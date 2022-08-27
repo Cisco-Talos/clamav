@@ -1241,8 +1241,8 @@ class LLVMCodegen
                     unsigned offset = GVoffsetMap[g];
                     Constant *Idx   = ConstantInt::get(Type::getInt32Ty(Context), offset);
                     Value *Idxs[2]  = {
-                         ConstantInt::get(Type::getInt32Ty(Context), 0),
-                         Idx};
+                        ConstantInt::get(Type::getInt32Ty(Context), 0),
+                        Idx};
                     Value *GEP       = Builder.CreateInBoundsGEP(Ctx, ArrayRef<Value *>(Idxs, Idxs + 2));
                     Type *Ty         = GVtypeMap[g];
                     Ty               = PointerType::getUnqual(PointerType::getUnqual(Ty));

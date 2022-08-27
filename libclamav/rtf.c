@@ -237,19 +237,25 @@ static int rtf_object_begin(struct rtf_state* state, cli_ctx* ctx, const char* t
     return 0;
 }
 
-static int decode_and_scan(struct rtf_object_data* data, cli_ctx* ctx)
+static cl_error_t decode_and_scan(struct rtf_object_data* data, cli_ctx* ctx)
 {
-    int ret = CL_CLEAN;
+    cl_error_t ret = CL_CLEAN;
 
-    cli_dbgmsg("RTF:Scanning embedded object:%s\n", data->name);
-    if (data->bread == 1 && data->fd > 0) {
-        cli_dbgmsg("Decoding ole object\n");
-        ret = cli_scan_ole10(data->fd, ctx);
-    } else if (data->fd > 0)
-        ret = cli_magic_scan_desc(data->fd, data->name, ctx, NULL, LAYER_ATTRIBUTES_NONE);
-    if (data->fd > 0)
+    cli_dbgmsg("RTF:Scanning embedded object: %s\n", data->name);
+
+    if (data->fd > 0) {
+        if (data->bread == 1) {
+            cli_dbgmsg("Decoding ole object\n");
+
+            ret = cli_scan_ole10(data->fd, ctx);
+        } else {
+            ret = cli_magic_scan_desc(data->fd, data->name, ctx, NULL, LAYER_ATTRIBUTES_NONE);
+        }
+
         close(data->fd);
-    data->fd = -1;
+        data->fd = -1;
+    }
+
     if (data->name) {
         if (!ctx->engine->keeptmp)
             if (cli_unlink(data->name)) ret = CL_EUNLINK;
@@ -257,9 +263,7 @@ static int decode_and_scan(struct rtf_object_data* data, cli_ctx* ctx)
         data->name = NULL;
     }
 
-    if (ret != CL_CLEAN)
-        return ret;
-    return 0;
+    return ret;
 }
 
 static int rtf_object_process(struct rtf_state* state, const unsigned char* input, const size_t len)
