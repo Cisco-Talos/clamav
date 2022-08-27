@@ -2114,7 +2114,7 @@ static fc_error_t check_for_new_database_version(
         &remotever,
         &remotename);
     switch (ret) {
-        case FC_SUCCESS: {
+        case FC_SUCCESS:
             if (0 == localver) {
                 logg(LOGG_INFO, "%s database available for download (remote version: %d)\n",
                      database, remotever);
@@ -2125,8 +2125,8 @@ static fc_error_t check_for_new_database_version(
                 break;
             }
             /* fall-through */
-        }
-        case FC_UPTODATE: {
+
+        case FC_UPTODATE:
             if (NULL == local_database) {
                 logg(LOGG_ERROR, "check_for_new_database_version: server claims we're up-to-date, but we don't have a local database!\n");
                 status = FC_EFAILEDGET;
@@ -2143,18 +2143,17 @@ static fc_error_t check_for_new_database_version(
                We know it will be the same as the local version though. */
             remotever = localver;
             break;
-        }
-        case FC_EFORBIDDEN: {
+
+        case FC_EFORBIDDEN:
             /* We tried to look up the version using HTTP and were actively blocked. */
             logg(LOGG_ERROR, "check_for_new_database_version: Blocked from using server %s.\n", server);
             status = FC_EFORBIDDEN;
             goto done;
-        }
-        default: {
+
+        default:
             logg(LOGG_ERROR, "check_for_new_database_version: Failed to find %s database using server %s.\n", database, server);
             status = FC_EFAILEDGET;
             goto done;
-        }
     }
 
     *remoteVersion = remotever;

@@ -2935,14 +2935,15 @@ cl_error_t cli_bytecode_runhook(cli_ctx *cctx, const struct cl_engine *engine, s
                 close(fd);
 
                 if (!cctx->engine->keeptmp) {
-                    if (tempfile && cli_unlink(tempfile))
+                    if (tempfile && cli_unlink(tempfile)) {
                         ret = CL_EUNLINK;
+                    }
                 }
 
                 free(tempfile);
 
-                if (ret == CL_VIRUS) {
-                    cli_dbgmsg("Scanning unpacked file by bytecode %u found a virus\n", bc->id);
+                if (ret != CL_SUCCESS) {
+                    cli_dbgmsg("Scanning unpacked file by bytecode %u found a reason to stop: %s\n", bc->id, cl_strerror(ret));
                     cli_bytecode_context_clear(ctx);
                     return ret;
                 }

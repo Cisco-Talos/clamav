@@ -517,8 +517,8 @@ static cl_error_t real_scansis(cli_ctx *ctx, const char *tmpd)
 
                         FREE(decomp);
 
-                        if (cli_magic_scan_desc(fd, ofn, ctx, original_filepath) == CL_VIRUS) {
-                            status = CL_VIRUS;
+                        status = cli_magic_scan_desc(fd, ofn, ctx, original_filepath);
+                        if (CL_SUCCESS != status) {
                             goto done;
                         }
 
@@ -713,6 +713,8 @@ static inline void seeknext(struct SISTREAM *s)
 
 static cl_error_t real_scansis9x(cli_ctx *ctx, const char *tmpd)
 {
+    cl_error_t ret;
+
     struct SISTREAM stream;
     struct SISTREAM *s = &stream;
     uint32_t field, optst[] = {T_CONTROLLERCHECKSUM, T_DATACHECKSUM, T_COMPRESSED};
@@ -840,9 +842,10 @@ static cl_error_t real_scansis9x(cli_ctx *ctx, const char *tmpd)
                                 break;
                             }
                             free(dst);
-                            if (cli_magic_scan_desc(fd, tempf, ctx, NULL) == CL_VIRUS) {
+                            ret = cli_magic_scan_desc(fd, tempf, ctx, NULL);
+                            if (CL_SUCCESS != ret) {
                                 close(fd);
-                                return CL_VIRUS;
+                                return ret;
                             }
                             close(fd);
                             break;

@@ -204,7 +204,7 @@ typedef struct cli_ctx_tag {
     uint64_t scansize;
     struct cl_scan_options *options;
     unsigned int scannedfiles;
-    unsigned int corrupted_input;
+    unsigned int corrupted_input;       /* Setting this flag will prevent the PE parser from reporting "broken executable" for unpacked/reconstructed files that may not be 100% to spec. */
     recursion_level_t *recursion_stack; /* Array of recursion levels used as a stack. */
     uint32_t recursion_stack_size;      /* stack size must == engine->max_recursion_level */
     uint32_t recursion_level;           /* Index into recursion_stack; current fmap recursion level from start of scan. */

@@ -416,8 +416,8 @@ scan_overlay:
         // Is there an overlay?
         if (offset < map->len) {
             cli_dbgmsg("GIF: Found extra data after the end of the GIF data stream: %zu bytes, we'll scan it!\n", map->len - offset);
-            cl_error_t nested_scan_result = cli_magic_scan_nested_fmap_type(map, offset, map->len - offset, ctx, CL_TYPE_ANY, NULL);
-            status                        = nested_scan_result != CL_SUCCESS ? nested_scan_result : status;
+            status = cli_magic_scan_nested_fmap_type(map, offset, map->len - offset, ctx, CL_TYPE_ANY, NULL);
+            goto done;
         }
     }
 

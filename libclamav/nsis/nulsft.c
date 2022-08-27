@@ -545,13 +545,17 @@ int cli_scannulsft(cli_ctx *ctx, off_t offset)
                 free(nsist.dir);
                 return CL_ESEEK;
             }
-            if (nsist.fno == 1)
+            if (nsist.fno == 1) {
                 ret = cli_scan_desc(nsist.ofd, ctx, CL_TYPE_ANY, false, NULL, AC_SCAN_VIR, NULL, NULL); /// TODO: Extract file names
-            else
+            } else {
                 ret = cli_magic_scan_desc(nsist.ofd, nsist.ofn, ctx, NULL); /// TODO: Extract file names
+            }
             close(nsist.ofd);
-            if (!ctx->engine->keeptmp)
-                if (cli_unlink(nsist.ofn)) ret = CL_EUNLINK;
+            if (!ctx->engine->keeptmp) {
+                if (cli_unlink(nsist.ofn)) {
+                    ret = CL_EUNLINK;
+                }
+            }
         } else if (ret == CL_EMAXSIZE) {
             ret = nsist.solid ? CL_BREAK : CL_SUCCESS;
         }
@@ -562,8 +566,9 @@ int cli_scannulsft(cli_ctx *ctx, off_t offset)
 
     nsis_shutdown(&nsist);
 
-    if (!ctx->engine->keeptmp)
+    if (!ctx->engine->keeptmp) {
         cli_rmdirs(nsist.dir);
+    }
 
     free(nsist.dir);
 

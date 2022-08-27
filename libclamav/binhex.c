@@ -123,7 +123,9 @@ int cli_binhex(cli_ctx *ctx)
                         break;
                     }
                     ret = cli_magic_scan_desc(datafd, dname, ctx, NULL);
-                    if (ret == CL_VIRUS) break;
+                    if (ret != CL_SUCCESS) {
+                        break;
+                    }
                 }
                 if (dec_done)
                     memmove(decoded, &decoded[todo], dec_done);

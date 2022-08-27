@@ -339,7 +339,7 @@ unsigned int cl_retflevel(void)
     return CL_FLEVEL;
 }
 
-const char *cl_strerror(int clerror)
+const char *cl_strerror(cl_error_t clerror)
 {
     switch (clerror) {
         /* libclamav specific codes */
@@ -1114,45 +1114,55 @@ cl_error_t cli_checklimits(const char *who, cli_ctx *ctx, unsigned long need1, u
     cl_error_t ret = CL_SUCCESS;
     unsigned long needed;
 
-    /* if called without limits, go on, unpack, scan */
-    if (!ctx) return ret;
+    if (!ctx) {
+        /* if called without limits, go on, unpack, scan */
+        goto done;
+    }
 
     needed = (need1 > need2) ? need1 : need2;
     needed = (needed > need3) ? needed : need3;
 
-    /* Enforce timelimit */
-    if (CL_ETIMEOUT == (ret = cli_checktimelimit(ctx))) {
-        /* Abort the scan ... */
-        ret = CL_ETIMEOUT;
+    /* Enforce global time limit, if limit enabled */
+    ret = cli_checktimelimit(ctx);
+    if (CL_SUCCESS != ret) {
+        // Exceeding the time limit will abort the scan.
+        // The logic for this and the possible heuristic is done inside the cli_checktimelimit function.
+        goto done;
     }
 
-    /* Enforce global scan-size limit */
-    if (needed && ctx->engine->maxscansize) {
-        /* if the remaining scansize is too small... */
-        if (ctx->engine->maxscansize - ctx->scansize < needed) {
-            /* Skip this file */
-            cli_dbgmsg("%s: scansize exceeded (initial: %lu, consumed: %lu, needed: %lu)\n", who, (unsigned long int)ctx->engine->maxscansize, (unsigned long int)ctx->scansize, needed);
-            ret = CL_EMAXSIZE;
-            cli_append_potentially_unwanted_if_heur_exceedsmax(ctx, "Heuristics.Limits.Exceeded.MaxScanSize");
-        }
+    /* Enforce global scan-size limit, if limit enabled */
+    if (needed && (ctx->engine->maxscansize != 0) && (ctx->engine->maxscansize - ctx->scansize < needed)) {
+        /* The size needed is greater than the remaining scansize ... Skip this file. */
+        cli_dbgmsg("%s: scansize exceeded (initial: %lu, consumed: %lu, needed: %lu)\n", who, (unsigned long int)ctx->engine->maxscansize, (unsigned long int)ctx->scansize, needed);
+        ret = CL_EMAXSIZE;
+        cli_append_potentially_unwanted_if_heur_exceedsmax(ctx, "Heuristics.Limits.Exceeded.MaxScanSize");
+        goto done;
     }
 
-    /* Enforce per-file file-size limit */
-    if (needed && ctx->engine->maxfilesize && ctx->engine->maxfilesize < needed) {
-        /* Skip this file */
+    /* Enforce per-file file-size limit, if limit enabled */
+    if (needed && (ctx->engine->maxfilesize != 0) && (ctx->engine->maxfilesize < needed)) {
+        /* The size needed is greater than that limit ... Skip this file. */
         cli_dbgmsg("%s: filesize exceeded (allowed: %lu, needed: %lu)\n", who, (unsigned long int)ctx->engine->maxfilesize, needed);
         ret = CL_EMAXSIZE;
         cli_append_potentially_unwanted_if_heur_exceedsmax(ctx, "Heuristics.Limits.Exceeded.MaxFileSize");
+        goto done;
     }
 
-    /* Enforce limit on number of embedded files */
-    if (ctx->engine->maxfiles && ctx->scannedfiles >= ctx->engine->maxfiles) {
-        /* Abort the scan ... */
+    /* Enforce limit on number of embedded files, if limit enabled */
+    if ((ctx->engine->maxfiles != 0) && (ctx->scannedfiles >= ctx->engine->maxfiles)) {
+        /* This file would exceed the max # of files ... Skip this file. */
         cli_dbgmsg("%s: files limit reached (max: %u)\n", who, ctx->engine->maxfiles);
         ret = CL_EMAXFILES;
         cli_append_potentially_unwanted_if_heur_exceedsmax(ctx, "Heuristics.Limits.Exceeded.MaxFiles");
-        ctx->abort_scan = true;
+
+        // We don't need to set the `ctx->abort_scan` flag here.
+        // We want `cli_magic_scan()` to finish scanning the current file, but not any future files.
+        // We keep track of the # scanned files with `ctx->scannedfiles`, and that should be sufficient to prevent
+        // additional files from being scanned.
+        goto done;
     }
+
+done:
 
     return ret;
 }
@@ -1191,10 +1201,8 @@ cl_error_t cli_checktimelimit(cli_ctx *ctx)
     if (ctx->time_limit.tv_sec != 0) {
         struct timeval now;
         if (gettimeofday(&now, NULL) == 0) {
-            if (now.tv_sec > ctx->time_limit.tv_sec) {
-                ctx->abort_scan = true;
-                ret             = CL_ETIMEOUT;
-            } else if (now.tv_sec == ctx->time_limit.tv_sec && now.tv_usec > ctx->time_limit.tv_usec) {
+            if ((now.tv_sec > ctx->time_limit.tv_sec) ||
+                (now.tv_sec == ctx->time_limit.tv_sec && now.tv_usec > ctx->time_limit.tv_usec)) {
                 ctx->abort_scan = true;
                 ret             = CL_ETIMEOUT;
             }
@@ -1203,6 +1211,9 @@ cl_error_t cli_checktimelimit(cli_ctx *ctx)
 
     if (CL_ETIMEOUT == ret) {
         cli_append_potentially_unwanted_if_heur_exceedsmax(ctx, "Heuristics.Limits.Exceeded.MaxScanTime");
+
+        // abort_scan flag is set so that in cli_magic_scan() we *will* stop scanning, even if we lose the status code.
+        ctx->abort_scan = true;
     }
 
 done:
@@ -1392,6 +1403,8 @@ static cl_error_t append_virus(cli_ctx *ctx, const char *virname, IndicatorType 
         switch (type) {
             case IndicatorType_Strong: {
                 status = CL_VIRUS;
+                // abort_scan flag is set so that in cli_magic_scan() we *will* stop scanning, even if we lose the status code.
+                ctx->abort_scan = true;
                 break;
             }
             case IndicatorType_PotentiallyUnwanted: {
@@ -1460,7 +1473,7 @@ cl_error_t cli_recursion_stack_push(cli_ctx *ctx, cl_fmap_t *map, cli_file_t typ
     recursion_level_t *new_container     = NULL;
 
     // Check the regular limits
-    if (CL_SUCCESS != (status = cli_checklimits("cli_updatelimits", ctx, map->len, 0, 0))) {
+    if (CL_SUCCESS != (status = cli_checklimits("cli_recursion_stack_push", ctx, map->len, 0, 0))) {
         cli_dbgmsg("cli_recursion_stack_push: Some content was skipped. The scan result will not be cached.\n");
         emax_reached(ctx); // Disable caching for all recursion layers.
         goto done;

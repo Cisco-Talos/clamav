@@ -169,14 +169,14 @@ END_TEST
 static int get_test_file(int i, char *file, unsigned fsize, unsigned long *size);
 static struct cl_engine *g_engine;
 
-/* int cl_scandesc(int desc, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, struct cl_scan_options* options) */
+/* cl_error_t cl_scandesc(int desc, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, struct cl_scan_options* options) */
 START_TEST(test_cl_scandesc)
 {
     const char *virname = NULL;
     char file[256];
     unsigned long size;
     unsigned long int scanned = 0;
-    int ret;
+    cl_error_t ret;
     struct cl_scan_options options;
 
     memset(&options, 0, sizeof(struct cl_scan_options));

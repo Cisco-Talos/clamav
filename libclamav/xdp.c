@@ -161,7 +161,7 @@ cl_error_t cli_scanxdp(cli_ctx *ctx)
 
                     rc = cli_magic_scan_buff(decoded, decodedlen, ctx, NULL);
                     free(decoded);
-                    if (rc != CL_SUCCESS || rc == CL_BREAK) {
+                    if (rc != CL_SUCCESS) {
                         xmlFree((void *)value);
                         break;
                     }
