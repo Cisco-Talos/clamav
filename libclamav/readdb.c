@@ -916,7 +916,9 @@ cl_error_t cli_add_content_match_pattern(struct cli_matcher *root, const char *v
             free(pt);
         }
 
-    } else if (root->ac_only || type || lsigid || sigopts || strpbrk(hexsig, "?([") || (root->bm_offmode && (!strcmp(offset, "*") || strchr(offset, ','))) || strstr(offset, "VI") || strchr(offset, '$')) {
+    } else if (root->ac_only || type || lsigid || sigopts || strpbrk(hexsig, "?([") ||
+               // Relative offset features that are not fully supported by the Boyer-Moore matcher.
+               (root->bm_offmode && (!strcmp(offset, "*") || strchr(offset, ','))) || strstr(offset, "VI") || strstr(offset, "S") || strchr(offset, '$')) {
         /*
          * format seems like it must be handled with the Aho-Corasick (AC) pattern matcher.
          */

@@ -290,12 +290,10 @@ class TC(testcase.TestCase):
         command = '{valgrind} {valgrind_args} {clamscan} \
              -d {alerting_dbs} \
              -d {weak_dbs} \
-             -d {broken_dbs} \
              --allmatch --bytecode-unsigned {testfiles}'.format(
             valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan,
             alerting_dbs=test_path / 'alert-sigs',
             weak_dbs=test_path / 'weak-sigs',
-            broken_dbs=test_path / 'broken-sigs',
             testfiles=test_exe,
         )
         output = self.execute_command(command)
@@ -308,8 +306,4 @@ class TC(testcase.TestCase):
         #       I think this is a minor bug. So if we change that, we'll need to update this test.
         expected_results = ['{sig} FOUND'.format(sig=f.stem) for f in (test_path / 'alert-sigs').iterdir()]
 
-        # The broken sig files are all given the signature name, so we can verify that the correct sigs were found.
-        # TODO: When we fix section signatures, we can move them to the alerting sigs directory and get rid of this line.
-        unexpected_results = ['{sig} FOUND'.format(sig=f.stem) for f in (test_path / 'broken-sigs').iterdir()]
-
-        self.verify_output(output.out, expected=expected_results, unexpected=unexpected_results)
+        self.verify_output(output.out, expected=expected_results)

@@ -135,13 +135,11 @@ rule regex
         command = '{valgrind} {valgrind_args} {clamscan} \
              -d {alerting_dbs} \
              -d {weak_dbs} \
-             -d {broken_dbs} \
              -d {trust_dbs} \
              --allmatch --bytecode-unsigned {testfiles}'.format(
             valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan,
             alerting_dbs=test_path / 'alert-sigs',
             weak_dbs=test_path / 'weak-sigs',
-            broken_dbs=test_path / 'broken-sigs',
             trust_dbs=test_path / 'trust-sigs',
             testfiles=test_exe,
         )
