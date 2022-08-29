@@ -346,7 +346,7 @@ cl_error_t cli_scan_buff(const unsigned char *buffer, uint32_t length, uint32_t 
  * offdata[2]: max shift
  * offdata[3]: section number
  */
-cl_error_t cli_caloff(const char *offstr, const struct cli_target_info *info, unsigned int target, uint32_t *offdata, uint32_t *offset_min, uint32_t *offset_max)
+cl_error_t cli_caloff(const char *offstr, const struct cli_target_info *info, cli_target_t target, uint32_t *offdata, uint32_t *offset_min, uint32_t *offset_max)
 {
     char offcpy[65] = {0};
     unsigned int n = 0, val = 0;
@@ -453,7 +453,7 @@ cl_error_t cli_caloff(const char *offstr, const struct cli_target_info *info, un
 
         if (offdata[0] != CLI_OFF_ANY && offdata[0] != CLI_OFF_ABSOLUTE &&
             offdata[0] != CLI_OFF_EOF_MINUS && offdata[0] != CLI_OFF_MACRO) {
-            if (target != 1 && target != 6 && target != 9) {
+            if (target != TARGET_PE && target != TARGET_ELF && target != TARGET_MACHO) {
                 cli_errmsg("cli_caloff: Invalid offset type for target %u\n", target);
                 return CL_EMALFDB;
             }
@@ -533,22 +533,27 @@ void cli_targetinfo_init(struct cli_target_info *info)
     cli_exe_info_init(&(info->exeinfo), 0);
 }
 
-void cli_targetinfo(struct cli_target_info *info, unsigned int target, cli_ctx *ctx)
+void cli_targetinfo(struct cli_target_info *info, cli_target_t target, cli_ctx *ctx)
 {
-    int (*einfo)(cli_ctx *, struct cli_exe_info *) = NULL;
+    cl_error_t (*einfo)(cli_ctx *, struct cli_exe_info *) = NULL;
 
     info->fsize = ctx->fmap->len;
 
-    if (target == 1)
-        einfo = cli_pe_targetinfo;
-    else if (target == 6)
-        einfo = cli_elfheader;
-    else if (target == 9)
-        einfo = cli_machoheader;
-    else
-        return;
+    switch (target) {
+        case TARGET_PE:
+            einfo = cli_pe_targetinfo;
+            break;
+        case TARGET_ELF:
+            einfo = cli_elfheader;
+            break;
+        case TARGET_MACHO:
+            einfo = cli_machoheader;
+            break;
+        default:
+            return;
+    }
 
-    if (einfo(ctx, &info->exeinfo))
+    if (CL_SUCCESS != einfo(ctx, &info->exeinfo))
         info->status = -1;
     else
         info->status = 1;

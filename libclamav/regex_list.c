@@ -757,7 +757,6 @@ static cl_error_t add_pattern_suffix(void *cbdata, const char *suffix, size_t su
     struct regex_matcher *matcher = cbdata;
     struct regex_list *regex      = NULL;
     const struct cli_element *el  = NULL;
-    void *tmp_matcher             = NULL; /*	save original address if OOM occurs */
     cl_error_t ret                = CL_SUCCESS;
 
     if (NULL == matcher) {
@@ -802,9 +801,8 @@ static cl_error_t add_pattern_suffix(void *cbdata, const char *suffix, size_t su
         list_add_tail(&matcher->suffix_regexes[(size_t)el->data], regex);
     } else {
         /* new suffix */
-        size_t n    = matcher->suffix_cnt;
-        el          = cli_hashtab_insert(&matcher->suffix_hash, suffix, suffix_len, (cli_element_data)n);
-        tmp_matcher = matcher->suffix_regexes; /*  save the current value before cli_realloc()	*/
+        size_t n = matcher->suffix_cnt;
+        el       = cli_hashtab_insert(&matcher->suffix_hash, suffix, suffix_len, (cli_element_data)n);
         CLI_REALLOC(matcher->suffix_regexes,
                     (n + 1) * sizeof(*matcher->suffix_regexes),
                     cli_errmsg("add_pattern_suffix: Unable to reallocate memory for matcher->suffix_regexes\n");
