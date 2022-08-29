@@ -1250,7 +1250,7 @@ cl_error_t cli_scan_fmap(cli_ctx *ctx, cli_file_t ftype, bool filetype_only, str
             ret = matcher_run(target_ac_root, buff, bytes, &virname, &target_ac_data, offset,
                               &info, ftype, ftoffset, acmode, PCRE_SCAN_FMAP, acres, ctx->fmap,
                               bm_offsets_table_initialized ? &bm_offsets_table : NULL,
-                              &generic_pcre_offsets_table, ctx);
+                              &target_pcre_offsets_table, ctx);
             if (ret == CL_VIRUS || ret == CL_EMEM) {
                 goto done;
             }
