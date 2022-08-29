@@ -2775,7 +2775,7 @@ int cli_scanpe(cli_ctx *ctx)
     char *dest                                                                             = NULL;
     int ndesc;
     cl_error_t ret = CL_SUCCESS;
-    cli_peheader_error_t peheader_ret;
+    cl_error_t peheader_ret;
     int upack = 0;
     size_t fsize;
     struct cli_bc_ctx *bc_ctx;
@@ -2829,34 +2829,39 @@ int cli_scanpe(cli_ctx *ctx)
     // successfully on Windows, we need to relax our PE parsing standards so
     // that we make sure the executable gets scanned appropriately
 
-#define PE_HDR_PARSE_FAIL_CONSEQUENCE "won't attempt .mdb / .imp / PE-specific BC rule matching or exe unpacking\n"
+    switch (peheader_ret) {
+        case CL_EFORMAT:
+            ret = CL_SUCCESS;
+            if (DETECT_BROKEN_PE) {
+                ret = cli_append_potentially_unwanted(ctx, "Heuristics.Broken.Executable");
+            }
+            cli_dbgmsg("cli_scanpe: PE header appears broken - won't attempt .mdb / .imp / PE-specific BC rule matching or exe unpacking\n");
+            cli_exe_info_destroy(peinfo);
+            return ret;
 
-    if (CLI_PEHEADER_RET_BROKEN_PE == peheader_ret) {
-        ret = CL_SUCCESS;
-        if (DETECT_BROKEN_PE) {
-            ret = cli_append_potentially_unwanted(ctx, "Heuristics.Broken.Executable");
-        }
-        cli_dbgmsg("cli_scanpe: PE header appears broken - " PE_HDR_PARSE_FAIL_CONSEQUENCE);
-        cli_exe_info_destroy(peinfo);
-        return ret;
+        case CL_ERROR:
+            ret = CL_SUCCESS;
+            cli_dbgmsg("cli_scanpe: An error occurred when parsing the PE header - won't attempt .mdb / .imp / PE-specific BC rule matching or exe unpacking\n");
+            cli_exe_info_destroy(peinfo);
+            return ret;
 
-    } else if (CLI_PEHEADER_RET_JSON_TIMEOUT == peheader_ret) {
-        cli_dbgmsg("cli_scanpe: JSON creation timed out - " PE_HDR_PARSE_FAIL_CONSEQUENCE);
-        cli_exe_info_destroy(peinfo);
-        return CL_ETIMEOUT;
+        case CL_ETIMEOUT:
+            ret = CL_ETIMEOUT;
+            cli_dbgmsg("cli_scanpe: JSON creation timed out - won't attempt .mdb / .imp / PE-specific BC rule matching or exe unpacking\n");
+            cli_exe_info_destroy(peinfo);
+            return ret;
 
-    } else if (CLI_PEHEADER_RET_GENERIC_ERROR == peheader_ret) {
-        cli_dbgmsg("cli_scanpe: An error occurred when parsing the PE header - " PE_HDR_PARSE_FAIL_CONSEQUENCE);
-        cli_exe_info_destroy(peinfo);
-        return CL_SUCCESS;
+        default:
+            break;
     }
 
     if (!peinfo->is_pe32plus) { /* PE */
-        if (DCONF & PE_CONF_UPACK)
+        if (DCONF & PE_CONF_UPACK) {
             upack = (EC16(peinfo->file_hdr.SizeOfOptionalHeader) == 0x148);
+        }
     }
-    for (i = 0; i < peinfo->nsections; i++) {
 
+    for (i = 0; i < peinfo->nsections; i++) {
         if (peinfo->sections[i].rsz) { /* Don't bother with virtual only sections */
             // TODO Regarding the commented out check below:
             // This used to check that the section name was NULL, but now that
@@ -4428,7 +4433,7 @@ int cli_scanpe(cli_ctx *ctx)
     return CL_SUCCESS;
 }
 
-cli_peheader_error_t cli_pe_targetinfo(cli_ctx *ctx, struct cli_exe_info *peinfo)
+cl_error_t cli_pe_targetinfo(cli_ctx *ctx, struct cli_exe_info *peinfo)
 {
     return cli_peheader(ctx->fmap, peinfo, CLI_PEHEADER_OPT_EXTRACT_VINFO, NULL);
 }
@@ -4461,10 +4466,9 @@ cli_peheader_error_t cli_pe_targetinfo(cli_ctx *ctx, struct cli_exe_info *peinfo
  *                                          rsz is just set to 0 for it.
  * @param ctx The overarching cli_ctx.  This is required with certain opts, but
  *            optional otherwise.
- * @return If the PE header is parsed successfully, CLI_PEHEADER_RET_SUCCESS
- *         is returned. If it seems like the PE is broken,
- *         CLI_PEHEADER_RET_BROKEN_PE is returned.  Otherwise, one of the
- *         other error codes is returned.
+ * @return If the PE header is parsed successfully, CL_SUCCESS is returned.
+ *         If it seems like the PE is broken, CL_EFORMAT is returned.
+ *         Otherwise, one of the other error codes is returned.
  *         The caller MUST destroy peinfo, regardless of what this function
  *         returns.
  *
@@ -4491,8 +4495,10 @@ cli_peheader_error_t cli_pe_targetinfo(cli_ctx *ctx, struct cli_exe_info *peinfo
  *
  * TODO Same as above but with JSON creation
  */
-cli_peheader_error_t cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts, cli_ctx *ctx)
+cl_error_t cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts, cli_ctx *ctx)
 {
+    cl_error_t ret = CL_ERROR;
+
     uint16_t e_magic; /* DOS signature ("MZ") */
     const char *archtype = NULL, *subsystem = NULL;
     time_t timestamp;
@@ -4514,7 +4520,6 @@ cli_peheader_error_t cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint
     int native      = 0;
     size_t read;
 
-    cli_peheader_error_t ret = CLI_PEHEADER_RET_GENERIC_ERROR;
 #if HAVE_JSON
     int toval                   = 0;
     struct json_object *pe_json = NULL;
@@ -4548,7 +4553,7 @@ cli_peheader_error_t cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint
     if (fmap_readn(map, &(peinfo->e_lfanew), peinfo->offset + 58 + sizeof(e_magic), sizeof(peinfo->e_lfanew)) != sizeof(peinfo->e_lfanew)) {
         /* truncated header? */
         cli_dbgmsg("cli_peheader: Unable to read e_lfanew - truncated header?\n");
-        ret = CLI_PEHEADER_RET_BROKEN_PE;
+        ret = CL_EFORMAT;
         goto done;
     }
 
@@ -4743,7 +4748,7 @@ cli_peheader_error_t cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint
                 cli_dbgmsg("cli_peheader: Invalid NumberOfSections (0)\n");
             }
         }
-        ret = CLI_PEHEADER_RET_BROKEN_PE;
+        ret = CL_EFORMAT;
         goto done;
     }
 
@@ -4776,14 +4781,14 @@ cli_peheader_error_t cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint
             pe_add_heuristic_property(ctx, "BadOptionalHeaderSize");
         }
 #endif
-        ret = CLI_PEHEADER_RET_BROKEN_PE;
+        ret = CL_EFORMAT;
         goto done;
     }
 
     at = peinfo->offset + peinfo->e_lfanew + sizeof(struct pe_image_file_hdr);
     if (fmap_readn(map, &(peinfo->pe_opt.opt32), at, sizeof(struct pe_image_optional_hdr32)) != sizeof(struct pe_image_optional_hdr32)) {
         cli_dbgmsg("cli_peheader: Can't read optional file header\n");
-        ret = CLI_PEHEADER_RET_BROKEN_PE;
+        ret = CL_EFORMAT;
         goto done;
     }
     stored_opt_hdr_size = sizeof(struct pe_image_optional_hdr32);
@@ -4802,13 +4807,13 @@ cli_peheader_error_t cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint
                 pe_add_heuristic_property(ctx, "BadOptionalHeaderSizePE32Plus");
             }
 #endif
-            ret = CLI_PEHEADER_RET_BROKEN_PE;
+            ret = CL_EFORMAT;
             goto done;
         }
 
         if (fmap_readn(map, (void *)(((size_t) & (peinfo->pe_opt.opt64)) + sizeof(struct pe_image_optional_hdr32)), at, OPT_HDR_SIZE_DIFF) != OPT_HDR_SIZE_DIFF) {
             cli_dbgmsg("cli_peheader: Can't read additional optional file header bytes\n");
-            ret = CLI_PEHEADER_RET_BROKEN_PE;
+            ret = CL_EFORMAT;
             goto done;
         }
 
@@ -4991,7 +4996,7 @@ cli_peheader_error_t cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint
     if (!native && (!salign || (salign % 0x1000))) {
         cli_dbgmsg("cli_peheader: Bad section alignment\n");
         if (opts & CLI_PEHEADER_OPT_STRICT_ON_PE_ERRORS) {
-            ret = CLI_PEHEADER_RET_BROKEN_PE;
+            ret = CL_EFORMAT;
             goto done;
         }
     }
@@ -4999,7 +5004,7 @@ cli_peheader_error_t cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint
     if (!native && (!falign || (falign % 0x200))) {
         cli_dbgmsg("cli_peheader: Bad file alignment\n");
         if (opts & CLI_PEHEADER_OPT_STRICT_ON_PE_ERRORS) {
-            ret = CLI_PEHEADER_RET_BROKEN_PE;
+            ret = CL_EFORMAT;
             goto done;
         }
     }
@@ -5029,7 +5034,7 @@ cli_peheader_error_t cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint
 
     if (opt_hdr_size < (stored_opt_hdr_size + data_dirs_size)) {
         cli_dbgmsg("cli_peheader: SizeOfOptionalHeader too small (doesn't include data dir size)\n");
-        ret = CLI_PEHEADER_RET_BROKEN_PE;
+        ret = CL_EFORMAT;
         goto done;
     }
 
@@ -5080,7 +5085,7 @@ cli_peheader_error_t cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint
     read = fmap_readn(map, section_hdrs, at, peinfo->nsections * sizeof(struct pe_image_section_hdr));
     if ((read == (size_t)-1) || (read != peinfo->nsections * sizeof(struct pe_image_section_hdr))) {
         cli_dbgmsg("cli_peheader: Can't read section header - possibly broken PE file\n");
-        ret = CLI_PEHEADER_RET_BROKEN_PE;
+        ret = CL_EFORMAT;
         goto done;
     }
     at += sizeof(struct pe_image_section_hdr) * peinfo->nsections;
@@ -5126,7 +5131,7 @@ cli_peheader_error_t cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint
 
                 if (opts & CLI_PEHEADER_OPT_REMOVE_MISSING_SECTIONS) {
                     if (peinfo->nsections == 1) {
-                        ret = CLI_PEHEADER_RET_BROKEN_PE;
+                        ret = CL_EFORMAT;
                         goto done;
                     }
 
@@ -5169,7 +5174,7 @@ cli_peheader_error_t cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint
             add_section_info(ctx, &peinfo->sections[i]);
 
             if (cli_json_timeout_cycle_check(ctx, &toval) != CL_SUCCESS) {
-                ret = CLI_PEHEADER_RET_JSON_TIMEOUT;
+                ret = CL_ETIMEOUT;
                 goto done;
             }
         }
@@ -5213,7 +5218,7 @@ cli_peheader_error_t cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint
         if (!salign || (section->urva % salign)) { /* Bad section alignment */
             cli_dbgmsg("cli_peheader: Broken PE - section's VirtualAddress is misaligned\n");
             if (opts & CLI_PEHEADER_OPT_STRICT_ON_PE_ERRORS) {
-                ret = CLI_PEHEADER_RET_BROKEN_PE;
+                ret = CL_EFORMAT;
                 goto done;
             }
         }
@@ -5222,7 +5227,7 @@ cli_peheader_error_t cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint
         // section? Why the exception for uraw?
         if (section->urva >> 31 || section->uvsz >> 31 || (section->rsz && section->uraw >> 31) || peinfo->sections[i].ursz >> 31) {
             cli_dbgmsg("cli_peheader: Found PE values with sign bit set\n");
-            ret = CLI_PEHEADER_RET_BROKEN_PE;
+            ret = CL_EFORMAT;
             goto done;
         }
 
@@ -5230,7 +5235,7 @@ cli_peheader_error_t cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint
             if (section->urva != peinfo->hdr_size) { /* Bad first section RVA */
                 cli_dbgmsg("cli_peheader: First section doesn't start immediately after the header\n");
                 if (opts & CLI_PEHEADER_OPT_STRICT_ON_PE_ERRORS) {
-                    ret = CLI_PEHEADER_RET_BROKEN_PE;
+                    ret = CL_EFORMAT;
                     goto done;
                 }
             }
@@ -5241,7 +5246,7 @@ cli_peheader_error_t cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint
             if (section->urva - peinfo->sections[i - 1].urva != peinfo->sections[i - 1].vsz) { /* No holes, no overlapping, no virtual disorder */
                 cli_dbgmsg("cli_peheader: Virtually misplaced section (wrong order, overlapping, non contiguous)\n");
                 if (opts & CLI_PEHEADER_OPT_STRICT_ON_PE_ERRORS) {
-                    ret = CLI_PEHEADER_RET_BROKEN_PE;
+                    ret = CL_EFORMAT;
                     goto done;
                 }
             }
@@ -5268,7 +5273,7 @@ cli_peheader_error_t cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint
     // TODO Should this offset include peinfo->offset?
     if (!(peinfo->ep = cli_rawaddr(peinfo->vep, peinfo->sections, peinfo->nsections, &err, fsize, peinfo->hdr_size)) && err) {
         cli_dbgmsg("cli_peheader: Broken PE file - Can't map EntryPoint to a file offset\n");
-        ret = CLI_PEHEADER_RET_BROKEN_PE;
+        ret = CL_EFORMAT;
         goto done;
     }
 
@@ -5277,7 +5282,7 @@ cli_peheader_error_t cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint
         cli_jsonint(pe_json, "EntryPointOffset", peinfo->ep);
 
         if (cli_json_timeout_cycle_check(ctx, &toval) != CL_SUCCESS) {
-            ret = CLI_PEHEADER_RET_JSON_TIMEOUT;
+            ret = CL_ETIMEOUT;
             goto done;
         }
     }
@@ -5480,7 +5485,7 @@ cli_peheader_error_t cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint
     // Do final preperations for peinfo to be passed back
     peinfo->is_dll = is_dll;
 
-    ret = CLI_PEHEADER_RET_SUCCESS;
+    ret = CL_SUCCESS;
 
 done:
     /* In the fail case, peinfo will get destroyed by the caller */
@@ -5546,7 +5551,7 @@ cl_error_t cli_check_auth_header(cli_ctx *ctx, struct cli_exe_info *peinfo)
         peinfo = &_peinfo;
         cli_exe_info_init(peinfo, 0);
 
-        if (cli_peheader(ctx->fmap, peinfo, CLI_PEHEADER_OPT_NONE, NULL) != CLI_PEHEADER_RET_SUCCESS) {
+        if (CL_SUCCESS != cli_peheader(ctx->fmap, peinfo, CLI_PEHEADER_OPT_NONE, NULL)) {
             cli_exe_info_destroy(peinfo);
             return CL_EFORMAT;
         }
@@ -5800,7 +5805,7 @@ cl_error_t cli_genhash_pe(cli_ctx *ctx, unsigned int class, int type, stats_sect
     // if so, use that to avoid having to re-parse the header
     cli_exe_info_init(peinfo, 0);
 
-    if (cli_peheader(ctx->fmap, peinfo, CLI_PEHEADER_OPT_NONE, NULL) != CLI_PEHEADER_RET_SUCCESS) {
+    if (cli_peheader(ctx->fmap, peinfo, CLI_PEHEADER_OPT_NONE, NULL) != CL_SUCCESS) {
         cli_exe_info_destroy(peinfo);
         return CL_EFORMAT;
     }

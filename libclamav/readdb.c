@@ -127,7 +127,7 @@ char *cli_virname(const char *virname, unsigned int official)
 
 cl_error_t cli_sigopts_handler(struct cli_matcher *root, const char *virname, const char *hexsig,
                                uint8_t sigopts, uint16_t rtype, uint16_t type,
-                               const char *offset, uint8_t target, const uint32_t *lsigid, unsigned int options)
+                               const char *offset, const uint32_t *lsigid, unsigned int options)
 {
     char *hexcpy, *start, *end, *mid;
     unsigned int i;
@@ -191,7 +191,7 @@ cl_error_t cli_sigopts_handler(struct cli_matcher *root, const char *virname, co
             return CL_EMALFDB;
         }
 
-        ret = cli_add_content_match_pattern(root, virname, hexcpy, sigopts, rtype, type, offset, target, lsigid, options);
+        ret = cli_add_content_match_pattern(root, virname, hexcpy, sigopts, rtype, type, offset, lsigid, options);
         free(hexcpy);
         return ret;
     }
@@ -203,7 +203,7 @@ cl_error_t cli_sigopts_handler(struct cli_matcher *root, const char *virname, co
 
     if (start != end && mid && (*(++mid) == '#' || !strncmp(mid, ">>", 2) || !strncmp(mid, "<<", 2) || !strncmp(mid, "0#", 2))) {
         /* TODO byte compare currently does not have support for sigopts, pass through */
-        ret = cli_add_content_match_pattern(root, virname, hexcpy, sigopts, rtype, type, offset, target, lsigid, options);
+        ret = cli_add_content_match_pattern(root, virname, hexcpy, sigopts, rtype, type, offset, lsigid, options);
         free(hexcpy);
         return ret;
     }
@@ -300,7 +300,7 @@ cl_error_t cli_sigopts_handler(struct cli_matcher *root, const char *virname, co
         }
 
         /* NOCASE sigopt is handled in cli_ac_addsig */
-        ret = cli_add_content_match_pattern(root, virname, hexovr, sigopts, rtype, type, offset, target, lsigid, options);
+        ret = cli_add_content_match_pattern(root, virname, hexovr, sigopts, rtype, type, offset, lsigid, options);
         free(hexovr);
         if (ret != CL_SUCCESS || !(sigopts & ACPATT_OPTION_ASCII)) {
             free(hexcpy);
@@ -312,7 +312,7 @@ cl_error_t cli_sigopts_handler(struct cli_matcher *root, const char *virname, co
     }
 
     /* ASCII sigopt; NOCASE sigopt is handled in cli_ac_addsig */
-    ret = cli_add_content_match_pattern(root, virname, hexcpy, sigopts, rtype, type, offset, target, lsigid, options);
+    ret = cli_add_content_match_pattern(root, virname, hexcpy, sigopts, rtype, type, offset, lsigid, options);
     free(hexcpy);
     return ret;
 }
@@ -426,7 +426,7 @@ done:
 }
 
 cl_error_t readdb_parse_ldb_subsignature(struct cli_matcher *root, const char *virname, char *hexsig,
-                                         const char *offset, uint8_t target, const uint32_t *lsigid, unsigned int options,
+                                         const char *offset, const uint32_t *lsigid, unsigned int options,
                                          int current_subsig_index, int num_subsigs, struct cli_lsig_tdb *tdb)
 {
     cl_error_t status = CL_EPARSE;
@@ -615,9 +615,9 @@ cl_error_t readdb_parse_ldb_subsignature(struct cli_matcher *root, const char *v
         sig = (subtokens_count % 2) ? subtokens[0] : subtokens[1];
 
         if (subsig_opts) {
-            ret = cli_sigopts_handler(root, virname, sig, subsig_opts, 0, 0, offset, target, lsigid, options);
+            ret = cli_sigopts_handler(root, virname, sig, subsig_opts, 0, 0, offset, lsigid, options);
         } else {
-            ret = cli_add_content_match_pattern(root, virname, sig, 0, 0, 0, offset, target, lsigid, options);
+            ret = cli_add_content_match_pattern(root, virname, sig, 0, 0, 0, offset, lsigid, options);
         }
 
         if (CL_SUCCESS != ret) {
@@ -647,13 +647,12 @@ done:
  * @param hexsig    The string containing the regex
  * @param subsig_opts Content match pattern options. See ACPATT_* macros in matcher-ac.h.
  * @param offset    The string offset where the pattern starts
- * @param target    The clamav target type.
  * @param lsigid    An array of 2 uint32_t numbers: lsig_id and subsig_id. May be NULL for testing.
  * @param options   Database options.  See CL_DB_* macros in clamav.h.
  * @return cl_error_t
  */
 static cl_error_t readdb_parse_yara_string(struct cli_matcher *root, const char *virname, char *hexsig, uint8_t subsig_opts,
-                                           const char *offset, uint8_t target, const uint32_t *lsigid, unsigned int options)
+                                           const char *offset, const uint32_t *lsigid, unsigned int options)
 {
     cl_error_t status = CL_EPARSE;
     cl_error_t ret;
@@ -669,9 +668,9 @@ static cl_error_t readdb_parse_yara_string(struct cli_matcher *root, const char 
          * Looks like an AC/BM content match subsignature.
          */
         if (subsig_opts) {
-            ret = cli_sigopts_handler(root, virname, hexsig, subsig_opts, 0, 0, offset, target, lsigid, options);
+            ret = cli_sigopts_handler(root, virname, hexsig, subsig_opts, 0, 0, offset, lsigid, options);
         } else {
-            ret = cli_add_content_match_pattern(root, virname, hexsig, 0, 0, 0, offset, target, lsigid, options);
+            ret = cli_add_content_match_pattern(root, virname, hexsig, 0, 0, 0, offset, lsigid, options);
         }
     }
 
@@ -700,14 +699,13 @@ done:
  * @param rtype
  * @param type
  * @param offset    The string offset where the pattern starts
- * @param target    The clamav target type.
  * @param lsigid    An array of 2 uint32_t numbers: lsig_id and subsig_id. May be NULL for testing.
  * @param options   Database options.  See CL_DB_* macros in clamav.h.
  * @return cl_error_t
  */
 cl_error_t cli_add_content_match_pattern(struct cli_matcher *root, const char *virname, const char *hexsig,
                                          uint8_t sigopts, uint16_t rtype, uint16_t type,
-                                         const char *offset, uint8_t target, const uint32_t *lsigid, unsigned int options)
+                                         const char *offset, const uint32_t *lsigid, unsigned int options)
 {
     struct cli_bm_patt *bm_new;
     char *pt, *hexcpy, *n, l, r;
@@ -747,7 +745,7 @@ cl_error_t cli_add_content_match_pattern(struct cli_matcher *root, const char *v
             }
 
             strcat(hexcpy, ++wild);
-            ret = cli_add_content_match_pattern(root, virname, hexcpy, sigopts, rtype, type, offset, target, lsigid, options);
+            ret = cli_add_content_match_pattern(root, virname, hexcpy, sigopts, rtype, type, offset, lsigid, options);
             free(hexcpy);
 
             return ret;
@@ -1275,7 +1273,7 @@ static cl_error_t cli_loaddb(FILE *fs, struct cl_engine *engine, unsigned int *s
 
         if (*pt == '=') continue;
 
-        if (CL_SUCCESS != (ret = cli_add_content_match_pattern(root, start, pt, 0, 0, 0, "*", 0, NULL, options))) {
+        if (CL_SUCCESS != (ret = cli_add_content_match_pattern(root, start, pt, 0, 0, 0, "*", NULL, options))) {
             cli_dbgmsg("cli_loaddb: cli_add_content_match_pattern failed on line %d\n", line);
             ret = CL_EMALFDB;
             break;
@@ -1584,7 +1582,7 @@ static int cli_loadndb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
     const char *sig, *virname, *offset, *pt;
     struct cli_matcher *root;
     int line = 0, sigs = 0, ret = 0, tokens_count;
-    unsigned short target;
+    cli_target_t target;
     unsigned int phish = options & CL_DB_PHISHING;
 
     UNUSEDPARAM(dbname);
@@ -1661,19 +1659,19 @@ static int cli_loadndb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
             ret = CL_EMALFDB;
             break;
         }
-        target = (unsigned short)atoi(pt);
+        target = (cli_target_t)atoi(pt);
 
-        if (target >= CLI_MTARGETS) {
-            cli_dbgmsg("Not supported target type in signature for %s\n", virname);
+        if (target >= CLI_MTARGETS || target < 0) {
+            cli_dbgmsg("Not supported target type (%d) in signature for %s\n", (int)target, virname);
             continue;
         }
 
-        root = engine->root[target];
+        root = engine->root[(size_t)target];
 
         offset = tokens[2];
         sig    = tokens[3];
 
-        if (CL_SUCCESS != (ret = cli_add_content_match_pattern(root, virname, sig, 0, 0, 0, offset, target, NULL, options))) {
+        if (CL_SUCCESS != (ret = cli_add_content_match_pattern(root, virname, sig, 0, 0, 0, offset, NULL, options))) {
             ret = CL_EMALFDB;
             break;
         }
@@ -2018,13 +2016,13 @@ static inline int init_tdb(struct cli_lsig_tdb *tdb, struct cl_engine *engine, c
         return CL_BREAK;
     }
 
-    if ((tdb->icongrp1 || tdb->icongrp2) && tdb->target[0] != 1) {
+    if ((tdb->icongrp1 || tdb->icongrp2) && tdb->target[0] != TARGET_PE) {
         FREE_TDB_P(tdb);
         cli_errmsg("init_tdb: IconGroup is only supported in PE (target 1) signatures\n");
         return CL_EMALFDB;
     }
 
-    if ((tdb->ep || tdb->nos) && tdb->target[0] != 1 && tdb->target[0] != 6 && tdb->target[0] != 9) {
+    if ((tdb->ep || tdb->nos) && tdb->target[0] != TARGET_PE && tdb->target[0] != TARGET_ELF && tdb->target[0] != TARGET_MACHO) {
         FREE_TDB_P(tdb);
         cli_errmsg("init_tdb: EntryPoint/NumberOfSections is only supported in PE/ELF/Mach-O signatures\n");
         return CL_EMALFDB;
@@ -2047,7 +2045,6 @@ static cl_error_t load_oneldb(char *buffer, int chkpua, struct cl_engine *engine
     struct cli_ac_lsig *lsig = NULL;
     char *tokens[LDB_TOKENS + 1];
     int i, subsigs, tokens_count;
-    unsigned short target = 0;
     struct cli_matcher *root;
     struct cli_lsig_tdb tdb;
     uint32_t lsigid[2];
@@ -2186,7 +2183,7 @@ static cl_error_t load_oneldb(char *buffer, int chkpua, struct cl_engine *engine
         lsigid[1] = i;
 
         // handle each LDB subsig
-        ret = readdb_parse_ldb_subsignature(root, virname, tokens[3 + i], "*", target, lsigid, options, i, subsigs, &tdb);
+        ret = readdb_parse_ldb_subsignature(root, virname, tokens[3 + i], "*", lsigid, options, i, subsigs, &tdb);
         if (CL_SUCCESS != ret) {
             cli_errmsg("cli_loadldb: failed to parse subsignature %d in %s\n", i, virname);
             status = ret;
@@ -2496,7 +2493,7 @@ static int cli_loadftm(FILE *fs, struct cl_engine *engine, unsigned int options,
 
         magictype = atoi(tokens[0]);
         if (magictype == 1) { /* A-C */
-            if (CL_SUCCESS != (ret = cli_add_content_match_pattern(engine->root[0], tokens[3], tokens[2], 0, rtype, type, tokens[1], 0, NULL, options)))
+            if (CL_SUCCESS != (ret = cli_add_content_match_pattern(engine->root[0], tokens[3], tokens[2], 0, rtype, type, tokens[1], NULL, options)))
                 break;
 
         } else if ((magictype == 0) || (magictype == 4)) { /* memcmp() */
@@ -3802,7 +3799,7 @@ static int yara_hexstr_verify(YR_STRING *string, const char *hexstr, uint32_t *l
     }
 
     /* Long Check: Attempt to load hexstr */
-    if (CL_SUCCESS != (ret = cli_sigopts_handler(engine->test_root, "test-hex", hexstr, 0, 0, 0, "*", 0, lsigid, options))) {
+    if (CL_SUCCESS != (ret = cli_sigopts_handler(engine->test_root, "test-hex", hexstr, 0, 0, 0, "*", lsigid, options))) {
         if (ret == CL_EMALFDB) {
             cli_warnmsg("load_oneyara[verify]: recovered from database loading error\n");
             /* TODO: if necessary, reset testing matcher if error occurs */
@@ -3831,7 +3828,6 @@ static int load_oneyara(YR_RULE *rule, int chkpua, struct cl_engine *engine, uns
     uint32_t lsigid[2];
     struct cli_matcher *root;
     struct cli_ac_lsig **newtable, *lsig, *tsig = NULL;
-    unsigned short target = 0;
     char *logic = NULL, *target_str = NULL;
     char *newident = NULL;
     /* size_t lsize; */       // only used in commented out code
@@ -4312,7 +4308,7 @@ static int load_oneyara(YR_RULE *rule, int chkpua, struct cl_engine *engine, uns
                     (ytable.table[i]->sigopts & ACPATT_OPTION_ASCII) ? "a" : "");
 
         ret = readdb_parse_yara_string(root, newident, ytable.table[i]->hexstr, ytable.table[i]->sigopts,
-                                       ytable.table[i]->offset, target, lsigid, options);
+                                       ytable.table[i]->offset, lsigid, options);
         if (CL_SUCCESS != ret) {
             root->ac_lsigs--;
             FREE_TDB(tdb);

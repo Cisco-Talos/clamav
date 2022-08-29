@@ -329,6 +329,7 @@ static struct node *parse_regex(const uint8_t *p, size_t *last)
                 /* next char is escaped, advance pointer
                  * and let fall-through handle it */
                 ++*last;
+                /* fall-through */
             default:
                 right = make_leaf(p[*last]);
                 v     = make_node(concat, v, right);
@@ -479,7 +480,7 @@ cl_error_t cli_regex2suffix(const char *pattern, regex_t *preg, suffix_callback 
                cli_errmsg("cli_regex2suffix: unable to strdup regex.pattern");
                rc = REG_ESPACE);
 
-    n = parse_regex(pattern, &last);
+    n = parse_regex((const uint8_t *)pattern, &last);
     if (!n) {
         rc = REG_ESPACE;
         goto done;

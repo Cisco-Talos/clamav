@@ -77,7 +77,7 @@ cli_ctx *convenience_ctx(int fd)
         goto done;
     }
 
-    if (cli_add_content_match_pattern(engine->root[0], "test", "deadbeef", 0, 0, 0, "*", 0, NULL, 0) != CL_SUCCESS) {
+    if (cli_add_content_match_pattern(engine->root[0], "test", "deadbeef", 0, 0, 0, "*", NULL, 0) != CL_SUCCESS) {
         printf("convenience_ctx: Can't parse signature\n");
         goto done;
     }

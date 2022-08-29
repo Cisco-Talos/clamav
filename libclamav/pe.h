@@ -87,15 +87,8 @@ enum {
 #define CLI_PEHEADER_OPT_STRICT_ON_PE_ERRORS 0x8
 #define CLI_PEHEADER_OPT_REMOVE_MISSING_SECTIONS 0x10
 
-typedef enum cli_peheader_error {
-    CLI_PEHEADER_RET_SUCCESS       = 0,
-    CLI_PEHEADER_RET_GENERIC_ERROR = -1,
-    CLI_PEHEADER_RET_BROKEN_PE     = -2,
-    CLI_PEHEADER_RET_JSON_TIMEOUT  = -3
-} cli_peheader_error_t;
-
-cli_peheader_error_t cli_pe_targetinfo(cli_ctx *ctx, struct cli_exe_info *peinfo);
-cli_peheader_error_t cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts, cli_ctx *ctx);
+cl_error_t cli_pe_targetinfo(cli_ctx *ctx, struct cli_exe_info *peinfo);
+cl_error_t cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts, cli_ctx *ctx);
 
 cl_error_t cli_check_auth_header(cli_ctx *ctx, struct cli_exe_info *peinfo);
 cl_error_t cli_genhash_pe(cli_ctx *ctx, unsigned int class, int type, stats_section_t *hashes);

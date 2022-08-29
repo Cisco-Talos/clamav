@@ -220,7 +220,7 @@ START_TEST(test_ac_scanbuff)
     ck_assert_msg(ret == CL_SUCCESS, "cli_ac_init() failed");
 
     for (i = 0; ac_testdata[i].data; i++) {
-        ret = cli_add_content_match_pattern(root, ac_testdata[i].virname, ac_testdata[i].hexsig, 0, 0, 0, "*", 0, NULL, 0);
+        ret = cli_add_content_match_pattern(root, ac_testdata[i].virname, ac_testdata[i].hexsig, 0, 0, 0, "*", NULL, 0);
         ck_assert_msg(ret == CL_SUCCESS, "cli_add_content_match_pattern failed");
     }
 
@@ -263,7 +263,7 @@ START_TEST(test_ac_scanbuff_allscan)
     ck_assert_msg(ret == CL_SUCCESS, "cli_ac_init() failed");
 
     for (i = 0; ac_testdata[i].data; i++) {
-        ret = cli_add_content_match_pattern(root, ac_testdata[i].virname, ac_testdata[i].hexsig, 0, 0, 0, "*", 0, NULL, 0);
+        ret = cli_add_content_match_pattern(root, ac_testdata[i].virname, ac_testdata[i].hexsig, 0, 0, 0, "*", NULL, 0);
         ck_assert_msg(ret == CL_SUCCESS, "cli_add_content_match_pattern failed");
     }
 
@@ -315,7 +315,7 @@ START_TEST(test_ac_scanbuff_ex)
     ck_assert_msg(ret == CL_SUCCESS, "[ac_ex] cli_ac_init() failed");
 
     for (i = 0; ac_sigopts_testdata[i].data; i++) {
-        ret = cli_sigopts_handler(root, ac_sigopts_testdata[i].virname, ac_sigopts_testdata[i].hexsig, ac_sigopts_testdata[i].sigopts, 0, 0, ac_sigopts_testdata[i].offset, 0, NULL, 0);
+        ret = cli_sigopts_handler(root, ac_sigopts_testdata[i].virname, ac_sigopts_testdata[i].hexsig, ac_sigopts_testdata[i].sigopts, 0, 0, ac_sigopts_testdata[i].offset, NULL, 0);
         ck_assert_msg(ret == CL_SUCCESS, "[ac_ex] cli_sigopts_handler() failed");
     }
 
@@ -358,7 +358,7 @@ START_TEST(test_ac_scanbuff_allscan_ex)
     ck_assert_msg(ret == CL_SUCCESS, "[ac_ex] cli_ac_init() failed");
 
     for (i = 0; ac_sigopts_testdata[i].data; i++) {
-        ret = cli_sigopts_handler(root, ac_sigopts_testdata[i].virname, ac_sigopts_testdata[i].hexsig, ac_sigopts_testdata[i].sigopts, 0, 0, ac_sigopts_testdata[i].offset, 0, NULL, 0);
+        ret = cli_sigopts_handler(root, ac_sigopts_testdata[i].virname, ac_sigopts_testdata[i].hexsig, ac_sigopts_testdata[i].sigopts, 0, 0, ac_sigopts_testdata[i].offset, NULL, 0);
         ck_assert_msg(ret == CL_SUCCESS, "[ac_ex] cli_sigopts_handler() failed");
     }
 
@@ -413,11 +413,11 @@ START_TEST(test_bm_scanbuff)
     ret = cli_bm_init(root);
     ck_assert_msg(ret == CL_SUCCESS, "cli_bm_init() failed");
 
-    ret = cli_add_content_match_pattern(root, "Sig1", "deadbabe", 0, 0, 0, "*", 0, NULL, 0);
+    ret = cli_add_content_match_pattern(root, "Sig1", "deadbabe", 0, 0, 0, "*", NULL, 0);
     ck_assert_msg(ret == CL_SUCCESS, "cli_add_content_match_pattern failed");
-    ret = cli_add_content_match_pattern(root, "Sig2", "deadbeef", 0, 0, 0, "*", 0, NULL, 0);
+    ret = cli_add_content_match_pattern(root, "Sig2", "deadbeef", 0, 0, 0, "*", NULL, 0);
     ck_assert_msg(ret == CL_SUCCESS, "cli_add_content_match_pattern failed");
-    ret = cli_add_content_match_pattern(root, "Sig3", "babedead", 0, 0, 0, "*", 0, NULL, 0);
+    ret = cli_add_content_match_pattern(root, "Sig3", "babedead", 0, 0, 0, "*", NULL, 0);
     ck_assert_msg(ret == CL_SUCCESS, "cli_add_content_match_pattern failed");
 
     ctx.options->general &= ~CL_SCAN_GENERAL_ALLMATCHES; /* make sure all-match is disabled */
@@ -442,11 +442,11 @@ START_TEST(test_bm_scanbuff_allscan)
     ret = cli_bm_init(root);
     ck_assert_msg(ret == CL_SUCCESS, "cli_bm_init() failed");
 
-    ret = cli_add_content_match_pattern(root, "Sig1", "deadbabe", 0, 0, 0, "*", 0, NULL, 0);
+    ret = cli_add_content_match_pattern(root, "Sig1", "deadbabe", 0, 0, 0, "*", NULL, 0);
     ck_assert_msg(ret == CL_SUCCESS, "cli_add_content_match_pattern failed");
-    ret = cli_add_content_match_pattern(root, "Sig2", "deadbeef", 0, 0, 0, "*", 0, NULL, 0);
+    ret = cli_add_content_match_pattern(root, "Sig2", "deadbeef", 0, 0, 0, "*", NULL, 0);
     ck_assert_msg(ret == CL_SUCCESS, "cli_add_content_match_pattern failed");
-    ret = cli_add_content_match_pattern(root, "Sig3", "babedead", 0, 0, 0, "*", 0, NULL, 0);
+    ret = cli_add_content_match_pattern(root, "Sig3", "babedead", 0, 0, 0, "*", NULL, 0);
     ck_assert_msg(ret == CL_SUCCESS, "cli_add_content_match_pattern failed");
 
     ctx.options->general |= CL_SCAN_GENERAL_ALLMATCHES; /* enable all-match */
@@ -484,7 +484,7 @@ START_TEST(test_pcre_scanbuff)
         strncat(hexsig, PCRE_BYPASS, hexlen);
         strncat(hexsig, pcre_testdata[i].hexsig, hexlen);
 
-        ret = readdb_parse_ldb_subsignature(root, pcre_testdata[i].virname, hexsig, pcre_testdata[i].offset, 0, NULL, 0, 0, 0, NULL);
+        ret = readdb_parse_ldb_subsignature(root, pcre_testdata[i].virname, hexsig, pcre_testdata[i].offset, NULL, 0, 0, 0, NULL);
         ck_assert_msg(ret == CL_SUCCESS, "[pcre] readdb_parse_ldb_subsignature failed");
         free(hexsig);
     }
@@ -538,7 +538,7 @@ START_TEST(test_pcre_scanbuff_allscan)
         strncat(hexsig, PCRE_BYPASS, hexlen);
         strncat(hexsig, pcre_testdata[i].hexsig, hexlen);
 
-        ret = readdb_parse_ldb_subsignature(root, pcre_testdata[i].virname, hexsig, pcre_testdata[i].offset, 0, NULL, 0, 0, 1, NULL);
+        ret = readdb_parse_ldb_subsignature(root, pcre_testdata[i].virname, hexsig, pcre_testdata[i].offset, NULL, 0, 0, 1, NULL);
         ck_assert_msg(ret == CL_SUCCESS, "[pcre] readdb_parse_ldb_subsignature failed");
         free(hexsig);
     }

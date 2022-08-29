@@ -140,14 +140,13 @@ char *cli_virname(const char *virname, unsigned int official);
  * @param rtype
  * @param type
  * @param offset
- * @param target
  * @param lsigid
  * @param options
  * @return cl_error_t
  */
 cl_error_t cli_sigopts_handler(struct cli_matcher *root, const char *virname, const char *hexsig,
                                uint8_t sigopts, uint16_t rtype, uint16_t type,
-                               const char *offset, uint8_t target, const uint32_t *lsigid, unsigned int options);
+                               const char *offset, const uint32_t *lsigid, unsigned int options);
 
 /**
  * @brief Parse body-based patterns that DO NOT have subsignature modifiers.
@@ -162,14 +161,13 @@ cl_error_t cli_sigopts_handler(struct cli_matcher *root, const char *virname, co
  * @param rtype
  * @param type
  * @param offset
- * @param target
  * @param lsigid
  * @param options
  * @return cl_error_t
  */
 cl_error_t cli_add_content_match_pattern(struct cli_matcher *root, const char *virname, const char *hexsig,
                                          uint8_t sigopts, uint16_t rtype, uint16_t type,
-                                         const char *offset, uint8_t target, const uint32_t *lsigid, unsigned int options);
+                                         const char *offset, const uint32_t *lsigid, unsigned int options);
 
 /**
  * @brief Parse a subsignature from a logical signature.
@@ -188,7 +186,6 @@ cl_error_t cli_add_content_match_pattern(struct cli_matcher *root, const char *v
  * @param virname
  * @param hexsig
  * @param offset
- * @param target
  * @param lsigid    An array of 2 uint32_t numbers: lsig_id and subsig_id. May be NULL for testing.
  * @param options
  * @param current_subsig_index
@@ -197,7 +194,7 @@ cl_error_t cli_add_content_match_pattern(struct cli_matcher *root, const char *v
  * @return cl_error_t
  */
 cl_error_t readdb_parse_ldb_subsignature(struct cli_matcher *root, const char *virname, char *hexsig,
-                                         const char *offset, uint8_t target, const uint32_t *lsigid, unsigned int options,
+                                         const char *offset, const uint32_t *lsigid, unsigned int options,
                                          int current_subsig_index, int num_subsigs, struct cli_lsig_tdb *tdb);
 
 cl_error_t cli_load(const char *filename, struct cl_engine *engine, unsigned int *signo, unsigned int options, struct cli_dbio *dbio);
