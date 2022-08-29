@@ -99,8 +99,8 @@ static uint64_t cli_rawaddr64(uint64_t vaddr, struct elf_program_hdr64 *ph, uint
 }
 
 /* Return converted endian-fixed header, or error code */
-static int cli_elf_fileheader(cli_ctx *ctx, fmap_t *map, union elf_file_hdr *file_hdr,
-                              uint8_t *do_convert, uint8_t *is64)
+static cl_error_t cli_elf_fileheader(cli_ctx *ctx, fmap_t *map, union elf_file_hdr *file_hdr,
+                                     uint8_t *do_convert, uint8_t *is64)
 {
     uint8_t format64, conv;
 
@@ -306,8 +306,8 @@ static int cli_elf_ph32(cli_ctx *ctx, fmap_t *map, struct cli_exe_info *elfinfo,
 }
 
 /* Read 64-bit program headers */
-static int cli_elf_ph64(cli_ctx *ctx, fmap_t *map, struct cli_exe_info *elfinfo,
-                        struct elf_file_hdr64 *file_hdr, uint8_t conv)
+static cl_error_t cli_elf_ph64(cli_ctx *ctx, fmap_t *map, struct cli_exe_info *elfinfo,
+                               struct elf_file_hdr64 *file_hdr, uint8_t conv)
 {
     struct elf_program_hdr64 *program_hdr = NULL;
     uint16_t phnum, phentsize;
@@ -791,11 +791,11 @@ cl_error_t cli_scanelf(cli_ctx *ctx)
 /* ELF header parsing only
  * Returns 0 on success, -1 on error
  */
-int cli_elfheader(cli_ctx *ctx, struct cli_exe_info *elfinfo)
+cl_error_t cli_elfheader(cli_ctx *ctx, struct cli_exe_info *elfinfo)
 {
     union elf_file_hdr file_hdr;
     uint8_t conv = 0, is64 = 0;
-    int ret;
+    cl_error_t ret = CL_SUCCESS;
 
     cli_dbgmsg("in cli_elfheader\n");
 
@@ -806,8 +806,8 @@ int cli_elfheader(cli_ctx *ctx, struct cli_exe_info *elfinfo)
     }
 
     ret = cli_elf_fileheader(NULL, ctx->fmap, &file_hdr, &conv, &is64);
-    if (ret != CL_CLEAN) {
-        return -1;
+    if (ret != CL_SUCCESS) {
+        goto done;
     }
 
     /* Program headers and Entry */
@@ -816,8 +816,8 @@ int cli_elfheader(cli_ctx *ctx, struct cli_exe_info *elfinfo)
     } else {
         ret = cli_elf_ph32(NULL, ctx->fmap, elfinfo, &(file_hdr.hdr32.hdr), conv);
     }
-    if (ret != CL_CLEAN) {
-        return -1;
+    if (ret != CL_SUCCESS) {
+        goto done;
     }
 
     /* Section Headers */
@@ -826,11 +826,13 @@ int cli_elfheader(cli_ctx *ctx, struct cli_exe_info *elfinfo)
     } else {
         ret = cli_elf_sh32(NULL, ctx->fmap, elfinfo, &(file_hdr.hdr32.hdr), conv);
     }
-    if (ret != CL_CLEAN) {
-        return -1;
+    if (ret != CL_SUCCESS) {
+        goto done;
     }
 
-    return 0;
+done:
+
+    return ret;
 }
 
 /*

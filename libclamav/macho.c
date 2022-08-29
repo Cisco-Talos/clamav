@@ -169,8 +169,6 @@ struct macho_fat_arch {
 };
 
 #define RETURN_BROKEN                                                                         \
-    if (matcher)                                                                              \
-        return -1;                                                                            \
     if (SCAN_HEURISTIC_BROKEN) {                                                              \
         if (CL_VIRUS == cli_append_potentially_unwanted(ctx, "Heuristics.Broken.Executable")) \
             return CL_VIRUS;                                                                  \
@@ -197,7 +195,7 @@ static uint32_t cli_rawaddr(uint32_t vaddr, struct cli_exe_section *sects, uint1
     return vaddr - sects[i].rva + sects[i].raw;
 }
 
-int cli_scanmacho(cli_ctx *ctx, struct cli_exe_info *fileinfo)
+cl_error_t cli_scanmacho(cli_ctx *ctx, struct cli_exe_info *fileinfo)
 {
     struct macho_hdr hdr;
     struct macho_load_cmd load_cmd;
@@ -205,7 +203,8 @@ int cli_scanmacho(cli_ctx *ctx, struct cli_exe_info *fileinfo)
     struct macho_segment_cmd64 segment_cmd64;
     struct macho_section section;
     struct macho_section64 section64;
-    unsigned int i, j, sect = 0, conv, m64, nsects, matcher = 0;
+    unsigned int i, j, sect = 0, conv, m64, nsects;
+    bool get_fileinfo = false;
     unsigned int arch = 0, ep = 0, err;
     struct cli_exe_section *sections = NULL;
     char name[16];
@@ -213,7 +212,7 @@ int cli_scanmacho(cli_ctx *ctx, struct cli_exe_info *fileinfo)
     ssize_t at;
 
     if (fileinfo) {
-        matcher = 1;
+        get_fileinfo = true;
 
         // TODO This code assumes fileinfo->offset == 0, which might not always
         // be the case.  For now just print this debug message and continue on
@@ -224,7 +223,7 @@ int cli_scanmacho(cli_ctx *ctx, struct cli_exe_info *fileinfo)
 
     if (fmap_readn(map, &hdr, 0, sizeof(hdr)) != sizeof(hdr)) {
         cli_dbgmsg("cli_scanmacho: Can't read header\n");
-        return matcher ? -1 : CL_EFORMAT;
+        return CL_EFORMAT;
     }
     at = sizeof(hdr);
 
@@ -242,44 +241,44 @@ int cli_scanmacho(cli_ctx *ctx, struct cli_exe_info *fileinfo)
         m64  = 1;
     } else {
         cli_dbgmsg("cli_scanmacho: Incorrect magic\n");
-        return matcher ? -1 : CL_EFORMAT;
+        return CL_EFORMAT;
     }
 
     switch (EC32(hdr.cpu_type, conv)) {
         case 7:
-            if (!matcher)
+            if (!get_fileinfo)
                 cli_dbgmsg("MACHO: CPU Type: Intel 32-bit\n");
             arch = 1;
             break;
         case 7 | 0x1000000:
-            if (!matcher)
+            if (!get_fileinfo)
                 cli_dbgmsg("MACHO: CPU Type: Intel 64-bit\n");
             break;
         case 12:
-            if (!matcher)
+            if (!get_fileinfo)
                 cli_dbgmsg("MACHO: CPU Type: ARM\n");
             break;
         case 14:
-            if (!matcher)
+            if (!get_fileinfo)
                 cli_dbgmsg("MACHO: CPU Type: SPARC\n");
             break;
         case 18:
-            if (!matcher)
+            if (!get_fileinfo)
                 cli_dbgmsg("MACHO: CPU Type: POWERPC 32-bit\n");
             arch = 2;
             break;
         case 18 | 0x1000000:
-            if (!matcher)
+            if (!get_fileinfo)
                 cli_dbgmsg("MACHO: CPU Type: POWERPC 64-bit\n");
             arch = 3;
             break;
         default:
-            if (!matcher)
+            if (!get_fileinfo)
                 cli_dbgmsg("MACHO: CPU Type: ** UNKNOWN ** (%u)\n", EC32(hdr.cpu_type, conv));
             break;
     }
 
-    if (!matcher) switch (EC32(hdr.filetype, conv)) {
+    if (!get_fileinfo) switch (EC32(hdr.filetype, conv)) {
             case 0x1: /* MH_OBJECT */
                 cli_dbgmsg("MACHO: Filetype: Relocatable object file\n");
                 break;
@@ -311,7 +310,7 @@ int cli_scanmacho(cli_ctx *ctx, struct cli_exe_info *fileinfo)
                 cli_dbgmsg("MACHO: Filetype: ** UNKNOWN ** (0x%x)\n", EC32(hdr.filetype, conv));
         }
 
-    if (!matcher) {
+    if (!get_fileinfo) {
         cli_dbgmsg("MACHO: Number of load commands: %u\n", EC32(hdr.ncmds, conv));
         cli_dbgmsg("MACHO: Size of load commands: %u\n", EC32(hdr.sizeofcmds, conv));
     }
@@ -362,7 +361,7 @@ int cli_scanmacho(cli_ctx *ctx, struct cli_exe_info *fileinfo)
                 strncpy(name, segment_cmd.segname, sizeof(name));
                 name[sizeof(name) - 1] = '\0';
             }
-            if (!matcher) {
+            if (!get_fileinfo) {
                 cli_dbgmsg("MACHO: Segment name: %s\n", name);
                 cli_dbgmsg("MACHO: Number of sections: %u\n", nsects);
             }
@@ -372,14 +371,14 @@ int cli_scanmacho(cli_ctx *ctx, struct cli_exe_info *fileinfo)
                 RETURN_BROKEN;
             }
             if (!nsects) {
-                if (!matcher)
+                if (!get_fileinfo)
                     cli_dbgmsg("MACHO: ------------------\n");
                 continue;
             }
             sections = (struct cli_exe_section *)cli_realloc2(sections, (sect + nsects) * sizeof(struct cli_exe_section));
             if (!sections) {
                 cli_errmsg("cli_scanmacho: Can't allocate memory for 'sections'\n");
-                return matcher ? -1 : CL_EMEM;
+                return CL_EMEM;
             }
 
             for (j = 0; j < nsects; j++) {
@@ -417,7 +416,7 @@ int cli_scanmacho(cli_ctx *ctx, struct cli_exe_info *fileinfo)
                     strncpy(name, section.sectname, sizeof(name));
                     name[sizeof(name) - 1] = '\0';
                 }
-                if (!matcher) {
+                if (!get_fileinfo) {
                     cli_dbgmsg("MACHO: --- Section %u ---\n", sect);
                     cli_dbgmsg("MACHO: Name: %s\n", name);
                     cli_dbgmsg("MACHO: Virtual address: 0x%x\n", (unsigned int)sections[sect].rva);
@@ -428,7 +427,7 @@ int cli_scanmacho(cli_ctx *ctx, struct cli_exe_info *fileinfo)
                 }
                 sect++;
             }
-            if (!matcher)
+            if (!get_fileinfo)
                 cli_dbgmsg("MACHO: ------------------\n");
 
         } else if (arch && (load_cmd.cmd == 0x4 || load_cmd.cmd == 0x5)) { /* LC_(UNIX)THREAD */
@@ -477,7 +476,7 @@ int cli_scanmacho(cli_ctx *ctx, struct cli_exe_info *fileinfo)
                 default:
                     cli_errmsg("cli_scanmacho: Invalid arch setting!\n");
                     free(sections);
-                    return matcher ? -1 : CL_EARG;
+                    return CL_EARG;
             }
         } else {
             if (EC32(load_cmd.cmdsize, conv) > sizeof(load_cmd))
@@ -486,32 +485,32 @@ int cli_scanmacho(cli_ctx *ctx, struct cli_exe_info *fileinfo)
     }
 
     if (ep) {
-        if (!matcher)
+        if (!get_fileinfo)
             cli_dbgmsg("Entry Point: 0x%x\n", ep);
         if (sections) {
             ep = cli_rawaddr(ep, sections, sect, &err);
             if (err) {
                 cli_dbgmsg("cli_scanmacho: Can't calculate EP offset\n");
                 free(sections);
-                return matcher ? -1 : CL_EFORMAT;
+                return CL_EFORMAT;
             }
-            if (!matcher)
+            if (!get_fileinfo)
                 cli_dbgmsg("Entry Point file offset: %u\n", ep);
         }
     }
 
-    if (matcher) {
+    if (get_fileinfo) {
         fileinfo->ep        = ep;
         fileinfo->nsections = sect;
         fileinfo->sections  = sections;
-        return 0;
     } else {
         free(sections);
-        return CL_SUCCESS;
     }
+
+    return CL_SUCCESS;
 }
 
-int cli_machoheader(cli_ctx *ctx, struct cli_exe_info *fileinfo)
+cl_error_t cli_machoheader(cli_ctx *ctx, struct cli_exe_info *fileinfo)
 {
     return cli_scanmacho(ctx, fileinfo);
 }
@@ -520,7 +519,7 @@ cl_error_t cli_scanmacho_unibin(cli_ctx *ctx)
 {
     struct macho_fat_header fat_header;
     struct macho_fat_arch fat_arch;
-    unsigned int conv, i, matcher = 0;
+    unsigned int conv, i;
     cl_error_t ret = CL_SUCCESS;
     fmap_t *map    = ctx->fmap;
     ssize_t at;
