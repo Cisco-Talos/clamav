@@ -4349,13 +4349,9 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
     /*
      * Check if we've already scanned this file before.
      */
-    if (!(SCAN_COLLECT_METADATA)) {
-        perf_start(ctx, PERFT_CACHE);
-        cache_check_result = clean_cache_check(hash, hashed_size, ctx);
-        perf_stop(ctx, PERFT_CACHE);
-    } else {
-        cache_check_result = CL_VIRUS;
-    }
+    perf_start(ctx, PERFT_CACHE);
+    cache_check_result = clean_cache_check(hash, hashed_size, ctx);
+    perf_stop(ctx, PERFT_CACHE);
 
 #if HAVE_JSON
     if (SCAN_COLLECT_METADATA) {

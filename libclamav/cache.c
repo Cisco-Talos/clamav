@@ -645,10 +645,9 @@ void clean_cache_add(unsigned char *md5, size_t size, cli_ctx *ctx)
         return;
     }
 
-    if (!SCAN_COLLECT_METADATA) {
+    if (SCAN_COLLECT_METADATA) {
         // Don't cache when using the "collect metadata" feature.
-        // TODO: This used to be checked in scanners.c before calling clean_cache_add()
-        //       I'm not sure this is actually the right call.
+        // We don't cache the JSON, so we can't reproduce it when the cache is positive.
         cli_dbgmsg("clean_cache_add: collect metadata feature enabled, skipping cache\n");
         return;
     }
@@ -735,6 +734,13 @@ cl_error_t clean_cache_check(unsigned char *md5, size_t size, cli_ctx *ctx)
 
     if (!ctx || !ctx->engine || !ctx->engine->cache)
         return CL_VIRUS;
+
+    if (SCAN_COLLECT_METADATA) {
+        // Don't cache when using the "collect metadata" feature.
+        // We don't cache the JSON, so we can't reproduce it when the cache is positive.
+        cli_dbgmsg("clean_cache_check: collect metadata feature enabled, skipping cache\n");
+        return CL_VIRUS;
+    }
 
     if (ctx->engine->engine_options & ENGINE_OPTIONS_DISABLE_CACHE) {
         cli_dbgmsg("clean_cache_check: Caching disabled. Returning CL_VIRUS.\n");
