@@ -37,6 +37,31 @@ static int fpu_words = FPU_ENDIAN_INITME;
 #define EA06_SCAN strstr(file, "clam.ea06.exe")
 #define FALSE_NEGATIVE (EA06_SCAN && NO_FPU_ENDIAN)
 
+// Define SRCDIR and OBJDIR when not defined, for the sake of the IDE.
+#ifndef SRCDIR
+#define SRCDIR " should be defined by CMake "
+#endif
+#ifndef OBJDIR
+#define OBJDIR " should be defined by CMake "
+#endif
+
+static char *tmpdir;
+
+static void cl_setup(void)
+{
+    tmpdir = cli_gentemp(NULL);
+    mkdir(tmpdir, 0700);
+    ck_assert_msg(!!tmpdir, "cli_gentemp failed");
+}
+
+static void cl_teardown(void)
+{
+    /* can't call fail() functions in teardown, it can cause SEGV */
+    cli_rmdirs(tmpdir);
+    free(tmpdir);
+    tmpdir = NULL;
+}
+
 /* extern void cl_free(struct cl_engine *engine); */
 START_TEST(test_cl_free)
 {
@@ -386,15 +411,98 @@ START_TEST(test_cl_scandesc_callback_allscan)
 }
 END_TEST
 
-/* int cl_load(const char *path, struct cl_engine **engine, unsigned int *signo, unsigned int options) */
+/* cl_error_t cl_load(const char *path, struct cl_engine **engine, unsigned int *signo, unsigned int options) */
 START_TEST(test_cl_load)
 {
+    cl_error_t ret;
+    struct cl_engine *engine;
+    unsigned int sigs = 0;
+    const char *testfile;
+
+    ret = cl_init(CL_INIT_DEFAULT);
+    ck_assert_msg(ret == CL_SUCCESS, "cl_init failed: %s", cl_strerror(ret));
+
+    engine = cl_engine_new();
+    ck_assert_msg(engine != NULL, "cl_engine_new failed");
+
+    /* load test cvd */
+    testfile = SRCDIR PATHSEP "input" PATHSEP "freshclam_testfiles" PATHSEP "test-5.cvd";
+    ret      = cl_load(testfile, engine, &sigs, CL_DB_STDOPT);
+    ck_assert_msg(ret == CL_SUCCESS, "cl_load failed for: %s -- %s", testfile, cl_strerror(ret));
+    ck_assert_msg(sigs > 0, "No signatures loaded");
+
+    cl_engine_free(engine);
 }
 END_TEST
 
-/* int cl_cvdverify(const char *file) */
+/* cl_error_t cl_cvdverify(const char *file) */
 START_TEST(test_cl_cvdverify)
 {
+    cl_error_t ret;
+    const char *testfile;
+    char newtestfile[PATH_MAX];
+    FILE *orig_fs;
+    FILE *new_fs;
+    char cvd_bytes[5000];
+
+    // Should be able to verify this cvd
+    testfile = SRCDIR "/input/freshclam_testfiles/test-1.cvd";
+    ret      = cl_cvdverify(testfile);
+    ck_assert_msg(CL_SUCCESS == ret, "cl_cvdverify failed for: %s -- %s", testfile, cl_strerror(ret));
+
+    // Can't verify a cvd that doesn't exist
+    testfile = SRCDIR "/input/freshclam_testfiles/test-na.cvd";
+    ret      = cl_cvdverify(testfile);
+    ck_assert_msg(CL_EOPEN == ret, "cl_cvdverify should have failed for: %s -- %s", testfile, cl_strerror(ret));
+
+    // A cdiff is not a cvd. Cannot verify with cl_cvdverify!
+    testfile = SRCDIR "/input/freshclam_testfiles/test-2.cdiff";
+    ret      = cl_cvdverify(testfile);
+    ck_assert_msg(CL_ECVD == ret, "cl_cvdverify should have failed for: %s -- %s", testfile, cl_strerror(ret));
+
+    // Can't verify an hdb file
+    testfile = SRCDIR "/input/clamav.hdb";
+    ret      = cl_cvdverify(testfile);
+    ck_assert_msg(CL_ECVD == ret, "cl_cvdverify should have failed for: %s -- %s", testfile, cl_strerror(ret));
+
+    // Modify the cvd to make it invalid
+    sprintf(newtestfile, "%s/modified.cvd", tmpdir);
+
+    orig_fs = fopen(SRCDIR "/input/freshclam_testfiles/test-1.cvd", "rb");
+    ck_assert_msg(orig_fs != NULL, "Failed to open %s", testfile);
+
+    new_fs = fopen(newtestfile, "wb");
+    ck_assert_msg(new_fs != NULL, "Failed to open %s", newtestfile);
+
+    // Copy the first 5000 bytes
+    fread(cvd_bytes, 1, 5000, orig_fs);
+    fwrite(cvd_bytes, 1, 5000, new_fs);
+
+    fclose(orig_fs);
+    fclose(new_fs);
+
+    // Now verify the modified cvd
+    ret = cl_cvdverify(newtestfile);
+    ck_assert_msg(CL_EVERIFY == ret, "cl_cvdverify should have failed for: %s -- %s", newtestfile, cl_strerror(ret));
+}
+END_TEST
+
+/* cl_error_t cl_cvdunpack(const char *file, const char *dir, bool dont_verify) */
+START_TEST(test_cl_cvdunpack)
+{
+    cl_error_t ret;
+    char *utf8       = NULL;
+    size_t utf8_size = 0;
+    const char *testfile;
+
+    testfile = SRCDIR "/input/freshclam_testfiles/test-1.cvd";
+    ret      = cl_cvdunpack(testfile, tmpdir, true);
+    ck_assert_msg(CL_SUCCESS == ret, "cl_cvdunpack: failed for: %s -- %s", testfile, cl_strerror(ret));
+
+    // Can't unpack a cdiff
+    testfile = SRCDIR "/input/freshclam_testfiles/test-2.cdiff";
+    ret      = cl_cvdunpack(testfile, tmpdir, true);
+    ck_assert_msg(CL_ECVD == ret, "cl_cvdunpack: should have failed for: %s -- %s", testfile, cl_strerror(ret));
 }
 END_TEST
 
@@ -1211,6 +1319,7 @@ static Suite *test_cl_suite(void)
     char *user_timeout = NULL;
     int expect         = expected_testfiles;
     suite_add_tcase(s, tc_cl);
+    tcase_add_checked_fixture(tc_cl, cl_setup, cl_teardown);
     tcase_add_test(tc_cl, test_cl_free);
     tcase_add_test(tc_cl, test_cl_build);
     tcase_add_test(tc_cl, test_cl_debug);

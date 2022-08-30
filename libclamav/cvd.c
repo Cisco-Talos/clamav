@@ -611,11 +611,11 @@ cl_error_t cl_cvdverify(const char *file)
     return ret;
 }
 
-int cli_cvdload(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned int options, unsigned int dbtype, const char *filename, unsigned int chkonly)
+cl_error_t cli_cvdload(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned int options, unsigned int dbtype, const char *filename, unsigned int chkonly)
 {
     struct cl_cvd cvd, dupcvd;
     FILE *dupfs;
-    int ret;
+    cl_error_t ret;
     time_t s_time;
     int cfd;
     struct cli_dbio dbio;
