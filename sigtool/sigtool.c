@@ -1094,7 +1094,7 @@ static int build(const struct optstruct *opts)
         return -1;
     }
 
-    if (cli_cvdunpack(olddb, pt) == -1) {
+    if (CL_SUCCESS != cl_cvdunpack(olddb, pt, false)) {
         mprintf(LOGG_ERROR, "build: Can't unpack CVD file %s\n", olddb);
         cli_rmdirs(pt);
         free(pt);
@@ -1120,7 +1120,7 @@ static int build(const struct optstruct *opts)
         return -1;
     }
 
-    if (cli_cvdunpack(newcvd, pt) == -1) {
+    if (CL_SUCCESS != cl_cvdunpack(newcvd, pt, false)) {
         mprintf(LOGG_ERROR, "build: Can't unpack CVD file %s\n", newcvd);
         cli_rmdirs(pt);
         free(pt);
@@ -1194,7 +1194,7 @@ static int unpack(const struct optstruct *opts)
         return -1;
     }
 
-    if (cli_cvdunpack(name, ".") == -1) {
+    if (CL_SUCCESS != cl_cvdunpack(name, ".", false)) {
         mprintf(LOGG_ERROR, "unpack: Can't unpack file %s\n", name);
         return -1;
     }
@@ -1348,7 +1348,7 @@ static int listdb(const char *filename, const regex_t *regex)
             return -1;
         }
 
-        if (cli_cvdunpack(filename, dir) == -1) {
+        if (CL_SUCCESS != cl_cvdunpack(filename, dir, false)) {
             mprintf(LOGG_ERROR, "listdb: Can't unpack CVD file %s\n", filename);
             cli_rmdirs(dir);
             free(dir);
@@ -1981,7 +1981,7 @@ static int verifydiff(const char *diff, const char *cvd, const char *incdir)
     }
 
     if (cvd) {
-        if (cli_cvdunpack(cvd, tempdir) == -1) {
+        if (CL_SUCCESS != cl_cvdunpack(cvd, tempdir, false)) {
             mprintf(LOGG_ERROR, "verifydiff: Can't unpack CVD file %s\n", cvd);
             cli_rmdirs(tempdir);
             free(tempdir);
@@ -3196,7 +3196,7 @@ static int makediff(const struct optstruct *opts)
         return -1;
     }
 
-    if (cli_cvdunpack(optget(opts, "diff")->strarg, odir) == -1) {
+    if (CL_SUCCESS != cl_cvdunpack(optget(opts, "diff")->strarg, odir, false)) {
         mprintf(LOGG_ERROR, "makediff: Can't unpack CVD file %s\n", optget(opts, "diff")->strarg);
         cli_rmdirs(odir);
         free(odir);
@@ -3219,7 +3219,7 @@ static int makediff(const struct optstruct *opts)
         return -1;
     }
 
-    if (cli_cvdunpack(opts->filename[0], ndir) == -1) {
+    if (CL_SUCCESS != cl_cvdunpack(opts->filename[0], ndir, false)) {
         mprintf(LOGG_ERROR, "makediff: Can't unpack CVD file %s\n", opts->filename[0]);
         cli_rmdirs(odir);
         cli_rmdirs(ndir);
