@@ -898,6 +898,12 @@ static cl_error_t ea05(cli_ctx *ctx, const uint8_t *base, char *tmpd)
             status = ret;
             goto done;
         }
+
+        close(tempfd);
+        tempfd = -1;
+        if (!ctx->engine->keeptmp) {
+            (void)cli_unlink(tempfile);
+        }
     }
 
 done:
