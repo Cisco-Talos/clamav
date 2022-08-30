@@ -65,6 +65,7 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <stdbool.h>
 
 #include "clamav-types.h"
 #include "clamav-version.h"
@@ -1072,6 +1073,18 @@ extern cl_error_t cl_cvdverify(const char *file);
  * @param cvd   Pointer to a CVD header struct.
  */
 extern void cl_cvdfree(struct cl_cvd *cvd);
+
+/**
+ * @brief Unpack a CVD file.
+ *
+ * Will verify the CVD is correctly signed unless the `dont_verify` parameter is true.
+ *
+ * @param file          Filepath of CVD file.
+ * @param dir           Destination directory.
+ * @param dont_verify   If true, don't verify the CVD.
+ * @return cl_error_t   CL_SUCCESS if success, else a CL_E* error code.
+ */
+extern cl_error_t cl_cvdunpack(const char *file, const char *dir, bool dont_verify);
 
 /* ----------------------------------------------------------------------------
  * DB directory stat functions.

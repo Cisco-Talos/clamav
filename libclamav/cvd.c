@@ -518,7 +518,15 @@ void cl_cvdfree(struct cl_cvd *cvd)
     free(cvd);
 }
 
-static int cli_cvdverify(FILE *fs, struct cl_cvd *cvdpt, unsigned int skipsig)
+/**
+ * @brief Verify the signature of a CVD file.
+ *
+ * @param fs            CVD File stream to read from.
+ * @param [out] cvdpt   (optional) Pointer to a CVD header struct to fill in .
+ * @param skipsig       If non-zero, skip the signature verification.
+ * @return cl_error_t   CL_SUCCESS on success. CL_ECVD, CL_EMEM, or CL_EVERIFY on error.
+ */
+static cl_error_t cli_cvdverify(FILE *fs, struct cl_cvd *cvdpt, unsigned int skipsig)
 {
     struct cl_cvd *cvd;
     char *md5, head[513];
@@ -585,7 +593,7 @@ cl_error_t cl_cvdverify(const char *file)
     }
 
     if (!(engine = cl_engine_new())) {
-        cli_errmsg("cld_cvdverify: Can't create new engine\n");
+        cli_errmsg("cl_cvdverify: Can't create new engine\n");
         fclose(fs);
         return CL_EMEM;
     }
@@ -731,4 +739,38 @@ int cli_cvdunpack(const char *file, const char *dir)
     ret = cli_untgz(fd, dir);
     close(fd);
     return ret;
+}
+
+cl_error_t cl_cvdunpack(const char *file, const char *dir, bool dont_verify)
+{
+    cl_error_t status = CL_SUCCESS;
+    FILE *fs          = NULL;
+
+    fs = fopen(file, "rb");
+    if (NULL == fs) {
+        char err[128];
+        cli_errmsg("Can't open CVD: %s -- %s\n", file, cli_strerror(errno, err, sizeof(err)));
+        return CL_EOPEN;
+    }
+
+    if (!dont_verify) {
+        status = cli_cvdverify(fs, NULL, 0);
+        if (CL_SUCCESS != status) {
+            cli_errmsg("CVD verification failed for: %s\n", file);
+            goto done;
+        }
+    }
+
+    status = cli_cvdunpack(file, dir);
+    if (CL_SUCCESS != status) {
+        cli_errmsg("CVD unpacking failed for: %s\n", file);
+        goto done;
+    }
+
+done:
+    if (NULL != fs) {
+        fclose(fs);
+    }
+
+    return status;
 }
