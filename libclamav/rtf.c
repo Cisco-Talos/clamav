@@ -241,15 +241,21 @@ static cl_error_t decode_and_scan(struct rtf_object_data* data, cli_ctx* ctx)
 {
     cl_error_t ret = CL_CLEAN;
 
-    cli_dbgmsg("RTF:Scanning embedded object:%s\n", data->name);
-    if (data->bread == 1 && data->fd > 0) {
-        cli_dbgmsg("Decoding ole object\n");
-        ret = cli_scan_ole10(data->fd, ctx);
-    } else if (data->fd > 0) {
-        ret = cli_magic_scan_desc(data->fd, data->name, ctx, NULL);
+    cli_dbgmsg("RTF:Scanning embedded object: %s\n", data->name);
+
+    if (data->fd > 0) {
+        if (data->bread == 1) {
+            cli_dbgmsg("Decoding ole object\n");
+
+            ret = cli_scan_ole10(data->fd, ctx);
+        } else {
+            ret = cli_magic_scan_desc(data->fd, data->name, ctx, NULL);
+        }
+
         close(data->fd);
         data->fd = -1;
     }
+
     if (data->name) {
         if (!ctx->engine->keeptmp)
             if (cli_unlink(data->name)) ret = CL_EUNLINK;
