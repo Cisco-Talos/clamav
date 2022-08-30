@@ -42,6 +42,5 @@ struct cli_dbio {
 };
 
 int cli_cvdload(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned int options, unsigned int dbtype, const char *filename, unsigned int chkonly);
-int cli_cvdunpack(const char *file, const char *dir);
 
 #endif

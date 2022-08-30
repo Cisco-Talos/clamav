@@ -723,7 +723,7 @@ int cli_cvdload(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigne
     return ret;
 }
 
-int cli_cvdunpack(const char *file, const char *dir)
+static cl_error_t cli_cvdunpack(const char *file, const char *dir)
 {
     int fd, ret;
 

@@ -1498,9 +1498,12 @@ done:
 }
 
 /**
- * @brief Change to the temp dir for storing CDIFFs for incremental database update.
+ * @brief Create a temp dir for storing CDIFFs for incremental database update.
  *
- * Will create the temp dir if it does not already exist.
+ * Will create the temp dir if it does not already exist and populate it with the
+ * unpacked CVD. Then it will chdir to that directory.
+ *
+ * But if that directory already exists, it will simply chdir to it.
  *
  * @param database      The database we're updating.
  * @param[out] tmpdir   The name of the temp dir to use.
@@ -1555,7 +1558,10 @@ static fc_error_t mkdir_and_chdir_for_cdiff_tmp(const char *database, const char
             goto done;
         }
 
-        if (-1 == cli_cvdunpack(cvdfile, tmpdir)) {
+        /*
+         * 3) Unpack the existing CVD/CLD database to this directory.
+         */
+        if (CL_SUCCESS != cl_cvdunpack(cvdfile, tmpdir, false)) {
             logg(LOGG_ERROR, "mkdir_and_chdir_for_cdiff_tmp: Can't unpack %s into %s\n", cvdfile, tmpdir);
             cli_rmdirs(tmpdir);
             goto done;
