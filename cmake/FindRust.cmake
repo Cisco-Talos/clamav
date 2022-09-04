@@ -7,68 +7,68 @@
 # To see this in a sample project, visit: https://github.com/micahsnyder/cmake-rust-demo
 #
 # Code to set the Cargo arguments was lifted from:
-#   https://github.com/Devolutions/CMakeRust
+# https://github.com/Devolutions/CMakeRust
 #
 # This Module defines the following variables:
-#  - <program>_FOUND      - True if the program was found
-#  - <program>_EXECUTABLE - path of the program
-#  - <program>_VERSION    - version number of the program
+# - <program>_FOUND      - True if the program was found
+# - <program>_EXECUTABLE - path of the program
+# - <program>_VERSION    - version number of the program
 #
 # ... for the following Rust toolchain programs:
-#  - cargo
-#  - rustc
-#  - rustup
-#  - rust-gdb
-#  - rust-lldb
-#  - rustdoc
-#  - rustfmt
-#  - bindgen
+# - cargo
+# - rustc
+# - rustup
+# - rust-gdb
+# - rust-lldb
+# - rustdoc
+# - rustfmt
+# - bindgen
 #
 # Callers can make any program mandatory by setting `<program>_REQUIRED` before
 # the call to `find_package(Rust)`
 #
 # Eg:
-#    find_package(Rust REQUIRED)
+# find_package(Rust REQUIRED)
 #
 # This module also provides:
 #
-#  - `add_rust_library()` - This allows a caller to create a Rust static library
-#   target which you can link to with `target_link_libraries()`.
+# - `add_rust_library()` - This allows a caller to create a Rust static library
+# target which you can link to with `target_link_libraries()`.
 #
-#   Your Rust static library target will itself depend on the native static libs
-#   you get from `rustc --crate-type staticlib --print=native-static-libs /dev/null`
+# Your Rust static library target will itself depend on the native static libs
+# you get from `rustc --crate-type staticlib --print=native-static-libs /dev/null`
 #
-#   The CARGO_CMD environment variable will be set to "BUILD" so you can tell
-#   it's not building the unit tests inside your (optional) `build.rs` file.
+# The CARGO_CMD environment variable will be set to "BUILD" so you can tell
+# it's not building the unit tests inside your (optional) `build.rs` file.
 #
-#   Example `add_rust_library()` usage:
+# Example `add_rust_library()` usage:
 #
-#       add_rust_library(TARGET yourlib WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
-#       add_library(YourProject::yourlib ALIAS yourlib)
+# add_rust_library(TARGET yourlib WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
+# add_library(YourProject::yourlib ALIAS yourlib)
 #
-#       add_executable(yourexe)
-#       target_link_libraries(yourexe YourProject::yourlib)
+# add_executable(yourexe)
+# target_link_libraries(yourexe YourProject::yourlib)
 #
-#  - `add_rust_test()` - This allows a caller to run `cargo test` for a specific
-#    Rust target as a CTest test.
+# - `add_rust_test()` - This allows a caller to run `cargo test` for a specific
+# Rust target as a CTest test.
 #
-#   The CARGO_CMD environment variable will be set to "TEST" so you can tell
-#   it's not building the unit tests inside your (optional) `build.rs` file.
+# The CARGO_CMD environment variable will be set to "TEST" so you can tell
+# it's not building the unit tests inside your (optional) `build.rs` file.
 #
-#   Example `add_rust_test()` usage:
+# Example `add_rust_test()` usage:
 #
-#       add_rust_test(NAME yourlib WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/yourlib")
-#       set_property(TEST yourlib PROPERTY ENVIRONMENT ${ENVIRONMENT})
+# add_rust_test(NAME yourlib WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/yourlib")
+# set_property(TEST yourlib PROPERTY ENVIRONMENT ${ENVIRONMENT})
 #
-#  - `add_rust_executable()` - This allows a caller to create a Rust executable target.
+# - `add_rust_executable()` - This allows a caller to create a Rust executable target.
 #
-#   Example `add_rust_executable()` usage:
+# Example `add_rust_executable()` usage:
 #
-#       add_rust_executable(TARGET yourapp WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
-#       add_executable(YourProject::yourapp ALIAS yourapp)
+# add_rust_executable(TARGET yourapp WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
+# add_executable(YourProject::yourapp ALIAS yourapp)
 #
-#       add_executable(yourexe)
-#       target_link_libraries(yourexe YourProject::yourlib)
+# add_executable(yourexe)
+# target_link_libraries(yourexe YourProject::yourlib)
 #
 
 if(NOT DEFINED CARGO_HOME)
@@ -90,9 +90,10 @@ function(find_rust_program RUST_PROGRAM)
     if(${RUST_PROGRAM}_EXECUTABLE)
         execute_process(COMMAND "${${RUST_PROGRAM}_EXECUTABLE}" --version
             OUTPUT_VARIABLE ${RUST_PROGRAM}_VERSION_OUTPUT
-            ERROR_VARIABLE  ${RUST_PROGRAM}_VERSION_ERROR
+            ERROR_VARIABLE ${RUST_PROGRAM}_VERSION_ERROR
             RESULT_VARIABLE ${RUST_PROGRAM}_VERSION_RESULT
         )
+
         if(NOT ${${RUST_PROGRAM}_VERSION_RESULT} EQUAL 0)
             message(STATUS "Rust tool `${RUST_PROGRAM}` not found: Failed to determine version.")
             unset(${RUST_PROGRAM}_EXECUTABLE)
@@ -131,14 +132,16 @@ function(cargo_vendor)
             COMMAND ${CMAKE_COMMAND} -E env "CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}" ${cargo_EXECUTABLE} vendor ".cargo/vendor"
             WORKING_DIRECTORY "${ARGS_WORKING_DIRECTORY}"
             OUTPUT_VARIABLE CARGO_VENDOR_OUTPUT
-            ERROR_VARIABLE  CARGO_VENDOR_ERROR
+            ERROR_VARIABLE CARGO_VENDOR_ERROR
             RESULT_VARIABLE CARGO_VENDOR_RESULT
         )
+
         if(NOT ${CARGO_VENDOR_RESULT} EQUAL 0)
             message(FATAL_ERROR "Failed!\n${CARGO_VENDOR_ERROR}")
         else()
             message("Success!")
         endif()
+
         write_file(${ARGS_WORKING_DIRECTORY}/.cargo/config.toml "
 [source.crates-io]
 replace-with = \"vendored-sources\"
@@ -185,7 +188,7 @@ function(add_rust_executable)
     # Specify where the executable is
     set_target_properties(${ARGS_TARGET}
         PROPERTIES
-            IMPORTED_LOCATION "${OUTPUT}"
+        IMPORTED_LOCATION "${OUTPUT}"
     )
 
     # Vendor the dependencies, if desired
@@ -243,8 +246,8 @@ function(add_rust_library)
     # Specify where the library is and where to find the headers
     set_target_properties(${ARGS_TARGET}
         PROPERTIES
-            IMPORTED_LOCATION "${OUTPUT}"
-            INTERFACE_INCLUDE_DIRECTORIES "${ARGS_WORKING_DIRECTORY};${CMAKE_CURRENT_BINARY_DIR}"
+        IMPORTED_LOCATION "${OUTPUT}"
+        INTERFACE_INCLUDE_DIRECTORIES "${ARGS_WORKING_DIRECTORY};${CMAKE_CURRENT_BINARY_DIR}"
     )
 
     # Vendor the dependencies, if desired
@@ -259,7 +262,8 @@ function(add_rust_test)
     cmake_parse_arguments(ARGS "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
     set(MY_CARGO_ARGS "test")
-    if(NOT "${CMAKE_OSX_ARCHITECTURES}" MATCHES "^(arm64;x86_64|x86_64;arm64)$") #  Don't specify the target for universal, we'll do that manually for each build.
+
+    if(NOT "${CMAKE_OSX_ARCHITECTURES}" MATCHES "^(arm64;x86_64|x86_64;arm64)$") # Don't specify the target for universal, we'll do that manually for each build.
         list(APPEND MY_CARGO_ARGS "--target" ${RUST_COMPILER_TARGET})
     endif()
 
@@ -302,19 +306,23 @@ endif()
 execute_process(
     COMMAND ${CMAKE_COMMAND} -E env "CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}" ${rustc_EXECUTABLE} --crate-type staticlib --print=native-static-libs /dev/null
     OUTPUT_VARIABLE RUST_NATIVE_STATIC_LIBS_OUTPUT
-    ERROR_VARIABLE  RUST_NATIVE_STATIC_LIBS_ERROR
+    ERROR_VARIABLE RUST_NATIVE_STATIC_LIBS_ERROR
     RESULT_VARIABLE RUST_NATIVE_STATIC_LIBS_RESULT
 )
 string(REGEX REPLACE "\r?\n" ";" LINE_LIST "${RUST_NATIVE_STATIC_LIBS_ERROR}")
+
 foreach(LINE ${LINE_LIST})
     # do the match on each line
     string(REGEX MATCH "native-static-libs: .*" LINE "${LINE}")
+
     if(NOT LINE)
         continue()
     endif()
+
     string(REPLACE "native-static-libs: " "" LINE "${LINE}")
     string(REGEX REPLACE "  " "" LINE "${LINE}")
     string(REGEX REPLACE " " ";" LINE "${LINE}")
+
     if(LINE)
         message(STATUS "Rust's native static libs: ${LINE}")
         set(RUST_NATIVE_STATIC_LIBS "${LINE}")
@@ -325,7 +333,7 @@ endforeach()
 if(NOT RUST_COMPILER_TARGET)
     # Automatically determine the Rust Target Triple.
     # Note: Users may override automatic target detection by specifying their own. Most likely needed for cross-compiling.
-    #       For reference determining target platform: https://doc.rust-lang.org/nightly/rustc/platform-support.html
+    # For reference determining target platform: https://doc.rust-lang.org/nightly/rustc/platform-support.html
     if(WIN32)
         # For windows x86/x64, it's easy enough to guess the target.
         if(CMAKE_SIZEOF_VOID_P EQUAL 8)
@@ -348,12 +356,14 @@ if(NOT RUST_COMPILER_TARGET)
 endif()
 
 set(CARGO_ARGS "build")
+
 if(NOT "${RUST_COMPILER_TARGET}" MATCHES "^universal-apple-darwin$")
     # Don't specify the target for macOS universal builds, we'll do that manually for each build.
     list(APPEND CARGO_ARGS "--target" ${RUST_COMPILER_TARGET})
 endif()
 
 set(RUSTFLAGS "")
+
 if(NOT CMAKE_BUILD_TYPE)
     set(CARGO_BUILD_TYPE "debug")
 elseif(${CMAKE_BUILD_TYPE} STREQUAL "Release" OR ${CMAKE_BUILD_TYPE} STREQUAL "MinSizeRel")
