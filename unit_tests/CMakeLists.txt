@@ -291,9 +291,6 @@ set(ENVIRONMENT
     CK_DEFAULT_TIMEOUT=300
     LD_LIBRARY_PATH=${LD_LIBRARY_PATH}
     DYLD_LIBRARY_PATH=${LD_LIBRARY_PATH}
-    SOURCE=${SOURCE}
-    BUILD=${BUILD}
-    TMP=${TMP}
     PATH=${NEW_PATH}
     LIBSSL=${LIBSSL}
     LIBCRYPTO=${LIBCRYPTO}
@@ -349,7 +346,7 @@ if(Valgrind_FOUND)
     set_property(TEST libclamav_valgrind PROPERTY ENVIRONMENT ${ENVIRONMENT} VALGRIND=${Valgrind_EXECUTABLE})
 endif()
 
-add_rust_test(NAME libclamav_rust WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/libclamav_rust")
+add_rust_test(NAME libclamav_rust WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/libclamav_rust" PRECOMPILE_TESTS TRUE DEPENDS ClamAV::libclamav ENVIRONMENT "${ENVIRONMENT}")
 set_property(TEST libclamav_rust PROPERTY ENVIRONMENT ${ENVIRONMENT})
 
 if(ENABLE_APP)

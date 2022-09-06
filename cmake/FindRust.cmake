@@ -30,9 +30,13 @@
 # Eg:
 # find_package(Rust REQUIRED)
 #
-# This module also provides:
+# This module provides the following functions:
+# =============================================
 #
-# - `add_rust_library()` - This allows a caller to create a Rust static library
+# `add_rust_library()`
+# --------------------
+#
+# This allows a caller to create a Rust static library
 # target which you can link to with `target_link_libraries()`.
 #
 # Your Rust static library target will itself depend on the native static libs
@@ -43,33 +47,77 @@
 #
 # Example `add_rust_library()` usage:
 #
-# add_rust_library(TARGET yourlib WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
-# add_library(YourProject::yourlib ALIAS yourlib)
+#   ```cmake
+#   add_rust_library(TARGET yourlib WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
+#   add_library(YourProject::yourlib ALIAS yourlib)
 #
-# add_executable(yourexe)
-# target_link_libraries(yourexe YourProject::yourlib)
+#   add_executable(yourexe)
+#   target_link_libraries(yourexe YourProject::yourlib)
+#   ```
 #
-# - `add_rust_test()` - This allows a caller to run `cargo test` for a specific
-# Rust target as a CTest test.
+# If your library has unit tests AND your library does NOT depend on your C
+# librar(ies), you can use `add_rust_library()` to build your library and unit
+# tests at the same time. Just pass `PRECOMPILE_TESTS TRUE` to add_rust_library.
+# This should make it so when you run the tests, they don't have to compile
+# during the test run.
+#
+# If your library does have C dependencies, you can still precompile the tests
+# by passing `PRECOMPILE_TESTS TRUE`, with `add_rust_test()` instead.
+# It will be slower because it will have to compile the C stuff first,
+# then compile the Rust stuff from scratch. See below.
+#
+# `add_rust_test()`
+# -----------------
+#
+# This allows a caller to run `cargo test` for a specific Rust target as a CTest
+# test.
 #
 # The CARGO_CMD environment variable will be set to "TEST" so you can tell
 # it's not building the unit tests inside your (optional) `build.rs` file.
 #
 # Example `add_rust_test()` usage:
 #
-# add_rust_test(NAME yourlib WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/yourlib")
-# set_property(TEST yourlib PROPERTY ENVIRONMENT ${ENVIRONMENT})
+#   ```cmake
+#   add_rust_test(NAME yourlib WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/yourlib")
+#   set_property(TEST yourlib PROPERTY ENVIRONMENT ${ENVIRONMENT})
+#   ```
 #
-# - `add_rust_executable()` - This allows a caller to create a Rust executable target.
+# If your library has unit tests AND your library DOES depend on your C
+# libraries, you can precompile the unit tests application with some extra
+# parameters to `add_rust_test()`:
+# - `PRECOMPILE_TESTS TRUE`
+# - `DEPENDS <the CMake target name for your C library dependency>`
+# - `ENVIRONMENT <a linked list of environment vars to build the Rust lib>`
+#
+# The `DEPENDS` option is required so CMake will build the C library first.
+# The `ENVIRONMENT` option is required for use in your `build.rs` file so you
+# can tell rustc how to link to your C library.
+#
+# For example:
+#
+#   ```cmake
+#   add_rust_test(NAME yourlib WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/yourlib"
+#       PRECOMPILE_TESTS TRUE
+#       DEPENDS ClamAV::libclamav
+#       ENVIRONMENT "${ENVIRONMENT}"
+#   )
+#   set_property(TEST yourlib PROPERTY ENVIRONMENT ${ENVIRONMENT})
+#   ```
+#
+# `add_rust_executable()`
+# -----------------------
+#
+# This allows a caller to create a Rust executable target.
 #
 # Example `add_rust_executable()` usage:
 #
-# add_rust_executable(TARGET yourapp WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
-# add_executable(YourProject::yourapp ALIAS yourapp)
+#   ```cmake
+#   add_rust_executable(TARGET yourapp WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
+#   add_executable(YourProject::yourapp ALIAS yourapp)
 #
-# add_executable(yourexe)
-# target_link_libraries(yourexe YourProject::yourlib)
-#
+#   add_executable(yourexe)
+#   target_link_libraries(yourexe YourProject::yourlib)
+#   ```
 
 if(NOT DEFINED CARGO_HOME)
     if(WIN32)
@@ -199,7 +247,7 @@ endfunction()
 
 function(add_rust_library)
     set(options)
-    set(oneValueArgs TARGET WORKING_DIRECTORY)
+    set(oneValueArgs TARGET WORKING_DIRECTORY PRECOMPILE_TESTS)
     cmake_parse_arguments(ARGS "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
     if(WIN32)
@@ -211,6 +259,9 @@ function(add_rust_library)
     file(GLOB_RECURSE LIB_SOURCES "${ARGS_WORKING_DIRECTORY}/*.rs")
 
     set(MY_CARGO_ARGS ${CARGO_ARGS})
+    if(ARGS_PRECOMPILE_TESTS)
+        list(APPEND MY_CARGO_ARGS "--tests")
+    endif()
     list(APPEND MY_CARGO_ARGS "--target-dir" ${CMAKE_CURRENT_BINARY_DIR})
     list(JOIN MY_CARGO_ARGS " " MY_CARGO_ARGS_STRING)
 
@@ -258,7 +309,8 @@ endfunction()
 
 function(add_rust_test)
     set(options)
-    set(oneValueArgs NAME WORKING_DIRECTORY)
+    set(oneValueArgs NAME WORKING_DIRECTORY PRECOMPILE_TESTS DEPENDS)
+    set(multiValueArgs ENVIRONMENT)
     cmake_parse_arguments(ARGS "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
     set(MY_CARGO_ARGS "test")
@@ -273,6 +325,14 @@ function(add_rust_test)
 
     list(APPEND MY_CARGO_ARGS "--target-dir" ${CMAKE_CURRENT_BINARY_DIR})
     list(JOIN MY_CARGO_ARGS " " MY_CARGO_ARGS_STRING)
+
+    if(ARGS_PRECOMPILE_TESTS)
+        list(APPEND ARGS_ENVIRONMENT "CARGO_CMD=test" "CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}")
+        add_custom_target(${ARGS_NAME}_precompile ALL
+            COMMAND ${CMAKE_COMMAND} -E env ${ARGS_ENVIRONMENT} ${cargo_EXECUTABLE} ${MY_CARGO_ARGS} --color always --no-run
+            DEPENDS ${ARGS_DEPENDS}
+        )
+    endif()
 
     add_test(
         NAME ${ARGS_NAME}
