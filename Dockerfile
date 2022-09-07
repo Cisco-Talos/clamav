@@ -50,7 +50,6 @@ RUN apk add --no-cache \
           -DENABLE_STATIC_LIB=OFF && \
     make DESTDIR="/clamav" -j$(($(nproc) - 1)) install && \
     rm -r \
-       "/clamav/usr/include" \
        "/clamav/usr/lib/pkgconfig/" \
     && \
     sed -e "s|^\(Example\)|\# \1|" \
