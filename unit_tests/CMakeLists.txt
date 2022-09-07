@@ -346,7 +346,13 @@ if(Valgrind_FOUND)
     set_property(TEST libclamav_valgrind PROPERTY ENVIRONMENT ${ENVIRONMENT} VALGRIND=${Valgrind_EXECUTABLE})
 endif()
 
-add_rust_test(NAME libclamav_rust WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/libclamav_rust" PRECOMPILE_TESTS TRUE DEPENDS ClamAV::libclamav ENVIRONMENT "${ENVIRONMENT}")
+add_rust_test(NAME libclamav_rust
+    SOURCE_DIRECTORY "${CMAKE_SOURCE_DIR}/libclamav_rust"
+    BINARY_DIRECTORY "${CMAKE_BINARY_DIR}"
+    PRECOMPILE_TESTS TRUE
+    DEPENDS ClamAV::libclamav
+    ENVIRONMENT "${ENVIRONMENT}"
+)
 set_property(TEST libclamav_rust PROPERTY ENVIRONMENT ${ENVIRONMENT})
 
 if(ENABLE_APP)

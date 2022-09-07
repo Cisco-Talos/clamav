@@ -121,7 +121,7 @@ fn main() -> Result<(), &'static str> {
 /// Use bindgen to generate Rust bindings to call into C libraries.
 fn execute_bindgen() -> Result<(), &'static str> {
     let build_dir = PathBuf::from(env::var("CARGO_TARGET_DIR").unwrap_or_else(|_| ".".into()));
-    let build_include_path = format!("-I{}", build_dir.join("..").to_str().unwrap());
+    let build_include_path = format!("-I{}", build_dir.join(".").to_str().unwrap());
 
     // Configure and generate bindings.
     let mut builder = builder()
@@ -150,10 +150,13 @@ fn execute_bindgen() -> Result<(), &'static str> {
     }
 
     // Generate!
-    let bindings = builder.generate().unwrap();
+    builder
+        .generate()
+        .expect("Generating Rust bindings for C code")
+        .write_to_file(BINDGEN_OUTPUT_FILE)
+        .expect("Writing Rust bindings to output file");
 
-    // Write the generated bindings to an output file.
-    bindings.write_to_file(BINDGEN_OUTPUT_FILE).unwrap();
+    eprintln!("bindgen outputting \"{}\"", BINDGEN_OUTPUT_FILE);
 
     Ok(())
 }
