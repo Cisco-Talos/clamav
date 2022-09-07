@@ -80,7 +80,7 @@
 #include "stats.h"
 #include "json_api.h"
 
-#include "libclamav_rust/clamav_rust.h"
+#include "clamav_rust.h"
 
 cl_unrar_error_t (*cli_unrar_open)(const char *filename, void **hArchive, char **comment, uint32_t *comment_size, uint8_t debug_flag);
 cl_unrar_error_t (*cli_unrar_peek_file_header)(void *hArchive, unrar_metadata_t *file_metadata);

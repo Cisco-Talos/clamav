@@ -48,7 +48,9 @@
 # Example `add_rust_library()` usage:
 #
 #   ```cmake
-#   add_rust_library(TARGET yourlib WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
+#   add_rust_library(TARGET yourlib
+#       SOURCE_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
+#       BINARY_DIRECTORY "${CMAKE_BINARY_DIR}")
 #   add_library(YourProject::yourlib ALIAS yourlib)
 #
 #   add_executable(yourexe)
@@ -78,7 +80,10 @@
 # Example `add_rust_test()` usage:
 #
 #   ```cmake
-#   add_rust_test(NAME yourlib WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/yourlib")
+#   add_rust_test(NAME yourlib
+#       SOURCE_DIRECTORY "${CMAKE_SOURCE_DIR}/path/to/yourlib"
+#       BINARY_DIRECTORY "${CMAKE_BINARY_DIR}"
+#   )
 #   set_property(TEST yourlib PROPERTY ENVIRONMENT ${ENVIRONMENT})
 #   ```
 #
@@ -96,7 +101,9 @@
 # For example:
 #
 #   ```cmake
-#   add_rust_test(NAME yourlib WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/yourlib"
+#   add_rust_test(NAME yourlib
+#       SOURCE_DIRECTORY "${CMAKE_SOURCE_DIR}/yourlib"
+#       BINARY_DIRECTORY "${CMAKE_BINARY_DIR}"
 #       PRECOMPILE_TESTS TRUE
 #       DEPENDS ClamAV::libclamav
 #       ENVIRONMENT "${ENVIRONMENT}"
@@ -112,11 +119,11 @@
 # Example `add_rust_executable()` usage:
 #
 #   ```cmake
-#   add_rust_executable(TARGET yourapp WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
-#   add_executable(YourProject::yourapp ALIAS yourapp)
-#
-#   add_executable(yourexe)
-#   target_link_libraries(yourexe YourProject::yourlib)
+#   add_rust_executable(TARGET yourexe
+#       SOURCE_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+#       BINARY_DIRECTORY "${CMAKE_BINARY_DIR}"
+#   )
+#   add_executable(YourProject::yourexe ALIAS yourexe)
 #   ```
 
 if(NOT DEFINED CARGO_HOME)
@@ -166,19 +173,19 @@ endfunction()
 
 function(cargo_vendor)
     set(options)
-    set(oneValueArgs TARGET WORKING_DIRECTORY)
+    set(oneValueArgs TARGET SOURCE_DIRECTORY BINARY_DIRECTORY)
     cmake_parse_arguments(ARGS "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
-    if(NOT EXISTS ${ARGS_WORKING_DIRECTORY}}/.cargo/config.toml)
+    if(NOT EXISTS ${ARGS_SOURCE_DIRECTORY}/.cargo/config.toml)
         # Vendor the dependencies and create .cargo/config.toml
         # Vendored dependencies will be used during the build.
         # This will allow us to package vendored dependencies in source tarballs
         # for online builds when we run `cpack --config CPackSourceConfig.cmake`
         message(STATUS "Running `cargo vendor` to collect dependencies for ${ARGS_TARGET}. This may take a while if the local crates.io index needs to be updated ...")
-        make_directory(${ARGS_WORKING_DIRECTORY}/.cargo)
+        make_directory(${ARGS_SOURCE_DIRECTORY}/.cargo)
         execute_process(
-            COMMAND ${CMAKE_COMMAND} -E env "CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}" ${cargo_EXECUTABLE} vendor ".cargo/vendor"
-            WORKING_DIRECTORY "${ARGS_WORKING_DIRECTORY}"
+            COMMAND ${CMAKE_COMMAND} -E env "CARGO_TARGET_DIR=${ARGS_BINARY_DIRECTORY}" ${cargo_EXECUTABLE} vendor ".cargo/vendor"
+            WORKING_DIRECTORY "${ARGS_SOURCE_DIRECTORY}"
             OUTPUT_VARIABLE CARGO_VENDOR_OUTPUT
             ERROR_VARIABLE CARGO_VENDOR_ERROR
             RESULT_VARIABLE CARGO_VENDOR_RESULT
@@ -190,7 +197,7 @@ function(cargo_vendor)
             message("Success!")
         endif()
 
-        write_file(${ARGS_WORKING_DIRECTORY}/.cargo/config.toml "
+        write_file(${ARGS_SOURCE_DIRECTORY}/.cargo/config.toml "
 [source.crates-io]
 replace-with = \"vendored-sources\"
 
@@ -203,28 +210,28 @@ endfunction()
 
 function(add_rust_executable)
     set(options)
-    set(oneValueArgs TARGET WORKING_DIRECTORY)
+    set(oneValueArgs TARGET SOURCE_DIRECTORY BINARY_DIRECTORY)
     cmake_parse_arguments(ARGS "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
     if(WIN32)
-        set(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${RUST_COMPILER_TARGET}/${CARGO_BUILD_TYPE}/${ARGS_TARGET}.exe")
+        set(OUTPUT "${ARGS_BINARY_DIRECTORY}/${RUST_COMPILER_TARGET}/${CARGO_BUILD_TYPE}/${ARGS_TARGET}.exe")
     else()
-        set(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${RUST_COMPILER_TARGET}/${CARGO_BUILD_TYPE}/${ARGS_TARGET}")
+        set(OUTPUT "${ARGS_BINARY_DIRECTORY}/${RUST_COMPILER_TARGET}/${CARGO_BUILD_TYPE}/${ARGS_TARGET}")
     endif()
 
-    file(GLOB_RECURSE EXE_SOURCES "${ARGS_WORKING_DIRECTORY}/*.rs")
+    file(GLOB_RECURSE EXE_SOURCES "${ARGS_SOURCE_DIRECTORY}/*.rs")
 
     set(MY_CARGO_ARGS ${CARGO_ARGS})
-    list(APPEND MY_CARGO_ARGS "--target-dir" ${CMAKE_CURRENT_BINARY_DIR})
+    list(APPEND MY_CARGO_ARGS "--target-dir" ${ARGS_BINARY_DIRECTORY})
     list(JOIN MY_CARGO_ARGS " " MY_CARGO_ARGS_STRING)
 
     # Build the executable.
     add_custom_command(
         OUTPUT "${OUTPUT}"
-        COMMAND ${CMAKE_COMMAND} -E env "CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}" ${cargo_EXECUTABLE} ARGS ${MY_CARGO_ARGS}
-        WORKING_DIRECTORY "${ARGS_WORKING_DIRECTORY}"
+        COMMAND ${CMAKE_COMMAND} -E env "CARGO_TARGET_DIR=${ARGS_BINARY_DIRECTORY}" ${cargo_EXECUTABLE} ARGS ${MY_CARGO_ARGS}
+        WORKING_DIRECTORY "${ARGS_SOURCE_DIRECTORY}"
         DEPENDS ${EXE_SOURCES}
-        COMMENT "Building ${ARGS_TARGET} in ${ARGS_WORKING_DIRECTORY} with:\n\t ${cargo_EXECUTABLE} ${MY_CARGO_ARGS_STRING}")
+        COMMENT "Building ${ARGS_TARGET} in ${ARGS_BINARY_DIRECTORY} with:\n\t ${cargo_EXECUTABLE} ${MY_CARGO_ARGS_STRING}")
 
     # Create a target from the build output
     add_custom_target(${ARGS_TARGET}_target
@@ -241,48 +248,51 @@ function(add_rust_executable)
 
     # Vendor the dependencies, if desired
     if(VENDOR_DEPENDENCIES)
-        cargo_vendor(TARGET "${ARGS_TARGET}" WORKING_DIRECTORY "${ARGS_WORKING_DIRECTORY}")
+        cargo_vendor(TARGET "${ARGS_TARGET}"
+            SOURCE_DIRECTORY "${ARGS_SOURCE_DIRECTORY}"
+            BINARY_DIRECTORY "${ARGS_BINARY_DIRECTORY}"
+        )
     endif()
 endfunction()
 
 function(add_rust_library)
     set(options)
-    set(oneValueArgs TARGET WORKING_DIRECTORY PRECOMPILE_TESTS)
+    set(oneValueArgs TARGET SOURCE_DIRECTORY BINARY_DIRECTORY PRECOMPILE_TESTS)
     cmake_parse_arguments(ARGS "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
     if(WIN32)
-        set(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${RUST_COMPILER_TARGET}/${CARGO_BUILD_TYPE}/${ARGS_TARGET}.lib")
+        set(OUTPUT "${ARGS_BINARY_DIRECTORY}/${RUST_COMPILER_TARGET}/${CARGO_BUILD_TYPE}/${ARGS_TARGET}.lib")
     else()
-        set(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${RUST_COMPILER_TARGET}/${CARGO_BUILD_TYPE}/lib${ARGS_TARGET}.a")
+        set(OUTPUT "${ARGS_BINARY_DIRECTORY}/${RUST_COMPILER_TARGET}/${CARGO_BUILD_TYPE}/lib${ARGS_TARGET}.a")
     endif()
 
-    file(GLOB_RECURSE LIB_SOURCES "${ARGS_WORKING_DIRECTORY}/*.rs")
+    file(GLOB_RECURSE LIB_SOURCES "${ARGS_SOURCE_DIRECTORY}/*.rs")
 
     set(MY_CARGO_ARGS ${CARGO_ARGS})
     if(ARGS_PRECOMPILE_TESTS)
         list(APPEND MY_CARGO_ARGS "--tests")
     endif()
-    list(APPEND MY_CARGO_ARGS "--target-dir" ${CMAKE_CURRENT_BINARY_DIR})
+    list(APPEND MY_CARGO_ARGS "--target-dir" ${ARGS_BINARY_DIRECTORY})
     list(JOIN MY_CARGO_ARGS " " MY_CARGO_ARGS_STRING)
 
     # Build the library and generate the c-binding
     if("${CMAKE_OSX_ARCHITECTURES}" MATCHES "^(arm64;x86_64|x86_64;arm64)$")
         add_custom_command(
             OUTPUT "${OUTPUT}"
-            COMMAND ${CMAKE_COMMAND} -E env "CARGO_CMD=build" "CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}" "MAINTAINER_MODE=${MAINTAINER_MODE}" "RUSTFLAGS=\"${RUSTFLAGS}\"" ${cargo_EXECUTABLE} ARGS ${MY_CARGO_ARGS} --target=x86_64-apple-darwin
-            COMMAND ${CMAKE_COMMAND} -E env "CARGO_CMD=build" "CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}" "MAINTAINER_MODE=${MAINTAINER_MODE}" "RUSTFLAGS=\"${RUSTFLAGS}\"" ${cargo_EXECUTABLE} ARGS ${MY_CARGO_ARGS} --target=aarch64-apple-darwin
-            COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_CURRENT_BINARY_DIR}/${RUST_COMPILER_TARGET}/${CARGO_BUILD_TYPE}"
-            COMMAND lipo ARGS -create ${CMAKE_CURRENT_BINARY_DIR}/x86_64-apple-darwin/${CARGO_BUILD_TYPE}/lib${ARGS_TARGET}.a ${CMAKE_CURRENT_BINARY_DIR}/aarch64-apple-darwin/${CARGO_BUILD_TYPE}/lib${ARGS_TARGET}.a -output "${OUTPUT}"
-            WORKING_DIRECTORY "${ARGS_WORKING_DIRECTORY}"
+            COMMAND ${CMAKE_COMMAND} -E env "CARGO_CMD=build" "CARGO_TARGET_DIR=${ARGS_BINARY_DIRECTORY}" "MAINTAINER_MODE=${MAINTAINER_MODE}" "RUSTFLAGS=\"${RUSTFLAGS}\"" ${cargo_EXECUTABLE} ARGS ${MY_CARGO_ARGS} --target=x86_64-apple-darwin
+            COMMAND ${CMAKE_COMMAND} -E env "CARGO_CMD=build" "CARGO_TARGET_DIR=${ARGS_BINARY_DIRECTORY}" "MAINTAINER_MODE=${MAINTAINER_MODE}" "RUSTFLAGS=\"${RUSTFLAGS}\"" ${cargo_EXECUTABLE} ARGS ${MY_CARGO_ARGS} --target=aarch64-apple-darwin
+            COMMAND ${CMAKE_COMMAND} -E make_directory "${ARGS_BINARY_DIRECTORY}/${RUST_COMPILER_TARGET}/${CARGO_BUILD_TYPE}"
+            COMMAND lipo ARGS -create ${ARGS_BINARY_DIRECTORY}/x86_64-apple-darwin/${CARGO_BUILD_TYPE}/lib${ARGS_TARGET}.a ${ARGS_BINARY_DIRECTORY}/aarch64-apple-darwin/${CARGO_BUILD_TYPE}/lib${ARGS_TARGET}.a -output "${OUTPUT}"
+            WORKING_DIRECTORY "${ARGS_SOURCE_DIRECTORY}"
             DEPENDS ${LIB_SOURCES}
-            COMMENT "Building ${ARGS_TARGET} in ${ARGS_WORKING_DIRECTORY} with:  ${cargo_EXECUTABLE} ${MY_CARGO_ARGS_STRING}")
+            COMMENT "Building ${ARGS_TARGET} in ${ARGS_BINARY_DIRECTORY} with:  ${cargo_EXECUTABLE} ${MY_CARGO_ARGS_STRING}")
     else()
         add_custom_command(
             OUTPUT "${OUTPUT}"
-            COMMAND ${CMAKE_COMMAND} -E env "CARGO_CMD=build" "CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}" "MAINTAINER_MODE=${MAINTAINER_MODE}" "RUSTFLAGS=\"${RUSTFLAGS}\"" ${cargo_EXECUTABLE} ARGS ${MY_CARGO_ARGS}
-            WORKING_DIRECTORY "${ARGS_WORKING_DIRECTORY}"
+            COMMAND ${CMAKE_COMMAND} -E env "CARGO_CMD=build" "CARGO_TARGET_DIR=${ARGS_BINARY_DIRECTORY}" "MAINTAINER_MODE=${MAINTAINER_MODE}" "RUSTFLAGS=\"${RUSTFLAGS}\"" ${cargo_EXECUTABLE} ARGS ${MY_CARGO_ARGS}
+            WORKING_DIRECTORY "${ARGS_SOURCE_DIRECTORY}"
             DEPENDS ${LIB_SOURCES}
-            COMMENT "Building ${ARGS_TARGET} in ${ARGS_WORKING_DIRECTORY} with:  ${cargo_EXECUTABLE} ${MY_CARGO_ARGS_STRING}")
+            COMMENT "Building ${ARGS_TARGET} in ${ARGS_BINARY_DIRECTORY} with:  ${cargo_EXECUTABLE} ${MY_CARGO_ARGS_STRING}")
     endif()
 
     # Create a target from the build output
@@ -298,18 +308,20 @@ function(add_rust_library)
     set_target_properties(${ARGS_TARGET}
         PROPERTIES
         IMPORTED_LOCATION "${OUTPUT}"
-        INTERFACE_INCLUDE_DIRECTORIES "${ARGS_WORKING_DIRECTORY};${CMAKE_CURRENT_BINARY_DIR}"
+        INTERFACE_INCLUDE_DIRECTORIES "${ARGS_SOURCE_DIRECTORY};${ARGS_BINARY_DIRECTORY}"
     )
 
     # Vendor the dependencies, if desired
     if(VENDOR_DEPENDENCIES)
-        cargo_vendor(TARGET "${ARGS_TARGET}" WORKING_DIRECTORY "${ARGS_WORKING_DIRECTORY}")
+        cargo_vendor(TARGET "${ARGS_TARGET}"
+            SOURCE_DIRECTORY "${ARGS_SOURCE_DIRECTORY}"
+            BINARY_DIRECTORY "${ARGS_BINARY_DIRECTORY}")
     endif()
 endfunction()
 
 function(add_rust_test)
     set(options)
-    set(oneValueArgs NAME WORKING_DIRECTORY PRECOMPILE_TESTS DEPENDS)
+    set(oneValueArgs NAME SOURCE_DIRECTORY BINARY_DIRECTORY PRECOMPILE_TESTS DEPENDS)
     set(multiValueArgs ENVIRONMENT)
     cmake_parse_arguments(ARGS "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
@@ -323,21 +335,22 @@ function(add_rust_test)
         list(APPEND MY_CARGO_ARGS "--release")
     endif()
 
-    list(APPEND MY_CARGO_ARGS "--target-dir" ${CMAKE_CURRENT_BINARY_DIR})
+    list(APPEND MY_CARGO_ARGS "--target-dir" ${ARGS_BINARY_DIRECTORY})
     list(JOIN MY_CARGO_ARGS " " MY_CARGO_ARGS_STRING)
 
     if(ARGS_PRECOMPILE_TESTS)
-        list(APPEND ARGS_ENVIRONMENT "CARGO_CMD=test" "CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}")
-        add_custom_target(${ARGS_NAME}_precompile ALL
+        list(APPEND ARGS_ENVIRONMENT "CARGO_CMD=test" "CARGO_TARGET_DIR=${ARGS_BINARY_DIRECTORY}")
+        add_custom_target(${ARGS_NAME}_tests ALL
             COMMAND ${CMAKE_COMMAND} -E env ${ARGS_ENVIRONMENT} ${cargo_EXECUTABLE} ${MY_CARGO_ARGS} --color always --no-run
             DEPENDS ${ARGS_DEPENDS}
+            WORKING_DIRECTORY ${ARGS_SOURCE_DIRECTORY}
         )
     endif()
 
     add_test(
         NAME ${ARGS_NAME}
-        COMMAND ${CMAKE_COMMAND} -E env "CARGO_CMD=test" "CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}" ${cargo_EXECUTABLE} ${MY_CARGO_ARGS} --color always
-        WORKING_DIRECTORY ${ARGS_WORKING_DIRECTORY}
+        COMMAND ${CMAKE_COMMAND} -E env "CARGO_CMD=test" "CARGO_TARGET_DIR=${ARGS_BINARY_DIRECTORY}" ${cargo_EXECUTABLE} ${MY_CARGO_ARGS} --color always
+        WORKING_DIRECTORY ${ARGS_SOURCE_DIRECTORY}
     )
 endfunction()
 
@@ -364,7 +377,7 @@ endif()
 # Determine the native libs required to link w/ rust static libs
 # message(STATUS "Detecting native static libs for rust: ${rustc_EXECUTABLE} --crate-type staticlib --print=native-static-libs /dev/null")
 execute_process(
-    COMMAND ${CMAKE_COMMAND} -E env "CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}" ${rustc_EXECUTABLE} --crate-type staticlib --print=native-static-libs /dev/null
+    COMMAND ${CMAKE_COMMAND} -E env "CARGO_TARGET_DIR=${CMAKE_BINARY_DIR}" ${rustc_EXECUTABLE} --crate-type staticlib --print=native-static-libs /dev/null
     OUTPUT_VARIABLE RUST_NATIVE_STATIC_LIBS_OUTPUT
     ERROR_VARIABLE RUST_NATIVE_STATIC_LIBS_ERROR
     RESULT_VARIABLE RUST_NATIVE_STATIC_LIBS_RESULT
