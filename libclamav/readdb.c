@@ -340,23 +340,37 @@ static cl_error_t readdb_load_regex_subsignature(struct cli_matcher *root, const
     char *end    = NULL;
 
     const char *trigger, *pattern, *cflags;
-    int subtokens_count;
+
 // The maximum number of `:` delimited fields in a regex subsignature.
 #define MAX_REGEX_SUB_TOKENS 4
     char *subtokens[MAX_REGEX_SUB_TOKENS + 1];
     const char *sig;
 
-    subtokens_count = cli_ldbtokenize(hexsig, ':', MAX_REGEX_SUB_TOKENS + 1, (const char **)subtokens, 0);
-    if (!subtokens_count) {
-        cli_errmsg("Invalid or unsupported ldb subsignature format\n");
-        status = CL_EMALFDB;
-        goto done;
+    if (0 == strncmp(virname, "YARA", 4)) {
+        // Do not tokenize for ':' in yara regex strings. ':' do not have special meaning in yara regex strings.
+        // Also, Yara regex strings may use '/' without escape characters, which confuses the "within_pcre" feature of `cli_ldbtokenize()`.
+        sig = hexsig;
+
+    } else {
+        // LDB PCRE subsignatures have this structure:
+        // [Offset:]Trigger/PCRE/[Flags]
+        // We need to split on the ':' character in case the offset was specified.
+
+        size_t subtokens_count = cli_ldbtokenize(hexsig, ':', MAX_REGEX_SUB_TOKENS + 1, (const char **)subtokens, 0);
+        if (!subtokens_count) {
+            cli_errmsg("Invalid or unsupported ldb subsignature format\n");
+            status = CL_EMALFDB;
+            goto done;
+        }
+
+        if (subtokens_count == 2) {
+            // Offset was specified
+            offset = subtokens[0];
+            sig = subtokens[1];
+        } else {
+            sig = subtokens[0];
+        }
     }
-
-    if ((subtokens_count % 2) == 0)
-        offset = subtokens[0];
-
-    sig = (subtokens_count % 2) ? subtokens[0] : subtokens[1];
 
     /* get copied */
     hexcpy = cli_strdup(sig);
