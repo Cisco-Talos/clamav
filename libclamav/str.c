@@ -857,33 +857,40 @@ cl_error_t cli_strntoul_wrap(const char *buf, size_t buf_size,
 size_t cli_ldbtokenize(char *buffer, const char delim, const size_t token_count,
                        const char **tokens, size_t token_skip)
 {
-    size_t tokens_found, i;
-    char *start = buffer;
+    size_t tokens_found = 0;
+    size_t token_index  = 0;
+    size_t buffer_index = 0;
+    bool within_pcre    = false;
 
-    for (tokens_found = 0; tokens_found < token_count;) {
-        tokens[tokens_found++] = buffer;
+    while (tokens_found < token_count) {
+        tokens[tokens_found++] = &buffer[buffer_index];
 
-        while (*buffer != '\0') {
-            if (*buffer == delim) {
+        while (buffer[buffer_index] != '\0') {
+            if (!within_pcre && (buffer[buffer_index] == delim)) {
                 break;
             } else if ((tokens_found > token_skip) &&
-                       ((buffer > start) && (*(buffer - 1) != '\\')) &&
-                       (*buffer == '/')) {
-                return tokens_found;
+                       // LDB PCRE rules must escape the '/' character with a '\'.
+                       // If the character sequence is "\/", then we are still within the PCRE string.
+                       ((buffer_index > 0) && (buffer[buffer_index - 1] != '\\')) && (buffer[buffer_index] == '/')) {
+                within_pcre = !within_pcre;
             }
-            buffer++;
+            buffer_index++;
         }
 
-        if (*buffer != '\0') {
-            *buffer++ = '\0';
+        if (buffer[buffer_index] != '\0') {
+            buffer[buffer_index] = '\0';
+            buffer_index++;
         } else {
-            i = tokens_found;
-            while (i < token_count) {
-                tokens[i++] = NULL;
+            token_index = tokens_found;
+            while (token_index < token_count) {
+                tokens[token_index] = NULL;
+                token_index++;
             }
+
             return tokens_found;
         }
     }
+
     return tokens_found;
 }
 
