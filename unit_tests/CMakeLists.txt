@@ -349,9 +349,7 @@ endif()
 add_rust_test(NAME libclamav_rust
     SOURCE_DIRECTORY "${CMAKE_SOURCE_DIR}/libclamav_rust"
     BINARY_DIRECTORY "${CMAKE_BINARY_DIR}"
-    PRECOMPILE_TESTS TRUE
-    DEPENDS ClamAV::libclamav
-    ENVIRONMENT "${ENVIRONMENT}"
+    PRECOMPILE_TESTS FALSE # Cannot precompile, because `sudo make install` will fail. See notes in FindRust.cmake.
 )
 set_property(TEST libclamav_rust PROPERTY ENVIRONMENT ${ENVIRONMENT})
 
