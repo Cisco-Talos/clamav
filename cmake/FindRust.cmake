@@ -87,15 +87,23 @@
 #   set_property(TEST yourlib PROPERTY ENVIRONMENT ${ENVIRONMENT})
 #   ```
 #
+# Experimental: Precompile the Tests Executable
+# ~~~~~~~~~~~~
+# This feature will cause install failures if you `sudo make install` because
+# it will recompile the test executable with sudo and Cargo is likely to fail to
+# run with sudo.
+# This cannot be fixed unless we can predetermine the test exeecutable OUTPUT
+# filepath. See: https://github.com/rust-lang/cargo/issues/1924
+#
 # If your library has unit tests AND your library DOES depend on your C
 # libraries, you can precompile the unit tests application with some extra
 # parameters to `add_rust_test()`:
 # - `PRECOMPILE_TESTS TRUE`
-# - `DEPENDS <the CMake target name for your C library dependency>`
-# - `ENVIRONMENT <a linked list of environment vars to build the Rust lib>`
+# - `PRECOMPILE_DEPENDS <the CMake target name for your C library dependency>`
+# - `PRECOMPILE_ENVIRONMENT <a linked list of environment vars to build the Rust lib>`
 #
-# The `DEPENDS` option is required so CMake will build the C library first.
-# The `ENVIRONMENT` option is required for use in your `build.rs` file so you
+# The `PRECOMPILE_DEPENDS` option is required so CMake will build the C library first.
+# The `PRECOMPILE_ENVIRONMENT` option is required for use in your `build.rs` file so you
 # can tell rustc how to link to your C library.
 #
 # For example:
@@ -105,8 +113,8 @@
 #       SOURCE_DIRECTORY "${CMAKE_SOURCE_DIR}/yourlib"
 #       BINARY_DIRECTORY "${CMAKE_BINARY_DIR}"
 #       PRECOMPILE_TESTS TRUE
-#       DEPENDS ClamAV::libclamav
-#       ENVIRONMENT "${ENVIRONMENT}"
+#       PRECOMPILE_DEPENDS ClamAV::libclamav
+#       PRECOMPILE_ENVIRONMENT "${ENVIRONMENT}"
 #   )
 #   set_property(TEST yourlib PROPERTY ENVIRONMENT ${ENVIRONMENT})
 #   ```
@@ -321,8 +329,8 @@ endfunction()
 
 function(add_rust_test)
     set(options)
-    set(oneValueArgs NAME SOURCE_DIRECTORY BINARY_DIRECTORY PRECOMPILE_TESTS DEPENDS)
-    set(multiValueArgs ENVIRONMENT)
+    set(oneValueArgs NAME SOURCE_DIRECTORY BINARY_DIRECTORY PRECOMPILE_TESTS PRECOMPILE_DEPENDS)
+    set(multiValueArgs PRECOMPILE_ENVIRONMENT)
     cmake_parse_arguments(ARGS "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
     set(MY_CARGO_ARGS "test")
@@ -339,10 +347,10 @@ function(add_rust_test)
     list(JOIN MY_CARGO_ARGS " " MY_CARGO_ARGS_STRING)
 
     if(ARGS_PRECOMPILE_TESTS)
-        list(APPEND ARGS_ENVIRONMENT "CARGO_CMD=test" "CARGO_TARGET_DIR=${ARGS_BINARY_DIRECTORY}")
+        list(APPEND ARGS_PRECOMPILE_ENVIRONMENT "CARGO_CMD=test" "CARGO_TARGET_DIR=${ARGS_BINARY_DIRECTORY}")
         add_custom_target(${ARGS_NAME}_tests ALL
-            COMMAND ${CMAKE_COMMAND} -E env ${ARGS_ENVIRONMENT} ${cargo_EXECUTABLE} ${MY_CARGO_ARGS} --color always --no-run
-            DEPENDS ${ARGS_DEPENDS}
+            COMMAND ${CMAKE_COMMAND} -E env ${ARGS_PRECOMPILE_ENVIRONMENT} ${cargo_EXECUTABLE} ${MY_CARGO_ARGS} --color always --no-run
+            DEPENDS ${ARGS_PRECOMPILE_DEPENDS}
             WORKING_DIRECTORY ${ARGS_SOURCE_DIRECTORY}
         )
     endif()
