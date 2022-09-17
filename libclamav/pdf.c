@@ -3301,7 +3301,7 @@ cl_error_t pdf_find_and_parse_objs_in_objstm(struct pdf_struct *pdf, struct objs
         obj = NULL;
 
         if (cli_checktimelimit(pdf->ctx) != CL_SUCCESS) {
-            cli_errmsg("Timeout reached in the PDF parser while parsing object stream.\n");
+            cli_dbgmsg("Timeout reached in the PDF parser while parsing object stream.\n");
             status = CL_ETIMEOUT;
             goto done;
         }
@@ -3321,7 +3321,7 @@ cl_error_t pdf_find_and_parse_objs_in_objstm(struct pdf_struct *pdf, struct objs
         cli_dbgmsg("pdf_find_and_parse_objs_in_objstm: Found object %u %u in object stream at offset: %u\n", obj->id >> 8, obj->id & 0xff, obj->start);
 
         if (cli_checktimelimit(pdf->ctx) != CL_SUCCESS) {
-            cli_errmsg("Timeout reached in the PDF parser while parsing object stream.\n");
+            cli_dbgmsg("Timeout reached in the PDF parser while parsing object stream.\n");
             status = CL_ETIMEOUT;
             goto done;
         }
@@ -3378,7 +3378,7 @@ static cl_error_t pdf_find_and_extract_objs(struct pdf_struct *pdf)
         struct pdf_obj *obj = pdf->objs[i];
 
         if (cli_checktimelimit(pdf->ctx) != CL_SUCCESS) {
-            cli_errmsg("pdf_find_and_extract_objs: Timeout reached in the PDF parser while parsing objects.\n");
+            cli_dbgmsg("pdf_find_and_extract_objs: Timeout reached in the PDF parser while parsing objects.\n");
 
             status = CL_ETIMEOUT;
             goto done;
@@ -3412,7 +3412,7 @@ static cl_error_t pdf_find_and_extract_objs(struct pdf_struct *pdf)
             struct pdf_obj *obj = pdf->objs[i];
 
             if (cli_checktimelimit(pdf->ctx) != CL_SUCCESS) {
-                cli_errmsg("pdf_find_and_extract_objs: Timeout reached in the PDF parser while extracting objects.\n");
+                cli_dbgmsg("pdf_find_and_extract_objs: Timeout reached in the PDF parser while extracting objects.\n");
 
                 status = CL_ETIMEOUT;
                 goto done;
