@@ -339,7 +339,7 @@ function(add_rust_test)
         list(APPEND MY_CARGO_ARGS "--target" ${RUST_COMPILER_TARGET})
     endif()
 
-    if("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
+    if("${CMAKE_BUILD_TYPE}" STREQUAL "Release" OR "${CMAKE_BUILD_TYPE}" STREQUAL "RelWithDebInfo")
         list(APPEND MY_CARGO_ARGS "--release")
     endif()
 
@@ -357,7 +357,7 @@ function(add_rust_test)
 
     add_test(
         NAME ${ARGS_NAME}
-        COMMAND ${CMAKE_COMMAND} -E env "CARGO_CMD=test" "CARGO_TARGET_DIR=${ARGS_BINARY_DIRECTORY}" ${cargo_EXECUTABLE} ${MY_CARGO_ARGS} --color always
+        COMMAND ${CMAKE_COMMAND} -E env "CARGO_CMD=test" "CARGO_TARGET_DIR=${ARGS_BINARY_DIRECTORY}" "RUSTFLAGS=${RUSTFLAGS}" ${cargo_EXECUTABLE} ${MY_CARGO_ARGS} --color always
         WORKING_DIRECTORY ${ARGS_SOURCE_DIRECTORY}
     )
 endfunction()

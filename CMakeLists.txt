@@ -110,6 +110,19 @@ set(ENABLE_SYSTEMD_DEFAULT          ON)
 # See CMakeOptions.cmake for additional options.
 include(CMakeOptions.cmake)
 
+# Set build type to RelWithDebInfo if not specified.
+# This must be done before pulling in the Rust module
+# or else the default build will be Debug for Rust stuffs.
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+    set(CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING "Choose the build type" FORCE)
+
+    # Include "None" as option to disable any additional (optimization) flags,
+    # relying on just CMAKE_C_FLAGS and CMAKE_CXX_FLAGS (which are empty by
+    # default). These strings are presented in cmake-gui.
+    set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS
+        "None" "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
+endif()
+
 #
 # Find Build Tools
 #
@@ -577,16 +590,6 @@ foreach(_cxx1x_flag -std=c++14 -std=c++11)
         break()
     endif()
 endforeach()
-
-if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
-    set(CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING "Choose the build type" FORCE)
-
-    # Include "None" as option to disable any additional (optimization) flags,
-    # relying on just CMAKE_C_FLAGS and CMAKE_CXX_FLAGS (which are empty by
-    # default). These strings are presented in cmake-gui.
-    set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS
-        "None" "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
-endif()
 
 # Always use '-fPIC'/'-fPIE' option.
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
