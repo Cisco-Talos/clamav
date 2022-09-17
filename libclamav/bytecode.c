@@ -102,37 +102,14 @@ static void context_safe(struct cli_bc_ctx *ctx)
         ctx->hooks.pedata = &nopedata;
 }
 
-static cl_error_t cli_bytecode_context_reset(struct cli_bc_ctx *ctx);
-struct cli_bc_ctx *cli_bytecode_context_alloc(void)
-{
-    struct cli_bc_ctx *ctx = cli_calloc(1, sizeof(*ctx));
-    if (!ctx) {
-        cli_errmsg("Out of memory allocating cli_bytecode_context_reset\n");
-        return NULL;
-    }
-    ctx->bytecode_timeout = 60000;
-    cli_bytecode_context_reset(ctx);
-    return ctx;
-}
-
-void cli_bytecode_context_destroy(struct cli_bc_ctx *ctx)
-{
-    cli_bytecode_context_clear(ctx);
-    free(ctx);
-}
-
-int cli_bytecode_context_getresult_file(struct cli_bc_ctx *ctx, char **tempfilename)
-{
-    int fd;
-    *tempfilename = ctx->tempfile;
-    fd            = ctx->outfd;
-    ctx->tempfile = NULL;
-    ctx->outfd    = 0;
-    return fd;
-}
-
-/* resets bytecode state, so you can run another bytecode with same ctx */
-static cl_error_t cli_bytecode_context_reset(struct cli_bc_ctx *ctx)
+/**
+ * @brief Reset bytecode state, so you can run another bytecode with same ctx.
+ *
+ * IMPORTANT: This function does not clear/reset all fields in the context!
+ *
+ * @param ctx
+ */
+static void bytecode_context_reset(struct cli_bc_ctx *ctx)
 {
     unsigned i;
 
@@ -145,17 +122,18 @@ static cl_error_t cli_bytecode_context_reset(struct cli_bc_ctx *ctx)
     free(ctx->operands);
     ctx->operands = NULL;
 
-    if (ctx->outfd) {
+    if (-1 != ctx->outfd) {
+        close(ctx->outfd);
+        ctx->outfd = -1;
+
         cli_ctx *cctx = ctx->ctx;
-        if (ctx->outfd)
-            close(ctx->outfd);
         if (ctx->tempfile && (!cctx || !cctx->engine->keeptmp)) {
             cli_unlink(ctx->tempfile);
         }
         free(ctx->tempfile);
         ctx->tempfile = NULL;
-        ctx->outfd    = 0;
     }
+
     if (ctx->jsnormdir) {
         char fullname[1025];
         cli_ctx *cctx = ctx->ctx;
@@ -179,13 +157,18 @@ static cl_error_t cli_bytecode_context_reset(struct cli_bc_ctx *ctx)
                 close(fd);
             }
         }
+
         if (!cctx || !cctx->engine->keeptmp) {
             cli_rmdirs(ctx->jsnormdir);
         }
+
         free(ctx->jsnormdir);
-        if (ret != CL_CLEAN)
+
+        if (ret != CL_SUCCESS) {
             ctx->found = 1;
+        }
     }
+
     ctx->numParams = 0;
     ctx->funcid    = 0;
     /* don't touch fmap, file_size, and hooks, sections, ctx, timeout, pdf* */
@@ -255,14 +238,46 @@ static cl_error_t cli_bytecode_context_reset(struct cli_bc_ctx *ctx)
 #endif
 
     ctx->containertype = CL_TYPE_ANY;
-    return CL_SUCCESS;
 }
 
-cl_error_t cli_bytecode_context_clear(struct cli_bc_ctx *ctx)
-{
-    cli_bytecode_context_reset(ctx);
+static inline void bytecode_context_initialize(struct cli_bc_ctx *ctx) {
     memset(ctx, 0, sizeof(*ctx));
-    return CL_SUCCESS;
+
+    ctx->bytecode_timeout = 60000;
+
+    // 0 (aka stdin) is not a valid fd for `outfd`.
+    // If encountered, we should initialize it to -1 instead.
+    ctx->outfd = -1;
+}
+
+struct cli_bc_ctx *cli_bytecode_context_alloc(void)
+{
+    struct cli_bc_ctx *ctx = cli_malloc(sizeof(*ctx));
+    if (!ctx) {
+        cli_errmsg("Failed to allocate bytecode context\n");
+        return NULL;
+    }
+
+    bytecode_context_initialize(ctx);
+    bytecode_context_reset(ctx);
+
+    return ctx;
+}
+
+void cli_bytecode_context_destroy(struct cli_bc_ctx *ctx)
+{
+    bytecode_context_reset(ctx);
+    free(ctx);
+}
+
+int cli_bytecode_context_getresult_file(struct cli_bc_ctx *ctx, char **tempfilename)
+{
+    int fd;
+    *tempfilename = ctx->tempfile;
+    fd            = ctx->outfd;
+    ctx->tempfile = NULL;
+    ctx->outfd    = -1;
+    return fd;
 }
 
 static unsigned typesize(const struct cli_bc *bc, uint16_t type)
@@ -2802,7 +2817,7 @@ cl_error_t cli_bytecode_runlsig(cli_ctx *cctx, struct cli_target_info *tinfo,
         bc_name = bc->hook_name;
     }
 
-    memset(&ctx, 0, sizeof(ctx));
+    bytecode_context_initialize(&ctx);
     cli_bytecode_context_setfuncid(&ctx, bc, 0);
     ctx.hooks.match_counts  = lsigcnt;
     ctx.hooks.match_offsets = lsigsuboff;
@@ -2827,7 +2842,7 @@ cl_error_t cli_bytecode_runlsig(cli_ctx *cctx, struct cli_target_info *tinfo,
         /* save match counts */
         memcpy(&ctx.lsigcnt, lsigcnt, 64 * 4);
         memcpy(&ctx.lsigoff, lsigsuboff, 64 * 4);
-        cli_bytecode_context_clear(&ctx);
+        bytecode_context_reset(&ctx);
         return CL_SUCCESS;
     }
 
@@ -2835,7 +2850,7 @@ cl_error_t cli_bytecode_runlsig(cli_ctx *cctx, struct cli_target_info *tinfo,
     ret = cli_bytecode_run(bcs, bc, &ctx);
     if (ret != CL_SUCCESS) {
         cli_warnmsg("Bytecode '%s' (id: %u) failed to run: %s\n", bc_name, bc->id, cl_strerror(ret));
-        cli_bytecode_context_clear(&ctx);
+        bytecode_context_reset(&ctx);
         return CL_SUCCESS;
     }
     if (ctx.virname) {
@@ -2844,12 +2859,12 @@ cl_error_t cli_bytecode_runlsig(cli_ctx *cctx, struct cli_target_info *tinfo,
 
         rc = cli_append_virus(cctx, ctx.virname);
 
-        cli_bytecode_context_clear(&ctx);
+        bytecode_context_reset(&ctx);
         return rc;
     }
     ret = cli_bytecode_context_getresult_int(&ctx);
     cli_dbgmsg("Bytecode '%s' (id: %u) returned code: %u\n", bc_name, bc->id, ret);
-    cli_bytecode_context_clear(&ctx);
+    bytecode_context_reset(&ctx);
     return CL_SUCCESS;
 }
 
@@ -2894,10 +2909,10 @@ cl_error_t cli_bytecode_runhook(cli_ctx *cctx, const struct cl_engine *engine, s
                 ret = cli_append_virus(cctx, ctx->virname);
             }
             if (ret == CL_VIRUS) {
-                cli_bytecode_context_clear(ctx);
+                bytecode_context_reset(ctx);
                 return CL_VIRUS;
             }
-            cli_bytecode_context_reset(ctx);
+            bytecode_context_reset(ctx);
             continue;
         }
         ret = cli_bytecode_context_getresult_int(ctx);
@@ -2942,15 +2957,15 @@ cl_error_t cli_bytecode_runhook(cli_ctx *cctx, const struct cl_engine *engine, s
 
                 if (ret != CL_SUCCESS) {
                     cli_dbgmsg("Scanning unpacked file by bytecode %u found a reason to stop: %s\n", bc->id, cl_strerror(ret));
-                    cli_bytecode_context_clear(ctx);
+                    bytecode_context_reset(ctx);
                     return ret;
                 }
 
-                cli_bytecode_context_reset(ctx);
+                bytecode_context_reset(ctx);
                 continue;
             }
         }
-        cli_bytecode_context_reset(ctx);
+        bytecode_context_reset(ctx);
     }
     if (executed)
         cli_dbgmsg("Bytecode: executed %u bytecodes for this hook\n", executed);

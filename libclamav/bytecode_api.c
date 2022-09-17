@@ -220,7 +220,7 @@ int32_t cli_bcapi_write(struct cli_bc_ctx *ctx, uint8_t *data, int32_t len)
         API_MISUSE();
         return -1;
     }
-    if (!ctx->outfd) {
+    if (-1 == ctx->outfd) {
         ctx->tempfile = cli_gentemp_with_prefix(cctx ? cctx->sub_tmpdir : NULL, "bcapi_write");
         if (!ctx->tempfile) {
             cli_dbgmsg("Bytecode API: Unable to allocate memory for tempfile\n");
@@ -229,7 +229,6 @@ int32_t cli_bcapi_write(struct cli_bc_ctx *ctx, uint8_t *data, int32_t len)
         }
         ctx->outfd = open(ctx->tempfile, O_RDWR | O_CREAT | O_EXCL | O_TRUNC | O_BINARY, 0600);
         if (ctx->outfd == -1) {
-            ctx->outfd = 0;
             cli_warnmsg("Bytecode API: Can't create file %s: %s\n", ctx->tempfile, cli_strerror(errno, err, sizeof(err)));
             cli_event_error_str(EV, "cli_bcapi_write: Can't create temporary file");
             free(ctx->tempfile);
@@ -558,13 +557,14 @@ int32_t cli_bcapi_extract_new(struct cli_bc_ctx *ctx, int32_t id)
     }
     if ((cctx && cctx->engine->keeptmp) ||
         (ftruncate(ctx->outfd, 0) == -1)) {
-
         close(ctx->outfd);
-        if (!(cctx && cctx->engine->keeptmp) && ctx->tempfile)
+        ctx->outfd = -1;
+
+        if (!(cctx && cctx->engine->keeptmp) && ctx->tempfile) {
             cli_unlink(ctx->tempfile);
+        }
         free(ctx->tempfile);
         ctx->tempfile = NULL;
-        ctx->outfd    = 0;
     }
     cli_dbgmsg("bytecode: extracting new file with id %u\n", id);
     return res;
