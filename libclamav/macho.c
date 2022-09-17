@@ -583,7 +583,6 @@ cl_error_t cli_unpackmacho(cli_ctx *ctx)
     char *tempfile = NULL;
     int ndesc      = -1;
     struct cli_bc_ctx *bc_ctx;
-    bool bc_ctx_set = false;
 
     /* Bytecode BC_MACHO_UNPACKER hook */
     bc_ctx = cli_bytecode_context_alloc();
@@ -594,7 +593,6 @@ cl_error_t cli_unpackmacho(cli_ctx *ctx)
     }
 
     cli_bytecode_context_setctx(bc_ctx, ctx);
-    bc_ctx_set = true;
 
     cli_dbgmsg("Running bytecode hook\n");
     ret = cli_bytecode_runhook(ctx, ctx->engine, bc_ctx, BC_MACHO_UNPACKER, ctx->fmap);
@@ -624,7 +622,7 @@ done:
         free(tempfile);
     }
 
-    if (bc_ctx_set) {
+    if (NULL != bc_ctx) {
         cli_bytecode_context_destroy(bc_ctx);
     }
 
