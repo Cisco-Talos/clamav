@@ -1893,10 +1893,10 @@ static cl_error_t cli_ole2_tempdir_scan_vba(const char *dir, cli_ctx *ctx, struc
                         close(proj_contents_fd);
                         proj_contents_fd = -1;
 
+                        cli_dbgmsg("cli_ole2_tempdir_scan_vba: VBA project '%s_%u' dumped to %s\n", vba_project->name[i], j, proj_contents_fname);
+
                         free(proj_contents_fname);
                         proj_contents_fname = NULL;
-
-                        cli_dbgmsg("cli_ole2_tempdir_scan_vba: VBA project '%s_%u' dumped to %s\n", vba_project->name[i], j, proj_contents_fname);
                     }
 
                     status = vba_scandata(data, data_len, ctx);
@@ -4129,10 +4129,8 @@ static inline bool result_should_goto_done(cli_ctx *ctx, cl_error_t result_in, c
     }
 
     if (NULL != ctx && ctx->abort_scan) {
-        // this covers CL_ETIMEOUT and CL_VIRUS at a minimum.
-        halt_scan   = true;
-        *result_out = result_in;
-        goto done;
+        // ensure abort_scan is respected
+        halt_scan = true;
     }
 
     switch (result_in) {
@@ -4459,6 +4457,7 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
 
     if (cache_check_result != CL_VIRUS) {
         cli_dbgmsg("cli_magic_scan: returning %d %s (no post, no cache)\n", ret, __AT__);
+        ret = CL_SUCCESS;
         goto early_ret;
     }
 
@@ -5634,6 +5633,10 @@ static cl_error_t scan_common(cl_fmap_t *map, const char *filepath, const char *
     }
 
 done:
+    // Filter the result from the post-scan hooks and stuff, so we don't propagate non-fatal errors.
+    // And to convert CL_VERIFIED -> CL_CLEAN
+    (void)result_should_goto_done(&ctx, status, &status);
+
     if (logg_initalized) {
         cli_logg_unsetup();
     }
