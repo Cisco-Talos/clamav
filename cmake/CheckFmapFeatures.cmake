@@ -4,6 +4,15 @@ include(CheckSymbolExists)
 include(CheckFunctionExists)
 include(CheckCSourceCompiles)
 
+# Extra -D Compile Definitions for check_c_source_compiles()
+set(CMAKE_REQUIRED_DEFINITIONS "")
+if(HAVE_SYS_TYPES_H)
+    set(CMAKE_REQUIRED_DEFINITIONS "${CMAKE_REQUIRED_DEFINITIONS};-DHAVE_SYS_TYPES_H=1")
+endif()
+if(HAVE_SYS_STAT_H)
+    set(CMAKE_REQUIRED_DEFINITIONS "${CMAKE_REQUIRED_DEFINITIONS};-DHAVE_SYS_STAT_H=1")
+endif()
+
 # Check for mmap() support, required for HAVE_MPOOL.
 #
 # checks for private fixed mappings, we don't need fixed mappings,
