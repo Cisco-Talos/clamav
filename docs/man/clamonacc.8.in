@@ -26,7 +26,7 @@ Save the scan report to FILE.
 \fB\-F, \-\-foreground\fR
 Run in foreground; do not daemonize.
 .TP
-\fB\-w FILE, \-\-watch\-list=FILE\fR
+\fB\-W FILE, \-\-watch\-list=FILE\fR
 Watch directories from FILE.
 .TP
 \fB\-e FILE, \-\-exclude\-list=FILE\fR
