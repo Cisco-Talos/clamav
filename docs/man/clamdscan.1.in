@@ -66,6 +66,9 @@ Request clamd to reload virus database.
 \fB\-\-allmatch\fR
 Continue scanning within file after finding a match.
 .TP
+\fB\-i, \-\-infected\fR
+Only print infected files
+.TP
 \fB\-\-fdpass\fR
 Pass the file descriptor permissions to clamd. This is useful if clamd is running as a different user as it is faster than streaming the file to clamd.
 Only available if connected to clamd via local(unix) socket.
