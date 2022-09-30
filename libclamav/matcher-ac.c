@@ -305,6 +305,57 @@ static void link_lists(struct cli_matcher *root)
     }
 }
 
+/**
+ * @brief Inserts newly malloced trans node in the array of nodes to be freed on
+ * cleanup.  There is no verification that the added node is not already in the
+ * list, so that is up to the caller.
+ *
+ * @param root      The matcher root.
+ * @param trans     The trans node to be tracked.
+ * @return bool
+ */
+static bool store_trans_node(struct cli_matcher *root, void *trans)
+{
+    bool bRet = false;
+
+    if (root->trans_cnt + 1 > root->trans_capacity) {
+        uint64_t newCapacity = root->trans_capacity + 1024;
+        void *ret            = MPOOL_REALLOC(root->mempool, root->trans_array, newCapacity * sizeof(void *));
+        if (NULL == ret) {
+            cli_errmsg("cli_ac_addpatt: Can't allocate memory for cleanup storage of trans\n");
+            goto done;
+        }
+        root->trans_capacity = newCapacity;
+        root->trans_array    = ret;
+    }
+
+    root->trans_array[root->trans_cnt++] = trans;
+
+    bRet = true;
+done:
+    return bRet;
+}
+
+/**
+ * @brief Frees all trans nodes for cleanup.
+ * cleanup.
+ *
+ * @param root      The matcher root.
+ */
+static void free_trans_nodes(struct cli_matcher *root)
+{
+    uint32_t i = 0;
+
+    for (i = 0; i < root->trans_cnt; i++) {
+        MPOOL_FREE(root->mempool, root->trans_array[i]);
+    }
+
+    MPOOL_FREE(root->mempool, root->trans_array);
+    root->trans_array    = NULL;
+    root->trans_cnt      = 0;
+    root->trans_capacity = 0;
+}
+
 static inline struct cli_ac_node *add_new_node(struct cli_matcher *root, uint16_t i, uint16_t len)
 {
     struct cli_ac_node *new;
@@ -320,6 +371,12 @@ static inline struct cli_ac_node *add_new_node(struct cli_matcher *root, uint16_
         new->trans = (struct cli_ac_node **)MPOOL_CALLOC(root->mempool, 256, sizeof(struct cli_ac_node *));
         if (!new->trans) {
             cli_errmsg("cli_ac_addpatt: Can't allocate memory for new->trans\n");
+            MPOOL_FREE(root->mempool, new);
+            return NULL;
+        }
+
+        if (!store_trans_node(root, new->trans)) {
+            /* Error printed in store_trans_node */
             MPOOL_FREE(root->mempool, new);
             return NULL;
         }
@@ -357,6 +414,10 @@ static int cli_ac_addpatt_recursive(struct cli_matcher *root, struct cli_ac_patt
         pt->trans = (struct cli_ac_node **)MPOOL_CALLOC(root->mempool, 256, sizeof(struct cli_ac_node *));
         if (!pt->trans) {
             cli_errmsg("cli_ac_addpatt: Can't allocate memory for pt->trans\n");
+            return CL_EMEM;
+        }
+        if (!store_trans_node(root, pt->trans)) {
+            /* Error printed in store_trans_node */
             return CL_EMEM;
         }
     }
@@ -654,32 +715,6 @@ static void ac_free_special(struct cli_ac_patt *p)
     MPOOL_FREE(mempool, p->special_table);
 }
 
-/*
- * This is a test to see if we have already seen this pointer.  If we have, we
- * have already freed it, so don't do it again (double-free)
- */
-static int need_to_free_trans(struct cli_matcher *root, const size_t idx)
-{
-    size_t j;
-    size_t min = idx;
-    if (root->ac_nodes < idx) {
-        /*Should never happen, but check just to be safe.*/
-        min = root->ac_nodes;
-    }
-
-    for (j = 0; j < min; j++) {
-        if (NULL == root->ac_nodetable[j]) {
-            continue;
-        }
-
-        if (root->ac_nodetable[idx]->trans == root->ac_nodetable[j]->trans) {
-            return 0;
-        }
-    }
-
-    return 1;
-}
-
 void cli_ac_free(struct cli_matcher *root)
 {
     uint32_t i               = 0;
@@ -708,17 +743,6 @@ void cli_ac_free(struct cli_matcher *root)
         MPOOL_FREE(root->mempool, root->ac_reloff);
     }
 
-    /* Freeing trans nodes must be done before freeing table nodes! */
-    for (i = 0; i < root->ac_nodes; i++) {
-        if (!IS_LEAF(root->ac_nodetable[i]) &&
-            root->ac_root->trans != root->ac_nodetable[i]->trans) {
-
-            if (need_to_free_trans(root, i)) {
-                MPOOL_FREE(root->mempool, root->ac_nodetable[i]->trans);
-            }
-        }
-    }
-
     for (i = 0; i < root->ac_lists; i++) {
         MPOOL_FREE(root->mempool, root->ac_listtable[i]);
     }
@@ -743,6 +767,8 @@ void cli_ac_free(struct cli_matcher *root)
     if (root->filter) {
         MPOOL_FREE(root->mempool, root->filter);
     }
+
+    free_trans_nodes(root);
 }
 
 /*
@@ -2301,9 +2327,13 @@ inline static int ac_uicmp(uint16_t *a, size_t alen, uint16_t *b, size_t blen, i
 /* add new generic alternate node to special */
 inline static int ac_addspecial_add_alt_node(const char *subexpr, uint8_t sigopts, struct cli_ac_special *special, struct cli_matcher *root)
 {
-    struct cli_alt_node *newnode, **prev, *ins;
-    uint16_t *s;
-    int i, cmp, wild;
+    struct cli_alt_node *newnode = NULL;
+    struct cli_alt_node **prev   = NULL;
+    struct cli_alt_node *ins     = NULL;
+    uint16_t *s                  = NULL;
+    int i                        = 0;
+    int cmp                      = 0;
+    int wild                     = 0;
 
 #ifndef USE_MPOOL
     UNUSEDPARAM(root);

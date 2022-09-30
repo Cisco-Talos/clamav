@@ -174,6 +174,11 @@ struct cli_matcher {
     /* Bytecode Tracker */
     uint32_t linked_bcs;
 
+    /*Store pointers to malloced trans values so that they can be more easily freed*/
+    struct cli_ac_node **trans_array;
+    size_t trans_cnt;
+    size_t trans_capacity;
+
 #ifdef USE_MPOOL
     mpool_t *mempool;
 #else
