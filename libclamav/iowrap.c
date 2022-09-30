@@ -19,7 +19,7 @@
  *  MA 02110-1301, USA.
  *
  */
-
+#include "clamav.h"
 #include "iowrap.h"
 
 #include <string.h>
@@ -43,9 +43,9 @@ int filter_memcpy(unsigned int code, struct _EXCEPTION_POINTERS *ep)
 }
 #endif
 
-int cli_memcpy(void *target, const void *source, unsigned long size)
+cl_error_t cli_memcpy(void *target, const void *source, unsigned long size)
 {
-    int ret = 0;
+    cl_error_t ret = CL_SUCCESS;
 
 #ifdef _WIN32
     __try {
@@ -53,7 +53,7 @@ int cli_memcpy(void *target, const void *source, unsigned long size)
         memcpy(target, source, size);
 #ifdef _WIN32
     } __except (filter_memcpy(GetExceptionCode(), GetExceptionInformation())) {
-        ret = 1;
+        ret = CL_EACCES;
     }
 #endif
     return ret;

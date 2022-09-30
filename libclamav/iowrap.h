@@ -37,11 +37,17 @@
 #include <excpt.h>
 #endif
 
-/*
- * cli_memcpy is an io wrapper that will allow ClamAV to minimize impact of
- * adding SEH logic around map accesses where Windows might raise an error
+/**
+ * @brief memcpy that will not crash if Windows fails to read from memory mapped file.
+ *
+ * cli_memcpy is an io wrapper that will allow ClamAV to minimize impact of adding SEH logic around map accesses where Windows might raise an error.
+ *
+ * @param target
+ * @param source
+ * @param size
+ * @return cl_error_t
  */
-int cli_memcpy(void *target, const void *source, unsigned long size);
+cl_error_t cli_memcpy(void *target, const void *source, unsigned long size);
 
 #ifdef _WIN32
 int filter_memcpy(unsigned int code, struct _EXCEPTION_POINTERS *ep);
