@@ -1180,6 +1180,8 @@ static cl_error_t hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHea
 
                                 written = cli_writen(ofd, uncompressed, header.fileSize);
 
+                                extracted_file = true;
+
                                 free(uncompressed);
                                 uncompressed = NULL;
                             }
@@ -1237,7 +1239,7 @@ static cl_error_t hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHea
                                         cli_dbgmsg("hfsplus_walk_catalog: Failed to read block table\n");
                                     } else {
                                         uint8_t block[4096];
-                                        uint8_t uncompressed[4096];
+                                        uint8_t uncompressed_block[4096];
                                         unsigned curBlock;
 
                                         for (curBlock = 0; status == CL_SUCCESS && curBlock < numBlocks; ++curBlock) {
@@ -1279,8 +1281,8 @@ static cl_error_t hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHea
                                                         stream.opaque    = Z_NULL;
                                                         stream.avail_in  = readLen;
                                                         stream.next_in   = block;
-                                                        stream.avail_out = sizeof(uncompressed);
-                                                        stream.next_out  = uncompressed;
+                                                        stream.avail_out = sizeof(uncompressed_block);
+                                                        stream.next_out  = uncompressed_block;
 
                                                         if (Z_OK != (z_ret = inflateInit2(&stream, 15))) {
                                                             cli_dbgmsg("hfsplus_walk_catalog: inflateInit2 failed (%d)\n", z_ret);
@@ -1293,8 +1295,8 @@ static cl_error_t hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHea
                                                 if (streamCompressed) {
                                                     stream.avail_in  = readLen;
                                                     stream.next_in   = block;
-                                                    stream.avail_out = sizeof(uncompressed);
-                                                    stream.next_out  = uncompressed;
+                                                    stream.avail_out = sizeof(uncompressed_block);
+                                                    stream.next_out  = uncompressed_block;
 
                                                     while (stream.avail_in > 0) {
                                                         z_ret = inflate(&stream, Z_NO_FLUSH);
@@ -1304,14 +1306,14 @@ static cl_error_t hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHea
                                                             goto done;
                                                         }
 
-                                                        if (cli_writen(ofd, &uncompressed, sizeof(uncompressed) - stream.avail_out) != sizeof(uncompressed) - stream.avail_out) {
+                                                        if (cli_writen(ofd, &uncompressed_block, sizeof(uncompressed_block) - stream.avail_out) != sizeof(uncompressed_block) - stream.avail_out) {
                                                             cli_dbgmsg("hfsplus_walk_catalog: Failed to write to temporary file\n");
                                                             status = CL_EWRITE;
                                                             goto done;
                                                         }
-                                                        written += sizeof(uncompressed) - stream.avail_out;
-                                                        stream.avail_out = sizeof(uncompressed);
-                                                        stream.next_out  = uncompressed;
+                                                        written += sizeof(uncompressed_block) - stream.avail_out;
+                                                        stream.avail_out = sizeof(uncompressed_block);
+                                                        stream.next_out  = uncompressed_block;
 
                                                         extracted_file = true;
                                                     }
@@ -1432,7 +1434,6 @@ static cl_error_t hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHea
 done:
     if (table) {
         free(table);
-        table = NULL;
     }
     if (-1 != ifd) {
         close(ifd);
@@ -1453,7 +1454,6 @@ done:
                 goto done;
             }
         }
-
         free(tmpname);
     }
     if (NULL != nodeBuf) {
@@ -1462,9 +1462,8 @@ done:
     if (NULL != name_utf8) {
         free(name_utf8);
     }
-    if (NULL != name_utf8) {
-        free(name_utf8);
-        name_utf8 = NULL;
+    if (NULL != uncompressed) {
+        free(uncompressed);
     }
 
     return status;
