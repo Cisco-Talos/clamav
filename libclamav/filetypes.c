@@ -278,7 +278,7 @@ cli_file_t cli_determine_fmap_type(fmap_t *map, const struct cl_engine *engine, 
     const unsigned char *buff;
     unsigned char *decoded;
     int bread;
-    cli_file_t sret;
+    cli_file_t scan_ret;
     cli_file_t ret = CL_TYPE_BINARY_DATA;
     struct cli_matcher *root;
     struct cli_ac_data mdata;
@@ -300,12 +300,10 @@ cli_file_t cli_determine_fmap_type(fmap_t *map, const struct cl_engine *engine, 
 
     buff = fmap_need_off_once(map, 0, bread);
     if (buff) {
-        sret = cli_memcpy(buffer, buff, bread);
-        if (sret) {
+        if (CL_SUCCESS != cli_memcpy(buffer, buff, bread)) {
             cli_errmsg("cli_determine_fmap_type: fileread error!\n");
             return CL_TYPE_ERROR;
         }
-        sret = 0;
     } else {
         return CL_TYPE_ERROR;
     }
@@ -414,21 +412,21 @@ cli_file_t cli_determine_fmap_type(fmap_t *map, const struct cl_engine *engine, 
         if (cli_ac_initdata(&mdata, root->ac_partsigs, root->ac_lsigs, root->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN))
             return ret;
 
-        sret = cli_ac_scanbuff(buff, bread, NULL, NULL, NULL, engine->root[0], &mdata, 0, ret, NULL, AC_SCAN_FT, NULL);
+        scan_ret = (cli_file_t)cli_ac_scanbuff(buff, bread, NULL, NULL, NULL, engine->root[0], &mdata, 0, ret, NULL, AC_SCAN_FT, NULL);
 
         cli_ac_freedata(&mdata);
 
-        if (sret >= CL_TYPENO) {
-            ret = sret;
+        if (scan_ret >= CL_TYPENO) {
+            ret = scan_ret;
         } else {
             if (cli_ac_initdata(&mdata, root->ac_partsigs, root->ac_lsigs, root->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN))
                 return ret;
 
             decoded = (unsigned char *)cli_utf16toascii((char *)buff, bread);
             if (decoded) {
-                sret = cli_ac_scanbuff(decoded, bread / 2, NULL, NULL, NULL, engine->root[0], &mdata, 0, CL_TYPE_TEXT_ASCII, NULL, AC_SCAN_FT, NULL);
+                scan_ret = (cli_file_t)cli_ac_scanbuff(decoded, bread / 2, NULL, NULL, NULL, engine->root[0], &mdata, 0, CL_TYPE_TEXT_ASCII, NULL, AC_SCAN_FT, NULL);
                 free(decoded);
-                if (sret == CL_TYPE_HTML)
+                if (scan_ret == CL_TYPE_HTML)
                     ret = CL_TYPE_HTML_UTF16;
             }
             cli_ac_freedata(&mdata);
@@ -461,8 +459,8 @@ cli_file_t cli_determine_fmap_type(fmap_t *map, const struct cl_engine *engine, 
                             return ret;
 
                         if (out_area.length > 0) {
-                            sret = cli_ac_scanbuff(decodedbuff, out_area.length, NULL, NULL, NULL, engine->root[0], &mdata, 0, 0, NULL, AC_SCAN_FT, NULL); /* FIXME: can we use CL_TYPE_TEXT_ASCII instead of 0? */
-                            if (sret == CL_TYPE_HTML) {
+                            scan_ret = (cli_file_t)cli_ac_scanbuff(decodedbuff, out_area.length, NULL, NULL, NULL, engine->root[0], &mdata, 0, 0, NULL, AC_SCAN_FT, NULL); /* FIXME: can we use CL_TYPE_TEXT_ASCII instead of 0? */
+                            if (scan_ret == CL_TYPE_HTML) {
                                 cli_dbgmsg("cli_determine_fmap_type: detected HTML signature in Unicode file\n");
                                 /* htmlnorm is able to handle any unicode now, since it skips null chars */
                                 ret = CL_TYPE_HTML;
