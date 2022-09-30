@@ -1139,12 +1139,12 @@ cl_error_t fmap_get_hash(fmap_t *map, unsigned char **hash, cli_hash_type_t type
             }
             break;
         case CLI_HASH_SHA1:
-            if (map->have_md5) {
+            if (map->have_sha1) {
                 goto complete;
             }
             break;
         case CLI_HASH_SHA256:
-            if (map->have_md5) {
+            if (map->have_sha256) {
                 goto complete;
             }
             break;
