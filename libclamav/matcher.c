@@ -850,83 +850,91 @@ static cl_error_t lsig_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_a
     if (status != CL_SUCCESS)
         return status;
 
-    if (cli_ac_chklsig(exp, exp_end, acdata->lsigcnt[lsid], &evalcnt, &evalids, 0) == 1) {
-        if (ac_lsig->tdb.container && ac_lsig->tdb.container[0] != cli_recursion_stack_get_type(ctx, -2))
+    if (cli_ac_chklsig(exp, exp_end, acdata->lsigcnt[lsid], &evalcnt, &evalids, 0) != 1) {
+        // Logical expression did not match.
+        goto done;
+    }
+
+    // Logical expression matched.
+    // Need to check the other conditions, like target description block, icon group, bytecode, etc.
+
+    if (ac_lsig->tdb.container && ac_lsig->tdb.container[0] != cli_recursion_stack_get_type(ctx, -2))
+        goto done;
+    if (ac_lsig->tdb.intermediates && !intermediates_eval(ctx, ac_lsig))
+        goto done;
+    if (ac_lsig->tdb.filesize && (ac_lsig->tdb.filesize[0] > ctx->fmap->len || ac_lsig->tdb.filesize[1] < ctx->fmap->len))
+        goto done;
+
+    if (ac_lsig->tdb.ep || ac_lsig->tdb.nos) {
+        if (!target_info || target_info->status != 1)
             goto done;
-        if (ac_lsig->tdb.intermediates && !intermediates_eval(ctx, ac_lsig))
+        if (ac_lsig->tdb.ep && (ac_lsig->tdb.ep[0] > target_info->exeinfo.ep || ac_lsig->tdb.ep[1] < target_info->exeinfo.ep))
             goto done;
-        if (ac_lsig->tdb.filesize && (ac_lsig->tdb.filesize[0] > ctx->fmap->len || ac_lsig->tdb.filesize[1] < ctx->fmap->len))
+        if (ac_lsig->tdb.nos && (ac_lsig->tdb.nos[0] > target_info->exeinfo.nsections || ac_lsig->tdb.nos[1] < target_info->exeinfo.nsections))
             goto done;
+    }
 
-        if (ac_lsig->tdb.ep || ac_lsig->tdb.nos) {
-            if (!target_info || target_info->status != 1)
-                goto done;
-            if (ac_lsig->tdb.ep && (ac_lsig->tdb.ep[0] > target_info->exeinfo.ep || ac_lsig->tdb.ep[1] < target_info->exeinfo.ep))
-                goto done;
-            if (ac_lsig->tdb.nos && (ac_lsig->tdb.nos[0] > target_info->exeinfo.nsections || ac_lsig->tdb.nos[1] < target_info->exeinfo.nsections))
-                goto done;
-        }
+    if (ac_lsig->tdb.handlertype) {
+        // This logical signature has a handler type, which means it's effectively a complex file type signature.
+        // Instead of alerting, we'll make a duplicate fmap (add recursion depth, to prevent infinite loops) and
+        // scan the file with the handler type.
 
-        if (hash && ac_lsig->tdb.handlertype) {
-            if (0 != memcmp(ctx->handlertype_hash, hash, 16)) {
-                /*
-                 * Create an fmap window into our current fmap using the original offset & length, and rescan as the new type
-                 *
-                 * TODO: Unsure if creating an fmap is the right move, or if we should rescan with the current fmap as-is,
-                 * since it's not really a container so much as it is type reassignment. This new fmap layer protect agains
-                 * a possible infinite loop by applying the scan recursion limit, but maybe there's a better way?
-                 * Testing with both HandlerType type reassignment sigs + Container/Intermediates sigs should indicate if
-                 * a change is needed.
-                 */
-                new_map = fmap_duplicate(ctx->fmap, 0, ctx->fmap->len, ctx->fmap->name);
-                if (NULL == new_map) {
-                    status = CL_EMEM;
-                    cli_dbgmsg("Failed to duplicate the current fmap for a re-scan as a different type.\n");
-                    goto done;
-                }
-
-                memcpy(ctx->handlertype_hash, hash, 16);
-
-                status = cli_recursion_stack_push(ctx, new_map, ac_lsig->tdb.handlertype[0], true, LAYER_ATTRIBUTES_NONE); /* Perform scan with child fmap */
-                if (CL_SUCCESS != status) {
-                    cli_dbgmsg("Failed to re-scan fmap as a new type.\n");
-                    goto done;
-                }
-
-                status = cli_magic_scan(ctx, ac_lsig->tdb.handlertype[0]);
-
-                (void)cli_recursion_stack_pop(ctx); /* Restore the parent fmap */
-
-                goto done;
-            }
-        }
-
-        if (ac_lsig->tdb.icongrp1 || ac_lsig->tdb.icongrp2) {
-            if (!target_info || target_info->status != 1) {
+        if (hash && 0 != memcmp(ctx->handlertype_hash, hash, 16)) {
+            /*
+             * Create an fmap window into our current fmap using the original offset & length, and rescan as the new type
+             *
+             * TODO: Unsure if creating an fmap is the right move, or if we should rescan with the current fmap as-is,
+             * since it's not really a container so much as it is type reassignment. This new fmap layer protect agains
+             * a possible infinite loop by applying the scan recursion limit, but maybe there's a better way?
+             * Testing with both HandlerType type reassignment sigs + Container/Intermediates sigs should indicate if
+             * a change is needed.
+             */
+            new_map = fmap_duplicate(ctx->fmap, 0, ctx->fmap->len, ctx->fmap->name);
+            if (NULL == new_map) {
+                status = CL_EMEM;
+                cli_dbgmsg("Failed to duplicate the current fmap for a re-scan as a different type.\n");
                 goto done;
             }
 
-            if (CL_VIRUS == matchicon(ctx, &target_info->exeinfo, ac_lsig->tdb.icongrp1, ac_lsig->tdb.icongrp2)) {
-                if (!ac_lsig->bc_idx) {
-                    status = cli_append_virus(ctx, ac_lsig->virname);
-                    if (status != CL_SUCCESS) {
-                        goto done;
-                    }
-                } else {
-                    status = cli_bytecode_runlsig(ctx, target_info, &ctx->engine->bcs, ac_lsig->bc_idx, acdata->lsigcnt[lsid], acdata->lsigsuboff_first[lsid], ctx->fmap);
-                    if (CL_SUCCESS != status) {
-                        goto done;
-                    }
-                }
-            }
-            goto done;
-        }
-        if (!ac_lsig->bc_idx) {
-            status = cli_append_virus(ctx, ac_lsig->virname);
-            if (status != CL_SUCCESS) {
+            memcpy(ctx->handlertype_hash, hash, 16);
+
+            status = cli_recursion_stack_push(ctx, new_map, ac_lsig->tdb.handlertype[0], true, LAYER_ATTRIBUTES_NONE); /* Perform scan with child fmap */
+            if (CL_SUCCESS != status) {
+                cli_dbgmsg("Failed to re-scan fmap as a new type.\n");
                 goto done;
             }
+
+            status = cli_magic_scan(ctx, ac_lsig->tdb.handlertype[0]);
+
+            (void)cli_recursion_stack_pop(ctx); /* Restore the parent fmap */
+
+            goto done;
         }
+    }
+
+    if (ac_lsig->tdb.icongrp1 || ac_lsig->tdb.icongrp2) {
+        // Logical sig depends on icon match. Check for the icon match.
+
+        if (!target_info || target_info->status != TARGET_PE) {
+            // Icon group feature only applies to PE files, so target description must match a PE file.
+            // This is a signature issue and should have been caught at load time, but just in case, we're checking again here.
+            goto done;
+        }
+
+        if (CL_VIRUS != matchicon(ctx, &target_info->exeinfo, ac_lsig->tdb.icongrp1, ac_lsig->tdb.icongrp2)) {
+            // No icon match!
+            goto done;
+        }
+    }
+
+    if (!ac_lsig->bc_idx) {
+        // Logical sig does not depend on bytecode match. Report the virus.
+        status = cli_append_virus(ctx, ac_lsig->virname);
+        if (status != CL_SUCCESS) {
+            goto done;
+        }
+    } else {
+        // Logical sig depends on bytecode match. Check for the bytecode match.
         status = cli_bytecode_runlsig(ctx, target_info, &ctx->engine->bcs, ac_lsig->bc_idx, acdata->lsigcnt[lsid], acdata->lsigsuboff_first[lsid], ctx->fmap);
         if (CL_SUCCESS != status) {
             goto done;
