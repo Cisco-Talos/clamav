@@ -817,6 +817,13 @@ parse_central_directory_file_header(
 
     *ret = CL_EPARSE;
 
+    if (cli_checktimelimit(ctx) != CL_SUCCESS) {
+        cli_dbgmsg("cli_unzip: central header - Time limit reached (max: %u)\n", ctx->engine->maxscantime);
+        last = 1;
+        *ret = CL_ETIMEOUT;
+        goto done;
+    }
+
     if (!(central_header = fmap_need_off(map, coff, SIZEOF_CENTRAL_HEADER)) || CENTRAL_HEADER_magic != ZIP_MAGIC_CENTRAL_DIRECTORY_RECORD_BEGIN) {
         if (central_header) {
             fmap_unneed_ptr(map, central_header, SIZEOF_CENTRAL_HEADER);

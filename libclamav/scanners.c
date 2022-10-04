@@ -1537,7 +1537,7 @@ static cl_error_t vba_scandata(const unsigned char *data, size_t len, cli_ctx *c
     must_pop_stack = true;
 
     ret = cli_exp_eval(ctx, target_ac_root, &tmdata, NULL, NULL);
-    if (ret == CL_VIRUS) {
+    if (CL_SUCCESS != ret) {
         goto done;
     }
 
