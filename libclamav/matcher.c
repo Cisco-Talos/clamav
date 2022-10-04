@@ -912,9 +912,11 @@ static cl_error_t lsig_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_a
                     if (status != CL_SUCCESS) {
                         goto done;
                     }
-                } else if (CL_VIRUS == cli_bytecode_runlsig(ctx, target_info, &ctx->engine->bcs, ac_lsig->bc_idx, acdata->lsigcnt[lsid], acdata->lsigsuboff_first[lsid], ctx->fmap)) {
-                    status = CL_VIRUS;
-                    goto done;
+                } else {
+                    status = cli_bytecode_runlsig(ctx, target_info, &ctx->engine->bcs, ac_lsig->bc_idx, acdata->lsigcnt[lsid], acdata->lsigsuboff_first[lsid], ctx->fmap);
+                    if (CL_SUCCESS != status) {
+                        goto done;
+                    }
                 }
             }
             goto done;
@@ -925,8 +927,8 @@ static cl_error_t lsig_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_a
                 goto done;
             }
         }
-        if (CL_VIRUS == cli_bytecode_runlsig(ctx, target_info, &ctx->engine->bcs, ac_lsig->bc_idx, acdata->lsigcnt[lsid], acdata->lsigsuboff_first[lsid], ctx->fmap)) {
-            status = CL_VIRUS;
+        status = cli_bytecode_runlsig(ctx, target_info, &ctx->engine->bcs, ac_lsig->bc_idx, acdata->lsigcnt[lsid], acdata->lsigsuboff_first[lsid], ctx->fmap);
+        if (CL_SUCCESS != status) {
             goto done;
         }
     }
@@ -972,24 +974,30 @@ static cl_error_t yara_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_a
 cl_error_t cli_exp_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_ac_data *acdata, struct cli_target_info *target_info, const char *hash)
 {
     uint32_t i;
-    cl_error_t rc = CL_SUCCESS;
+    cl_error_t status = CL_SUCCESS;
 
     for (i = 0; i < root->ac_lsigs; i++) {
-        if (root->ac_lsigtable[i]->type == CLI_LSIG_NORMAL)
-            rc = lsig_eval(ctx, root, acdata, target_info, hash, i);
+        if (root->ac_lsigtable[i]->type == CLI_LSIG_NORMAL) {
+            status = lsig_eval(ctx, root, acdata, target_info, hash, i);
+        }
 #ifdef HAVE_YARA
-        else if (root->ac_lsigtable[i]->type == CLI_YARA_NORMAL || root->ac_lsigtable[i]->type == CLI_YARA_OFFSET)
-            rc = yara_eval(ctx, root, acdata, target_info, hash, i);
+        else if (root->ac_lsigtable[i]->type == CLI_YARA_NORMAL || root->ac_lsigtable[i]->type == CLI_YARA_OFFSET) {
+            status = yara_eval(ctx, root, acdata, target_info, hash, i);
+        }
 #endif
-        if (rc == CL_VIRUS) {
+
+        if (CL_SUCCESS != status) {
+            break;
+        }
+
+        if (cli_checktimelimit(ctx) != CL_SUCCESS) {
+            cli_dbgmsg("Exceeded scan time limit while evaluating logical and yara signatures (max: %u)\n", ctx->engine->maxscantime);
+            status = CL_ETIMEOUT;
             break;
         }
     }
 
-    if (rc == CL_VIRUS) {
-        return CL_VIRUS;
-    }
-    return CL_CLEAN;
+    return status;
 }
 
 cl_error_t cli_scan_fmap(cli_ctx *ctx, cli_file_t ftype, bool filetype_only, struct cli_matched_type **ftoffset, unsigned int acmode, struct cli_ac_result **acres, unsigned char *refhash)

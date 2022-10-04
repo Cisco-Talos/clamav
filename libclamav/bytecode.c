@@ -2851,6 +2851,12 @@ cl_error_t cli_bytecode_runlsig(cli_ctx *cctx, struct cli_target_info *tinfo,
     if (ret != CL_SUCCESS) {
         cli_warnmsg("Bytecode '%s' (id: %u) failed to run: %s\n", bc_name, bc->id, cl_strerror(ret));
         bytecode_context_reset(&ctx);
+
+        if (cli_checktimelimit(cctx) != CL_SUCCESS) {
+            cli_dbgmsg("Exceeded scan timeout during bytecode run (max: %u)\n", cctx->engine->maxscantime);
+            return CL_ETIMEOUT;
+        }
+
         return CL_SUCCESS;
     }
     if (ctx.virname) {
