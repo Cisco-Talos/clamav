@@ -391,6 +391,17 @@ if(ENABLE_APP)
     endif()
 endif()
 
+if(ENABLE_EXAMPLES)
+    add_test(NAME examples COMMAND ${PythonTest_COMMAND};examples
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+    set_property(TEST examples PROPERTY ENVIRONMENT ${ENVIRONMENT})
+    if(Valgrind_FOUND)
+        add_test(NAME examples_valgrind COMMAND ${PythonTest_COMMAND};examples
+            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+        set_property(TEST examples_valgrind PROPERTY ENVIRONMENT ${ENVIRONMENT} VALGRIND=${Valgrind_EXECUTABLE})
+    endif()
+endif()
+
 if(WIN32)
     #
     # Prepare a test install, with all our DLL dependencies co-located with our EXEs and DLLs
