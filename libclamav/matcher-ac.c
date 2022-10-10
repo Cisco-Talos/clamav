@@ -319,7 +319,7 @@ static bool store_trans_node(struct cli_matcher *root, void *trans)
     bool bRet = false;
 
     if (root->trans_cnt + 1 > root->trans_capacity) {
-        uint64_t newCapacity = root->trans_capacity + 1024;
+        size_t newCapacity = root->trans_capacity + 1024;
         void *ret            = MPOOL_REALLOC(root->mempool, root->trans_array, newCapacity * sizeof(void *));
         if (NULL == ret) {
             cli_errmsg("cli_ac_addpatt: Can't allocate memory for cleanup storage of trans\n");
