@@ -1318,6 +1318,9 @@ pub struct cli_matcher {
     pub bcomp_metatable: *mut *mut cli_bcomp_meta,
     pub fuzzy_hashmap: fuzzyhashmap_t,
     pub linked_bcs: u32,
+    pub trans_array: *mut *mut cli_ac_node,
+    pub trans_cnt: size_t,
+    pub trans_capacity: size_t,
     pub mempool: *mut mpool_t,
 }
 #[repr(C)]
