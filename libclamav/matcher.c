@@ -858,12 +858,32 @@ static cl_error_t lsig_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_a
     // Logical expression matched.
     // Need to check the other conditions, like target description block, icon group, bytecode, etc.
 
-    if (ac_lsig->tdb.container && ac_lsig->tdb.container[0] != cli_recursion_stack_get_type(ctx, -2))
+    // If the lsig requires a specific container type, check if check that it matches
+    if (ac_lsig->tdb.container &&
+        ac_lsig->tdb.container[0] != cli_recursion_stack_get_type(ctx, -2)) {
+        // So far the match is good, but the container type doesn't match.
+        // Because this may need to match in a different scenario where the
+        // container does match, we do not want to cache this result.
+        ctx->fmap->dont_cache_flag = 1;
+
         goto done;
-    if (ac_lsig->tdb.intermediates && !intermediates_eval(ctx, ac_lsig))
+    }
+
+    // If the lsig has intermediates, check if they match the current recursion stack
+    if (ac_lsig->tdb.intermediates &&
+        !intermediates_eval(ctx, ac_lsig)) {
+        // So far the match is good, but the intermediates type(s) do not match.
+        // Because this may need to match in a different scenario where the
+        // intermediates do match, we do not want to cache this result.
+        ctx->fmap->dont_cache_flag = 1;
+
         goto done;
-    if (ac_lsig->tdb.filesize && (ac_lsig->tdb.filesize[0] > ctx->fmap->len || ac_lsig->tdb.filesize[1] < ctx->fmap->len))
+    }
+
+    // If the lsig has filesize requirements, check if they match
+    if (ac_lsig->tdb.filesize && (ac_lsig->tdb.filesize[0] > ctx->fmap->len || ac_lsig->tdb.filesize[1] < ctx->fmap->len)) {
         goto done;
+    }
 
     if (ac_lsig->tdb.ep || ac_lsig->tdb.nos) {
         if (!target_info || target_info->status != 1)
