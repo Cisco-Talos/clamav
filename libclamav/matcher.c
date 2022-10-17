@@ -1254,6 +1254,12 @@ cl_error_t cli_scan_fmap(cli_ctx *ctx, cli_file_t ftype, bool filetype_only, str
     }
 
     while (offset < ctx->fmap->len) {
+        if (cli_checktimelimit(ctx) != CL_SUCCESS) {
+            cli_dbgmsg("Exceeded scan time limit while scanning fmap (max: %u)\n", ctx->engine->maxscantime);
+            ret = CL_ETIMEOUT;
+            goto done;
+        }
+
         bytes = MIN(ctx->fmap->len - offset, SCANBUFF);
         if (!(buff = fmap_need_off_once(ctx->fmap, offset, bytes)))
             break;
