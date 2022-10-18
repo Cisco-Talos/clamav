@@ -102,7 +102,10 @@
  * You can externally define this or it defaults to 4096-bits [allowing multiplications upto 2048x2048 bits ]
  */
 #ifndef FP_MAX_SIZE
-   #define FP_MAX_SIZE           (4096+(8*DIGIT_BIT))
+// Increase max size of TomsFastMath's numbers from 4096-bits to 8192-bits.
+// 8192-bits was the previous maximum size, but was reduced to 4096 bits (the default) accidentally when the library was updated.
+// The higher size is required for RSA certificate verification.
+   #define FP_MAX_SIZE           (8192+(8*DIGIT_BIT))
 #endif
 
 /* will this lib work? */
