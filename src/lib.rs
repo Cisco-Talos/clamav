@@ -49,3 +49,17 @@ impl PartialEq for cl_scan_options {
             && self.dev == other.dev
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::cl_msg;
+
+    #[test]
+    fn msg_levels_exist() {
+        // Just a compilation check that the message levels are there. We don't
+        // check their values since those are defined in the C header file.
+        assert!(cl_msg::CL_MSG_WARN as isize != 0);
+        assert!(cl_msg::CL_MSG_ERROR as isize != 0);
+        assert!(cl_msg::CL_MSG_INFO_VERBOSE as isize != 0);
+    }
+}
