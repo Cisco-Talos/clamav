@@ -314,13 +314,13 @@ static void link_lists(struct cli_matcher *root)
  * @param trans     The trans node to be tracked.
  * @return bool
  */
-static bool store_trans_node(struct cli_matcher *root, struct cli_ac_node *trans)
+static bool store_trans_node(struct cli_matcher *root, struct cli_ac_node **trans)
 {
     bool bRet = false;
 
     if (root->trans_cnt + 1 > root->trans_capacity) {
-        size_t newCapacity       = root->trans_capacity + 1024;
-        struct cli_ac_node **ret = MPOOL_REALLOC(root->mempool, root->trans_array, newCapacity * sizeof(struct cli_ac_node *));
+        size_t newCapacity        = root->trans_capacity + 1024;
+        struct cli_ac_node ***ret = MPOOL_REALLOC(root->mempool, root->trans_array, newCapacity * sizeof(struct cli_ac_node **));
         if (NULL == ret) {
             cli_errmsg("cli_ac_addpatt: Can't allocate memory for cleanup storage of trans\n");
             goto done;
