@@ -43,10 +43,12 @@ fn generate_bindings(customize_bindings: &dyn Fn(bindgen::Builder) -> bindgen::B
         .whitelist_function("cl_scandesc")
         .whitelist_function("cl_scanfile")
         .whitelist_function("cl_scanmap_callback")
+        .whitelist_function("cl_set_clcb_msg")
         .whitelist_function("cl_strerror")
         //Whitelist wanted types
         .rustified_enum("cl_engine_field")
         .rustified_enum("cl_error_t")
+        .rustified_enum("cl_msg")
         .whitelist_type("time_t")
         //Whitelist wanted constants
         .whitelist_var("CL_DB_.*")
