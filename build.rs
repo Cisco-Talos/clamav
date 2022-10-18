@@ -15,9 +15,8 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 // MA 02110-1301, USA.
 
-use std::path::PathBuf;
 use std::env;
-
+use std::path::PathBuf;
 
 fn generate_bindings(customize_bindings: &dyn Fn(bindgen::Builder) -> bindgen::Builder) {
     let mut bindings = bindgen::Builder::default()
@@ -53,10 +52,7 @@ fn generate_bindings(customize_bindings: &dyn Fn(bindgen::Builder) -> bindgen::B
         .whitelist_var("CL_SCAN_.*")
         .whitelist_var("CL_INIT_DEFAULT")
         .whitelist_var("CL_DB_.*")
-
-
         .header("wrapper.h")
-
         // Tell cargo to invalidate the built crate whenever any of the
         // included header files changed.
         .parse_callbacks(Box::new(bindgen::CargoCallbacks));
@@ -82,14 +78,15 @@ fn cargo_common() {
     println!("cargo:rerun-if-changed=wrapper.h");
 }
 
-
-
 #[cfg(windows)]
 fn main() {
     let include_paths = match vcpkg::find_package("clamav") {
         Ok(pkg) => pkg.include_paths,
         Err(err) => {
-            println!("cargo:warning=Either vcpkg is not installed, or an error occurred in vcpkg: {}", err);
+            println!(
+                "cargo:warning=Either vcpkg is not installed, or an error occurred in vcpkg: {}",
+                err
+            );
             let clamav_source = PathBuf::from(env::var("CLAMAV_SOURCE").expect("CLAMAV_SOURCE environment variable must be set and point to ClamAV's source directory"));
             let clamav_build = PathBuf::from(env::var("CLAMAV_BUILD").expect("CLAMAV_BUILD environment variable must be set and point to ClamAV's build directory"));
             let openssl_include = PathBuf::from(env::var("OPENSSL_INCLUDE").expect("OPENSSL_INCLUDE environment variable must be set and point to openssl's include directory"));
@@ -101,14 +98,27 @@ fn main() {
                 _ => panic!("Unexpected build profile"),
             };
 
-            println!("cargo:rustc-link-search=native={}", library_path.to_str().unwrap());
+            println!(
+                "cargo:rustc-link-search=native={}",
+                library_path.to_str().unwrap()
+            );
 
-            vec![clamav_source.join("libclamav"), clamav_build, openssl_include]
+            vec![
+                clamav_source.join("libclamav"),
+                clamav_build,
+                openssl_include,
+            ]
         }
     };
 
     cargo_common();
-    generate_bindings(&|x: bindgen::Builder| -> bindgen::Builder {let mut x = x; for include_path in &include_paths {x = x.clang_arg("-I").clang_arg(include_path.to_str().unwrap());}; x});
+    generate_bindings(&|x: bindgen::Builder| -> bindgen::Builder {
+        let mut x = x;
+        for include_path in &include_paths {
+            x = x.clang_arg("-I").clang_arg(include_path.to_str().unwrap());
+        }
+        x
+    });
 }
 
 #[cfg(unix)]
@@ -127,6 +137,11 @@ fn main() {
     }
 
     cargo_common();
-    generate_bindings(&|x: bindgen::Builder| -> bindgen::Builder {let mut x = x; for include_path in &include_paths {x = x.clang_arg("-I").clang_arg(include_path.to_str().unwrap());}; x});
+    generate_bindings(&|x: bindgen::Builder| -> bindgen::Builder {
+        let mut x = x;
+        for include_path in &include_paths {
+            x = x.clang_arg("-I").clang_arg(include_path.to_str().unwrap());
+        }
+        x
+    });
 }
-
