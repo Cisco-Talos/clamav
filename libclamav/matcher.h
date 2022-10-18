@@ -175,7 +175,7 @@ struct cli_matcher {
     uint32_t linked_bcs;
 
     /*Store pointers to malloced trans values so that they can be more easily freed*/
-    struct cli_ac_node **trans_array;
+    struct cli_ac_node ***trans_array;
     size_t trans_cnt;
     size_t trans_capacity;
 
