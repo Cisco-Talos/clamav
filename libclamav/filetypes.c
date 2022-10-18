@@ -416,7 +416,14 @@ cli_file_t cli_determine_fmap_type(fmap_t *map, const struct cl_engine *engine, 
 
         cli_ac_freedata(&mdata);
 
-        if (scan_ret >= CL_TYPENO) {
+        if (scan_ret >= CL_TYPENO &&
+            /* Omit SFX archive types selected. We'll detect these in scanraw() */
+            ((scan_ret != CL_TYPE_ZIPSFX) &&
+             (scan_ret != CL_TYPE_ARJSFX) &&
+             (scan_ret != CL_TYPE_RARSFX) &&
+             (scan_ret != CL_TYPE_EGGSFX) &&
+             (scan_ret != CL_TYPE_CABSFX) &&
+             (scan_ret != CL_TYPE_7ZSFX))) {
             ret = scan_ret;
         } else {
             if (cli_ac_initdata(&mdata, root->ac_partsigs, root->ac_lsigs, root->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN))
