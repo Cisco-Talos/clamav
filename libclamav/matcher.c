@@ -1427,11 +1427,11 @@ done:
         cli_bm_freeoff(&bm_offsets_table);
     }
 
-    if (ret == CL_VIRUS) {
-        return CL_VIRUS;
+    if (ret != CL_SUCCESS) {
+        return ret;
     }
 
-    return (acmode & AC_SCAN_FT) ? type : CL_CLEAN;
+    return (acmode & AC_SCAN_FT) ? type : CL_SUCCESS;
 }
 
 #define CDBRANGE(field, val)                                              \
