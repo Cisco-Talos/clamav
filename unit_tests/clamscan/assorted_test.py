@@ -84,14 +84,8 @@ class TC(testcase.TestCase):
         expected_results.append('Infected files: {}'.format(expected_num_infected))
         self.verify_output(output.out, expected=expected_results)
 
-    @unittest.expectedFailure
     def test_pe_cert_trust(self):
         self.step_name('Test that clam can trust an EXE based on an authenticode certificate check.')
-
-        # TODO: This feature was added in 0.105, but was also broken during that release cycle when we upgraded TomsFastMath.
-        #       So instead of trusting the certificate, prints this out and the certificate is not trusted so the matches may still happen:
-        #           LibClamAV Warning: crtmgr_rsa_verify: verification failed: fp_exptmod failed with 1
-        #       We need to fix this, and then update this test.
 
         test_path = TC.path_source / 'unit_tests' / 'input' / 'pe_allmatch'
         test_exe = test_path / 'test.exe'
@@ -120,5 +114,49 @@ class TC(testcase.TestCase):
         # Note: Some of these have ".UNOFFICIAL" in the name because not all of them have that ".UNOFFICIAL" suffix when reported.
         #       I think this is a minor bug. So if we change that, we'll need to update this test.
         unexpected_results = ['{sig} FOUND'.format(sig=f.stem) for f in (test_path / 'alert-sigs').iterdir()]
+
+        self.verify_output(output.out, expected=expected_results, unexpected=unexpected_results)
+
+    def test_pe_cert_block(self):
+        self.step_name('Test that clam will disregard a certificate trust signature if a block certificate rule is used.')
+
+        # The sig set and test.exe for test set was written by one of our threat researchers to test the allmatch option.
+        # Overall, it's much more thorough than previous tests, but some of the tests are duplicates of the previous tests.
+
+        # TODO: The section signatures are not working as written, hence the "broken_dbs" directory.
+        #       There is a known issue with relative offset signatures when using the Boyer-Moore matcher. The sigs work if using the Aho-Corasick matcher.
+        #       When we fix section signatures, we can move them to the alerting sigs directory and update this test.
+
+        test_path = TC.path_source / 'unit_tests' / 'input' / 'pe_allmatch'
+        test_exe = test_path / 'test.exe'
+
+        command = '{valgrind} {valgrind_args} {clamscan} \
+             -d {alerting_dbs} \
+             -d {weak_dbs} \
+             -d {broken_dbs} \
+             -d {block_cert_dbs} \
+             --allmatch --bytecode-unsigned {testfiles}'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan,
+            alerting_dbs=test_path / 'alert-sigs',
+            block_cert_dbs=test_path / 'block-cert-sigs',
+            weak_dbs=test_path / 'weak-sigs',
+            broken_dbs=test_path / 'broken-sigs',
+            trust_dbs=test_path / 'trust-sigs',
+            testfiles=test_exe,
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 1
+
+        # The alert sig files are all given the signature name, so we can verify that the correct sigs were found.
+        # We need only to trim off the extension and say "FOUND" for the alerting sigs.
+        # Note: Some of these have ".UNOFFICIAL" in the name because not all of them have that ".UNOFFICIAL" suffix when reported.
+        #       I think this is a minor bug. So if we change that, we'll need to update this test.
+        expected_results = ['{sig} FOUND'.format(sig=f.stem) for f in (test_path / 'alert-sigs').iterdir()]
+        expected_results += ['{sig} FOUND'.format(sig=f.stem) for f in (test_path / 'block-cert-sigs').iterdir()]
+
+        # The broken sig files are all given the signature name, so we can verify that the correct sigs were found.
+        # TODO: When we fix section signatures, we can move them to the alerting sigs directory and get rid of this line.
+        unexpected_results = ['{sig} FOUND'.format(sig=f.stem) for f in (test_path / 'broken-sigs').iterdir()]
 
         self.verify_output(output.out, expected=expected_results, unexpected=unexpected_results)
