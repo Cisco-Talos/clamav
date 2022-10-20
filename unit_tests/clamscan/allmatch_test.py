@@ -291,9 +291,11 @@ class TC(testcase.TestCase):
              -d {alerting_dbs} \
              -d {weak_dbs} \
              -d {broken_dbs} \
+             -d {block_cert_dbs} \
              --allmatch --bytecode-unsigned {testfiles}'.format(
             valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan,
             alerting_dbs=test_path / 'alert-sigs',
+            block_cert_dbs=test_path / 'block-cert-sigs',
             weak_dbs=test_path / 'weak-sigs',
             broken_dbs=test_path / 'broken-sigs',
             testfiles=test_exe,
@@ -307,6 +309,7 @@ class TC(testcase.TestCase):
         # Note: Some of these have ".UNOFFICIAL" in the name because not all of them have that ".UNOFFICIAL" suffix when reported.
         #       I think this is a minor bug. So if we change that, we'll need to update this test.
         expected_results = ['{sig} FOUND'.format(sig=f.stem) for f in (test_path / 'alert-sigs').iterdir()]
+        expected_results += ['{sig} FOUND'.format(sig=f.stem) for f in (test_path / 'block-cert-sigs').iterdir()]
 
         # The broken sig files are all given the signature name, so we can verify that the correct sigs were found.
         # TODO: When we fix section signatures, we can move them to the alerting sigs directory and get rid of this line.
