@@ -53,6 +53,8 @@
 #if HAVE_JSON
 #include "msdoc.h"
 #endif
+#include "rijndael.h"
+#include "ole2_encryption.h"
 
 #ifdef DEBUG_OLE2_LIST
 #define ole2_listmsg(...) cli_dbgmsg(__VA_ARGS__)
@@ -62,6 +64,7 @@
 
 #define ole2_endian_convert_16(v) le16_to_host((uint16_t)(v))
 #define ole2_endian_convert_32(v) le32_to_host((uint32_t)(v))
+#define ole2_endian_convert_64(v) le64_to_host((uint64_t)(v))
 
 #ifndef HAVE_ATTRIB_PACKED
 #define __attribute__(x)
@@ -75,6 +78,7 @@
 #pragma pack 1
 #endif
 
+//https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-cfb/05060311-bfce-4b12-874d-71fd4ce63aea
 typedef struct ole2_header_tag {
     unsigned char magic[8]; /* should be: 0xd0cf11e0a1b11ae1 */
     unsigned char clsid[16];
@@ -118,9 +122,17 @@ typedef struct ole2_header_tag {
     bool has_vba;
     bool has_xlm;
     bool has_image;
-    hwp5_header_t *is_hwp;
+
+    hwp5_header_t *is_hwp; //This value MUST be last in this structure,
+                           //otherwise you will get short file reads.
+
 } ole2_header_t;
 
+/*
+ * DirectoryEntry
+ *
+ * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-cfb/60fe8611-66c3-496b-b70d-a504c94c9ace
+ */
 typedef struct property_tag {
     char name[64]; /* in unicode */
     uint16_t name_size __attribute__((packed));
@@ -549,13 +561,20 @@ ole2_get_sbat_data_block(ole2_header_t *hdr, void *buff, int32_t sbat_index)
 /**
  * @brief File handler for use when walking ole2 property trees.
  *
- * @param hdr   The ole2 header metadata
- * @param prop  The property
- * @param dir   (optional) directory to write temp files to.
- * @param ctx   The scan context
+ * @param hdr       The ole2 header metadata
+ * @param prop      The property
+ * @param dir       (optional) directory to write temp files to.
+ * @param ctx       The scan context
+ * @param ole2_data (optional) Context needed by the handler
  * @return cl_error_t
  */
-typedef cl_error_t ole2_walk_property_tree_file_handler(ole2_header_t *hdr, property_t *prop, const char *dir, cli_ctx *ctx);
+typedef cl_error_t ole2_walk_property_tree_file_handler(ole2_header_t *hdr,
+                                                        property_t *prop, const char *dir, cli_ctx *ctx, void *handler_ctx);
+
+static cl_error_t handler_writefile(ole2_header_t *hdr, property_t *prop, const char *dir, cli_ctx *ctx, void *handler_ctx);
+static cl_error_t handler_enum(ole2_header_t *hdr, property_t *prop, const char *dir, cli_ctx *ctx, void *handler_ctx);
+static cl_error_t handler_otf_encrypted(ole2_header_t *hdr, property_t *prop, const char *dir, cli_ctx *ctx, void *handler_ctx);
+static cl_error_t handler_otf(ole2_header_t *hdr, property_t *prop, const char *dir, cli_ctx *ctx, void *handler_ctx);
 
 /**
  * @brief Walk an ole2 property tree, calling the handler for each file found
@@ -572,7 +591,8 @@ typedef cl_error_t ole2_walk_property_tree_file_handler(ole2_header_t *hdr, prop
  */
 static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t prop_index,
                                    ole2_walk_property_tree_file_handler handler,
-                                   unsigned int rec_level, unsigned int *file_count, cli_ctx *ctx, unsigned long *scansize)
+                                   unsigned int rec_level, unsigned int *file_count,
+                                   cli_ctx *ctx, unsigned long *scansize, void *handler_ctx)
 {
     property_t prop_block[4];
     int32_t idx, current_block, i, curindex;
@@ -684,7 +704,7 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
                 }
                 hdr->sbat_root_start = prop_block[idx].start_block;
                 if ((int)(prop_block[idx].child) != -1) {
-                    ret = ole2_walk_property_tree(hdr, dir, prop_block[idx].child, handler, rec_level + 1, file_count, ctx, scansize);
+                    ret = ole2_walk_property_tree(hdr, dir, prop_block[idx].child, handler, rec_level + 1, file_count, ctx, scansize, handler_ctx);
                     if (ret != CL_SUCCESS) {
                         ole2_list_delete(&node_list);
                         return ret;
@@ -715,7 +735,7 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
                     (*file_count)++;
                     *scansize -= prop_block[idx].size;
                     ole2_listmsg("running file handler\n");
-                    ret = handler(hdr, &prop_block[idx], dir, ctx);
+                    ret = handler(hdr, &prop_block[idx], dir, ctx, handler_ctx);
                     if (ret != CL_SUCCESS) {
                         ole2_listmsg("file handler returned %d\n", ret);
                         ole2_list_delete(&node_list);
@@ -725,7 +745,7 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
                     cli_dbgmsg("OLE2: filesize exceeded\n");
                 }
                 if ((int)(prop_block[idx].child) != -1) {
-                    ret = ole2_walk_property_tree(hdr, dir, prop_block[idx].child, handler, rec_level, file_count, ctx, scansize);
+                    ret = ole2_walk_property_tree(hdr, dir, prop_block[idx].child, handler, rec_level, file_count, ctx, scansize, handler_ctx);
                     if (ret != CL_SUCCESS) {
                         ole2_list_delete(&node_list);
                         return ret;
@@ -777,7 +797,7 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
                 } else
                     dirname = NULL;
                 if ((int)(prop_block[idx].child) != -1) {
-                    ret = ole2_walk_property_tree(hdr, dirname, prop_block[idx].child, handler, rec_level + 1, file_count, ctx, scansize);
+                    ret = ole2_walk_property_tree(hdr, dirname, prop_block[idx].child, handler, rec_level + 1, file_count, ctx, scansize, handler_ctx);
                     if (ret != CL_SUCCESS) {
                         ole2_list_delete(&node_list);
                         if (dirname) {
@@ -814,7 +834,7 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
 }
 
 /* Write file Handler - write the contents of the entry to a file */
-static cl_error_t handler_writefile(ole2_header_t *hdr, property_t *prop, const char *dir, cli_ctx *ctx)
+static cl_error_t handler_writefile(ole2_header_t *hdr, property_t *prop, const char *dir, cli_ctx *ctx, void *handler_ctx)
 {
     cl_error_t ret = CL_BREAK;
     char newname[1024];
@@ -828,6 +848,7 @@ static cl_error_t handler_writefile(ole2_header_t *hdr, property_t *prop, const 
     uint32_t cnt         = 0;
 
     UNUSEDPARAM(ctx);
+    UNUSEDPARAM(handler_ctx);
 
     if (prop->type != 2) {
         /* Not a file */
@@ -904,7 +925,7 @@ static cl_error_t handler_writefile(ole2_header_t *hdr, property_t *prop, const 
             }
 
             /* buff now contains the block with N small blocks in it */
-            offset = (1 << hdr->log2_small_block_size) * (current_block % (1 << (hdr->log2_big_block_size - hdr->log2_small_block_size)));
+            offset = (((size_t)1) << hdr->log2_small_block_size) * (((size_t)current_block) % (((size_t)1) << (hdr->log2_big_block_size - hdr->log2_small_block_size)));
 
             if (cli_writen(ofd, &buff[offset], MIN(len, 1 << hdr->log2_small_block_size)) != MIN(len, 1 << hdr->log2_small_block_size)) {
                 goto done;
@@ -1205,7 +1226,7 @@ done:
  * @param ctx   the scan context
  * @return cl_error_t
  */
-static cl_error_t handler_enum(ole2_header_t *hdr, property_t *prop, const char *dir, cli_ctx *ctx)
+static cl_error_t handler_enum(ole2_header_t *hdr, property_t *prop, const char *dir, cli_ctx *ctx, void *handler_ctx)
 {
     cl_error_t status        = CL_EREAD;
     char *name               = NULL;
@@ -1214,6 +1235,8 @@ static cl_error_t handler_enum(ole2_header_t *hdr, property_t *prop, const char 
 #if HAVE_JSON
     json_object *arrobj  = NULL;
     json_object *strmobj = NULL;
+
+    UNUSEDPARAM(handler_ctx);
 
     name = cli_ole2_get_property_name2(prop->name, prop->name_size);
     if (name) {
@@ -1503,7 +1526,7 @@ mso_end:
     return ret;
 }
 
-static cl_error_t handler_otf(ole2_header_t *hdr, property_t *prop, const char *dir, cli_ctx *ctx)
+static cl_error_t handler_otf(ole2_header_t *hdr, property_t *prop, const char *dir, cli_ctx *ctx, void *handler_ctx)
 {
     cl_error_t ret        = CL_BREAK;
     char *tempfile        = NULL;
@@ -1516,6 +1539,7 @@ static cl_error_t handler_otf(ole2_header_t *hdr, property_t *prop, const char *
     bitset_t *blk_bitset = NULL;
 
     UNUSEDPARAM(dir);
+    UNUSEDPARAM(handler_ctx);
 
     if (prop->type != 2) {
         /* Not a file */
@@ -1579,7 +1603,6 @@ static cl_error_t handler_otf(ole2_header_t *hdr, property_t *prop, const char *
 
             /* buff now contains the block with N small blocks in it */
             offset = (1 << hdr->log2_small_block_size) * (current_block % (1 << (hdr->log2_big_block_size - hdr->log2_small_block_size)));
-
             if (cli_writen(ofd, &buff[offset], MIN(len, 1 << hdr->log2_small_block_size)) != MIN(len, 1 << hdr->log2_small_block_size)) {
                 goto done;
             }
@@ -1677,6 +1700,252 @@ done:
     return ret;
 }
 
+/*
+ * @brief               Extracts encrypted files.
+ * @param hdr           ole2_header_t structure
+ * @param prop          property_t structure (DirectoryEntry)
+ * @param dir           dir pointer.  Unused by this function
+ * @param ctx           cli_ctx
+ * @param handler_ctx   handler context.  For this function, it is the encryption key
+ *                      initialized by 'initialize_encryption_key'
+ * @return              Success or failure depending on whether validation was successful. 
+ *
+ * For more information, see below
+ * https://docs.microsoft.com/en-us/openspecs/office_file_formats/ms-offcrypto/e5ad39b8-9bc1-4a19-bad3-44e6246d21e6
+ */
+static cl_error_t handler_otf_encrypted(ole2_header_t *hdr, property_t *prop, const char *dir, cli_ctx *ctx, void *handler_ctx)
+{
+    cl_error_t ret        = CL_BREAK;
+    char *tempfile        = NULL;
+    char *name            = NULL;
+    uint8_t *buff         = NULL;
+    int32_t current_block = 0;
+    size_t len            = 0;
+    size_t offset         = 0;
+    int ofd               = -1;
+    int is_mso            = 0;
+    bitset_t *blk_bitset  = NULL;
+    int nrounds           = 0;
+    uint8_t *decryptDst   = NULL;
+    encryption_key_t *key = (encryption_key_t *)handler_ctx;
+    uint64_t *rk          = NULL;
+    uint32_t bytesRead    = 0;
+    uint64_t actualFileLength;
+    uint64_t bytesWritten = 0;
+    uint32_t leftover     = 0;
+    uint32_t readIdx      = 0;
+
+    UNUSEDPARAM(dir);
+
+    if (NULL == key) {
+        cli_errmsg("%s::%d::key NULL\n", __FUNCTION__, __LINE__);
+        goto done;
+    }
+
+    if (prop->type != 2) {
+        /* Not a file */
+        ret = CL_SUCCESS;
+        goto done;
+    }
+
+    CLI_MALLOC(rk, RKLENGTH(key->key_length_bits) * sizeof(uint64_t), ret = CL_EMEM);
+
+    print_ole2_property(prop);
+
+    nrounds = rijndaelSetupDecrypt(rk, key->key, key->key_length_bits);
+
+    if (!(tempfile = cli_gentemp(ctx ? ctx->sub_tmpdir : NULL))) {
+        ret = CL_EMEM;
+        goto done;
+    }
+
+    if ((ofd = open(tempfile, O_RDWR | O_CREAT | O_TRUNC | O_BINARY, S_IRUSR | S_IWUSR)) < 0) {
+        cli_dbgmsg("OLE2 [handler_otf]: Can't create file %s\n", tempfile);
+        ret = CL_ECREAT;
+        goto done;
+    }
+
+    current_block = prop->start_block;
+    len           = prop->size;
+
+    if (cli_debug_flag) {
+        if (!name) {
+            name = cli_ole2_get_property_name2(prop->name, prop->name_size);
+        }
+        cli_dbgmsg("OLE2 [handler_otf]: Dumping '%s' to '%s'\n", name, tempfile);
+    }
+
+    uint32_t blockSize = 1 << hdr->log2_big_block_size;
+    CLI_MALLOC(buff, blockSize + sizeof(uint64_t), ret = CL_EMEM);
+    CLI_MALLOC(decryptDst, blockSize, ret = CL_EMEM);
+
+    blk_bitset = cli_bitset_init();
+    if (!blk_bitset) {
+        cli_errmsg("OLE2 [handler_otf]: init bitset failed\n");
+        goto done;
+    }
+
+    while (bytesRead < len) {
+        if (current_block > (int32_t)hdr->max_block_no) {
+            cli_dbgmsg("OLE2 [handler_otf]: Max block number for file size exceeded: %d\n", current_block);
+            break;
+        }
+
+        /* Check we aren't in a loop */
+        if (cli_bitset_test(blk_bitset, (uint64_t)current_block)) {
+            /* Loop in block list */
+            cli_dbgmsg("OLE2 [handler_otf]: Block list loop detected\n");
+            break;
+        }
+
+        if (!cli_bitset_set(blk_bitset, (uint64_t)current_block)) {
+            break;
+        }
+
+        if (prop->size < (int64_t)hdr->sbat_cutoff) {
+            /* Small block file */
+            if (!ole2_get_sbat_data_block(hdr, buff, current_block)) {
+                cli_dbgmsg("OLE2 [handler_otf]: ole2_get_sbat_data_block failed\n");
+                break;
+            }
+
+            /* buff now contains the block with N small blocks in it */
+            offset = (((size_t)1) << hdr->log2_small_block_size) * (((size_t)current_block) % (((size_t)1) << (hdr->log2_big_block_size - hdr->log2_small_block_size)));
+
+            if (cli_writen(ofd, &buff[offset], MIN(len, 1 << hdr->log2_small_block_size)) != MIN(len, 1 << hdr->log2_small_block_size)) {
+                goto done;
+            }
+
+            len -= MIN(len, 1 << hdr->log2_small_block_size);
+            current_block = ole2_get_next_sbat_block(hdr, current_block);
+
+            //These small block files don't seem to be encrypted.
+        } else {
+            uint32_t bytesToWrite  = MIN(len - bytesRead, blockSize);
+            uint32_t writeIdx      = 0;
+            uint32_t decryptDstIdx = 0;
+
+            if (!ole2_read_block(hdr, &(buff[readIdx]), blockSize, current_block)) {
+                break;
+            }
+            if (0 == bytesRead) {
+                //first block.  account for size of file.
+
+                writeIdx += sizeof(uint64_t);
+                memcpy(&actualFileLength, buff, sizeof(actualFileLength));
+                actualFileLength = ole2_endian_convert_64(actualFileLength);
+            }
+            bytesRead += blockSize;
+
+            for (; writeIdx <= (leftover + bytesToWrite) - 16; writeIdx += 16, decryptDstIdx += 16) {
+                rijndaelDecrypt(rk, nrounds, &(buff[writeIdx]), &(decryptDst[decryptDstIdx]));
+            }
+
+            /*Since our buffer size is a power of 2, leftover should always be
+             * either 0 or 8, but we have to decrypt in multiples of 16.*/
+            if (((leftover + bytesToWrite) - writeIdx) > 8) {
+                goto done;
+            }
+
+            /*Make sure we don't write more data than the file is actually supposed to be.*/
+            if ((decryptDstIdx + bytesWritten) > actualFileLength) {
+                decryptDstIdx = actualFileLength - bytesWritten;
+            }
+            if (cli_writen(ofd, decryptDst, decryptDstIdx) != decryptDstIdx) {
+                cli_errmsg("ole2: Error writing to file '%s'\n", tempfile);
+                goto done;
+            }
+            bytesWritten += decryptDstIdx;
+
+            leftover = (leftover + bytesToWrite) - writeIdx;
+            if (leftover) {
+                memmove(buff, &(buff[writeIdx]), leftover);
+            }
+            readIdx = leftover;
+
+            current_block = ole2_get_next_block_number(hdr, current_block);
+        }
+    }
+
+    /* defragmenting of ole2 stream complete */
+
+    is_mso = likely_mso_stream(ofd);
+    if (lseek(ofd, 0, SEEK_SET) == -1) {
+        ret = CL_ESEEK;
+        goto done;
+    }
+
+#if HAVE_JSON
+
+    /* JSON Output Summary Information */
+    if (SCAN_COLLECT_METADATA && (ctx->properties != NULL)) {
+        if (!name) {
+            name = cli_ole2_get_property_name2(prop->name, prop->name_size);
+        }
+        if (name) {
+            if (!strncmp(name, "_5_summaryinformation", 21)) {
+                cli_dbgmsg("OLE2: detected a '_5_summaryinformation' stream\n");
+                /* JSONOLE2 - what to do if something breaks? */
+                if (cli_ole2_summary_json(ctx, ofd, 0) == CL_ETIMEOUT) {
+                    ret = CL_ETIMEOUT;
+                    goto done;
+                }
+            }
+
+            if (!strncmp(name, "_5_documentsummaryinformation", 29)) {
+                cli_dbgmsg("OLE2: detected a '_5_documentsummaryinformation' stream\n");
+                /* JSONOLE2 - what to do if something breaks? */
+                if (cli_ole2_summary_json(ctx, ofd, 1) == CL_ETIMEOUT) {
+                    ret = CL_ETIMEOUT;
+                    goto done;
+                }
+            }
+        }
+    }
+
+#endif
+
+    if (hdr->is_hwp) {
+        if (!name) {
+            name = cli_ole2_get_property_name2(prop->name, prop->name_size);
+        }
+        ret = cli_scanhwp5_stream(ctx, hdr->is_hwp, name, ofd, tempfile);
+    } else if (is_mso < 0) {
+        ret = CL_ESEEK;
+    } else if (is_mso) {
+        /* MSO Stream Scan */
+        ret = scan_mso_stream(ofd, ctx);
+    } else {
+        /* Normal File Scan */
+        ret = cli_magic_scan_desc(ofd, tempfile, ctx, NULL, LAYER_ATTRIBUTES_NONE);
+    }
+
+    ret = ret == CL_VIRUS ? CL_VIRUS : CL_SUCCESS;
+
+done:
+    FREE(name);
+    if (-1 != ofd) {
+        close(ofd);
+    }
+    FREE(buff);
+    if (NULL != blk_bitset) {
+        cli_bitset_free(blk_bitset);
+    }
+    if (NULL != tempfile) {
+        if (ctx && !ctx->engine->keeptmp) {
+            if (cli_unlink(tempfile)) {
+                ret = CL_EUNLINK;
+            }
+        }
+        free(tempfile);
+        tempfile = NULL;
+    }
+    FREE(decryptDst);
+    FREE(rk);
+
+    return ret;
+}
+
 #if !defined(HAVE_ATTRIB_PACKED) && !defined(HAVE_PRAGMA_PACK) && !defined(HAVE_PRAGMA_PACK_HPPA)
 static int
 ole2_read_header(int fd, ole2_header_t *hdr)
@@ -1740,6 +2009,381 @@ ole2_read_header(int fd, ole2_header_t *hdr)
 }
 #endif
 
+void copy_encryption_info_stream_standard(encryption_info_stream_standard_t *dst, const uint8_t *src)
+{
+    memcpy(dst, src, sizeof(encryption_info_stream_standard_t));
+    dst->version_major = ole2_endian_convert_16(dst->version_major);
+    dst->version_minor = ole2_endian_convert_16(dst->version_minor);
+
+    dst->flags = ole2_endian_convert_32(dst->flags);
+    dst->size  = ole2_endian_convert_32(dst->size);
+
+    dst->encryptionInfo.flags           = ole2_endian_convert_32(dst->encryptionInfo.flags);
+    dst->encryptionInfo.sizeExtra       = ole2_endian_convert_32(dst->encryptionInfo.sizeExtra);
+    dst->encryptionInfo.algorithmID     = ole2_endian_convert_32(dst->encryptionInfo.algorithmID);
+    dst->encryptionInfo.algorithmIDHash = ole2_endian_convert_32(dst->encryptionInfo.algorithmIDHash);
+    dst->encryptionInfo.keySize         = ole2_endian_convert_32(dst->encryptionInfo.keySize);
+    dst->encryptionInfo.providerType    = ole2_endian_convert_32(dst->encryptionInfo.providerType);
+    dst->encryptionInfo.reserved1       = ole2_endian_convert_32(dst->encryptionInfo.reserved1);
+    dst->encryptionInfo.reserved2       = ole2_endian_convert_32(dst->encryptionInfo.reserved2);
+}
+
+void copy_encryption_verifier(encryption_verifier_t *dst, const uint8_t *src)
+{
+    memcpy(dst, src, sizeof(encryption_verifier_t));
+    dst->salt_size          = ole2_endian_convert_32(dst->salt_size);
+    dst->verifier_hash_size = ole2_endian_convert_32(dst->verifier_hash_size);
+}
+
+static inline bool key_length_valid_aes_bits(const uint32_t keyLength)
+{
+    switch (keyLength) {
+        case SE_HEADER_EI_AES128_KEYSIZE:
+            /* fallthrough */
+        case SE_HEADER_EI_AES192_KEYSIZE:
+            /* fallthrough */
+        case SE_HEADER_EI_AES256_KEYSIZE:
+            return true;
+    }
+    return false;
+}
+
+/*Definitions for generate_key_aes*/
+#define GENERATE_KEY_AES_ITERATIONS 50000
+
+/*
+ * @brief           Generate the key for aes encryption based on the password
+ * @param password  Password to generate the key from
+ * @param key       [out] location to store the key
+ * @param verifier  encryption_verifier_t from the header.  Contains information necessary to generate the key
+ *
+ * @return          Error code based on whether or not the key was generated.  This function
+ *                  does NOT validate the key, you must call 'verify_key' for that.
+ */
+static cl_error_t generate_key_aes(const char *const password, encryption_key_t *key,
+                                   encryption_verifier_t *verifier)
+{
+    uint8_t *buffer                                                    = NULL;
+    size_t bufLen                                                      = 0;
+    cl_error_t ret                                                     = CL_ERROR;
+    uint32_t i                                                         = 0;
+    uint8_t sha1[sizeof(uint32_t) + SHA1_HASH_SIZE + sizeof(uint32_t)] = {0};
+    uint8_t *sha1Dst                                                   = &(sha1[sizeof(uint32_t)]);
+    uint8_t buf1[64];
+    uint8_t buf2[64];
+    uint8_t doubleSha[SHA1_HASH_SIZE * 2];
+    uint32_t tmp = 0;
+
+    if (!key_length_valid_aes_bits(key->key_length_bits)) {
+        cli_errmsg("ole2: Invalid key length '0x%x'\n", key->key_length_bits / 8);
+        goto done;
+    }
+
+    memset(key->key, 0, key->key_length_bits / 8);
+
+    bufLen = verifier->salt_size + (strlen(password) * 2);
+
+    buffer = calloc(bufLen, 1);
+    if (NULL == buffer) {
+        cli_errmsg("ole2: calloc failed\n");
+        ret = CL_EMEM;
+        goto done;
+    }
+
+    tmp = verifier->salt_size;
+    if (verifier->salt_size > sizeof(verifier->salt)) {
+        cli_warnmsg("ole2: Invalid salt length '0x%x'\n", verifier->salt_size);
+        tmp = sizeof(verifier->salt);
+    }
+    memcpy(buffer, verifier->salt, tmp);
+
+    /*Convert to UTF16-LE*/
+    for (i = 0; i < (uint32_t)strlen(password); i++) {
+        buffer[verifier->salt_size + (i * 2)] = password[i];
+    }
+
+    (void)cl_sha1(buffer, bufLen, sha1Dst, NULL);
+
+    for (i = 0; i < GENERATE_KEY_AES_ITERATIONS; i++) {
+        uint32_t eye = ole2_endian_convert_32(i);
+
+        memcpy(sha1, &eye, sizeof(eye));
+        (void)cl_sha1(sha1, SHA1_HASH_SIZE + sizeof(uint32_t), sha1Dst, NULL);
+    }
+
+    memset(&(sha1Dst[SHA1_HASH_SIZE]), 0, sizeof(uint32_t));
+
+    (void)cl_sha1(sha1Dst, SHA1_HASH_SIZE + sizeof(uint32_t), sha1Dst, NULL);
+
+    memset(buf1, 0x36, sizeof(buf1));
+    for (i = 0; i < SHA1_HASH_SIZE; i++) {
+        buf1[i] = buf1[i] ^ sha1Dst[i];
+    }
+
+    //now sha1 buf1
+    (void)cl_sha1(buf1, sizeof(buf1), doubleSha, NULL);
+
+    memset(buf2, 0x5c, sizeof(buf2));
+    for (i = 0; i < SHA1_HASH_SIZE; i++) {
+        buf2[i] = buf2[i] ^ sha1Dst[i];
+    }
+
+    (void)cl_sha1(buf2, sizeof(buf2), &(doubleSha[SHA1_HASH_SIZE]), NULL);
+
+    tmp = key->key_length_bits / 8;
+    if (tmp > sizeof(key->key)) {
+        cli_warnmsg("ole2: Invalid key length 0x%x\n", key->key_length_bits / 8);
+        tmp = sizeof(key->key);
+    }
+
+    memcpy(key->key, doubleSha, tmp);
+    ret = CL_SUCCESS;
+done:
+    FREE(buffer);
+
+    return ret;
+}
+
+static bool aes_128ecb_decrypt(const unsigned char *in, size_t length, unsigned char *out, const encryption_key_t *const key)
+{
+    uint64_t rk[RKLENGTH(128)];
+    int nrounds;
+    size_t i;
+    bool bRet = false;
+
+    nrounds = rijndaelSetupDecrypt(rk, (const unsigned char *)key->key, key->key_length_bits);
+    if (!nrounds) {
+        cli_errmsg("ole2: Unable to initialize decryption.\n");
+        goto done;
+    } else {
+        for (i = 0; i < length; i += 16) {
+            rijndaelDecrypt(rk, nrounds, &(in[i]), &(out[i]));
+        }
+    }
+
+    bRet = true;
+done:
+
+    return bRet;
+}
+
+/*Definitions for verify_key_aes*/
+#define AES_VERIFIER_HASH_LEN 32
+/*
+ * @brief           Returns true if it is actually encrypted with the key.
+ * @param key       encryption_key_t to attempt validation
+ * @param verifier  encryption_verifier_t to attempt validation.
+ * @return          Success or failure depending on whether validation was successful. 
+ *
+ * For more information, see below
+ * https://docs.microsoft.com/en-us/openspecs/office_file_formats/ms-offcrypto/e5ad39b8-9bc1-4a19-bad3-44e6246d21e6
+ */
+static bool verify_key_aes(const encryption_key_t *const key, encryption_verifier_t *verifier)
+{
+
+    bool bRet = false;
+    uint8_t sha[SHA1_HASH_SIZE];
+    uint8_t decrypted[AES_VERIFIER_HASH_LEN];
+    uint32_t tmp = 0;
+
+    if (!aes_128ecb_decrypt(verifier->encrypted_verifier, sizeof(verifier->encrypted_verifier),
+                            decrypted, key)) {
+        goto done;
+    }
+
+    (void)cl_sha1(decrypted, sizeof(verifier->encrypted_verifier), sha, NULL);
+
+    tmp = verifier->verifier_hash_size;
+    if (tmp > sizeof(verifier->encrypted_verifier_hash)) {
+        cli_warnmsg("ole2: Invalid encrypted verifier hash length 0x%x\n", verifier->verifier_hash_size);
+        tmp = sizeof(verifier->encrypted_verifier_hash);
+    }
+    if (!aes_128ecb_decrypt(verifier->encrypted_verifier_hash, tmp,
+                            decrypted, key)) {
+        goto done;
+    }
+
+    bRet = (0 == memcmp(sha, decrypted, verifier->verifier_hash_size));
+done:
+
+    return bRet;
+}
+
+/*Definitions for initialize_encryption_key*/
+#define SE_HEADER_FCRYPTOAPI (1 << 2)
+#define SE_HEADER_FEXTERNAL (1 << 4)
+#define SE_HEADER_FDOCPROPS (1 << 3)
+#define SE_HEADER_FAES (1 << 5)
+#define SE_HEADER_EI_AES128 0x0000660e
+#define SE_HEADER_EI_AES192 0x0000660f
+#define SE_HEADER_EI_AES256 0x00006610
+#define SE_HEADER_EI_RC4 0x00006801
+#define SE_HEADER_EI_SHA1 0x00008004
+#define SE_HEADER_EI_AES_PROVIDERTYPE 0x00000018
+/**
+ * @brief               Initialize encryption key, if the encryption validation passes.
+ *
+ * @param headerPtr     Pointer to the encryption header.
+ * @param encryptionKey [out] Pointer to encryption_key_t structure to be initialized by this function.  
+ * @return              Success or failure depending on whether or not the
+ *                      encryption verifier was successful with the
+ *                      standard password (VelvetSweatshop).
+ *
+ * Information about the encryption keys is here
+ * https://docs.microsoft.com/en-us/openspecs/office_file_formats/ms-offcrypto/dca653b5-b93b-48df-8e1e-0fb9e1c83b0f
+ * https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-offcrypto/2895eba1-acb1-4624-9bde-2cdad3fea015
+ *
+ */
+static bool initialize_encryption_key(const encryption_info_stream_standard_t *headerPtr,
+                                      encryption_key_t *encryptionKey)
+{
+
+    bool bRet  = false;
+    size_t idx = 0;
+    encryption_key_t key;
+    encryption_verifier_t ev;
+    bool bAES = false;
+
+    memset(encryptionKey, 0, sizeof(encryption_key_t));
+    memset(&key, 0, sizeof(encryption_key_t));
+
+    cli_dbgmsg("Major Version   = 0x%x\n", headerPtr->version_major);
+    cli_dbgmsg("Minor Version   = 0x%x\n", headerPtr->version_minor);
+    cli_dbgmsg("Flags           = 0x%x\n", headerPtr->flags);
+
+    /*Bit 0 and 1 must be 0*/
+    if (1 & headerPtr->flags) {
+        cli_dbgmsg("ole2: Invalid first bit, must be 0\n");
+        goto done;
+    }
+
+    if ((1 << 1) & headerPtr->flags) {
+        cli_dbgmsg("ole2: Invalid second bit, must be 0\n");
+        goto done;
+    }
+
+    //https://docs.microsoft.com/en-us/openspecs/office_file_formats/ms-offcrypto/200a3d61-1ab4-4402-ae11-0290b28ab9cb
+    if ((SE_HEADER_FDOCPROPS & headerPtr->flags)) {
+        cli_dbgmsg("ole2: Unsupported document properties encrypted\n");
+        goto done;
+    }
+
+    if ((SE_HEADER_FEXTERNAL & headerPtr->flags) &&
+        (SE_HEADER_FEXTERNAL != headerPtr->flags)) {
+        cli_dbgmsg("ole2: Invalid fExternal flags.  If fExternal bit is set, nothing else can be\n");
+        goto done;
+    }
+
+    if (SE_HEADER_FAES & headerPtr->flags) {
+        if (!(SE_HEADER_FCRYPTOAPI & headerPtr->flags)) {
+            cli_dbgmsg("ole2: Invalid combo of fAES and fCryptoApi flags\n");
+            goto done;
+        }
+
+        cli_dbgmsg("Flags: AES\n");
+    }
+
+    cli_dbgmsg("Size            = 0x%x\n", headerPtr->size);
+
+    if (headerPtr->flags != headerPtr->encryptionInfo.flags) {
+        cli_dbgmsg("ole2: Flags must match\n");
+        goto done;
+    }
+
+    if (0 != headerPtr->encryptionInfo.sizeExtra) {
+        cli_dbgmsg("ole2: Size Extra must be 0\n");
+        goto done;
+    }
+
+    switch (headerPtr->encryptionInfo.algorithmID) {
+        case SE_HEADER_EI_AES128:
+            bAES = true;
+            break;
+        case SE_HEADER_EI_AES192:
+            //not implemented
+            bAES = true;
+            goto done;
+        case SE_HEADER_EI_AES256:
+            //not implemented
+            bAES = true;
+            goto done;
+        case SE_HEADER_EI_RC4:
+            //not implemented
+            goto done;
+        default:
+            cli_dbgmsg("ole2: Invalid Algorithm ID: 0x%x\n", headerPtr->encryptionInfo.algorithmID);
+            goto done;
+    }
+
+    if (SE_HEADER_EI_SHA1 != headerPtr->encryptionInfo.algorithmIDHash) {
+        cli_dbgmsg("ole2: Invalid Algorithm ID Hash: 0x%x\n", headerPtr->encryptionInfo.algorithmIDHash);
+        goto done;
+    }
+
+    if (!key_length_valid_aes_bits(headerPtr->encryptionInfo.keySize)) {
+        cli_dbgmsg("ole2: Invalid key size: 0x%x\n", headerPtr->encryptionInfo.keySize);
+        goto done;
+    }
+
+    cli_dbgmsg("KeySize = 0x%x\n", headerPtr->encryptionInfo.keySize);
+
+    if (SE_HEADER_EI_AES_PROVIDERTYPE != headerPtr->encryptionInfo.providerType) {
+        cli_dbgmsg("ole2: WARNING: Provider Type should be '0x%x', is '0x%x'\n",
+                    SE_HEADER_EI_AES_PROVIDERTYPE, headerPtr->encryptionInfo.providerType);
+        goto done;
+    }
+
+    cli_dbgmsg("Reserved1:  0x%x\n", headerPtr->encryptionInfo.reserved1);
+
+    if (0 != headerPtr->encryptionInfo.reserved2) {
+        cli_dbgmsg("ole2: Reserved 2 must be zero, is 0x%x\n", headerPtr->encryptionInfo.reserved2);
+        goto done;
+    }
+
+    /*The encryption info is at the end of the CPSName string.  
+     * Find the end, and we'll have the index of the EncryptionVerifier.
+     * The CPSName string *should* always be either
+     * 'Microsoft Enhanced RSA and AES Cryptographic Provider'
+     * or
+     * 'Microsoft Enhanced RSA and AES Cryptographic Provider (Prototype)'
+     *
+     */
+    for (idx = 0; idx < CSP_NAME_LENGTH(headerPtr) - 1; idx += 2) {
+        if (((uint16_t *)&(headerPtr->encryptionInfo.cspName[idx]))[0] == 0) {
+            break;
+        }
+    }
+
+    idx += 2;
+    if ((sizeof(headerPtr->encryptionInfo.cspName) - idx) <= sizeof(encryption_verifier_t)) {
+        cli_dbgmsg("ole2: No encryption_verifier_t\n");
+        goto done;
+    }
+    copy_encryption_verifier(&ev, &(headerPtr->encryptionInfo.cspName[idx]));
+
+    key.key_length_bits = headerPtr->encryptionInfo.keySize;
+    if (!bAES) {
+        cli_dbgmsg("ole2: Unsupported encryption algorithm\n");
+        goto done;
+    }
+
+    if (CL_SUCCESS != generate_key_aes("VelvetSweatshop", &key, &ev)) {
+        /*Error message printed by generate_key_aes*/
+        goto done;
+    }
+
+    if (!verify_key_aes(&key, &ev)) {
+        cli_dbgmsg("ole2: Key verification for '%s' failed, unable to decrypt.\n", "VelvetSweatshop");
+        goto done;
+    }
+
+    memcpy(encryptionKey, &key, sizeof(encryption_key_t));
+    bRet = true;
+done:
+
+    return bRet;
+}
+
 /**
  * @brief Extract macros and images from an ole2 file
  *
@@ -1759,6 +2403,9 @@ cl_error_t cli_ole2_extract(const char *dirname, cli_ctx *ctx, struct uniq **fil
     unsigned int file_count = 0;
     unsigned long scansize, scansize2;
     const void *phdr;
+    encryption_key_t key;
+    bool bEncrypted         = false;
+    off_t encryption_offset = 0;
 
     cli_dbgmsg("in cli_ole2_extract()\n");
     if (!ctx) {
@@ -1818,6 +2465,19 @@ cl_error_t cli_ole2_extract(const char *dirname, cli_ctx *ctx, struct uniq **fil
     hdr.xbat_start            = ole2_endian_convert_32(hdr.xbat_start);
     hdr.xbat_count            = ole2_endian_convert_32(hdr.xbat_count);
 
+    encryption_offset = 4 * (1 << hdr.log2_big_block_size);
+    if ((encryption_offset + (off_t)sizeof(encryption_info_stream_standard_t)) <= hdr.m_length) {
+        encryption_info_stream_standard_t encryption_info_stream_standard;
+        copy_encryption_info_stream_standard(&encryption_info_stream_standard, &(((const uint8_t *)phdr)[encryption_offset]));
+        bEncrypted = initialize_encryption_key(&encryption_info_stream_standard, &key);
+
+#if HAVE_JSON
+        if (ctx->wrkproperty == ctx->properties) {
+            cli_jsonint(ctx->wrkproperty, "EncryptedWithVelvetSweatshop", bEncrypted);
+        }
+#endif /* HAVE_JSON */
+    }
+
     hdr.sbat_root_start = -1;
 
     hdr.bitset = cli_bitset_init();
@@ -1857,7 +2517,7 @@ cl_error_t cli_ole2_extract(const char *dirname, cli_ctx *ctx, struct uniq **fil
     hdr.has_vba   = false;
     hdr.has_xlm   = false;
     hdr.has_image = false;
-    ret           = ole2_walk_property_tree(&hdr, NULL, 0, handler_enum, 0, &file_count, ctx, &scansize);
+    ret           = ole2_walk_property_tree(&hdr, NULL, 0, handler_enum, 0, &file_count, ctx, &scansize, NULL);
     cli_bitset_free(hdr.bitset);
     hdr.bitset = NULL;
     if (!file_count || !(hdr.bitset = cli_bitset_init())) {
@@ -1885,7 +2545,7 @@ cl_error_t cli_ole2_extract(const char *dirname, cli_ctx *ctx, struct uniq **fil
             goto done;
         }
         file_count = 0;
-        ole2_walk_property_tree(&hdr, dirname, 0, handler_writefile, 0, &file_count, ctx, &scansize2);
+        ole2_walk_property_tree(&hdr, dirname, 0, handler_writefile, 0, &file_count, ctx, &scansize2, NULL);
         ret    = CL_CLEAN;
         *files = hdr.U;
         if (has_vba) {
@@ -1901,7 +2561,11 @@ cl_error_t cli_ole2_extract(const char *dirname, cli_ctx *ctx, struct uniq **fil
         cli_dbgmsg("OLE2: no VBA projects found\n");
         /* PASS 2/B : OTF scan */
         file_count = 0;
-        ret        = ole2_walk_property_tree(&hdr, NULL, 0, handler_otf, 0, &file_count, ctx, &scansize2);
+        if (bEncrypted) {
+            ret = ole2_walk_property_tree(&hdr, NULL, 0, handler_otf_encrypted, 0, &file_count, ctx, &scansize2, &key);
+        } else {
+            ret = ole2_walk_property_tree(&hdr, NULL, 0, handler_otf, 0, &file_count, ctx, &scansize2, NULL);
+        }
     }
 
 done:
