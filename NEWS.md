@@ -22,6 +22,25 @@ ClamAV 1.0.0 includes the following improvements and changes.
 Special thanks to the following people for code contributions and bug reports:
 -
 
+## 0.105.1
+
+ClamAV 0.105.1 is a critical patch release with the following fixes:
+
+- Upgrade the vendored UnRAR library to version 6.1.7.
+
+- Fix issue building macOS universal binaries in some configurations.
+
+- Silence error message when the logical signature maximum functionality level
+  is lower than the current functionality level.
+
+- Fix scan error when scanning files containing malformed images that cannot be
+  loaded to calculate an image fuzzy hash.
+
+- Fix logical signature "Intermediates" feature.
+
+- Relax constraints on slightly malformed zip archives that contain overlapping
+  file entries.
+
 ## 0.105.0
 
 ClamAV 0.105.0 includes the following improvements and changes.
@@ -284,6 +303,17 @@ Special thanks to the following people for code contributions and bug reports:
 - Simon Arlott
 - Stuart Henderson
 - Yann E. Morin
+
+## 0.104.4
+
+ClamAV 0.104.4 is a critical patch release with the following fixes:
+
+- Upgrade the vendored UnRAR library to version 6.1.7.
+
+- Fix logical signature "Intermediates" feature.
+
+- Relax constraints on slightly malformed zip archives that contain overlapping
+  file entries.
 
 ## 0.104.3
 
@@ -645,6 +675,17 @@ The ClamAV team thanks the following individuals for their code submissions:
 - Tom Briden
 - Vasile Papp
 - Yasuhiro Kimura
+
+## 0.103.7
+
+ClamAV 0.103.7 is a critical patch release with the following fixes:
+
+- Upgrade the vendored UnRAR library to version 6.1.7.
+
+- Fix logical signature "Intermediates" feature.
+
+- Relax constraints on slightly malformed zip archives that contain overlapping
+  file entries.
 
 ## 0.103.6
 
