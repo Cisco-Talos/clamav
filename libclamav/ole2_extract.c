@@ -2039,9 +2039,9 @@ static inline bool key_length_valid_aes_bits(const uint32_t keyLength)
 {
     switch (keyLength) {
         case SE_HEADER_EI_AES128_KEYSIZE:
-            /* fallthrough */
+            /* fall-through */
         case SE_HEADER_EI_AES192_KEYSIZE:
-            /* fallthrough */
+            /* fall-through */
         case SE_HEADER_EI_AES256_KEYSIZE:
             return true;
     }
@@ -2151,7 +2151,13 @@ static bool aes_128ecb_decrypt(const unsigned char *in, size_t length, unsigned 
     size_t i;
     bool bRet = false;
 
+    if (SE_HEADER_EI_AES128_KEYSIZE != key->key_length_bits) {
+        cli_dbgmsg("ole2: Unsupported AES key length in aes_128ecb_decrypt\n");
+        goto done;
+    }
+
     nrounds = rijndaelSetupDecrypt(rk, (const unsigned char *)key->key, key->key_length_bits);
+
     if (!nrounds) {
         cli_errmsg("ole2: Unable to initialize decryption.\n");
         goto done;
@@ -2186,9 +2192,19 @@ static bool verify_key_aes(const encryption_key_t *const key, encryption_verifie
     uint8_t decrypted[AES_VERIFIER_HASH_LEN];
     uint32_t tmp = 0;
 
-    if (!aes_128ecb_decrypt(verifier->encrypted_verifier, sizeof(verifier->encrypted_verifier),
-                            decrypted, key)) {
-        goto done;
+    switch (key->key_length_bits) {
+        case SE_HEADER_EI_AES128_KEYSIZE:
+            if (!aes_128ecb_decrypt(verifier->encrypted_verifier, sizeof(verifier->encrypted_verifier),
+                                    decrypted, key)) {
+                goto done;
+            }
+            break;
+        case SE_HEADER_EI_AES192_KEYSIZE:
+            /* fall-through */
+        case SE_HEADER_EI_AES256_KEYSIZE:
+            /* fall-through */
+        default:
+            goto done;
     }
 
     (void)cl_sha1(decrypted, sizeof(verifier->encrypted_verifier), sha, NULL);
@@ -2297,14 +2313,26 @@ static bool initialize_encryption_key(const encryption_info_stream_standard_t *h
 
     switch (headerPtr->encryptionInfo.algorithmID) {
         case SE_HEADER_EI_AES128:
+            if (SE_HEADER_EI_AES128_KEYSIZE != headerPtr->encryptionInfo.keySize) {
+                cli_dbgmsg("ole2: Key length does not match algorithm id\n");
+                goto done;
+            }
             bAES = true;
             break;
         case SE_HEADER_EI_AES192:
             //not implemented
+            if (SE_HEADER_EI_AES192_KEYSIZE != headerPtr->encryptionInfo.keySize) {
+                cli_dbgmsg("ole2: Key length does not match algorithm id\n");
+                goto done;
+            }
             bAES = true;
             goto done;
         case SE_HEADER_EI_AES256:
             //not implemented
+            if (SE_HEADER_EI_AES256_KEYSIZE != headerPtr->encryptionInfo.keySize) {
+                cli_dbgmsg("ole2: Key length does not match algorithm id\n");
+                goto done;
+            }
             bAES = true;
             goto done;
         case SE_HEADER_EI_RC4:
@@ -2329,7 +2357,7 @@ static bool initialize_encryption_key(const encryption_info_stream_standard_t *h
 
     if (SE_HEADER_EI_AES_PROVIDERTYPE != headerPtr->encryptionInfo.providerType) {
         cli_dbgmsg("ole2: WARNING: Provider Type should be '0x%x', is '0x%x'\n",
-                    SE_HEADER_EI_AES_PROVIDERTYPE, headerPtr->encryptionInfo.providerType);
+                   SE_HEADER_EI_AES_PROVIDERTYPE, headerPtr->encryptionInfo.providerType);
         goto done;
     }
 
