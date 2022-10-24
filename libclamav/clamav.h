@@ -497,7 +497,10 @@ extern void cl_engine_set_clcb_pre_cache(struct cl_engine *engine, clcb_pre_cach
 #define LAYER_ATTRIBUTES_DECRYPTED 0x2     /** Decryption was used to extract this layer. I.e. had to decrypt some previous layer. */
 
 /**
- * @brief Pre-scan callback.
+ * @brief File inspection callback.
+ *
+ * DISCLAIMER: This interface is to be considered unstable while we continue to evaluate it.
+ * We may change this interface in the future.
  *
  * Called for each NEW file (inner and outer).
  * Provides capability to record embedded file information during a scan.
@@ -521,6 +524,9 @@ typedef cl_error_t (*clcb_file_inspection)(int fd, const char *type, const char 
                                            uint32_t recursion_level, uint32_t layer_attributes, void *context);
 /**
  * @brief Set a custom file inspection callback function.
+ *
+ * DISCLAIMER: This interface is to be considered unstable while we continue to evaluate it.
+ * We may change this interface in the future.
  *
  * Caution: changing options for an engine that is in-use is not thread-safe!
  *
