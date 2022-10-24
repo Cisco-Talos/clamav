@@ -78,7 +78,7 @@
 #pragma pack 1
 #endif
 
-//https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-cfb/05060311-bfce-4b12-874d-71fd4ce63aea
+// https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-cfb/05060311-bfce-4b12-874d-71fd4ce63aea
 typedef struct ole2_header_tag {
     unsigned char magic[8]; /* should be: 0xd0cf11e0a1b11ae1 */
     unsigned char clsid[16];
@@ -123,8 +123,8 @@ typedef struct ole2_header_tag {
     bool has_xlm;
     bool has_image;
 
-    hwp5_header_t *is_hwp; //This value MUST be last in this structure,
-                           //otherwise you will get short file reads.
+    hwp5_header_t *is_hwp; // This value MUST be last in this structure,
+                           // otherwise you will get short file reads.
 
 } ole2_header_t;
 
@@ -1548,7 +1548,7 @@ static cl_error_t handler_otf(ole2_header_t *hdr, property_t *prop, const char *
     }
     print_ole2_property(prop);
 
-    if (!(tempfile = cli_gentemp(ctx ? ctx->sub_tmpdir : NULL))) {
+    if (!(tempfile = cli_gentemp(ctx->sub_tmpdir))) {
         ret = CL_EMEM;
         goto done;
     }
@@ -1688,7 +1688,7 @@ done:
         cli_bitset_free(blk_bitset);
     }
     if (NULL != tempfile) {
-        if (ctx && !ctx->engine->keeptmp) {
+        if (!ctx->engine->keeptmp) {
             if (cli_unlink(tempfile)) {
                 ret = CL_EUNLINK;
             }
@@ -1708,7 +1708,7 @@ done:
  * @param ctx           cli_ctx
  * @param handler_ctx   handler context.  For this function, it is the encryption key
  *                      initialized by 'initialize_encryption_key'
- * @return              Success or failure depending on whether validation was successful. 
+ * @return              Success or failure depending on whether validation was successful.
  *
  * For more information, see below
  * https://docs.microsoft.com/en-us/openspecs/office_file_formats/ms-offcrypto/e5ad39b8-9bc1-4a19-bad3-44e6246d21e6
@@ -1754,7 +1754,7 @@ static cl_error_t handler_otf_encrypted(ole2_header_t *hdr, property_t *prop, co
 
     nrounds = rijndaelSetupDecrypt(rk, key->key, key->key_length_bits);
 
-    if (!(tempfile = cli_gentemp(ctx ? ctx->sub_tmpdir : NULL))) {
+    if (!(tempfile = cli_gentemp(ctx->sub_tmpdir))) {
         ret = CL_EMEM;
         goto done;
     }
@@ -1819,7 +1819,7 @@ static cl_error_t handler_otf_encrypted(ole2_header_t *hdr, property_t *prop, co
             len -= MIN(len, 1 << hdr->log2_small_block_size);
             current_block = ole2_get_next_sbat_block(hdr, current_block);
 
-            //These small block files don't seem to be encrypted.
+            // These small block files don't seem to be encrypted.
         } else {
             uint32_t bytesToWrite  = MIN(len - bytesRead, blockSize);
             uint32_t writeIdx      = 0;
@@ -1829,7 +1829,7 @@ static cl_error_t handler_otf_encrypted(ole2_header_t *hdr, property_t *prop, co
                 break;
             }
             if (0 == bytesRead) {
-                //first block.  account for size of file.
+                // first block.  account for size of file.
 
                 writeIdx += sizeof(uint64_t);
                 memcpy(&actualFileLength, buff, sizeof(actualFileLength));
@@ -1932,7 +1932,7 @@ done:
         cli_bitset_free(blk_bitset);
     }
     if (NULL != tempfile) {
-        if (ctx && !ctx->engine->keeptmp) {
+        if (!ctx->engine->keeptmp) {
             if (cli_unlink(tempfile)) {
                 ret = CL_EUNLINK;
             }
@@ -2120,7 +2120,7 @@ static cl_error_t generate_key_aes(const char *const password, encryption_key_t 
         buf1[i] = buf1[i] ^ sha1Dst[i];
     }
 
-    //now sha1 buf1
+    // now sha1 buf1
     (void)cl_sha1(buf1, sizeof(buf1), doubleSha, NULL);
 
     memset(buf2, 0x5c, sizeof(buf2));
@@ -2179,7 +2179,7 @@ done:
  * @brief           Returns true if it is actually encrypted with the key.
  * @param key       encryption_key_t to attempt validation
  * @param verifier  encryption_verifier_t to attempt validation.
- * @return          Success or failure depending on whether validation was successful. 
+ * @return          Success or failure depending on whether validation was successful.
  *
  * For more information, see below
  * https://docs.microsoft.com/en-us/openspecs/office_file_formats/ms-offcrypto/e5ad39b8-9bc1-4a19-bad3-44e6246d21e6
@@ -2240,7 +2240,7 @@ done:
  * @brief               Initialize encryption key, if the encryption validation passes.
  *
  * @param headerPtr     Pointer to the encryption header.
- * @param encryptionKey [out] Pointer to encryption_key_t structure to be initialized by this function.  
+ * @param encryptionKey [out] Pointer to encryption_key_t structure to be initialized by this function.
  * @return              Success or failure depending on whether or not the
  *                      encryption verifier was successful with the
  *                      standard password (VelvetSweatshop).
@@ -2278,7 +2278,7 @@ static bool initialize_encryption_key(const encryption_info_stream_standard_t *h
         goto done;
     }
 
-    //https://docs.microsoft.com/en-us/openspecs/office_file_formats/ms-offcrypto/200a3d61-1ab4-4402-ae11-0290b28ab9cb
+    // https://docs.microsoft.com/en-us/openspecs/office_file_formats/ms-offcrypto/200a3d61-1ab4-4402-ae11-0290b28ab9cb
     if ((SE_HEADER_FDOCPROPS & headerPtr->flags)) {
         cli_dbgmsg("ole2: Unsupported document properties encrypted\n");
         goto done;
@@ -2336,7 +2336,7 @@ static bool initialize_encryption_key(const encryption_info_stream_standard_t *h
             bAES = true;
             goto done;
         case SE_HEADER_EI_RC4:
-            //not implemented
+            // not implemented
             goto done;
         default:
             cli_dbgmsg("ole2: Invalid Algorithm ID: 0x%x\n", headerPtr->encryptionInfo.algorithmID);
@@ -2368,7 +2368,7 @@ static bool initialize_encryption_key(const encryption_info_stream_standard_t *h
         goto done;
     }
 
-    /*The encryption info is at the end of the CPSName string.  
+    /*The encryption info is at the end of the CPSName string.
      * Find the end, and we'll have the index of the EncryptionVerifier.
      * The CPSName string *should* always be either
      * 'Microsoft Enhanced RSA and AES Cryptographic Provider'
