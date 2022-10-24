@@ -7,20 +7,187 @@ differ slightly from third-party binary packages.
 
 ClamAV 1.0.0 includes the following improvements and changes.
 
-### New Requirements
-
 ### Major changes
 
-### Notable changes
+- Support for decrypting read-only OLE2-based XLS files that are encrypted with
+  the default "VelvetSweatshop" password.
+  Use of the VelvetSweatshop password will now appear in the metadata JSON.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/700
+
+- Overhauled the implementation of the all-match feature. The newer code is more
+  reliable and easier to maintain.
+  - This project fixed several known issues with signature detection in all-
+    match mode:
+    - Enabled embedded file-type-recognition-signatures to match when a malware
+      signature also matched in a scan of the same layer.
+    - Enabled bytecode signatures to run in all-match mode after a match has
+      occurred.
+    - Fixed an assortment of all-match edge case issues:
+  - Added multiple test cases to verify correct all-match behavior.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/687
+
+- Added a new callback to the public API for inspecting file content during a
+  scan at each layer of archive extraction.
+  - The new callback function type is `clcb_file_inspection` defined in
+    `clamav.h`.
+  - The function `cl_engine_set_clcb_file_inspection()` may be used to enable
+    the callback prior to performing a scan.
+  - This new callback is to be considered *unstable* for the 1.0 release.
+    We may alter this function in a subsequent feature version.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/170
+
+- Added a new function to the public API for unpacking CVD signature archives.
+  - The new function is `cl_cvdunpack()`. The last parameter for the function
+    may be set to verify if a CVD's signature is valid before unpacking the CVD
+    content to the destination directory.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/690
 
 ### Other improvements
 
+- Add checks to limit PDF object extraction recursion.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/629
+
+- Increased the limit for memory allocations based on untrusted input and
+  altered the warning message when the limit is exceeded so that it is more
+  helpful and less dramatic.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/723
+
+- Dramatically improved the build time of libclamav-Rust unit tests.
+  The unit test build is included in the time limit for the test itself and was
+  timing out on slower systems. The ClamAV Rust code modules now share the same
+  build directory, which also reduces the amount of disk space used for the
+  build.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/694
+
+- Windows: The debugging symbol (PDB) files are now installed alongside the DLL
+- and LIB library files when built in "RelWithDebInfo" or "Debug" mode.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/669
+
+- Relaxed the constraints on the check for overlapping ZIP file entries so as
+  not to alert on slightly malformed, but non-malicious, Java (JAR) archives.
+  - Talos escalations issues:
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/561
+
+- Increased the time limit in FreshClam before warning if the DNS entry is
+  stale. In combination with changes to update the DNS entry more
+  frequently, this should prevent false alarms of failures in the database
+  publication system.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/597
+
+- Docker: The C library header files are now included in the Docker image.
+  Patch courtesy of GitHub user TerminalFi.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/693
+
+- Show the BYTECODE_RUNTIME build options when using the `ccmake` GUI for CMake.
+  Patch courtesy of Дилян Палаузов.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/678
+
+- Added explicit minimum and maximum supported LLVM versions so that the build
+  will fail if you try to build with the version that is too old or too new and
+  will print a helpful message rather than simply failing to compile because of
+  compatibility issues. Patch courtesy of Matt Jolly.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/692
+
 ### Bug fixes
 
-### Acknowledgements
+- Assorted code quality fixes. These are not security issues and will not be
+  backported to prior feature versions:
+  - Several heap buffer overflows while loading PDB and WDB databases were found
+    by OSS-Fuzz and by Michał Dardas.
+    - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/530
+    - Follow-up Optimization: https://github.com/Cisco-Talos/clamav/pull/712
+
+  - oss-fuzz 43843: heap buffer overflow read (1) cli_sigopts_handler
+    - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/560
+
+  - oss-fuzz 44849: heap buffer overflow read (4) in HTML/js-norm
+    - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/503
+
+  - oss-fuzz 43816: heap buffer overflow read (8) in cli_bcomp_freemeta
+    - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/583
+
+  - oss-fuzz 43832: heap buffer overflow read (2) in cli_parse_add
+    - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/611
+
+  - oss-fuzz 44493: integer overflow in cli_scannulsft
+    - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/554
+
+  - CIFuzz leak detected in IDB parser
+    - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/547
+
+  - oss-fuzz assorted signature parser leaks
+    - GitHub pull requests:
+      - https://github.com/Cisco-Talos/clamav/pull/532
+      - https://github.com/Cisco-Talos/clamav/pull/533
+      - https://github.com/Cisco-Talos/clamav/pull/535
+
+  - oss-fuzz 40601: leak detected in pdf_parseobj
+    - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/553
+
+- Fixed a build failure when using LIBCLAMAV_ONLY mode with tests enabled.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/714
+
+- Fixed an issue verifying EXE/DLL authenticode signatures to determine a given
+  file can be trusted (skipped).
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/727
+
+- Fixed a caching bug relating to the Container and Intermediates logical
+  signature condition.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/724
+
+- Fixed a build issues when build with RAR disabled or when building with an
+  external libmspack library rather than the vendored library.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/672
+
+- Fixed the capitalization of the `-W` option for `clamonacc` in the `clamonacc`
+  manpage. Patch courtesy of GitHub user monkz.
+  - GitHub pull requests:
+    - https://github.com/Cisco-Talos/clamav/pull/709
+    - https://github.com/Cisco-Talos/clamav/pull/710
+
+- macOS: Fixed an issue with memory-map (`mmap`) system call detection affecting
+  versions 0.105 and 0.104. Memory maps may be used in ClamAV to improve
+  signature load performance, scan performance, and RAM usage.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/705
+
+- Fixed a performance issue with Rust code when the build type is not explicitly
+  set to "Release" or "RelWithDebInfo". The Rust default build type is now
+  "RelWithDebInfo" just like the C code, instead of Debug.
+  This means it is now optimized by default.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/701
+
+- Fixed an issue loading Yara rules containing regex strings with an escaped
+  forward-slash (`\/`) followed by a colon (`:`).
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/696
+
+- Fixed an issue detecting and scanning ZIP file entries appended to very small
+  files. The fix is part of the all-match feature overhaul.
+
+- Fixed a detection issue with EXE/DLL import-address-table hash signatures that
+  specify a wildcard (`*`) for the size field. The fix is part of the all-match
+  feature overhaul.
+
+- Fix the default bytecode timeout value listed in the manpages and in the
+  sample config files. Patches courtesy of Liam Jarvis and Ben Bodenmiller.
+  - GitHub pull requests:
+    - https://github.com/Cisco-Talos/clamav/pull/631
+    - https://github.com/Cisco-Talos/clamav/pull/661
+
+- Fix issue building the libclamav_rust test program when running `ctest` if
+  building with `BYTECODE_RUNTIME=llvm` and when the `FindLLVM.cmake` module is
+  used to find the LLVM libraries. Patch courtesy of GitHub user teoberi.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/572
+
+### Acknowledgments
 
 Special thanks to the following people for code contributions and bug reports:
--
+- Ben Bodenmiller
+- Дилян Палаузов
+- Liam Jarvis
+- Matt Jolly
+- monkz
+- teoberi
+- TerminalFi
 
 ## 0.105.1
 
@@ -275,7 +442,7 @@ The CVE's fixes below are also addressed in versions 0.104.3 and 0.103.6.
 
 - Assorted bug fixes and improvements.
 
-### Acknowledgements
+### Acknowledgments
 
 Special thanks to the following people for code contributions and bug reports:
 - Ahmon Dancy
@@ -651,7 +818,7 @@ patch versions do not generally introduce new options:
 
 - Other minor bug fixes.
 
-### Acknowledgements
+### Acknowledgments
 
 The ClamAV team thanks the following individuals for their code submissions:
 
@@ -1067,7 +1234,7 @@ ClamAV 0.103.1 is a patch release with the following fixes and improvements.
   update in the event that it proves to be problematic.
   This feature already exists for many other file types.
 
-### Acknowledgements
+### Acknowledgments
 
 The ClamAV team thanks the following individuals for their code submissions:
 
@@ -1279,7 +1446,7 @@ ClamAV 0.103.0 includes the following improvements and changes.
   you compile ClamAV, run `autogen.sh`.
   Users building with Autotools from the release tarball should be unaffected.
 
-### Acknowledgements
+### Acknowledgments
 
 The ClamAV team thanks the following individuals for their code submissions:
 
@@ -1485,7 +1652,7 @@ changes.
   - The documentation will continue to be provided in HTML format with each
     release for offline viewing in the `docs/html` directory.
   - The new home for the documentation markdown is in our
-    [ClamAV FAQ Github repository](https://github.com/Cisco-Talos/clamav-faq)
+    [ClamAV FAQ GitHub repository](https://github.com/Cisco-Talos/clamav-faq)
 - To remediate future denial of service conditions caused by excessive scan times,
   we introduced a scan time limit.
   The default value is 2 minutes (120000 milliseconds).
@@ -1566,7 +1733,7 @@ changes.
   Non-Linux users will need to take no actions as they are unaffected by this
   new requirement.
 
-### Acknowledgements
+### Acknowledgments
 
 The ClamAV team thanks the following individuals for their code submissions:
 
@@ -1771,7 +1938,7 @@ alongside `clamav.h`.
 - Fixes for `--with-libjson` and `--with-libcurl` to correctly accept library
   install path arguments.
 
-### Acknowledgements
+### Acknowledgments
 
 The ClamAV team thanks the following individuals for their code submissions:
 
@@ -1988,7 +2155,7 @@ infrastructure that's so easy to take for granted.
 
   We're very proud of ClamAV 0.101 and we hope you enjoy it.
 
-### Acknowledgements
+### Acknowledgments
 
 The ClamAV team thanks the following individuals for their code submissions:
 
@@ -2126,7 +2293,7 @@ ClamAV 0.100, including but not limited to:
   for more descriptive signatures.
 - Improvements to clamd's On-Access scanning capabilities for Linux.
 
-### Acknowledgements
+### Acknowledgments
 
 The ClamAV team thanks the following individuals for their code submissions:
 
