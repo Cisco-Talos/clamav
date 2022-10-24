@@ -711,7 +711,7 @@ pub type fp_digit = ulong64;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct fp_int {
-    pub dp: [fp_digit; 72usize],
+    pub dp: [fp_digit; 136usize],
     pub used: ::std::os::raw::c_int,
     pub sign: ::std::os::raw::c_int,
 }
