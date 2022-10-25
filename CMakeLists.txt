@@ -491,8 +491,8 @@ find_package(JSONC REQUIRED)
 # Set variable required by libclamav to use libjson-c
 set(HAVE_JSON 1)
 
-set(LLVM_MAX_VER "14.0.0")
-set(LLVM_MIN_VER "8.0.0")
+set(LLVM_MAX_VER "13")
+set(LLVM_MIN_VER "8")
 
 string (TOLOWER ${BYTECODE_RUNTIME} bytecodeRuntime)
 if(${bytecodeRuntime} STREQUAL "llvm")
@@ -519,13 +519,16 @@ if(${bytecodeRuntime} STREQUAL "llvm")
             endif()
         endif()
 
-        if (${LLVM_PACKAGE_VERSION} VERSION_LESS ${LLVM_MIN_VER})
+        math(EXPR TOO_HIGH_VERSION "${LLVM_MAX_VER} + 1" OUTPUT_FORMAT DECIMAL)
+
+        if(${LLVM_PACKAGE_VERSION} VERSION_LESS ${LLVM_MIN_VER})
             message(FATAL_ERROR "LLVM version ${LLVM_PACKAGE_VERSION} is too old")
-        elseif (${LLVM_PACKAGE_VERSION} VERSION_GREATER_EQUAL ${LLVM_MAX_VER} )
+        elseif (${LLVM_PACKAGE_VERSION} VERSION_GREATER_EQUAL ${TOO_HIGH_VERSION} )
             message(FATAL_ERROR "LLVM version ${LLVM_PACKAGE_VERSION} is too new")
         else()
             message(STATUS "LLVM version ${LLVM_PACKAGE_VERSION} found")
         endif()
+
         # Set variable required by libclamav to use llvm instead of interpreter
         set(LLVM_VERSION ${LLVM_VERSION_MAJOR}${LLVM_VERSION_MINOR})
     endif()
