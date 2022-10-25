@@ -2189,37 +2189,51 @@ static bool verify_key_aes(const encryption_key_t *const key, encryption_verifie
 
     bool bRet = false;
     uint8_t sha[SHA1_HASH_SIZE];
-    uint8_t decrypted[AES_VERIFIER_HASH_LEN];
-    uint32_t tmp = 0;
+    uint8_t decrypted[AES_VERIFIER_HASH_LEN] = {0};
+    uint32_t actual_hash_size = 0;
+
+    // The hash size should be 20 bytes, even though the buffer is 32 bytes.
+    // If it claims to be LARGER than 32 bytes, we have a problem - because the buffer isn't that big.
+    actual_hash_size = verifier->verifier_hash_size;
+    if (actual_hash_size > sizeof(verifier->encrypted_verifier_hash)) {
+        cli_warnmsg("ole2: Invalid encrypted verifier hash length 0x%x\n", verifier->verifier_hash_size);
+        actual_hash_size = sizeof(verifier->encrypted_verifier_hash);
+    }
 
     switch (key->key_length_bits) {
         case SE_HEADER_EI_AES128_KEYSIZE:
-            if (!aes_128ecb_decrypt(verifier->encrypted_verifier, sizeof(verifier->encrypted_verifier),
-                                    decrypted, key)) {
+            // Decrypt the verifier, which is a randomly generated Verifier value encrypted using
+            // the algorithm chosen by the implementation.
+            if (!aes_128ecb_decrypt(verifier->encrypted_verifier, sizeof(verifier->encrypted_verifier), decrypted, key)) {
                 goto done;
             }
+
+            // Get hash of decrypted verifier.
+            // The hash type is from the encryption header, but in this case should always be SHA1.
+            (void)cl_sha1(decrypted, sizeof(verifier->encrypted_verifier), sha, NULL);
+
+            // Decrypt the verifier hash, which, for contains the encrypted form of the hash of the randomly generated Verifier value
+            if (!aes_128ecb_decrypt(verifier->encrypted_verifier_hash, actual_hash_size, decrypted, key)) {
+                goto done;
+            }
+
             break;
         case SE_HEADER_EI_AES192_KEYSIZE:
-            /* fall-through */
+            // not implemented
+            goto done;
         case SE_HEADER_EI_AES256_KEYSIZE:
-            /* fall-through */
+            // not implemented
+            goto done;
         default:
+            // unsupported/invalid key size
             goto done;
     }
 
-    (void)cl_sha1(decrypted, sizeof(verifier->encrypted_verifier), sha, NULL);
+    // Compare our (20-byte) SHA1 with the decrypted hash, which should be the same.
+    // Note: the hash size is different then ... what are we gonna do?  We only support SHA1 hashes for this algorithm.
+    // So we'll just assume they're the same for this comparison.
+    bRet = (0 == memcmp(sha, decrypted, SHA1_HASH_SIZE));
 
-    tmp = verifier->verifier_hash_size;
-    if (tmp > sizeof(verifier->encrypted_verifier_hash)) {
-        cli_warnmsg("ole2: Invalid encrypted verifier hash length 0x%x\n", verifier->verifier_hash_size);
-        tmp = sizeof(verifier->encrypted_verifier_hash);
-    }
-    if (!aes_128ecb_decrypt(verifier->encrypted_verifier_hash, tmp,
-                            decrypted, key)) {
-        goto done;
-    }
-
-    bRet = (0 == memcmp(sha, decrypted, verifier->verifier_hash_size));
 done:
 
     return bRet;
@@ -2320,7 +2334,7 @@ static bool initialize_encryption_key(const encryption_info_stream_standard_t *h
             bAES = true;
             break;
         case SE_HEADER_EI_AES192:
-            //not implemented
+            // not implemented
             if (SE_HEADER_EI_AES192_KEYSIZE != headerPtr->encryptionInfo.keySize) {
                 cli_dbgmsg("ole2: Key length does not match algorithm id\n");
                 goto done;
@@ -2328,7 +2342,7 @@ static bool initialize_encryption_key(const encryption_info_stream_standard_t *h
             bAES = true;
             goto done;
         case SE_HEADER_EI_AES256:
-            //not implemented
+            // not implemented
             if (SE_HEADER_EI_AES256_KEYSIZE != headerPtr->encryptionInfo.keySize) {
                 cli_dbgmsg("ole2: Key length does not match algorithm id\n");
                 goto done;
