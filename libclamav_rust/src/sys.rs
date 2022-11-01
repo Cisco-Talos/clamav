@@ -112,7 +112,10 @@ pub type clcb_pre_cache = ::std::option::Option<
         context: *mut ::std::os::raw::c_void,
     ) -> cl_error_t,
 >;
-#[doc = " @brief Pre-scan callback."]
+#[doc = " @brief File inspection callback."]
+#[doc = ""]
+#[doc = " DISCLAIMER: This interface is to be considered unstable while we continue to evaluate it."]
+#[doc = " We may change this interface in the future."]
 #[doc = ""]
 #[doc = " Called for each NEW file (inner and outer)."]
 #[doc = " Provides capability to record embedded file information during a scan."]
