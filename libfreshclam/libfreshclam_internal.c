@@ -1527,6 +1527,7 @@ static fc_error_t mkdir_and_chdir_for_cdiff_tmp(const char *database, const char
          * yet exist.
          */
         int ret;
+        bool is_cld = false;
 
         /*
          * 1) Double-check that we have a CVD or CLD. Without either one, incremental update won't work.
@@ -1548,6 +1549,8 @@ static fc_error_t mkdir_and_chdir_for_cdiff_tmp(const char *database, const char
                 logg(LOGG_ERROR, "mkdir_and_chdir_for_cdiff_tmp: Can't find (or access) local CVD or CLD for %s database\n", database);
                 goto done;
             }
+
+            is_cld = true;
         }
 
         /*
@@ -1561,7 +1564,7 @@ static fc_error_t mkdir_and_chdir_for_cdiff_tmp(const char *database, const char
         /*
          * 3) Unpack the existing CVD/CLD database to this directory.
          */
-        if (CL_SUCCESS != cl_cvdunpack(cvdfile, tmpdir, false)) {
+        if (CL_SUCCESS != cl_cvdunpack(cvdfile, tmpdir, is_cld == true)) {
             logg(LOGG_ERROR, "mkdir_and_chdir_for_cdiff_tmp: Can't unpack %s into %s\n", cvdfile, tmpdir);
             cli_rmdirs(tmpdir);
             goto done;
