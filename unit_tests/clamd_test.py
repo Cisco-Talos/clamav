@@ -512,3 +512,48 @@ class TC(testcase.TestCase):
         self.run_clamdscan('{}'.format(TC.path_tmp),
             expected_ec=1, expected_out=expected_out, unexpected_out=unexpected_out,
             use_valgrind=True)
+
+    def test_clamd_10_allmatch_not_sticky(self):
+        '''
+        Verify that a scanning without allmatch does not use allmatch mode, after scanning with allmatch.
+        This is a regression test for an issue where the allmatch scan option is sticky and any scans after an allmatch scan become an allmatch scan.
+        '''
+        self.step_name('Testing clamdscan --allmatch is not sticky')
+
+        # Get a list of Path()'s of each of signature file
+        test_path = TC.path_source / 'unit_tests' / 'input' / 'pe_allmatch'
+        database_files = list(test_path.glob('alert-sigs/*'))
+
+        test_exe = test_path / 'test.exe'
+
+        # Copy them to the database directory before starting ClamD
+        for db in database_files:
+            shutil.copy(str(db), str(TC.path_db))
+
+        #
+        # Start ClamD
+        #
+        self.start_clamd()
+
+        poll = self.proc.poll()
+        assert poll == None  # subprocess is alive if poll() returns None
+
+        # Try first without --allmatch
+        output = self.execute_command('{clamdscan} -c {clamd_config} --wait --ping 10 {test_exe}'.format(
+            clamdscan=TC.clamdscan, clamd_config=TC.clamd_config, test_exe=test_exe))
+        assert output.ec == 1
+        assert output.out.count('FOUND') == 1
+
+
+        # Next, try WITH --allmatch
+        output = self.execute_command('{clamdscan} -c {clamd_config} --allmatch {test_exe}'.format(
+            clamdscan=TC.clamdscan, clamd_config=TC.clamd_config, test_exe=test_exe))
+        assert output.ec == 1
+        assert output.out.count('FOUND') > 1
+
+
+        # Try again without --allmatch
+        output = self.execute_command('{clamdscan} -c {clamd_config} {test_exe}'.format(
+            clamdscan=TC.clamdscan, clamd_config=TC.clamd_config, test_exe=test_exe))
+        assert output.ec == 1
+        assert output.out.count('FOUND') == 1
