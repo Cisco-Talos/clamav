@@ -66,9 +66,6 @@ option(ENABLE_FUZZ
 option(ENABLE_EXTERNAL_MSPACK
     "Use external mspack instead of internal libclammspack.")
 
-option(ENABLE_EXTERNAL_TOMSFASTMATH
-    "Use external TomsFastMath instead of compiling vendored source into libclamav.")
-
 option(ENABLE_JSON_SHARED
     "Prefer linking with libjson-c shared library instead of static."
     ON)

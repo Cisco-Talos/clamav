@@ -1032,15 +1032,6 @@ else()
     set(LIBMSPACK "MSPack::mspack")
 endif()
 
-if(NOT ENABLE_EXTERNAL_TOMSFASTMATH)
-    # TomsFastMath built as an object library within libclamav, at least for now.
-    set(LIBTFM "tomsfastmath")
-else()
-    find_package(TomsFastMath REQUIRED)
-    set(HAVE_SYSTEM_TOMSFASTMATH 1)
-    set(LIBTFM "TomsFastMath::TomsFastMath")
-endif()
-
 if(WIN32)
     add_subdirectory( win32/compat )
 endif()
