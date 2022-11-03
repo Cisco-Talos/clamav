@@ -115,7 +115,7 @@ typedef struct ole2_header_tag {
      */
     int32_t sbat_root_start __attribute__((packed));
     uint32_t max_block_no;
-    off_t m_length;
+    size_t m_length;
     bitset_t *bitset;
     struct uniq *U;
     fmap_t *map;
@@ -404,14 +404,13 @@ print_ole2_header(ole2_header_t *hdr)
     return;
 }
 
-static int
-ole2_read_block(ole2_header_t *hdr, void *buff, unsigned int size, int32_t blockno)
+static bool ole2_read_block(ole2_header_t *hdr, void *buff, size_t size, int32_t blockno)
 {
-    off_t offset, offend;
+    size_t offset, offend;
     const void *pblock;
 
     if (blockno < 0) {
-        return FALSE;
+        return false;
     }
     /* other methods: (blockno+1) * 512 or (blockno * block_size) + 512; */
     if (((uint64_t)blockno << hdr->log2_big_block_size) < (INT32_MAX - MAX(512, (uint64_t)1 << hdr->log2_big_block_size))) {
@@ -423,18 +422,18 @@ ole2_read_block(ole2_header_t *hdr, void *buff, unsigned int size, int32_t block
         offend = INT32_MAX;
     }
 
-    if ((offend <= 0) || (offset < 0) || (offset >= hdr->m_length)) {
-        return FALSE;
+    if ((offend == 0) || (offset >= hdr->m_length)) {
+        return false;
     } else if (offend > hdr->m_length) {
         /* bb#11369 - ole2 files may not be a block multiple in size */
         memset(buff, 0, size);
         size = hdr->m_length - offset;
     }
     if (!(pblock = fmap_need_off_once(hdr->map, offset, size))) {
-        return FALSE;
+        return false;
     }
     memcpy(buff, pblock, size);
-    return TRUE;
+    return true;
 }
 
 static int32_t
@@ -531,17 +530,16 @@ ole2_get_next_sbat_block(ole2_header_t *hdr, int32_t current_block)
 }
 
 /* Retrieve the block containing the data for the given sbat index */
-static int32_t
-ole2_get_sbat_data_block(ole2_header_t *hdr, void *buff, int32_t sbat_index)
+static bool ole2_get_sbat_data_block(ole2_header_t *hdr, void *buff, int32_t sbat_index)
 {
     int32_t block_count, current_block;
 
     if (sbat_index < 0) {
-        return FALSE;
+        return false;
     }
     if (hdr->sbat_root_start < 0) {
         cli_dbgmsg("No root start block\n");
-        return FALSE;
+        return false;
     }
     block_count   = sbat_index / (1 << (hdr->log2_big_block_size - hdr->log2_small_block_size));
     current_block = hdr->sbat_root_start;
@@ -1947,65 +1945,64 @@ done:
 }
 
 #if !defined(HAVE_ATTRIB_PACKED) && !defined(HAVE_PRAGMA_PACK) && !defined(HAVE_PRAGMA_PACK_HPPA)
-static int
-ole2_read_header(int fd, ole2_header_t *hdr)
+static bool ole2_read_header(int fd, ole2_header_t *hdr)
 {
     int i;
 
     if (cli_readn(fd, &hdr->magic, 8) != 8) {
-        return FALSE;
+        return false;
     }
     if (cli_readn(fd, &hdr->clsid, 16) != 16) {
-        return FALSE;
+        return false;
     }
     if (cli_readn(fd, &hdr->minor_version, 2) != 2) {
-        return FALSE;
+        return false;
     }
     if (cli_readn(fd, &hdr->dll_version, 2) != 2) {
-        return FALSE;
+        return false;
     }
     if (cli_readn(fd, &hdr->byte_order, 2) != 2) {
-        return FALSE;
+        return false;
     }
     if (cli_readn(fd, &hdr->log2_big_block_size, 2) != 2) {
-        return FALSE;
+        return false;
     }
     if (cli_readn(fd, &hdr->log2_small_block_size, 4) != 4) {
-        return FALSE;
+        return false;
     }
     if (cli_readn(fd, &hdr->reserved, 8) != 8) {
-        return FALSE;
+        return false;
     }
     if (cli_readn(fd, &hdr->bat_count, 4) != 4) {
-        return FALSE;
+        return false;
     }
     if (cli_readn(fd, &hdr->prop_start, 4) != 4) {
-        return FALSE;
+        return false;
     }
     if (cli_readn(fd, &hdr->signature, 4) != 4) {
-        return FALSE;
+        return false;
     }
     if (cli_readn(fd, &hdr->sbat_cutoff, 4) != 4) {
-        return FALSE;
+        return false;
     }
     if (cli_readn(fd, &hdr->sbat_start, 4) != 4) {
-        return FALSE;
+        return false;
     }
     if (cli_readn(fd, &hdr->sbat_block_count, 4) != 4) {
-        return FALSE;
+        return false;
     }
     if (cli_readn(fd, &hdr->xbat_start, 4) != 4) {
-        return FALSE;
+        return false;
     }
     if (cli_readn(fd, &hdr->xbat_count, 4) != 4) {
-        return FALSE;
+        return false;
     }
     for (i = 0; i < 109; i++) {
         if (cli_readn(fd, &hdr->bat_array[i], 4) != 4) {
-            return FALSE;
+            return false;
         }
     }
-    return TRUE;
+    return true;
 }
 #endif
 
@@ -2190,7 +2187,7 @@ static bool verify_key_aes(const encryption_key_t *const key, encryption_verifie
     bool bRet = false;
     uint8_t sha[SHA1_HASH_SIZE];
     uint8_t decrypted[AES_VERIFIER_HASH_LEN] = {0};
-    uint32_t actual_hash_size = 0;
+    uint32_t actual_hash_size                = 0;
 
     // The hash size should be 20 bytes, even though the buffer is 32 bytes.
     // If it claims to be LARGER than 32 bytes, we have a problem - because the buffer isn't that big.
@@ -2446,8 +2443,8 @@ cl_error_t cli_ole2_extract(const char *dirname, cli_ctx *ctx, struct uniq **fil
     unsigned long scansize, scansize2;
     const void *phdr;
     encryption_key_t key;
-    bool bEncrypted         = false;
-    off_t encryption_offset = 0;
+    bool bEncrypted          = false;
+    size_t encryption_offset = 0;
 
     cli_dbgmsg("in cli_ole2_extract()\n");
     if (!ctx) {
@@ -2507,19 +2504,6 @@ cl_error_t cli_ole2_extract(const char *dirname, cli_ctx *ctx, struct uniq **fil
     hdr.xbat_start            = ole2_endian_convert_32(hdr.xbat_start);
     hdr.xbat_count            = ole2_endian_convert_32(hdr.xbat_count);
 
-    encryption_offset = 4 * (1 << hdr.log2_big_block_size);
-    if ((encryption_offset + (off_t)sizeof(encryption_info_stream_standard_t)) <= hdr.m_length) {
-        encryption_info_stream_standard_t encryption_info_stream_standard;
-        copy_encryption_info_stream_standard(&encryption_info_stream_standard, &(((const uint8_t *)phdr)[encryption_offset]));
-        bEncrypted = initialize_encryption_key(&encryption_info_stream_standard, &key);
-
-#if HAVE_JSON
-        if (ctx->wrkproperty == ctx->properties) {
-            cli_jsonint(ctx->wrkproperty, "EncryptedWithVelvetSweatshop", bEncrypted);
-        }
-#endif /* HAVE_JSON */
-    }
-
     hdr.sbat_root_start = -1;
 
     hdr.bitset = cli_bitset_init();
@@ -2532,7 +2516,12 @@ cl_error_t cli_ole2_extract(const char *dirname, cli_ctx *ctx, struct uniq **fil
         ret = CL_EFORMAT;
         goto done;
     }
-    if (hdr.log2_big_block_size < 6 || hdr.log2_big_block_size > 30) {
+    if (hdr.log2_big_block_size < 6 || hdr.log2_big_block_size > 28) {
+        // The big block size (aka Sector Shift) is expected to be:
+        //  - 9   for Major Version 3
+        //  - 12  for Major Version 4
+        //  - TBD for Major Version 5?
+        // To allow for future changes, and prevent overflowing an int32_t, we're limiting to 28.
         cli_dbgmsg("CAN'T PARSE: Invalid big block size (2^%u)\n", hdr.log2_big_block_size);
         goto done;
     }
@@ -2549,6 +2538,22 @@ cl_error_t cli_ole2_extract(const char *dirname, cli_ctx *ctx, struct uniq **fil
         ret = CL_EFORMAT;
         goto done;
     }
+
+    /* determine if encrypted with VelvetSweatshop password */
+    encryption_offset = 4 * (1 << hdr.log2_big_block_size);
+    if ((encryption_offset + sizeof(encryption_info_stream_standard_t)) <= hdr.m_length) {
+        encryption_info_stream_standard_t encryption_info_stream_standard;
+        copy_encryption_info_stream_standard(&encryption_info_stream_standard, &(((const uint8_t *)phdr)[encryption_offset]));
+        bEncrypted = initialize_encryption_key(&encryption_info_stream_standard, &key);
+
+        cli_dbgmsg("Encrypted with VelvetSweatshop\n");
+#if HAVE_JSON
+        if (ctx->wrkproperty == ctx->properties) {
+            cli_jsonint(ctx->wrkproperty, "EncryptedWithVelvetSweatshop", bEncrypted);
+        }
+#endif /* HAVE_JSON */
+    }
+
     /* 8 SBAT blocks per file block */
     hdr.max_block_no = (hdr.map->len - MAX(512, 1 << hdr.log2_big_block_size)) / (1 << hdr.log2_small_block_size);
 
