@@ -49,7 +49,7 @@ if(ENABLE_APP)
         PRIVATE
             ClamAV::libclamav
             libcheck::check
-            ${LIBTFM}
+            tomsfastmath
             JSONC::jsonc
             ${LIBMSPACK}
             OpenSSL::SSL
@@ -85,7 +85,7 @@ if(ENABLE_APP)
             ClamAV::libclamav
             ClamAV::common
             libcheck::check
-            ${LIBTFM}
+            tomsfastmath
             JSONC::jsonc
             ${LIBMSPACK}
             OpenSSL::SSL
@@ -133,7 +133,7 @@ target_link_libraries(check_clamav
     PRIVATE
         ClamAV::libclamav
         libcheck::check
-        ${LIBTFM}
+        tomsfastmath
         JSONC::jsonc
         ${LIBMSPACK}
         OpenSSL::SSL
@@ -195,10 +195,6 @@ if(WIN32)
     file(TO_NATIVE_PATH $<TARGET_FILE:PThreadW32::pthreadw32>                   LIBPTHREADW32)
     file(TO_NATIVE_PATH $<TARGET_FILE:ClamAV::win32_compat>                     LIBWIN32COMPAT)
 
-    if (ENABLE_EXTERNAL_TOMSFASTMATH)
-        file(TO_NATIVE_PATH $<TARGET_FILE:${LIBTFM}>                            LIBTFM_PATH)
-    endif()
-
     if(ENABLE_STATIC_LIB)
         file(TO_NATIVE_PATH $<TARGET_FILE:clamav_static>                        LIBCLAMAV)
         if (ENABLE_UNRAR)
@@ -231,10 +227,6 @@ else()
     endif()
     if (ENABLE_UNRAR)
         set(LD_LIBRARY_PATH ${LD_LIBRARY_PATH}:$<TARGET_FILE_DIR:ClamAV::libunrar_iface>:$<TARGET_FILE_DIR:ClamAV::libunrar>)
-    endif()
-    if (ENABLE_EXTERNAL_TOMSFASTMATH)
-        set(LD_LIBRARY_PATH ${LD_LIBRARY_PATH}:$<TARGET_FILE_DIR:${LIBTFM}>)
-        set(LIBTFM_PATH     $<TARGET_FILE:${LIBTFM}>)
     endif()
 
     set(SOURCE             ${CMAKE_SOURCE_DIR})
@@ -310,7 +302,6 @@ set(ENVIRONMENT
     LIBICONV=${LIBICONV}
     LLVM_LIBS=${LLVM_LIBS}
     LLVM_DIRS=${LLVM_LIBRARY_DIRS}
-    LIBTFM=${LIBTFM_PATH}
     LIBPTHREADW32=${LIBPTHREADW32}
     LIBWIN32COMPAT=${LIBWIN32COMPAT}
     LIBCLAMAV=${LIBCLAMAV}

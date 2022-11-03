@@ -42,6 +42,13 @@ ClamAV 1.0.0 includes the following improvements and changes.
     content to the destination directory.
   - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/690
 
+- The option to build with an external TomsFastMath library has been removed.
+  ClamAV requires non-default build options for TomsFastMath to support bigger
+  floating point numbers. Without this change, database and Windows EXE/DLL
+  authenticode certificate validation may fail.
+  The `ENABLE_EXTERNAL_TOMSFASTMATH` build is now ignored.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/742
+
 ### Other improvements
 
 - Add checks to limit PDF object extraction recursion.
