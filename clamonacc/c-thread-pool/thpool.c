@@ -8,7 +8,7 @@
  *
  ********************************/
 
-#define _POSIX_C_SOURCE 200809L
+#define _GNU_SOURCE
 #include <unistd.h>
 #include <signal.h>
 #include <stdio.h>
