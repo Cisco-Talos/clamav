@@ -959,6 +959,12 @@ static cl_error_t lsig_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_a
         if (CL_SUCCESS != status) {
             goto done;
         }
+
+        // Check time limit here, because bytecode functions may take a while.
+        status = cli_checktimelimit(ctx);
+        if (CL_SUCCESS != status) {
+            goto done;
+        }
     }
 
 done:
@@ -1018,10 +1024,15 @@ cl_error_t cli_exp_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_ac_da
             break;
         }
 
-        if (cli_checktimelimit(ctx) != CL_SUCCESS) {
-            cli_dbgmsg("Exceeded scan time limit while evaluating logical and yara signatures (max: %u)\n", ctx->engine->maxscantime);
-            status = CL_ETIMEOUT;
-            break;
+        if (i % 10 == 0) {
+            // Check the time limit every n'th lsig.
+            // In testing with a large signature set, we found n = 10 to be just as fast as 100 or
+            // 1000 and has a significant performance improvement over checking with every lsig.
+            status = cli_checktimelimit(ctx);
+            if (CL_SUCCESS != status) {
+                cli_dbgmsg("Exceeded scan time limit while evaluating logical and yara signatures (max: %u)\n", ctx->engine->maxscantime);
+                break;
+            }
         }
     }
 
