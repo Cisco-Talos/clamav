@@ -19,7 +19,7 @@
 
 ClamAV documentation is hosted at [docs.clamav.net](https://docs.clamav.net/).
 The source archive for each release also includes a copy of the documentation
-for [offline](docs/html/UserManual.html) reading.
+for [offline](docs/html/index.html) reading.
 
 You can contribute to the documentation by submitting improvements to
 [Cisco-Talos/clamav-documentation](https://github.com/Cisco-Talos/clamav-documentation)
