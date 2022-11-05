@@ -72,7 +72,7 @@ int daemonize(void);
 /*closes stdin, stdout, stderr.  This is called by daemonize, but not
  * daemonize_all_return.  Users of daemonize_all_return should call this
  * when initialization is complete.*/
-int close_std_descriptors();
+int close_std_descriptors(void);
 
 /*Returns the return value of fork.  All processes return */
 int daemonize_all_return(void);

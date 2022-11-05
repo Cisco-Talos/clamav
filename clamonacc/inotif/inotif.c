@@ -66,7 +66,7 @@
 
 static int onas_ddd_init_ht(uint32_t ht_size);
 static int onas_ddd_init_wdlt(uint64_t nwatches);
-static int onas_ddd_grow_wdlt();
+static int onas_ddd_grow_wdlt(void);
 
 static int onas_ddd_watch(const char *pathname, int fan_fd, uint64_t fan_mask, int in_fd, uint64_t in_mask);
 static int onas_ddd_watch_hierarchy(const char *pathname, size_t len, int fd, uint64_t mask, uint32_t type);

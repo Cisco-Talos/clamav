@@ -121,7 +121,7 @@ extern void abort(void);
   ((bb_size) > 0 && (sb_size) > 0 && (size_t)(sb_size) <= (size_t)(bb_size) \
    && (sb) >= (bb) && ((sb) + (sb_size)) <= ((bb) + (bb_size)) && ((sb) + (sb_size)) > (bb) && (sb) < ((bb) + (bb_size)))
 
-int crashtest()
+int crashtest(void)
 {
 	unsigned int backsize, dcur;
 	int dval=0x12000, unp_offset;
