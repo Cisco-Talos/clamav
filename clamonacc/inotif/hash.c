@@ -58,7 +58,7 @@
 
 #if defined(HAVE_SYS_FANOTIFY_H)
 
-static struct onas_bucket *onas_bucket_init();
+static struct onas_bucket *onas_bucket_init(void);
 static void onas_free_bucket(struct onas_bucket *bckt);
 static int onas_bucket_insert(struct onas_bucket *bckt, struct onas_element *elem);
 static int onas_bucket_remove(struct onas_bucket *bckt, struct onas_element *elem);

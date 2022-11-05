@@ -77,13 +77,13 @@ void cli_pcre_freetable(struct cli_matcher *root);
 /*
  * The following are defined to simple stub functions in matcher-pcre.c if HAVE_PCRE is not defined.
  */
-cl_error_t cli_pcre_init();
+cl_error_t cli_pcre_init(void);
 cl_error_t cli_pcre_build(struct cli_matcher *root, long long unsigned match_limit, long long unsigned recmatch_limit, const struct cli_dconf *dconf);
 cl_error_t cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const char **virname, struct cli_ac_result **res, const struct cli_matcher *root, struct cli_ac_data *mdata, const struct cli_pcre_off *data, cli_ctx *ctx);
 cl_error_t cli_pcre_recaloff(struct cli_matcher *root, struct cli_pcre_off *data, struct cli_target_info *info, cli_ctx *ctx);
 void cli_pcre_freeoff(struct cli_pcre_off *data);
 
-void cli_pcre_perf_print();
-void cli_pcre_perf_events_destroy();
+void cli_pcre_perf_print(void);
+void cli_pcre_perf_events_destroy(void);
 
 #endif /*__MATCHER_PCRE_H*/

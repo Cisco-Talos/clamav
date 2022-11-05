@@ -61,7 +61,7 @@
 pthread_t ddd_pid        = 0;
 pthread_t scan_queue_pid = 0;
 
-static void onas_handle_signals();
+static void onas_handle_signals(void);
 static int startup_checks(struct onas_context *ctx);
 static struct onas_context *g_ctx = NULL;
 
@@ -260,7 +260,7 @@ done:
     exit(ret);
 }
 
-static void onas_handle_signals()
+static void onas_handle_signals(void)
 {
     sigset_t sigset;
     struct sigaction act;

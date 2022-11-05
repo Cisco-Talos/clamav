@@ -31,4 +31,4 @@ struct onas_sock_t {
 };
 
 cl_error_t onas_set_sock_only_once(struct onas_context *ctx);
-int onas_get_sockd();
+int onas_get_sockd(void);
