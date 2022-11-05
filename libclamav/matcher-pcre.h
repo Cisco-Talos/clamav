@@ -68,11 +68,11 @@ struct cli_pcre_meta {
 };
 
 /* PCRE PERFORMANCE DECLARATIONS */
-void cli_pcre_perf_print();
-void cli_pcre_perf_events_destroy();
+void cli_pcre_perf_print(void);
+void cli_pcre_perf_events_destroy(void);
 
 /* PCRE MATCHER DECLARATIONS */
-int cli_pcre_init();
+int cli_pcre_init(void);
 cl_error_t cli_pcre_addpatt(struct cli_matcher *root, const char *virname, const char *trigger, const char *pattern, const char *cflags, const char *offset, const uint32_t *lsigid, unsigned int options);
 cl_error_t cli_pcre_build(struct cli_matcher *root, long long unsigned match_limit, long long unsigned recmatch_limit, const struct cli_dconf *dconf);
 cl_error_t cli_pcre_recaloff(struct cli_matcher *root, struct cli_pcre_off *data, struct cli_target_info *info, cli_ctx *ctx);
