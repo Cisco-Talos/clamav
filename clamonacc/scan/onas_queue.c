@@ -80,7 +80,7 @@ static cl_error_t onas_new_event_queue_node(struct onas_event_queue_node **node)
     return CL_SUCCESS;
 }
 
-static void *onas_init_event_queue()
+static void *onas_init_event_queue(void)
 {
 
     if (CL_EMEM == onas_new_event_queue_node(&g_onas_event_queue_head)) {
@@ -120,7 +120,7 @@ static void onas_destroy_event_queue_node(struct onas_event_queue_node *node)
     return;
 }
 
-static void onas_destroy_event_queue()
+static void onas_destroy_event_queue(void)
 {
 
     if (NULL == g_onas_event_queue_head) {
@@ -189,7 +189,7 @@ void *onas_scan_queue_th(void *arg)
     pthread_cleanup_pop(1);
 }
 
-static int onas_queue_is_b_empty()
+static int onas_queue_is_b_empty(void)
 {
 
     if (g_onas_event_queue.head->next == g_onas_event_queue.tail) {
