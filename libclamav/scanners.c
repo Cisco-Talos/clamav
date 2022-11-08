@@ -5330,7 +5330,7 @@ static cl_error_t scan_common(cl_fmap_t *map, const char *filepath, const char *
     time_t current_time;
     struct tm tm_struct;
 
-    if (NULL == map) {
+    if (NULL == map || NULL == scanoptions) {
         return CL_ENULLARG;
     }
 
