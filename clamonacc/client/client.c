@@ -418,18 +418,6 @@ cl_error_t onas_setup_client(struct onas_context **ctx)
         (*ctx)->printinfected = 1;
     }
 
-    /* initialize logger */
-
-    if ((opt = optget(opts, "log"))->enabled) {
-        logg_file = opt->strarg;
-        if (logg(LOGG_INFO, "--------------------------------------\n")) {
-            logg(LOGG_ERROR, "ClamClient: problem with internal logger\n");
-            return CL_EARG;
-        }
-    } else {
-        logg_file = NULL;
-    }
-
     if (actsetup(opts)) {
         return CL_EARG;
     }
