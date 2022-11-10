@@ -167,16 +167,20 @@ ClamAV 1.0.0 includes the following improvements and changes.
   specify a wildcard (`*`) for the size field. The fix is part of the all-match
   feature overhaul.
 
-- Fix the default bytecode timeout value listed in the manpages and in the
+- Fixed the default bytecode timeout value listed in the manpages and in the
   sample config files. Patches courtesy of Liam Jarvis and Ben Bodenmiller.
   - GitHub pull requests:
     - https://github.com/Cisco-Talos/clamav/pull/631
     - https://github.com/Cisco-Talos/clamav/pull/661
 
-- Fix issue building the libclamav_rust test program when running `ctest` if
-  building with `BYTECODE_RUNTIME=llvm` and when the `FindLLVM.cmake` module is
-  used to find the LLVM libraries. Patch courtesy of GitHub user teoberi.
+- Fixed an issue building the libclamav_rust test program when running `ctest`
+  if building with `BYTECODE_RUNTIME=llvm` and when the `FindLLVM.cmake` module
+  is used to find the LLVM libraries. Patch courtesy of GitHub user teoberi.
   - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/572
+
+- Fixed an issue where scans sent to `clamd` with the all-match mode enabled
+  caused all subsequent scans to also use all-match mode.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/741
 
 ### Acknowledgments
 
