@@ -54,7 +54,8 @@ static cl_error_t hfsplus_scanfile(cli_ctx *, hfsPlusVolumeHeader *, hfsHeaderRe
                                    hfsPlusForkData *, const char *, char **, char *);
 static int hfsplus_validate_catalog(cli_ctx *, hfsPlusVolumeHeader *, hfsHeaderRecord *);
 static int hfsplus_fetch_node(cli_ctx *, hfsPlusVolumeHeader *, hfsHeaderRecord *,
-                              hfsHeaderRecord *, hfsPlusForkData *, uint32_t, uint8_t *);
+                              hfsHeaderRecord *, hfsPlusForkData *, uint32_t, uint8_t *,
+                              size_t);
 static cl_error_t hfsplus_walk_catalog(cli_ctx *, hfsPlusVolumeHeader *, hfsHeaderRecord *,
                                        hfsHeaderRecord *, hfsHeaderRecord *, const char *);
 
@@ -521,7 +522,7 @@ static cl_error_t hfsplus_check_attribute(cli_ctx *ctx, hfsPlusVolumeHeader *vol
         }
 
         /* fetch node into buffer */
-        ret = hfsplus_fetch_node(ctx, volHeader, attrHeader, NULL, &(volHeader->attributesFile), thisNode, nodeBuf);
+        ret = hfsplus_fetch_node(ctx, volHeader, attrHeader, NULL, &(volHeader->attributesFile), thisNode, nodeBuf, nodeSize);
         if (ret != CL_CLEAN) {
             cli_dbgmsg("hfsplus_check_attribute: node fetch failed.\n");
             break;
@@ -629,7 +630,8 @@ static cl_error_t hfsplus_check_attribute(cli_ctx *ctx, hfsPlusVolumeHeader *vol
 
 /* Fetch a node's contents into the buffer */
 static int hfsplus_fetch_node(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader, hfsHeaderRecord *catHeader,
-                              hfsHeaderRecord *extHeader, hfsPlusForkData *catFork, uint32_t node, uint8_t *buff)
+                              hfsHeaderRecord *extHeader, hfsPlusForkData *catFork, uint32_t node, uint8_t *buff,
+                              size_t buffSize)
 {
     int foundBlock = 0;
     uint64_t catalogOffset;
@@ -712,6 +714,11 @@ static int hfsplus_fetch_node(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader, hfsH
             fileOffset += startOffset;
         } else if (curBlock == endBlock) {
             readSize = endSize;
+        }
+
+        if ((buffOffset + readSize) > buffSize) {
+            cli_dbgmsg("hfsplus_fetch_node: Not enough space for read\n");
+            return CL_EFORMAT;
         }
 
         if (fmap_readn(ctx->fmap, buff + buffOffset, fileOffset, readSize) != readSize) {
@@ -911,7 +918,7 @@ static cl_error_t hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHea
         }
 
         /* fetch node into buffer */
-        ret = hfsplus_fetch_node(ctx, volHeader, catHeader, extHeader, &(volHeader->catalogFile), thisNode, nodeBuf);
+        ret = hfsplus_fetch_node(ctx, volHeader, catHeader, extHeader, &(volHeader->catalogFile), thisNode, nodeBuf, nodeSize);
         if (ret != CL_SUCCESS) {
             cli_dbgmsg("hfsplus_walk_catalog: node fetch failed.\n");
             break;
