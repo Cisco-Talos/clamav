@@ -7,6 +7,13 @@ differ slightly from third-party binary packages.
 
 ClamAV 0.105.2 is a critical patch release with the following fixes:
 
+- Moved the ClamAV Docker files for building containers to a new Git repository.
+  The Docker files are now in https://github.com/Cisco-Talos/clamav-docker.
+  This change enables us to fix issues with the images and with the supporting
+  scripts used to publish and update the images without committing changes
+  directly to files in the ClamAV release branches.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/765
+
 ## 0.105.1
 
 ClamAV 0.105.1 is a critical patch release with the following fixes:
