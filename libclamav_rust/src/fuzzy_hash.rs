@@ -26,6 +26,7 @@ use std::{
     ffi::CStr,
     mem::ManuallyDrop,
     os::raw::c_char,
+    panic,
     slice,
 };
 
@@ -58,6 +59,9 @@ pub enum FuzzyHashError {
 
     #[error("Failed to load image: {0}")]
     ImageLoad(image::ImageError),
+
+    #[error("Failed to load image due to bug in image decoder")]
+    ImageLoadPanic(),
 
     #[error("Invalid parameter: {0}")]
     InvalidParameter(String),
@@ -409,7 +413,17 @@ impl FuzzyHashMap {
 /// param: hash_out is an output variable
 /// param: hash_out_len indicates the size of the hash_out buffer
 pub fn fuzzy_hash_calculate_image(buffer: &[u8]) -> Result<Vec<u8>, FuzzyHashError> {
-    let og_image = image::load_from_memory(buffer).map_err(FuzzyHashError::ImageLoad)?;
+
+    // Load image and attempt to catch panics in case the decoders encounter unexpected issues
+    let result = panic::catch_unwind(|| -> Result<DynamicImage, FuzzyHashError> {
+        let image = image::load_from_memory(buffer).map_err(FuzzyHashError::ImageLoad)?;
+        Ok(image)
+    });
+
+    let og_image = match result {
+        Ok(image) => image?,
+        Err(_) => return Err(FuzzyHashError::ImageLoadPanic()),
+    };
 
     // Drop the alpha channel (if exists).
     let buff_rgb8 = og_image.to_rgb8();
