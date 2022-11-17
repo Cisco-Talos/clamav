@@ -10,19 +10,19 @@ ClamAV 1.0.0 includes the following improvements and changes.
 ### Major changes
 
 - Support for decrypting read-only OLE2-based XLS files that are encrypted with
-  the default "VelvetSweatshop" password.
-  Use of the VelvetSweatshop password will now appear in the metadata JSON.
+  the default password.
+  Use of the default password will now appear in the metadata JSON.
   - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/700
 
 - Overhauled the implementation of the all-match feature. The newer code is more
   reliable and easier to maintain.
   - This project fixed several known issues with signature detection in all-
     match mode:
-    - Enabled embedded file-type-recognition-signatures to match when a malware
+    - Enabled embedded file-type recognition signatures to match when a malware
       signature also matched in a scan of the same layer.
     - Enabled bytecode signatures to run in all-match mode after a match has
       occurred.
-    - Fixed an assortment of all-match edge case issues:
+    - Fixed an assortment of all-match edge case issues.
   - Added multiple test cases to verify correct all-match behavior.
   - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/687
 
@@ -66,13 +66,12 @@ ClamAV 1.0.0 includes the following improvements and changes.
   build.
   - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/694
 
-- Windows: The debugging symbol (PDB) files are now installed alongside the DLL
-- and LIB library files when built in "RelWithDebInfo" or "Debug" mode.
+- For Windows: The debugging symbol (PDB) files are now installed alongside the
+  DLL and LIB library files when built in "RelWithDebInfo" or "Debug" mode.
   - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/669
 
 - Relaxed the constraints on the check for overlapping ZIP file entries so as
   not to alert on slightly malformed, but non-malicious, Java (JAR) archives.
-  - Talos escalations issues:
   - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/561
 
 - Increased the time limit in FreshClam before warning if the DNS entry is
@@ -90,7 +89,7 @@ ClamAV 1.0.0 includes the following improvements and changes.
   - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/678
 
 - Added explicit minimum and maximum supported LLVM versions so that the build
-  will fail if you try to build with the version that is too old or too new and
+  will fail if you try to build with a version that is too old or too new and
   will print a helpful message rather than simply failing to compile because of
   compatibility issues. Patch courtesy of Matt Jolly.
   - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/692
@@ -149,8 +148,8 @@ ClamAV 1.0.0 includes the following improvements and changes.
   signature condition.
   - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/724
 
-- Fixed a build issues when build with RAR disabled or when building with an
-  external libmspack library rather than the vendored library.
+- Fixed a build issue when build with RAR disabled or when building with an
+  external libmspack library rather than the bundled library.
   - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/672
 
 - Fixed the capitalization of the `-W` option for `clamonacc` in the `clamonacc`
@@ -161,7 +160,7 @@ ClamAV 1.0.0 includes the following improvements and changes.
 
 - macOS: Fixed an issue with memory-map (`mmap`) system call detection affecting
   versions 0.105 and 0.104. Memory maps may be used in ClamAV to improve
-  signature load performance, scan performance, and RAM usage.
+  signature load performance and scan performance, as well as RAM usage.
   - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/705
 
 - Fixed a performance issue with Rust code when the build type is not explicitly
