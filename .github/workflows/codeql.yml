@@ -40,6 +40,18 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v3
 
+    - name: Update package listings
+      run: sudo apt-get update
+
+    - name: Install Build Tools
+      run: sudo apt-get install -y bison flex valgrind
+
+    - name: Install Dependencies
+      run: sudo apt-get install -y check libbz2-dev libcurl4-openssl-dev libjson-c-dev libmilter-dev libncurses5-dev libpcre3-dev libssl-dev libxml2-dev zlib1g-dev
+
+    - name: Install pytest for easier to read test results
+      run: python3 -m pip install pytest
+
     # Initializes the CodeQL tools for scanning.
     - name: Initialize CodeQL
       uses: github/codeql-action/init@v2
