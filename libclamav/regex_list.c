@@ -817,8 +817,11 @@ static cl_error_t add_pattern_suffix(void *cbdata, const char *suffix, size_t su
 
         if (CL_SUCCESS != ret) {
             cli_hashtab_delete(&matcher->suffix_hash, suffix, suffix_len);
-            /*shrink the size back to what it was.*/
-            CLI_REALLOC(matcher->suffix_regexes, n * sizeof(*matcher->suffix_regexes));
+            /* shrink the size back to what it was.
+               unless n == 0, because we don't want to realloc to zero. */
+            if (n > 0) {
+                CLI_REALLOC(matcher->suffix_regexes, n * sizeof(*matcher->suffix_regexes));
+            }
         } else {
             matcher->suffix_cnt++;
         }
