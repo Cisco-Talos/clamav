@@ -1224,7 +1224,7 @@ cl_error_t cli_realpath(const char *file_name, char **real_filename);
  * This is required for unit tests to be able to link with clamav.dll and not
  * directly manipulate libclamav global variables.
  */
-uint8_t cli_get_debug_flag();
+uint8_t cli_get_debug_flag(void);
 
 /**
  * @brief   Set the libclamav debug flag to a specific value.
