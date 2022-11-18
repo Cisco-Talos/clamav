@@ -240,7 +240,8 @@ static void bytecode_context_reset(struct cli_bc_ctx *ctx)
     ctx->containertype = CL_TYPE_ANY;
 }
 
-static inline void bytecode_context_initialize(struct cli_bc_ctx *ctx) {
+static inline void bytecode_context_initialize(struct cli_bc_ctx *ctx)
+{
     memset(ctx, 0, sizeof(*ctx));
 
     ctx->bytecode_timeout = 60000;

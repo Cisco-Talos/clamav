@@ -366,7 +366,7 @@ static cl_error_t readdb_load_regex_subsignature(struct cli_matcher *root, const
         if (subtokens_count == 2) {
             // Offset was specified
             offset = subtokens[0];
-            sig = subtokens[1];
+            sig    = subtokens[1];
         } else {
             sig = subtokens[0];
         }
