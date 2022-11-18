@@ -189,11 +189,11 @@ int conn_reply_errno(const client_conn_t *conn, const char *path,
  */
 int command(client_conn_t *conn, int *virus)
 {
-    int desc                        = conn->sd;
-    struct cl_engine *engine        = conn->engine;
+    int desc                 = conn->sd;
+    struct cl_engine *engine = conn->engine;
     struct cl_scan_options options;
-    const struct optstruct *opts    = conn->opts;
-    enum scan_type type             = TYPE_INIT;
+    const struct optstruct *opts = conn->opts;
+    enum scan_type type          = TYPE_INIT;
     int maxdirrec;
     int ret   = 0;
     int flags = CLI_FTW_STD;

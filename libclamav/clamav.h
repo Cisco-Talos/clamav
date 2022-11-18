@@ -493,8 +493,8 @@ extern void cl_engine_set_clcb_pre_cache(struct cl_engine *engine, clcb_pre_cach
  * Attributes of each layer in scan.
  */
 #define LAYER_ATTRIBUTES_NONE 0x0
-#define LAYER_ATTRIBUTES_NORMALIZED 0x1    /** This layer was modified to make matching more generic, reliable. */
-#define LAYER_ATTRIBUTES_DECRYPTED 0x2     /** Decryption was used to extract this layer. I.e. had to decrypt some previous layer. */
+#define LAYER_ATTRIBUTES_NORMALIZED 0x1 /** This layer was modified to make matching more generic, reliable. */
+#define LAYER_ATTRIBUTES_DECRYPTED 0x2  /** Decryption was used to extract this layer. I.e. had to decrypt some previous layer. */
 
 /**
  * @brief File inspection callback.
