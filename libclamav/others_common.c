@@ -221,8 +221,8 @@ void *cli_malloc(size_t size)
     void *alloc;
 
     if (!size || size > CLI_MAX_ALLOCATION) {
-        cli_warnmsg("cli_malloc(): File or section is too large to scan (%zu bytes). \
-                     For your safety, ClamAV limits how much memory an operation can allocate to %zu bytes\n",
+        cli_warnmsg("cli_malloc(): File or section is too large to scan (%zu bytes). "
+                    "For your safety, ClamAV limits how much memory an operation can allocate to %zu bytes\n",
                     size, CLI_MAX_ALLOCATION);
         return NULL;
     }
@@ -242,8 +242,8 @@ void *cli_calloc(size_t nmemb, size_t size)
     void *alloc;
 
     if (!nmemb || !size || size > CLI_MAX_ALLOCATION || nmemb > CLI_MAX_ALLOCATION || (nmemb * size > CLI_MAX_ALLOCATION)) {
-        cli_warnmsg("cli_calloc2(): File or section is too large to scan (%zu bytes). \
-                     For your safety, ClamAV limits how much memory an operation can allocate to %zu bytes\n",
+        cli_warnmsg("cli_calloc2(): File or section is too large to scan (%zu bytes). "
+                    "For your safety, ClamAV limits how much memory an operation can allocate to %zu bytes\n",
                     size, CLI_MAX_ALLOCATION);
         return NULL;
     }
@@ -263,8 +263,8 @@ void *cli_realloc(void *ptr, size_t size)
     void *alloc;
 
     if (!size || size > CLI_MAX_ALLOCATION) {
-        cli_warnmsg("cli_realloc(): File or section is too large to scan (%zu bytes). \
-                     For your safety, ClamAV limits how much memory an operation can allocate to %zu bytes\n",
+        cli_warnmsg("cli_realloc(): File or section is too large to scan (%zu bytes). "
+                    "For your safety, ClamAV limits how much memory an operation can allocate to %zu bytes\n",
                     size, CLI_MAX_ALLOCATION);
         return NULL;
     }
@@ -284,8 +284,8 @@ void *cli_realloc2(void *ptr, size_t size)
     void *alloc;
 
     if (!size || size > CLI_MAX_ALLOCATION) {
-        cli_warnmsg("cli_realloc2(): File or section is too large to scan (%zu bytes). \
-                     For your safety, ClamAV limits how much memory an operation can allocate to %zu bytes\n",
+        cli_warnmsg("cli_realloc2(): File or section is too large to scan (%zu bytes). "
+                    "For your safety, ClamAV limits how much memory an operation can allocate to %zu bytes\n",
                     size, CLI_MAX_ALLOCATION);
         return NULL;
     }
