@@ -4213,7 +4213,8 @@ done:
 cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
 {
     cl_error_t ret = CL_CLEAN;
-    cl_error_t cache_check_result;
+    cl_error_t cache_check_result = CL_VIRUS;
+    bool cache_enabled = true;
     cl_error_t verdict_at_this_level;
     cli_file_t dettype              = 0;
     uint8_t typercg                 = 1;
@@ -4293,6 +4294,10 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
 
     if (type == CL_TYPE_PART_ANY) {
         typercg = 0;
+    }
+
+    if (ctx->engine->engine_options & ENGINE_OPTIONS_DISABLE_CACHE) {
+        cache_enabled = false;
     }
 
     /*
@@ -4398,17 +4403,19 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
     }
 
     /*
-     * Get the maphash
+     * Get the maphash, if necessary
      */
-    if (CL_SUCCESS != fmap_get_hash(ctx->fmap, &hash, CLI_HASH_MD5)) {
-        cli_dbgmsg("cli_magic_scan: Failed to get a hash for the current fmap.\n");
+    if (cache_enabled || (SCAN_COLLECT_METADATA)) {
+        if (CL_SUCCESS != fmap_get_hash(ctx->fmap, &hash, CLI_HASH_MD5)) {
+            cli_dbgmsg("cli_magic_scan: Failed to get a hash for the current fmap.\n");
 
-        // It may be that the file was truncated between the time we started the scan and the time we got the hash.
-        // Not a reason to print an error message.
-        ret = CL_SUCCESS;
-        goto done;
+            // It may be that the file was truncated between the time we started the scan and the time we got the hash.
+            // Not a reason to print an error message.
+            ret = CL_SUCCESS;
+            goto done;
+        }
+        hashed_size = ctx->fmap->len;
     }
-    hashed_size = ctx->fmap->len;
 
     ret = dispatch_file_inspection_callback(ctx->engine->cb_file_inspection, ctx, filetype);
     if (CL_CLEAN != ret) {
@@ -4423,9 +4430,11 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
     /*
      * Check if we've already scanned this file before.
      */
-    perf_start(ctx, PERFT_CACHE);
-    cache_check_result = clean_cache_check(hash, hashed_size, ctx);
-    perf_stop(ctx, PERFT_CACHE);
+    if (cache_enabled) {
+        perf_start(ctx, PERFT_CACHE);
+        cache_check_result = clean_cache_check(hash, hashed_size, ctx);
+        perf_stop(ctx, PERFT_CACHE);
+    }
 
     if (SCAN_COLLECT_METADATA) {
         char hashstr[CLI_HASHLEN_MD5 * 2 + 1];
@@ -4443,7 +4452,7 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
         }
     }
 
-    if (cache_check_result != CL_VIRUS) {
+    if (cache_enabled && (cache_check_result != CL_VIRUS)) {
         cli_dbgmsg("cli_magic_scan: returning %d %s (no post, no cache)\n", ret, __AT__);
         ret = CL_SUCCESS;
         goto early_ret;
