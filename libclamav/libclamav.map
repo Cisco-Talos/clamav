@@ -61,6 +61,15 @@ CLAMAV_PUBLIC {
     cl_engine_stats_enable;
     lsig_sub_matched;
 };
+CLAMAV_0.104.0 {
+  global:
+    cl_engine_set_clcb_engine_compile_progress;
+    cl_engine_set_clcb_sigload_progress;
+} CLAMAV_PUBLIC;
+CLAMAV_1.0.0 {
+  global:
+    cl_cvdunpack;
+} CLAMAV_0.104.0;
 CLAMAV_PRIVATE {
   global:
     cli_sigperf_print;
@@ -267,6 +276,19 @@ CLAMAV_PRIVATE {
     cli_get_filepath_from_filedesc;
     fmap_duplicate;
     free_duplicate_fmap;
+    cli_add_content_match_pattern;
+    cli_dbgmsg;
+    cli_dbgmsg_no_inline;
+    cli_get_debug_flag;
+    cli_get_last_virus_str;
+    cli_getdsig;
+    cli_infomsg_simple;
+    cli_set_debug_flag;
+    fmap_dump_to_file;
+    init_allow_list;
+    init_domain_list;
+    lsig_increment_subsig_match;
+    readdb_parse_ldb_subsignature;
 
     __cli_strcasestr;
     __cli_strndup;
