@@ -113,7 +113,7 @@ else()
         )
         if(result_code)
             _LLVM_FAIL("Failed to execute llvm-config ('${LLVM_CONFIG}', result code: '${result_code})'")
-        else()        
+        else()
             file(TO_CMAKE_PATH "${tmplibs}" tmplibs)
             string(REGEX MATCHALL "${pattern}[^ ]+" LLVM_${var} ${tmplibs})
         endif()
@@ -163,9 +163,15 @@ else()
     set(LLVM_NATIVE_ARCH ${CMAKE_MATCH_1})
     message(STATUS "LLVM_NATIVE_ARCH: ${LLVM_NATIVE_ARCH}")
 
+    if("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
+        set(USING_CLANG ON)
+    else()
+        set(USING_CLANG OFF)
+    endif()
+
     # On CMake builds of LLVM, the output of llvm-config --cxxflags does not
     # include -fno-rtti, leading to linker errors. Be sure to add it.
-    if(NOT MSVC AND (CMAKE_COMPILER_IS_GNUCXX OR (${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")))
+    if(NOT MSVC AND (CMAKE_COMPILER_IS_GNUCXX OR USING_CLANG))
         if(NOT ${LLVM_CXXFLAGS} MATCHES "-fno-rtti")
             set(LLVM_CXXFLAGS "${LLVM_CXXFLAGS} -fno-rtti")
         endif()
@@ -181,7 +187,7 @@ else()
     endif()
 
     # Remove gcc-specific flags for clang.
-    if(${CMAKE_CXX_COMPILER_ID} MATCHES "Clang")
+    if(USING_CLANG)
         string(REPLACE "-Wno-maybe-uninitialized " "" LLVM_CXXFLAGS ${LLVM_CXXFLAGS})
     endif()
 
