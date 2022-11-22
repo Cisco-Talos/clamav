@@ -986,12 +986,19 @@ class LLVMCodegen
             Value *idxs[1] = {
                 ConstantInt::get(Type::getInt64Ty(Context), components[c++])};
             unsigned idx = components[c++];
-            if (!idx)
+            if (!idx) {
                 return ConstantPointerNull::get(PTy);
+            }
+            if (idx >= globals.size()) {
+                return ConstantPointerNull::get(PTy);
+            }
             assert(idx < globals.size());
-            GlobalVariable *GV = cast<GlobalVariable>(globals[idx]);
-            Type *IP8Ty        = PointerType::getUnqual(Type::getInt8Ty(Ty->getContext()));
-            Constant *C        = ConstantExpr::getPointerCast(GV, IP8Ty);
+            GlobalVariable *GV = dyn_cast<GlobalVariable>(globals[idx]);
+            if (nullptr == GV) {
+                return ConstantPointerNull::get(PTy);
+            }
+            Type *IP8Ty = PointerType::getUnqual(Type::getInt8Ty(Ty->getContext()));
+            Constant *C = ConstantExpr::getPointerCast(GV, IP8Ty);
             // TODO: check constant bounds here
             return ConstantExpr::getPointerCast(
                 ConstantExpr::getInBoundsGetElementPtr(C->getType(), C, idxs),
