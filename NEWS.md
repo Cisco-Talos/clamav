@@ -95,6 +95,13 @@ ClamAV 1.0.0 includes the following improvements and changes.
   compatibility issues. Patch courtesy of Matt Jolly.
   - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/692
 
+- Moved the ClamAV Docker files for building containers to a new Git repository.
+  The Docker files are now in https://github.com/Cisco-Talos/clamav-docker.
+  This change enables us to fix issues with the images and with the supporting
+  scripts used to publish and update the images without committing changes
+  directly to files in the ClamAV release branches.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/764
+
 ### Bug fixes
 
 - Assorted code quality fixes. These are not security issues and will not be

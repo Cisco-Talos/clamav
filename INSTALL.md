@@ -58,11 +58,6 @@ configuration options.
 
 ## Known Issues / To-do's:
 
-- The newest LLVM version supported is 3.6.2. We ran out of time during 0.104
-  development to add support for newer versions of LLVM.
-  The bytecode interpreter is therefore the default option for the bytecode
-  signature runtime in this release.
-
 - Complete the `MAINTAINER_MODE` option to generate jsparse files with GPerf.
 
 - The test suite will fail to run if you have `pytest` from Python2 installed
@@ -93,7 +88,6 @@ For Maintainer-mode only (not recommended):
 - Flex
 - Bison
 - Gperf
-- Rust bindgen
 
 ### External Library Dependencies
 
@@ -159,7 +153,7 @@ mkdir build && cd build
 
 ## CMake Basics
 
-CMake isn't actually a built system. It's a meta-build system. In other words,
+CMake isn't actually a build system. It is a meta-build system. In other words,
 CMake is a build system *generator*.
 
 On Unix systems, CMake generates Makefiles by default, just like Autotools.
