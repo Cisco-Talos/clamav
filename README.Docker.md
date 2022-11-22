@@ -38,7 +38,8 @@ While it is recommended to pull the image from our
 to build the image locally instead.
 
 To do this, you will need to get the  `Dockerfile` and the supporting `scripts/`
-directory from the [clamav-docker Git repository](https://github.com/Cisco-Talos/clamav-docker/tree/main/clamav).
+directory from the
+[clamav-docker Git repository](https://github.com/Cisco-Talos/clamav-docker).
 Be sure to select the correct one for this ClamAV release.
 
 > _Tip_: For unreleased ClamAV versions, such as when building from the `main`
