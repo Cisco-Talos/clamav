@@ -188,8 +188,14 @@ if (NOT DEFINED CMAKE_INSTALL_RPATH)
     endif()
 endif()
 
+if("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
+  set(USING_CLANG ON)
+else()
+  set(USING_CLANG OFF)
+endif()
+
 if(C_LINUX)
-    if(CMAKE_COMPILER_IS_GNUCXX)
+    if(CMAKE_COMPILER_IS_GNUCXX OR USING_CLANG)
         # Set _GNU_SOURCE for O_LARGEFILE, O_CLOEXEC, O_DIRECTORY, O_NOFOLLOW, etc flags on older systems
         # (pre POSIX.1-2008: glibc 2.11 and earlier). #4042
         set(_GNU_SOURCE 1)
