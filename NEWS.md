@@ -49,6 +49,21 @@ ClamAV 1.0.0 includes the following improvements and changes.
   The `ENABLE_EXTERNAL_TOMSFASTMATH` build is now ignored.
   - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/742
 
+- Moved the Dockerfile and supporting scripts from the main ClamAV repository
+  over to a new repository: https://github.com/Cisco-Talos/clamav-docker
+
+  The separate repository will make it easier to update the images and fix
+  issues with images for released ClamAV versions.
+
+  Any users building the ClamAV Docker image rather than pulling them from
+  Docker Hub will have to get the latest Docker files from the new location.
+
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/764
+
+- Increased the SONAME major version for libclamav because of ABI changes
+  between the 0.103 LTS release and the 1.0 LTS release.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/778
+
 ### Other improvements
 
 - Add checks to limit PDF object extraction recursion.
@@ -100,6 +115,14 @@ ClamAV 1.0.0 includes the following improvements and changes.
   scripts used to publish and update the images without committing changes
   directly to files in the ClamAV release branches.
   - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/764
+
+- Fixed compiler warnings that may turn into errors in Clang 16.
+  Patch courtesy of Michael Orlitzky.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/767
+
+- Allow building with a custom RPATH so that the executables may be moved after
+  build in a development environment to a final installation directory.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/768
 
 ### Bug fixes
 
@@ -195,13 +218,21 @@ ClamAV 1.0.0 includes the following improvements and changes.
   caused all subsequent scans to also use all-match mode.
   - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/741
 
+- Fixed bug when starting `clamonacc` with the `--log=FILE` option that created
+  randomly named files in the current directory.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/751
+
+- Other assorted bug fixes.
+
 ### Acknowledgments
 
 Special thanks to the following people for code contributions and bug reports:
+- Anthony Chan
 - Ben Bodenmiller
 - Дилян Палаузов
 - Liam Jarvis
 - Matt Jolly
+- Michael Orlitzky
 - monkz
 - teoberi
 - TerminalFi
