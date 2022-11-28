@@ -325,7 +325,9 @@ static int traverse_to(const char *directory, bool want_directory_handle, HANDLE
             /* Empty token, likely first / or double // */
             continue;
         }
+
 #ifndef _WIN32
+
         next_handle = openat(current_handle, tokens[i], O_RDONLY | O_NOFOLLOW);
         if (-1 == next_handle) {
             logg(LOGG_INFO, "traverse_to: Failed open %s\n", tokens[i]);
@@ -334,7 +336,9 @@ static int traverse_to(const char *directory, bool want_directory_handle, HANDLE
         close(current_handle);
         current_handle = next_handle;
         next_handle    = -1;
+
 #else
+
         if (true != want_directory_handle) {
             if (i == tokens_count - 1) {
                 /* Change createfile options for our target file instead of an intermediate directory. */
@@ -376,6 +380,7 @@ static int traverse_to(const char *directory, bool want_directory_handle, HANDLE
         current_handle = next_handle;
         next_handle    = NULL;
 #endif
+
         logg(LOGG_DEBUG, "traverse_to: Handle opened for '%s' directory.\n", tokens[i]);
     }
 
