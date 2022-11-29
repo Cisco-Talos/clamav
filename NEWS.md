@@ -3,6 +3,10 @@
 Note: This file refers to the official packages. Things described here may
 differ slightly from third-party binary packages.
 
+## 0.105.2
+
+ClamAV 0.105.2 is a critical patch release with the following fixes:
+
 ## 0.105.1
 
 ClamAV 0.105.1 is a critical patch release with the following fixes:
