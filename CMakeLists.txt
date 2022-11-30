@@ -223,20 +223,26 @@ if(ENABLE_TESTS)
     find_package(Libcheck REQUIRED)
 
     # Used to generate the test files and for the application feature test framework
-    find_package(Python3 REQUIRED)
-
-    # First try using pytest from the PATH
-    execute_process(
-        COMMAND pytest --version
-        RESULT_VARIABLE PYTEST_EXIT_CODE
-        ERROR_QUIET OUTPUT_QUIET
-    )
-
-    if(${PYTEST_EXIT_CODE} EQUAL 0)
-        # pytest found in the path.
-        set(PythonTest_COMMAND "pytest;-v")
+    # In distros that support multiple implementations of python it is helpful to specify the impl to use
+    if(DEFINED PYTHON_FIND_VERSION)
+        find_package(Python3 EXACT ${PYTHON_FIND_VERSION} REQUIRED)
     else()
-        # Not in the path, try using: python3 -m pytest
+        find_package(Python3 REQUIRED)
+        # Not requesting a specific python impl; try using pytest from the PATH
+        execute_process(
+            COMMAND pytest --version
+            RESULT_VARIABLE PYTEST_EXIT_CODE
+            ERROR_QUIET OUTPUT_QUIET
+        )
+
+        if(${PYTEST_EXIT_CODE} EQUAL 0)
+            # pytest found in the path.
+            set(PythonTest_COMMAND "pytest;-v")
+        endif()
+    endif()
+
+    if("${PythonTest_COMMAND}" STREQUAL "")
+        # Not in the path or specified a python impl; try using: python3 -m pytest
         execute_process(
             COMMAND ${Python3_EXECUTABLE} -m pytest --version
             RESULT_VARIABLE PYTEST_MODULE_EXIT_CODE
