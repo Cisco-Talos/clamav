@@ -963,9 +963,8 @@ static void print_posix_info_mode(uint32_t mode)
         printf("p");
     } else if (mode & POSIX_INFO_MODE_SYM_LINK) {
         printf("l");
-    } else if (mode & POSIX_INFO_MODE_SOCKET) {
-        printf("s");
     }
+    
     /* Owner/Group/Other permissions */
     if (mode & POSIX_INFO_MODE_PERM_OWNER_READ) {
         printf("r");
