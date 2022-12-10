@@ -1221,7 +1221,7 @@ static int cli_chkpua(const char *signame, const char *pua_cats, unsigned int op
     endsig = strrchr(sig, '.');
     strncpy(cat, sig, strlen(sig) - strlen(endsig) + 1);
     cat[strlen(sig) - strlen(endsig) + 1] = 0;
-    cat_pt                = strstr(pua_cats, cat);
+    cat_pt                = strstr(cat, pua_cats);
     cli_dbgmsg("cli_chkpua:                cat=[%s]\n", cat                      );
     cli_dbgmsg("cli_chkpua:                sig=[%s]\n", sig                      );
     if (options & CL_DB_PUA_INCLUDE)
