@@ -187,7 +187,7 @@ START_TEST(js_begin_end)
         buf[p]   = ' ';
     }
     strncpy(buf + 8192, " stuff stuff <script language='javascript'> function () {}", 8192);
-    ck_assert_msg(html_normalise_mem((unsigned char *)buf, sizeof(buf), NULL, NULL, dconf) == 1, "normalise");
+    ck_assert_msg(html_normalise_mem(NULL, (unsigned char *)buf, sizeof(buf), NULL, NULL, dconf) == 1, "normalise");
 }
 END_TEST
 
@@ -198,7 +198,7 @@ START_TEST(multiple_scripts)
                  "<script language='Javascript'> function bar() {} </script>";
 
     ck_assert_msg(!!dconf, "failed to init dconf");
-    ck_assert_msg(html_normalise_mem((unsigned char *)buf, sizeof(buf), NULL, NULL, dconf) == 1, "normalise");
+    ck_assert_msg(html_normalise_mem(NULL, (unsigned char *)buf, sizeof(buf), NULL, NULL, dconf) == 1, "normalise");
     /* TODO: test that both had been normalized */
 }
 END_TEST
@@ -430,7 +430,7 @@ START_TEST(screnc_infloop)
         buf[p] = 'a';
     }
     strncpy(buf + 24626, "#@~^ ", 10);
-    ck_assert_msg(html_normalise_mem((unsigned char *)buf, sizeof(buf), NULL, NULL, dconf) == 1, "normalise");
+    ck_assert_msg(html_normalise_mem(NULL, (unsigned char *)buf, sizeof(buf), NULL, NULL, dconf) == 1, "normalise");
 }
 END_TEST
 

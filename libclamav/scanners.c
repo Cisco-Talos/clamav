@@ -2110,7 +2110,7 @@ static cl_error_t cli_scanhtml(cli_ctx *ctx)
 
     cli_dbgmsg("cli_scanhtml: using tempdir %s\n", tempname);
 
-    (void)html_normalise_map(map, tempname, NULL, ctx->dconf);
+    (void)html_normalise_map(ctx, map, tempname, NULL, ctx->dconf);
 
     snprintf(fullname, 1024, "%s" PATHSEP "nocomment.html", tempname);
     fd = open(fullname, O_RDONLY | O_BINARY);

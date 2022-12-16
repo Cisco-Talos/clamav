@@ -1280,6 +1280,8 @@ pub union cli_ac_lsig__bindgen_ty_1 {
     pub code_start: *mut u8,
 }
 pub type fuzzyhashmap_t = *mut ::std::os::raw::c_void;
+pub type css_image_extractor_t = *mut ::std::os::raw::c_void;
+pub type css_image_handle_t = *mut ::std::os::raw::c_void;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct cli_matcher {

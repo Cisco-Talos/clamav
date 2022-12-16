@@ -434,14 +434,15 @@ static int htmlnorm(const struct optstruct *opts)
 {
     int fd;
     fmap_t *map;
+    cli_ctx *ctx = NULL;
 
     if ((fd = open(optget(opts, "html-normalise")->strarg, O_RDONLY | O_BINARY)) == -1) {
         mprintf(LOGG_ERROR, "htmlnorm: Can't open file %s\n", optget(opts, "html-normalise")->strarg);
         return -1;
     }
 
-    if ((map = fmap(fd, 0, 0, optget(opts, "html-normalise")->strarg))) {
-        html_normalise_map(map, ".", NULL, NULL);
+    if (NULL != (ctx = convenience_ctx(fd))) {
+        html_normalise_map(ctx, ctx->fmap, ".", NULL, NULL);
         funmap(map);
     } else
         mprintf(LOGG_ERROR, "fmap failed\n");
