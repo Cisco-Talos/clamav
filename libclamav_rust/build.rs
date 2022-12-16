@@ -55,7 +55,7 @@ const BINDGEN_FUNCTIONS: &[&str] = &[
 ];
 
 // Generate bindings for these types (structs, enums):
-const BINDGEN_TYPES: &[&str] = &["cli_matcher", "cli_ac_data", "cli_ac_result"];
+const BINDGEN_TYPES: &[&str] = &["cli_matcher", "cli_ac_data", "cli_ac_result", "css_image_extractor_t", "css_image_handle_t"];
 
 // Find the required functions and types in these headers:
 const BINDGEN_HEADERS: &[&str] = &[
