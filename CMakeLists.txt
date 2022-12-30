@@ -466,6 +466,11 @@ if(ZLIB_FOUND)
     set(HAVE_LIBZ 1)
 endif()
 
+find_package(TOMSFASTMATH REQUIRED)
+if(TOMSFASTMATH_FOUND)
+   set(HAVE_TFM_H 1)
+endif()
+
 find_package(BZip2 REQUIRED)
 if(BZIP2_FOUND)
     set(HAVE_BZLIB_H 1)
@@ -1211,6 +1216,16 @@ ${_}                            ${e}${OPENSSL_LIBRARIES}
 ${b}        JSON support:       ${e}
 ${_}            json-c          ${e}${JSONC_INCLUDE_DIRS}
 ${_}                            ${e}${JSONC_LIBRARIES}
+${b}        Math support:       ${e}")
+if(TOMSFASTMATH_BUILTIN)
+message("\
+${_}            tomsfastmath    ${e}built-in")
+else()
+message("\
+${_}            tomsfastmath    ${e}${TOMSFASTMATH_INCLUDE_DIR}
+${_}                            ${e}${TOMSFASTMATH_LIBRARY}")
+endif()
+message("\
 ${b}        Threading support:  ${e}")
 if(WIN32)
 message("\

@@ -116,6 +116,9 @@ option(ENABLE_SYSTEMD
     "Install systemd service files if systemd is found."
     ${ENABLE_SYSTEMD_DEFAULT})
 
+option(ENABLE_EXTERNAL_TOMSFASTMATH
+    "Use system's tomsfastmath instead of internal bundled version.")
+
 # For reference determining target platform:
 #  Rust Targets:  https://doc.rust-lang.org/nightly/rustc/platform-support.html
 option(RUST_COMPILER_TARGET

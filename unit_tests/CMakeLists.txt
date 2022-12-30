@@ -49,7 +49,7 @@ if(ENABLE_APP)
         PRIVATE
             ClamAV::libclamav
             libcheck::check
-            tomsfastmath
+	    ${TOMSFASTMATH_LIB_NAME}
             JSONC::jsonc
             ${LIBMSPACK}
             OpenSSL::SSL
@@ -85,7 +85,7 @@ if(ENABLE_APP)
             ClamAV::libclamav
             ClamAV::common
             libcheck::check
-            tomsfastmath
+	    ${TOMSFASTMATH_LIB_NAME}
             JSONC::jsonc
             ${LIBMSPACK}
             OpenSSL::SSL
@@ -133,7 +133,7 @@ target_link_libraries(check_clamav
     PRIVATE
         ClamAV::libclamav
         libcheck::check
-        tomsfastmath
+	${TOMSFASTMATH_LIB_NAME}
         JSONC::jsonc
         ${LIBMSPACK}
         OpenSSL::SSL

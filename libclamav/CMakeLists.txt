@@ -3,6 +3,7 @@
 include_directories(
     ${LIBXML2_INCLUDE_DIR}
     ${OPENSSL_INCLUDE_DIR}
+    ${TOMSFASTMATH_INCLUDE_DIR}
     ${ZLIB_INCLUDE_DIR}
     ${CMAKE_CURRENT_BINARY_DIR}
     $<TARGET_PROPERTY:ClamAV::libunrar_iface_iface,INTERFACE_INCLUDE_DIRECTORIES>
@@ -166,6 +167,7 @@ target_link_libraries( yara
         PCRE2::pcre2
         JSONC::jsonc )
 
+if(TOMSFASTMATH_BUILTIN)
 add_library( tomsfastmath OBJECT )
 target_sources( tomsfastmath
     PRIVATE
@@ -259,6 +261,7 @@ target_include_directories( tomsfastmath
     PUBLIC  ${CMAKE_CURRENT_SOURCE_DIR} )
 set_target_properties( tomsfastmath PROPERTIES
     COMPILE_FLAGS "${WARNCFLAGS}" )
+endif()
 
 # Bytecode Runtime
 add_library( bytecode_runtime OBJECT )
@@ -525,7 +528,7 @@ if(ENABLE_SHARED_LIB)
             regex
             lzma_sdk
             yara
-            tomsfastmath
+	    ${TOMSFASTMATH_LIB_NAME}
             bytecode_runtime
             ${LIBMSPACK}
             ClamAV::libclamav_rust
@@ -635,7 +638,7 @@ if(ENABLE_STATIC_LIB)
             regex
             lzma_sdk
             yara
-            tomsfastmath
+	    ${TOMSFASTMATH_LIB_NAME}
             bytecode_runtime
             ${LIBMSPACK}
             ClamAV::libclamav_rust
