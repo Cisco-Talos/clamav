@@ -404,7 +404,8 @@ if(ENABLE_SHARED_LIB)
     add_library( clamav SHARED )
     set_target_properties( clamav PROPERTIES
         VERSION ${LIBCLAMAV_VERSION}
-        SOVERSION ${LIBCLAMAV_SOVERSION} )
+        SOVERSION ${LIBCLAMAV_SOVERSION}
+        LINK_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/libclamav.map)
     target_sources( clamav
         PRIVATE
             ${LIBCLAMAV_SOURCES}
