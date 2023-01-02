@@ -1,43 +1,43 @@
 FRESHCLAM_PUBLIC {
   global:
-    fc_strerror;
-    fc_initialize;
     fc_cleanup;
-    fc_prune_database_directory;
-    fc_test_database;
     fc_dns_query_update_info;
     fc_download_url_database;
     fc_download_url_databases;
+    fc_initialize;
+    fc_prune_database_directory;
+    fc_set_fccb_download_complete;
+    fc_strerror;
+    fc_test_database;
     fc_update_database;
     fc_update_databases;
-    fc_set_fccb_download_complete;
     logg;
     logg_close;
-    mprintf;
-    logg_verbose;
+    logg_file;
     logg_nowarn;
-    logg_time;
     logg_rotate;
     logg_size;
-    logg_file;
-    mprintf_verbose;
-    mprintf_quiet;
-    mprintf_nowarn;
-    mprintf_stdout;
-    mprintf_progress;
+    logg_time;
+    logg_verbose;
+    mprintf;
     mprintf_disabled;
+    mprintf_nowarn;
+    mprintf_progress;
+    mprintf_quiet;
+    mprintf_stdout;
+    mprintf_verbose;
 };
 FRESHCLAM_PRIVATE {
   global:
-    optparse;
-    optget;
-    optfree;
-    get_version;
-    print_version;
     check_flevel;
-    drop_privileges;
     daemonize_parent_wait;
     daemonize_signal_parent;
+    drop_privileges;
+    get_version;
+    optfree;
+    optget;
+    optparse;
+    print_version;
     sendln;
   local:
     *;
