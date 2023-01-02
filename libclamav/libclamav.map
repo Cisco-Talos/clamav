@@ -75,6 +75,9 @@ CLAMAV_PRIVATE {
     cl_base64_decode;
     cl_base64_encode;
     cl_cleanup_crypto;
+    cl_cvdunpack;
+    cl_engine_set_clcb_engine_compile_progress;
+    cl_engine_set_clcb_sigload_progress;
     cl_get_pkey_file;
     cl_get_x509_from_mem;
     cl_hash_data;
@@ -108,6 +111,7 @@ CLAMAV_PRIVATE {
     cli_ac_init;
     cli_ac_initdata;
     cli_ac_scanbuff;
+    cli_add_content_match_pattern;
     cli_basename;
     cli_bm_free;
     cli_bm_init;
@@ -142,7 +146,10 @@ CLAMAV_PRIVATE {
     cli_codepage_to_utf8;
     cli_ctime;
     cli_cvdunpack;
+    cli_dbgmsg;
+    cli_dbgmsg;
     cli_dbgmsg_internal;
+    cli_dbgmsg_no_inline;
     cli_dconf_init;
     cli_debug_flag;
     cli_detect_environment;
@@ -156,13 +163,17 @@ CLAMAV_PRIVATE {
     cli_gentemp_with_prefix;
     cli_gentempfd;
     cli_gentempfd_with_prefix;
+    cli_get_debug_flag;
     cli_get_filepath_from_filedesc;
+    cli_get_last_virus_str;
+    cli_getdsig;
     cli_gettmpdir;
     cli_hashfile;
     cli_hashset_destroy;
     cli_hashstream;
     cli_hex2str;
     cli_hex2ui;
+    cli_infomsg_simple;
     cli_initroots;
     cli_isnumber;
     cli_js_destroy;
@@ -196,6 +207,7 @@ CLAMAV_PRIVATE {
     cli_sanitize_filepath;
     cli_scan_buff;
     cli_scan_fmap;
+    cli_set_debug_flag;
     cli_sigopts_handler;
     cli_sigperf_events_destroy;
     cli_sigperf_print;
@@ -227,6 +239,7 @@ CLAMAV_PRIVATE {
     decodeLine;
     disasmbuf;
     fmap;
+    fmap_dump_to_file;
     fmap_duplicate;
     free_duplicate_fmap;
     get_fpu_endian;
@@ -236,11 +249,14 @@ CLAMAV_PRIVATE {
     html_normalise_mem;
     html_screnc_decode;
     html_tag_arg_free;
+    init_allow_list;
+    init_domain_list;
     init_domainlist;
     init_regex_list;
     init_whitelist;
     is_regex_ok;
     load_regex_matcher;
+    lsig_increment_subsig_match;
     messageCreate;
     messageDestroy;
     mpool_calloc;
@@ -251,6 +267,7 @@ CLAMAV_PRIVATE {
     phishingScan;
     phishing_done;
     phishing_init;
+    readdb_parse_ldb_subsignature;
     regex_list_add_pattern;
     regex_list_done;
     regex_list_match;
