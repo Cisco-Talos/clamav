@@ -61,7 +61,12 @@ if(ENABLE_SHARED_LIB)
     endif()
     set_target_properties(freshclam PROPERTIES
         COMPILE_FLAGS "${WARNCFLAGS}"
-        VERSION ${LIBFRESHCLAM_VERSION} SOVERSION ${LIBFRESHCLAM_SOVERSION})
+        VERSION ${LIBFRESHCLAM_VERSION} SOVERSION ${LIBFRESHCLAM_SOVERSION}
+        LINK_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/libfreshclam.map)
+    if(UNIX AND NOT APPLE)
+        set_target_properties(freshclam PROPERTIES LINK_FLAGS
+              "-Wl,--version-script='${CMAKE_CURRENT_SOURCE_DIR}/libfreshclam.map'")
+    endif()
     if(WIN32)
         install(TARGETS freshclam DESTINATION . COMPONENT libraries)
         install(FILES $<TARGET_PDB_FILE:freshclam> DESTINATION . OPTIONAL COMPONENT libraries)

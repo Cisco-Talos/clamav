@@ -505,7 +505,8 @@ if(ENABLE_SHARED_LIB)
     add_library( clamav SHARED )
     set_target_properties( clamav PROPERTIES
         VERSION ${LIBCLAMAV_VERSION}
-        SOVERSION ${LIBCLAMAV_SOVERSION} )
+        SOVERSION ${LIBCLAMAV_SOVERSION}
+        LINK_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/libclamav.map)
     target_sources( clamav
         PRIVATE
             ${LIBCLAMAV_SOURCES}
@@ -551,6 +552,10 @@ if(ENABLE_SHARED_LIB)
                 Iconv::Iconv
                 ${CMAKE_DL_LIBS}
                 m )
+        if(UNIX AND NOT APPLE)
+            set_target_properties(clamav PROPERTIES LINK_FLAGS
+                      "-Wl,--version-script='${CMAKE_CURRENT_SOURCE_DIR}/libclamav.map'")
+        endif()
     endif()
     set_target_properties( clamav PROPERTIES
         COMPILE_FLAGS "${WARNCFLAGS}"
