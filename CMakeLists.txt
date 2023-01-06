@@ -174,13 +174,13 @@ endif()
 #
 # Set RPATH for custom install prefixes
 #
-if(APPLE)
+if(APPLE AND NOT DO_NOT_SET_RPATH)
     set(CMAKE_MACOSX_RPATH 1)
 endif()
 
 include(GNUInstallDirs)
 
-if (NOT DEFINED CMAKE_INSTALL_RPATH)
+if (NOT DEFINED CMAKE_INSTALL_RPATH AND NOT DO_NOT_SET_RPATH)
     if(CMAKE_INSTALL_FULL_LIBDIR)
         set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_FULL_LIBDIR}")
     else()
