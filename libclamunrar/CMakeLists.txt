@@ -70,7 +70,8 @@ if(ENABLE_SHARED_LIB)
     add_library( clamunrar SHARED )
     set_target_properties(clamunrar PROPERTIES
         VERSION ${LIBCLAMAV_VERSION}
-        SOVERSION ${LIBCLAMAV_SOVERSION})
+        SOVERSION ${LIBCLAMAV_SOVERSION}
+        LINK_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/libclamunrar.map)
     target_sources( clamunrar
         PRIVATE
             ${UNRAR_SOURCES}
@@ -95,6 +96,9 @@ if(ENABLE_SHARED_LIB)
 
     if(WIN32)
         set_target_properties(clamunrar PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
+    elseif(UNIX AND NOT APPLE)
+        set_target_properties(clamunrar PROPERTIES LINK_FLAGS
+                   "-Wl,--version-script='${CMAKE_CURRENT_SOURCE_DIR}/libclamunrar.map'")
     endif()
 
     if(WIN32)

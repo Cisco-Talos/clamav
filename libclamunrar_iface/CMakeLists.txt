@@ -36,7 +36,8 @@ if(ENABLE_UNRAR)
         add_library( clamunrar_iface SHARED )
         set_target_properties(clamunrar_iface PROPERTIES
             VERSION ${LIBCLAMAV_VERSION}
-            SOVERSION ${LIBCLAMAV_SOVERSION})
+            SOVERSION ${LIBCLAMAV_SOVERSION}
+            LINK_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/libclamunrar_iface.map)
 
         target_sources( clamunrar_iface
             PRIVATE
@@ -62,6 +63,9 @@ if(ENABLE_UNRAR)
 
         if(WIN32)
             set_target_properties(clamunrar_iface PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
+        elseif(UNIX AND NOT APPLE)
+            set_target_properties(clamunrar_iface PROPERTIES LINK_FLAGS
+                 "-Wl,--version-script='${CMAKE_CURRENT_SOURCE_DIR}/libclamunrar_iface.map'")
         endif()
 
         # Private (internal-only) dependencies.
