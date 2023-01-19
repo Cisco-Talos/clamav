@@ -403,15 +403,27 @@ static int functionality_level_check(char *line)
 
 static int add_hash(struct regex_matcher *matcher, char *pattern, const char fl, int is_prefix)
 {
-    int rc;
-    struct cli_bm_patt *pat = MPOOL_CALLOC(matcher->mempool, 1, sizeof(*pat));
-    struct cli_matcher *bm;
-    const char *vname = NULL;
-    if (!pat)
-        return CL_EMEM;
+    int rc                  = CL_SUCCESS;
+    struct cli_bm_patt *pat = NULL;
+    struct cli_matcher *bm  = NULL;
+    const char *vname       = NULL;
+
+    if (0 == strlen(pattern)) {
+        cli_errmsg("add_hash: Invalid pattern '%s' in database\n", pattern);
+        rc = CL_EMALFDB;
+        goto done;
+    }
+
+    pat = MPOOL_CALLOC(matcher->mempool, 1, sizeof(*pat));
+    if (!pat) {
+        rc = CL_EMEM;
+        goto done;
+    }
     pat->pattern = (unsigned char *)CLI_MPOOL_HEX2STR(matcher->mempool, pattern);
-    if (!pat->pattern)
-        return CL_EMALFDB;
+    if (!pat->pattern) {
+        rc = CL_EMALFDB;
+        goto done;
+    }
     pat->length = 32;
     if (is_prefix) {
         pat->length = 4;
@@ -422,7 +434,7 @@ static int add_hash(struct regex_matcher *matcher, char *pattern, const char fl,
 
     if (!matcher->sha256_pfx_set.keys) {
         if ((rc = cli_hashset_init(&matcher->sha256_pfx_set, 1048576, 90))) {
-            return rc;
+            goto done;
         }
     }
 
@@ -432,27 +444,37 @@ static int add_hash(struct regex_matcher *matcher, char *pattern, const char fl,
         if (*vname == 'W') {
             /* hash is allowed in local.gdb */
             cli_dbgmsg("Skipping hash %s\n", pattern);
-            MPOOL_FREE(matcher->mempool, pat->pattern);
-            MPOOL_FREE(matcher->mempool, pat);
-            return CL_SUCCESS;
+            rc = CL_SUCCESS;
+            goto done;
         }
     }
     pat->virname = MPOOL_MALLOC(matcher->mempool, 1);
     if (!pat->virname) {
-        free(pat);
         cli_errmsg("add_hash: Unable to allocate memory for path->virname\n");
-        return CL_EMEM;
+        rc = CL_EMEM;
+        goto done;
     }
     *pat->virname = fl;
     cli_hashset_addkey(&matcher->sha256_pfx_set, cli_readint32(pat->pattern));
     if ((rc = cli_bm_addpatt(bm, pat, "*"))) {
         cli_errmsg("add_hash: failed to add BM pattern\n");
-        free(pat->pattern);
-        free(pat->virname);
-        free(pat);
-        return CL_EMALFDB;
+        rc = CL_EMALFDB;
+        goto done;
     }
-    return CL_SUCCESS;
+
+    pat = NULL;
+done:
+    if (pat) {
+        if (pat->pattern) {
+            MPOOL_FREE(matcher->mempool, pat->pattern);
+        }
+        if (pat->virname) {
+            MPOOL_FREE(matcher->mempool, pat->virname);
+        }
+        MPOOL_FREE(matcher->mempool, pat);
+    }
+
+    return rc;
 }
 
 /* Load patterns/regexes from file */
