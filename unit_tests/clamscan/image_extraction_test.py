@@ -112,7 +112,7 @@ class TC(testcase.TestCase):
         expected_stderr = [
             'Recognized GIF file',
             'Recognized PNG file',
-            '"FileMD5":"a27ae2b5bb2a00e406796be08cbd5519"',
+            '"FileMD5":"d8cff93e97a3d74b5a8bdd06a4381fee"',
             '"FileMD5":"fff2b19d9d2442488d819aba21dc0729"',
         ]
         self.verify_output(output.err, expected=expected_stderr)
