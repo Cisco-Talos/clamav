@@ -1189,16 +1189,21 @@ static bool cli_html_normalise(cli_ctx *ctx, int fd, m_area_t *m_area, const cha
                             /*don't output newlines in nocomment.html
                              * html_output_c(file_buff_o2, '\n');*/
                         } else if ((strcmp(tag, "/style") == 0) && (in_tag == TAG_STYLE)) {
+                            size_t chunk_size;
+
                             style_end = ptr - strlen("</style>") - 1;
+
+                            chunk_size = style_end - style_begin;
+
                             if (style_buff == NULL) {
-                                CLI_MALLOC(style_buff, style_end - style_begin + 1);
+                                CLI_MALLOC(style_buff, chunk_size + 1);
                             } else {
-                                CLI_REALLOC(style_buff, style_buff_size + style_end - style_begin + 1);
+                                CLI_REALLOC(style_buff, style_buff_size + chunk_size + 1);
                             }
 
-                            memcpy(style_buff + style_buff_size, style_begin, style_end - style_begin);
+                            memcpy(style_buff + style_buff_size, style_begin, chunk_size);
 
-                            style_buff_size += style_end - style_begin;
+                            style_buff_size += chunk_size;
                             style_buff[style_buff_size] = '\0';
 
                             in_tag      = TAG_DONT_EXTRACT;
@@ -1819,19 +1824,18 @@ static bool cli_html_normalise(cli_ctx *ctx, int fd, m_area_t *m_area, const cha
         }
 
         if (in_tag == TAG_STYLE) {
+            size_t chunk_size = ptr - style_begin;
+
             if (style_buff == NULL) {
-                CLI_MALLOC(style_buff, ptr - style_begin + 1);
+                CLI_MALLOC(style_buff, chunk_size + 1);
             } else {
-                CLI_REALLOC(style_buff, style_buff_size + ptr - style_begin + 1);
+                CLI_REALLOC(style_buff, style_buff_size + chunk_size + 1);
             }
 
-            memcpy(style_buff + style_buff_size, style_begin, ptr - style_begin);
+            memcpy(style_buff + style_buff_size, style_begin, chunk_size);
 
-            style_buff_size += ptr - style_begin;
+            style_buff_size += chunk_size;
             style_buff[style_buff_size] = '\0';
-
-            // reset style_begin to start of the next line
-            style_begin = line;
         }
 
         if (look_for_screnc && ptr_screnc) {
@@ -1844,6 +1848,12 @@ static bool cli_html_normalise(cli_ctx *ctx, int fd, m_area_t *m_area, const cha
         }
         free(line);
         ptr = line = cli_readchunk(stream_in, m_area, 8192);
+
+        if (in_tag == TAG_STYLE) {
+            // reset style_begin to start of the next line
+            style_begin = line;
+        }
+
         if (in_screnc) {
             state      = HTML_JSDECODE_DECRYPT;
             next_state = HTML_BAD_STATE;
@@ -1853,6 +1863,7 @@ static bool cli_html_normalise(cli_ctx *ctx, int fd, m_area_t *m_area, const cha
             next_state       = state;
             state            = HTML_LOOKFOR_SCRENC;
         }
+
         if (next_state == state) {
             /* safeguard against infloop */
             cli_dbgmsg("htmlnorm.c: next_state == state, changing next_state\n");
