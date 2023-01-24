@@ -3,6 +3,10 @@
 Note: This file refers to the official packages. Things described here may
 differ slightly from third-party binary packages.
 
+## 1.0.1
+
+ClamAV 1.0.1 is a critical patch release with the following fixes:
+
 ## 1.0.0
 
 ClamAV 1.0.0 includes the following improvements and changes.
