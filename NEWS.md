@@ -7,8 +7,23 @@ Note: This file refers to the source tarball. Things described here may differ
 
 ClamAV 0.103.8 is a critical patch release with the following fixes:
 
+- [CVE-2023-20032](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2023-20032):
+  Fixed a possible remote code execution vulnerability in the HFS+ file parser.
+  Issue affects versions 1.0.0 and earlier, 0.105.1 and earlier, and 0.103.7 and
+  earlier.
+  Thank you to Simon Scannell for reporting this issue.
+
+- [CVE-2023-20052](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2023-20052):
+  Fixed a possible remote information leak vulnerability in the DMG file parser.
+  Issue affects versions 1.0.0 and earlier, 0.105.1 and earlier, and 0.103.7 and
+  earlier.
+  Thank you to Simon Scannell for reporting this issue.
+
 - Update vendored libmspack library to version 0.11alpha.
   - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/830
+
+Special thanks to the following people for code contributions and bug reports:
+- Simon Scannell
 
 ## 0.103.7
 
@@ -25,19 +40,20 @@ ClamAV 0.103.7 is a critical patch release with the following fixes:
 
 ClamAV 0.103.6 is a critical patch release with the following fixes:
 
-- [CVE-2022-20770](CVE-2022-20770): Fixed a possible infinite loop vulnerability
-  in the CHM file parser.
+- [CVE-2022-20770](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2022-20770):
+  Fixed a possible infinite loop vulnerability in the CHM file parser.
   Issue affects versions 0.104.0 through 0.104.2 and LTS version 0.103.5 and
   prior versions.
   Thank you to Michał Dardas for reporting this issue.
 
-- [CVE-2022-20796](CVE-2022-20796): Fixed a possible NULL-pointer dereference
-  crash in the scan verdict cache check.
+- [CVE-2022-20796](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2022-20796):
+  Fixed a possible NULL-pointer dereference crash in the scan verdict cache
+  check.
   Issue affects versions 0.103.4, 0.103.5, 0.104.1, and 0.104.2.
   Thank you to Alexander Patrakov and Antoine Gatineau for reporting this issue.
 
-- [CVE-2022-20771](CVE-2022-20771): Fixed a possible infinite loop vulnerability
-  in the TIFF file parser.
+- [CVE-2022-20771](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2022-20771):
+  Fixed a possible infinite loop vulnerability in the TIFF file parser.
   Issue affects versions 0.104.0 through 0.104.2 and LTS version 0.103.5 and
   prior versions.
   The issue only occurs if the "--alert-broken-media" ClamScan option is
@@ -45,14 +61,15 @@ ClamAV 0.103.6 is a critical patch release with the following fixes:
   libclamav it is the "CL_SCAN_HEURISTIC_BROKEN_MEDIA" scan option.
   Thank you to Michał Dardas for reporting this issue.
 
-- [CVE-2022-20785](CVE-2022-20785): Fixed a possible memory leak in the
-  HTML file parser / Javascript normalizer.
+- [CVE-2022-20785](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2022-20785):
+  Fixed a possible memory leak in the HTML file parser / Javascript normalizer.
   Issue affects versions 0.104.0 through 0.104.2 and LTS version 0.103.5 and
   prior versions.
   Thank you to Michał Dardas for reporting this issue.
 
-- [CVE-2022-20792](CVE-2022-20792): Fixed a possible multi-byte heap buffer
-  overflow write vulnerability in the signature database load module.
+- [CVE-2022-20792](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2022-20792):
+  Fixed a possible multi-byte heap buffer overflow write vulnerability in the
+  signature database load module.
   The fix was to update the vendored regex library to the latest version.
   Issue affects versions 0.104.0 through 0.104.2 and LTS version 0.103.5 and
   prior versions.
