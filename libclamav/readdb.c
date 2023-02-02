@@ -2006,8 +2006,8 @@ static inline int init_tdb(struct cli_lsig_tdb *tdb, struct cl_engine *engine, c
 
     if (tdb->engine) {
         if (tdb->engine[0] > cl_retflevel()) {
-            FREE_TDB_P(tdb);
             cli_dbgmsg("init_tdb: Signature for %s not loaded (required f-level: %u)\n", virname, tdb->engine[0]);
+            FREE_TDB_P(tdb);
             return CL_BREAK;
         } else if (tdb->engine[1] < cl_retflevel()) {
             FREE_TDB_P(tdb);
