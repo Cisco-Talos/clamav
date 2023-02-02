@@ -1206,11 +1206,11 @@ static int cli_chkpua(const char *signame, const char *pua_cats, unsigned int op
         cli_dbgmsg("Skipping signature %s - bad syntax\n", signame);
         return 1;
     }
-    if ( (pt2 = strrchr(sig + 1, '.')) != pt1 ) {
+    if ((pt2 = strrchr(sig + 1, '.')) != pt1) {
         cli_dbgmsg("Signature has at least three dots [%s]\n", signame);
     }
     if ((unsigned int)(pt1 - sig + 2) > sizeof(cat)) {
-        cli_dbgmsg("Skipping signature %s - too long category name, length approaching %d characters\n", signame, (unsigned int)(pt1 - sig + 2) );
+        cli_dbgmsg("Skipping signature %s - too long category name, length approaching %d characters\n", signame, (unsigned int)(pt1 - sig + 2));
         return 1;
     }
     if ((unsigned int)(pt2 - sig + 2) > sizeof(cat)) {
@@ -1221,9 +1221,9 @@ static int cli_chkpua(const char *signame, const char *pua_cats, unsigned int op
     endsig = strrchr(sig, '.');
     strncpy(cat, sig, strlen(sig) - strlen(endsig) + 1);
     cat[strlen(sig) - strlen(endsig) + 1] = 0;
-    cat_pt                = strstr(cat, pua_cats);
-    cli_dbgmsg("cli_chkpua:                cat=[%s]\n", cat                      );
-    cli_dbgmsg("cli_chkpua:                sig=[%s]\n", sig                      );
+    cat_pt                                = strstr(cat, pua_cats);
+    cli_dbgmsg("cli_chkpua:                cat=[%s]\n", cat);
+    cli_dbgmsg("cli_chkpua:                sig=[%s]\n", sig);
     if (options & CL_DB_PUA_INCLUDE)
         ret = cat_pt ? 0 : 1;
     else
@@ -3418,6 +3418,15 @@ static int cli_loadcrt(FILE *fs, struct cl_engine *engine, struct cli_dbio *dbio
             goto done;
         }
 
+        /*
+         * tokens[4] is the public key.  having a length that is too
+         * long causes an out of bounds read in the this call.
+         */
+        if ((strlen(tokens[4]) / 2) >= (FP_MAX_SIZE / 8)) {
+            cli_errmsg("cli_loadcrt: line %u: Public key too long.\nNOTE: If this is actually a valid key length, recompile with a larger FP_MAX_SIZE (currently %d).\n", (unsigned int)line, FP_MAX_SIZE);
+            ret = CL_EMALFDB;
+            goto done;
+        }
         fp_read_unsigned_bin(&(ca.n), (const unsigned char *)pubkey, strlen(tokens[4]) / 2);
 
         fp_read_unsigned_bin(&(ca.e), exp, sizeof(exp) - 1);
