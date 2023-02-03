@@ -5471,57 +5471,6 @@ static cl_error_t scan_common(cl_fmap_t *map, const char *filepath, const char *
 
     status = cli_magic_scan(&ctx, CL_TYPE_ANY);
 
-    // If any alerts occurred, set the output pointer to the "latest" alert signature name.
-    if (0 < evidence_num_alerts(ctx.evidence)) {
-        *virname = cli_get_last_virus_str(&ctx);
-        verdict  = CL_VIRUS;
-    }
-
-    /*
-     * Report PUA alerts here.
-     */
-    num_potentially_unwanted_indicators = evidence_num_indicators_type(
-        ctx.evidence,
-        IndicatorType_PotentiallyUnwanted);
-    if (0 != num_potentially_unwanted_indicators) {
-        // We have "potentially unwanted" indicators that would not have been reported yet.
-        // We may wish to report them now, ... depending ....
-
-        if (ctx.options->general & CL_SCAN_GENERAL_ALLMATCHES) {
-            // We're in allmatch mode, so report all "potentially unwanted" matches now.
-
-            size_t i;
-
-            for (i = 0; i < num_potentially_unwanted_indicators; i++) {
-                const char *pua_alert = evidence_get_indicator(
-                    ctx.evidence,
-                    IndicatorType_PotentiallyUnwanted,
-                    i);
-
-                if (NULL != pua_alert) {
-                    // We don't know exactly which layer the alert happened at.
-                    // There's a decent chance it wasn't at this layer, and in that case we wouldn't
-                    // even have access to that file anymore (it's gone!). So we'll pass back -1 for the
-                    // file descriptor rather than using `cli_virus_found_cb() which would pass back
-                    // The top level file descriptor.
-                    if (ctx.engine->cb_virus_found) {
-                        ctx.engine->cb_virus_found(
-                            -1,
-                            pua_alert,
-                            ctx.cb_ctx);
-                    }
-                }
-            }
-
-        } else {
-            // Not allmatch mode. Only want to report one thing...
-            if (0 == evidence_num_indicators_type(ctx.evidence, IndicatorType_Strong)) {
-                // And it looks like we haven't reported anything else, so report the last "potentially unwanted" one.
-                cli_virus_found_cb(&ctx, cli_get_last_virus(&ctx));
-            }
-        }
-    }
-
 #if HAVE_JSON
     if (ctx.options->general & CL_SCAN_GENERAL_COLLECT_METADATA && (ctx.properties != NULL)) {
         json_object *jobj;
@@ -5616,6 +5565,57 @@ static cl_error_t scan_common(cl_fmap_t *map, const char *filepath, const char *
         }
     }
 #endif // HAVE_JSON
+
+    // If any alerts occurred, set the output pointer to the "latest" alert signature name.
+    if (0 < evidence_num_alerts(ctx.evidence)) {
+        *virname = cli_get_last_virus_str(&ctx);
+        verdict  = CL_VIRUS;
+    }
+
+    /*
+     * Report PUA alerts here.
+     */
+    num_potentially_unwanted_indicators = evidence_num_indicators_type(
+        ctx.evidence,
+        IndicatorType_PotentiallyUnwanted);
+    if (0 != num_potentially_unwanted_indicators) {
+        // We have "potentially unwanted" indicators that would not have been reported yet.
+        // We may wish to report them now, ... depending ....
+
+        if (ctx.options->general & CL_SCAN_GENERAL_ALLMATCHES) {
+            // We're in allmatch mode, so report all "potentially unwanted" matches now.
+
+            size_t i;
+
+            for (i = 0; i < num_potentially_unwanted_indicators; i++) {
+                const char *pua_alert = evidence_get_indicator(
+                    ctx.evidence,
+                    IndicatorType_PotentiallyUnwanted,
+                    i);
+
+                if (NULL != pua_alert) {
+                    // We don't know exactly which layer the alert happened at.
+                    // There's a decent chance it wasn't at this layer, and in that case we wouldn't
+                    // even have access to that file anymore (it's gone!). So we'll pass back -1 for the
+                    // file descriptor rather than using `cli_virus_found_cb() which would pass back
+                    // The top level file descriptor.
+                    if (ctx.engine->cb_virus_found) {
+                        ctx.engine->cb_virus_found(
+                            -1,
+                            pua_alert,
+                            ctx.cb_ctx);
+                    }
+                }
+            }
+
+        } else {
+            // Not allmatch mode. Only want to report one thing...
+            if (0 == evidence_num_indicators_type(ctx.evidence, IndicatorType_Strong)) {
+                // And it looks like we haven't reported anything else, so report the last "potentially unwanted" one.
+                cli_virus_found_cb(&ctx, cli_get_last_virus(&ctx));
+            }
+        }
+    }
 
     if (verdict != CL_CLEAN) {
         // Reporting "VIRUS" is more important than reporting and error,
