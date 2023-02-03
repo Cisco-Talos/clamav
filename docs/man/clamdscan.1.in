@@ -27,7 +27,7 @@ Be quiet \- only output error messages.
 \fB\-\-stdout\fR
 Write all messages (except for libclamav output) to the standard output (stdout).
 .TP
-\fB\-\-config\-file=FILE\fR
+\fB\-c, \-\-config\-file=FILE\fR
 Read clamd settings from FILE.
 .TP
 \fB\-l FILE, \-\-log=FILE\fR
