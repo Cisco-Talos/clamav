@@ -1,5 +1,5 @@
 /* This file is part of libmspack.
- * (C) 2003-2010 Stuart Caie.
+ * (C) 2003-2023 Stuart Caie.
  *
  * The deflate method was created by Phil Katz. MSZIP is equivalent to the
  * deflate method.
@@ -12,8 +12,8 @@
 
 /* MS-ZIP decompression implementation. */
 
-#include "system.h"
-#include "mszip.h"
+#include <system.h>
+#include <mszip.h>
 
 /* import bit-reading macros and code */
 #define BITS_TYPE struct mszipd_stream
@@ -24,7 +24,7 @@
     READ_IF_NEEDED;             \
     INJECT_BITS(*i_ptr++, 8);   \
 } while (0)
-#include "readbits.h"
+#include <readbits.h>
 
 /* import huffman macros and code */
 #define TABLEBITS(tbl)      MSZIP_##tbl##_TABLEBITS
@@ -32,7 +32,7 @@
 #define HUFF_TABLE(tbl,idx) zip->tbl##_table[idx]
 #define HUFF_LEN(tbl,idx)   zip->tbl##_len[idx]
 #define HUFF_ERROR          return INF_ERR_HUFFSYM
-#include "readhuff.h"
+#include <readhuff.h>
 
 #define FLUSH_IF_NEEDED do {                            \
     if (zip->window_posn == MSZIP_FRAME_SIZE) {         \
@@ -89,10 +89,7 @@ static const unsigned char bitlen_order[19] = {
 #define INF_ERR_HUFFSYM     (-14) /* out of bits decoding huffman symbol     */
 
 static int zip_read_lens(struct mszipd_stream *zip) {
-  /* for the bit buffer and huffman decoding */
-  register unsigned int bit_buffer;
-  register int bits_left;
-  unsigned char *i_ptr, *i_end;
+  DECLARE_BIT_VARS;
 
   /* bitlen Huffman codes -- immediate lookup, 7 bit max code length */
   unsigned short bl_table[(1 << 7)];
@@ -155,13 +152,9 @@ static int zip_read_lens(struct mszipd_stream *zip) {
 
 /* a clean implementation of RFC 1951 / inflate */
 static int inflate(struct mszipd_stream *zip) {
-  unsigned int last_block, block_type, distance, length, this_run, i;
-
-  /* for the bit buffer and huffman decoding */
-  register unsigned int bit_buffer;
-  register int bits_left;
-  register unsigned short sym;
-  unsigned char *i_ptr, *i_end;
+  DECLARE_HUFF_VARS;
+  unsigned int last_block, block_type, distance, length, this_run;
+  int i;
 
   RESTORE_BITS;
 
@@ -232,7 +225,7 @@ static int inflate(struct mszipd_stream *zip) {
         RESTORE_BITS;
       }
 
-      /* now huffman lengths are read for either kind of block,
+      /* now huffman lengths are read for either kind of block, 
        * create huffman decoding tables */
       if (make_decode_table(MSZIP_LITERAL_MAXSYMBOLS, MSZIP_LITERAL_TABLEBITS,
                             &zip->LITERAL_len[0], &zip->LITERAL_table[0]))
@@ -270,7 +263,7 @@ static int inflate(struct mszipd_stream *zip) {
 
           /* match position is window position minus distance. If distance
            * is more than window position numerically, it must 'wrap
-           * around' the frame size. */
+           * around' the frame size. */ 
           match_posn = ((distance > zip->window_posn) ? MSZIP_FRAME_SIZE : 0)
             + zip->window_posn - distance;
 
@@ -326,7 +319,7 @@ static int inflate(struct mszipd_stream *zip) {
  * MSZIP only expands to the size of the window, the implementation used
  * simply keeps track of the amount of data flushed, and if more than 32k
  * is flushed, an error is raised.
- */
+ */  
 static int mszipd_flush_window(struct mszipd_stream *zip,
                                unsigned int data_flushed)
 {
@@ -359,7 +352,7 @@ struct mszipd_stream *mszipd_init(struct mspack_system *system,
   }
 
   /* allocate input buffer */
-  zip->inbuf  = (unsigned char *) system->alloc(system, (size_t) input_buffer_size);
+  zip->inbuf  = (unsigned char *) system->alloc(system, input_buffer_size);
   if (!zip->inbuf) {
     system->free(zip);
     return NULL;
@@ -467,11 +460,7 @@ int mszipd_decompress(struct mszipd_stream *zip, off_t out_bytes) {
 }
 
 int mszipd_decompress_kwaj(struct mszipd_stream *zip) {
-    /* for the bit buffer */
-    register unsigned int bit_buffer;
-    register int bits_left;
-    unsigned char *i_ptr, *i_end;
-
+    DECLARE_BIT_VARS;
     int i, error, block_len;
 
     /* unpack blocks until block_len == 0 */

@@ -1,5 +1,5 @@
 /* This file is part of libmspack.
- * (C) 2003-2018 Stuart Caie.
+ * (C) 2003-2023 Stuart Caie.
  *
  * libmspack is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License (LGPL) version 2.1
@@ -21,11 +21,11 @@
 
 /* CAB decompression implementation */
 
-#include "system.h"
-#include "cab.h"
-#include "mszip.h"
-#include "lzx.h"
-#include "qtm.h"
+#include <system.h>
+#include <cab.h>
+#include <mszip.h>
+#include <lzx.h>
+#include <qtm.h>
 
 /* Notes on compliance with cabinet specification:
  *
@@ -56,7 +56,7 @@
  * means each consecutive data block can have completely different
  * "uncompressed" sizes, ranging from 1 to 32768 bytes. However, in
  * reality, all data blocks in a folder decompress to exactly 32768 bytes,
- * excepting the final block.
+ * excepting the final block. 
  *
  * Given this situation, the decompression algorithms are designed to
  * realign their input bitstreams on 32768 output-byte boundaries, and
@@ -76,7 +76,8 @@ static int cabd_read_headers(
   struct mspack_system *sys, struct mspack_file *fh,
   struct mscabd_cabinet_p *cab, off_t offset, int salvage, int quiet);
 static char *cabd_read_string(
-  struct mspack_system *sys, struct mspack_file *fh, int *error);
+  struct mspack_system *sys, struct mspack_file *fh, int permit_empty,
+  int *error);
 
 static struct mscabd_cabinet *cabd_search(
   struct mscab_decompressor *base, const char *filename);
@@ -388,23 +389,23 @@ static int cabd_read_headers(struct mspack_system *sys,
   }
   else {
     cab->base.header_resv = 0;
-    folder_resv           = 0;
+    folder_resv           = 0; 
     cab->block_resv       = 0;
   }
 
   /* read name and info of preceeding cabinet in set, if present */
   if (cab->base.flags & cfheadPREV_CABINET) {
-    cab->base.prevname = cabd_read_string(sys, fh, &err);
+    cab->base.prevname = cabd_read_string(sys, fh, 0, &err);
     if (err) return err;
-    cab->base.previnfo = cabd_read_string(sys, fh, &err);
+    cab->base.previnfo = cabd_read_string(sys, fh, 1, &err);
     if (err) return err;
   }
 
   /* read name and info of next cabinet in set, if present */
   if (cab->base.flags & cfheadNEXT_CABINET) {
-    cab->base.nextname = cabd_read_string(sys, fh, &err);
+    cab->base.nextname = cabd_read_string(sys, fh, 0, &err);
     if (err) return err;
-    cab->base.nextinfo = cabd_read_string(sys, fh, &err);
+    cab->base.nextinfo = cabd_read_string(sys, fh, 1, &err);
     if (err) return err;
   }
 
@@ -508,7 +509,7 @@ static int cabd_read_headers(struct mspack_system *sys,
     file->date_y = (x >> 9) + 1980;
 
     /* get filename */
-    file->filename = cabd_read_string(sys, fh, &err);
+    file->filename = cabd_read_string(sys, fh, 0, &err);
 
     /* if folder index or filename are bad, either skip it or fail */
     if (err || !file->folder) {
@@ -535,7 +536,8 @@ static int cabd_read_headers(struct mspack_system *sys,
 }
 
 static char *cabd_read_string(struct mspack_system *sys,
-                              struct mspack_file *fh, int *error)
+                              struct mspack_file *fh, int permit_empty,
+                              int *error)
 {
   off_t base = sys->tell(fh);
   char buf[256], *str;
@@ -549,8 +551,8 @@ static char *cabd_read_string(struct mspack_system *sys,
 
   /* search for a null terminator in the buffer */
   for (i = 0, ok = 0; i < len; i++) if (!buf[i]) { ok = 1; break; }
-  /* reject empty strings */
-  if (i == 0) ok = 0;
+  /* optionally reject empty strings */
+  if (i == 0 && !permit_empty) ok = 0;
 
   if (!ok) {
     *error = MSPACK_ERR_DATAFORMAT;
@@ -574,7 +576,7 @@ static char *cabd_read_string(struct mspack_system *sys,
   *error = MSPACK_ERR_OK;
   return str;
 }
-
+    
 /***************************************
  * CABD_SEARCH, CABD_FIND
  ***************************************
@@ -627,7 +629,7 @@ static struct mscabd_cabinet *cabd_search(struct mscab_decompressor *base,
                      firstlen - filelen);
       }
     }
-
+    
     sys->close(fh);
   }
   else {
@@ -651,10 +653,10 @@ static int cabd_find(struct mscab_decompressor_p *self, unsigned char *buf,
   unsigned int cablen_u32 = 0, foffset_u32 = 0;
   int false_cabs = 0;
 
-#if !LARGEFILE_SUPPORT
+#if SIZEOF_OFF_T < 8
   /* detect 32-bit off_t overflow */
   if (flen < 0) {
-    sys->message(fh, largefile_msg);
+    sys->message(fh, "library not compiled to support large files.");
     return MSPACK_ERR_OK;
   }
 #endif
@@ -676,7 +678,7 @@ static int cabd_find(struct mscab_decompressor_p *self, unsigned char *buf,
     /* FAQ avoidance strategy */
     if ((offset == 0) && (EndGetI32(&buf[0]) == 0x28635349)) {
       sys->message(fh, "WARNING; found InstallShield header. Use unshield "
-                   "(https://github.com/twogood/unshield) to unpack this file");
+                   "(https://github.com/twogood/unshield) to unpack this file"); 
     }
 
     /* read through the entire buffer. */
@@ -753,13 +755,13 @@ static int cabd_find(struct mscab_decompressor_p *self, unsigned char *buf,
             /* cause the search to restart after this cab's data. */
             offset = caboff + (off_t) cablen_u32;
 
-#if !LARGEFILE_SUPPORT
+#if SIZEOF_OFF_T < 8
             /* detect 32-bit off_t overflow */
             if (offset < caboff) {
-              sys->message(fh, largefile_msg);
+              sys->message(fh, "library not compiled to support large files.");
               return MSPACK_ERR_OK;
             }
-#endif
+#endif        
           }
         }
 
@@ -786,7 +788,7 @@ static int cabd_find(struct mscab_decompressor_p *self, unsigned char *buf,
 
   return MSPACK_ERR_OK;
 }
-
+                                             
 /***************************************
  * CABD_MERGE, CABD_PREPEND, CABD_APPEND
  ***************************************
@@ -1012,7 +1014,7 @@ static int cabd_extract(struct mscab_decompressor *base,
   struct mscabd_folder_p *fol;
   struct mspack_system *sys;
   struct mspack_file *fh;
-  off_t filelen;
+  unsigned int filelen;
 
   if (!self) return MSPACK_ERR_ARGS;
   if (!file) return self->error = MSPACK_ERR_ARGS;
@@ -1029,7 +1031,7 @@ static int cabd_extract(struct mscab_decompressor *base,
    * or in salvage mode reduce file length so it fits 2GB limit
    */
   filelen = file->length;
-  if (filelen > CAB_LENGTHMAX || (file->offset + filelen) > CAB_LENGTHMAX) {
+  if (filelen > (CAB_LENGTHMAX - file->offset)) {
     if (self->salvage) {
       filelen = CAB_LENGTHMAX - file->offset;
     }
@@ -1049,8 +1051,8 @@ static int cabd_extract(struct mscab_decompressor *base,
    * In salvage mode, don't assume block sizes, just try decoding
    */
   if (!self->salvage) {
-    off_t maxlen = fol->base.num_blocks * CAB_BLOCKMAX;
-    if ((file->offset + filelen) > maxlen) {
+    unsigned int maxlen = fol->base.num_blocks * CAB_BLOCKMAX;
+    if (file->offset > maxlen || filelen > (maxlen - file->offset)) {
       sys->message(NULL, "ERROR; file \"%s\" cannot be extracted, "
                    "cabinet set is incomplete", file->filename);
       return self->error = MSPACK_ERR_DECRUNCH;
@@ -1220,7 +1222,7 @@ static int cabd_sys_read(struct mspack_file *file, void *buffer, int bytes) {
   int avail, todo, outlen, ignore_cksum, ignore_blocksize;
 
   ignore_cksum = self->salvage ||
-    (self->fix_mszip &&
+    (self->fix_mszip && 
      ((self->d->comp_type & cffoldCOMPTYPE_MASK) == cffoldCOMPTYPE_MSZIP));
   ignore_blocksize = self->salvage;
 
@@ -1398,7 +1400,7 @@ static unsigned int cabd_checksum(unsigned char *data, unsigned int bytes,
   unsigned int len, ul = 0;
 
   for (len = bytes >> 2; len--; data += 4) {
-    cksum ^= ((data[0]) | (data[1]<<8) | (data[2]<<16) | (data[3]<<24));
+    cksum ^= EndGetI32(data);
   }
 
   switch (bytes & 3) {
