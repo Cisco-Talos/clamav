@@ -37,7 +37,7 @@ BEGIN
             VALUE "OriginalFilename", RES_FNAME
             VALUE "ProductName", "ClamAV"
             VALUE "ProductVersion", RES_VER_S " ("  REPO_VERSION ")"
-            VALUE "LegalCopyright", "(C) 2022 Cisco Systems, Inc."
+            VALUE "LegalCopyright", "(C) 2023 Cisco Systems, Inc."
             VALUE "LegalTrademarks", "License: GNU GPL, Version 2"
             VALUE "Comments", REPO_VERSION
         }
@@ -46,4 +46,3 @@ BEGIN
 	    VALUE "Translation", 0x409, 0x4b0
     }
 END
-

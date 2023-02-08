@@ -628,7 +628,7 @@ static const flex_int32_t yy_rule_can_match_eol[76] =
 /*
  * YARA rule lexer for ClamAV
  *
- * Copyright (C) 2014-2022 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ * Copyright (C) 2014-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *
  * Authors: Steven Morgan
  *
@@ -3108,4 +3108,3 @@ int yr_lex_parse_rules_file(
 
   return compiler->errors;
 }
-
