@@ -13,6 +13,7 @@
 /* this header defines macros that read data streams by
  * the individual bits
  *
+ * DECLARE_BIT_VARS  declares local variables
  * INIT_BITS         initialises bitstream state in state structure
  * STORE_BITS        stores bitstream state in state structure
  * RESTORE_BITS      restores bitstream state from state structure
@@ -92,13 +93,20 @@
 # endif
 #endif
 
+typedef unsigned int bitbuf_type;
+
 #if HAVE_LIMITS_H
 # include <limits.h>
 #endif
 #ifndef CHAR_BIT
 # define CHAR_BIT (8)
 #endif
-#define BITBUF_WIDTH (sizeof(bit_buffer) * CHAR_BIT)
+#define BITBUF_WIDTH (sizeof(bitbuf_type) * CHAR_BIT)
+
+#define DECLARE_BIT_VARS \
+   unsigned char *i_ptr, *i_end; \
+   register bitbuf_type bit_buffer; \
+   register int bits_left
 
 #define INIT_BITS do {                          \
     BITS_VAR->i_ptr      = &BITS_VAR->inbuf[0]; \
@@ -136,7 +144,7 @@
     unsigned char needed = (bits), bitrun;                      \
     (val) = 0;                                                  \
     while (needed > 0) {                                        \
-        if (bits_left <= (BITBUF_WIDTH - 16)) READ_BYTES;       \
+        if (bits_left <= (int)(BITBUF_WIDTH - 16)) READ_BYTES;	\
         bitrun = (bits_left < needed) ? bits_left : needed;     \
         (val) = ((val) << bitrun) | PEEK_BITS(bitrun);          \
         REMOVE_BITS(bitrun);                                    \
@@ -148,12 +156,13 @@
 # define PEEK_BITS(nbits)   (bit_buffer >> (BITBUF_WIDTH - (nbits)))
 # define REMOVE_BITS(nbits) ((bit_buffer <<= (nbits)), (bits_left -= (nbits)))
 # define INJECT_BITS(bitdata,nbits) ((bit_buffer |= \
-    (bitdata) << (BITBUF_WIDTH - (nbits) - bits_left)), (bits_left += (nbits)))
+    (bitbuf_type)(bitdata) << (BITBUF_WIDTH - (nbits) - bits_left)), \
+    (bits_left += (nbits)))
 #else /* BITS_ORDER_LSB */
-# define PEEK_BITS(nbits)   (bit_buffer & ((1 << (nbits))-1))
+# define PEEK_BITS(nbits)   (bit_buffer & ((bitbuf_type)(1 << (nbits))-1))
 # define REMOVE_BITS(nbits) ((bit_buffer >>= (nbits)), (bits_left -= (nbits)))
 # define INJECT_BITS(bitdata,nbits) ((bit_buffer |= \
-    (bitdata) << bits_left), (bits_left += (nbits)))
+    (bitbuf_type)(bitdata) << bits_left), (bits_left += (nbits)))
 #endif
 
 #ifdef BITS_LSB_TABLE

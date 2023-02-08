@@ -1,3 +1,148 @@
+2023-02-03  Stuart Caie <kyzer@cabextract.org.uk>
+
+	* configure.ac: do AC_CHECK_SIZEOF([off_t]) test only after
+	AC_SYS_LARGEFILE, because the latter can alter the size of off_t.
+
+        * cabd_extract(): file->offset and file->length are unsigned ints,
+	both of them and their sum are checked to be <= CAB_LENGTHMAX. But
+	recent code stuffs file->length into an off_t and checks that instead.
+	On 32-bit architectures, if file->length > 2GiB then the off_t is
+	negative, evading the check. Ultimately this causes the decompression
+	functions to return MSPACK_ERR_ARGS as they already guard against
+	being asked to decompress a negative number of bytes.
+
+2023-02-01  Stuart Caie <kyzer@cabextract.org.uk>
+
+	* readbits.h, readhuff.h, cabd.c, kwajd.c, lzxd.c, mszipd.c, qtmd.c:
+	ensure bit operations (including intermediary ones) are considered
+	as unsigned int, so UBSan is happy.
+
+2023-01-31  Stuart Caie <kyzer@cabextract.org.uk>
+
+	* chmd.c: replace READ_ENCINT() macro with stricter read_encint()
+	function that reads no more than 63 or 31 bits so ENCINTs can never
+	be negative.
+
+	I'd prefer to use unsigned types, but off_t is used for file offsets
+	and lengths to match the environment's file I/O, so changing it is
+	tricky and would change the current public API.
+
+	Additionally, UBSan complains about shifting a 1 into a signed
+	type's MSB. https://www.cs.utah.edu/~regehr/papers/tosem15.pdf
+	notes that this is legal in ANSI C and "fairly benign (and well-
+	defined until C99)", but C99 made it undefined for no good reason.
+	I don't agree with this, but I don't want someone else using a C99
+	compiler to end up miscompiling the code.
+
+	* chmd_read_headers(): the CHM's internally declared file length is
+	compared against its actual file length and a warning is printed if
+	they don't match.
+
+	* chmd_extract(): files in the uncompressed section will print a
+	warning if their declared length goes beyond the declared end of the
+	CHM file. This may not match the actual CHM file length. You will
+	still get seek or read errors if a file's offset or length go beyond
+	the actual CHM file length.
+
+	Files in the compressed section will now cause a decrunch error if
+	their declared offset goes beyond the uncompressed length of the
+	section. If their offset is OK but their declared length goes beyond
+	the end, they will print a warning and then decompress as much as
+	possible before causing an error.
+
+2023-01-02  Stuart Caie <kyzer@cabextract.org.uk>
+
+	* kwajd_extract(): KWAJ compression method #2 is the QBasic variant
+	of the SZDD compression algorithm. Thanks to Jason Summers for finding
+	this and providing examples.
+
+2021-07-20  Stuart Caie <kyzer@cabextract.org.uk>
+
+	* lzxd_decompress(): simplified the code that decodes match_offset.
+	Thanks to Jasper St. Pierre for prompting me to look at it.
+
+2020-12-30  Stuart Caie <kyzer@cabextract.org.uk>
+
+	* cabd_read_string(): libmspack no longer rejects CAB files with
+	empty previnfo/nextinfo strings. Thanks to Simon Tatham for the
+	patch, and for noting that WiX v4 currently generates such files.
+
+2020-08-10  Stuart Caie <kyzer@cabextract.org.uk>
+
+	* lzxd_decompress(): merged the code for decoding aligned and
+	verbatim blocks, also verified there is no significant performance
+	penalty.
+
+2020-08-07  Stuart Caie <kyzer@cabextract.org.uk>
+
+	* read_sys_file(): in a CHM file, the ControlData and ResetTable
+	files are loaded entirely into memory, regardless of file size.
+	This is not in the spirit of letting users control memory usage.
+
+	ControlData previously had to be at least 28 bytes (in case a new,
+	larger version of the file ever appeared), but is now rejected
+	if not exactly 28 bytes.
+
+	ResetTable can theoretically be huge; the longest LZX stream of
+	16 exabytes could have a 4 petabyte ResetTable. Practically, the
+	largest seen in the wild is 46 kilobytes (PHP manuals). I picked
+	an arbitrary upper limit of 1MB; please get in contact if you
+	know of any CHM files in the wild that are largest than this.
+
+	Thanks to seviezhou on Github for reporting this.
+
+2020-04-13  Stuart Caie <kyzer@cabextract.org.uk>
+
+	* system.h: clear up libmspack's large file support.
+
+	To support large files, do this:
+
+	1. add any defines that your compiler needs to enable large file
+	support. It may be supported by default.
+	2. Define HAVE_FSEEKO if fseeko() and ftello() are available.
+	3. Define SIZEOF_OFF_T to the value of sizeof(off_t); it must be a
+	literal value because sizeof() can't be used in preprocessor tests.
+
+	libmspack uses the off_t datatype for all file offsets. If off_t is
+	less than 64 bits, libmspack will return an error when processing
+	CHM files with offsets beyond 2GB, and won't search for CAB headers
+	beyond 2GB into a file.  In both cases, it prints a warning message
+	that the library doesn't support large files.
+
+2020-04-13  Stuart Caie <kyzer@cabextract.org.uk>
+
+	* macros.h: new header for the D(), LD/LU and EndGet???() macros.
+	Use this instead of system.h.
+
+        * system.h: if MSPACK_NO_DEFAULT_SYSTEM is defined, define
+        inline versions of the only standard C functions used in
+        mspack (strlen, memcmp, memset), so that no standard C library
+        functions are needed at all.
+
+2020-01-08  Stuart Caie <kyzer@cabextract.org.uk>
+
+	* lzxd_decompress(): do not apply the E8 transformation on the
+	32769th LZX frame! Thanks to Cezary Sliwa for discovering this
+	bug and providing an example cab file (which is
+	http://download.windowsupdate.com/d/msdownload/update/driver/
+	drvs/2019/11/016c7f3e-809d-4720-893b-
+	e0d74f10c39d_35e12507628e8dc8ae5fb3332835f4253d2dab23.cab)
+
+        * cabd_compare: use EXPAND.EXE instead of EXTRACT.EXE when
+	testing files in a directory called 'expand'. The example
+	cab file above is extracted wrongly by EXTRACT.EXE, but
+	correctly by EXPAND.EXE because they take different approaches
+	to E8 transformations:
+
+	- EXTRACT.EXE writes "E8E8E8E8E8E8' to the last 6 bytes of
+	  frame, looks for E8 bytes up to the last 6 bytes, then restores
+	  the last 6 bytes, leaving partial transforms of 1-3 bytes if
+	  E8 byte is found near the end of the frame
+
+	- EXPAND.EXE looks for E8 bytes up to the last 10 bytes of a
+	  frame, therefore the last 6 bytes are never altered and all
+	  transforms are 4 bytes
+
 2019-02-18  Stuart Caie <kyzer@cabextract.org.uk>
 
 	* chmd_read_headers(): a CHM file name beginning "::" but shorter
