@@ -1,7 +1,7 @@
 /*
  *  Assorted utility functions and macros.
  *
- *  Copyright (C) 2021-2022 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2021-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *
  *  Authors: Scott Hutton
  *
