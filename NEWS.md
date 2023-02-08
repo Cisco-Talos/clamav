@@ -14,6 +14,9 @@ ClamAV 0.105.2 is a critical patch release with the following fixes:
   directly to files in the ClamAV release branches.
   - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/765
 
+- Update vendored libmspack library to version 0.11alpha.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/829
+
 ## 0.105.1
 
 ClamAV 0.105.1 is a critical patch release with the following fixes:
