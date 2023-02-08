@@ -14,6 +14,7 @@ char md5_string[33];
 
 struct mspack_file_p {
     FILE *fh;
+    const char *filename;
 };
 
 static struct mspack_file *m_open(struct mspack_system *self, const char *filename, int mode) {
@@ -24,12 +25,15 @@ static struct mspack_file *m_open(struct mspack_system *self, const char *filena
     if ((fh = (struct mspack_file_p *) malloc(sizeof(struct mspack_file_p)))) {
         if (mode == MSPACK_SYS_OPEN_WRITE) {
             fh->fh = NULL;
+            fh->filename = "<output>";
             md5_init_ctx(&md5_context);
             return (struct mspack_file *) fh;
         }
         else {
-            if ((fh->fh = fopen(filename, "rb")))
+            if ((fh->fh = fopen(filename, "rb"))) {
+                fh->filename = filename;
                 return (struct mspack_file *) fh;
+            }
         }
         /* error - free file handle and return NULL */
         free(fh);
@@ -101,6 +105,9 @@ static off_t m_tell(struct mspack_file *file) {
 
 static void m_msg(struct mspack_file *file, const char *format, ...) {
     va_list ap;
+    if (file) {
+        fprintf(stderr, "%s: ", ((struct mspack_file_p *) file)->filename);
+    }
     va_start(ap, format);
     vfprintf(stderr, format, ap);
     va_end(ap);
