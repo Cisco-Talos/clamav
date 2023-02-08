@@ -67,7 +67,6 @@ struct lzxd_stream {
   unsigned int   block_remaining; /* uncompressed bytes still left to decode */
 
   signed int     intel_filesize;  /* magic header value used for transform   */
-  signed int     intel_curpos;    /* current offset in transform space       */
 
   unsigned char  intel_started;   /* has intel E8 decoding started?          */
   unsigned char  block_type;      /* type of the current block               */
