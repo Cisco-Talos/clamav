@@ -7,6 +7,9 @@ Note: This file refers to the source tarball. Things described here may differ
 
 ClamAV 0.103.8 is a critical patch release with the following fixes:
 
+- Update vendored libmspack library to version 0.11alpha.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/830
+
 ## 0.103.7
 
 ClamAV 0.103.7 is a critical patch release with the following fixes:
