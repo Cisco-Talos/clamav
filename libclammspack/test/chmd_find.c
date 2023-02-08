@@ -8,9 +8,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <mspack.h>
-
+#include "mspack/macros.h"
 #include <error.h>
-#include "system.h"
 
 void find(struct mschm_decompressor *chmd, struct mschmd_header *chm,
           char *archive, char *filename, struct mschmd_file *compare)

@@ -13,8 +13,8 @@
 
 /* SZDD decompression implementation */
 
-#include "system.h"
-#include "szdd.h"
+#include <system.h>
+#include <szdd.h>
 
 /* prototypes */
 static struct msszddd_header *szddd_open(
@@ -97,7 +97,7 @@ static struct msszddd_header *szddd_open(struct msszdd_decompressor *base,
         if (!fh)  self->error = MSPACK_ERR_OPEN;
         if (!hdr) self->error = MSPACK_ERR_NOMEMORY;
     }
-
+    
     if (self->error) {
         if (fh) sys->close(fh);
         sys->free(hdr);

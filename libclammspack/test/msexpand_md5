@@ -1,0 +1,44 @@
+#!/usr/bin/perl -w
+# put expand.exe and dpx.dll (or a link to them) into this directory
+# for this script to work.
+#
+# NOTE: when a cabinet only contains one file, expand.exe fails to
+# preserve its filename, it renames the output after the source cabinet
+
+use strict;
+use File::Temp qw(tempdir);
+use Cwd qw(cwd);
+
+my $expand = $0; $expand =~ s{[^/]+$}{expand.exe};
+my $HDR1 = 'Microsoft (R) File Expansion Utility';
+my $HDR2 = 'Copyright (c) Microsoft Corp';
+
+my $dir = tempdir("./.tempXXXX", CLEANUP => 1) . '/extradir';
+mkdir $dir;
+$ENV{LANG} = 'C';
+$ENV{WINEPREFIX} = "$ENV{HOME}/.wine64";
+$ENV{WINEARCH} = 'win64';
+
+for my $cab (@ARGV) {
+    my @files;
+    print "*** $cab\n";
+    for (`wine $expand $cab -F:* $dir 2>&1`) {
+        s/\015?\012$//s; # remove line endings
+        next if /^(\Q$HDR1\E|\Q$HDR2\E|\s*$|Expanding Files |Progress: |\d+ files total)/;
+        if (/^Adding \Q$dir\E\\(.+) to Extraction Queue$/) {
+            my $file = $1;
+            $file =~ s{\\}{/}g;
+            $file =~ s{^/+}{};
+            push @files, $file;
+        }
+        else {
+            print STDERR "$_\n";
+        }
+    }
+
+    next unless @files;
+    my $olddir = cwd();
+    chdir $dir;
+    system 'md5sum', @files;
+    chdir $olddir;
+}

@@ -1,4 +1,4 @@
-libmspack 0.10.1alpha
+libmspack 0.11alpha
 
 The purpose of libmspack is to provide compressors and decompressors,
 archivers and dearchivers for Microsoft compression formats: CAB, CHM, WIM,
@@ -90,7 +90,7 @@ examples/msexpand.c     - expands an SZDD or KWAJ file
 examples/oabextract.c   - extracts an Exchange Offline Address Book (.LZX) file
 
 test/cabd_c10          - tests the CAB decompressor on the C10 collection
-test/cabd_compare      - compares libmspack with Microsoft's EXTRACT.EXE
+test/cabd_compare      - compares libmspack with Microsoft's EXTRACT/EXPAND.EXE
 test/cabd_md5          - shows MD5 checksums of all files in a CAB file/set
 test/chmd_compare      - compares libmspack with Microsoft's HH.EXE
 test/chmd_find.c       - checks all files in a CHM file can be fast-found
@@ -98,6 +98,7 @@ test/chmd_md5.c        - shows MD5 checksums of all files within a CHM file
 test/chmd_order.c      - extracts files in a CHM file in four different ways
 test/chminfo.c         - prints verbose information about CHM file structures
 test/msdecompile_md5   - runs Microsoft's HH.EXE -DECOMPILE via WINE
+test/msexpand_md5      - runs Microsoft's EXPAND.EXE via WINE
 test/msextract_md5     - runs Microsoft's EXTRACT.EXE via WINE
 
 Here is a simple example of usage, which will create a CAB decompressor,
