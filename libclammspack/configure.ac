@@ -1,12 +1,12 @@
 # -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 AC_PREREQ(2.59)
-AC_INIT([libmspack],[0.10.1alpha],[kyzer@cabextract.org.uk])
+AC_INIT([libmspack],[0.11alpha],[kyzer@cabextract.org.uk])
 AC_CONFIG_MACRO_DIR([m4])
 AM_INIT_AUTOMAKE([1.11])
 AM_SILENT_RULES([yes])
 AC_CONFIG_SRCDIR([mspack/mspack.h])
-AC_CONFIG_HEADER([config.h])
+AC_CONFIG_HEADERS([config.h])
 
 # --enable-debug option
 AC_ARG_ENABLE(debug,
@@ -34,7 +34,6 @@ AC_C_BIGENDIAN
 AC_TYPE_MODE_T
 AC_TYPE_OFF_T
 AC_TYPE_SIZE_T
-AC_CHECK_SIZEOF([off_t])
 
 # Checks for library functions
 AX_FUNC_MKDIR
@@ -43,6 +42,7 @@ AC_CHECK_FUNCS([towlower])
 # largefile support
 AC_SYS_LARGEFILE
 AC_FUNC_FSEEKO
+AC_CHECK_SIZEOF([off_t])
 
 AC_CONFIG_FILES([Makefile libmspack.pc])
 AC_OUTPUT

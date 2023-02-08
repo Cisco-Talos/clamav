@@ -28,35 +28,40 @@
 # define HUFF_MAXBITS 16
 #endif
 
+#define DECLARE_HUFF_VARS \
+   DECLARE_BIT_VARS; \
+   register int huff_idx; \
+   register unsigned short huff_sym
+
 /* Decodes the next huffman symbol from the input bitstream into var.
  * Do not use this macro on a table unless build_decode_table() succeeded.
  */
-#define READ_HUFFSYM(tbl, var) do {                     \
-    ENSURE_BITS(HUFF_MAXBITS);                          \
-    sym = HUFF_TABLE(tbl, PEEK_BITS(TABLEBITS(tbl)));   \
-    if (sym >= MAXSYMBOLS(tbl)) HUFF_TRAVERSE(tbl);     \
-    (var) = sym;                                        \
-    i = HUFF_LEN(tbl, sym);                             \
-    REMOVE_BITS(i);                                     \
+#define READ_HUFFSYM(tbl, var) do {                                 \
+    ENSURE_BITS(HUFF_MAXBITS);                                      \
+    huff_sym = HUFF_TABLE(tbl, PEEK_BITS(TABLEBITS(tbl)));          \
+    if (huff_sym >= MAXSYMBOLS(tbl)) HUFF_TRAVERSE(tbl);            \
+    (var) = huff_sym;                                               \
+    huff_idx = HUFF_LEN(tbl, huff_sym);                             \
+    REMOVE_BITS(huff_idx);                                          \
 } while (0)
 
 #ifdef BITS_ORDER_LSB
-# define HUFF_TRAVERSE(tbl) do {                        \
-    i = TABLEBITS(tbl) - 1;                             \
-    do {                                                \
-        if (i++ > HUFF_MAXBITS) HUFF_ERROR;             \
-        sym = HUFF_TABLE(tbl,                           \
-            (sym << 1) | ((bit_buffer >> i) & 1));      \
-    } while (sym >= MAXSYMBOLS(tbl));                   \
+# define HUFF_TRAVERSE(tbl) do {                                    \
+    huff_idx = TABLEBITS(tbl) - 1;                                  \
+    do {                                                            \
+        if (huff_idx++ > HUFF_MAXBITS) HUFF_ERROR;                  \
+        huff_sym = HUFF_TABLE(tbl,                                  \
+            (huff_sym << 1) | ((bit_buffer >> huff_idx) & 1));      \
+    } while (huff_sym >= MAXSYMBOLS(tbl));                          \
 } while (0)
 #else
-#define HUFF_TRAVERSE(tbl) do {                         \
-    i = 1 << (BITBUF_WIDTH - TABLEBITS(tbl));           \
-    do {                                                \
-        if ((i >>= 1) == 0) HUFF_ERROR;                 \
-        sym = HUFF_TABLE(tbl,                           \
-            (sym << 1) | ((bit_buffer & i) ? 1 : 0));   \
-    } while (sym >= MAXSYMBOLS(tbl));                   \
+#define HUFF_TRAVERSE(tbl) do {                                     \
+    huff_idx = 1 << (BITBUF_WIDTH - TABLEBITS(tbl));                \
+    do {                                                            \
+        if ((huff_idx >>= 1) == 0) HUFF_ERROR;                      \
+        huff_sym = HUFF_TABLE(tbl,                                  \
+            (huff_sym << 1) | ((bit_buffer & huff_idx) ? 1 : 0));   \
+    } while (huff_sym >= MAXSYMBOLS(tbl));                          \
 } while (0)
 #endif
 

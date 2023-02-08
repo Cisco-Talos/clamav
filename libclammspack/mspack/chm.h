@@ -1,5 +1,5 @@
 /* This file is part of libmspack.
- * (C) 2003-2004 Stuart Caie.
+ * (C) 2003-2023 Stuart Caie.
  *
  * libmspack is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License (LGPL) version 2.1
@@ -10,7 +10,7 @@
 #ifndef MSPACK_CHM_H
 #define MSPACK_CHM_H 1
 
-#include "lzx.h"
+#include <lzx.h>
 
 /* generic CHM definitions */
 
@@ -104,7 +104,8 @@ struct mschm_compressor_p {
 /* CHM decompression definitions */
 struct mschmd_decompress_state {
   struct mschmd_header *chm;         /* CHM file being decompressed          */
-  off_t offset;                      /* uncompressed offset within folder    */
+  off_t length;                      /* uncompressed length of LZX stream    */
+  off_t offset;                      /* uncompressed offset within stream    */
   off_t inoffset;                    /* offset in input file                 */
   struct lzxd_stream *state;         /* LZX decompressor state               */
   struct mspack_system sys;          /* special I/O code for decompressor    */

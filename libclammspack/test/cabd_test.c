@@ -8,7 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <mspack.h>
-#include "system.h"
+#include <md5_fh.h>
 
 #define __tf3(x) #x
 #define __tf2(x) __tf3(x)
@@ -125,7 +125,7 @@ void cabd_open_test_04() {
     /* cab has 0 files */
     TEST(!cabd->open(cabd, TESTFILE("bad_nofiles.cab")));
 
-    /* second file in the cab has a folder index for a non-existant folder */
+    /* second file in the cab has a folder index for a non-existent folder */
     TEST(!cabd->open(cabd, TESTFILE("bad_folderindex.cab")));
 
     /* cab has one file with empty filename */
@@ -197,6 +197,38 @@ void cabd_open_test_06() {
 }
 
 
+int reads_allowed_before_failure = 0;
+static int readfail_read(struct mspack_file *fh, void *buffer, int bytes) {
+    return (reads_allowed_before_failure-- <= 0) ? -1 :
+        read_files_write_md5.read(fh, buffer, bytes);
+}
+
+/* open cab with overlong filename and an mspack_system.read() that fails
+ * after a certain number of calls. Tests that CVE-2017-11423 is fixed */
+void cabd_open_test_07() {
+    struct mscab_decompressor *cabd;
+    struct mscabd_cabinet *cab;
+    int i;
+
+    struct mspack_system readfail = read_files_write_md5;
+    readfail.read = &readfail_read;
+    cabd = mspack_create_cab_decompressor(&readfail);
+    TEST(cabd != NULL);
+
+    /* normally the cabd_read_string() call to read() is the 3rd read but try
+     * 1-5 just in case implementation changes. If I re-introduce the code bug,
+     * I can get valgrind to say "Conditional jump or move depends on
+     * uninitialised value(s)" as it reads beyond the stack buffer, but I can't
+     * get ASan to notice it. Also, I don't have the original POC file from
+     * https://bugzilla.clamav.net/show_bug.cgi?id=11873 */
+    for (i = 1; i <= 5; i++) {
+        reads_allowed_before_failure = i;
+        cab = cabd->open(cabd, TESTFILE("cve-2017-11423-fname-overread.cab"));
+        if (cab) cabd->close(cabd, cab);
+    }
+    mspack_destroy_cab_decompressor(cabd);
+}
+
 /* open where search file doesn't exist */
 void cabd_search_test_01() {
     struct mscab_decompressor *cabd;
@@ -207,7 +239,7 @@ void cabd_search_test_01() {
 
     mspack_destroy_cab_decompressor(cabd);
 }
-
+  
 /* search file using 1-byte buffer */
 void cabd_search_test_02() {
     struct mscab_decompressor *cabd;
@@ -279,7 +311,7 @@ void cabd_merge_test_01() {
     cabd->close(cabd, cab1);
     mspack_destroy_cab_decompressor(cabd);
 }
-
+  
 /* test merging a normal 5 part single folder cabinet set with slightly
  * haphazard ordering.  should still merge fine */
 void cabd_merge_test_02() {
@@ -329,21 +361,21 @@ void cabd_extract_test_01() {
         TESTFILE("cve-2014-9556-qtm-infinite-loop.cab"),
         TESTFILE("cve-2015-4470-mszip-over-read.cab"),
         TESTFILE("cve-2015-4471-lzx-under-read.cab"),
+        TESTFILE("cve-2018-18584-qtm-max-size-block.cab"),
         TESTFILE("filename-read-violation-2.cab"),
         TESTFILE("filename-read-violation-3.cab"),
         TESTFILE("filename-read-violation-4.cab"),
         TESTFILE("lzx-main-tree-no-lengths.cab"),
         TESTFILE("lzx-premature-matches.cab"),
-        TESTFILE("qtm-max-size-block.cab"),
     };
 
-    TEST(cabd = mspack_create_cab_decompressor(NULL));
+    TEST(cabd = mspack_create_cab_decompressor(&read_files_write_md5));
 
     for (i = 0; i < (sizeof(files)/sizeof(char *)); i++) {
         TEST(cab = cabd->open(cabd, files[i]));
         TEST(cab->files != NULL);
         for (file = cab->files; file; file = file->next) {
-            int err = cabd->extract(cabd, file, "/dev/null");
+            int err = cabd->extract(cabd, file, NULL);
             TEST(err == MSPACK_ERR_DATAFORMAT || err == MSPACK_ERR_DECRUNCH);
         }
         cabd->close(cabd, cab);
@@ -362,19 +394,17 @@ void cabd_extract_test_02() {
      * caused cabd.c to try and free the invalid folder state left by
      * extracting from folder 2, which caused a jump to NULL / segfault
      */
-    TEST(cabd = mspack_create_cab_decompressor(NULL));
+    TEST(cabd = mspack_create_cab_decompressor(&read_files_write_md5));
     TEST(cab = cabd->open(cabd, TESTFILE("cve-2014-9732-folders-segfault.cab")));
-    err = cabd->extract(cabd, cab->files, "/dev/null");
+    err = cabd->extract(cabd, cab->files, NULL);
     TEST(err == MSPACK_ERR_OK);
-    err = cabd->extract(cabd, cab->files->next, "/dev/null");
+    err = cabd->extract(cabd, cab->files->next, NULL);
     TEST(err == MSPACK_ERR_DATAFORMAT || err == MSPACK_ERR_DECRUNCH);
-    err = cabd->extract(cabd, cab->files, "/dev/null");
+    err = cabd->extract(cabd, cab->files, NULL);
     TEST(err == MSPACK_ERR_OK);
     cabd->close(cabd, cab);
     mspack_destroy_cab_decompressor(cabd);
 }
-
-#include <md5_fh.h>
 
 /* test that extraction works with all compression methods */
 void cabd_extract_test_03() {
@@ -450,6 +480,7 @@ int main() {
     cabd_open_test_04();
     cabd_open_test_05();
     cabd_open_test_06();
+    cabd_open_test_07();
 
     cabd_search_test_01();
     cabd_search_test_02();
