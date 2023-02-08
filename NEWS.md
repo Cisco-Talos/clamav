@@ -10,6 +10,9 @@ ClamAV 1.0.1 is a critical patch release with the following fixes:
 - Fix allmatch detection issue with the preclass bytecode hook.
   - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/825
 
+- Update vendored libmspack library to version 0.11alpha.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/828
+
 ## 1.0.0
 
 ClamAV 1.0.0 includes the following improvements and changes.
