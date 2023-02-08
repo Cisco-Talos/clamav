@@ -5,7 +5,10 @@ TESTS =                 $(check_PROGRAMS)
 
 ACLOCAL_AMFLAGS =       -I m4
 AM_CFLAGS =
-# add "-DMSPACK_NO_DEFAULT_SYSTEM" to remove default mspack_system
+# add "-DMSPACK_NO_DEFAULT_SYSTEM" to remove default mspack_system.
+# however, note that many of the tests and examples provided DO rely on the
+# default mspack_system and will fail without it -- any program with a call
+# like "mspack_create_...(NULL)" expects a default mspack_system.
 if GCC
 AM_CFLAGS +=            -Wall -Wextra -Wno-unused-parameter -Wno-unused-result
 endif
@@ -34,7 +37,7 @@ libmspack_la_SOURCES =  mspack/mspack.h \
                         mspack/lzx.h mspack/lzxc.c mspack/lzxd.c \
                         mspack/mszip.h mspack/mszipc.c mspack/mszipd.c \
                         mspack/qtm.h mspack/qtmd.c \
-                        mspack/readbits.h mspack/readhuff.h \
+                        mspack/macros.h mspack/readbits.h mspack/readhuff.h \
                         mspack/lzss.h mspack/lzssd.c \
                         mspack/des.h mspack/sha.h \
                         mspack/crc32.c mspack/crc32.h
@@ -46,14 +49,14 @@ libmscabd_la_SOURCES =  mspack/mspack.h \
                         mspack/lzx.h mspack/lzxd.c \
                         mspack/mszip.h mspack/mszipd.c \
                         mspack/qtm.h mspack/qtmd.c \
-                        mspack/readbits.h mspack/readhuff.h
+                        mspack/macros.h mspack/readbits.h mspack/readhuff.h
 libmscabd_la_LDFLAGS =  -export-symbols-regex '^mspack_'
 
 libmschmd_la_SOURCES =  mspack/mspack.h \
                         mspack/system.h mspack/system.c \
                         mspack/chm.h mspack/chmd.c \
                         mspack/lzx.h mspack/lzxd.c \
-                        mspack/readbits.h mspack/readhuff.h
+                        mspack/macros.h mspack/readbits.h mspack/readhuff.h
 libmschmd_la_LDFLAGS =  -export-symbols-regex '^mspack_'
 
 examples_cabd_memory_SOURCES =  examples/cabd_memory.c libmscabd.la

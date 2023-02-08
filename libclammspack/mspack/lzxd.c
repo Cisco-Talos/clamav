@@ -1,5 +1,5 @@
 /* This file is part of libmspack.
- * (C) 2003-2013 Stuart Caie.
+ * (C) 2003-2023 Stuart Caie.
  *
  * The LZX method was created by Jonathan Forbes and Tomi Poutanen, adapted
  * by Microsoft Corporation.
@@ -12,8 +12,8 @@
 
 /* LZX decompression implementation */
 
-#include "system.h"
-#include "lzx.h"
+#include <system.h>
+#include <lzx.h>
 
 /* Microsoft's LZX document (in cab-sdk.exe) and their implementation
  * of the com.ms.util.cab Java package do not concur.
@@ -89,7 +89,7 @@
     READ_IF_NEEDED; b1 = *i_ptr++;      \
     INJECT_BITS((b1 << 8) | b0, 16);    \
 } while (0)
-#include "readbits.h"
+#include <readbits.h>
 
 /* import huffman-reading macros and code */
 #define TABLEBITS(tbl)      LZX_##tbl##_TABLEBITS
@@ -97,7 +97,7 @@
 #define HUFF_TABLE(tbl,idx) lzx->tbl##_table[idx]
 #define HUFF_LEN(tbl,idx)   lzx->tbl##_len[idx]
 #define HUFF_ERROR          return lzx->error = MSPACK_ERR_DECRUNCH
-#include "readhuff.h"
+#include <readhuff.h>
 
 /* BUILD_TABLE(tbl) builds a huffman lookup table from code lengths */
 #define BUILD_TABLE(tbl)                                                \
@@ -138,17 +138,12 @@
 static int lzxd_read_lens(struct lzxd_stream *lzx, unsigned char *lens,
                           unsigned int first, unsigned int last)
 {
-  /* bit buffer and huffman symbol decode variables */
-  register unsigned int bit_buffer;
-  register int bits_left, i;
-  register unsigned short sym;
-  unsigned char *i_ptr, *i_end;
-
+  DECLARE_HUFF_VARS;
   unsigned int x, y;
   int z;
 
   RESTORE_BITS;
-
+  
   /* read lengths for pretree (20 symbols, lengths stored in fixed 4 bits) */
   for (x = 0; x < 20; x++) {
     READ_BITS(y, 4);
@@ -315,8 +310,8 @@ struct lzxd_stream *lzxd_init(struct mspack_system *system,
   }
 
   /* allocate decompression window and input buffer */
-  lzx->window = (unsigned char *) system->alloc(system, (size_t) window_size);
-  lzx->inbuf  = (unsigned char *) system->alloc(system, (size_t) input_buffer_size);
+  lzx->window = (unsigned char *) system->alloc(system, window_size);
+  lzx->inbuf  = (unsigned char *) system->alloc(system, input_buffer_size);
   if (!lzx->window || !lzx->inbuf) {
     system->free(lzx->window);
     system->free(lzx->inbuf);
@@ -339,7 +334,6 @@ struct lzxd_stream *lzxd_init(struct mspack_system *system,
   lzx->frame           = 0;
   lzx->reset_interval  = reset_interval;
   lzx->intel_filesize  = 0;
-  lzx->intel_curpos    = 0;
   lzx->intel_started   = 0;
   lzx->error           = MSPACK_ERR_OK;
   lzx->num_offsets     = position_slots[window_bits - 15] << 3;
@@ -392,17 +386,10 @@ void lzxd_set_output_length(struct lzxd_stream *lzx, off_t out_bytes) {
 }
 
 int lzxd_decompress(struct lzxd_stream *lzx, off_t out_bytes) {
-  /* bitstream and huffman reading variables */
-  register unsigned int bit_buffer;
-  register int bits_left, i=0;
-  unsigned char *i_ptr, *i_end;
-  register unsigned short sym;
-
-  int match_length, length_footer, extra, verbatim_bits, bytes_todo;
-  int this_run, main_element, aligned_bits, j, warned = 0;
-  unsigned char *window, *runsrc, *rundest, buf[12];
-  unsigned int frame_size=0, end_frame, match_offset, window_posn;
-  unsigned int R0, R1, R2;
+  DECLARE_HUFF_VARS;
+  unsigned char *window, *runsrc, *rundest, buf[12], warned = 0;
+  unsigned int frame_size, end_frame, window_posn, R0, R1, R2;
+  int bytes_todo, this_run, i, j;
 
   /* easy answers */
   if (!lzx || (out_bytes < 0)) return MSPACK_ERR_ARGS;
@@ -463,7 +450,7 @@ int lzxd_decompress(struct lzxd_stream *lzx, off_t out_bytes) {
       j = 0; READ_BITS(i, 1); if (i) { READ_BITS(i, 16); READ_BITS(j, 16); }
       lzx->intel_filesize = (i << 16) | j;
       lzx->header_read = 1;
-    }
+    } 
 
     /* calculate size of frame: all frames are 32k except the final frame
      * which is 32kb or less. this can only be calculated when lzx->length
@@ -524,9 +511,9 @@ int lzxd_decompress(struct lzxd_stream *lzx, off_t out_bytes) {
             READ_IF_NEEDED;
             *rundest++ = *i_ptr++;
           }
-          R0 = buf[0] | (buf[1] << 8) | (buf[2]  << 16) | (buf[3]  << 24);
-          R1 = buf[4] | (buf[5] << 8) | (buf[6]  << 16) | (buf[7]  << 24);
-          R2 = buf[8] | (buf[9] << 8) | (buf[10] << 16) | (buf[11] << 24);
+          R0 = EndGetI32(&buf[0]);
+          R1 = EndGetI32(&buf[4]);
+          R2 = EndGetI32(&buf[8]);
           break;
 
         default:
@@ -546,8 +533,12 @@ int lzxd_decompress(struct lzxd_stream *lzx, off_t out_bytes) {
 
       /* decode at least this_run bytes */
       switch (lzx->block_type) {
+      case LZX_BLOCKTYPE_ALIGNED:
       case LZX_BLOCKTYPE_VERBATIM:
         while (this_run > 0) {
+	  int main_element, length_footer, verbatim_bits, aligned_bits, extra;
+	  int match_length;
+	  unsigned int match_offset;
           READ_HUFFSYM(MAINTREE, main_element);
           if (main_element < LZX_NUM_CHARS) {
             /* literal: 0 to LZX_NUM_CHARS-1 */
@@ -572,136 +563,23 @@ int lzxd_decompress(struct lzxd_stream *lzx, off_t out_bytes) {
 
             /* get match offset */
             switch ((match_offset = (main_element >> 3))) {
-            case 0: match_offset = R0;                                  break;
-            case 1: match_offset = R1; R1=R0;        R0 = match_offset; break;
-            case 2: match_offset = R2; R2=R0;        R0 = match_offset; break;
-            case 3: match_offset = 1;  R2=R1; R1=R0; R0 = match_offset; break;
-            default:
-              extra = (match_offset >= 36) ? 17 : extra_bits[match_offset];
-              READ_BITS(verbatim_bits, extra);
-              match_offset = position_base[match_offset] - 2 + verbatim_bits;
-              R2 = R1; R1 = R0; R0 = match_offset;
-            }
-
-            /* LZX DELTA uses max match length to signal even longer match */
-            if (match_length == LZX_MAX_MATCH && lzx->is_delta) {
-                int extra_len = 0;
-                ENSURE_BITS(3); /* 4 entry huffman tree */
-                if (PEEK_BITS(1) == 0) {
-                    REMOVE_BITS(1); /* '0' -> 8 extra length bits */
-                    READ_BITS(extra_len, 8);
-                }
-                else if (PEEK_BITS(2) == 2) {
-                    REMOVE_BITS(2); /* '10' -> 10 extra length bits + 0x100 */
-                    READ_BITS(extra_len, 10);
-                    extra_len += 0x100;
-                }
-                else if (PEEK_BITS(3) == 6) {
-                    REMOVE_BITS(3); /* '110' -> 12 extra length bits + 0x500 */
-                    READ_BITS(extra_len, 12);
-                    extra_len += 0x500;
-                }
-                else {
-                    REMOVE_BITS(3); /* '111' -> 15 extra length bits */
-                    READ_BITS(extra_len, 15);
-                }
-                match_length += extra_len;
-            }
-
-            if ((window_posn + match_length) > lzx->window_size) {
-              D(("match ran over window wrap"))
-              return lzx->error = MSPACK_ERR_DECRUNCH;
-            }
-
-            /* copy match */
-            rundest = &window[window_posn];
-            i = match_length;
-            /* does match offset wrap the window? */
-            if (match_offset > window_posn) {
-              if (match_offset > lzx->offset &&
-                  (match_offset - window_posn) > lzx->ref_data_size)
-              {
-                D(("match offset beyond LZX stream"))
-                return lzx->error = MSPACK_ERR_DECRUNCH;
-              }
-              /* j = length from match offset to end of window */
-              j = match_offset - window_posn;
-              if (j > (int) lzx->window_size) {
-                D(("match offset beyond window boundaries"))
-                return lzx->error = MSPACK_ERR_DECRUNCH;
-              }
-              runsrc = &window[lzx->window_size - j];
-              if (j < i) {
-                /* if match goes over the window edge, do two copy runs */
-                i -= j; while (j-- > 0) *rundest++ = *runsrc++;
-                runsrc = window;
-              }
-              while (i-- > 0) *rundest++ = *runsrc++;
-            }
-            else {
-              runsrc = rundest - match_offset;
-              while (i-- > 0) *rundest++ = *runsrc++;
-            }
-
-            this_run    -= match_length;
-            window_posn += match_length;
-          }
-        } /* while (this_run > 0) */
-        break;
-
-      case LZX_BLOCKTYPE_ALIGNED:
-        while (this_run > 0) {
-          READ_HUFFSYM(MAINTREE, main_element);
-          if (main_element < LZX_NUM_CHARS) {
-            /* literal: 0 to LZX_NUM_CHARS-1 */
-            window[window_posn++] = main_element;
-            this_run--;
-          }
-          else {
-            /* match: LZX_NUM_CHARS + ((slot<<3) | length_header (3 bits)) */
-            main_element -= LZX_NUM_CHARS;
-
-            /* get match length */
-            match_length = main_element & LZX_NUM_PRIMARY_LENGTHS;
-            if (match_length == LZX_NUM_PRIMARY_LENGTHS) {
-              if (lzx->LENGTH_empty) {
-                D(("LENGTH symbol needed but tree is empty"))
-                return lzx->error = MSPACK_ERR_DECRUNCH;
-              }
-              READ_HUFFSYM(LENGTH, length_footer);
-              match_length += length_footer;
-            }
-            match_length += LZX_MIN_MATCH;
-
-            /* get match offset */
-            switch ((match_offset = (main_element >> 3))) {
-            case 0: match_offset = R0;                             break;
-            case 1: match_offset = R1; R1 = R0; R0 = match_offset; break;
-            case 2: match_offset = R2; R2 = R0; R0 = match_offset; break;
+            case 0: match_offset = R0; break;
+            case 1: match_offset = R1; R1=R0; R0 = match_offset; break;
+            case 2: match_offset = R2; R2=R0; R0 = match_offset; break;
             default:
               extra = (match_offset >= 36) ? 17 : extra_bits[match_offset];
               match_offset = position_base[match_offset] - 2;
-              if (extra > 3) {
-                /* verbatim and aligned bits */
-                extra -= 3;
-                READ_BITS(verbatim_bits, extra);
-                match_offset += (verbatim_bits << 3);
+              if (extra >= 3 && lzx->block_type == LZX_BLOCKTYPE_ALIGNED) {
+                if (extra > 3) {
+                  READ_BITS(verbatim_bits, extra - 3); /* 1-14 bits */
+                  match_offset += verbatim_bits << 3;
+                }
                 READ_HUFFSYM(ALIGNED, aligned_bits);
                 match_offset += aligned_bits;
               }
-              else if (extra == 3) {
-                /* aligned bits only */
-                READ_HUFFSYM(ALIGNED, aligned_bits);
-                match_offset += aligned_bits;
-              }
-              else if (extra > 0) { /* extra==1, extra==2 */
-                /* verbatim bits only */
-                READ_BITS(verbatim_bits, extra);
+              else if (extra) {
+                READ_BITS(verbatim_bits, extra); /* 1-17 bits */
                 match_offset += verbatim_bits;
-              }
-              else /* extra == 0 */ {
-                /* ??? not defined in LZX specification! */
-                match_offset = 1;
               }
               /* update repeated offset LRU queue */
               R2 = R1; R1 = R0; R0 = match_offset;
@@ -742,7 +620,7 @@ int lzxd_decompress(struct lzxd_stream *lzx, off_t out_bytes) {
             i = match_length;
             /* does match offset wrap the window? */
             if (match_offset > window_posn) {
-              if (match_offset > lzx->offset &&
+	      if ((off_t)match_offset > lzx->offset &&
                   (match_offset - window_posn) > lzx->ref_data_size)
               {
                 D(("match offset beyond LZX stream"))
@@ -784,7 +662,7 @@ int lzxd_decompress(struct lzxd_stream *lzx, off_t out_bytes) {
           }
           else {
             if (i > this_run) i = this_run;
-            lzx->sys->copy(i_ptr, rundest, (size_t) i);
+            lzx->sys->copy(i_ptr, rundest, i);
             rundest  += i;
             i_ptr    += i;
             this_run -= i;
@@ -827,11 +705,11 @@ int lzxd_decompress(struct lzxd_stream *lzx, off_t out_bytes) {
 
     /* does this intel block _really_ need decoding? */
     if (lzx->intel_started && lzx->intel_filesize &&
-        (lzx->frame <= 32768) && (frame_size > 10))
+        (lzx->frame < 32768) && (frame_size > 10))
     {
       unsigned char *data    = &lzx->e8_buf[0];
       unsigned char *dataend = &lzx->e8_buf[frame_size - 10];
-      signed int curpos      = lzx->intel_curpos;
+      signed int curpos      = (int) lzx->offset;
       signed int filesize    = lzx->intel_filesize;
       signed int abs_off, rel_off;
 
@@ -841,7 +719,7 @@ int lzxd_decompress(struct lzxd_stream *lzx, off_t out_bytes) {
 
       while (data < dataend) {
         if (*data++ != 0xE8) { curpos++; continue; }
-        abs_off = data[0] | (data[1]<<8) | (data[2]<<16) | (data[3]<<24);
+        abs_off = EndGetI32(data);
         if ((abs_off >= -curpos) && (abs_off < filesize)) {
           rel_off = (abs_off >= 0) ? abs_off - curpos : abs_off + filesize;
           data[0] = (unsigned char) rel_off;
@@ -852,11 +730,9 @@ int lzxd_decompress(struct lzxd_stream *lzx, off_t out_bytes) {
         data += 4;
         curpos += 5;
       }
-      lzx->intel_curpos += frame_size;
     }
     else {
       lzx->o_ptr = &lzx->window[lzx->frame_posn];
-      if (lzx->intel_filesize) lzx->intel_curpos += frame_size;
     }
     lzx->o_end = &lzx->o_ptr[frame_size];
 
