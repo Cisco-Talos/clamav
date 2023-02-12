@@ -1,4 +1,4 @@
-LIBRARY mspack 
+LIBRARY libmspack 
 EXPORTS 
     mspack_create_cab_compressor
     mspack_create_cab_decompressor
