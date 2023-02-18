@@ -113,7 +113,6 @@ ClamAV contains a number of components that include code copied in part or in
 whole from 3rd party projects and whose code is not owned by Cisco and which
 are licensed differently than ClamAV. These include:
 
-- tomsfastmath:  public domain
 - Yara: Apache 2.0 license
   - Yara has since switched to the BSD 3-Clause License;
     Our source is out-of-date and needs to be updated.
