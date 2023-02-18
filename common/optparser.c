@@ -254,23 +254,23 @@ const struct clam_option __clam_options[] = {
 
     {"LogFile", "log", 'l', CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMD | OPT_MILTER | OPT_CLAMSCAN | OPT_CLAMDSCAN | OPT_CLAMONACC, "Save all reports to a log file.", "/tmp/clamav.log"},
 
-    {"LogFileUnlock", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_MILTER, "By default the log file is locked for writing and only a single\ndaemon process can write to it. This option disables the lock.", "yes"},
+    {"LogFileUnlock", "log-file-unlock", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_MILTER, "By default the log file is locked for writing and only a single\ndaemon process can write to it. This option disables the lock.", "yes"},
 
-    {"LogFileMaxSize", NULL, 0, CLOPT_TYPE_SIZE, MATCH_SIZE, 1048576, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_MILTER, "Maximum size of the log file.\nValue of 0 disables the limit.", "5M"},
+    {"LogFileMaxSize", "log-file-max-size", 0, CLOPT_TYPE_SIZE, MATCH_SIZE, 1048576, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_MILTER, "Maximum size of the log file.\nValue of 0 disables the limit.", "5M"},
 
-    {"LogTime", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_MILTER, "Log time with each message.", "yes"},
+    {"LogTime", "log-time", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_MILTER, "Log time with each message.", "yes"},
 
-    {"LogClean", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD, "Log all clean files.\nUseful in debugging but drastically increases the log size.", "yes"},
+    {"LogClean", "log-clean", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD, "Log all clean files.\nUseful in debugging but drastically increases the log size.", "yes"},
 
-    {"LogSyslog", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_MILTER, "Use the system logger (can work together with LogFile).", "yes"},
+    {"LogSyslog", "log-syslog", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_MILTER, "Use the system logger (can work together with LogFile).", "yes"},
 
-    {"LogFacility", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, "LOG_LOCAL6", FLAG_REQUIRED, OPT_CLAMD | OPT_FRESHCLAM | OPT_MILTER, "Type of syslog messages.\nPlease refer to 'man syslog' for the facility names.", "LOG_MAIL"},
+    {"LogFacility", "log-facility", 0, CLOPT_TYPE_STRING, NULL, -1, "LOG_LOCAL6", FLAG_REQUIRED, OPT_CLAMD | OPT_FRESHCLAM | OPT_MILTER, "Type of syslog messages.\nPlease refer to 'man syslog' for the facility names.", "LOG_MAIL"},
 
-    {"LogVerbose", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_MILTER, "Enable verbose logging.", "yes"},
+    {"LogVerbose", "log-verbose", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_MILTER, "Enable verbose logging.", "yes"},
 
     {"LogRotate", "log-rotate", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_MILTER, "Rotate log file. Requires LogFileMaxSize option set prior to this option.", "yes"},
 
-    {"ExtendedDetectionInfo", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD, "Log additional information about the infected file, such as its\nsize and hash, together with the virus name.", "yes"},
+    {"ExtendedDetectionInfo", "extended-detection-info", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD, "Log additional information about the infected file, such as its\nsize and hash, together with the virus name.", "yes"},
 
     {"PidFile", "pid", 'p', CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_MILTER, "Save the process ID to a file.", "/var/run/clam.pid"},
 
@@ -282,77 +282,77 @@ const struct clam_option __clam_options[] = {
 
     {"YaraRules", "yara-rules", 0, CLOPT_TYPE_STRING, NULL, 0, NULL, 0, OPT_CLAMSCAN, "By default, yara rules will be loaded. This option allows you to exclude yara rules when scanning and also to scan only using yara rules. Valid options are yes|no|only", "yes"},
 
-    {"LocalSocket", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMD, "Path to a local socket file the daemon will listen on.", "/tmp/clamd.socket"},
+    {"LocalSocket", "local-socket", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMD, "Path to a local socket file the daemon will listen on.", "/tmp/clamd.socket"},
 
-    {"LocalSocketGroup", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMD, "Sets the group ownership on the unix socket.", "virusgroup"},
+    {"LocalSocketGroup", "local-socket-group", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMD, "Sets the group ownership on the unix socket.", "virusgroup"},
 
-    {"LocalSocketMode", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMD, "Sets the permissions on the unix socket to the specified mode.", "660"},
+    {"LocalSocketMode", "local-socket-mode", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMD, "Sets the permissions on the unix socket to the specified mode.", "660"},
 
-    {"FixStaleSocket", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD | OPT_MILTER, "Remove a stale socket after unclean shutdown", "yes"},
+    {"FixStaleSocket", "fix-stale-socket", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD | OPT_MILTER, "Remove a stale socket after unclean shutdown", "yes"},
 
-    {"TCPSocket", NULL, 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, -1, NULL, 0, OPT_CLAMD, "A TCP port number the daemon will listen on.", "3310"},
+    {"TCPSocket", "tcp-socket", 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, -1, NULL, 0, OPT_CLAMD, "A TCP port number the daemon will listen on.", "3310"},
 
     /* FIXME: add a regex for IP addr */
-    {"TCPAddr", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_CLAMD, "By default clamd binds to INADDR_ANY.\nThis option allows you to restrict the TCP address and provide\nsome degree of protection from the outside world.", "localhost"},
+    {"TCPAddr", "tcp-addr", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_CLAMD, "By default clamd binds to INADDR_ANY.\nThis option allows you to restrict the TCP address and provide\nsome degree of protection from the outside world.", "localhost"},
 
-    {"MaxConnectionQueueLength", NULL, 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 200, NULL, 0, OPT_CLAMD, "Maximum length the queue of pending connections may grow to.", "30"},
+    {"MaxConnectionQueueLength", "max-connection-queue-length", 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 200, NULL, 0, OPT_CLAMD, "Maximum length the queue of pending connections may grow to.", "30"},
 
-    {"StreamMaxLength", NULL, 0, CLOPT_TYPE_SIZE, MATCH_SIZE, CLI_DEFAULT_MAXFILESIZE, NULL, 0, OPT_CLAMD, "Close the STREAM session when the data size limit is exceeded.\nThe value should match your MTA's limit for the maximum attachment size.", "100M"},
+    {"StreamMaxLength", "stream-max-length", 0, CLOPT_TYPE_SIZE, MATCH_SIZE, CLI_DEFAULT_MAXFILESIZE, NULL, 0, OPT_CLAMD, "Close the STREAM session when the data size limit is exceeded.\nThe value should match your MTA's limit for the maximum attachment size.", "100M"},
 
-    {"StreamMinPort", NULL, 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 1024, NULL, 0, OPT_CLAMD, "The STREAM command uses an FTP-like protocol.\nThis option sets the lower boundary for the port range.", "1024"},
+    {"StreamMinPort", "stream-min-port", 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 1024, NULL, 0, OPT_CLAMD, "The STREAM command uses an FTP-like protocol.\nThis option sets the lower boundary for the port range.", "1024"},
 
-    {"StreamMaxPort", NULL, 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 2048, NULL, 0, OPT_CLAMD, "This option sets the upper boundary for the port range.", "2048"},
+    {"StreamMaxPort", "stream-max-port", 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 2048, NULL, 0, OPT_CLAMD, "This option sets the upper boundary for the port range.", "2048"},
 
-    {"MaxThreads", NULL, 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 10, NULL, 0, OPT_CLAMD | OPT_MILTER, "Maximum number of threads running at the same time.", "20"},
+    {"MaxThreads", "max-threads", 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 10, NULL, 0, OPT_CLAMD | OPT_MILTER, "Maximum number of threads running at the same time.", "20"},
 
-    {"ReadTimeout", NULL, 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 120, NULL, 0, OPT_CLAMD, "This option specifies the time (in seconds) after which clamd should\ntimeout if a client doesn't provide any data.", "120"},
+    {"ReadTimeout", "read-timeout", 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 120, NULL, 0, OPT_CLAMD, "This option specifies the time (in seconds) after which clamd should\ntimeout if a client doesn't provide any data.", "120"},
 
-    {"CommandReadTimeout", NULL, 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 30, NULL, 0, OPT_CLAMD, "This option specifies the time (in seconds) after which clamd should\ntimeout if a client doesn't provide any initial command after connecting.", "30"},
+    {"CommandReadTimeout", "command-read-timeout", 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 30, NULL, 0, OPT_CLAMD, "This option specifies the time (in seconds) after which clamd should\ntimeout if a client doesn't provide any initial command after connecting.", "30"},
 
-    {"SendBufTimeout", NULL, 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 500, NULL, 0, OPT_CLAMD, "This option specifies how long to wait (in milliseconds) if the send buffer\nis full. Keep this value low to prevent clamd hanging.", "200"},
+    {"SendBufTimeout", "send-buf-timeout", 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 500, NULL, 0, OPT_CLAMD, "This option specifies how long to wait (in milliseconds) if the send buffer\nis full. Keep this value low to prevent clamd hanging.", "200"},
 
-    {"ReadTimeout", NULL, 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 120, NULL, 0, OPT_MILTER, "Waiting for data from clamd will timeout after this time (seconds).", "300"},
+    {"ReadTimeout", "read-timeout", 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 120, NULL, 0, OPT_MILTER, "Waiting for data from clamd will timeout after this time (seconds).", "300"},
 
-    {"MaxQueue", NULL, 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 100, NULL, 0, OPT_CLAMD, "Maximum number of queued items (including those being processed by MaxThreads\nthreads). It is recommended to have this value at least twice MaxThreads\nif possible.\nWARNING: you shouldn't increase this too much to avoid running out of file\n descriptors, the following condition should hold:\n MaxThreads*MaxRecursion + MaxQueue - MaxThreads  + 6 < RLIMIT_NOFILE\n (usual max for RLIMIT_NOFILE is 1024)\n", "200"},
+    {"MaxQueue", "max-queue", 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 100, NULL, 0, OPT_CLAMD, "Maximum number of queued items (including those being processed by MaxThreads\nthreads). It is recommended to have this value at least twice MaxThreads\nif possible.\nWARNING: you shouldn't increase this too much to avoid running out of file\n descriptors, the following condition should hold:\n MaxThreads*MaxRecursion + MaxQueue - MaxThreads  + 6 < RLIMIT_NOFILE\n (usual max for RLIMIT_NOFILE is 1024)\n", "200"},
 
-    {"IdleTimeout", NULL, 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 30, NULL, 0, OPT_CLAMD, "This option specifies how long (in seconds) the process should wait\nfor a new job.", "60"},
+    {"IdleTimeout", "idle-timeout", 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 30, NULL, 0, OPT_CLAMD, "This option specifies how long (in seconds) the process should wait\nfor a new job.", "60"},
 
-    {"ExcludePath", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_CLAMD, "Don't scan files/directories whose names match the provided\nregular expression. This option can be specified multiple times.", "^/proc/\n^/sys/"},
+    {"ExcludePath", "exclude-path", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_CLAMD, "Don't scan files/directories whose names match the provided\nregular expression. This option can be specified multiple times.", "^/proc/\n^/sys/"},
 
     {"MaxDirectoryRecursion", "max-dir-recursion", 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 15, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Maximum depth the directories are scanned at.", "15"},
 
-    {"FollowDirectorySymlinks", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD, "Follow directory symlinks.", "no"},
+    {"FollowDirectorySymlinks", "follow-directory-symlinks", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD, "Follow directory symlinks.", "no"},
 
-    {"FollowFileSymlinks", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD, "Follow symlinks to regular files.", "no"},
+    {"FollowFileSymlinks", "follow-file-symlinks", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD, "Follow symlinks to regular files.", "no"},
 
     {"CrossFilesystems", "cross-fs", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Scan files and directories on other filesystems.", "yes"},
 
-    {"SelfCheck", NULL, 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 600, NULL, 0, OPT_CLAMD, "This option specifies the time intervals (in seconds) in which clamd\nshould perform a database check.", "600"},
+    {"SelfCheck", "self-check", 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 600, NULL, 0, OPT_CLAMD, "This option specifies the time intervals (in seconds) in which clamd\nshould perform a database check.", "600"},
 
-    {"ConcurrentDatabaseReload", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD, "Enable non-blocking (multi-threaded/concurrent) database reloads. This feature \nwill temporarily load a second scanning engine while scanning continues using \nthe first engine. Once loaded, the new engine takes over. The old engine is \nremoved as soon as all scans using the old engine have completed. This feature \nrequires more RAM, so this option is provided in case users are willing to \nblock scans during reload in exchange for lower RAM requirements.", "yes"},
+    {"ConcurrentDatabaseReload", "concurrent-database-reload", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD, "Enable non-blocking (multi-threaded/concurrent) database reloads. This feature \nwill temporarily load a second scanning engine while scanning continues using \nthe first engine. Once loaded, the new engine takes over. The old engine is \nremoved as soon as all scans using the old engine have completed. This feature \nrequires more RAM, so this option is provided in case users are willing to \nblock scans during reload in exchange for lower RAM requirements.", "yes"},
 
     {"DisableCache", "disable-cache", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option allows you to disable clamd's caching feature.", "no"},
 
-    {"VirusEvent", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMD, "Execute a command when a virus is found. In the command string %v will be\nreplaced with the virus name and %f will be replaced with the file name.\nAdditionally, two environment variables will be defined: $CLAM_VIRUSEVENT_FILENAME\nand $CLAM_VIRUSEVENT_VIRUSNAME.", "/usr/bin/mailx -s \"ClamAV VIRUS ALERT: %v\" alert < /dev/null"},
+    {"VirusEvent", "virus-event", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMD, "Execute a command when a virus is found. In the command string %v will be\nreplaced with the virus name and %f will be replaced with the file name.\nAdditionally, two environment variables will be defined: $CLAM_VIRUSEVENT_FILENAME\nand $CLAM_VIRUSEVENT_VIRUSNAME.", "/usr/bin/mailx -s \"ClamAV VIRUS ALERT: %v\" alert < /dev/null"},
 
-    {"ExitOnOOM", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD, "Stop the daemon when libclamav reports an out of memory condition.", "yes"},
+    {"ExitOnOOM", "exit-on-oom", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD, "Stop the daemon when libclamav reports an out of memory condition.", "yes"},
 
-    {"AllowAllMatchScan", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD, "Permit use of the ALLMATCHSCAN command.", "yes"},
+    {"AllowAllMatchScan", "allow-all-match-scan", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD, "Permit use of the ALLMATCHSCAN command.", "yes"},
 
     {"Foreground", "foreground", 'F', CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_MILTER | OPT_CLAMONACC, "Don't fork into background.", "no"},
 
-    {"Debug", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM, "Enable debug messages in libclamav.", "no"},
+    {"Debug", "debug", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM, "Enable debug messages in libclamav.", "no"},
 
-    {"LeaveTemporaryFiles", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD, "Don't remove temporary files (for debugging purposes).", "no"},
+    {"LeaveTemporaryFiles", "leave-temporary-files", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD, "Don't remove temporary files (for debugging purposes).", "no"},
 
-    {"GenerateMetadataJson", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD, "Record metadata about the file being scanned.\nScan metadata is useful for file analysis purposes and for debugging scan behavior.\nThe JSON metadata will be printed after the scan is complete if Debug is enabled.\nA metadata.json file will be written to the scan temp directory if LeaveTemporaryFiles is enabled.", "no"},
+    {"GenerateMetadataJson", "generate-metadata-json", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD, "Record metadata about the file being scanned.\nScan metadata is useful for file analysis purposes and for debugging scan behavior.\nThe JSON metadata will be printed after the scan is complete if Debug is enabled.\nA metadata.json file will be written to the scan temp directory if LeaveTemporaryFiles is enabled.", "no"},
 
-    {"User", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMD | OPT_MILTER, "Run the daemon as a specified user (the process must be started by root).", "clamav"},
+    {"User", "user", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMD | OPT_MILTER, "Run the daemon as a specified user (the process must be started by root).", "clamav"},
 
     /* Scan options */
     {"Bytecode", "bytecode", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "With this option enabled ClamAV will load bytecode from the database. It is highly recommended you keep this option on, otherwise you'll miss detections for many new viruses.", "yes"},
 
-    {"BytecodeSecurity", NULL, 0, CLOPT_TYPE_STRING, "^(TrustSigned|Paranoid)$", -1, "TrustSigned", 0, OPT_CLAMD,
+    {"BytecodeSecurity", "bytecode-security", 0, CLOPT_TYPE_STRING, "^(TrustSigned|Paranoid)$", -1, "TrustSigned", 0, OPT_CLAMD,
      "Set bytecode security level.\nPossible values:\n\tTrustSigned - trust bytecode loaded from signed .c[lv]d files,\n\t\t insert runtime safety checks for bytecode loaded from other sources\n\tParanoid - don't trust any bytecode, insert runtime checks for all\nRecommended: TrustSigned, because bytecode in .cvd files already has these checks.", "TrustSigned"},
 
     {"BytecodeTimeout", "bytecode-timeout", 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 10000, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN,
@@ -378,7 +378,7 @@ const struct clam_option __clam_options[] = {
 
     {"ScanMail", "scan-mail", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Enable the built in email scanner.\nIf you turn off this option, the original files will still be scanned, but\nwithout parsing individual messages/attachments.", "yes"},
 
-    {"ScanPartialMessages", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD, "Scan RFC1341 messages split over many emails. You will need to\nperiodically clean up $TemporaryDirectory/clamav-partial directory.\nWARNING: This option may open your system to a DoS attack. Please don't use\nthis feature on highly loaded servers.", "no"},
+    {"ScanPartialMessages", "scan-partial-messages", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD, "Scan RFC1341 messages split over many emails. You will need to\nperiodically clean up $TemporaryDirectory/clamav-partial directory.\nWARNING: This option may open your system to a DoS attack. Please don't use\nthis feature on highly loaded servers.", "no"},
 
     {"PhishingSignatures", "phishing-sigs", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "With this option enabled ClamAV will try to detect phishing attempts by using\nsignatures.", "yes"},
 
@@ -394,9 +394,9 @@ const struct clam_option __clam_options[] = {
 
     {"StructuredMinSSNCount", "structured-ssn-count", 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, CLI_DEFAULT_MIN_SSN_COUNT, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option sets the lowest number of Social Security Numbers found\nin a file to generate a detect.", "5"},
 
-    {"StructuredSSNFormatNormal", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD, "With this option enabled the DLP module will search for valid\nSSNs formatted as xxx-yy-zzzz.", "yes"},
+    {"StructuredSSNFormatNormal", "structured-ssn-format-normal", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD, "With this option enabled the DLP module will search for valid\nSSNs formatted as xxx-yy-zzzz.", "yes"},
 
-    {"StructuredSSNFormatStripped", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD, "With this option enabled the DLP module will search for valid\nSSNs formatted as xxxyyzzzz", "no"},
+    {"StructuredSSNFormatStripped", "structured-ssn-format-stripped", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD, "With this option enabled the DLP module will search for valid\nSSNs formatted as xxxyyzzzz", "no"},
 
     {"ScanHTML", "scan-html", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Perform HTML/JavaScript/ScriptEncoder normalisation and decryption.\nIf you turn off this option, the original files will still be scanned, but\nwithout additional processing.", "yes"},
 
@@ -468,33 +468,33 @@ const struct clam_option __clam_options[] = {
     {"PCREMaxFileSize", "pcre-max-filesize", 0, CLOPT_TYPE_SIZE, MATCH_SIZE, CLI_DEFAULT_PCRE_MAX_FILESIZE, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option sets the maximum filesize for which PCRE subsigs will be executed.\nFiles exceeding this limit will not have PCRE subsigs executed unless a subsig is encompassed to a smaller buffer.\nNegative values are not allowed.\nSetting this value to zero disables the limit.\nWARNING: setting this limit too high or disabling it may severely impact performance.", "100M"},
 
     /* OnAccess settings */
-    {"OnAccessMountPath", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_CLAMD, "This option specifies a directory or mount point which should be scanned on access. The mount point specified, or the mount point containing the specified directory will be watched, but only notifications will occur. If any directories are specified, this option will preempt the DDD system. It can also be used multiple times.", "/\n/home/user"},
+    {"OnAccessMountPath", "on-access-mount-path", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_CLAMD, "This option specifies a directory or mount point which should be scanned on access. The mount point specified, or the mount point containing the specified directory will be watched, but only notifications will occur. If any directories are specified, this option will preempt the DDD system. It can also be used multiple times.", "/\n/home/user"},
 
-    {"OnAccessIncludePath", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_CLAMD, "This option specifies a directory (including all files and directories\ninside it), which should be scanned on access. This option can\nbe used multiple times.", "/home\n/students"},
+    {"OnAccessIncludePath", "on-access-include-path", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_CLAMD, "This option specifies a directory (including all files and directories\ninside it), which should be scanned on access. This option can\nbe used multiple times.", "/home\n/students"},
 
-    {"OnAccessExcludePath", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_CLAMD, "This option allows excluding directories from on-access scanning. It can\nbe used multiple times. Only works with DDD system.", "/home/bofh\n/root"},
+    {"OnAccessExcludePath", "on-access-exclude-path", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_CLAMD, "This option allows excluding directories from on-access scanning. It can\nbe used multiple times. Only works with DDD system.", "/home/bofh\n/root"},
 
-    {"OnAccessExcludeRootUID", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, -1, NULL, 0, OPT_CLAMD, "Use this option to exclude the root UID (0) and allow any processes run under root to access all watched files without triggering scans.", "no"},
+    {"OnAccessExcludeRootUID", "on-access-exclude-root-uid", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, -1, NULL, 0, OPT_CLAMD, "Use this option to exclude the root UID (0) and allow any processes run under root to access all watched files without triggering scans.", "no"},
 
-    {"OnAccessExcludeUID", NULL, 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, -1, NULL, FLAG_MULTIPLE, OPT_CLAMD, "With this option you can exclude specific UIDs. Processes with these UIDs\nwill be able to access all files.\nThis option can be used multiple times (one per line). Using a value of 0 on any line will disable this option entirely. To exclude the root UID please enable the OnAccessExcludeRootUID option.", "0"},
+    {"OnAccessExcludeUID", "on-access-exclude-uid", 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, -1, NULL, FLAG_MULTIPLE, OPT_CLAMD, "With this option you can exclude specific UIDs. Processes with these UIDs\nwill be able to access all files.\nThis option can be used multiple times (one per line). Using a value of 0 on any line will disable this option entirely. To exclude the root UID please enable the OnAccessExcludeRootUID option.", "0"},
 
-    {"OnAccessExcludeUname", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_CLAMD, "This option allows exclusions via user names when using the on-access scanning client. It can\nbe used multiple times.", "clamuser"},
+    {"OnAccessExcludeUname", "on-access-exclude-uname", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_CLAMD, "This option allows exclusions via user names when using the on-access scanning client. It can\nbe used multiple times.", "clamuser"},
 
-    {"OnAccessMaxFileSize", NULL, 0, CLOPT_TYPE_SIZE, MATCH_SIZE, 5242880, NULL, 0, OPT_CLAMD, "Files larger than this value will not be scanned in on access.", "5M"},
+    {"OnAccessMaxFileSize", "on-access-max-file-size", 0, CLOPT_TYPE_SIZE, MATCH_SIZE, 5242880, NULL, 0, OPT_CLAMD, "Files larger than this value will not be scanned in on access.", "5M"},
 
-    {"OnAccessDisableDDD", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD, "This option toggles the dynamic directory determination system for on-access scanning (Linux only).", "no"},
+    {"OnAccessDisableDDD", "on-access-disable-ddd", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD, "This option toggles the dynamic directory determination system for on-access scanning (Linux only).", "no"},
 
-    {"OnAccessPrevention", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD, "This option changes fanotify behavior to prevent access attempts on malicious files instead of simply notifying the user (On Access scan only).", "yes"},
+    {"OnAccessPrevention", "on-access-prevention", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD, "This option changes fanotify behavior to prevent access attempts on malicious files instead of simply notifying the user (On Access scan only).", "yes"},
 
-    {"OnAccessExtraScanning", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD, "Enables extra scanning and notification after catching certain inotify events. Only works with the DDD system enabled.", "yes"},
+    {"OnAccessExtraScanning", "on-access-extra-scanning", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD, "Enables extra scanning and notification after catching certain inotify events. Only works with the DDD system enabled.", "yes"},
 
-    {"OnAccessCurlTimeout", NULL, 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 5000l, NULL, 0, OPT_CLAMD, "Max amount of time (in milliseconds) that the OnAccess client should spend for every connect, send, and recieve attempt when communicating with clamd via curl (5s default)", "10000L"},
+    {"OnAccessCurlTimeout", "on-access-curl-timeout", 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 5000l, NULL, 0, OPT_CLAMD, "Max amount of time (in milliseconds) that the OnAccess client should spend for every connect, send, and recieve attempt when communicating with clamd via curl (5s default)", "10000L"},
 
-    {"OnAccessMaxThreads", NULL, 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 5, NULL, 0, OPT_CLAMD, "Max number of scanning threads to allocate to the OnAccess thread pool at startup--these threads are the ones responsible for creating a connection with the daemon and kicking off scanning after an event has been processed. To prevent clamonacc from consuming all clamd's resources keep this lower than clamd's max threads. Default is 5", "10"},
+    {"OnAccessMaxThreads", "on-access-max-threads", 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 5, NULL, 0, OPT_CLAMD, "Max number of scanning threads to allocate to the OnAccess thread pool at startup--these threads are the ones responsible for creating a connection with the daemon and kicking off scanning after an event has been processed. To prevent clamonacc from consuming all clamd's resources keep this lower than clamd's max threads. Default is 5", "10"},
 
-    {"OnAccessRetryAttempts", NULL, 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 0, NULL, 0, OPT_CLAMD, "Number of times the OnAccess client will retry a failed scan due to connection problems (or other issues). Defaults to no retries.", "3"},
+    {"OnAccessRetryAttempts", "on-access-retry-attempts", 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 0, NULL, 0, OPT_CLAMD, "Number of times the OnAccess client will retry a failed scan due to connection problems (or other issues). Defaults to no retries.", "3"},
 
-    {"OnAccessDenyOnError", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD, "When using prevention, if this option is turned on, any errors that occur during scanning will result in the event attempt being denied. This could potentially lead to unwanted system behaviour with certain configurations, so the client defaults to off and allowing access events in case of error.", "yes"},
+    {"OnAccessDenyOnError", "on-access-deny-on-error", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD, "When using prevention, if this option is turned on, any errors that occur during scanning will result in the event attempt being denied. This could potentially lead to unwanted system behaviour with certain configurations, so the client defaults to off and allowing access events in case of error.", "yes"},
 
     /* clamonacc cmdline options */
 
@@ -521,35 +521,35 @@ const struct clam_option __clam_options[] = {
 
     {"Checks", "checks", 'c', CLOPT_TYPE_NUMBER, MATCH_NUMBER, 12, NULL, 0, OPT_FRESHCLAM, "This option defined how many times daily freshclam should check for\na database update.", "24"},
 
-    {"DNSDatabaseInfo", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, "current.cvd.clamav.net", FLAG_REQUIRED, OPT_FRESHCLAM, "Use DNS to verify the virus database version. FreshClam uses DNS TXT records\nto verify the versions of the database and software itself. With this\ndirective you can change the database verification domain.\nWARNING: Please don't change it unless you're configuring freshclam to use\nyour own database verification domain.", "current.cvd.clamav.net"},
+    {"DNSDatabaseInfo", "dns-database-info", 0, CLOPT_TYPE_STRING, NULL, -1, "current.cvd.clamav.net", FLAG_REQUIRED, OPT_FRESHCLAM, "Use DNS to verify the virus database version. FreshClam uses DNS TXT records\nto verify the versions of the database and software itself. With this\ndirective you can change the database verification domain.\nWARNING: Please don't change it unless you're configuring freshclam to use\nyour own database verification domain.", "current.cvd.clamav.net"},
 
-    {"DatabaseMirror", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_FRESHCLAM, "DatabaseMirror specifies to which mirror(s) freshclam should connect.\nYou should have at least one entry: database.clamav.net.", "database.clamav.net"},
+    {"DatabaseMirror", "database-mirror", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_FRESHCLAM, "DatabaseMirror specifies to which mirror(s) freshclam should connect.\nYou should have at least one entry: database.clamav.net.", "database.clamav.net"},
 
-    {"PrivateMirror", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_FRESHCLAM, "This option allows you to easily point freshclam to private mirrors.\nIf PrivateMirror is set, freshclam does not attempt to use DNS\nto determine whether its databases are out-of-date, instead it will\nuse the If-Modified-Since request or directly check the headers of the\nremote database files. For each database, freshclam first attempts\nto download the CLD file. If that fails, it tries to download the\nCVD file. This option overrides DatabaseMirror, DNSDatabaseInfo\nand Scripted Updates. It can be used multiple times to provide\nfall-back mirrors.", "mirror1.mynetwork.com\nmirror2.mynetwork.com"},
+    {"PrivateMirror", "private-mirror", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_FRESHCLAM, "This option allows you to easily point freshclam to private mirrors.\nIf PrivateMirror is set, freshclam does not attempt to use DNS\nto determine whether its databases are out-of-date, instead it will\nuse the If-Modified-Since request or directly check the headers of the\nremote database files. For each database, freshclam first attempts\nto download the CLD file. If that fails, it tries to download the\nCVD file. This option overrides DatabaseMirror, DNSDatabaseInfo\nand Scripted Updates. It can be used multiple times to provide\nfall-back mirrors.", "mirror1.mynetwork.com\nmirror2.mynetwork.com"},
 
-    {"MaxAttempts", NULL, 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 3, NULL, 0, OPT_FRESHCLAM, "This option defines how many attempts freshclam should make before giving up.", "5"},
+    {"MaxAttempts", "max-attempts", 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 3, NULL, 0, OPT_FRESHCLAM, "This option defines how many attempts freshclam should make before giving up.", "5"},
 
-    {"ScriptedUpdates", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_FRESHCLAM, "With this option you can control scripted updates. It's highly recommended to keep them enabled.", "yes"},
+    {"ScriptedUpdates", "scripted-updates", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_FRESHCLAM, "With this option you can control scripted updates. It's highly recommended to keep them enabled.", "yes"},
 
-    {"TestDatabases", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_FRESHCLAM, "With this option enabled, freshclam will attempt to load new\ndatabases into memory to make sure they are properly handled\nby libclamav before replacing the old ones. Tip: This feature uses a lot of RAM. If your system has limited RAM and you are actively running ClamD or ClamScan during the update, then you may need to set `TestDatabases no`.", "yes"},
+    {"TestDatabases", "test-databases", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_FRESHCLAM, "With this option enabled, freshclam will attempt to load new\ndatabases into memory to make sure they are properly handled\nby libclamav before replacing the old ones. Tip: This feature uses a lot of RAM. If your system has limited RAM and you are actively running ClamD or ClamScan during the update, then you may need to set `TestDatabases no`.", "yes"},
 
-    {"CompressLocalDatabase", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_FRESHCLAM, "By default freshclam will keep the local databases (.cld) uncompressed to\nmake their handling faster. With this option you can enable the compression.\nThe change will take effect with the next database update.", ""},
+    {"CompressLocalDatabase", "compress-local-database", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_FRESHCLAM, "By default freshclam will keep the local databases (.cld) uncompressed to\nmake their handling faster. With this option you can enable the compression.\nThe change will take effect with the next database update.", ""},
 
-    {"ExtraDatabase", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_FRESHCLAM, "Include an optional signature databases (opt-in). This option can be used multiple times.", "dbname1\ndbname2"},
+    {"ExtraDatabase", "extra-database", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_FRESHCLAM, "Include an optional signature databases (opt-in). This option can be used multiple times.", "dbname1\ndbname2"},
 
-    {"ExcludeDatabase", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_FRESHCLAM, "Exclude a standard signature database (opt-out). This option can be used multiple times.", "dbname1\ndbname2"},
+    {"ExcludeDatabase", "exclude-database", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_FRESHCLAM, "Exclude a standard signature database (opt-out). This option can be used multiple times.", "dbname1\ndbname2"},
 
-    {"DatabaseCustomURL", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_FRESHCLAM, "With this option you can provide custom sources (http:// or file://) for database files.\nThis option can be used multiple times.", "http://myserver.com/mysigs.ndb\nfile:///mnt/nfs/local.hdb"},
+    {"DatabaseCustomURL", "database-custom-url", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_FRESHCLAM, "With this option you can provide custom sources (http:// or file://) for database files.\nThis option can be used multiple times.", "http://myserver.com/mysigs.ndb\nfile:///mnt/nfs/local.hdb"},
 
-    {"HTTPProxyServer", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_FRESHCLAM, "If you're behind a proxy, please enter its address here.", "your-proxy"},
+    {"HTTPProxyServer", "http-proxy-server", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_FRESHCLAM, "If you're behind a proxy, please enter its address here.", "your-proxy"},
 
-    {"HTTPProxyPort", NULL, 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, -1, NULL, 0, OPT_FRESHCLAM, "HTTP proxy's port", "8080"},
+    {"HTTPProxyPort", "http-proxy-port", 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, -1, NULL, 0, OPT_FRESHCLAM, "HTTP proxy's port", "8080"},
 
-    {"HTTPProxyUsername", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_FRESHCLAM, "A user name for the HTTP proxy authentication.", "username"},
+    {"HTTPProxyUsername", "http-proxy-username", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_FRESHCLAM, "A user name for the HTTP proxy authentication.", "username"},
 
-    {"HTTPProxyPassword", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_FRESHCLAM, "A password for the HTTP proxy authentication.", "pass"},
+    {"HTTPProxyPassword", "http-proxy-password", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_FRESHCLAM, "A password for the HTTP proxy authentication.", "pass"},
 
-    {"HTTPUserAgent", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_FRESHCLAM, "If your servers are behind a firewall/proxy which does a User-Agent\nfiltering you can use this option to force the use of a different\nUser-Agent header.", "default"},
+    {"HTTPUserAgent", "http-user-agent", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_FRESHCLAM, "If your servers are behind a firewall/proxy which does a User-Agent\nfiltering you can use this option to force the use of a different\nUser-Agent header.", "default"},
 
     {"NotifyClamd", "daemon-notify", 0, CLOPT_TYPE_STRING, NULL, -1, CONST_CONFDIR_CLAMD, 0, OPT_FRESHCLAM, "Send the RELOAD command to clamd after a successful update.", "yes"},
 
@@ -562,11 +562,11 @@ const struct clam_option __clam_options[] = {
     /* FIXME: MATCH_IPADDR */
     {"LocalIPAddress", "local-address", 'a', CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_FRESHCLAM, "With this option you can provide a client address for the database downloading.\nUseful for multi-homed systems.", "aaa.bbb.ccc.ddd"},
 
-    {"ConnectTimeout", NULL, 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 30, NULL, 0, OPT_FRESHCLAM, "Timeout in seconds when connecting to database server.", "30"},
+    {"ConnectTimeout", "connect-timeout", 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 30, NULL, 0, OPT_FRESHCLAM, "Timeout in seconds when connecting to database server.", "30"},
 
-    {"ReceiveTimeout", NULL, 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 60, NULL, 0, OPT_FRESHCLAM, "Timeout in seconds when reading from database server. 0 means no timeout.", "60"},
+    {"ReceiveTimeout", "receive-timeout", 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 60, NULL, 0, OPT_FRESHCLAM, "Timeout in seconds when reading from database server. 0 means no timeout.", "60"},
 
-    {"Bytecode", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_FRESHCLAM, "This option enables downloading of bytecode.cvd, which includes additional\ndetection mechanisms and improvements to the ClamAV engine.", "yes"},
+    {"Bytecode", "bytecode", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_FRESHCLAM, "This option enables downloading of bytecode.cvd, which includes additional\ndetection mechanisms and improvements to the ClamAV engine.", "yes"},
 
     {"DisableCertCheck", "nocerts", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Disable authenticode certificate chain verification in PE files.", "no"},
 
@@ -595,43 +595,43 @@ const struct clam_option __clam_options[] = {
 
     /* Milter specific options */
 
-    {"ClamdSocket", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_MILTER, "Define the clamd socket to connect to for scanning.\nThis option is mandatory! Syntax:\n  ClamdSocket unix:path\n  ClamdSocket tcp:host:port\nThe first syntax specifies a local unix socket (needs an absolute path) e.g.:\n  ClamdSocket unix:/var/run/clamd/clamd.socket\nThe second syntax specifies a tcp local or remote tcp socket: the\nhost can be a hostname or an ip address; the \":port\" field is only required\nfor IPv6 addresses, otherwise it defaults to 3310\n  ClamdSocket tcp:192.168.0.1\nThis option can be repeated several times with different sockets or even\nwith the same socket: clamd servers will be selected in a round-robin fashion.", "tcp:scanner.mydomain:7357"},
+    {"ClamdSocket", "clamd-socket", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_MILTER, "Define the clamd socket to connect to for scanning.\nThis option is mandatory! Syntax:\n  ClamdSocket unix:path\n  ClamdSocket tcp:host:port\nThe first syntax specifies a local unix socket (needs an absolute path) e.g.:\n  ClamdSocket unix:/var/run/clamd/clamd.socket\nThe second syntax specifies a tcp local or remote tcp socket: the\nhost can be a hostname or an ip address; the \":port\" field is only required\nfor IPv6 addresses, otherwise it defaults to 3310\n  ClamdSocket tcp:192.168.0.1\nThis option can be repeated several times with different sockets or even\nwith the same socket: clamd servers will be selected in a round-robin fashion.", "tcp:scanner.mydomain:7357"},
 
-    {"MilterSocket", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_MILTER, "Define the interface through which we communicate with sendmail.\nThis option is mandatory! Possible formats are:\n[[unix|local]:]/path/to/file - to specify a unix domain socket;\ninet:port@[hostname|ip-address] - to specify an ipv4 socket;\ninet6:port@[hostname|ip-address] - to specify an ipv6 socket.", "/tmp/clamav-milter.socket\ninet:7357"},
+    {"MilterSocket", "milter-socket", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_MILTER, "Define the interface through which we communicate with sendmail.\nThis option is mandatory! Possible formats are:\n[[unix|local]:]/path/to/file - to specify a unix domain socket;\ninet:port@[hostname|ip-address] - to specify an ipv4 socket;\ninet6:port@[hostname|ip-address] - to specify an ipv6 socket.", "/tmp/clamav-milter.socket\ninet:7357"},
 
-    {"MilterSocketGroup", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_MILTER, "Define the group ownership for the (unix) milter socket.", "virusgroup"},
+    {"MilterSocketGroup", "milter-socket-group", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_MILTER, "Define the group ownership for the (unix) milter socket.", "virusgroup"},
 
-    {"MilterSocketMode", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_MILTER, "Sets the permissions on the (unix) milter socket to the specified mode.", "660"},
+    {"MilterSocketMode", "milter-socket-mode", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_MILTER, "Sets the permissions on the (unix) milter socket to the specified mode.", "660"},
 
-    {"LocalNet", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_MILTER, "Messages originating from these hosts/networks will not be scanned\nThis option takes a host(name)/mask pair in CIRD notation and can be\nrepeated several times. If \"/mask\" is omitted, a host is assumed.\nTo specify a locally originated, non-smtp, email use the keyword \"local\".", "local\n192.168.0.0/24\n1111:2222:3333::/48"},
+    {"LocalNet", "local-net", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_MILTER, "Messages originating from these hosts/networks will not be scanned\nThis option takes a host(name)/mask pair in CIRD notation and can be\nrepeated several times. If \"/mask\" is omitted, a host is assumed.\nTo specify a locally originated, non-smtp, email use the keyword \"local\".", "local\n192.168.0.0/24\n1111:2222:3333::/48"},
 
-    {"OnClean", NULL, 0, CLOPT_TYPE_STRING, "^(Accept|Reject|Defer|Blackhole|Quarantine)$", -1, "Accept", 0, OPT_MILTER, "Action to be performed on clean messages (mostly useful for testing).\nThe following actions are available:\nAccept: the message is accepted for delivery\nReject: immediately refuse delivery (a 5xx error is returned to the peer)\nDefer: return a temporary failure message (4xx) to the peer\nBlackhole: like Accept but the message is sent to oblivion\nQuarantine: like Accept but message is quarantined instead of being delivered", "Accept"},
+    {"OnClean", "on-clean", 0, CLOPT_TYPE_STRING, "^(Accept|Reject|Defer|Blackhole|Quarantine)$", -1, "Accept", 0, OPT_MILTER, "Action to be performed on clean messages (mostly useful for testing).\nThe following actions are available:\nAccept: the message is accepted for delivery\nReject: immediately refuse delivery (a 5xx error is returned to the peer)\nDefer: return a temporary failure message (4xx) to the peer\nBlackhole: like Accept but the message is sent to oblivion\nQuarantine: like Accept but message is quarantined instead of being delivered", "Accept"},
 
-    {"OnInfected", NULL, 0, CLOPT_TYPE_STRING, "^(Accept|Reject|Defer|Blackhole|Quarantine)$", -1, "Quarantine", 0, OPT_MILTER, "Action to be performed on clean messages (mostly useful for testing).\nThe following actions are available:\nAccept: the message is accepted for delivery\nReject: immediately refuse delivery (a 5xx error is returned to the peer)\nDefer: return a temporary failure message (4xx) to the peer\nBlackhole: like Accept but the message is sent to oblivion\nQuarantine: like Accept but message is quarantined instead of being delivered", "Quarantine"},
+    {"OnInfected", "on-infected", 0, CLOPT_TYPE_STRING, "^(Accept|Reject|Defer|Blackhole|Quarantine)$", -1, "Quarantine", 0, OPT_MILTER, "Action to be performed on clean messages (mostly useful for testing).\nThe following actions are available:\nAccept: the message is accepted for delivery\nReject: immediately refuse delivery (a 5xx error is returned to the peer)\nDefer: return a temporary failure message (4xx) to the peer\nBlackhole: like Accept but the message is sent to oblivion\nQuarantine: like Accept but message is quarantined instead of being delivered", "Quarantine"},
 
-    {"OnFail", NULL, 0, CLOPT_TYPE_STRING, "^(Accept|Reject|Defer)$", -1, "Defer", 0, OPT_MILTER, "Action to be performed on error conditions (this includes failure to\nallocate data structures, no scanners available, network timeouts, unknown\nscanner replies and the like.\nThe following actions are available:\nAccept: the message is accepted for delivery;\nReject: immediately refuse delivery (a 5xx error is returned to the peer);\nDefer: return a temporary failure message (4xx) to the peer.", "Defer"},
+    {"OnFail", "on-fail", 0, CLOPT_TYPE_STRING, "^(Accept|Reject|Defer)$", -1, "Defer", 0, OPT_MILTER, "Action to be performed on error conditions (this includes failure to\nallocate data structures, no scanners available, network timeouts, unknown\nscanner replies and the like.\nThe following actions are available:\nAccept: the message is accepted for delivery;\nReject: immediately refuse delivery (a 5xx error is returned to the peer);\nDefer: return a temporary failure message (4xx) to the peer.", "Defer"},
 
-    {"RejectMsg", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_MILTER, "This option allows you to set a specific rejection reason for infected messages\nand it's therefore only useful together with \"OnInfected Reject\"\nThe string \"%v\", if present, will be replaced with the virus name.", "MTA specific"},
+    {"RejectMsg", "reject-msg", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_MILTER, "This option allows you to set a specific rejection reason for infected messages\nand it's therefore only useful together with \"OnInfected Reject\"\nThe string \"%v\", if present, will be replaced with the virus name.", "MTA specific"},
 
-    {"AddHeader", NULL, 0, CLOPT_TYPE_STRING, "^(No|Replace|Yes|Add)$", -1, "no", 0, OPT_MILTER, "If this option is set to \"Replace\" (or \"Yes\"), an \"X-Virus-Scanned\" and an\n\"X-Virus-Status\" headers will be attached to each processed message, possibly\nreplacing existing headers.\nIf it is set to Add, the X-Virus headers are added possibly on top of the\nexisting ones.\nNote that while \"Replace\" can potentially break DKIM signatures, \"Add\" may\nconfuse procmail and similar filters.", "Replace"},
+    {"AddHeader", "add-header", 0, CLOPT_TYPE_STRING, "^(No|Replace|Yes|Add)$", -1, "no", 0, OPT_MILTER, "If this option is set to \"Replace\" (or \"Yes\"), an \"X-Virus-Scanned\" and an\n\"X-Virus-Status\" headers will be attached to each processed message, possibly\nreplacing existing headers.\nIf it is set to Add, the X-Virus headers are added possibly on top of the\nexisting ones.\nNote that while \"Replace\" can potentially break DKIM signatures, \"Add\" may\nconfuse procmail and similar filters.", "Replace"},
 
-    {"ReportHostname", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_MILTER, "When AddHeader is in use, this option allows you to set the reported\nhostname. This may be desirable in order to avoid leaking internal names.\nIf unset the real machine name is used.", "my.mail.server.name"},
+    {"ReportHostname", "report-hostname", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_MILTER, "When AddHeader is in use, this option allows you to set the reported\nhostname. This may be desirable in order to avoid leaking internal names.\nIf unset the real machine name is used.", "my.mail.server.name"},
 
-    {"VirusAction", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_MILTER, "Execute a command when an infected message is processed.\nThe following parameters are passed to the invoked program in this order:\nvirus name, queue id, sender, destination, subject, message id, message date.\nNote #1: this requires MTA macroes to be available (see LogInfected below)\nNote #2: the process is invoked in the context of clamav-milter\nNote #3: clamav-milter will wait for the process to exit. Be quick or fork to\navoid unnecessary delays in email delivery", "/usr/local/bin/my_infected_message_handler"},
+    {"VirusAction", "virus-action", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_MILTER, "Execute a command when an infected message is processed.\nThe following parameters are passed to the invoked program in this order:\nvirus name, queue id, sender, destination, subject, message id, message date.\nNote #1: this requires MTA macroes to be available (see LogInfected below)\nNote #2: the process is invoked in the context of clamav-milter\nNote #3: clamav-milter will wait for the process to exit. Be quick or fork to\navoid unnecessary delays in email delivery", "/usr/local/bin/my_infected_message_handler"},
 
-    {"Chroot", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_MILTER, "Chroot to the specified directory.\nChrooting is performed just after reading the config file and before\ndropping privileges.", "/newroot"},
+    {"Chroot", "chroot", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_MILTER, "Chroot to the specified directory.\nChrooting is performed just after reading the config file and before\ndropping privileges.", "/newroot"},
 
-    {"AllowList", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_MILTER, "This option specifies a file which contains a list of basic POSIX regular\nexpressions. Addresses (sent to or from - see below) matching these regexes\nwill not be scanned.  Optionally each line can start with the string \"From:\"\nor \"To:\" (note: no whitespace after the colon) indicating if it is,\nrespectively, the sender or recipient that is to be allowed.\nIf the field is missing, \"To:\" is assumed.\nLines starting with #, : or ! are ignored.", "/etc/allowed_addresses"},
+    {"AllowList", "allow-list", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_MILTER, "This option specifies a file which contains a list of basic POSIX regular\nexpressions. Addresses (sent to or from - see below) matching these regexes\nwill not be scanned.  Optionally each line can start with the string \"From:\"\nor \"To:\" (note: no whitespace after the colon) indicating if it is,\nrespectively, the sender or recipient that is to be allowed.\nIf the field is missing, \"To:\" is assumed.\nLines starting with #, : or ! are ignored.", "/etc/allowed_addresses"},
     // The Whitelist option should remain functional for a version or two, but has been deprecated in the documentation in favor of "AllowList".
-    {"Whitelist", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_MILTER, "This option specifies a file which contains a list of basic POSIX regular\nexpressions. Addresses (sent to or from - see below) matching these regexes\nwill not be scanned.  Optionally each line can start with the string \"From:\"\nor \"To:\" (note: no whitespace after the colon) indicating if it is,\nrespectively, the sender or recipient that is to be allowed.\nIf the field is missing, \"To:\" is assumed.\nLines starting with #, : or ! are ignored.", "/etc/allowed_addresses"},
+    {"Whitelist", "whitelist", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_MILTER, "This option specifies a file which contains a list of basic POSIX regular\nexpressions. Addresses (sent to or from - see below) matching these regexes\nwill not be scanned.  Optionally each line can start with the string \"From:\"\nor \"To:\" (note: no whitespace after the colon) indicating if it is,\nrespectively, the sender or recipient that is to be allowed.\nIf the field is missing, \"To:\" is assumed.\nLines starting with #, : or ! are ignored.", "/etc/allowed_addresses"},
 
-    {"SkipAuthenticated", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_MILTER, "Messages from authenticated SMTP users matching this extended POSIX\nregular expression (egrep-like) will not be scanned.\nAs an alternative, a file containing a plain (not regex) list of names (one\nper line) can be specified using the prefix \"file:\".\ne.g. SkipAuthenticated file:/etc/good_guys\n\nNote: this is the AUTH login name!", "SkipAuthenticated ^(tom|dick|henry)$"},
+    {"SkipAuthenticated", "skip-authenticated", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_MILTER, "Messages from authenticated SMTP users matching this extended POSIX\nregular expression (egrep-like) will not be scanned.\nAs an alternative, a file containing a plain (not regex) list of names (one\nper line) can be specified using the prefix \"file:\".\ne.g. SkipAuthenticated file:/etc/good_guys\n\nNote: this is the AUTH login name!", "SkipAuthenticated ^(tom|dick|henry)$"},
 
-    {"LogInfected", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_MILTER, "This option allows you to tune what is logged when a message is infected.\nPossible values are Off (the default - nothing is logged),\nBasic (minimal info logged), Full (verbose info logged)\nNote:\nFor this to work properly in sendmail, make sure the msg_id, mail_addr,\nrcpt_addr and i macroes are available in eom. In other words add a line like:\nMilter.macros.eom={msg_id}, {mail_addr}, {rcpt_addr}, i\nto your .cf file. Alternatively use the macro:\ndefine(`confMILTER_MACROS_EOM', `{msg_id}, {mail_addr}, {rcpt_addr}, i')\nPostfix should be working fine with the default settings.", "Basic"},
+    {"LogInfected", "log-infected", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_MILTER, "This option allows you to tune what is logged when a message is infected.\nPossible values are Off (the default - nothing is logged),\nBasic (minimal info logged), Full (verbose info logged)\nNote:\nFor this to work properly in sendmail, make sure the msg_id, mail_addr,\nrcpt_addr and i macroes are available in eom. In other words add a line like:\nMilter.macros.eom={msg_id}, {mail_addr}, {rcpt_addr}, i\nto your .cf file. Alternatively use the macro:\ndefine(`confMILTER_MACROS_EOM', `{msg_id}, {mail_addr}, {rcpt_addr}, i')\nPostfix should be working fine with the default settings.", "Basic"},
 
-    {"LogClean", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_MILTER, "This option allows you to tune what is logged when no threat is found in a scanned message.\nSee LogInfected for possible values and caveats.\nUseful in debugging but drastically increases the log size.", "Basic"},
+    {"LogClean", "log-clean", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_MILTER, "This option allows you to tune what is logged when no threat is found in a scanned message.\nSee LogInfected for possible values and caveats.\nUseful in debugging but drastically increases the log size.", "Basic"},
 
-    {"SupportMultipleRecipients", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_MILTER, "This option affects the behaviour of LogInfected, LogClean and VirusAction\nwhen a message with multiple recipients is scanned:\nIf SupportMultipleRecipients is off (the default)\nthen one single log entry is generated for the message and, in case the\nmessage is determined to be malicious, the command indicated by VirusAction\nis executed just once. In both cases only the last recipient is reported.\nIf SupportMultipleRecipients is on:\nthen one line is logged for each recipient and the command indicated\nby VirusAction is also executed once for each recipient.\n\nNote: although it's probably a good idea to enable this option, the default value\nis currently set to off for legacy reasons.", "yes"},
+    {"SupportMultipleRecipients", "support-multiple-recipients", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_MILTER, "This option affects the behaviour of LogInfected, LogClean and VirusAction\nwhen a message with multiple recipients is scanned:\nIf SupportMultipleRecipients is off (the default)\nthen one single log entry is generated for the message and, in case the\nmessage is determined to be malicious, the command indicated by VirusAction\nis executed just once. In both cases only the last recipient is reported.\nIf SupportMultipleRecipients is on:\nthen one line is logged for each recipient and the command indicated\nby VirusAction is also executed once for each recipient.\n\nNote: although it's probably a good idea to enable this option, the default value\nis currently set to off for legacy reasons.", "yes"},
 
     /* Deprecated milter options */
 
