@@ -111,15 +111,4 @@ INPUT = . \
         jsparse \
         jsparse/generated \
         nsis \
-        regex \
-        tomsfastmath \
-        tomsfastmath/addsub \
-        tomsfastmath/bin \
-        tomsfastmath/bit \
-        tomsfastmath/divide \
-        tomsfastmath/exptmod \
-        tomsfastmath/misc \
-        tomsfastmath/mont \
-        tomsfastmath/mul \
-        tomsfastmath/numtheory \
-        tomsfastmath/sqr
+        regex
