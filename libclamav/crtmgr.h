@@ -23,8 +23,8 @@
 #define __CRTMGR_H
 
 #include <time.h>
-
-#include "bignum.h"
+#include <stdbool.h>
+#include <openssl/bn.h>
 
 typedef enum { CLI_HASHTYPE_ANY, /* used by crts added from .CRB rules */
                CLI_SHA1RSA,
@@ -63,9 +63,9 @@ typedef struct cli_crt_t {
      * so it must have at least enough space for the largest hash in
      * cli_crt_hashtype */
     uint8_t tbshash[SHA512_HASH_SIZE];
-    fp_int n;
-    fp_int e;
-    fp_int sig;
+    BIGNUM *n;
+    BIGNUM *e;
+    BIGNUM *sig;
     time_t not_before;
     time_t not_after;
     cli_crt_hashtype hashtype;
@@ -82,11 +82,11 @@ typedef struct {
     unsigned int items;
 } crtmgr;
 
-void cli_crt_init(cli_crt *x509);
+int cli_crt_init(cli_crt *x509);
 void cli_crt_clear(cli_crt *x509);
 void crtmgr_init(crtmgr *m);
 void crtmgr_free(crtmgr *m);
-int crtmgr_add(crtmgr *m, cli_crt *x509);
+bool crtmgr_add(crtmgr *m, cli_crt *x509);
 cli_crt *crtmgr_lookup(crtmgr *m, cli_crt *x509);
 cli_crt *crtmgr_block_list_lookup(crtmgr *m, cli_crt *x509);
 cli_crt *crtmgr_trust_list_lookup(crtmgr *m, cli_crt *x509, int crb_crts_only);

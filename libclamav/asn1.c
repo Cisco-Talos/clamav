@@ -24,10 +24,10 @@
 #endif
 
 #include <time.h>
+#include <openssl/bn.h>
 
 #include "clamav.h"
 #include "asn1.h"
-#include "bignum.h"
 #include "matcher-hash.h"
 
 /* --------------------------------------------------------------------------- OIDS */
@@ -695,7 +695,8 @@ static int asn1_get_rsa_pubkey(fmap_t *map, const void **asn1data, unsigned int 
         return 1;
     }
 
-    fp_read_unsigned_bin(&x509->n, obj.content, avail2);
+    if (!BN_bin2bn(obj.content, avail2, x509->n))
+        return 1;
 
     if (asn1_expect_objtype(map, obj.next, &avail, &obj, ASN1_TYPE_INTEGER)) /* INTEGER - exp */
         return 1;
@@ -712,7 +713,8 @@ static int asn1_get_rsa_pubkey(fmap_t *map, const void **asn1data, unsigned int 
         return 1;
     }
 
-    fp_read_unsigned_bin(&x509->e, obj.content, obj.size);
+    if (!BN_bin2bn(obj.content, obj.size, x509->e))
+        return 1;
 
     return 0;
 }
@@ -738,9 +740,12 @@ static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size,
     int ret = ASN1_GET_X509_UNRECOVERABLE_ERROR;
     unsigned int version;
 
-    cli_crt_init(&x509);
-
     do {
+        if (cli_crt_init(&x509) < 0) {
+            cli_dbgmsg("asn1_get_x509: failed to initialize x509.\n");
+            break;
+        }
+
         if (asn1_expect_objtype(map, *asn1data, size, &crt, ASN1_TYPE_SEQUENCE)) { /* SEQUENCE */
             cli_dbgmsg("asn1_get_x509: expected SEQUENCE at the x509 start\n");
             break;
@@ -1107,7 +1112,8 @@ static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size,
             break;
         }
 
-        fp_read_unsigned_bin(&x509.sig, obj.content, obj.size);
+        if (!BN_bin2bn(obj.content, obj.size, x509.sig))
+            break;
 
         if (crt.size) {
             cli_dbgmsg("asn1_get_x509: found unexpected extra data in signature\n");
@@ -1404,6 +1410,8 @@ static cl_error_t asn1_parse_mscat(struct cl_engine *engine, fmap_t *map, size_t
     void *hash_ctx;
     int result;
     cl_error_t ret = CL_EPARSE;
+    char *mod      = NULL;
+    char *exp      = NULL;
 
     cli_dbgmsg("in asn1_parse_mscat\n");
 
@@ -1558,11 +1566,10 @@ static cl_error_t asn1_parse_mscat(struct cl_engine *engine, fmap_t *map, size_t
                     while (x509) {
                         char raw_issuer[CRT_RAWMAXLEN * 2 + 1], raw_subject[CRT_RAWMAXLEN * 2 + 1], raw_serial[CRT_RAWMAXLEN * 3 + 1];
                         char issuer[SHA1_HASH_SIZE * 2 + 1], subject[SHA1_HASH_SIZE * 2 + 1], serial[SHA1_HASH_SIZE * 2 + 1];
-                        char mod[1024 + 1], exp[1024 + 1];
-                        int j = 1024;
+                        int j;
 
-                        fp_toradix_n(&x509->n, mod, 16, j + 1);
-                        fp_toradix_n(&x509->e, exp, 16, j + 1);
+                        mod = BN_bn2hex(x509->n);
+                        exp = BN_bn2hex(x509->e);
                         memset(raw_issuer, 0, CRT_RAWMAXLEN * 2 + 1);
                         memset(raw_subject, 0, CRT_RAWMAXLEN * 2 + 1);
                         memset(raw_serial, 0, CRT_RAWMAXLEN * 2 + 1);
@@ -1594,6 +1601,10 @@ static cl_error_t asn1_parse_mscat(struct cl_engine *engine, fmap_t *map, size_t
                         cli_dbgmsg("  raw_issuer: %s\n", raw_issuer);
 
                         x509 = x509->next;
+                        OPENSSL_free(mod);
+                        OPENSSL_free(exp);
+                        mod = NULL;
+                        exp = NULL;
                     }
                     x509 = newcerts.crts;
                 }
@@ -2149,6 +2160,8 @@ static cl_error_t asn1_parse_mscat(struct cl_engine *engine, fmap_t *map, size_t
     } while (0);
 
 finish:
+    OPENSSL_free(mod);
+    OPENSSL_free(exp);
     if (CL_EPARSE == ret) {
         cli_dbgmsg("asn1_parse_mscat: failed to parse authenticode section\n");
     }

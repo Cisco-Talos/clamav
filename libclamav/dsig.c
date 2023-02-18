@@ -30,12 +30,12 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <openssl/bn.h>
 
 #include "clamav.h"
 #include "others.h"
 #include "dsig.h"
 #include "str.h"
-#include "bignum.h"
 
 #ifndef _WIN32
 #include <sys/socket.h>
@@ -81,37 +81,83 @@ static char cli_ndecode(unsigned char value)
     return -1;
 }
 
-static unsigned char *cli_decodesig(const char *sig, unsigned int plen, fp_int e, fp_int n)
+static unsigned char *cli_decodesig(const char *sig, unsigned int plen, BIGNUM *e, BIGNUM *n)
 {
     int i, slen = strlen(sig), dec;
-    unsigned char *plain;
-    fp_int r, p, c;
+    unsigned char *plain = NULL, *ret_sig = NULL;
+    BIGNUM *r = NULL, *p = NULL, *c = NULL;
+    BN_CTX *bn_ctx;
+    unsigned int bn_bytes;
+    ;
 
-    fp_init(&r);
-    fp_init(&c);
+    r = BN_new();
+    if (!r) {
+        goto done;
+    }
+
+    p = BN_new();
+    if (!p) {
+        goto done;
+    }
+
+    c = BN_new();
+    if (!c) {
+        goto done;
+    }
+
+    bn_ctx = BN_CTX_new();
+    if (!bn_ctx) {
+        goto done;
+    }
+
+    BN_zero(c);
     for (i = 0; i < slen; i++) {
         if ((dec = cli_ndecode(sig[i])) < 0) {
-            return NULL;
+            goto done;
         }
-        fp_set(&r, dec);
-        fp_mul_2d(&r, 6 * i, &r);
-        fp_add(&r, &c, &c);
-    }
+        if (!BN_set_word(r, dec)) {
+            goto done;
+        }
+        if (!BN_lshift(r, r, 6 * i)) {
+            goto done;
+        }
 
-    plain = (unsigned char *)cli_calloc(plen + 1, sizeof(unsigned char));
+        if (!BN_add(c, c, r)) {
+            goto done;
+        }
+    }
+    if (!BN_mod_exp(p, c, e, n, bn_ctx)) {
+        goto done;
+    }
+    bn_bytes = BN_num_bytes(p);
+    /* Sometimes the size of the resulting BN (128) is larger than the expected
+     * length (16). The result does not match in this case. Instead of
+     * allocating memory and filling it, we fail early.
+     */
+    if (plen < bn_bytes) {
+        cli_errmsg("cli_decodesig: Resulting signature too large (%d vs %d).\n",
+                   bn_bytes, plen);
+        goto done;
+    }
+    plain = cli_calloc(plen, sizeof(unsigned char));
     if (!plain) {
         cli_errmsg("cli_decodesig: Can't allocate memory for 'plain'\n");
-        return NULL;
+        goto done;
     }
-    fp_init(&p);
-    fp_exptmod(&c, &e, &n, &p); /* plain = cipher^e mod n */
-    fp_set(&c, 256);
-    for (i = plen - 1; i >= 0; i--) { /* reverse */
-        fp_div(&p, &c, &p, &r);
-        plain[i] = MP_GET(&r);
+    if (!BN_bn2bin(p, plain)) {
+        goto done;
     }
 
-    return plain;
+    ret_sig = plain;
+    plain   = NULL;
+
+done:
+    BN_free(r);
+    BN_free(p);
+    BN_free(c);
+    BN_CTX_free(bn_ctx);
+    free(plain);
+    return ret_sig;
 }
 
 char *cli_getdsig(const char *host, const char *user, const unsigned char *data, unsigned int datalen, unsigned short mode)
@@ -228,41 +274,55 @@ char *cli_getdsig(const char *host, const char *user, const unsigned char *data,
     return strdup(pt);
 }
 
-int cli_versig(const char *md5, const char *dsig)
+cl_error_t cli_versig(const char *md5, const char *dsig)
 {
-    fp_int n, e;
-    char *pt, *pt2;
+    BIGNUM *n = NULL, *e = NULL;
+    char *pt = NULL, *pt2 = NULL;
+    int ret;
+
+    ret = CL_EMEM;
+    n   = BN_new();
+    if (!n)
+        goto done;
+
+    e = BN_new();
+    if (!e)
+        goto done;
+
+    ret = CL_EVERIFY;
+    if (!BN_dec2bn(&e, CLI_ESTR))
+        goto done;
+
+    if (!BN_dec2bn(&n, CLI_NSTR))
+        goto done;
 
     if (strlen(md5) != 32 || !isalnum(md5[0])) {
         /* someone is trying to fool us with empty/malformed MD5 ? */
         cli_errmsg("SECURITY WARNING: MD5 basic test failure.\n");
-        return CL_EVERIFY;
+        goto done;
     }
 
-    fp_init(&n);
-    fp_read_radix(&n, CLI_NSTR, 10);
-    fp_init(&e);
-    fp_read_radix(&e, CLI_ESTR, 10);
-
-    if (!(pt = (char *)cli_decodesig(dsig, 16, e, n))) {
-        return CL_EVERIFY;
-    }
+    if (!(pt = (char *)cli_decodesig(dsig, 16, e, n)))
+        goto done;
 
     pt2 = cli_str2hex(pt, 16);
-    free(pt);
 
     cli_dbgmsg("cli_versig: Decoded signature: %s\n", pt2);
 
     if (strncmp(md5, pt2, 32)) {
         cli_dbgmsg("cli_versig: Signature doesn't match.\n");
-        free(pt2);
-        return CL_EVERIFY;
+        goto done;
     }
 
-    free(pt2);
-
     cli_dbgmsg("cli_versig: Digital signature is correct.\n");
-    return CL_SUCCESS;
+    ret = CL_SUCCESS;
+
+done:
+    free(pt);
+    free(pt2);
+    BN_free(n);
+    BN_free(e);
+    return ret;
 }
 
 #define HASH_LEN 32
@@ -275,21 +335,39 @@ int cli_versig2(const unsigned char *sha256, const char *dsig_str, const char *n
     unsigned char mask[BLK_LEN], data[BLK_LEN], final[8 + 2 * HASH_LEN], c[4];
     unsigned int i, rounds;
     void *ctx;
-    fp_int n, e;
+    BIGNUM *n, *e;
+    int ret;
 
-    fp_init(&e);
-    fp_read_radix(&e, e_str, 10);
-    fp_init(&n);
-    fp_read_radix(&n, n_str, 10);
+    n = BN_new();
+    e = BN_new();
+
+    if (!n || !e) {
+        ret = CL_EMEM;
+        goto done;
+    }
+
+    ret = CL_EVERIFY;
+    if (!BN_dec2bn(&e, e_str))
+        goto done;
+
+    if (!BN_dec2bn(&n, n_str))
+        goto done;
 
     decoded = cli_decodesig(dsig_str, PAD_LEN, e, n);
-    if (!decoded)
-        return CL_EVERIFY;
+    if (!decoded) {
+        ret = CL_EVERIFY;
+        goto done;
+    }
 
     if (decoded[PAD_LEN - 1] != 0xbc) {
         free(decoded);
-        return CL_EVERIFY;
+        ret = CL_EVERIFY;
     }
+    BN_free(n);
+    BN_free(e);
+
+    n = NULL;
+    e = NULL;
 
     memcpy(mask, decoded, BLK_LEN);
     memcpy(digest2, &decoded[BLK_LEN], HASH_LEN);
@@ -337,4 +415,9 @@ int cli_versig2(const unsigned char *sha256, const char *dsig_str, const char *n
     cl_finish_hash(ctx, digest1);
 
     return memcmp(digest1, digest2, HASH_LEN) ? CL_EVERIFY : CL_SUCCESS;
+
+done:
+    BN_free(n);
+    BN_free(e);
+    return ret;
 }
