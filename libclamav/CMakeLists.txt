@@ -250,8 +250,7 @@ target_sources( tomsfastmath
         tomsfastmath/sqr/fp_sqr_comba_generic.c
         tomsfastmath/sqr/fp_sqr_comba_small_set.c
         tomsfastmath/sqr/fp_sqrmod.c
-    PUBLIC
-        bignum.h )
+        )
 target_include_directories( tomsfastmath
     PRIVATE
         ${CMAKE_BINARY_DIR}
