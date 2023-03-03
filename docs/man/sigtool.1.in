@@ -114,6 +114,12 @@ Test all signatures from DATABASE against TARGET_FILE. This option will only giv
 .TP
 \fB\-\-print\-certs=FILE\fR
 Print Authenticode details from a PE file.
+.TP
+\fB\-\-tempdir=DIRECTORY\fR
+Create temporary files in DIRECTORY. Directory must be writable for the user running sigtool.
+.TP
+\fB\-\-leave\-temps\fR
+Do not remove temporary files.
 
 .SH "ENVIRONMENT VARIABLES"
 .LP

@@ -154,47 +154,7 @@ done:
     return ctx;
 }
 
-void destroy_ctx(cli_ctx *ctx)
-{
-    if (NULL != ctx) {
-        if (NULL != ctx->recursion_stack) {
-            /* Clean up any fmaps */
-            while (ctx->recursion_level > 0) {
-                if (NULL != ctx->recursion_stack[ctx->recursion_level].fmap) {
-                    funmap(ctx->recursion_stack[ctx->recursion_level].fmap);
-                    ctx->recursion_stack[ctx->recursion_level].fmap = NULL;
-                }
-                ctx->recursion_level -= 1;
-            }
-            if (NULL != ctx->recursion_stack[0].fmap) {
-                funmap(ctx->recursion_stack[0].fmap);
-                ctx->recursion_stack[0].fmap = NULL;
-            }
-
-            free(ctx->recursion_stack);
-            ctx->recursion_stack = NULL;
-        }
-
-        if (NULL != ctx->engine) {
-            cl_engine_free((struct cl_engine *)ctx->engine);
-            ctx->engine = NULL;
-        }
-
-        if (NULL != ctx->options) {
-            free(ctx->options);
-            ctx->options = NULL;
-        }
-
-        if (NULL != ctx->evidence) {
-            evidence_free(ctx->evidence);
-        }
-
-        free(ctx);
-    }
-}
-
-int sigtool_vba_scandir(const char *dirname, int hex_output, struct uniq *U);
-
+/*only called by wm_decode_macro*/
 static char *get_unicode_name(char *name, int size)
 {
     int i, j;
@@ -224,6 +184,7 @@ static char *get_unicode_name(char *name, int size)
     return newname;
 }
 
+/*only called by wm_decode_macro*/
 static void output_token(unsigned char token)
 {
     int i;
@@ -320,6 +281,7 @@ static void output_token(unsigned char token)
     return;
 }
 
+/*only called by wm_decode_macro*/
 static void output_token67(uint16_t token)
 {
     int i;
@@ -670,6 +632,7 @@ static void output_token67(uint16_t token)
     return;
 }
 
+/*only called by wm_decode_macro*/
 static void output_token73(uint16_t token)
 {
     int i;
@@ -921,6 +884,7 @@ static void output_token73(uint16_t token)
     return;
 }
 
+/*only called by wm_decode_macro*/
 static void print_hex_buff(unsigned char *start, unsigned char *end, int hex_output)
 {
     if (!hex_output) {
@@ -1098,265 +1062,4 @@ static void wm_decode_macro(unsigned char *buff, uint32_t len, int hex_output)
         }
     }
     print_hex_buff(line_start, buff + i, hex_output);
-}
-
-static int sigtool_scandir(const char *dirname, int hex_output)
-{
-    int status = -1;
-    DIR *dd    = NULL;
-    struct dirent *dent;
-    STATBUF statbuf;
-    const char *tmpdir;
-    char *fname    = NULL;
-    char *dir      = NULL;
-    cl_error_t ret = CL_CLEAN;
-    int desc       = -1;
-    cli_ctx *ctx   = NULL;
-    int has_vba = 0, has_xlm = 0;
-
-    if ((dd = opendir(dirname)) != NULL) {
-        while ((dent = readdir(dd))) {
-            if (dent->d_ino) {
-                if (strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..")) {
-                    /* build the full name */
-                    fname = (char *)cli_calloc(strlen(dirname) + strlen(dent->d_name) + 2, sizeof(char));
-                    if (!fname) {
-                        status = -1;
-                        goto done;
-                    }
-
-                    sprintf(fname, "%s" PATHSEP "%s", dirname, dent->d_name);
-
-                    /* stat the file */
-                    if (LSTAT(fname, &statbuf) != -1) {
-                        if (S_ISDIR(statbuf.st_mode) && !S_ISLNK(statbuf.st_mode)) {
-                            if (sigtool_scandir(fname, hex_output)) {
-                                status = CL_VIRUS;
-                                goto done;
-                            }
-                        } else {
-                            if (S_ISREG(statbuf.st_mode)) {
-                                struct uniq *files = NULL;
-                                tmpdir             = cli_gettmpdir();
-
-                                /* generate the temporary directory */
-                                dir = cli_gentemp(tmpdir);
-                                if (!dir) {
-                                    printf("cli_gentemp() failed\n");
-                                    status = -1;
-                                    goto done;
-                                }
-
-                                if (mkdir(dir, 0700)) {
-                                    printf("Can't create temporary directory %s\n", dir);
-                                    status = CL_ETMPDIR;
-                                    goto done;
-                                }
-
-                                if ((desc = open(fname, O_RDONLY | O_BINARY)) == -1) {
-                                    printf("Can't open file %s\n", fname);
-                                    status = 1;
-                                    goto done;
-                                }
-
-                                if (!(ctx = convenience_ctx(desc))) {
-                                    status = 1;
-                                    goto done;
-                                }
-                                if ((ret = cli_ole2_extract(dir, ctx, &files, &has_vba, &has_xlm, NULL))) {
-                                    printf("ERROR %s\n", cl_strerror(ret));
-
-                                    status = ret;
-                                    goto done;
-                                }
-
-                                if (has_vba && files)
-                                    sigtool_vba_scandir(dir, hex_output, files);
-
-                                // Cleanup
-                                if (desc >= 0) {
-                                    close(desc);
-                                    desc = -1;
-                                }
-
-                                destroy_ctx(ctx);
-                                ctx = NULL;
-
-                                cli_rmdirs(dir);
-                                free(dir);
-                                dir = NULL;
-                            }
-                        }
-                    }
-
-                    // Cleanup
-                    free(fname);
-                    fname = NULL;
-                }
-            }
-        }
-    } else {
-        logg(LOGG_ERROR, "Can't open directory %s.\n", dirname);
-        return CL_EOPEN;
-    }
-
-    status = 0;
-
-done:
-    if (desc >= 0) {
-        close(desc);
-    }
-    if (NULL != dd) {
-        closedir(dd);
-    }
-    if (NULL != ctx) {
-        destroy_ctx(ctx);
-    }
-    if (NULL != dir) {
-        cli_rmdirs(dir);
-        free(dir);
-    }
-    if (NULL != fname) {
-        free(fname);
-    }
-
-    return status;
-}
-
-int sigtool_vba_scandir(const char *dirname, int hex_output, struct uniq *U)
-{
-    cl_error_t status = CL_CLEAN;
-    cl_error_t ret;
-    int i, fd;
-    size_t data_len;
-    vba_project_t *vba_project = NULL;
-    DIR *dd;
-    struct dirent *dent;
-    STATBUF statbuf;
-    char *fullname, vbaname[1024], *hash;
-    unsigned char *data;
-    uint32_t hashcnt;
-    unsigned int j;
-
-    if (CL_SUCCESS != (ret = uniq_get(U, "_vba_project", 12, NULL, &hashcnt))) {
-        logg(LOGG_ERROR, "ScanDir -> uniq_get('_vba_project') failed.\n");
-        return ret;
-    }
-
-    while (hashcnt) {
-        if (!(vba_project = (vba_project_t *)cli_vba_readdir(dirname, U, hashcnt))) {
-            hashcnt--;
-            continue;
-        }
-
-        for (i = 0; i < vba_project->count; i++) {
-            for (j = 0; j < vba_project->colls[i]; j++) {
-                snprintf(vbaname, 1024, "%s" PATHSEP "%s_%u", vba_project->dir, vba_project->name[i], j);
-                vbaname[sizeof(vbaname) - 1] = '\0';
-
-                fd = open(vbaname, O_RDONLY | O_BINARY);
-                if (fd == -1) continue;
-                data = (unsigned char *)cli_vba_inflate(fd, vba_project->offset[i], &data_len);
-                close(fd);
-
-                if (data) {
-                    data           = (unsigned char *)realloc(data, data_len + 1);
-                    data[data_len] = '\0';
-                    printf("-------------- start of code ------------------\n%s\n-------------- end of code ------------------\n", data);
-                    free(data);
-                }
-            }
-        }
-
-        cli_free_vba_project(vba_project);
-        vba_project = NULL;
-
-        hashcnt--;
-    }
-
-    if (CL_SUCCESS != (ret = uniq_get(U, "powerpoint document", 19, &hash, &hashcnt))) {
-        logg(LOGG_ERROR, "ScanDir -> uniq_get('powerpoint document') failed.\n");
-        return ret;
-    }
-
-    while (hashcnt) {
-        snprintf(vbaname, 1024, "%s" PATHSEP "%s_%u", dirname, hash, hashcnt);
-        vbaname[sizeof(vbaname) - 1] = '\0';
-
-        fd = open(vbaname, O_RDONLY | O_BINARY);
-        if (fd == -1) {
-            hashcnt--;
-            continue;
-        }
-        if ((fullname = cli_ppt_vba_read(fd, NULL))) {
-            sigtool_scandir(fullname, hex_output);
-            cli_rmdirs(fullname);
-            free(fullname);
-        }
-        close(fd);
-        hashcnt--;
-    }
-
-    if (CL_SUCCESS != (ret = uniq_get(U, "worddocument", 12, &hash, &hashcnt))) {
-        logg(LOGG_ERROR, "ScanDir -> uniq_get('worddocument') failed.\n");
-        return ret;
-    }
-
-    while (hashcnt) {
-        snprintf(vbaname, sizeof(vbaname), "%s" PATHSEP "%s_%u", dirname, hash, hashcnt);
-        vbaname[sizeof(vbaname) - 1] = '\0';
-
-        fd = open(vbaname, O_RDONLY | O_BINARY);
-        if (fd == -1) {
-            hashcnt--;
-            continue;
-        }
-
-        if (!(vba_project = (vba_project_t *)cli_wm_readdir(fd))) {
-            close(fd);
-            hashcnt--;
-            continue;
-        }
-
-        for (i = 0; i < vba_project->count; i++) {
-            data_len = vba_project->length[i];
-            data     = (unsigned char *)cli_wm_decrypt_macro(fd, vba_project->offset[i], (uint32_t)data_len, vba_project->key[i]);
-            if (data) {
-                data           = (unsigned char *)realloc(data, data_len + 1);
-                data[data_len] = '\0';
-                printf("-------------- start of code ------------------\n%s\n-------------- end of code ------------------\n", data);
-                free(data);
-            }
-        }
-
-        close(fd);
-        cli_free_vba_project(vba_project);
-        vba_project = NULL;
-        hashcnt--;
-    }
-
-    if ((dd = opendir(dirname)) != NULL) {
-        while ((dent = readdir(dd))) {
-            if (dent->d_ino) {
-                if (strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..")) {
-                    /* build the full name */
-                    fullname = calloc(strlen(dirname) + strlen(dent->d_name) + 2, sizeof(char));
-                    sprintf(fullname, "%s" PATHSEP "%s", dirname, dent->d_name);
-
-                    /* stat the file */
-                    if (LSTAT(fullname, &statbuf) != -1) {
-                        if (S_ISDIR(statbuf.st_mode) && !S_ISLNK(statbuf.st_mode))
-                            sigtool_vba_scandir(fullname, hex_output, U);
-                    }
-                    free(fullname);
-                }
-            }
-        }
-    } else {
-        logg(LOGG_ERROR, "ScanDir -> Can't open directory %s.\n", dirname);
-        return CL_EOPEN;
-    }
-
-    closedir(dd);
-    return status;
 }
