@@ -1259,10 +1259,20 @@ cl_error_t cli_vba_readdir_new(cli_ctx *ctx, const char *dir, struct uniq *U, co
                         module_data_utf8_size = vba_normalize(module_data_utf8, module_data_utf8_size);
 
                         CLI_WRITEN(module_data_utf8, module_data_utf8_size);
+
+                        if (NULL != ctx->engine->cb_vba) {
+                            ctx->engine->cb_vba(module_data_utf8, module_data_utf8_size, ctx->cb_ctx);
+                        }
+
                         module_stream_found = 1;
                         free(module_data_utf8);
                         module_data_utf8 = NULL;
                     } else {
+                        /*If normalization didn't work, fall back to the pre-normalized data.*/
+                        if (NULL != ctx->engine->cb_vba) {
+                            ctx->engine->cb_vba(module_data, module_data_size, ctx->cb_ctx);
+                        }
+
                         CLI_WRITEN("\n<Error decoding module data>\n", 30);
                         cli_dbgmsg("cli_vba_readdir_new: Failed to decode VBA module content from codepage %" PRIu16 " to UTF8\n", codepage);
                     }

@@ -74,6 +74,7 @@ CLAMAV_1.0.0 {
 CLAMAV_1.1.0 {
   global:
     cl_cvdgetage;
+    cl_engine_set_clcb_vba;
 } CLAMAV_1.0.0;
 CLAMAV_PRIVATE {
   global:
