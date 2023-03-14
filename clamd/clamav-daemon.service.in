@@ -11,6 +11,19 @@ ExecStart=@prefix@/sbin/clamd --foreground=true
 # Reload the database
 ExecReload=/bin/kill -USR2 $MAINPID
 TimeoutStartSec=420
+# Security options
+# Remove ProtectSystem, ProtectHome, and ReadWritePaths..
+# if you want clamav to be able to remove infected files.
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/var/log/
+NoExecPaths=/
+ExecPaths=@prefix@/sbin/clamd /bin/kill
+ProtectClock=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
 
 [Install]
 WantedBy=multi-user.target

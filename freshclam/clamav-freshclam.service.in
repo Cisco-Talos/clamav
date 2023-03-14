@@ -8,6 +8,16 @@ After=network-online.target
 
 [Service]
 ExecStart=@prefix@/bin/freshclam -d --foreground=true
+# Security Options
+ProtectSystem=full
+ProtectHome=tmpfs
+ProtectClock=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+NoExecPaths=/
+ExecPaths=@prefix@/bin/freshclam
 
 [Install]
 WantedBy=multi-user.target
