@@ -15,7 +15,6 @@ CLAMAV_PUBLIC {
     cl_engine_set_clcb_meta;
     cl_engine_set_clcb_file_props;
     cl_set_clcb_msg;
-    cl_engine_set_clcb_file_inspection;
     cl_engine_set_clcb_pre_scan;
     cl_engine_set_clcb_post_scan;
     cl_engine_set_clcb_virus_found;
@@ -64,11 +63,13 @@ CLAMAV_PUBLIC {
 CLAMAV_0.104.0 {
   global:
     cl_engine_set_clcb_engine_compile_progress;
+    cl_engine_set_clcb_engine_free_progress;
     cl_engine_set_clcb_sigload_progress;
 } CLAMAV_PUBLIC;
 CLAMAV_1.0.0 {
   global:
     cl_cvdunpack;
+    cl_engine_set_clcb_file_inspection;
 } CLAMAV_0.104.0;
 CLAMAV_PRIVATE {
   global:
