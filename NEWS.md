@@ -289,7 +289,7 @@ ClamAV 0.105.0 includes the following improvements and changes.
   rustup update
   ```
 
-  Building ClamAV requires, at a minimum, Rust compiler version 1.56, as it
+  Building ClamAV requires, at a minimum, Rust compiler version 1.61, as it
   relies on features introduced in the Rust 2021 Edition.
 
   ClamAV's third-party Rust library dependencies are vendored into the release

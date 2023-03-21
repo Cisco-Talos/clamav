@@ -376,7 +376,7 @@ void findres(uint32_t by_type, uint32_t by_name, fmap_t *map, struct cli_exe_inf
         cli_dbgmsg("findres: Assumption Violated: Looking for version info when peinfo->offset != 0\n");
     }
 
-    res_rva = EC32(peinfo->dirs[2].VirtualAddress);
+    res_rva = peinfo->dirs[2].VirtualAddress;
 
     if (!(resdir = fmap_need_off_once(map, cli_rawaddr(res_rva, peinfo->sections, peinfo->nsections, &err, map->len, peinfo->hdr_size), 16)) || err)
         return;
@@ -3259,7 +3259,7 @@ int cli_scanpe(cli_ctx *ctx)
                 cli_exe_info_destroy(peinfo);
                 return CL_EMEM;
             } else {
-                cli_parseres_special(EC32(peinfo->dirs[2].VirtualAddress), EC32(peinfo->dirs[2].VirtualAddress), map, peinfo, fsize, 0, 0, &m, stats);
+                cli_parseres_special(peinfo->dirs[2].VirtualAddress, peinfo->dirs[2].VirtualAddress, map, peinfo, fsize, 0, 0, &m, stats);
                 if ((ret = cli_detect_swizz(stats)) == CL_VIRUS) {
                     ret = cli_append_potentially_unwanted(ctx, "Heuristics.Trojan.Swizzor.Gen");
                     if (ret != CL_SUCCESS) {
@@ -4041,7 +4041,7 @@ int cli_scanpe(cli_ctx *ctx)
 #endif
 
             CLI_UNPTEMP("cli_scanpe: Petite", (dest, 0));
-            CLI_UNPRESULTS("Petite", (petite_inflate2x_1to9(dest, peinfo->min, peinfo->max - peinfo->min, peinfo->sections, peinfo->nsections - (found == 1 ? 1 : 0), EC32(peinfo->pe_opt.opt32.ImageBase), peinfo->vep, ndesc, found, EC32(peinfo->dirs[2].VirtualAddress), EC32(peinfo->dirs[2].Size))), 0, (dest, 0));
+            CLI_UNPRESULTS("Petite", (petite_inflate2x_1to9(dest, peinfo->min, peinfo->max - peinfo->min, peinfo->sections, peinfo->nsections - (found == 1 ? 1 : 0), EC32(peinfo->pe_opt.opt32.ImageBase), peinfo->vep, ndesc, found, peinfo->dirs[2].VirtualAddress, peinfo->dirs[2].Size)), 0, (dest, 0));
         }
     }
 
@@ -5043,6 +5043,14 @@ cl_error_t cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts,
         cli_dbgmsg("cli_peheader: Can't read optional file header data dirs\n");
         goto done;
     }
+
+    for (i = 0; i < peinfo->ndatadirs; i++) {
+        struct pe_image_data_dir *dir = peinfo->dirs;
+
+        dir[i].VirtualAddress = EC32(dir[i].VirtualAddress);
+        dir[i].Size           = EC32(dir[i].Size);
+    }
+
     at += data_dirs_size;
 
     if (opt_hdr_size != (stored_opt_hdr_size + data_dirs_size)) {
@@ -5295,7 +5303,7 @@ cl_error_t cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts,
     if (is_dll || peinfo->ndatadirs < 3 || !peinfo->dirs[2].Size)
         peinfo->res_addr = 0;
     else
-        peinfo->res_addr = EC32(peinfo->dirs[2].VirtualAddress);
+        peinfo->res_addr = peinfo->dirs[2].VirtualAddress;
 
     while (opts & CLI_PEHEADER_OPT_EXTRACT_VINFO &&
            peinfo->ndatadirs >= 3 && peinfo->dirs[2].Size) {
@@ -5557,8 +5565,8 @@ cl_error_t cli_check_auth_header(cli_ctx *ctx, struct cli_exe_info *peinfo)
         }
     }
 
-    sec_dir_offset = EC32(peinfo->dirs[4].VirtualAddress);
-    sec_dir_size   = EC32(peinfo->dirs[4].Size);
+    sec_dir_offset = peinfo->dirs[4].VirtualAddress;
+    sec_dir_size   = peinfo->dirs[4].Size;
 
     // As an optimization, check the security DataDirectory here and if
     // it's less than 8-bytes (and we aren't relying on this code to compute
