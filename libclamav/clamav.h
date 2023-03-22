@@ -1132,6 +1132,18 @@ extern void cl_cvdfree(struct cl_cvd *cvd);
  */
 extern cl_error_t cl_cvdunpack(const char *file, const char *dir, bool dont_verify);
 
+/**
+ * @brief Retrieve the age of CVD disk data.
+ *
+ * Will retrieve the age of the youngest file in a database directory,
+ * or the age of a single CVD (or CLD) file.
+ *
+ * @param path          Filepath of CVD directory or file.
+ * @param age_seconds   Age of the directory or file.
+ * @return cl_error_t   CL_SUCCESS if success, else a CL_E* error code.
+ */
+extern cl_error_t cl_cvdgetage(const char *path, time_t *age_seconds);
+
 /* ----------------------------------------------------------------------------
  * DB directory stat functions.
  * Use these functions to watch for database changes.

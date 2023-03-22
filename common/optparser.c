@@ -200,6 +200,7 @@ const struct clam_option __clam_options[] = {
     {NULL, "no-trace-showsource", 's', CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMBC, "Don't show source line during tracing", ""},
 
     {NULL, "archive-verbose", 'a', CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN, "", ""},
+    {NULL, "fail-if-cvd-older-than", 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, -1, NULL, 0, OPT_CLAMSCAN, "", ""},
 
 #ifdef _WIN32
     {NULL, "install-service", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM, "", ""},

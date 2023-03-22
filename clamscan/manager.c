@@ -1258,6 +1258,13 @@ int scanmanager(const struct optstruct *opts)
 
     if ((opt = optget(opts, "database"))->active) {
         while (opt) {
+            if (optget(opts, "fail-if-cvd-older-than")->enabled) {
+                if (check_if_cvd_outdated(opt->strarg, optget(opts, "fail-if-cvd-older-than")->numarg) != CL_SUCCESS) {
+                    ret = 2;
+                    goto done;
+                }
+            }
+
             if ((ret = cl_load(opt->strarg, engine, &info.sigs, dboptions))) {
                 logg(LOGG_ERROR, "%s\n", cl_strerror(ret));
 
@@ -1269,6 +1276,13 @@ int scanmanager(const struct optstruct *opts)
         }
     } else {
         char *dbdir = freshdbdir();
+
+        if (optget(opts, "fail-if-cvd-older-than")->enabled) {
+            if (check_if_cvd_outdated(dbdir, optget(opts, "fail-if-cvd-older-than")->numarg) != CL_SUCCESS) {
+                ret = 2;
+                goto done;
+            }
+        }
 
         if ((ret = cl_load(dbdir, engine, &info.sigs, dboptions))) {
             logg(LOGG_ERROR, "%s\n", cl_strerror(ret));

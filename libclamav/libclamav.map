@@ -4,6 +4,7 @@ CLAMAV_PUBLIC {
     cl_cvdhead;
     cl_cvdparse;
     cl_cvdverify;
+    cl_cvdgetage;
     cl_debug;
     cl_init;
     cl_engine_new;
