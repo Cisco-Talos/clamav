@@ -120,3 +120,6 @@ option(ENABLE_SYSTEMD
 #  Rust Targets:  https://doc.rust-lang.org/nightly/rustc/platform-support.html
 option(RUST_COMPILER_TARGET
     "Use a custom target triple to build the Rust components. Needed for cross-compiling.")
+
+option(DO_NOT_SET_RPATH
+    "Don't set the RPATH on UNIX systems.")
