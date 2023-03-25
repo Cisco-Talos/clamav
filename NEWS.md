@@ -18,6 +18,31 @@ ClamAV 1.1.0 includes the following improvements and changes.
 Special thanks to the following people for code contributions and bug reports:
 
 
+## 1.0.1
+
+ClamAV 1.0.1 is a critical patch release with the following fixes:
+
+- [CVE-2023-20032](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2023-20032):
+  Fixed a possible remote code execution vulnerability in the HFS+ file parser.
+  Issue affects versions 1.0.0 and earlier, 0.105.1 and earlier, and 0.103.7 and
+  earlier.
+  Thank you to Simon Scannell for reporting this issue.
+
+- [CVE-2023-20052](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2023-20052):
+  Fixed a possible remote information leak vulnerability in the DMG file parser.
+  Issue affects versions 1.0.0 and earlier, 0.105.1 and earlier, and 0.103.7 and
+  earlier.
+  Thank you to Simon Scannell for reporting this issue.
+
+- Fix allmatch detection issue with the preclass bytecode hook.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/825
+
+- Update vendored libmspack library to version 0.11alpha.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/828
+
+Special thanks to the following people for code contributions and bug reports:
+- Simon Scannell
+
 ## 1.0.0
 
 ClamAV 1.0.0 includes the following improvements and changes.
@@ -251,6 +276,39 @@ Special thanks to the following people for code contributions and bug reports:
 - monkz
 - teoberi
 - TerminalFi
+
+## 0.105.2
+
+ClamAV 0.105.2 is a critical patch release with the following fixes:
+
+- [CVE-2023-20032](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2023-20032):
+  Fixed a possible remote code execution vulnerability in the HFS+ file parser.
+  Issue affects versions 1.0.0 and earlier, 0.105.1 and earlier, and 0.103.7 and
+  earlier.
+  Thank you to Simon Scannell for reporting this issue.
+
+- [CVE-2023-20052](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2023-20052):
+  Fixed a possible remote information leak vulnerability in the DMG file parser.
+  Issue affects versions 1.0.0 and earlier, 0.105.1 and earlier, and 0.103.7 and
+  earlier.
+  Thank you to Simon Scannell for reporting this issue.
+
+- Fixed an issue loading Yara rules containing regex strings with an escaped
+  forward-slash (`\/`) followed by a colon (`:`).
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/695
+
+- Moved the ClamAV Docker files for building containers to a new Git repository.
+  The Docker files are now in https://github.com/Cisco-Talos/clamav-docker.
+  This change enables us to fix issues with the images and with the supporting
+  scripts used to publish and update the images without committing changes
+  directly to files in the ClamAV release branches.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/765
+
+- Update vendored libmspack library to version 0.11alpha.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/829
+
+Special thanks to the following people for code contributions and bug reports:
+- Simon Scannell
 
 ## 0.105.1
 
@@ -905,6 +963,28 @@ The ClamAV team thanks the following individuals for their code submissions:
 - Tom Briden
 - Vasile Papp
 - Yasuhiro Kimura
+
+## 0.103.8
+
+ClamAV 0.103.8 is a critical patch release with the following fixes:
+
+- [CVE-2023-20032](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2023-20032):
+  Fixed a possible remote code execution vulnerability in the HFS+ file parser.
+  Issue affects versions 1.0.0 and earlier, 0.105.1 and earlier, and 0.103.7 and
+  earlier.
+  Thank you to Simon Scannell for reporting this issue.
+
+- [CVE-2023-20052](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2023-20052):
+  Fixed a possible remote information leak vulnerability in the DMG file parser.
+  Issue affects versions 1.0.0 and earlier, 0.105.1 and earlier, and 0.103.7 and
+  earlier.
+  Thank you to Simon Scannell for reporting this issue.
+
+- Update vendored libmspack library to version 0.11alpha.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/830
+
+Special thanks to the following people for code contributions and bug reports:
+- Simon Scannell
 
 ## 0.103.7
 
