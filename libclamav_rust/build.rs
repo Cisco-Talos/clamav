@@ -63,6 +63,7 @@ const BINDGEN_HEADERS: &[&str] = &[
     "../libclamav/matcher-ac.h",
     "../libclamav/others.h",
     "../libclamav/dsig.h",
+    "../libclamav/htmlnorm.h",
 ];
 
 // Find the required headers in these directories:
