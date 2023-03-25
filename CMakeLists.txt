@@ -19,7 +19,7 @@ cmake_policy(SET CMP0087 NEW) # support generator expressions in install(CODE) a
 #  For release candidate:     set(VERSION_SUFFIX "-rc")
 #  For release:               set(VERSION_SUFFIX "")
 string(TIMESTAMP TODAY "%Y%m%d")
-set(VERSION_SUFFIX "-devel-${TODAY}")
+set(VERSION_SUFFIX "-rc")
 
 project( ClamAV
          VERSION "1.1.0"
@@ -36,7 +36,7 @@ set(PACKAGE_URL       "https://www.clamav.net/")
 HexVersion(PACKAGE_VERSION_NUM ${PROJECT_VERSION_MAJOR} ${PROJECT_VERSION_MINOR} ${PROJECT_VERSION_PATCH})
 
 # libtool library versioning rules: http://www.gnu.org/software/libtool/manual/html_node/Updating-version-info.html
-set(LIBCLAMAV_CURRENT  11)
+set(LIBCLAMAV_CURRENT  12)
 set(LIBCLAMAV_REVISION 0)
 set(LIBCLAMAV_AGE      0)
 
@@ -44,8 +44,8 @@ math(EXPR LIBCLAMAV_SOVERSION "${LIBCLAMAV_CURRENT} - ${LIBCLAMAV_AGE}")
 set(LIBCLAMAV_VERSION "${LIBCLAMAV_SOVERSION}.${LIBCLAMAV_AGE}.${LIBCLAMAV_REVISION}")
 HexVersion(LIBCLAMAV_VERSION_NUM ${LIBCLAMAV_CURRENT} ${LIBCLAMAV_REVISION} ${LIBCLAMAV_AGE})
 
-set(LIBFRESHCLAM_CURRENT  2)
-set(LIBFRESHCLAM_REVISION 2)
+set(LIBFRESHCLAM_CURRENT  3)
+set(LIBFRESHCLAM_REVISION 0)
 set(LIBFRESHCLAM_AGE      0)
 
 math(EXPR LIBFRESHCLAM_SOVERSION "${LIBFRESHCLAM_CURRENT} - ${LIBFRESHCLAM_AGE}")
