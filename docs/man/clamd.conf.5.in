@@ -102,6 +102,11 @@ Only load the official signatures published by the ClamAV project.
 .br
 Default: no
 .TP
+\fBFailIfCvdOlderThan NUMBER\fR
+Return with a nonzero error code if the virus database is older than the specified number of days.
+.br
+Default: -1
+.TP
 \fBLocalSocket STRING\fR
 Path to a local (Unix) socket the daemon will listen on.
 .br
