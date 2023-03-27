@@ -76,6 +76,11 @@ Example
 # Default: no
 #OfficialDatabaseOnly no
 
+# Return with a nonzero error code if the virus database is older than
+# the specified number of days.
+# Default: -1
+#FailIfCvdOlderThan 7
+
 # The daemon on Windows only supports unsecured TCP sockets.
 # Due to security reasons make sure that your IP & port is not
 # exposed to the open internet.
