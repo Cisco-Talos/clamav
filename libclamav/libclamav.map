@@ -71,6 +71,10 @@ CLAMAV_1.0.0 {
     cl_cvdunpack;
     cl_engine_set_clcb_file_inspection;
 } CLAMAV_0.104.0;
+CLAMAV_1.1.0 {
+  global:
+    cl_cvdgetage;
+} CLAMAV_1.0.0;
 CLAMAV_PRIVATE {
   global:
     cli_sigperf_print;

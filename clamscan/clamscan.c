@@ -255,6 +255,7 @@ void help(void)
     mprintf(LOGG_INFO, "                                         A JSON file will dropped to the temp directory if --leave-temps is enabled.\n");
     mprintf(LOGG_INFO, "    --database=FILE/DIR   -d FILE/DIR    Load virus database from FILE or load all supported db files from DIR\n");
     mprintf(LOGG_INFO, "    --official-db-only[=yes/no(*)]       Only load official signatures\n");
+    mprintf(LOGG_INFO, "    --fail-if-cvd-older-than=days        Return with a nonzero error code if virus database outdated.\n");
     mprintf(LOGG_INFO, "    --log=FILE            -l FILE        Save scan report to FILE\n");
     mprintf(LOGG_INFO, "    --recursive[=yes/no(*)]  -r          Scan subdirectories recursively\n");
     mprintf(LOGG_INFO, "    --allmatch[=yes/no(*)]   -z          Continue scanning within file after finding a match\n");

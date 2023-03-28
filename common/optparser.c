@@ -280,6 +280,8 @@ const struct clam_option __clam_options[] = {
 
     {"OfficialDatabaseOnly", "official-db-only", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Only load the official signatures published by the ClamAV project.", "no"},
 
+    {"FailIfCvdOlderThan", "fail-if-cvd-older-than", 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, -1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Return with a nonzero error code if the virus database is older than the specified number of days.", "-1"},
+
     {"YaraRules", "yara-rules", 0, CLOPT_TYPE_STRING, NULL, 0, NULL, 0, OPT_CLAMSCAN, "By default, yara rules will be loaded. This option allows you to exclude yara rules when scanning and also to scan only using yara rules. Valid options are yes|no|only", "yes"},
 
     {"LocalSocket", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMD, "Path to a local socket file the daemon will listen on.", "/tmp/clamd.socket"},
