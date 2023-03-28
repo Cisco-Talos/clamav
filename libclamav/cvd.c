@@ -842,7 +842,7 @@ cl_error_t cl_cvdgetage(const char *path, time_t *age_seconds)
     }
 
     while ((dent = readdir(dd))) {
-        char fname[1024] = {};
+        char fname[1024] = {0};
         time_t file_age;
 
         if (!dent->d_ino)
