@@ -536,6 +536,13 @@ Alert on raw DMG image files containing partition intersections.
 .br
 Default: no
 .TP
+\fBDisableCache\fR
+This option allows you to disable the caching feature of the engine.
+.br
+By default, the engine will store an MD5 in a cache of any files that are not flagged as virus or that hit limits checks. \fBWarning: Disabling the cache will have a negative performance impact on large scans.\fR
+.br
+Default: no
+.TP
 \fBForceToDisk\fR
 This option causes memory or nested map scans to dump the content to disk.
 .br
