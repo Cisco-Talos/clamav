@@ -71,6 +71,7 @@ node('master') {
 
         dir(path: 'build') {
             sh """# CPack
+                cargo update
                 cmake .. -D VENDOR_DEPENDENCIES=ON
                 cpack --config CPackSourceConfig.cmake """
             archiveArtifacts(artifacts: "clamav-${params.VERSION}*.tar.gz", onlyIfSuccessful: true)
