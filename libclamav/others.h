@@ -327,6 +327,7 @@ struct cl_engine {
     char *tmpdir;
     uint32_t keeptmp;
     uint64_t engine_options;
+    uint32_t cache_size;
 
     /* Limits */
     uint32_t maxscantime;         /* Time limit (in milliseconds) */
@@ -492,6 +493,7 @@ struct cl_settings {
     enum bytecode_mode bytecode_mode;
     char *pua_cats;
     uint64_t engine_options;
+    uint32_t cache_size;
 
     /* callbacks */
     clcb_pre_cache cb_pre_cache;

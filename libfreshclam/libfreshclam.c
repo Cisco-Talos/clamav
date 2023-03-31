@@ -432,6 +432,10 @@ fc_error_t fc_test_database(const char *dbFilename, int bBytecodeEnabled)
         goto done;
     }
 
+    // Disable cache as testing the database doesn't need caching,
+    // having cache will only waste time and memory.
+    engine->engine_options |= ENGINE_OPTIONS_DISABLE_CACHE;
+
     cl_engine_set_clcb_stats_submit(engine, NULL);
 
     if (CL_SUCCESS != (cl_ret = cl_load(

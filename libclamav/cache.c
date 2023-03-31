@@ -31,30 +31,26 @@
 #include "mpool.h"
 #include "clamav.h"
 #include "cache.h"
+#include "math.h"
 #include "fmap.h"
 
 #include "clamav_rust.h"
 
-/* The number of root trees and the chooser function
+/* The chooser function
    Each tree is protected by a mutex against concurrent access */
-/* #define TREES 1 */
-/* static inline unsigned int getkey(uint8_t *hash) { return 0; } */
-#define TREES 256
-static inline unsigned int getkey(uint8_t *hash)
+static inline unsigned int getkey(uint8_t *hash, size_t trees)
 {
     if (hash) {
-        return *hash;
+        // Take the first two bytes (16 bits) of the hash, which total to 65536 values,
+        // and modulus that by the number of trees desired.
+        // As long as trees < 65536, and the hash is uniformly distributed,
+        // the resulting key will be a good value to use a bucket identifier
+        // for evenly placing values.
+        return (hash[0] | (((unsigned int)hash[1]) << 8)) % trees;
     }
 
     return 0;
 }
-/* #define TREES 4096 */
-/* static inline unsigned int getkey(uint8_t *hash) { return hash[0] | ((unsigned int)(hash[1] & 0xf)<<8) ; } */
-/* #define TREES 65536 */
-/* static inline unsigned int getkey(uint8_t *hash) { return hash[0] | (((unsigned int)hash[1])<<8) ; } */
-
-/* The number of nodes in each tree */
-#define NODES 256
 
 /* SPLAY --------------------------------------------------------------------- */
 struct node { /* a node */
@@ -77,13 +73,15 @@ struct cache_set { /* a tree */
 
 struct CACHE {
     struct cache_set cacheset;
+    uint32_t trees;
+    uint32_t nodes_per_tree;
 #ifdef CL_THREAD_SAFE
     pthread_mutex_t mutex;
 #endif
 };
 
 /* Allocates all the nodes and sets up the replacement chain */
-static int cacheset_init(struct cache_set *cs, mpool_t *mempool)
+static int cacheset_init(struct cache_set *cs, mpool_t *mempool, uint32_t nodes_per_tree)
 {
     unsigned int i;
 
@@ -91,19 +89,19 @@ static int cacheset_init(struct cache_set *cs, mpool_t *mempool)
     UNUSEDPARAM(mempool);
 #endif
 
-    cs->data = MPOOL_CALLOC(mempool, NODES, sizeof(*cs->data));
+    cs->data = MPOOL_CALLOC(mempool, nodes_per_tree, sizeof(*cs->data));
     cs->root = NULL;
 
     if (!cs->data)
         return 1;
 
-    for (i = 1; i < NODES; i++) {
+    for (i = 1; i < nodes_per_tree; i++) {
         cs->data[i - 1].next = &cs->data[i];
         cs->data[i].prev     = &cs->data[i - 1];
     }
 
     cs->first = cs->data;
-    cs->last  = &cs->data[NODES - 1];
+    cs->last  = &cs->data[nodes_per_tree - 1];
 
     return 0;
 }
@@ -540,7 +538,7 @@ static int cache_lookup_hash(unsigned char *md5, size_t len, struct CACHE *cache
         return ret;
     }
 
-    key = getkey(md5);
+    key = getkey(md5, cache->trees);
 
     c = &cache[key];
 
@@ -575,12 +573,24 @@ int clean_cache_init(struct cl_engine *engine)
         return 0;
     }
 
-    if (!(cache = MPOOL_MALLOC(engine->mempool, sizeof(struct CACHE) * TREES))) {
+    // The user requested the cache size to be engine->cache_size
+    // The nodes within each tree are locked together, so having one tree would result in excessive lock contention.
+    // However, having too many trees is inefficient.
+    // A good balance is to have trees and nodes per tree be equal, which is done by using the sqrt of the user request cache size.
+    const uint32_t trees          = ceil(sqrt(engine->cache_size));
+    const uint32_t nodes_per_tree = ceil(sqrt(engine->cache_size));
+
+    cli_dbgmsg("clean_cache_init: Requested cache size: %d. Actual cache size: %d. Trees: %d. Nodes per tree: %d.\n", engine->cache_size, trees * nodes_per_tree, trees, nodes_per_tree);
+
+    if (!(cache = MPOOL_MALLOC(engine->mempool, sizeof(struct CACHE) * trees))) {
         cli_errmsg("clean_cache_init: mpool malloc fail\n");
         return 1;
     }
 
-    for (i = 0; i < TREES; i++) {
+    cache->trees          = trees;
+    cache->nodes_per_tree = nodes_per_tree;
+
+    for (i = 0; i < trees; i++) {
 #ifdef CL_THREAD_SAFE
         if (pthread_mutex_init(&cache[i].mutex, NULL)) {
             cli_errmsg("clean_cache_init: mutex init fail\n");
@@ -590,7 +600,7 @@ int clean_cache_init(struct cl_engine *engine)
             return 1;
         }
 #endif
-        if (cacheset_init(&cache[i].cacheset, engine->mempool)) {
+        if (cacheset_init(&cache[i].cacheset, engine->mempool, cache->nodes_per_tree)) {
             for (j = 0; j < i; j++) cacheset_destroy(&cache[j].cacheset, engine->mempool);
 #ifdef CL_THREAD_SAFE
             for (j = 0; j <= i; j++) pthread_mutex_destroy(&cache[j].mutex);
@@ -615,7 +625,7 @@ void clean_cache_destroy(struct cl_engine *engine)
         return;
     }
 
-    for (i = 0; i < TREES; i++) {
+    for (i = 0; i < cache->trees; i++) {
         cacheset_destroy(&cache[i].cacheset, engine->mempool);
 #ifdef CL_THREAD_SAFE
         pthread_mutex_destroy(&cache[i].mutex);
@@ -667,7 +677,7 @@ void clean_cache_add(unsigned char *md5, size_t size, cli_ctx *ctx)
 
     level = (ctx->fmap && ctx->fmap->dont_cache_flag) ? ctx->recursion_level : 0;
 
-    key = getkey(md5);
+    key = getkey(md5, ctx->engine->cache->trees);
     c   = &ctx->engine->cache[key];
 
 #ifdef CL_THREAD_SAFE
@@ -709,7 +719,7 @@ void clean_cache_remove(unsigned char *md5, size_t size, const struct cl_engine 
         return;
     }
 
-    key = getkey(md5);
+    key = getkey(md5, engine->cache->trees);
 
     c = &engine->cache[key];
 #ifdef CL_THREAD_SAFE
