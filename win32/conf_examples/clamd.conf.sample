@@ -255,6 +255,11 @@ TCPAddr localhost
 # Default: no
 #DisableCache yes
 
+# This option allows you to set the number of entries the cache can store.
+# The value should be a square number or will be rounded up to the nearest
+# square number.
+#CacheSize 65536
+
 # In some cases (eg. complex malware, exploits in graphic files, and others),
 # ClamAV uses special algorithms to detect abnormal patterns and behaviors that
 # may be malicious.  This option enables alerting on such heuristically

@@ -301,6 +301,7 @@ enum cl_engine_field {
     CL_ENGINE_MAX_SCRIPTNORMALIZE, /* uint64_t */
     CL_ENGINE_MAX_ZIPTYPERCG,      /* uint64_t */
     CL_ENGINE_FORCETODISK,         /* uint32_t */
+    CL_ENGINE_CACHE_SIZE,          /* uint32_t */
     CL_ENGINE_DISABLE_CACHE,       /* uint32_t */
     CL_ENGINE_DISABLE_PE_STATS,    /* uint32_t */
     CL_ENGINE_STATS_TIMEOUT,       /* uint32_t */

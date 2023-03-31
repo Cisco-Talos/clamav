@@ -543,6 +543,11 @@ By default, the engine will store an MD5 in a cache of any files that are not fl
 .br
 Default: no
 .TP
+\fBCacheSize\fR
+This option allows you to set the number of entries the cache can store. The value should be a square number or will be rounded up to the nearest square number.
+.br
+Default: 65536
+.TP
 \fBForceToDisk\fR
 This option causes memory or nested map scans to dump the content to disk.
 .br

@@ -248,6 +248,8 @@ const struct clam_option __clam_options[] = {
     /* config file/cmdline options */
     {"AlertExceedsMax", "alert-exceeds-max", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "", ""},
 
+    {"CacheSize", "cache-size", 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, CLI_DEFAULT_CACHE_SIZE, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Number of entries the cache can store.", "65536"},
+
     {"PreludeEnable", "prelude-enable", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD, "Enable prelude", ""},
 
     {"PreludeAnalyzerName", "prelude-analyzer-name", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMD, "Name of the analyzer as seen in prewikka", ""},

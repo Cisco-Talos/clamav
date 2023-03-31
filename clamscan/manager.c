@@ -1116,6 +1116,8 @@ int scanmanager(const struct optstruct *opts)
 #endif
     }
 
+    if ((opt = optget(opts, "cache-size"))->enabled)
+        cl_engine_set_num(engine, CL_ENGINE_CACHE_SIZE, opt->numarg);
     if (optget(opts, "disable-cache")->enabled)
         cl_engine_set_num(engine, CL_ENGINE_DISABLE_CACHE, 1);
 

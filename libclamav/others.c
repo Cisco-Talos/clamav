@@ -473,6 +473,7 @@ struct cl_engine *cl_engine_new(void)
     new->maxhtmlnotags      = CLI_DEFAULT_MAXHTMLNOTAGS;
     new->maxscriptnormalize = CLI_DEFAULT_MAXSCRIPTNORMALIZE;
     new->maxziptypercg      = CLI_DEFAULT_MAXZIPTYPERCG;
+    new->cache_size         = CLI_DEFAULT_CACHE_SIZE;
 
     new->bytecode_security = CL_BYTECODE_TRUST_SIGNED;
     /* 5 seconds timeout */
@@ -730,6 +731,11 @@ cl_error_t cl_engine_set_num(struct cl_engine *engine, enum cl_engine_field fiel
                     clean_cache_init(engine);
             }
             break;
+        case CL_ENGINE_CACHE_SIZE:
+            if (num) {
+                engine->cache_size = (uint32_t)num;
+            }
+            break;
         case CL_ENGINE_DISABLE_PE_STATS:
             if (num) {
                 engine->engine_options |= ENGINE_OPTIONS_DISABLE_PE_STATS;
@@ -846,6 +852,8 @@ long long cl_engine_get_num(const struct cl_engine *engine, enum cl_engine_field
             return engine->bytecode_mode;
         case CL_ENGINE_DISABLE_CACHE:
             return engine->engine_options & ENGINE_OPTIONS_DISABLE_CACHE;
+        case CL_ENGINE_CACHE_SIZE:
+            return engine->cache_size;
         case CL_ENGINE_STATS_TIMEOUT:
             return ((cli_intel_t *)(engine->stats_data))->timeout;
         case CL_ENGINE_MAX_PARTITIONS:
@@ -976,6 +984,7 @@ struct cl_settings *cl_engine_settings_copy(const struct cl_engine *engine)
     settings->cb_meta                        = engine->cb_meta;
     settings->cb_file_props                  = engine->cb_file_props;
     settings->engine_options                 = engine->engine_options;
+    settings->cache_size                     = engine->cache_size;
 
     settings->cb_stats_add_sample      = engine->cb_stats_add_sample;
     settings->cb_stats_remove_sample   = engine->cb_stats_remove_sample;
@@ -1020,6 +1029,7 @@ cl_error_t cl_engine_settings_apply(struct cl_engine *engine, const struct cl_se
     engine->bytecode_timeout    = settings->bytecode_timeout;
     engine->bytecode_mode       = settings->bytecode_mode;
     engine->engine_options      = settings->engine_options;
+    engine->cache_size          = settings->cache_size;
 
     if (engine->tmpdir)
         MPOOL_FREE(engine->mempool, engine->tmpdir);
