@@ -803,10 +803,6 @@ cl_error_t cli_scan_desc(int desc, cli_ctx *ctx, cli_file_t ftype, bool filetype
 
     status = cli_scan_fmap(ctx, ftype, filetype_only, ftoffset, acmode, acres, NULL);
 
-    map->dont_cache_flag = ctx->fmap->dont_cache_flag; /* Set the parent layer's "don't cache" flag to match the child.
-                                                          TODO: This may not be needed since `emax_reached()` should've
-                                                          already done that for us. */
-
     (void)cli_recursion_stack_pop(ctx); /* Restore the parent fmap */
 
 done:
