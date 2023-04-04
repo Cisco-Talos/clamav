@@ -11,14 +11,25 @@ ExecStart=@prefix@/sbin/clamd --foreground=true
 # Reload the database
 ExecReload=/bin/kill -USR2 $MAINPID
 TimeoutStartSec=420
-# Security options
-# Remove ProtectSystem, ProtectHome, and ReadWritePaths..
-# if you want clamav to be able to remove infected files.
+
+##
+## Security Hardening Options
+##
+
+# Remove `ProtectSystem`, `ProtectHome`, and `ReadWritePaths`
+# if you want ClamAV to be able to remove infected files.
 ProtectSystem=strict
 ProtectHome=read-only
 ReadWritePaths=/var/log/
+
 NoExecPaths=/
+# If you want to run commands or execute binaries on event,
+# append the full path of the binary or executable to `ExecPaths`
+# Commonly, this is used for `VirusEvent` in clamd.conf or `VirusAction`
+# in clamav-milter.conf.The binaries must be space separated like so:
+;ExecPaths=@prefix@/sbin/clamd /bin/kill /usr/local/bin/send_sms /usr/local/bin/my_infected_message_handler
 ExecPaths=@prefix@/sbin/clamd /bin/kill
+
 ProtectClock=yes
 ProtectKernelTunables=yes
 ProtectKernelModules=yes

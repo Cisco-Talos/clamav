@@ -218,6 +218,9 @@ Example
 # be replaced with the virus name and %f will be replaced with the file name.
 # Additionally, two environment variables will be defined: $CLAM_VIRUSEVENT_FILENAME
 # and $CLAM_VIRUSEVENT_VIRUSNAME.
+# Note: When using systemd to manage ClamAV daemon, ensure that the full path to
+#   the VirusEvent target binary / executable is listed in ExecPaths in the service
+#   file clamav-daemon.service in order for the process to be able to execute it.
 # Default: no
 #VirusEvent /usr/local/bin/send_sms 123456789 "VIRUS ALERT: %v in %f"
 
