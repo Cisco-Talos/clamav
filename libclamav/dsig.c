@@ -331,7 +331,8 @@ done:
 #define BLK_LEN (PAD_LEN - HASH_LEN - 1)
 int cli_versig2(const unsigned char *sha256, const char *dsig_str, const char *n_str, const char *e_str)
 {
-    unsigned char *decoded, digest1[HASH_LEN], digest2[HASH_LEN], digest3[HASH_LEN], *salt;
+    unsigned char *decoded = NULL;
+    unsigned char digest1[HASH_LEN], digest2[HASH_LEN], digest3[HASH_LEN], *salt;
     unsigned char mask[BLK_LEN], data[BLK_LEN], final[8 + 2 * HASH_LEN], c[4];
     unsigned int i, rounds;
     void *ctx;
@@ -360,8 +361,8 @@ int cli_versig2(const unsigned char *sha256, const char *dsig_str, const char *n
     }
 
     if (decoded[PAD_LEN - 1] != 0xbc) {
-        free(decoded);
         ret = CL_EVERIFY;
+        goto done;
     }
     BN_free(n);
     BN_free(e);
@@ -372,6 +373,7 @@ int cli_versig2(const unsigned char *sha256, const char *dsig_str, const char *n
     memcpy(mask, decoded, BLK_LEN);
     memcpy(digest2, &decoded[BLK_LEN], HASH_LEN);
     free(decoded);
+    decoded = NULL;
 
     c[0] = c[1] = 0;
     rounds      = (BLK_LEN + HASH_LEN - 1) / HASH_LEN;
@@ -417,6 +419,7 @@ int cli_versig2(const unsigned char *sha256, const char *dsig_str, const char *n
     return memcmp(digest1, digest2, HASH_LEN) ? CL_EVERIFY : CL_SUCCESS;
 
 done:
+    free(decoded);
     BN_free(n);
     BN_free(e);
     return ret;
