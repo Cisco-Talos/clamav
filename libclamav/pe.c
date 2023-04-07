@@ -5045,10 +5045,14 @@ cl_error_t cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts,
     }
 
     for (i = 0; i < peinfo->ndatadirs; i++) {
+        uint32_t tmp;
         struct pe_image_data_dir *dir = peinfo->dirs;
 
-        dir[i].VirtualAddress = EC32(dir[i].VirtualAddress);
-        dir[i].Size           = EC32(dir[i].Size);
+        tmp                   = EC32(dir[i].VirtualAddress);
+        dir[i].VirtualAddress = tmp;
+
+        tmp         = EC32(dir[i].Size);
+        dir[i].Size = tmp;
     }
 
     at += data_dirs_size;
