@@ -434,6 +434,143 @@ done:
     return status;
 }
 
+static cli_ctx *convenience_ctx(int fd)
+{
+    cl_error_t status        = CL_EMEM;
+    cli_ctx *ctx             = NULL;
+    struct cl_engine *engine = NULL;
+    cl_fmap_t *new_map       = NULL;
+
+    /* build engine */
+    engine = cl_engine_new();
+    if (NULL == engine) {
+        printf("convenience_ctx: engine initialization failed\n");
+        goto done;
+    }
+
+    cl_engine_set_num(engine, CL_ENGINE_AC_ONLY, 1);
+
+    if (cli_initroots(engine, 0) != CL_SUCCESS) {
+        printf("convenience_ctx: cli_initroots() failed\n");
+        goto done;
+    }
+
+    if (cli_add_content_match_pattern(engine->root[0], "test", "deadbeef", 0, 0, 0, "*", NULL, 0) != CL_SUCCESS) {
+        printf("convenience_ctx: Can't parse signature\n");
+        goto done;
+    }
+
+    if (CL_SUCCESS != cl_engine_compile(engine)) {
+        printf("convenience_ctx: failed to compile engine.");
+        goto done;
+    }
+
+    /* fake input fmap */
+    new_map = fmap(fd, 0, 0, NULL);
+    if (NULL == new_map) {
+        printf("convenience_ctx: fmap failed\n");
+        goto done;
+    }
+
+    /* prepare context */
+    ctx = cli_calloc(1, sizeof(cli_ctx));
+    if (!ctx) {
+        printf("convenience_ctx: ctx allocation failed\n");
+        goto done;
+    }
+
+    ctx->engine = (const struct cl_engine *)engine;
+
+    ctx->evidence = evidence_new();
+
+    ctx->dconf = (struct cli_dconf *)engine->dconf;
+
+    ctx->recursion_stack_size = ctx->engine->max_recursion_level;
+    ctx->recursion_stack      = cli_calloc(sizeof(recursion_level_t), ctx->recursion_stack_size);
+    if (!ctx->recursion_stack) {
+        status = CL_EMEM;
+        goto done;
+    }
+
+    // ctx was calloc'd, so recursion_level starts at 0.
+    ctx->recursion_stack[ctx->recursion_level].fmap = new_map;
+    ctx->recursion_stack[ctx->recursion_level].type = CL_TYPE_ANY; // ANY for the top level, because we don't yet know the type.
+    ctx->recursion_stack[ctx->recursion_level].size = new_map->len;
+
+    ctx->fmap = ctx->recursion_stack[ctx->recursion_level].fmap;
+
+    ctx->options = cli_calloc(1, sizeof(struct cl_scan_options));
+    if (!ctx->options) {
+        printf("convenience_ctx: scan options allocation failed\n");
+        goto done;
+    }
+    ctx->options->general |= CL_SCAN_GENERAL_HEURISTICS;
+    ctx->options->parse = ~(0);
+
+    status = CL_SUCCESS;
+
+done:
+    if (CL_SUCCESS != status) {
+        if (NULL != new_map) {
+            funmap(new_map);
+        }
+        if (NULL != ctx) {
+            if (NULL != ctx->options) {
+                free(ctx->options);
+            }
+            if (NULL != ctx->recursion_stack) {
+                free(ctx->recursion_stack);
+            }
+            free(ctx);
+            ctx = NULL;
+        }
+        if (NULL != engine) {
+            cl_engine_free(engine);
+        }
+    }
+
+    return ctx;
+}
+
+static void destroy_ctx(cli_ctx *ctx)
+{
+    if (NULL != ctx) {
+        if (NULL != ctx->recursion_stack) {
+            /* Clean up any fmaps */
+            while (ctx->recursion_level > 0) {
+                if (NULL != ctx->recursion_stack[ctx->recursion_level].fmap) {
+                    funmap(ctx->recursion_stack[ctx->recursion_level].fmap);
+                    ctx->recursion_stack[ctx->recursion_level].fmap = NULL;
+                }
+                ctx->recursion_level -= 1;
+            }
+            if (NULL != ctx->recursion_stack[0].fmap) {
+                funmap(ctx->recursion_stack[0].fmap);
+                ctx->recursion_stack[0].fmap = NULL;
+            }
+
+            free(ctx->recursion_stack);
+            ctx->recursion_stack = NULL;
+        }
+
+        if (NULL != ctx->engine) {
+            cl_engine_free((struct cl_engine *)ctx->engine);
+            ctx->engine = NULL;
+        }
+
+        if (NULL != ctx->options) {
+            free(ctx->options);
+            ctx->options = NULL;
+        }
+
+        if (NULL != ctx->evidence) {
+            evidence_free(ctx->evidence);
+        }
+
+        free(ctx);
+    }
+}
+
 static int htmlnorm(const struct optstruct *opts)
 {
     int fd;
@@ -451,6 +588,8 @@ static int htmlnorm(const struct optstruct *opts)
         mprintf(LOGG_ERROR, "fmap failed\n");
 
     close(fd);
+
+    destroy_ctx(ctx);
 
     return 0;
 }
