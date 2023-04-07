@@ -2045,6 +2045,10 @@ done:
         free(fullname);
     }
 
+    if (fd >= 0) {
+        close(fd);
+    }
+
     return status;
 }
 
