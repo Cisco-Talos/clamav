@@ -86,7 +86,7 @@ static unsigned char *cli_decodesig(const char *sig, unsigned int plen, BIGNUM *
     int i, slen = strlen(sig), dec;
     unsigned char *plain = NULL, *ret_sig = NULL;
     BIGNUM *r = NULL, *p = NULL, *c = NULL;
-    BN_CTX *bn_ctx;
+    BN_CTX *bn_ctx = NULL;
     unsigned int bn_bytes;
     ;
 
