@@ -323,7 +323,7 @@ enum badness {
 };
 static inline void get_score(enum badness badness, unsigned i, const struct filter *m, const struct char_spec *spec0, const struct char_spec *spec1, int32_t *score, int32_t *score_end)
 {
-    int32_t base;
+    int32_t base = 0;
     unsigned k0, k1, num_introduced = 0, num_end_introduced = 0;
     switch (badness) {
         case reject:
