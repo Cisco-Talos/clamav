@@ -394,11 +394,11 @@ static cl_error_t crtmgr_get_recov_data(BIGNUM *sig, cli_crt *x509,
                                         uint8_t **buffer, uint8_t **payload,
                                         int *payload_len)
 {
-    BN_CTX *bnctx;
+    BN_CTX *bnctx = NULL;
     int pad_size;
     int keylen;
-    uint8_t *d;
-    BIGNUM *x;
+    uint8_t *d = NULL;
+    BIGNUM *x = NULL;
     cl_error_t ret;
 
     *buffer      = NULL;
