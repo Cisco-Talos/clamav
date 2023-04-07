@@ -142,7 +142,7 @@ void cl_set_clcb_msg(clcb_msg callback)
     va_list args;                                         \
     size_t len = sizeof(x) - 1;                           \
     char buff[MSGBUFSIZ];                                 \
-    strncpy(buff, x, len);                                \
+    memcpy(buff, x, len);                                 \
     va_start(args, str);                                  \
     vsnprintf(buff + len, sizeof(buff) - len, str, args); \
     va_end(args)
