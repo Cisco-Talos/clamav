@@ -206,7 +206,7 @@ cl_error_t regex_list_match(struct regex_matcher *matcher, char *real_url, const
         return CL_EMEM;
     }
 
-    strncpy(buffer, real_url, real_len);
+    strncpy(buffer, real_url, buffer_len);
     buffer[real_len] = (!is_allow_list_lookup && hostOnly) ? '/' : ':';
 
     /*
@@ -215,7 +215,7 @@ cl_error_t regex_list_match(struct regex_matcher *matcher, char *real_url, const
      */
     if (!hostOnly || is_allow_list_lookup) {
         /* For all other PDB and WDB signatures concatenate Real:Displayed. */
-        strncpy(buffer + real_len + 1, display_url, display_len);
+        strncpy(buffer + real_len + 1, display_url, buffer_len - real_len);
     }
     buffer[buffer_len - 1] = '/';
     buffer[buffer_len]     = 0;

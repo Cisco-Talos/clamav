@@ -156,7 +156,6 @@ static int compare_state(const struct rtf_state* a, const struct rtf_state* b)
 static int push_state(struct stack* stack, struct rtf_state* state)
 {
     int toplevel;
-    size_t defelements;
 
     stack->elements++;
     if (compare_state(state, &base_state)) {
@@ -175,7 +174,6 @@ static int push_state(struct stack* stack, struct rtf_state* state)
     }
     stack->states[stack->stack_cnt++] = *state;
     toplevel                          = state->encounteredTopLevel;
-    defelements                       = state->default_elements;
 
     *state = base_state;
 

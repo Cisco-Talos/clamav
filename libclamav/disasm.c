@@ -1316,9 +1316,11 @@ static const uint8_t *disasm_x86(const uint8_t *command, unsigned int len, struc
                     switch (x87_st[table][rm].args) {
                         case X87_S:
                             reversed = 1;
+                            /* fall-through */
                         case X87_R:
                             s->args[reversed ^ 1].access = ACCESS_REG;
                             s->args[reversed ^ 1].reg    = X86_REG_ST0;
+                            /* fall-through */
                         case X87_ONE:
                             s->args[reversed].access = ACCESS_REG;
                             s->args[reversed].reg    = X86_REG_ST0 + (rm & 7);
@@ -1453,6 +1455,7 @@ static const uint8_t *disasm_x86(const uint8_t *command, unsigned int len, struc
                     case ADDR_MRM_GEN_CR:
                     case ADDR_MRM_GEN_DR:
                         reversed = 1;
+                        /* fall-through */
 
                     case ADDR_MRM_GEN_EG:
                     case ADDR_MRM_GEN_ES:
@@ -1500,8 +1503,10 @@ static const uint8_t *disasm_x86(const uint8_t *command, unsigned int len, struc
                                 break;
                             case SIZE_WD:
                                 s->args[reversed].size += (s->opsize == 0);
+                                /* fall-through */
                             case SIZE_WORD:
                                 s->args[reversed].size++;
+                                /* fall-through */
                             case SIZE_BYTE:
                                 break;
                             default:
@@ -1743,6 +1748,7 @@ const uint8_t *cli_disasm_one(const uint8_t *buff, unsigned int len,
                 break;
             case ACCESS_REG:
                 w->arg[i][1] = s.args[i].reg;
+                /* fall-through */
             default:
                 cli_writeint32(&w->arg[i][2], s.args[i].arg.q);
                 cli_writeint32(&w->arg[i][6], s.args[i].arg.q >> 32);

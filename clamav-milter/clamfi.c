@@ -61,7 +61,7 @@ static sfsistat (*InfectedAction)(SMFICTX *ctx);
 static char *rejectfmt = NULL;
 
 int addxvirus = 0; /* 0 - don't add | 1 - replace | 2 - add */
-char xvirushdr[255];
+char xvirushdr[300];
 char *viraction = NULL;
 int multircpt   = 1;
 

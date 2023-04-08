@@ -1,12 +1,12 @@
 /*
  * This file is a part of the zlib compression module for NSIS.
- * 
+ *
  * Copyright and license information can be found below.
  * Modifications Copyright (C) 1999-2007 Nullsoft and Contributors
- * 
+ *
  * The original zlib source code is available at
  * http://www.zlib.net/
- * 
+ *
  * This software is provided 'as-is', without any express or implied
  * warranty.
  */
@@ -382,7 +382,7 @@ int ZEXPORT nsis_inflate(nsis_z_streamp z)
             {
               int _k;              /* temporary variable */
               uInt f = 0;         /* number of hufts used in fixed_mem */
-              
+
               /* literal table */
               for (_k = 0; _k < 288; _k++)
               {
@@ -574,11 +574,14 @@ int ZEXPORT nsis_inflate(nsis_z_streamp z)
 #define f (_state.f)
 
     /* waiting for "i:"=input, "o:"=output, "x:"=nothing */
+    /* fall-through */
 
     case CODES_START:         /* x: set up for LEN */
       c->sub.code.need = c->lbits;
       c->sub.code.tree = c->ltree;
       s->mode = CODES_LEN;
+      /* fall-through */
+
     case CODES_LEN:           /* i: get length/literal/eob next */
       t = c->sub.code.need;
       NEEDBITS(t)
@@ -618,6 +621,8 @@ int ZEXPORT nsis_inflate(nsis_z_streamp z)
       c->sub.code.need = c->dbits;
       c->sub.code.tree = c->dtree;
       s->mode = CODES_DIST;
+      /* fall-through */
+
     case CODES_DIST:          /* i: get distance next */
       t = c->sub.code.need;
       NEEDBITS(t)
@@ -644,6 +649,8 @@ int ZEXPORT nsis_inflate(nsis_z_streamp z)
       c->sub.copy.dist += (uInt)b & (uInt)inflate_mask[t];
       DUMPBITS(t)
       s->mode = CODES_COPY;
+      /* fall-through */
+
     case CODES_COPY:          /* o: copying bytes in window, waiting for space */
       f = (uInt)(q - s->window) < c->sub.copy.dist ?
           s->end - (c->sub.copy.dist - (q - s->window)) :
@@ -665,7 +672,7 @@ int ZEXPORT nsis_inflate(nsis_z_streamp z)
       s->mode = CODES_START;
       break;
     case CODES_WASH:          /* o: got eob, possibly more output */
-      if (k > 7)        /* return unused byte, if any */
+      if (k > 7)
       {
         k -= 8;
         n++;
@@ -676,6 +683,7 @@ int ZEXPORT nsis_inflate(nsis_z_streamp z)
 #undef j
 #undef e
 #undef f
+      /* fall-through */
 
     case DRY:
       FLUSH
