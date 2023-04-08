@@ -264,7 +264,7 @@ static int string_assign_concatenated(struct string* dest, const char* prefix, c
         cli_errmsg("Phishcheck: Unable to allocate memory for string_assign_concatenated\n");
         return CL_EMEM;
     }
-    strncpy(ret, prefix, prefix_len);
+    strncpy(ret, prefix, prefix_len + end - begin + 1);
     strncpy(ret + prefix_len, begin, end - begin);
     ret[prefix_len + end - begin] = '\0';
     string_free(dest);

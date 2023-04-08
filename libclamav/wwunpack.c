@@ -150,9 +150,11 @@ cl_error_t wwunpack(uint8_t *exe, uint32_t exesz, uint8_t *wwsect, struct cli_ex
                 switch (bits) {
                     case 4: /* 10,11 */
                         backbytes++;
+                        /* fall-through */
                     case 3: /* 8,9 */
                         BIT;
                         backbytes += bits;
+                        /* fall-through */
                     case 0:
                     case 1:
                     case 2: /* 5,6,7 */

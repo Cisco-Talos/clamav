@@ -96,6 +96,10 @@ size_t text_normalize_buffer(struct text_norm_state *state, const unsigned char 
     const unsigned char *out_end = state->out + state->out_len;
     unsigned char *p             = state->out + state->out_pos;
 
+    if (NULL == buf) {
+        return 0;
+    }
+
     for (i = 0; i < buf_len && p < out_end; i++) {
         unsigned char c = buf[i];
         switch (char_action[c]) {

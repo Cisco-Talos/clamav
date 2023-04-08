@@ -758,7 +758,7 @@ static int writeinfo(const char *dbname, const char *builder, const char *header
 {
     FILE *fh;
     unsigned int i, bytes;
-    char file[32], *pt, dbfile[32];
+    char file[4096], *pt, dbfile[4096];
     unsigned char digest[32], buffer[FILEBUFF];
     void *ctx;
 
@@ -863,7 +863,7 @@ static int build(const struct optstruct *opts)
     STATBUF foo;
     unsigned char buffer[FILEBUFF];
     char *tarfile, header[513], smbuff[32], builder[33], *pt, olddb[512];
-    char patch[50], broken[57], dbname[32], dbfile[36];
+    char patch[50], broken[57], dbname[32], dbfile[4096];
     const char *newcvd, *localdbdir = NULL;
     struct cl_engine *engine;
     FILE *cvd, *fh;
@@ -2718,12 +2718,13 @@ static int decodehex(const char *hexsig)
     int asterisk = 0;
     unsigned int i, j, hexlen, dlen, parts = 0;
     int mindist = 0, maxdist = 0, error = 0;
+    ssize_t bytes_written;
 
     hexlen = strlen(hexsig);
     if ((wild = strchr(hexsig, '/'))) {
         /* ^offset:trigger-logic/regex/options$ */
         char *trigger, *regex, *regex_end, *cflags;
-        size_t tlen = wild - hexsig, rlen, clen;
+        size_t tlen = wild - hexsig, rlen = 0, clen;
 
         /* check for trigger */
         if (!tlen) {
@@ -2788,7 +2789,7 @@ static int decodehex(const char *hexsig)
         /* print components of regex subsig */
         mprintf(LOGG_INFO, "     +-> TRIGGER: %s\n", trigger);
         mprintf(LOGG_INFO, "     +-> REGEX: %s\n", regex);
-        mprintf(LOGG_INFO, "     +-> CFLAGS: %s\n", cflags);
+        mprintf(LOGG_INFO, "     +-> CFLAGS: %s\n", cflags != NULL ? cflags : "null");
 
         free(trigger);
         free(regex);
@@ -2844,7 +2845,10 @@ static int decodehex(const char *hexsig)
                 free(hexcpy);
                 return -1;
             }
-            (void)write(1, decoded, dlen);
+            bytes_written = write(1, decoded, dlen);
+            if (bytes_written != dlen) {
+                mprintf(LOGG_WARNING, "Failed to print all decoded bytes\n");
+            }
             free(decoded);
 
             if (i == parts)
@@ -2925,7 +2929,10 @@ static int decodehex(const char *hexsig)
                 free(pt);
                 return -1;
             }
-            (void)write(1, decoded, dlen);
+            bytes_written = write(1, decoded, dlen);
+            if (bytes_written != dlen) {
+                mprintf(LOGG_WARNING, "Failed to print all decoded bytes\n");
+            }
             free(decoded);
             if (i < parts)
                 mprintf(LOGG_INFO, "{WILDCARD_ANY_STRING}");
@@ -2937,7 +2944,10 @@ static int decodehex(const char *hexsig)
             mprintf(LOGG_ERROR, "Decoding failed\n");
             return -1;
         }
-        (void)write(1, decoded, dlen);
+        bytes_written = write(1, decoded, dlen);
+        if (bytes_written != dlen) {
+            mprintf(LOGG_WARNING, "Failed to print all decoded bytes\n");
+        }
         free(decoded);
     }
 

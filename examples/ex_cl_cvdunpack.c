@@ -41,21 +41,11 @@
  */
 int main(int argc, char **argv)
 {
-    int fd;
     cl_error_t ret;
 
     const char *filename;
     const char *destination_directory;
     bool dont_verify = false;
-
-    char dest_buff[1024];
-
-    unsigned long int size = 0;
-    unsigned int sigs      = 0;
-    long double mb;
-    const char *virname;
-    struct cl_engine *engine;
-    struct cl_scan_options options;
 
     switch (argc) {
         case 2:

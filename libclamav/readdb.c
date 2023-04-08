@@ -1193,6 +1193,7 @@ static int cli_chkpua(const char *signame, const char *pua_cats, unsigned int op
 {
     char cat[32], *cat_pt, *pt1, *pt2, *endsig;
     const char *sig;
+    size_t catlen;
     int ret;
 
     cli_dbgmsg("cli_chkpua: Checking signature [%s]\n", signame);
@@ -1219,9 +1220,15 @@ static int cli_chkpua(const char *signame, const char *pua_cats, unsigned int op
     }
 
     endsig = strrchr(sig, '.');
-    strncpy(cat, sig, strlen(sig) - strlen(endsig) + 1);
-    cat[strlen(sig) - strlen(endsig) + 1] = 0;
-    cat_pt                                = strstr(cat, pua_cats);
+
+    catlen = MIN(sizeof(cat), strlen(sig) - strlen(endsig));
+
+    memcpy(cat, sig, catlen + 1);
+
+    // Add null terminator.
+    cat[catlen + 1] = '\0';
+
+    cat_pt = strstr(cat, pua_cats);
     cli_dbgmsg("cli_chkpua:                cat=[%s]\n", cat);
     cli_dbgmsg("cli_chkpua:                sig=[%s]\n", sig);
     if (options & CL_DB_PUA_INCLUDE)
@@ -2736,7 +2743,7 @@ static int cli_loadign(FILE *fs, struct cl_engine *engine, unsigned int options,
             int pad = 3 - len;
             /* patch-up for Boyer-Moore minimum length of 3: pad with spaces */
             if (signame != buffer) {
-                strncpy(buffer, signame, len);
+                memcpy(buffer, signame, len);
                 signame = buffer;
             }
             buffer[3] = '\0';

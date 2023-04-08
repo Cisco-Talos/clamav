@@ -210,7 +210,7 @@ int filter_add_static(struct filter *m, const unsigned char *pattern, unsigned l
     for (j = 0; (best < 100 && j < MAX_CHOICES) || (j < maxlen); j++) {
         uint32_t num = MAXSOPATLEN;
         uint8_t k;
-        if (j + 2 > len)
+        if ((unsigned long)(j + 2) > len)
             break;
         for (k = j; k < len - 1 && (k - j < MAXSOPATLEN); k++) {
             q = cli_readint16(&pattern[k]);

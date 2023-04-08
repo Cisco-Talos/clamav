@@ -94,6 +94,9 @@ cl_error_t post_callback(
     const char *virname,
     void *context) // Could be used to retrieve / store contextual information for app
 {
+    (void)fd;
+    (void)context;
+
     printf("result:             %d\n", result);
     printf("virname:            %s\n", virname);
     printf("\n\n");
@@ -120,7 +123,7 @@ int main(int argc, char **argv)
     long double mb;
     const char *virname;
     const char *filename;
-    struct cl_engine *engine;
+    struct cl_engine *engine = NULL;
     struct cl_scan_options options;
     char database_filepath[256];
     bool created_database = false;
