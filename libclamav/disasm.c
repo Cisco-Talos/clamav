@@ -1405,11 +1405,13 @@ static const uint8_t *disasm_x86(const uint8_t *command, unsigned int len, struc
                     case ADDR_REG_SS:
                     case ADDR_REG_DS:
                         assert(x86ops[table][s->table_op].dsize == SIZE_WORD);
+                        /* fall-through */
                     case ADDR_REG_ESP:
                     case ADDR_REG_EBP:
                     case ADDR_REG_ESI:
                     case ADDR_REG_EDI:
                         assert(x86ops[table][s->table_op].dsize != SIZE_BYTE && x86ops[table][s->table_op].dsize != SIZE_BYTEH);
+                        /* fall-through */
                     case ADDR_REG_EAX:
                     case ADDR_REG_ECX:
                     case ADDR_REG_EDX:
