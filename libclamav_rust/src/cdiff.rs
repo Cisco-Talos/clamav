@@ -183,6 +183,9 @@ pub enum InputError {
 
     #[error("no final newline")]
     MissingNL,
+
+    #[error("Database file is still open: {0}")]
+    DBStillOpen(String),
 }
 
 /// Errors encountered while processing
@@ -283,6 +286,32 @@ impl<'a> DelOp<'a> {
             .ok_or(InputError::MissingParameter("DEL", "orig_line"))?;
 
         Ok(DelOp { line_no, del_line })
+    }
+}
+
+#[derive(Debug)]
+pub struct UnlinkOp<'a> {
+    db_name: &'a str,
+}
+
+/// Method to parse the cdiff line describing an unlink operation
+impl<'a> UnlinkOp<'a> {
+    pub fn new(data: &'a [u8]) -> Result<Self, InputError> {
+        let mut iter = data.split(|b| *b == b' ');
+        let db_name = str::from_utf8(
+            iter.next()
+                .ok_or(InputError::MissingParameter("UNLINK", "db_name"))?,
+        )
+        .map_err(|_| InputError::NotUnicode("database name"))?;
+
+        if !db_name
+            .chars()
+            .all(|x: char| x.is_alphanumeric() || x == '\\' || x == '/' || x == '.')
+        {
+            return Err(InputError::ForbiddenCharactersInDB(db_name.to_owned()));
+        }
+
+        Ok(UnlinkOp { db_name })
     }
 }
 
@@ -927,12 +956,16 @@ fn cmd_close(ctx: &mut Context) -> Result<(), InputError> {
 }
 
 /// Set up Context structure with data parsed from command unlink
-fn cmd_unlink(ctx: &mut Context) -> Result<(), InputError> {
+fn cmd_unlink(ctx: &mut Context, unlink_op: UnlinkOp) -> Result<(), InputError> {
     if let Some(open_db) = &ctx.open_db {
-        fs::remove_file(open_db).map_err(ProcessingError::from)?;
-    } else {
-        return Err(InputError::NoDBForAction("UNLINK"));
+        return Err(InputError::DBStillOpen(open_db.clone()));
     }
+
+    // We checked that the db_name doesn't have any '/' or '\\' in it before
+    // adding to the UnlinkOp struct, so it's safe to say the path is just a local file and
+    // won't accidentally delete something in a different directory.
+    fs::remove_file(unlink_op.db_name).map_err(ProcessingError::from)?;
+
     Ok(())
 }
 
@@ -960,7 +993,10 @@ fn process_line(ctx: &mut Context, line: &[u8]) -> Result<(), InputError> {
             cmd_move(ctx, move_op)
         }
         b"CLOSE" => cmd_close(ctx),
-        b"UNLINK" => cmd_unlink(ctx),
+        b"UNLINK" => {
+            let unlink_op = UnlinkOp::new(remainder.unwrap())?;
+            cmd_unlink(ctx, unlink_op)
+        }
         _ => Err(InputError::UnknownCommand(
             String::from_utf8(cmd.to_owned()).unwrap(),
         )),
