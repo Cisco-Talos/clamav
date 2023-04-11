@@ -2351,6 +2351,7 @@ fc_error_t updatedb(
 
         if (
             (FC_EEMPTYFILE == ret) ||                                 /* Request a new CVD if we got an empty CDIFF.      */
+            (FC_EFAILEDUPDATE == ret) ||                              /* Request a new CVD if we failed to apply a CDIFF. */
             (FC_SUCCESS != ret && (                                   /* Or if the incremental update failed:             */
                                    (0 == numPatchesReceived) &&       /* 1. Ask for the CVD if we didn't get any patches, */
                                    (localVersion < remoteVersion - 1) /* 2. AND if we're more than 1 version out of date. */
