@@ -477,7 +477,7 @@ pub fn script2cdiff(script_file_name: &str, builder: &str, server: &str) -> Resu
         .map_err(|e| CdiffError::FileCreate(cdiff_file_name.to_owned(), e))?;
 
     // Open the original script file for reading
-    let script_file: File = File::open(&script_file_name)
+    let script_file: File = File::open(script_file_name)
         .map_err(|e| CdiffError::FileOpen(script_file_name.to_owned(), e))?;
 
     // Get file length
@@ -599,7 +599,7 @@ pub fn cdiff_apply(file: &mut File, mode: ApplyMode) -> Result<(), CdiffError> {
             let dsig = read_dsig(file)?;
             debug!("cdiff_apply() - final dsig length is {}", dsig.len());
             if is_debug_enabled() {
-                print_file_data(dsig.clone(), dsig.len() as usize);
+                print_file_data(dsig.clone(), dsig.len());
             }
 
             // Get file length
@@ -1022,7 +1022,7 @@ where
             0 => break,
             n_read => {
                 decompressed_bytes = decompressed_bytes + n_read + 1;
-                match linebuf.get(0) {
+                match linebuf.first() {
                     // Skip comment lines
                     Some(b'#') => continue,
                     _ => process_line(ctx, &linebuf).map_err(|e| CdiffError::Input(line_no, e))?,
@@ -1071,7 +1071,7 @@ fn read_dsig(file: &mut File) -> Result<Vec<u8>, SignatureError> {
 // as the offset in the file that the header ends.
 fn read_size(file: &mut File) -> Result<(u32, usize), HeaderError> {
     // Seek to beginning of file.
-    file.seek(SeekFrom::Start(0))?;
+    file.rewind()?;
 
     // File should always start with "ClamAV-Diff".
     let prefix = b"ClamAV-Diff";
@@ -1116,7 +1116,7 @@ fn get_hash(file: &mut File, len: usize) -> Result<[u8; 32], CdiffError> {
     let mut hasher = Sha256::new();
 
     // Seek to beginning of file
-    file.seek(SeekFrom::Start(0))?;
+    file.rewind()?;
 
     let mut sum: usize = 0;
 
