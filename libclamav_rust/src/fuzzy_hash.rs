@@ -123,7 +123,7 @@ pub struct FuzzyHashMeta {
 /// Initialize the hashmap
 #[no_mangle]
 pub extern "C" fn fuzzy_hashmap_new() -> sys::fuzzyhashmap_t {
-    Box::into_raw(Box::new(FuzzyHashMap::default())) as sys::fuzzyhashmap_t
+    Box::into_raw(Box::<FuzzyHashMap>::default()) as sys::fuzzyhashmap_t
 }
 
 /// Free the hashmap

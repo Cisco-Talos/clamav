@@ -22,7 +22,7 @@
 
 use std::{ffi::CStr, mem::ManuallyDrop, os::raw::c_char};
 
-use base64::{Engine as _, engine::general_purpose as base64_engine_standard};
+use base64::{engine::general_purpose as base64_engine_standard, Engine as _};
 use log::{debug, error, warn};
 use thiserror::Error;
 
@@ -194,7 +194,7 @@ impl<'a> CssImageExtractor<'a> {
             // So we'll just skip until after the next ';'.
 
             // Find contents after ";"
-            if let Some(pos) = url_parameter.find(";") {
+            if let Some(pos) = url_parameter.find(';') {
                 (_, url_parameter) = url_parameter.split_at(pos + ";".len());
                 // Found ";"
             } else {
@@ -267,7 +267,7 @@ impl<'a> Iterator for CssImageExtractor<'a> {
             // Decode the base64 encoded image
             base64_engine_standard::STANDARD.decode(base64_image).ok()
         } else {
-            return None;
+            None
         }
     }
 }
@@ -297,9 +297,9 @@ pub unsafe extern "C" fn new_css_image_extractor(
     };
 
     if let Ok(extractor) = CssImageExtractor::new(css_input) {
-        return Box::into_raw(Box::new(extractor)) as sys::css_image_extractor_t;
+        Box::into_raw(Box::new(extractor)) as sys::css_image_extractor_t
     } else {
-        return 0 as sys::css_image_extractor_t;
+        0 as sys::css_image_extractor_t
     }
 }
 
@@ -334,11 +334,9 @@ pub unsafe extern "C" fn css_image_extract_next(
             *image_out = image.as_ptr();
             *image_out_len = image.len();
             *image_out_handle = Box::into_raw(Box::new(image)) as sys::css_image_handle_t;
-            return true;
+            true
         }
-        None => {
-            return false;
-        }
+        None => false,
     }
 }
 
