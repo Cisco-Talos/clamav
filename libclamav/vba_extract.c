@@ -358,7 +358,7 @@ static size_t vba_normalize(unsigned char *buffer, size_t size)
  * Read a VBA project in an OLE directory.
  * Contrary to cli_vba_readdir, this function uses the dir file to locate VBA modules.
  */
-cl_error_t cli_vba_readdir_new(cli_ctx *ctx, const char *dir, struct uniq *U, const char *hash, uint32_t which, int *tempfd, int *has_macros)
+cl_error_t cli_vba_readdir_new(cli_ctx *ctx, const char *dir, struct uniq *U, const char *hash, uint32_t which, int *tempfd, int *has_macros, char **tempfile)
 {
     cl_error_t ret = CL_SUCCESS;
     char fullname[1024];
@@ -367,7 +367,6 @@ cl_error_t cli_vba_readdir_new(cli_ctx *ctx, const char *dir, struct uniq *U, co
     size_t data_len;
     size_t data_offset;
     const char *stream_name = NULL;
-    char *tempfile          = NULL;
     uint16_t codepage       = CODEPAGE_ISO8859_1;
     unsigned i;
     char *mbcs_name = NULL, *utf16_name = NULL;
@@ -375,7 +374,7 @@ cl_error_t cli_vba_readdir_new(cli_ctx *ctx, const char *dir, struct uniq *U, co
     unsigned char *module_data = NULL, *module_data_utf8 = NULL;
     size_t module_data_size = 0, module_data_utf8_size = 0;
 
-    if (dir == NULL || hash == NULL || tempfd == NULL || has_macros == NULL) {
+    if (dir == NULL || hash == NULL || tempfd == NULL || has_macros == NULL || tempfile == NULL) {
         return CL_EARG;
     }
 
@@ -398,12 +397,12 @@ cl_error_t cli_vba_readdir_new(cli_ctx *ctx, const char *dir, struct uniq *U, co
 
     *has_macros = *has_macros + 1;
 
-    if ((ret = cli_gentempfd_with_prefix(ctx->sub_tmpdir, "vba_project", &tempfile, tempfd)) != CL_SUCCESS) {
+    if ((ret = cli_gentempfd_with_prefix(ctx->sub_tmpdir, "vba_project", tempfile, tempfd)) != CL_SUCCESS) {
         cli_warnmsg("vba_readdir_new: VBA project cannot be dumped to file\n");
         goto done;
     }
 
-    cli_dbgmsg("Dumping VBA project from dir %s to file %s\n", fullname, tempfile);
+    cli_dbgmsg("Dumping VBA project from dir %s to file %s\n", fullname, *tempfile);
 
 #define CLI_WRITEN(msg, size)                                                 \
     do {                                                                      \
@@ -1305,9 +1304,6 @@ done:
     if (stream_name) {
         free((void *)stream_name);
     }
-    if (tempfile) {
-        free(tempfile);
-    }
     if (ret != CL_SUCCESS && *tempfd >= 0) {
         close(*tempfd);
         *tempfd = -1;
@@ -1972,7 +1968,7 @@ word_read_macro_entry(int fd, macro_info_t *macro_info)
         uint32_t len __attribute__((packed));
         uint32_t state __attribute__((packed));
         uint32_t offset __attribute__((packed));
-    } * m;
+    } *m;
     const struct macro *n;
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack()
