@@ -3719,6 +3719,12 @@ int main(int argc, char **argv)
     }
     ret = 1;
 
+    /* Rust logging initialization */
+    if (!clrs_log_init()) {
+        cli_dbgmsg("Unexpected problem occurred while setting up rust logging... continuing without rust logging. \
+                    Please submit an issue to https://github.com/Cisco-Talos/clamav");
+    }
+
     opts = optparse(NULL, argc, argv, 1, OPT_SIGTOOL, 0, NULL);
     if (!opts) {
         mprintf(LOGG_ERROR, "Can't parse command line options\n");
