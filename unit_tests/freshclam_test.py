@@ -87,7 +87,7 @@ class TC(testcase.TestCase):
             port=TC.mock_mirror_port,
         ))
 
-        command = '{valgrind} {valgrind_args} {freshclam} --config-file={freshclam_config} -V'.format(
+        command = '{valgrind} {valgrind_args} {freshclam} --no-dns --config-file={freshclam_config} -V'.format(
             valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, freshclam=TC.freshclam, freshclam_config=TC.freshclam_config
         )
         output = self.execute_command(command)
@@ -133,7 +133,7 @@ class TC(testcase.TestCase):
             user=getpass.getuser(),
         ))
 
-        command = '{valgrind} {valgrind_args} {freshclam} --config-file={freshclam_config}'.format(
+        command = '{valgrind} {valgrind_args} {freshclam} --no-dns --config-file={freshclam_config}'.format(
             valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, freshclam=TC.freshclam, freshclam_config=TC.freshclam_config
         )
         output = self.execute_command(command)
@@ -174,7 +174,7 @@ class TC(testcase.TestCase):
             port=TC.mock_mirror_port,
             user=getpass.getuser(),
         ))
-        command = '{valgrind} {valgrind_args} {freshclam} --config-file={freshclam_config} --update-db=daily'.format(
+        command = '{valgrind} {valgrind_args} {freshclam} --no-dns --config-file={freshclam_config} --update-db=daily'.format(
             valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, freshclam=TC.freshclam, freshclam_config=TC.freshclam_config
         )
         output = self.execute_command(command)
@@ -189,7 +189,7 @@ class TC(testcase.TestCase):
         # verify stderr
         self.verify_output(output.err, expected=expected_stderr)
 
-        command = '{valgrind} {valgrind_args} {freshclam} --config-file={freshclam_config} --update-db=daily'.format(
+        command = '{valgrind} {valgrind_args} {freshclam} --no-dns --config-file={freshclam_config} --update-db=daily'.format(
             valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, freshclam=TC.freshclam, freshclam_config=TC.freshclam_config
         )
         output = self.execute_command(command)
@@ -229,7 +229,7 @@ class TC(testcase.TestCase):
             port=TC.mock_mirror_port,
             user=getpass.getuser(),
         ))
-        command = '{valgrind} {valgrind_args} {freshclam} --config-file={freshclam_config} --update-db=daily --daemon -F'.format(
+        command = '{valgrind} {valgrind_args} {freshclam} --no-dns --config-file={freshclam_config} --update-db=daily --daemon -F'.format(
             valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, freshclam=TC.freshclam, freshclam_config=TC.freshclam_config
         )
         output = self.execute_command(command)
@@ -269,7 +269,7 @@ class TC(testcase.TestCase):
             port=TC.mock_mirror_port,
             user=getpass.getuser(),
         ))
-        command = '{valgrind} {valgrind_args} {freshclam} --config-file={freshclam_config} --update-db=daily'.format(
+        command = '{valgrind} {valgrind_args} {freshclam} --no-dns --config-file={freshclam_config} --update-db=daily'.format(
             valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, freshclam=TC.freshclam, freshclam_config=TC.freshclam_config
         )
         output = self.execute_command(command)
@@ -322,7 +322,7 @@ class TC(testcase.TestCase):
             port=TC.mock_mirror_port,
             user=getpass.getuser(),
         ))
-        command = '{valgrind} {valgrind_args} {freshclam} --config-file={freshclam_config} --update-db=test'.format(
+        command = '{valgrind} {valgrind_args} {freshclam} --no-dns --config-file={freshclam_config} --update-db=test'.format(
             valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, freshclam=TC.freshclam, freshclam_config=TC.freshclam_config
         )
         output = self.execute_command(command)
@@ -384,7 +384,7 @@ class TC(testcase.TestCase):
             port=TC.mock_mirror_port,
             user=getpass.getuser(),
         ))
-        command = '{valgrind} {valgrind_args} {freshclam} --config-file={freshclam_config} --update-db=test'.format(
+        command = '{valgrind} {valgrind_args} {freshclam} --no-dns --config-file={freshclam_config} --update-db=test'.format(
             valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, freshclam=TC.freshclam, freshclam_config=TC.freshclam_config
         )
         output = self.execute_command(command)
@@ -440,7 +440,7 @@ class TC(testcase.TestCase):
             port=TC.mock_mirror_port,
             user=getpass.getuser(),
         ))
-        command = '{valgrind} {valgrind_args} {freshclam} --config-file={freshclam_config} --update-db=test'.format(
+        command = '{valgrind} {valgrind_args} {freshclam} --no-dns --config-file={freshclam_config} --update-db=test'.format(
             valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, freshclam=TC.freshclam, freshclam_config=TC.freshclam_config
         )
         output = self.execute_command(command)
@@ -465,7 +465,7 @@ class TC(testcase.TestCase):
         #
         # Try again, we should be 1 behind which is tolerable and should not trigger a full CVD download
         #
-        command = '{valgrind} {valgrind_args} {freshclam} --config-file={freshclam_config} --update-db=test'.format(
+        command = '{valgrind} {valgrind_args} {freshclam} --no-dns --config-file={freshclam_config} --update-db=test'.format(
             valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, freshclam=TC.freshclam, freshclam_config=TC.freshclam_config
         )
         output = self.execute_command(command)
@@ -526,7 +526,7 @@ class TC(testcase.TestCase):
             port=TC.mock_mirror_port,
             user=getpass.getuser(),
         ))
-        command = '{valgrind} {valgrind_args} {freshclam} --config-file={freshclam_config} --update-db=test'.format(
+        command = '{valgrind} {valgrind_args} {freshclam} --no-dns --config-file={freshclam_config} --update-db=test'.format(
             valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, freshclam=TC.freshclam, freshclam_config=TC.freshclam_config
         )
         output = self.execute_command(command)
@@ -551,7 +551,7 @@ class TC(testcase.TestCase):
         #
         # Try again, we should be 2 behind which is NOT tolerable and SHOULD trigger a full CVD download
         #
-        command = '{valgrind} {valgrind_args} {freshclam} --config-file={freshclam_config} --update-db=test'.format(
+        command = '{valgrind} {valgrind_args} {freshclam} --no-dns --config-file={freshclam_config} --update-db=test'.format(
             valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, freshclam=TC.freshclam, freshclam_config=TC.freshclam_config
         )
         output = self.execute_command(command)
@@ -617,7 +617,7 @@ class TC(testcase.TestCase):
         #
         # 1st attempt
         #
-        command = '{valgrind} {valgrind_args} {freshclam} --config-file={freshclam_config} --update-db=test'.format(
+        command = '{valgrind} {valgrind_args} {freshclam} --no-dns --config-file={freshclam_config} --update-db=test'.format(
             valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, freshclam=TC.freshclam, freshclam_config=TC.freshclam_config
         )
         output = self.execute_command(command)
@@ -637,7 +637,7 @@ class TC(testcase.TestCase):
         #
         # 2nd attempt
         #
-        command = '{valgrind} {valgrind_args} {freshclam} --config-file={freshclam_config} --update-db=test'.format(
+        command = '{valgrind} {valgrind_args} {freshclam} --no-dns --config-file={freshclam_config} --update-db=test'.format(
             valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, freshclam=TC.freshclam, freshclam_config=TC.freshclam_config
         )
         output = self.execute_command(command)
@@ -663,7 +663,7 @@ class TC(testcase.TestCase):
         #
         # 3rd attempt
         #
-        command = '{valgrind} {valgrind_args} {freshclam} --config-file={freshclam_config} --update-db=test'.format(
+        command = '{valgrind} {valgrind_args} {freshclam} --no-dns --config-file={freshclam_config} --update-db=test'.format(
             valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, freshclam=TC.freshclam, freshclam_config=TC.freshclam_config
         )
         output = self.execute_command(command)
@@ -684,6 +684,92 @@ class TC(testcase.TestCase):
 
         # verify stderr
         self.verify_output(output.err, unexpected=unexpected_results)
+
+    def test_freshclam_08_cdiff_update_twice(self):
+        self.step_name('Verify that freshclam can update from an older CVD to a newer with CDIFF patches, and then update from an older CLD to the latest with more CDIFF patches')
+
+        # start with this CVD
+        shutil.copy(str(TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles' /'test-1.cvd'), str(TC.path_db / 'test.cvd'))
+
+        # advertise this CVD FIRST (by sending the header response to Range requests)
+        shutil.copy(str(TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles' /'test-3.cvd'), str(TC.path_www / 'test.cvd.advertised'))
+
+        # using these CDIFFs
+        shutil.copy(str(TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles' /'test-2.cdiff'), str(TC.path_www))
+        shutil.copy(str(TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles' /'test-3.cdiff'), str(TC.path_www))
+
+        handler = partial(WebServerHandler_WWW, TC.path_www)
+        TC.mock_mirror = Process(target=mock_database_mirror, args=(handler, TC.mock_mirror_port))
+        TC.mock_mirror.start()
+
+        if TC.freshclam_config.exists():
+            os.remove(str(TC.freshclam_config))
+
+        TC.freshclam_config.write_text('''
+            DatabaseMirror http://localhost:{port}
+            DNSDatabaseInfo no
+            PidFile {freshclam_pid}
+            LogVerbose yes
+            LogFileMaxSize 0
+            LogTime yes
+            DatabaseDirectory {path_db}
+            DatabaseOwner {user}
+        '''.format(
+            freshclam_pid=TC.freshclam_pid,
+            path_db=TC.path_db,
+            port=TC.mock_mirror_port,
+            user=getpass.getuser(),
+        ))
+
+        #
+        # Now run the update for the first set up updates.
+        #
+        command = '{valgrind} {valgrind_args} {freshclam} --no-dns --config-file={freshclam_config} --update-db=test'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, freshclam=TC.freshclam, freshclam_config=TC.freshclam_config
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 0  # success
+
+        expected_stdout = [
+            'test.cld updated',
+        ]
+        unexpected_results = [
+            'already up-to-date'
+        ]
+
+        # verify stdout
+        self.verify_output(output.out, expected=expected_stdout, unexpected=unexpected_results)
+
+        # verify stderr
+        self.verify_output(output.err, unexpected=unexpected_results)
+
+        # advertise this newer CVD SECOND (by sending the header response to Range requests)
+        shutil.copy(str(TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles' /'test-6.cvd'), str(TC.path_www / 'test.cvd.advertised'))
+
+        # using these CDIFFs
+        shutil.copy(str(TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles' /'test-4.cdiff'), str(TC.path_www))
+        shutil.copy(str(TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles' /'test-5.cdiff'), str(TC.path_www))
+        shutil.copy(str(TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles' /'test-6.cdiff'), str(TC.path_www))
+
+        #
+        # Now re-run the update for more updates.
+        #
+        command = '{valgrind} {valgrind_args} {freshclam} --no-dns --config-file={freshclam_config} --update-db=test'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, freshclam=TC.freshclam, freshclam_config=TC.freshclam_config
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 0  # success
+
+        expected_stdout = [
+            'test.cld updated',
+        ]
+        unexpected_results = [
+            'already up-to-date'
+        ]
+
+
 
 def mock_database_mirror(handler, port=8001):
     '''
