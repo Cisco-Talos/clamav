@@ -56,6 +56,7 @@
 
 // libclamav
 #include "clamav.h"
+#include "clamav_rust.h"
 #include "others.h"
 #include "regex_list.h"
 #include "str.h"
@@ -130,6 +131,12 @@ fc_error_t fc_initialize(fc_config *fcConfig)
     if (NULL == fcConfig) {
         printf("fc_initialize: Invalid arguments.\n");
         return status;
+    }
+
+    /* Rust logging initialization */
+    if (!clrs_log_init()) {
+        cli_dbgmsg("Unexpected problem occurred while setting up rust logging... continuing without rust logging. \
+                    Please submit an issue to https://github.com/Cisco-Talos/clamav");
     }
 
     /* Initilize libcurl */
