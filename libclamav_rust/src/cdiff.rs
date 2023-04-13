@@ -25,8 +25,8 @@ use std::{
     io::{prelude::*, BufReader, BufWriter, Read, Seek, SeekFrom, Write},
     iter::*,
     os::raw::c_char,
-    path::PathBuf,
-    str,
+    path::{Path, PathBuf},
+    str::{self, FromStr},
 };
 
 use crate::sys;
@@ -97,8 +97,12 @@ pub enum CdiffError {
     ///
     /// This error *may* wrap a processing error if the command has side effects
     /// (e.g., MOVE or CLOSE)
-    #[error("{1} on line {0}")]
-    Input(usize, InputError),
+    #[error("{err} on line {line}: {operation}")]
+    Input {
+        line: usize,
+        err: InputError,
+        operation: String,
+    },
 
     /// An error encountered while handling a particular CDiff command
     #[error("processing {1} command on line {2}: {0}")]
@@ -155,14 +159,20 @@ pub enum InputError {
     #[error("No DB open for action {0}")]
     NoDBForAction(&'static str),
 
+    #[error("Invalid DB \"{0}\" open for action {1}")]
+    InvalidDBForAction(String, &'static str),
+
     #[error("File {0} not closed before opening {1}")]
     NotClosedBeforeOpening(String, String),
 
     #[error("{0} not Unicode")]
     NotUnicode(&'static str),
 
-    #[error("Forbidden characters found in database name {0}")]
-    ForbiddenCharactersInDB(String),
+    #[error("Invalid database name {0}. Characters must be alphanumeric or '.'")]
+    InvalidDBNameForbiddenCharacters(String),
+
+    #[error("Invalid database name {0}. Must not specify parent directory.")]
+    InvalidDBNameNoParentDirectory(String),
 
     #[error("{0} missing for {1}")]
     MissingParameter(&'static str, &'static str),
@@ -306,9 +316,20 @@ impl<'a> UnlinkOp<'a> {
 
         if !db_name
             .chars()
-            .all(|x: char| x.is_alphanumeric() || x == '\\' || x == '/' || x == '.')
+            .all(|x: char| x.is_alphanumeric() || x == '.')
         {
-            return Err(InputError::ForbiddenCharactersInDB(db_name.to_owned()));
+            // DB Name contains invalid characters.
+            return Err(InputError::InvalidDBNameForbiddenCharacters(
+                db_name.to_owned(),
+            ));
+        }
+
+        let db_path = PathBuf::from_str(db_name).unwrap();
+        if db_path.parent() != Some(Path::new("")) {
+            // DB Name must be not include a parent directory.
+            return Err(InputError::InvalidDBNameNoParentDirectory(
+                db_name.to_owned(),
+            ));
         }
 
         Ok(UnlinkOp { db_name })
@@ -673,10 +694,22 @@ fn cmd_open(ctx: &mut Context, db_name: Option<&[u8]>) -> Result<(), InputError>
 
     if !db_name
         .chars()
-        .all(|x: char| x.is_alphanumeric() || x == '\\' || x == '/' || x == '.')
+        .all(|x: char| x.is_alphanumeric() || x == '.')
     {
-        return Err(InputError::ForbiddenCharactersInDB(db_name.to_owned()));
+        // DB Name contains invalid characters.
+        return Err(InputError::InvalidDBNameForbiddenCharacters(
+            db_name.to_owned(),
+        ));
     }
+
+    let db_path = PathBuf::from_str(db_name).unwrap();
+    if db_path.parent() != Some(Path::new("")) {
+        // DB Name must be not include a parent directory.
+        return Err(InputError::InvalidDBNameNoParentDirectory(
+            db_name.to_owned(),
+        ));
+    }
+
     ctx.open_db = Some(db_name.to_owned());
 
     Ok(())
@@ -941,6 +974,7 @@ fn cmd_close(ctx: &mut Context) -> Result<(), InputError> {
     // Test for lines to add
     if !ctx.additions.is_empty() {
         let mut db_file = OpenOptions::new()
+            .create(true)
             .append(true)
             .open(&open_db)
             .map_err(ProcessingError::from)?;
@@ -998,7 +1032,7 @@ fn process_line(ctx: &mut Context, line: &[u8]) -> Result<(), InputError> {
             cmd_unlink(ctx, unlink_op)
         }
         _ => Err(InputError::UnknownCommand(
-            String::from_utf8(cmd.to_owned()).unwrap(),
+            String::from_utf8_lossy(&cmd).to_string(),
         )),
     }
 }
@@ -1025,7 +1059,11 @@ where
                 match linebuf.first() {
                     // Skip comment lines
                     Some(b'#') => continue,
-                    _ => process_line(ctx, &linebuf).map_err(|e| CdiffError::Input(line_no, e))?,
+                    _ => process_line(ctx, &linebuf).map_err(|e| CdiffError::Input {
+                        line: line_no,
+                        err: e,
+                        operation: String::from_utf8_lossy(&linebuf).to_string(),
+                    })?,
                 }
             }
         }
