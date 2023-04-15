@@ -92,7 +92,7 @@ class TC(testcase.TestCase):
         self.log.warning('VG: {}'.format(os.getenv("VG")))
 
         (TC.path_tmp / 'run_cdiff').mkdir()
-        os.chdir(TC.path_tmp / 'run_cdiff')
+        os.chdir(str(TC.path_tmp / 'run_cdiff'))
 
         command = '{valgrind} {valgrind_args} {sigtool} --unpack {cvd}'.format(
             valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, sigtool=TC.sigtool,
@@ -131,7 +131,7 @@ class TC(testcase.TestCase):
         self.log.warning('VG: {}'.format(os.getenv("VG")))
 
         (TC.path_tmp / 'run_cdiff_log').mkdir()
-        os.chdir(TC.path_tmp / 'run_cdiff_log')
+        os.chdir(str(TC.path_tmp / 'run_cdiff_log'))
 
         command = '{valgrind} {valgrind_args} {sigtool} --unpack {cvd}'.format(
             valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, sigtool=TC.sigtool,
