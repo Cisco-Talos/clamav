@@ -226,7 +226,7 @@ static int onas_ddd_watch_hierarchy(const char *pathname, size_t len, int fd, ui
 
         hnode->watched |= ONAS_INWATCH;
     } else if (type & ONAS_FAN) {
-        if (fanotify_mark(fd, FAN_MARK_ADD, mask, AT_FDCWD, hnode->pathname) < 0) { 
+        if (fanotify_mark(fd, FAN_MARK_ADD, mask, AT_FDCWD, hnode->pathname) < 0) {
             logg(LOGG_ERROR, "ClamInotif: error when marking %s to be watched by fanotify\n", hnode->pathname);
             return CL_EARG;
         }
@@ -247,7 +247,7 @@ static int onas_ddd_watch_hierarchy(const char *pathname, size_t len, int fd, ui
         if (child_path == NULL) {
             logg(LOGG_ERROR, "ClamInotif: out of memory when when adding child for %s\n", hnode->pathname);
             return CL_EMEM;
-	}
+        }
 
         if (hnode->pathname[len - 1] == '/')
             snprintf(child_path, --size, "%s%s", hnode->pathname, curr->dirname);
