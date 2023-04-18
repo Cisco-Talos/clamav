@@ -358,7 +358,7 @@ static size_t vba_normalize(unsigned char *buffer, size_t size)
  * Read a VBA project in an OLE directory.
  * Contrary to cli_vba_readdir, this function uses the dir file to locate VBA modules.
  */
-cl_error_t cli_vba_readdir_new(cli_ctx *ctx, const char *dir, struct uniq *U, const char *hash, uint32_t which, int *tempfd, int *has_macros, char** tempfile)
+cl_error_t cli_vba_readdir_new(cli_ctx *ctx, const char *dir, struct uniq *U, const char *hash, uint32_t which, int *tempfd, int *has_macros, char **tempfile)
 {
     cl_error_t ret = CL_SUCCESS;
     char fullname[1024];

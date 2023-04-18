@@ -1632,8 +1632,8 @@ static cl_error_t cli_ole2_tempdir_scan_vba_new(const char *dir, cli_ctx *ctx, s
     char *hash       = NULL;
     char path[PATH_MAX];
     char filename[PATH_MAX];
-    int tempfd = -1;
-    char * tempfile = NULL;
+    int tempfd     = -1;
+    char *tempfile = NULL;
 
     if (CL_SUCCESS != (ret = uniq_get(U, "dir", 3, &hash, &hashcnt))) {
         cli_dbgmsg("cli_ole2_tempdir_scan_vba_new: uniq_get('dir') failed with ret code (%d)!\n", ret);
@@ -1691,7 +1691,7 @@ static cl_error_t cli_ole2_tempdir_scan_vba_new(const char *dir, cli_ctx *ctx, s
             if (CL_SUCCESS != ret) {
                 goto done;
             }
-            
+
             close(tempfd);
             tempfd = -1;
 
