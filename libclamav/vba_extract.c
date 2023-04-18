@@ -1805,6 +1805,8 @@ ppt_unlzw(const char *dir, int fd, uint32_t length)
         return FALSE;
     }
 
+    memset(&stream, 0, sizeof(stream));
+
     stream.zalloc    = Z_NULL;
     stream.zfree     = Z_NULL;
     stream.opaque    = (void *)NULL;
