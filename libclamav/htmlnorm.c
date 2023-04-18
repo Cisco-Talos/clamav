@@ -1824,6 +1824,11 @@ static bool cli_html_normalise(cli_ctx *ctx, int fd, m_area_t *m_area, const cha
         }
 
         if (in_tag == TAG_STYLE) {
+            if (ptr < style_begin) {
+                cli_errmsg("cli_html_normalise: style chunk size underflow\n");
+                goto done;
+            }
+
             size_t chunk_size = ptr - style_begin;
 
             if (style_buff == NULL) {
