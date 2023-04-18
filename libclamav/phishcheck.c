@@ -211,6 +211,7 @@ static void url_check_init(struct url_check* urls)
     string_init_c(&urls->realLink, NULL);
     string_init_c(&urls->displayLink, NULL);
     string_init_c(&urls->pre_fixup.pre_displayLink, NULL);
+    urls->flags = 0;
 }
 
 /* string reference counting implementation,
