@@ -398,18 +398,22 @@ START_TEST(js_buffer)
     const char s_exp[] = "<script>";
     const char e_exp[] = "</script>";
     char *tst          = malloc(len);
-    char *exp          = malloc(len + sizeof(s_exp) + sizeof(e_exp) - 2);
+
+    const size_t explen = len + sizeof(s_exp) + sizeof(e_exp) - 2;
+    char *exp           = malloc(len + sizeof(s_exp) + sizeof(e_exp) - 2);
 
     ck_assert_msg(!!tst, "malloc");
     ck_assert_msg(!!exp, "malloc");
 
-    memset(tst, 'a', len);
+    memset(tst, 'a', len - 1);
     strncpy(tst, s, strlen(s));
     strncpy(tst + len - sizeof(e), e, sizeof(e));
+    tst[len - 1] = '\0';
 
     strncpy(exp, s_exp, len);
     strncpy(exp + sizeof(s_exp) - 1, tst, len - 1);
     strncpy(exp + sizeof(s_exp) + len - 2, e_exp, sizeof(e_exp));
+    exp[explen - 1] = '\0';
 
     tokenizer_test(tst, exp, 1);
     free(exp);

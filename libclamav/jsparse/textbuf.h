@@ -27,6 +27,18 @@ struct text_buffer {
     size_t capacity;
 };
 
+/**
+ * @brief If the provided text_buffer capacity is smaller than the requested len,
+ * then resize the text_buffer to be at least `len` bytes in size.
+ *
+ * Note: If a resize is required, it will allocate an additional 4096 bytes, minimum.
+ *
+ * Safety: Will NOT free the text_buffer data if the realloc fails!
+ *
+ * @param txtbuf
+ * @param len
+ * @return int
+ */
 static inline int textbuffer_ensure_capacity(struct text_buffer *txtbuf, size_t len)
 {
     if (txtbuf->pos + len > txtbuf->capacity) {
@@ -41,6 +53,16 @@ static inline int textbuffer_ensure_capacity(struct text_buffer *txtbuf, size_t 
     return 0;
 }
 
+/**
+ * @brief Append bytes from source `s` to the data in text_buffer `txtbuf`. Reallocate to a larger buf as needed.
+ *
+ * Safety: `s` must be at least `len` bytes in length.
+ *
+ * @param txtbuf    The destination text_buffer.
+ * @param s         Pointer to the source data.
+ * @param len       The number of bytes to copy from `s` to append to `txtbuf`
+ * @return int      0 on success. -1 on failure
+ */
 static inline int textbuffer_append_len(struct text_buffer *txtbuf, const char *s, size_t len)
 {
     if (textbuffer_ensure_capacity(txtbuf, len) == -1)
@@ -50,12 +72,26 @@ static inline int textbuffer_append_len(struct text_buffer *txtbuf, const char *
     return 0;
 }
 
+/**
+ * @brief A wrapper around textbuffer_append_len() for source buffers that are NULL-terminated strings.
+ *
+ * @param txtbuf    The destination text_buffer.
+ * @param s         Pointer to the source data.
+ * @return int      0 on success. -1 on failure
+ */
 static inline int textbuffer_append(struct text_buffer *txtbuf, const char *s)
 {
     size_t len = strlen(s);
     return textbuffer_append_len(txtbuf, s, len);
 }
 
+/**
+ * @brief Append a single cahracter from source `c` to the data in text_buffer `txtbuf`. Reallocate to a larger buf as needed.
+ *
+ * @param txtbuf    The destination text_buffer.
+ * @param c         Pointer to the source data.
+ * @return int      0 on success. -1 on failure
+ */
 static inline int textbuffer_putc(struct text_buffer *txtbuf, const char c)
 {
     if (textbuffer_ensure_capacity(txtbuf, 1) == -1)
