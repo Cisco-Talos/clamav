@@ -1258,6 +1258,10 @@ static cl_error_t parseBB(struct cli_bc *bc, unsigned func, unsigned bb, unsigne
     BB->insts    = &bcfunc->allinsts[bcfunc->insn_idx];
     while (!last) {
         unsigned numOp;
+
+        // Initialize instruction to zero
+        memset(&inst, 0, sizeof(inst));
+
         if (buffer[offset] == 'T') {
             last = 1;
             offset++;
@@ -1355,6 +1359,33 @@ static cl_error_t parseBB(struct cli_bc *bc, unsigned func, unsigned bb, unsigne
                         inst.u.ops.ops[i] = readOperand(bcfunc, buffer, &offset, len, &ok);
                 }
                 break;
+            case OP_BC_STORE:
+                numOp = operand_counts[inst.opcode];
+                if (2 != numOp) {
+                    // invalid number of operands
+                    cli_errmsg("Invalid number of operands (%u) for OP_BC_STORE opcode\n", numOp);
+                    return CL_EMALFDB;
+                }
+                inst.u.binop[0] = readOperand(bcfunc, buffer, &offset, len, &ok);
+                inst.u.binop[1] = readOperand(bcfunc, buffer, &offset, len, &ok);
+
+                int16_t t = get_optype(bcfunc, inst.u.binop[0]);
+                if (t) {
+                    inst.type = t;
+                }
+                break;
+            case OP_BC_COPY:
+                numOp = operand_counts[inst.opcode];
+                if (2 != numOp) {
+                    // invalid number of operands
+                    cli_errmsg("Invalid number of operands (%u) for OP_BC_COPY opcode\n", numOp);
+                    return CL_EMALFDB;
+                }
+                inst.u.binop[0] = readOperand(bcfunc, buffer, &offset, len, &ok);
+                inst.u.binop[1] = readOperand(bcfunc, buffer, &offset, len, &ok);
+
+                inst.type = get_optype(bcfunc, inst.u.binop[1]);
+                break;
             case OP_BC_ICMP_EQ:
             case OP_BC_ICMP_NE:
             case OP_BC_ICMP_UGT:
@@ -1391,22 +1422,18 @@ static cl_error_t parseBB(struct cli_bc *bc, unsigned func, unsigned bb, unsigne
                         break;
                 }
         }
-        if (inst.opcode == OP_BC_STORE) {
-            int16_t t = get_optype(bcfunc, inst.u.binop[0]);
-            if (t)
-                inst.type = t;
-        }
-        if (inst.opcode == OP_BC_COPY)
-            inst.type = get_optype(bcfunc, inst.u.binop[1]);
+
         if (!ok) {
             cli_errmsg("Invalid instructions or operands\n");
             return CL_EMALFDB;
         }
+
         if (bcfunc->insn_idx + BB->numInsts >= bcfunc->numInsts) {
             cli_errmsg("More instructions than declared in total: %u > %u!\n",
                        bcfunc->insn_idx + BB->numInsts, bcfunc->numInsts);
             return CL_EMALFDB;
         }
+
         inst.interp_op = inst.opcode * 5;
         if (inst.type > 1) {
             if (inst.type <= 8)
