@@ -322,7 +322,7 @@ static cl_error_t hfsplus_scanfile(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader,
     hfsPlusExtentDescriptor *currExt;
     const uint8_t *mPtr = NULL;
     char *tmpname       = NULL;
-    int ofd;
+    int ofd             = -1;
     uint64_t targetSize;
     uint32_t outputBlocks = 0;
     uint8_t ext;
