@@ -99,7 +99,7 @@ typedef uint16_t WCHAR;
  * general defines
  */
 #define EOFARC 0x08E28222 /* Signals end of each header, or end of archive. */
-//#define EOFAR_ 0x2282E208
+// #define EOFAR_ 0x2282E208
 /*
  * egg_header
  */
@@ -579,11 +579,12 @@ static cl_error_t egg_parse_encrypt_header(const uint8_t* index, size_t size, eg
     }
 
     *encryptInfo = encrypt;
-    status       = CL_SUCCESS;
+    encrypt      = NULL;
+
+    status = CL_SUCCESS;
 
 done:
-
-    if (CL_SUCCESS != status) {
+    if (NULL != encrypt) {
         egg_free_encrypt(encrypt);
     }
 
@@ -608,8 +609,7 @@ static cl_error_t egg_parse_comment_header(const uint8_t* index, size_t size, ex
         /*
          * comment is encrypted, nothing to be done.
          */
-        *commentInfo = cli_strdup("<encrypted>");
-        status       = CL_EUNPACK;
+        status = CL_EUNPACK;
         goto done;
     }
 
@@ -637,9 +637,15 @@ static cl_error_t egg_parse_comment_header(const uint8_t* index, size_t size, ex
     cli_dbgmsg("egg_parse_comment_header: comment:          %s\n", comment_utf8);
 
     *commentInfo = comment_utf8;
-    status       = CL_SUCCESS;
+    comment_utf8 = NULL;
+
+    status = CL_SUCCESS;
 
 done:
+    if (NULL != comment_utf8) {
+        free(comment_utf8);
+    }
+
     return status;
 }
 
@@ -739,14 +745,14 @@ static cl_error_t egg_parse_block_headers(egg_handle* handle, egg_block** block)
     eggBlock->compressedData = (char*)index;
     handle->offset += blockHeader->compress_size;
 
-    *block = eggBlock;
+    *block   = eggBlock;
+    eggBlock = NULL;
+
     status = CL_SUCCESS;
 
 done:
-    if (CL_SUCCESS != status) {
-        if (eggBlock) {
-            egg_free_egg_block(eggBlock);
-        }
+    if (NULL != eggBlock) {
+        egg_free_egg_block(eggBlock);
     }
 
     return status;
@@ -1446,14 +1452,14 @@ static cl_error_t egg_parse_file_headers(egg_handle* handle, egg_file** file)
         }
     }
 
-    *file  = eggFile;
+    *file   = eggFile;
+    eggFile = NULL;
+
     status = CL_SUCCESS;
 
 done:
-    if (CL_SUCCESS != status) {
-        if (eggFile) {
-            egg_free_egg_file(eggFile);
-        }
+    if (NULL != eggFile) {
+        egg_free_egg_file(eggFile);
     }
 
     return status;
@@ -1607,6 +1613,10 @@ cl_error_t cli_egg_open(fmap_t* map, void** hArchive, char*** comments, uint32_t
         return CL_EARG;
     }
 
+    *hArchive  = NULL;
+    *comments  = NULL;
+    *nComments = 0;
+
     handle = (egg_handle*)cli_calloc(1, sizeof(egg_handle));
     if (NULL == handle) {
         cli_errmsg("cli_egg_open: Failed to allocate memory for egg_handle.\n");
@@ -1721,6 +1731,7 @@ cl_error_t cli_egg_open(fmap_t* map, void** hArchive, char*** comments, uint32_t
                     if (handle->nFiles == 0) {
                         cli_dbgmsg("cli_egg_open: No file found for block in non-solid archive.\n");
                         // TODO: create an unamed block.
+                        egg_free_egg_block(found_block);
                     } else {
                         egg_block** blocks_tmp;
 
@@ -1833,18 +1844,19 @@ cl_error_t cli_egg_open(fmap_t* map, void** hArchive, char*** comments, uint32_t
         }
     }
 
-    *hArchive  = handle;
-    *comments  = handle->comments;
+    *comments        = handle->comments;
+    handle->comments = NULL;
+
     *nComments = handle->nComments;
+
+    *hArchive = handle;
+    handle    = NULL;
 
     status = CL_SUCCESS;
 
 done:
-    if (CL_SUCCESS != status) {
-        if (handle) {
-            egg_free_egg_handle(handle);
-        }
-        *hArchive = NULL;
+    if (NULL != handle) {
+        egg_free_egg_handle(handle);
     }
     return status;
 }
@@ -2040,7 +2052,9 @@ cl_error_t cli_egg_deflate_decompress(char* compressed, size_t compressed_size, 
             break;
     }
 
-    *decompressed      = (char*)decoded;
+    *decompressed = (char*)decoded;
+    decoded       = NULL;
+
     *decompressed_size = declen;
 
     status = CL_SUCCESS;
@@ -2051,7 +2065,7 @@ done:
         (void)inflateEnd(&stream);
     }
 
-    if (CL_SUCCESS != status) {
+    if (NULL != decoded) {
         free(decoded);
     }
 
@@ -2157,7 +2171,9 @@ cl_error_t cli_egg_bzip2_decompress(char* compressed, size_t compressed_size, ch
             break;
     }
 
-    *decompressed      = (char*)decoded;
+    *decompressed = (char*)decoded;
+    decoded       = NULL;
+
     *decompressed_size = declen;
 
     status = CL_SUCCESS;
@@ -2166,7 +2182,7 @@ done:
 
     (void)BZ2_bzDecompressEnd(&stream);
 
-    if (CL_SUCCESS != status) {
+    if (NULL != decoded) {
         free(decoded);
     }
 
@@ -2274,7 +2290,9 @@ cl_error_t cli_egg_lzma_decompress(char* compressed, size_t compressed_size, cha
             break;
     }
 
-    *decompressed      = (char*)decoded;
+    *decompressed = (char*)decoded;
+    decoded       = NULL;
+
     *decompressed_size = declen;
 
     status = CL_SUCCESS;
@@ -2285,7 +2303,7 @@ done:
         (void)cli_LzmaShutdown(&stream);
     }
 
-    if (CL_SUCCESS != status) {
+    if (NULL != decoded) {
         free(decoded);
     }
 
@@ -2307,6 +2325,7 @@ cl_error_t cli_egg_extract_file(void* hArchive, const char** filename, const cha
         goto done;
     }
 
+    *filename             = NULL;
     *output_buffer        = NULL;
     *output_buffer_length = 0;
 
@@ -2522,21 +2541,22 @@ cl_error_t cli_egg_extract_file(void* hArchive, const char** filename, const cha
     }
 
     cli_dbgmsg("cli_egg_extract_file: File extracted: %s\n", currFile->filename.name_utf8);
-    *filename             = strdup(currFile->filename.name_utf8);
-    *output_buffer        = decompressed;
+    *filename = strdup(currFile->filename.name_utf8);
+
+    *output_buffer = decompressed;
+    decompressed   = NULL;
+
     *output_buffer_length = decompressed_size;
-    status                = CL_SUCCESS;
+
+    status = CL_SUCCESS;
 
 done:
     if (NULL != handle) {
         handle->fileExtractionIndex += 1;
     }
 
-    if (CL_SUCCESS != status) {
-        /* Free buffer */
-        if (NULL != decompressed) {
-            free(decompressed);
-        }
+    if (NULL != decompressed) {
+        free(decompressed);
     }
 
     return status;
