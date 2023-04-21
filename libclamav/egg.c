@@ -623,7 +623,8 @@ static cl_error_t egg_parse_comment_header(const uint8_t* index, size_t size, ex
          */
         if (CL_SUCCESS != cli_codepage_to_utf8((char*)index, size, CODEPAGE_UTF8, &comment_utf8, &comment_utf8_size)) {
             cli_dbgmsg("egg_parse_comment_header: failed to convert codepage \"0\" to UTF-8\n");
-            comment_utf8 = cli_genfname(NULL);
+            status = CL_EUNPACK;
+            goto done;
         }
     } else {
         /* Should already be UTF-8. Use as-is.. */
@@ -1213,34 +1214,21 @@ static cl_error_t egg_parse_file_extra_field(egg_handle* handle, egg_file* eggFi
 
             if (CL_SUCCESS != (retval = egg_parse_comment_header(index, size, extraField, &comment))) {
                 cli_dbgmsg("egg_parse_file_extra_field: Issue parsing comment header. Error code: %u\n", retval);
-                break;
+                // Don't fail out with a `goto done;`. We're making a best effort to process the file, so just move on.
+            } else if (comment == NULL) {
+                cli_errmsg("egg_parse_file_extra_field: Logic error! Succesfully parsed comment header,"
+                           " but did not return egg_comment information!\n");
+                goto done;
             } else {
                 /*
-                 * Success?
+                 * Comment found. Add comment to our list.
                  */
-                if (comment == NULL) {
-                    /* Uh... no. */
-                    cli_errmsg("egg_parse_file_extra_field: Logic error! Succesfully parsed comment header,"
-                               " but did not return egg_comment information!\n");
-                    goto done;
-                } else {
-                    /*
-                     * Comment found. Add comment to our list.
-                     */
-                    char** comments_tmp;
-
-                    comments_tmp = (char**)cli_realloc(
-                        (void*)eggFile->comments,
-                        sizeof(char*) * (eggFile->nComments + 1));
-                    if (NULL == comments_tmp) {
-                        free(comment);
-                        status = CL_EMEM;
-                        goto done;
-                    }
-                    eggFile->comments                     = comments_tmp;
-                    eggFile->comments[eggFile->nComments] = comment;
-                    eggFile->nComments++;
-                }
+                CLI_REALLOC(eggFile->comments,
+                            sizeof(char*) * (eggFile->nComments + 1),
+                            free(comment),
+                            status = CL_EMEM);
+                eggFile->comments[eggFile->nComments] = comment;
+                eggFile->nComments++;
             }
             break;
         }
@@ -1681,17 +1669,10 @@ cl_error_t cli_egg_open(fmap_t* map, void** hArchive, char*** comments, uint32_t
                 goto done;
             } else {
                 /* Add file to list. */
-                egg_file** files_tmp;
-
-                files_tmp = (egg_file**)cli_realloc(
-                    (void*)handle->files,
-                    sizeof(egg_file*) * (handle->nFiles + 1));
-                if (NULL == files_tmp) {
-                    egg_free_egg_file(found_file);
-                    status = CL_EMEM;
-                    goto done;
-                }
-                handle->files                 = files_tmp;
+                CLI_REALLOC(handle->files,
+                            sizeof(egg_file*) * (handle->nFiles + 1),
+                            egg_free_egg_file(found_file),
+                            status = CL_EMEM);
                 handle->files[handle->nFiles] = found_file;
                 handle->nFiles++;
             }
@@ -1710,17 +1691,10 @@ cl_error_t cli_egg_open(fmap_t* map, void** hArchive, char*** comments, uint32_t
             } else {
                 /* Add block to list. */
                 if (handle->bSolid) {
-                    egg_block** blocks_tmp;
-
-                    blocks_tmp = (egg_block**)cli_realloc(
-                        (void*)handle->blocks,
-                        sizeof(egg_block*) * (handle->nBlocks + 1));
-                    if (NULL == blocks_tmp) {
-                        egg_free_egg_block(found_block);
-                        status = CL_EMEM;
-                        goto done;
-                    }
-                    handle->blocks                  = blocks_tmp;
+                    CLI_REALLOC(handle->blocks,
+                                sizeof(egg_block*) * (handle->nBlocks + 1),
+                                egg_free_egg_block(found_block),
+                                status = CL_EMEM);
                     handle->blocks[handle->nBlocks] = found_block;
                     handle->nBlocks++;
                 } else {
@@ -1733,20 +1707,12 @@ cl_error_t cli_egg_open(fmap_t* map, void** hArchive, char*** comments, uint32_t
                         // TODO: create an unamed block.
                         egg_free_egg_block(found_block);
                     } else {
-                        egg_block** blocks_tmp;
-
                         eggFile = handle->files[handle->nFiles - 1];
 
-                        /* Add block to list. */
-                        blocks_tmp = (egg_block**)cli_realloc(
-                            (void*)eggFile->blocks,
-                            sizeof(egg_block*) * (eggFile->nBlocks + 1));
-                        if (NULL == blocks_tmp) {
-                            egg_free_egg_block(found_block);
-                            status = CL_EMEM;
-                            goto done;
-                        }
-                        eggFile->blocks                   = blocks_tmp;
+                        CLI_REALLOC(eggFile->blocks,
+                                    sizeof(egg_block*) * (eggFile->nBlocks + 1),
+                                    egg_free_egg_block(found_block),
+                                    status = CL_EMEM);
                         eggFile->blocks[eggFile->nBlocks] = found_block;
                         eggFile->nBlocks++;
                     }
@@ -1756,7 +1722,6 @@ cl_error_t cli_egg_open(fmap_t* map, void** hArchive, char*** comments, uint32_t
             /*
              * Parse extra field for archive comment header.
              */
-            char** comments_tmp;
             extra_field* extraField = NULL;
             char* comment           = NULL;
             uint32_t size           = 0;
@@ -1806,24 +1771,32 @@ cl_error_t cli_egg_open(fmap_t* map, void** hArchive, char*** comments, uint32_t
                 goto done;
             }
 
-            retval = egg_parse_comment_header(index, size, extraField, &comment);
-            if (CL_SUCCESS != retval) {
-                cli_dbgmsg("cli_egg_open: Failed to parse archive comment extra_field data.\n");
-                goto done;
+            if (CL_SUCCESS != (retval = egg_parse_comment_header(index, size, extraField, &comment))) {
+                cli_dbgmsg("cli_egg_open: Issue parsing comment header. Error code: %u\n", retval);
+                // Don't fail out with a `goto done;`. We're making a best effort to process the file, so just move on.
+            } else {
+                /*
+                 * Success?
+                 */
+                if (comment == NULL) {
+                    /* Uh... no. */
+                    cli_errmsg("cli_egg_open: Logic error! Succesfully parsed comment header,"
+                               " but did not return egg_comment information!\n");
+                    goto done;
+                } else {
+                    /*
+                     * Comment found. Add comment to our list.
+                     */
+                    CLI_REALLOC(handle->comments,
+                                sizeof(char*) * (handle->nComments + 1),
+                                free(comment),
+                                status = CL_EMEM);
+                    handle->comments[handle->nComments] = comment;
+                    handle->nComments++;
+                }
             }
-
-            comments_tmp = (char**)cli_realloc(
-                (void*)handle->comments,
-                sizeof(char*) * (handle->nComments + 1));
-            if (NULL == comments_tmp) {
-                free(comment);
-                status = CL_EMEM;
-                goto done;
-            }
-            handle->comments                    = comments_tmp;
-            handle->comments[handle->nComments] = comment;
-            handle->nComments++;
             handle->offset += size;
+
         } else {
             cli_dbgmsg("cli_egg_open: unexpected header magic:               %08x (%s)\n", magic, getMagicHeaderName(magic));
             status = CL_EPARSE;
@@ -1949,7 +1922,6 @@ cl_error_t cli_egg_deflate_decompress(char* compressed, size_t compressed_size, 
 {
     cl_error_t status = CL_EPARSE;
 
-    uint8_t* decoded_tmp;
     uint8_t* decoded = NULL;
     uint32_t declen = 0, capacity = 0;
 
@@ -2002,12 +1974,10 @@ cl_error_t cli_egg_deflate_decompress(char* compressed, size_t compressed_size, 
     while (zstat == Z_OK && stream.avail_in) {
         /* extend output capacity if needed,*/
         if (stream.avail_out == 0) {
-            if (!(decoded_tmp = cli_realloc(decoded, capacity + BUFSIZ))) {
-                cli_errmsg("cli_egg_deflate_decompress: cannot reallocate memory for decompressed output\n");
-                status = CL_EMEM;
-                goto done;
-            }
-            decoded          = decoded_tmp;
+            CLI_REALLOC(decoded,
+                        capacity + BUFSIZ,
+                        cli_errmsg("cli_egg_deflate_decompress: cannot reallocate memory for decompressed output\n"),
+                        status = CL_EMEM);
             stream.next_out  = decoded + capacity;
             stream.avail_out = BUFSIZ;
             declen += BUFSIZ;
@@ -2077,7 +2047,6 @@ cl_error_t cli_egg_bzip2_decompress(char* compressed, size_t compressed_size, ch
 {
     cl_error_t status = CL_EPARSE;
 
-    char* decoded_tmp;
     char* decoded   = NULL;
     uint32_t declen = 0, capacity = 0;
 
@@ -2127,12 +2096,10 @@ cl_error_t cli_egg_bzip2_decompress(char* compressed, size_t compressed_size, ch
     while (bzstat == BZ_OK && stream.avail_in) {
         /* extend output capacity if needed,*/
         if (stream.avail_out == 0) {
-            if (!(decoded_tmp = cli_realloc(decoded, capacity + BUFSIZ))) {
-                cli_errmsg("cli_egg_bzip2_decompress: cannot reallocate memory for decompressed output\n");
-                status = CL_EMEM;
-                goto done;
-            }
-            decoded          = decoded_tmp;
+            CLI_REALLOC(decoded,
+                        capacity + BUFSIZ,
+                        cli_errmsg("cli_egg_bzip2_decompress: cannot reallocate memory for decompressed output\n");
+                        status = CL_EMEM);
             stream.next_out  = decoded + capacity;
             stream.avail_out = BUFSIZ;
             declen += BUFSIZ;
@@ -2194,7 +2161,6 @@ cl_error_t cli_egg_lzma_decompress(char* compressed, size_t compressed_size, cha
 {
     cl_error_t status = CL_EPARSE;
 
-    uint8_t* decoded_tmp;
     uint8_t* decoded = NULL;
     uint32_t declen = 0, capacity = 0;
 
@@ -2247,12 +2213,10 @@ cl_error_t cli_egg_lzma_decompress(char* compressed, size_t compressed_size, cha
     while (lzmastat == LZMA_RESULT_OK && stream.avail_in) {
         /* extend output capacity if needed,*/
         if (stream.avail_out == 0) {
-            if (!(decoded_tmp = cli_realloc(decoded, capacity + BUFSIZ))) {
-                cli_errmsg("cli_egg_lzma_decompress: cannot reallocate memory for decompressed output\n");
-                status = CL_EMEM;
-                goto done;
-            }
-            decoded          = decoded_tmp;
+            CLI_REALLOC(decoded,
+                        capacity + BUFSIZ,
+                        cli_errmsg("cli_egg_lzma_decompress: cannot reallocate memory for decompressed output\n");
+                        status = CL_EMEM);
             stream.next_out  = decoded + capacity;
             stream.avail_out = BUFSIZ;
             declen += BUFSIZ;
@@ -2379,7 +2343,6 @@ cl_error_t cli_egg_extract_file(void* hArchive, const char** filename, const cha
         }
 
         for (i = 0; i < currFile->nBlocks; i++) {
-            char* decompressed_tmp;
             egg_block* currBlock = currFile->blocks[i];
             cl_error_t retval    = CL_EPARSE;
 
@@ -2399,14 +2362,12 @@ cl_error_t cli_egg_extract_file(void* hArchive, const char** filename, const cha
                         cli_warnmsg("cli_egg_extract_file: blockHeader compress_size != uncompress_size!\n");
                         break;
                     }
-                    decompressed_tmp = cli_realloc(decompressed, (size_t)decompressed_size + currBlock->blockHeader->compress_size);
-                    if (NULL == decompressed_tmp) {
-                        cli_errmsg("cli_egg_extract_file: Failed to allocate %" PRIu64 " bytes for decompressed file!\n",
-                                   decompressed_size);
-                        status = CL_EMEM;
-                        goto done;
-                    }
-                    decompressed = decompressed_tmp;
+
+                    CLI_REALLOC(decompressed,
+                                (size_t)decompressed_size + currBlock->blockHeader->compress_size,
+                                cli_errmsg("cli_egg_extract_file: Failed to allocate %" PRIu64 " bytes for decompressed file!\n",
+                                           decompressed_size),
+                                status = CL_EMEM);
 
                     memcpy(decompressed + decompressed_size, currBlock->compressedData, currBlock->blockHeader->compress_size);
                     decompressed_size += currBlock->blockHeader->compress_size;
@@ -2427,15 +2388,12 @@ cl_error_t cli_egg_extract_file(void* hArchive, const char** filename, const cha
                         goto done;
                     }
                     /* Decompressed block. Add it to the file data */
-                    decompressed_tmp = cli_realloc(decompressed, (size_t)decompressed_size + decompressed_block_size);
-                    if (NULL == decompressed_tmp) {
-                        cli_errmsg("cli_egg_extract_file: Failed to allocate %" PRIu64 " bytes for decompressed file!\n",
-                                   decompressed_size);
-                        free(decompressed_block);
-                        status = CL_EMEM;
-                        goto done;
-                    }
-                    decompressed = decompressed_tmp;
+                    CLI_REALLOC(decompressed,
+                                (size_t)decompressed_size + decompressed_block_size,
+                                cli_errmsg("cli_egg_extract_file: Failed to allocate %" PRIu64 " bytes for decompressed file!\n",
+                                           decompressed_size),
+                                free(decompressed_block),
+                                status = CL_EMEM);
 
                     memcpy(decompressed + decompressed_size, decompressed_block, decompressed_block_size);
                     decompressed_size += decompressed_block_size;
@@ -2459,15 +2417,12 @@ cl_error_t cli_egg_extract_file(void* hArchive, const char** filename, const cha
                         goto done;
                     }
                     /* Decompressed block. Add it to the file data */
-                    decompressed_tmp = cli_realloc(decompressed, (size_t)decompressed_size + decompressed_block_size);
-                    if (NULL == decompressed_tmp) {
-                        cli_errmsg("cli_egg_extract_file: Failed to allocate %" PRIu64 " bytes for decompressed file!\n",
-                                   decompressed_size);
-                        free(decompressed_block);
-                        status = CL_EMEM;
-                        goto done;
-                    }
-                    decompressed = decompressed_tmp;
+                    CLI_REALLOC(decompressed,
+                                (size_t)decompressed_size + decompressed_block_size,
+                                cli_errmsg("cli_egg_extract_file: Failed to allocate %" PRIu64 " bytes for decompressed file!\n",
+                                           decompressed_size),
+                                free(decompressed_block),
+                                status = CL_EMEM);
 
                     memcpy(decompressed + decompressed_size, decompressed_block, decompressed_block_size);
                     decompressed_size += decompressed_block_size;
@@ -2501,15 +2456,12 @@ cl_error_t cli_egg_extract_file(void* hArchive, const char** filename, const cha
                     //     goto done;
                     // }
                     // /* Decompressed block. Add it to the file data */
-                    // decompressed_tmp = cli_realloc(decompressed, (size_t)decompressed_size + decompressed_block_size);
-                    // if (NULL == decompressed_tmp) {
-                    //     cli_errmsg("cli_egg_extract_file: Failed to allocate %" PRIu64 " bytes for decompressed file!\n",
-                    //                decompressed_size);
-                    //     free(decompressed_block);
-                    //     status = CL_EMEM;
-                    //     goto done;
-                    // }
-                    // decompressed = decompressed_tmp;
+                    // CLI_REALLOC(decompressed,
+                    //             (size_t)decompressed_size + decompressed_block_size,
+                    //             cli_errmsg("cli_egg_extract_file: Failed to allocate %" PRIu64 " bytes for decompressed file!\n",
+                    //                        decompressed_size),
+                    //             free(decompressed_block),
+                    //             status = CL_EMEM);
 
                     // memcpy(decompressed + decompressed_size, decompressed_block, decompressed_block_size);
                     // decompressed_size += decompressed_block_size;
