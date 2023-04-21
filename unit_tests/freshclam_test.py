@@ -671,7 +671,7 @@ class TC(testcase.TestCase):
         assert output.ec == 0  # success
 
         expected_stdout = [
-            'already up-to-date',
+            'database is up-to-date',
         ]
         unexpected_results = [
             'test.cld updated \\(version: 6',
