@@ -21,25 +21,25 @@ env:
 
 jobs:
   build-windows:
-    runs-on: windows-2019
+    runs-on: windows-2022
 
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v3
 
       - name: Install Build Tools
-        uses: crazy-max/ghaction-chocolatey@v1
+        uses: crazy-max/ghaction-chocolatey@v2
         with:
           args: install wixtoolset
 
       - name: Install pytest for easier to read test results
         run: python3 -m pip install pytest
 
-      - uses: lukka/get-cmake@v3.21.2
+      - uses: lukka/get-cmake@v3.26.3
 
       # Restore from cache the previously built ports. If cache-miss, download, build vcpkg ports.
       - name: Restore vcpkg ports from cache or install vcpkg
         # Download and build vcpkg, without installing any port. If content is cached already, it is a no-op.
-        uses: lukka/run-vcpkg@v7.4
+        uses: lukka/run-vcpkg@v11
         id: runvcpkg
         with:
           vcpkgArguments: "curl[openssl] json-c libxml2 pcre2 check pthreads zlib pdcurses bzip2"
@@ -60,7 +60,7 @@ jobs:
         run: cmake -E make_directory ${{runner.workspace}}/build
 
       - name: Run CMake+Ninja with triplet (cmd)
-        uses: lukka/run-cmake@v3.4
+        uses: lukka/run-cmake@v10
         id: runcmake_cmd
         with:
           cmakeGenerator: "Ninja" # Visual Studio 15 2017
@@ -83,10 +83,10 @@ jobs:
         run: cpack -C ${{ env.BUILD_TYPE }}
 
   build-macos:
-    runs-on: macos-latest
+    runs-on: macos-12
 
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v3
 
       - name: Install Build Tools
         run: brew install bison flex
@@ -97,7 +97,7 @@ jobs:
       - name: Install pytest for easier to read test results
         run: python3 -m pip install pytest
 
-      - uses: lukka/get-cmake@v3.21.2
+      - uses: lukka/get-cmake@v3.26.3
 
       - name: Create Build Directory
         shell: bash
@@ -134,10 +134,10 @@ jobs:
         run: ctest -C ${{ env.BUILD_TYPE }} -V
 
   build-ubuntu:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v3
 
       - name: Update package listings
         run: sudo apt-get update
@@ -151,7 +151,7 @@ jobs:
       - name: Install pytest for easier to read test results
         run: python3 -m pip install pytest
 
-      - uses: lukka/get-cmake@v3.21.2
+      - uses: lukka/get-cmake@v3.26.3
 
       - name: Create Build Directory
         shell: bash

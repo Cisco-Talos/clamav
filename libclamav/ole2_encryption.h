@@ -43,7 +43,7 @@ typedef struct __attribute__((packed)) {
 
 } encryption_info_t;
 
-/* 
+/*
  * https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-offcrypto/2895eba1-acb1-4624-9bde-2cdad3fea015
  */
 typedef struct __attribute__((packed)) {

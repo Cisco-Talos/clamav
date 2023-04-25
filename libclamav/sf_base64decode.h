@@ -27,6 +27,6 @@
 #include <stdio.h>
 #include "clamav-types.h"
 
-int sf_base64decode(uint8_t*, size_t, uint8_t*, size_t, size_t*);
+int sf_base64decode(uint8_t *, size_t, uint8_t *, size_t, size_t *);
 
 #endif

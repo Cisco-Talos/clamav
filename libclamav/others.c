@@ -269,7 +269,7 @@ static void *get_module_function(HMODULE handle, const char *name)
 static void *get_module_function(void *handle, const char *name)
 {
     void *procAddress = NULL;
-    procAddress = dlsym(handle, name);
+    procAddress       = dlsym(handle, name);
     if (NULL == procAddress) {
         const char *err = dlerror();
         if (NULL == err) {

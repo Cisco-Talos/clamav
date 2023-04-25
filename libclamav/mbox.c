@@ -162,7 +162,7 @@ typedef enum {
  * Slows things down a lot and only catches unencoded copies
  * of EICAR within bounces, which don't matter
  */
-//#define    SCAN_UNENCODED_BOUNCES
+// #define    SCAN_UNENCODED_BOUNCES
 
 typedef struct mbox_ctx {
     const char *dir;

@@ -1980,7 +1980,7 @@ word_read_macro_entry(int fd, macro_info_t *macro_info)
         uint32_t len __attribute__((packed));
         uint32_t state __attribute__((packed));
         uint32_t offset __attribute__((packed));
-    } * m;
+    } *m;
     const struct macro *n;
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack()

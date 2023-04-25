@@ -6,12 +6,12 @@ on:
 
 jobs:
   update-image-databases:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     env:
       CLAMAV_DOCKER_USER: ${{ secrets.CLAMAV_DOCKER_USER }}
       CLAMAV_DOCKER_PASSWD: ${{ secrets.CLAMAV_DOCKER_PASSWD }}
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v3
 
       - name: Update virus database and push image
         run: ./dockerfiles/update_db_image.sh

@@ -37,7 +37,7 @@
 #include "scanners.h"
 #include "dconf.h"
 
-//#define DEBUG_APM_PARSE
+// #define DEBUG_APM_PARSE
 
 #ifdef DEBUG_APM_PARSE
 #define apm_parsemsg(...) cli_dbgmsg(__VA_ARGS__)
