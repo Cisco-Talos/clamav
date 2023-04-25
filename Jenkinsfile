@@ -47,7 +47,7 @@ properties(
     ]
 )
 
-node('master') {
+node('ubuntu-18-x64') {
     stage('Generate Tarball') {
         cleanWs()
 
