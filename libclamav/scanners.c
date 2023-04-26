@@ -1655,6 +1655,15 @@ static cl_error_t cli_ole2_tempdir_scan_vba_new(const char *dir, cli_ctx *ctx, s
                 //        OLE2 archive, we don't know if we have the right file. The only thing we can do is
                 //        iterate all of them until one succeeds.
                 cli_dbgmsg("cli_ole2_tempdir_scan_vba_new: Failed to read dir from %s, trying others (error: %s (%d))\n", path, cl_strerror(ret), (int)ret);
+
+                if (tempfile) {
+                    if (!ctx->engine->keeptmp) {
+                        remove(tempfile);
+                    }
+                    free(tempfile);
+                    tempfile = NULL;
+                }
+
                 ret = CL_SUCCESS;
                 hashcnt--;
                 continue;
