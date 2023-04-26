@@ -10,7 +10,7 @@
 *.ref           binary
 
 # Preserve signature for .cargo/vendor files (from the tarabll)
-+/.cargo/vendor binary
+.cargo/vendor   binary
 
 #
 # Exclude files from exporting
