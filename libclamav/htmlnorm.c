@@ -1191,7 +1191,12 @@ static bool cli_html_normalise(cli_ctx *ctx, int fd, m_area_t *m_area, const cha
                         } else if ((strcmp(tag, "/style") == 0) && (in_tag == TAG_STYLE)) {
                             size_t chunk_size;
 
-                            style_end = ptr - strlen("</style>") - 1;
+                            style_end = ptr - strlen("</style>");
+
+                            if (style_end < style_begin) {
+                                cli_errmsg("cli_html_normalise: style chunk size underflow\n");
+                                goto done;
+                            }
 
                             chunk_size = style_end - style_begin;
 
