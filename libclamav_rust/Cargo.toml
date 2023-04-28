@@ -18,6 +18,7 @@ transpose = "0.2"
 num-traits = "0.2"
 base64 = "0.21.0"
 sha1 = "0.10.5"
+unicode-segmentation = "1.10.1"
 
 [lib]
 crate-type = ["staticlib"]

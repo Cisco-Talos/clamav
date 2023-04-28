@@ -1032,7 +1032,7 @@ fn process_line(ctx: &mut Context, line: &[u8]) -> Result<(), InputError> {
             cmd_unlink(ctx, unlink_op)
         }
         _ => Err(InputError::UnknownCommand(
-            String::from_utf8_lossy(&cmd).to_string(),
+            String::from_utf8_lossy(cmd).to_string(),
         )),
     }
 }
