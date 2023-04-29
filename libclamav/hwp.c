@@ -1525,7 +1525,7 @@ static inline cl_error_t parsehwp3_infoblk_1(cli_ctx *ctx, fmap_t *dmap, size_t 
     char field[HWP3_FIELD_LENGTH];
 #endif
 #if HAVE_JSON
-    json_object *infoblk_1, *contents, *counter, *entry;
+    json_object *infoblk_1, *contents = NULL, *counter, *entry = NULL;
 #endif
 
     hwp3_debug("HWP3.x: Information Block @ offset %llu\n", infoloc);
@@ -1757,7 +1757,7 @@ static cl_error_t hwp3_cb(void *cbdata, int fd, const char *filepath, cli_ctx *c
     int i, p = 0, last = 0;
     uint16_t nstyles;
 #if HAVE_JSON
-    json_object *fonts;
+    json_object *fonts = NULL;
 #endif
 
     UNUSEDPARAM(filepath);

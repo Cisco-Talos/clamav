@@ -210,7 +210,7 @@ int filter_add_static(struct filter *m, const unsigned char *pattern, unsigned l
     for (j = 0; (best < 100 && j < MAX_CHOICES) || (j < maxlen); j++) {
         uint32_t num = MAXSOPATLEN;
         uint8_t k;
-        if (j + 2 > len)
+        if ((unsigned long)(j + 2) > len)
             break;
         for (k = j; k < len - 1 && (k - j < MAXSOPATLEN); k++) {
             q = cli_readint16(&pattern[k]);
@@ -323,7 +323,7 @@ enum badness {
 };
 static inline void get_score(enum badness badness, unsigned i, const struct filter *m, const struct char_spec *spec0, const struct char_spec *spec1, int32_t *score, int32_t *score_end)
 {
-    int32_t base;
+    int32_t base = 0;
     unsigned k0, k1, num_introduced = 0, num_end_introduced = 0;
     switch (badness) {
         case reject:

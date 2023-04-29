@@ -406,7 +406,6 @@ cl_error_t onas_setup_client(struct onas_context **ctx)
 {
 
     const struct optstruct *opts;
-    const struct optstruct *opt;
     cl_error_t err;
     int remote;
 

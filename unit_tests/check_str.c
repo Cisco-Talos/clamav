@@ -117,8 +117,8 @@ START_TEST(test_append_len)
     ck_assert_msg(textbuffer_append_len(&buf, "test", 3) != -1, "tbuf append");
     ck_assert_msg(buf.data && !strncmp(buf.data, "tes", 3), "textbuffer_append_len");
     errmsg_expected();
-    ck_assert_msg(textbuffer_append_len(&buf, "test", CLI_MAX_ALLOCATION) == -1, "tbuf append");
-    ck_assert_msg(buf.data && !strncmp(buf.data, "tes", 3), "textbuffer_append_len");
+    ck_assert_msg(textbuffer_append_len(&buf, "TEST", 4) != -1, "tbuf append");
+    ck_assert_msg(buf.data && !strncmp(buf.data, "tesTEST", 4), "textbuffer_append_len");
 }
 END_TEST
 

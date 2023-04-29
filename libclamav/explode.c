@@ -198,8 +198,8 @@ int explode_init(struct xplstate *X, uint16_t flags)
         }                                                                 \
     }
 
-#define GETCODES(CASE, WHICH, HOWMANY)                                        \
-    case CASE: {                                                              \
+#define GETCODES(WHICH, HOWMANY)                                              \
+    {                                                                         \
         if (!X->avail_in) return EXPLODE_EBUFF;                               \
         if (!X->got)                                                          \
             need = *X->next_in;                                               \
@@ -227,6 +227,7 @@ int explode_init(struct xplstate *X, uint16_t flags)
 
 #define SETCASE(CASE)         \
     X->state = (CASE);        \
+    /* fall-through */        \
     case (CASE): { /* FAKE */ \
     }
 
@@ -236,14 +237,19 @@ int explode(struct xplstate *X)
     int temp = -1;
 
     switch (X->state) {
-        /* grab compressed coded literals, if present */
-        GETCODES(GRABLITS, lit_tree, 256);
-        /* grab compressed coded lens */
-        GETCODES(GRABLENS, len_tree, 64);
-        /* grab compressed coded dists */
-        GETCODES(GRABDISTS, dist_tree, 64);
+        case GRABLITS: { /* grab compressed coded literals, if present */
+            GETCODES(lit_tree, 256);
+        } /* fall-through */
 
-        case EXPLODE:
+        case GRABLENS: { /* grab compressed coded lens */
+            GETCODES(len_tree, 64);
+        } /* fall-through */
+
+        case GRABDISTS: { /* grab compressed coded dists */
+            GETCODES(dist_tree, 64);
+        } /* fall-through */
+
+        case EXPLODE: {
             while (X->avail_in || X->bits) {
                 GETBIT; /* can't fail */
                 if (val) {
@@ -315,6 +321,7 @@ int explode(struct xplstate *X)
                 }
                 X->state = EXPLODE;
             }
+        }
     }
     return EXPLODE_EBUFF;
 }

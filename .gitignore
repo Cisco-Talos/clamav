@@ -30,7 +30,6 @@ __pycache__/
 
 # C Linker output
 *.ilk
-*.map
 *.exp
 
 # C Precompiled Headers

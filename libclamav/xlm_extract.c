@@ -4994,6 +4994,9 @@ done:
 
     FREE(data);
 
+    if (tempfile && !ctx->engine->keeptmp) {
+        remove(tempfile);
+    }
     FREE(tempfile);
 
     return status;

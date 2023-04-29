@@ -766,7 +766,7 @@ int32_t cli_bcapi_matchicon(struct cli_bc_ctx *ctx, const uint8_t *grp1, int32_t
             !ctx->hooks.pedata->dirs[2].Size)
             info.res_addr = 0;
         else
-            info.res_addr = le32_to_host(ctx->hooks.pedata->dirs[2].VirtualAddress);
+            info.res_addr = ctx->hooks.pedata->dirs[2].VirtualAddress;
     } else
         info.res_addr = ctx->resaddr; /* from target_info */
     info.sections  = (struct cli_exe_section *)ctx->sections;

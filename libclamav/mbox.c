@@ -217,7 +217,7 @@ static int count_quotes(const char *buf);
 static bool next_is_folded_header(const text *t);
 static bool newline_in_header(const char *line);
 
-static blob *getHrefs(cli_ctx*, message *m, tag_arguments_t *hrefs);
+static blob *getHrefs(cli_ctx *, message *m, tag_arguments_t *hrefs);
 static void hrefs_done(blob *b, tag_arguments_t *hrefs);
 static void checkURLs(message *m, mbox_ctx *mctx, mbox_status *rc, int is_html);
 

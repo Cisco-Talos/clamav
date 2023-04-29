@@ -58,11 +58,13 @@ class TC(testcase.TestCase):
         super(TC, cls).tearDownClass()
 
     def setUp(self):
+        TC.original_cwd = os.getcwd()
         super(TC, self).setUp()
 
     def tearDown(self):
         super(TC, self).tearDown()
         self.verify_valgrind_log()
+        os.chdir(TC.original_cwd)
 
     def test_sigtool_00_version(self):
         self.step_name('sigtool version test')
@@ -79,3 +81,79 @@ class TC(testcase.TestCase):
             'ClamAV {}'.format(TC.version),
         ]
         self.verify_output(output.out, expected=expected_results)
+
+    def test_sigtool_01_run_cdiff(self):
+        self.step_name('sigtool run cdiff test')
+        # In addition to testing that running a cdiff works, this also tests a regression.
+        # Applying test-3.cdiff was failing because UNLINK wasn't properly implemented (since 0.105.0).
+        # We didn't notice it because logging wasn't enabled, and leniency in our freshclam cdiff process
+        # allowed the test to pass without noticing the bug.
+
+        self.log.warning('VG: {}'.format(os.getenv("VG")))
+
+        (TC.path_tmp / 'run_cdiff').mkdir()
+        os.chdir(str(TC.path_tmp / 'run_cdiff'))
+
+        command = '{valgrind} {valgrind_args} {sigtool} --unpack {cvd}'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, sigtool=TC.sigtool,
+            cvd=TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles' / 'test-1.cvd'
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 0  # success
+
+        # Apply 1st cdiff.
+
+        command = '{valgrind} {valgrind_args} {sigtool} --run-cdiff={cdiff}'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, sigtool=TC.sigtool,
+            cdiff=TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles' / 'test-2.cdiff'
+        )
+        output = self.execute_command(command)
+
+        # Apply 2nd cdiff. This one failed because the CLOSE operation should create a file
+        # if it didn't exist, and it was only appending but not creating.
+
+        command = '{valgrind} {valgrind_args} {sigtool} --run-cdiff={cdiff}'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, sigtool=TC.sigtool,
+            cdiff=TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles' / 'test-3.cdiff'
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 0  # success
+
+    def test_sigtool_02_rust_logs_messages_work(self):
+        self.step_name('sigtool test rust log macros work')
+        # In addition to testing that running a cdiff works, this also tests a regression.
+        # Applying test-3.cdiff was failing because UNLINK wasn't properly implemented (since 0.105.0).
+        # We didn't notice it because logging wasn't enabled, and leniency in our freshclam cdiff process
+        # allowed the test to pass without noticing the bug.
+
+        self.log.warning('VG: {}'.format(os.getenv("VG")))
+
+        (TC.path_tmp / 'run_cdiff_log').mkdir()
+        os.chdir(str(TC.path_tmp / 'run_cdiff_log'))
+
+        command = '{valgrind} {valgrind_args} {sigtool} --unpack {cvd}'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, sigtool=TC.sigtool,
+            cvd=TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles' / 'test-1.cvd'
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 0  # success
+
+        # Apply cdiffs in wrong order. Should fail and print a message.
+
+        command = '{valgrind} {valgrind_args} {sigtool} --run-cdiff={cdiff}'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, sigtool=TC.sigtool,
+            cdiff=TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles' / 'test-3.cdiff'
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 1  # failure
+
+        # Verify that the `error!()` message was printed to stderr.
+        # This didn't happen before when we didn't initialize the rust logging lib at the top of sigtool.
+        expected_results = [
+            'LibClamAV Error',
+        ]
+        self.verify_output(output.err, expected=expected_results)

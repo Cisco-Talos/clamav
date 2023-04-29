@@ -787,6 +787,10 @@ static void handle_df(const yystype *tokens, size_t start, struct decode_result 
 static void handle_eval(struct tokens *tokens, size_t start, struct decode_result *res)
 {
     res->txtbuf.data = TOKEN_GET(&tokens->data[start], string);
+
+    if (start + 1 >= tokens->cnt)
+        return;
+
     if (res->txtbuf.data && tokens->data[start + 1].type == TOK_PAR_CLOSE) {
         TOKEN_SET(&tokens->data[start], string, NULL);
         res->txtbuf.pos = strlen(res->txtbuf.data);

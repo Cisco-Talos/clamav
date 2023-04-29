@@ -29,7 +29,7 @@
 #include "clamav-config.h"
 #endif
 
-int cli_versig(const char *md5, const char *dsig);
+cl_error_t cli_versig(const char *md5, const char *dsig);
 int cli_versig2(const unsigned char *sha256, const char *dsig_str, const char *n_str, const char *e_str);
 
 /**

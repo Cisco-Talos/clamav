@@ -290,7 +290,7 @@ static void mspack_fmap_message(struct mspack_file *file, const char *fmt, ...)
         memset(buff, 0, BUFSIZ);
 
         /* Add the prefix */
-        strncpy(buff, "LibClamAV debug: ", len);
+        memcpy(buff, "LibClamAV debug: ", len);
 
         va_start(args, fmt);
         vsnprintf(buff + len, sizeof(buff) - len - 2, fmt, args);

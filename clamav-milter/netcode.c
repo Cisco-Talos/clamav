@@ -466,7 +466,8 @@ int islocalnet_name(char *name)
 
 int islocalnet_sock(struct sockaddr *sa)
 {
-    uint32_t host[4], family;
+    uint32_t host[4] = {0};
+    uint32_t family;
 
     if (!lnet) return 0;
 

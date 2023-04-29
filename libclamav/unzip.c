@@ -1061,7 +1061,7 @@ cl_error_t index_the_central_directory(
                 goto done;
             }
 
-            zip_catalogue_new = cli_realloc2(zip_catalogue, sizeof(struct zip_record) * ZIP_RECORDS_CHECK_BLOCKSIZE * (num_record_blocks + 1));
+            zip_catalogue_new = cli_realloc(zip_catalogue, sizeof(struct zip_record) * ZIP_RECORDS_CHECK_BLOCKSIZE * (num_record_blocks + 1));
             if (NULL == zip_catalogue_new) {
                 status = CL_EMEM;
                 goto done;

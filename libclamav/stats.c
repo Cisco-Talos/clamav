@@ -572,11 +572,12 @@ char *clamav_stats_get_hostid(void *cbdata)
 #else
 char *clamav_stats_get_hostid(void *cbdata)
 {
-    char *sysctls[] = {
-        "kern.hostuuid",
-        NULL};
-    size_t bufsz, i;
     char *buf;
+
+#if HAVE_SYSCTLBYNAME
+    char *sysctls[] = {"kern.hostuuid", NULL};
+    size_t bufsz, i;
+#endif
 
     UNUSEDPARAM(cbdata);
 

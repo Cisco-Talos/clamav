@@ -1,9 +1,9 @@
-/* 
+/*
  * This file contains code from zlib library v.1.2.3 with modifications
  * by aCaB <acab@clamav.net> to allow decompression of deflate64 streams
  * (aka zip method 9). The implementation is heavily inspired by InfoZip
  *  and zlib's inf9back.c
- * 
+ *
  * Full copy of the original zlib license follows:
  */
 
@@ -439,11 +439,13 @@ int flush;
             strm->adler = state->check = REVERSE(hold);
             INITBITS();
             state->mode = DICT;
+            /* fall-through */
         case DICT:
             RESTORE();
             return Z_NEED_DICT;
         case TYPE:
             if (flush == Z_BLOCK) goto inf_leave;
+            /* fall-through */
         case TYPEDO:
             if (state->last) {
                 BYTEBITS();
@@ -487,6 +489,7 @@ int flush;
                     state->length));
             INITBITS();
             state->mode = COPY;
+            /* fall-through */
         case COPY:
             copy = state->length;
             if (copy) {
@@ -611,6 +614,7 @@ int flush;
             }
             Tracev((stderr, "inflate:       codes ok\n"));
             state->mode = LEN;
+            /* fall-through */
         case LEN:
 		/*            if (have >= 6 && left >= 258) {
                 RESTORE();
@@ -654,6 +658,7 @@ int flush;
             }
             state->extra = (unsigned)(this.op) & 31;
             state->mode = LENEXT;
+            /* fall-through */
         case LENEXT:
             if (state->extra) {
                 NEEDBITS(state->extra);
@@ -662,6 +667,7 @@ int flush;
             }
             Tracevv((stderr, "inflate:         length %u\n", state->length));
             state->mode = DIST;
+            /* fall-through */
         case DIST:
             for (;;) {
                 this = state->distcode[BITS(state->distbits)];
@@ -687,6 +693,7 @@ int flush;
             state->offset = (unsigned)this.val;
             state->extra = (unsigned)(this.op) & 15;
             state->mode = DISTEXT;
+            /* fall-through */
         case DISTEXT:
             if (state->extra) {
                 NEEDBITS(state->extra);
@@ -705,6 +712,7 @@ int flush;
             }
             Tracevv((stderr, "inflate:         distance %u\n", state->offset));
             state->mode = MATCH;
+            /* fall-through */
         case MATCH:
             if (left == 0) goto inf_leave;
             copy = out - left;
@@ -755,6 +763,7 @@ int flush;
                 Tracev((stderr, "inflate:   check matches trailer\n"));
             }
             state->mode = DONE;
+            /* fall-through */
         case DONE:
             ret = Z_STREAM_END;
             goto inf_leave;

@@ -2055,7 +2055,9 @@ int main(void)
 
     srunner_set_log(sr, OBJDIR PATHSEP "test.log");
     if (freopen(OBJDIR PATHSEP "test-stderr.log", "w+", stderr) == NULL) {
-        fputs("Unable to redirect stderr!\n", stderr);
+        // The stderr FILE pointer may be closed by `freopen()` even if redirecting to the log file files.
+        // So we will output the error message to stdout instead.
+        fputs("Unable to redirect stderr!\n", stdout);
     }
     cl_debug();
 

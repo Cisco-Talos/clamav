@@ -397,6 +397,12 @@ The following is a complete list of CMake options unique to configuring ClamAV:
 
   _Default: `ON`_
 
+- `DO_NOT_SET_RPATH`: By default RPATH is set in executeables resulting using
+  paths set at build time instead of using system defaults. By setting this
+  `ON` system defaults are used.
+
+  _Default: `OFF`_
+
 - `ENABLE_WERROR`: Compile time warnings will cause build failures (i.e.
   `-Werror`)
 
