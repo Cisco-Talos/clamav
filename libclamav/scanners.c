@@ -1632,7 +1632,8 @@ static cl_error_t cli_ole2_tempdir_scan_vba_new(const char *dir, cli_ctx *ctx, s
     char *hash       = NULL;
     char path[PATH_MAX];
     char filename[PATH_MAX];
-    int tempfd = -1;
+    int tempfd     = -1;
+    char *tempfile = NULL;
 
     if (CL_SUCCESS != (ret = uniq_get(U, "dir", 3, &hash, &hashcnt))) {
         cli_dbgmsg("cli_ole2_tempdir_scan_vba_new: uniq_get('dir') failed with ret code (%d)!\n", ret);
@@ -1649,11 +1650,20 @@ static cl_error_t cli_ole2_tempdir_scan_vba_new(const char *dir, cli_ctx *ctx, s
 
         if (CL_SUCCESS == find_file(filename, dir, path, sizeof(path))) {
             cli_dbgmsg("cli_ole2_tempdir_scan_vba_new: Found dir file: %s\n", path);
-            if ((ret = cli_vba_readdir_new(ctx, path, U, hash, hashcnt, &tempfd, has_macros)) != CL_SUCCESS) {
+            if ((ret = cli_vba_readdir_new(ctx, path, U, hash, hashcnt, &tempfd, has_macros, &tempfile)) != CL_SUCCESS) {
                 // FIXME: Since we only know the stream name of the OLE2 stream, but not its path inside the
                 //        OLE2 archive, we don't know if we have the right file. The only thing we can do is
                 //        iterate all of them until one succeeds.
                 cli_dbgmsg("cli_ole2_tempdir_scan_vba_new: Failed to read dir from %s, trying others (error: %s (%d))\n", path, cl_strerror(ret), (int)ret);
+
+                if (tempfile) {
+                    if (!ctx->engine->keeptmp) {
+                        remove(tempfile);
+                    }
+                    free(tempfile);
+                    tempfile = NULL;
+                }
+
                 ret = CL_SUCCESS;
                 hashcnt--;
                 continue;
@@ -1693,6 +1703,14 @@ static cl_error_t cli_ole2_tempdir_scan_vba_new(const char *dir, cli_ctx *ctx, s
 
             close(tempfd);
             tempfd = -1;
+
+            if (tempfile) {
+                if (!ctx->engine->keeptmp) {
+                    remove(tempfile);
+                }
+                free(tempfile);
+                tempfile = NULL;
+            }
         }
 
         hashcnt--;
@@ -1702,6 +1720,14 @@ done:
     if (tempfd != -1) {
         close(tempfd);
         tempfd = -1;
+    }
+
+    if (tempfile) {
+        if (!ctx->engine->keeptmp) {
+            remove(tempfile);
+        }
+        free(tempfile);
+        tempfile = NULL;
     }
 
     return ret;
@@ -2043,6 +2069,10 @@ done:
         }
 
         free(fullname);
+    }
+
+    if (fd >= 0) {
+        close(fd);
     }
 
     return status;

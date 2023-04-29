@@ -416,6 +416,7 @@ struct cl_engine {
     void *cb_sigload_ctx;
     clcb_hash cb_hash;
     clcb_meta cb_meta;
+    clcb_generic_data cb_vba;
     clcb_file_props cb_file_props;
     clcb_progress cb_sigload_progress;
     void *cb_sigload_progress_ctx;

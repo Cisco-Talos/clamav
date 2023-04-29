@@ -88,6 +88,11 @@ Example
 # Default: no
 #OfficialDatabaseOnly no
 
+# Return with a nonzero error code if the virus database is older than
+# the specified number of days.
+# Default: -1
+#FailIfCvdOlderThan 7
+
 # The daemon can work in local mode, network mode or both.
 # Due to security reasons we recommend the local mode.
 

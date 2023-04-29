@@ -106,6 +106,7 @@ static void help(void)
     printf("    --debug                                 Enable debug mode\n");
     printf("    --log=FILE               -l FILE        Log into FILE\n");
     printf("    --config-file=FILE       -c FILE        Read configuration from FILE\n");
+    printf("    --fail-if-cvd-older-than=days           Return with a nonzero error code if virus database outdated.\n");
     printf("\n");
     printf("Pass in - as the filename for stdin.\n");
     printf("\n");
@@ -651,6 +652,12 @@ int main(int argc, char **argv)
             svc_register("clamd");
         }
 #endif
+        if (optget(opts, "fail-if-cvd-older-than")->enabled) {
+            if (check_if_cvd_outdated(dbdir, optget(opts, "fail-if-cvd-older-than")->numarg) != CL_SUCCESS) {
+                ret = 1;
+                break;
+            }
+        }
 
         if ((ret = cl_load(dbdir, engine, &sigs, dboptions))) {
             logg(LOGG_ERROR, "%s\n", cl_strerror(ret));

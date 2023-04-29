@@ -1927,6 +1927,11 @@ void cl_engine_set_clcb_file_props(struct cl_engine *engine, clcb_file_props cal
     engine->cb_file_props = callback;
 }
 
+void cl_engine_set_clcb_vba(struct cl_engine *engine, clcb_generic_data callback)
+{
+    engine->cb_vba = callback;
+}
+
 uint8_t cli_get_debug_flag()
 {
     return cli_debug_flag;

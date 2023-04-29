@@ -49,6 +49,7 @@ struct pdf_obj {
     size_t stream_size;           // size of stream contained in object.
     struct objstm_struct *objstm; // Should be NULL unless the obj exists in an object stream (separate buffer)
     char *path;
+    bool extracted; // We've attempted to extract this object. Check to prevent doing it more than once!
 };
 
 enum pdf_array_type { PDF_ARR_UNKNOWN = 0,

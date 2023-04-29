@@ -987,11 +987,11 @@ static fc_error_t remote_cvdhead(
          * show the more generic information from curl_easy_strerror instead.
          */
         size_t len = strlen(errbuf);
-        logg(LOGG_INFO, "%cremote_cvdhead: Download failed (%d) ", logerr ? '!' : '^', curl_ret);
+        logg(logerr ? LOGG_ERROR : LOGG_WARNING, "remote_cvdhead: Download failed (%d) ", curl_ret);
         if (len)
-            logg(LOGG_INFO, "%c Message: %s%s", logerr ? '!' : '^', errbuf, ((errbuf[len - 1] != '\n') ? "\n" : ""));
+            logg(logerr ? LOGG_ERROR : LOGG_WARNING, " Message: %s%s", errbuf, ((errbuf[len - 1] != '\n') ? "\n" : ""));
         else
-            logg(LOGG_INFO, "%c Message: %s\n", logerr ? '!' : '^', curl_easy_strerror(curl_ret));
+            logg(logerr ? LOGG_ERROR : LOGG_WARNING, " Message: %s\n", curl_easy_strerror(curl_ret));
         status = FC_ECONNECTION;
         goto done;
     }
@@ -1057,11 +1057,11 @@ static fc_error_t remote_cvdhead(
         }
         default: {
             if (g_proxyServer)
-                logg(LOGG_INFO, "%cremote_cvdhead: Unexpected response (%li) from %s (Proxy: %s:%u)\n",
-                     logerr ? '!' : '^', http_code, server, g_proxyServer, g_proxyPort);
+                logg(logerr ? LOGG_ERROR : LOGG_WARNING, "remote_cvdhead: Unexpected response (%li) from %s (Proxy: %s:%u)\n",
+                     http_code, server, g_proxyServer, g_proxyPort);
             else
-                logg(LOGG_INFO, "%cremote_cvdhead: Unexpected response (%li) from %s\n",
-                     logerr ? '!' : '^', http_code, server);
+                logg(logerr ? LOGG_ERROR : LOGG_WARNING, "remote_cvdhead: Unexpected response (%li) from %s\n",
+                     http_code, server);
             status = FC_EFAILEDGET;
             goto done;
         }
@@ -1071,7 +1071,7 @@ static fc_error_t remote_cvdhead(
      * Identify start of CVD header in response body.
      */
     if (receivedData.size < CVD_HEADER_SIZE) {
-        logg(LOGG_INFO, "%cremote_cvdhead: Malformed CVD header (too short)\n", logerr ? '!' : '^');
+        logg(logerr ? LOGG_ERROR : LOGG_WARNING, "remote_cvdhead: Malformed CVD header (too short)\n");
         status = FC_EFAILEDGET;
         goto done;
     }
@@ -1087,7 +1087,7 @@ static fc_error_t remote_cvdhead(
             (receivedData.buffer && !*receivedData.buffer) ||
             (receivedData.buffer && !isprint(receivedData.buffer[i]))) {
 
-            logg(LOGG_INFO, "%cremote_cvdhead: Malformed CVD header (bad chars)\n", logerr ? '!' : '^');
+            logg(logerr ? LOGG_ERROR : LOGG_WARNING, "remote_cvdhead: Malformed CVD header (bad chars)\n");
             status = FC_EFAILEDGET;
             goto done;
         }
@@ -1098,7 +1098,7 @@ static fc_error_t remote_cvdhead(
      * Parse CVD info into CVD info struct.
      */
     if (!(cvdhead = cl_cvdparse(head))) {
-        logg(LOGG_INFO, "%cremote_cvdhead: Malformed CVD header (can't parse)\n", logerr ? '!' : '^');
+        logg(logerr ? LOGG_ERROR : LOGG_WARNING, "remote_cvdhead: Malformed CVD header (can't parse)\n");
         status = FC_EFAILEDGET;
         goto done;
     } else {
@@ -1289,17 +1289,18 @@ static fc_error_t downloadFile(
          * show the more generic information from curl_easy_strerror instead.
          */
         size_t len = strlen(errbuf);
-        logg(LOGG_INFO, "%cDownload failed (%d) ", logerr ? '!' : '^', curl_ret);
+        logg(logerr ? LOGG_ERROR : LOGG_WARNING, "Download failed (%d) ", curl_ret);
         if (len)
-            logg(LOGG_INFO, "%c Message: %s%s", logerr ? '!' : '^', errbuf, ((errbuf[len - 1] != '\n') ? "\n" : ""));
+            logg(logerr ? LOGG_ERROR : LOGG_WARNING, " Message: %s%s", errbuf, ((errbuf[len - 1] != '\n') ? "\n" : ""));
         else
-            logg(LOGG_INFO, "%c Message: %s\n", logerr ? '!' : '^', curl_easy_strerror(curl_ret));
+            logg(logerr ? LOGG_ERROR : LOGG_WARNING, " Message: %s\n", curl_easy_strerror(curl_ret));
         status = FC_ECONNECTION;
         goto done;
     }
 
     /* Check HTTP code */
     curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
+    logg(LOGG_WARNING, " ******* RESULT %ld, SIZE: %zu ******* \n", http_code, receivedFile.size);
     switch (http_code) {
         case 200:
         case 206: {
@@ -1363,11 +1364,11 @@ static fc_error_t downloadFile(
         }
         default: {
             if (g_proxyServer)
-                logg(LOGG_INFO, "%cdownloadFile: Unexpected response (%li) from %s (Proxy: %s:%u)\n",
-                     logerr ? '!' : '^', http_code, url, g_proxyServer, g_proxyPort);
+                logg(logerr ? LOGG_ERROR : LOGG_WARNING, "downloadFile: Unexpected response (%li) from %s (Proxy: %s:%u)\n",
+                     http_code, url, g_proxyServer, g_proxyPort);
             else
-                logg(LOGG_INFO, "%cdownloadFile: Unexpected response (%li) from %s\n",
-                     logerr ? '!' : '^', http_code, url);
+                logg(logerr ? LOGG_ERROR : LOGG_WARNING, "downloadFile: Unexpected response (%li) from %s\n",
+                     http_code, url);
             status = FC_EFAILEDGET;
         }
     }
@@ -1426,7 +1427,7 @@ static fc_error_t getcvd(
         status = ret;
         goto done;
     } else if (ret > FC_UPTODATE) {
-        logg(LOGG_INFO, "%cCan't download %s from %s\n", logerr ? '!' : '^', cvdfile, url);
+        logg(logerr ? LOGG_ERROR : LOGG_WARNING, "Can't download %s from %s\n", cvdfile, url);
         status = ret;
         goto done;
     }
@@ -1634,7 +1635,7 @@ static fc_error_t downloadPatch(
         if (ret == FC_EEMPTYFILE) {
             logg(LOGG_INFO, "Empty script %s, need to download entire database\n", patch);
         } else {
-            logg(LOGG_INFO, "%cdownloadPatch: Can't download %s from %s\n", logerr ? '!' : '^', patch, url);
+            logg(logerr ? LOGG_ERROR : LOGG_WARNING, "downloadPatch: Can't download %s from %s\n", patch, url);
         }
         status = ret;
         goto done;
@@ -2351,6 +2352,7 @@ fc_error_t updatedb(
 
         if (
             (FC_EEMPTYFILE == ret) ||                                 /* Request a new CVD if we got an empty CDIFF.      */
+            (FC_EFAILEDUPDATE == ret) ||                              /* Request a new CVD if we failed to apply a CDIFF. */
             (FC_SUCCESS != ret && (                                   /* Or if the incremental update failed:             */
                                    (0 == numPatchesReceived) &&       /* 1. Ask for the CVD if we didn't get any patches, */
                                    (localVersion < remoteVersion - 1) /* 2. AND if we're more than 1 version out of date. */
@@ -2396,7 +2398,7 @@ fc_error_t updatedb(
             size_t newLocalFilenameLen = 0;
             if (FC_SUCCESS != buildcld(tmpdir, database, tmpfile, g_bCompressLocalDatabase)) {
                 logg(LOGG_ERROR, "updatedb: Incremental update failed. Failed to build CLD.\n");
-                status = FC_EFAILEDUPDATE;
+                status = FC_EBADCVD;
                 goto done;
             }
 
@@ -2610,7 +2612,7 @@ fc_error_t updatecustomdb(
             logg(LOGG_INFO, "%s is up-to-date (version: custom database)\n", databaseName);
             goto up_to_date;
         } else if (ret > FC_UPTODATE) {
-            logg(LOGG_INFO, "%cCan't download %s from %s\n", logerr ? '!' : '^', databaseName, url);
+            logg(logerr ? LOGG_ERROR : LOGG_WARNING, "Can't download %s from %s\n", databaseName, url);
             status = ret;
             goto done;
         }

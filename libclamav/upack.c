@@ -331,8 +331,10 @@ int unupack(int upack, char *dest, uint32_t dsize, char *buff, uint32_t vma, uin
             /* fix values */
             if (!CLI_ISCONTAINED(dest, dsize, loc_ebx - 4, (12 + 4 * 4)) || !CLI_ISCONTAINED(dest, dsize, loc_esi + 0x24, 4) || !CLI_ISCONTAINED(dest, dsize, loc_esi + 0x40, 4))
                 return -1;
-            for (j = 2; j < 6; j++)
-                cli_writeint32(loc_ebx + (j << 2), cli_readint32(loc_ebx + (j << 2)));
+            for (j = 2; j < 6; j++) {
+                int32_t temp = cli_readint32(loc_ebx + (j << 2));
+                cli_writeint32(loc_ebx + (j << 2), temp);
+            }
             paddr      = dest + cli_readint32(loc_ebx - 4) - base;
             save1      = loc_ecx;
             pushed_esi = loc_edi;

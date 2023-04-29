@@ -5,18 +5,201 @@ differ slightly from third-party binary packages.
 
 ## 1.1.0
 
-ClamAV 1.1.0 includes the following improvements and changes.
+ClamAV 1.1.0 includes the following improvements and changes:
 
 ### Major changes
 
-### Other improvements
+- Added the ability to extract images embedded in HTML CSS `<style>` blocks.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/813
+
+- Updated to Sigtool so that the `--vba` option will extract VBA code from
+  Microsoft Office documents the same way that libclamav extracts VBA.
+  This resolves several issues where Sigtool could not extract VBA.
+  Sigtool will also now display the normalized VBA code instead of the
+  pre-normalized VBA code.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/852
+
+- Added a new ClamScan and ClamD option: `--fail-if-cvd-older-than=days`.
+  Additionally, we introduce `FailIfCvdOlderThan` as a `clamd.conf` synonym for
+  `--fail-if-cvd-older-than`. When passed, it causes ClamD to exit on startup
+  with a non-zero return code if the virus database is older than the specified
+  number of days.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/867
+
+- Added a new function `cl_cvdgetage()` to the libclamav API.
+  This function will retrieve the age in seconds of the youngest file in a
+  database directory, or the age of a single CVD (or CLD) file.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/867
+
+- Added a new function `cl_engine_set_clcb_vba()` to the libclamav API.
+  Use this function to set a `cb_vba` callback function.
+  The cb_vba callback function will be run whenever VBA is extracted from
+  office documents. The provided data will be a normalized copy of the
+  extracted VBA.
+  This callback was added to support Sigtool so that it can use the same VBA
+  extraction logic that ClamAV uses to scan documents.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/852
+
+## Other improvements
+
+- Removed the vendored TomsFastMath library in favor of using OpenSSL to
+  perform "big number"/multiprecision math operations.
+  Work courtesy of Sebastian Andrzej Siewior.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/840
+
+- Build system: Added CMake option `DO_NOT_SET_RPATH` to avoid setting
+  `RPATH` on Unix systems.
+  Feature courtesy of Sebastian Andrzej Siewior.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/815
+
+- Build system: Enabled version-scripts with CMake to limit symbol exports for
+  libclamav, libfreshclam, libclamunrar_iface, and libclamunrar shared
+  libraries on Unix systems, excluding macOS.
+  Improvement courtesy of Orion Poplawski and Sebastian Andrzej Siewior.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/776
+
+- Build system: Enabled users to pass in custom Rust compiler flags using the
+  `RUSTFLAGS` CMake variable.
+  Feature courtesy of Orion Poplawski.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/835
+
+- Removed a hard-coded alert for CVE-2004-0597.
+  The CVE is old enough that it is no longer a threat and the detection had
+  occasional false-positives.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/855
+
+- Set Git attributes to prevent Git from altering line endings for Rust
+  vendored libraries. Third-party Rust libraries are bundled in the ClamAV
+  release tarball. We do not commit them to our own Git repository, but
+  community package maintainers may now store the tarball contents in Git.
+  The Rust build system verifies the library manifest, and this change
+  ensures that the hashes are correct.
+  Improvement courtesy of Nicolas R.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/800
+
+- Fixed compile time warnings.
+  Improvement courtesy of Răzvan Cojocaru.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/795
+
+- Added a minor optimization when matching domain name regex signatures for
+  PDB, WDB and CDB type signatures.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/837
+
+- Build system: Enabled the ability to select a specific Python version.
+  When building, you may use the CMake option `-D PYTHON_FIND_VER=<version>`
+  to choose a specific Python version.
+  Feature courtesy of Matt Jolly.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/787
+
+- Added improvements to the ClamOnAcc process log output so that it is
+  easier to diagnose bugs.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/822
+
+- Windows: Enabled the MSI installer to upgrade between feature versions more
+  easily when ClamAV is installed to a location different from the default
+  (i.e., not `C:\Program Files\ClamAV`). This means that the MSI installer can
+  find a previous ClamAV 1.0.x installation to upgrade to ClamAV 1.1.0.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/872
+
+- Sigtool: Added the ability to change the location of the temp directory
+  using the `--tempdir` option and added the ability to retain the temp files
+  created by Sigtool using the `--leave-temps` option.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/852
+
+- Other minor improvements.
 
 ### Bug fixes
+
+- Fixed the broken `ExcludePUA` / `--exclude-pua` feature.
+  Fix courtesy of Ged Haywood and Shawn Iverson.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/780
+
+- Fixed an issue with integer endianness when parsing Windows executables on
+  big-endian systems.
+  Fix courtesy of Sebastian Andrzej Siewior.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/814
+
+- Fixed a possible stack overflow read when parsing WDB signatures.
+  This issue is not a vulnerability.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/807
+
+- Fixed a possible index out of bounds when loading CRB signatures.
+  This issue is not a vulnerability.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/810
+
+- Fixed a possible use after free when reading logical signatures.
+  This issue is not a vulnerability.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/811
+
+- Fixed a possible heap overflow read when reading PDB signatures.
+  This issue is not a vulnerability.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/812
+
+- Fixed a possible heap overflow read in javascript normalizer module.
+  This issue is not a vulnerability.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/868
+
+- Fixed two bugs that would cause Freshclam to fail update when applying a
+  CDIFF database patch if that patch adds a file to the database archive
+  or removes a file from the database archive.
+  This bug also caused Sigtool to fail to create such a patch.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/893
+
+- Fixed an assortment of complaints identified by Coverity static analysis.
+  - GitHub pull requests:
+    - https://github.com/Cisco-Talos/clamav/pull/891
+    - https://github.com/Cisco-Talos/clamav/pull/899
+
+- Fixed one of the Freshclam tests that was failing on some Fedora systems
+  due to a bug printing debug-level log messages to stdout.
+  Fix courtesy of Arjen de Korte.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/881
+
+- Correctly remove temporary files generated by the VBA and XLM extraction
+  modules so that the files are not leaked in patched versions of ClamAV
+  where temporary files are written directly to the temp-directory instead
+  of writing to a unique subdirectory.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/894
 
 ### Acknowledgments
 
 Special thanks to the following people for code contributions and bug reports:
+- Arjen de Korte
+- Craig Andrews
+- Ged Haywood
+- Matt Jolly
+- Orion Poplawski
+- Nicolas R.
+- Răzvan Cojocaru
+- Red
+- Shawn Iverson
+- Sebastian Andrzej Siewior
+- The OSS-Fuzz project
 
+## 1.0.1
+
+ClamAV 1.0.1 is a critical patch release with the following fixes:
+
+- [CVE-2023-20032](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2023-20032):
+  Fixed a possible remote code execution vulnerability in the HFS+ file parser.
+  Issue affects versions 1.0.0 and earlier, 0.105.1 and earlier, and 0.103.7 and
+  earlier.
+  Thank you to Simon Scannell for reporting this issue.
+
+- [CVE-2023-20052](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2023-20052):
+  Fixed a possible remote information leak vulnerability in the DMG file parser.
+  Issue affects versions 1.0.0 and earlier, 0.105.1 and earlier, and 0.103.7 and
+  earlier.
+  Thank you to Simon Scannell for reporting this issue.
+
+- Fix allmatch detection issue with the preclass bytecode hook.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/825
+
+- Update vendored libmspack library to version 0.11alpha.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/828
+
+Special thanks to the following people for code contributions and bug reports:
+- Simon Scannell
 
 ## 1.0.0
 
@@ -251,6 +434,39 @@ Special thanks to the following people for code contributions and bug reports:
 - monkz
 - teoberi
 - TerminalFi
+
+## 0.105.2
+
+ClamAV 0.105.2 is a critical patch release with the following fixes:
+
+- [CVE-2023-20032](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2023-20032):
+  Fixed a possible remote code execution vulnerability in the HFS+ file parser.
+  Issue affects versions 1.0.0 and earlier, 0.105.1 and earlier, and 0.103.7 and
+  earlier.
+  Thank you to Simon Scannell for reporting this issue.
+
+- [CVE-2023-20052](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2023-20052):
+  Fixed a possible remote information leak vulnerability in the DMG file parser.
+  Issue affects versions 1.0.0 and earlier, 0.105.1 and earlier, and 0.103.7 and
+  earlier.
+  Thank you to Simon Scannell for reporting this issue.
+
+- Fixed an issue loading Yara rules containing regex strings with an escaped
+  forward-slash (`\/`) followed by a colon (`:`).
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/695
+
+- Moved the ClamAV Docker files for building containers to a new Git repository.
+  The Docker files are now in https://github.com/Cisco-Talos/clamav-docker.
+  This change enables us to fix issues with the images and with the supporting
+  scripts used to publish and update the images without committing changes
+  directly to files in the ClamAV release branches.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/765
+
+- Update vendored libmspack library to version 0.11alpha.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/829
+
+Special thanks to the following people for code contributions and bug reports:
+- Simon Scannell
 
 ## 0.105.1
 
@@ -905,6 +1121,28 @@ The ClamAV team thanks the following individuals for their code submissions:
 - Tom Briden
 - Vasile Papp
 - Yasuhiro Kimura
+
+## 0.103.8
+
+ClamAV 0.103.8 is a critical patch release with the following fixes:
+
+- [CVE-2023-20032](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2023-20032):
+  Fixed a possible remote code execution vulnerability in the HFS+ file parser.
+  Issue affects versions 1.0.0 and earlier, 0.105.1 and earlier, and 0.103.7 and
+  earlier.
+  Thank you to Simon Scannell for reporting this issue.
+
+- [CVE-2023-20052](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2023-20052):
+  Fixed a possible remote information leak vulnerability in the DMG file parser.
+  Issue affects versions 1.0.0 and earlier, 0.105.1 and earlier, and 0.103.7 and
+  earlier.
+  Thank you to Simon Scannell for reporting this issue.
+
+- Update vendored libmspack library to version 0.11alpha.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/830
+
+Special thanks to the following people for code contributions and bug reports:
+- Simon Scannell
 
 ## 0.103.7
 

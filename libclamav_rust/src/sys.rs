@@ -22,6 +22,12 @@ pub struct timeval {
     pub tv_sec: __time_t,
     pub tv_usec: __suseconds_t,
 }
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct bignum_st {
+    _unused: [u8; 0],
+}
+pub type BIGNUM = bignum_st;
 pub const cl_error_t_CL_CLEAN: cl_error_t = 0;
 pub const cl_error_t_CL_SUCCESS: cl_error_t = 0;
 pub const cl_error_t_CL_VIRUS: cl_error_t = 1;
@@ -308,6 +314,20 @@ pub type clcb_file_props = ::std::option::Option<
     unsafe extern "C" fn(
         j_propstr: *const ::std::os::raw::c_char,
         rc: ::std::os::raw::c_int,
+        cbdata: *mut ::std::os::raw::c_void,
+    ) -> ::std::os::raw::c_int,
+>;
+#[doc = " @brief generic data callback function."]
+#[doc = ""]
+#[doc = " Callback handler prototype for callbacks passing back data and application context."]
+#[doc = ""]
+#[doc = " @param data      A pointer to some data. Should be treated as read-only and may be freed after callback."]
+#[doc = " @param data_len  The length of data."]
+#[doc = " @param cbdata    Opaque application provided data."]
+pub type clcb_generic_data = ::std::option::Option<
+    unsafe extern "C" fn(
+        data: *const ::std::os::raw::c_uchar,
+        data_len: size_t,
         cbdata: *mut ::std::os::raw::c_void,
     ) -> ::std::os::raw::c_int,
 >;
@@ -709,15 +729,6 @@ pub struct cli_events {
     _unused: [u8; 0],
 }
 pub type cli_events_t = cli_events;
-pub type ulong64 = ::std::os::raw::c_ulonglong;
-pub type fp_digit = ulong64;
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct fp_int {
-    pub dp: [fp_digit; 136usize],
-    pub used: ::std::os::raw::c_int,
-    pub sign: ::std::os::raw::c_int,
-}
 pub const cli_crt_hashtype_CLI_HASHTYPE_ANY: cli_crt_hashtype = 0;
 pub const cli_crt_hashtype_CLI_SHA1RSA: cli_crt_hashtype = 1;
 pub const cli_crt_hashtype_CLI_MD5RSA: cli_crt_hashtype = 2;
@@ -739,9 +750,9 @@ pub struct cli_crt_t {
     pub serial: [u8; 20usize],
     pub ignore_serial: ::std::os::raw::c_int,
     pub tbshash: [u8; 64usize],
-    pub n: fp_int,
-    pub e: fp_int,
-    pub sig: fp_int,
+    pub n: *mut BIGNUM,
+    pub e: *mut BIGNUM,
+    pub sig: *mut BIGNUM,
     pub not_before: time_t,
     pub not_after: time_t,
     pub hashtype: cli_crt_hashtype,
@@ -918,6 +929,7 @@ pub struct cl_engine {
     pub cb_sigload_ctx: *mut ::std::os::raw::c_void,
     pub cb_hash: clcb_hash,
     pub cb_meta: clcb_meta,
+    pub cb_vba: clcb_generic_data,
     pub cb_file_props: clcb_file_props,
     pub cb_sigload_progress: clcb_progress,
     pub cb_sigload_progress_ctx: *mut ::std::os::raw::c_void,
@@ -1280,8 +1292,6 @@ pub union cli_ac_lsig__bindgen_ty_1 {
     pub code_start: *mut u8,
 }
 pub type fuzzyhashmap_t = *mut ::std::os::raw::c_void;
-pub type css_image_extractor_t = *mut ::std::os::raw::c_void;
-pub type css_image_handle_t = *mut ::std::os::raw::c_void;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct cli_matcher {
@@ -1370,6 +1380,8 @@ extern "C" {
         mode: ::std::os::raw::c_ushort,
     ) -> *mut ::std::os::raw::c_char;
 }
+pub type css_image_extractor_t = *mut ::std::os::raw::c_void;
+pub type css_image_handle_t = *mut ::std::os::raw::c_void;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct re_guts {

@@ -153,9 +153,9 @@ cl_error_t regex_list_match(struct regex_matcher *matcher, char *real_url, const
     struct regex_list *regex;
     size_t real_len, display_len, buffer_len;
 
-    char *buffer  = NULL;
-    char *bufrev  = NULL;
-    cl_error_t rc = CL_SUCCESS;
+    char *buffer         = NULL;
+    char *bufrev         = NULL;
+    cl_error_t rc        = CL_SUCCESS;
     int filter_search_rc = 0;
     int root;
     struct cli_ac_data mdata;
@@ -206,7 +206,7 @@ cl_error_t regex_list_match(struct regex_matcher *matcher, char *real_url, const
         return CL_EMEM;
     }
 
-    strncpy(buffer, real_url, real_len);
+    strncpy(buffer, real_url, buffer_len);
     buffer[real_len] = (!is_allow_list_lookup && hostOnly) ? '/' : ':';
 
     /*
@@ -215,7 +215,7 @@ cl_error_t regex_list_match(struct regex_matcher *matcher, char *real_url, const
      */
     if (!hostOnly || is_allow_list_lookup) {
         /* For all other PDB and WDB signatures concatenate Real:Displayed. */
-        strncpy(buffer + real_len + 1, display_url, display_len);
+        strncpy(buffer + real_len + 1, display_url, buffer_len - real_len);
     }
     buffer[buffer_len - 1] = '/';
     buffer[buffer_len]     = 0;
@@ -232,12 +232,12 @@ cl_error_t regex_list_match(struct regex_matcher *matcher, char *real_url, const
 
     filter_search_rc = filter_search(&matcher->filter, (const unsigned char *)bufrev, buffer_len);
     if (filter_search_rc == -1) {
-       free(buffer);
-       free(bufrev);
-       /* filter says this suffix doesn't match.
+        free(buffer);
+        free(bufrev);
+        /* filter says this suffix doesn't match.
         * The filter has false positives, but no false
         * negatives */
-       return CL_SUCCESS;
+        return CL_SUCCESS;
     }
 
     rc = cli_ac_scanbuff((const unsigned char *)bufrev, buffer_len, NULL, (void *)&regex, &res, &matcher->suffixes, &mdata, 0, 0, NULL, AC_SCAN_VIR, NULL);

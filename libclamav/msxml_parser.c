@@ -579,6 +579,8 @@ cl_error_t cli_msxml_parse_document(cli_ctx *ctx, xmlTextReaderPtr reader, const
         if (!ictx.root)
             ictx.flags &= ~MSXML_FLAG_JSON;
         ictx.toval = 0;
+    } else {
+        ictx.root = NULL;
     }
 #else
     ictx.flags &= ~MSXML_FLAG_JSON;

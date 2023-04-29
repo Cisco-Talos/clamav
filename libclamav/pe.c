@@ -2331,9 +2331,12 @@ static inline int hash_impfns(cli_ctx *ctx, void **hashctx, uint32_t *impsz, str
 
         while ((num_fns < PE_MAXIMPORTS) && (fmap_readn(map, &thunk32, thuoff, sizeof(struct pe_image_thunk32)) == sizeof(struct pe_image_thunk32)) && (thunk32.u.Ordinal != 0)) {
             char *funcname = NULL;
+            uint32_t temp;
+
             thuoff += sizeof(struct pe_image_thunk32);
 
-            thunk32.u.Ordinal = EC32(thunk32.u.Ordinal);
+            temp = EC32(thunk32.u.Ordinal);
+            thunk32.u.Ordinal = temp;
 
             if (!(thunk32.u.Ordinal & PE_IMAGEDIR_ORDINAL_FLAG32)) {
                 offset = cli_rawaddr(thunk32.u.Function, peinfo->sections, peinfo->nsections, &err, fsize, peinfo->hdr_size);
@@ -2367,9 +2370,14 @@ static inline int hash_impfns(cli_ctx *ctx, void **hashctx, uint32_t *impsz, str
 
         while ((num_fns < PE_MAXIMPORTS) && (fmap_readn(map, &thunk64, thuoff, sizeof(struct pe_image_thunk64)) == sizeof(struct pe_image_thunk64)) && (thunk64.u.Ordinal != 0)) {
             char *funcname = NULL;
+
+            // Temporary variable so we don't have overlapping writes with the EC32 reads.
+            uint64_t temp;
+
             thuoff += sizeof(struct pe_image_thunk64);
 
-            thunk64.u.Ordinal = EC64(thunk64.u.Ordinal);
+            temp              = EC64(thunk64.u.Ordinal);
+            thunk64.u.Ordinal = temp;
 
             if (!(thunk64.u.Ordinal & PE_IMAGEDIR_ORDINAL_FLAG64)) {
                 offset = cli_rawaddr(thunk64.u.Function, peinfo->sections, peinfo->nsections, &err, fsize, peinfo->hdr_size);
@@ -2474,6 +2482,9 @@ static cl_error_t hash_imptbl(cli_ctx *ctx, unsigned char **digest, uint32_t *im
     while (left > sizeof(struct pe_image_import_descriptor) && nimps < PE_MAXIMPORTS) {
         char *dllname = NULL;
 
+        // Temporary variable so we don't have overlapping writes with the EC32 reads.
+        uint32_t temp;
+
         /* Get copy of image import descriptor to work with */
         memcpy(&image, impdes, sizeof(struct pe_image_import_descriptor));
 
@@ -2489,11 +2500,16 @@ static cl_error_t hash_imptbl(cli_ctx *ctx, unsigned char **digest, uint32_t *im
         impdes++;
 
         /* Endian Conversion */
-        image.u.OriginalFirstThunk = EC32(image.u.OriginalFirstThunk);
-        image.TimeDateStamp        = EC32(image.TimeDateStamp);
-        image.ForwarderChain       = EC32(image.ForwarderChain);
-        image.Name                 = EC32(image.Name);
-        image.FirstThunk           = EC32(image.FirstThunk);
+        temp                       = EC32(image.u.OriginalFirstThunk);
+        image.u.OriginalFirstThunk = temp;
+        temp                       = EC32(image.TimeDateStamp);
+        image.TimeDateStamp        = temp;
+        temp                       = EC32(image.ForwarderChain);
+        image.ForwarderChain       = temp;
+        temp                       = EC32(image.Name);
+        image.Name                 = temp;
+        temp                       = EC32(image.FirstThunk);
+        image.FirstThunk           = temp;
 
         /* DLL name acquisition */
         offset = cli_rawaddr(image.Name, peinfo->sections, peinfo->nsections, &err, fsize, peinfo->hdr_size);
@@ -3440,7 +3456,7 @@ int cli_scanpe(cli_ctx *ctx)
                   ) ||
                  (                                                                                                         /* upack 1.1/1.2, based on 2 samples */
                   epbuff[0] == '\xbe' && cli_readint32(epbuff + 1) - EC32(peinfo->pe_opt.opt32.ImageBase) < peinfo->min && /* mov esi */
-                  cli_readint32(epbuff + 1) > EC32(peinfo->pe_opt.opt32.ImageBase) &&
+                  cli_readint32(epbuff + 1) > (int32_t)EC32(peinfo->pe_opt.opt32.ImageBase) &&
                   epbuff[5] == '\xad' && epbuff[6] == '\x8b' && epbuff[7] == '\xf8' /* loads;  mov edi, eax */
                   )))) {
             uint32_t vma, off;
@@ -4508,7 +4524,7 @@ cl_error_t cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts,
     uint32_t stored_opt_hdr_size;
     struct pe_image_file_hdr *file_hdr;
     struct pe_image_optional_hdr32 *opt32;
-    struct pe_image_optional_hdr64 *opt64;
+    struct pe_image_optional_hdr64 *opt64     = NULL;
     struct pe_image_section_hdr *section_hdrs = NULL;
     size_t i, j, section_pe_idx;
     unsigned int err;
@@ -4519,6 +4535,7 @@ cl_error_t cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts,
     uint32_t is_exe = 0;
     int native      = 0;
     size_t read;
+    uint32_t temp;
 
 #if HAVE_JSON
     int toval                   = 0;
@@ -4557,7 +4574,8 @@ cl_error_t cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts,
         goto done;
     }
 
-    peinfo->e_lfanew = EC32(peinfo->e_lfanew);
+    temp             = EC32(peinfo->e_lfanew);
+    peinfo->e_lfanew = temp;
     if (opts & CLI_PEHEADER_OPT_DBG_PRINT_INFO) {
         cli_dbgmsg("e_lfanew == %d\n", peinfo->e_lfanew);
     }
@@ -4811,7 +4829,7 @@ cl_error_t cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts,
             goto done;
         }
 
-        if (fmap_readn(map, (void *)(((size_t) & (peinfo->pe_opt.opt64)) + sizeof(struct pe_image_optional_hdr32)), at, OPT_HDR_SIZE_DIFF) != OPT_HDR_SIZE_DIFF) {
+        if (fmap_readn(map, (void *)((size_t)&peinfo->pe_opt.opt64 + sizeof(struct pe_image_optional_hdr32)), at, OPT_HDR_SIZE_DIFF) != OPT_HDR_SIZE_DIFF) {
             cli_dbgmsg("cli_peheader: Can't read additional optional file header bytes\n");
             ret = CL_EFORMAT;
             goto done;
@@ -4932,10 +4950,10 @@ cl_error_t cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts,
 #endif
     }
 
-    salign = (peinfo->is_pe32plus) ? EC32(opt64->SectionAlignment) : EC32(opt32->SectionAlignment);
-    falign = (peinfo->is_pe32plus) ? EC32(opt64->FileAlignment) : EC32(opt32->FileAlignment);
+    salign = (peinfo->is_pe32plus && opt64 != NULL) ? EC32(opt64->SectionAlignment) : EC32(opt32->SectionAlignment);
+    falign = (peinfo->is_pe32plus && opt64 != NULL) ? EC32(opt64->FileAlignment) : EC32(opt32->FileAlignment);
 
-    switch (peinfo->is_pe32plus ? EC16(opt64->Subsystem) : EC16(opt32->Subsystem)) {
+    switch ((peinfo->is_pe32plus && opt64 != NULL) ? EC16(opt64->Subsystem) : EC16(opt32->Subsystem)) {
         case 0:
             subsystem = "Unknown";
             break;
@@ -5045,10 +5063,14 @@ cl_error_t cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts,
     }
 
     for (i = 0; i < peinfo->ndatadirs; i++) {
+        uint32_t tmp;
         struct pe_image_data_dir *dir = peinfo->dirs;
 
-        dir[i].VirtualAddress = EC32(dir[i].VirtualAddress);
-        dir[i].Size           = EC32(dir[i].Size);
+        tmp                   = EC32(dir[i].VirtualAddress);
+        dir[i].VirtualAddress = tmp;
+
+        tmp         = EC32(dir[i].Size);
+        dir[i].Size = tmp;
     }
 
     at += data_dirs_size;

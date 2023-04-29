@@ -30,7 +30,6 @@
 #include <ctype.h>
 #include "clamav.h"
 #include "textnorm.h"
-#include "bignum.h"
 
 int text_normalize_init(struct text_norm_state *state, unsigned char *out, size_t out_len)
 {
@@ -96,6 +95,10 @@ size_t text_normalize_buffer(struct text_norm_state *state, const unsigned char 
     size_t i;
     const unsigned char *out_end = state->out + state->out_len;
     unsigned char *p             = state->out + state->out_pos;
+
+    if (NULL == buf) {
+        return 0;
+    }
 
     for (i = 0; i < buf_len && p < out_end; i++) {
         unsigned char c = buf[i];
