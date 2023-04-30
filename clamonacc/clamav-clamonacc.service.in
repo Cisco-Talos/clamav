@@ -10,8 +10,8 @@ After=clamav-daemon.service syslog.target network.target
 [Service]
 Type=simple
 User=root
-ExecStartPre=/bin/bash -c "while [ ! -S /run/clamav/clamd.ctl ]; do sleep 1; done"
-ExecStart=@prefix@/sbin/clamonacc --foreground --log=/var/log/clamav/clamonacc.log
+ExecStartPre=/usr/bin/install --owner=root --group=root --directory /var/log/clamav /var/local/quarantine
+ExecStart=@prefix@/sbin/clamonacc --foreground --log=/var/log/clamav/clamonacc.log --move=/var/local/quarantine --ping 120 --wait
 ExecReload=/bin/kill -SIGHUP $MAINPID
 ExecStop=/bin/kill -SIGTERM $MAINPID
 
@@ -24,13 +24,13 @@ ProtectKernelModules=yes
 ProtectKernelLogs=yes
 ProtectControlGroups=yes
 NoExecPaths=/
-ExecPaths=@prefix@/sbin/clamonacc /bin/kill
+ExecPaths=@prefix@/sbin/clamonacc @CMAKE_INSTALL_FULL_LIBDIR@ /bin/kill
 
 # Remove `ProtectSystem`, `ProtectHome`, and `ReadWritePaths` if you
 # want ClamAV to be able to quarantine or remove infected files.
 ProtectSystem=strict
 ProtectHome=read-only
-ReadWritePaths=/var/log
+ReadWritePaths=/var/log /var/local/quarantine
 
 [Install]
 WantedBy=multi-user.target
