@@ -8,6 +8,8 @@ After=network-online.target
 
 [Service]
 ExecStart=@prefix@/bin/freshclam -d --foreground=true
+LogsDirectory=clamav
+ConfigurationDirectory=clamav
 
 ##
 ## Security Hardening Options
@@ -27,6 +29,7 @@ NoExecPaths=/
 # there is only one `ExecPaths` option. The binaries must be space separated like so:
 ;ExecPaths=@prefix@/sbin/freshclam /usr/local/bin/OnOutdated.sh /usr/local/bin/OnErrorExecute.sh
 ExecPaths=@prefix@/bin/freshclam
+ReadWritePaths=@DATADIR@ /var/log/clamav
 
 [Install]
 WantedBy=multi-user.target

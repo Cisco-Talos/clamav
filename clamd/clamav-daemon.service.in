@@ -11,6 +11,8 @@ ExecStart=@prefix@/sbin/clamd --foreground=true
 # Reload the database
 ExecReload=/bin/kill -USR2 $MAINPID
 TimeoutStartSec=420
+LogsDirectory=clamav
+ConfigurationDirectory=clamav
 
 ##
 ## Security Hardening Options
@@ -20,7 +22,7 @@ TimeoutStartSec=420
 # if you want ClamAV to be able to remove infected files.
 ProtectSystem=strict
 ProtectHome=read-only
-ReadWritePaths=/var/log/
+ReadWritePaths=/var/log/clamav /run /var/run
 
 NoExecPaths=/
 # If you want to run commands or execute binaries on event,
@@ -28,14 +30,16 @@ NoExecPaths=/
 # Commonly, this is used for `VirusEvent` in clamd.conf or `VirusAction`
 # in clamav-milter.conf.The binaries must be space separated like so:
 ;ExecPaths=@prefix@/sbin/clamd /bin/kill /usr/local/bin/send_sms /usr/local/bin/my_infected_message_handler
-ExecPaths=@prefix@/sbin/clamd /bin/kill
+ExecPaths=@prefix@/sbin/clamd @CMAKE_INSTALL_FULL_LIBDIR@ /bin/kill
 
 ProtectClock=yes
 ProtectKernelTunables=yes
 ProtectKernelModules=yes
 ProtectKernelLogs=yes
 ProtectControlGroups=yes
+PrivateTmp=yes
 
 [Install]
 WantedBy=multi-user.target
 Also=clamav-daemon.socket
+Alias=clamd.service
