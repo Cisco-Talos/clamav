@@ -990,7 +990,7 @@ if(WIN32)
     set(CLAMAV_RES "")
     configure_file(
         win32/res/common.rc.in
-        ${CMAKE_BINARY_DIR}/version.rc
+        ${CMAKE_SOURCE_DIR}/win32/res/common.rc
         @ONLY)
 else()
     #
