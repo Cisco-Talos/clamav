@@ -1323,6 +1323,11 @@ static cl_error_t hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHea
                                                         stream.next_out  = uncompressed_block;
 
                                                         extracted_file = true;
+
+                                                        if (stream.avail_in > 0 && Z_STREAM_END == z_ret) {
+                                                            cli_dbgmsg("hfsplus_walk_catalog: Reached end of stream even though there's still some available bytes left!\n");
+                                                            break;
+                                                        }
                                                     }
                                                 } else {
                                                     if (cli_writen(ofd, &block[streamBeginning ? 1 : 0], readLen - (streamBeginning ? 1 : 0)) != readLen - (streamBeginning ? 1 : 0)) {
