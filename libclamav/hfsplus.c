@@ -1256,9 +1256,9 @@ static cl_error_t hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHea
                                                     stream.next_out  = uncompressed;
 
                                                     while (stream.avail_in > 0) {
-                                                        ret = inflate(&stream, Z_NO_FLUSH);
-                                                        if (ret != Z_OK && ret != Z_STREAM_END) {
-                                                            cli_dbgmsg("hfsplus_walk_catalog: Failed to extract (%d)\n", ret);
+                                                        int z_ret = inflate(&stream, Z_NO_FLUSH);
+                                                        if (z_ret != Z_OK && z_ret != Z_STREAM_END) {
+                                                            cli_dbgmsg("hfsplus_walk_catalog: Failed to extract (%d)\n", z_ret);
                                                             ret = CL_EFORMAT;
                                                             break;
                                                         }
@@ -1271,6 +1271,11 @@ static cl_error_t hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHea
                                                         written += sizeof(uncompressed) - stream.avail_out;
                                                         stream.avail_out = sizeof(uncompressed);
                                                         stream.next_out  = uncompressed;
+
+                                                        if (stream.avail_in > 0 && Z_STREAM_END == z_ret) {
+                                                            cli_dbgmsg("hfsplus_walk_catalog: Reached end of stream even though there's still some available bytes left!\n");
+                                                            break;
+                                                        }
                                                     }
                                                 } else {
                                                     if (cli_writen(ofd, &block[streamBeginning ? 1 : 0], readLen - (streamBeginning ? 1 : 0)) != readLen - (streamBeginning ? 1 : 0)) {
