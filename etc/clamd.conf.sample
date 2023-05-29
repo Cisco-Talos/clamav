@@ -74,7 +74,7 @@ Example
 # It is recommended that the directory where this file is stored is
 # also owned by root to keep other users from tampering with it.
 # Default: disabled
-#PidFile /var/run/clamd.pid
+#PidFile /run/clamav/clamd.pid
 
 # Optional path to the global temporary directory.
 # Default: system specific (usually /tmp or /var/tmp).
@@ -98,7 +98,8 @@ Example
 
 # Path to a local socket file the daemon will listen on.
 # Default: disabled (must be specified by a user)
-#LocalSocket /tmp/clamd.socket
+#LocalSocket /run/clamav/clamd.sock
+#LocalSocket /tmp/clamd.sock
 
 # Sets the group ownership on the unix socket.
 # Default: disabled (the primary group of the user running clamd)
