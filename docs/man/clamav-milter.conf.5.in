@@ -92,7 +92,7 @@ ClamdSocket tcp:host:port
 .br
 The first syntax specifies a local unix socket (needs an absolute path) e.g.:
 .br
-ClamdSocket unix:/var/run/clamd/clamd.socket
+ClamdSocket unix:/run/clamav/clamd.sock
 .br
 The second syntax specifies a tcp local or remote tcp socket: the host can be a hostname or an ip address; the ":port" field is only required for IPv6 addresses, otherwise it defaults to 3310 e.g.:
 .br
