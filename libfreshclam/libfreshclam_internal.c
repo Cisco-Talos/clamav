@@ -1300,7 +1300,6 @@ static fc_error_t downloadFile(
 
     /* Check HTTP code */
     curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
-    logg(LOGG_WARNING, " ******* RESULT %ld, SIZE: %zu ******* \n", http_code, receivedFile.size);
     switch (http_code) {
         case 200:
         case 206: {
