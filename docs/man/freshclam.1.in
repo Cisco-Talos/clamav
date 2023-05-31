@@ -46,7 +46,7 @@ Log report to FILE.
 Run in a daemon mode. Defaults to 12 checks per day unless otherwise specified by \-\-checks or freshclam.conf.
 .TP
 \fB\-p FILE, \-\-pid=FILE\fR
-Write daemon's pid to FILE.
+Write the daemon's pid to FILE.
 .TP
 \fB\-F, \-\-foreground\fR
 Don't fork into background (for use in daemon mode).

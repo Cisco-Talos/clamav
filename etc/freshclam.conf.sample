@@ -46,7 +46,8 @@ Example
 # Default: no
 #LogRotate yes
 
-# This option allows you to save the process identifier of the daemon.
+# Write the daemon's pid to the specified file.
+# You must run freshclam with --daemon (-d) for freshclam to run as a daemon.
 # This file will be owned by root, as long as freshclam was started by root.
 # It is recommended that the directory where this file is stored is
 # also owned by root to keep other users from tampering with it.

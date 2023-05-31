@@ -120,7 +120,7 @@ Return with a nonzero error code if the virus database is older than the specifi
 Load signatures from DIRECTORY.
 .TP
 \fB\-p FILE, \-\-pid=FILE\fR
-Write daemon's pid to FILE.
+Write the daemon's pid to FILE.
 
 .SH "ENVIRONMENT VARIABLES"
 .LP

@@ -182,7 +182,7 @@ static void help(void)
     printf("    --uninstall-service                  Uninstall Windows Service\n");
 #endif
     printf("    --daemon             -d              Run in daemon mode\n");
-    printf("    --pid=FILE           -p FILE         Write daemon's pid to FILE\n");
+    printf("    --pid=FILE           -p FILE         Write the daemon's pid to FILE\n");
 #ifndef _WIN32
     printf("    --foreground         -F              Don't fork into background (for use in daemon mode).\n");
     printf("    --user=USER          -u USER         Run as USER\n");

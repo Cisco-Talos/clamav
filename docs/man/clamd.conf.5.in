@@ -83,7 +83,7 @@ Log additional information about the infected file, such as its size and hash, t
 Default: no
 .TP
 \fBPidFile STRING\fR
-Write daemon's pid to FILE.
+Write the daemon's pid to the specified file.
 .br
 Default: disabled
 .TP

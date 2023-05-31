@@ -60,7 +60,7 @@ Example
 #ExtendedDetectionInfo yes
 
 # This option allows you to save a process identifier of the listening
-# daemon (main thread).
+# daemon.
 # Default: disabled
 #PidFile "C:\Program Files\ClamAV\clamd.pid"
 
