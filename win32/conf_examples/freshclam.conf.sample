@@ -46,7 +46,7 @@ Example
 # Default: no
 #LogRotate yes
 
-# This option allows you to save the process identifier of the daemon
+# This option allows you to save the process identifier of the daemon.
 # Default: disabled
 #PidFile "C:\Program Files\ClamAV\freshclam.pid"
 
