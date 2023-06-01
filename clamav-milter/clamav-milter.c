@@ -126,9 +126,10 @@ int main(int argc, char **argv)
         printf("\n");
         printf("    %s [-c <config-file>]\n\n", argv[0]);
         printf("\n");
-        printf("    --help                   -h       Show this help\n");
-        printf("    --version                -V       Show version\n");
-        printf("    --config-file <file>     -c       Read configuration from file\n");
+        printf("    --help                   -h             Show this help\n");
+        printf("    --version                -V             Show version\n");
+        printf("    --config-file <file>     -c             Read configuration from file\n");
+        printf("    --pid=FILE               -p FILE        Write the daemon's pid to FILE\n");
         printf("\n");
         optfree(opts);
         return 0;

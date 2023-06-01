@@ -73,7 +73,7 @@ Chroot to the specified directory. Chrooting is performed just after reading the
 Default: unset (don\'t chroot)
 .TP
 \fBPidFile STRING\fR
-Save the process identifier of a clamav-milter (main thread) to a specified file.
+Write the daemon's pid to the specified file.
 .br
 Default: disabled
 .TP

@@ -83,7 +83,7 @@ Log additional information about the infected file, such as its size and hash, t
 Default: no
 .TP
 \fBPidFile STRING\fR
-Save the process identifier of a listening daemon (main thread) to a specified file.
+Write the daemon's pid to the specified file.
 .br
 Default: disabled
 .TP
