@@ -1,5 +1,5 @@
 [Unit]
-Description=Weekly ClamAV clamscan %I
+Description=Weekly ClamAV clamscan %f
 
 [Timer]
 OnCalendar=weekly
