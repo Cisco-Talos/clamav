@@ -395,6 +395,8 @@ set(LIBCLAMAV_SOURCES
     tiff.c              tiff.h
     # GIF image format checker
     gif.c               gif.h
+    # UDF partition
+    udf.c               udf.h
 )
 
 if(ENABLE_SHARED_LIB)

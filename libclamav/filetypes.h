@@ -122,7 +122,7 @@ typedef enum cli_file {
     CL_TYPE_HWPOLE2,
     CL_TYPE_MHTML,
     CL_TYPE_LNK,
-
+    CL_TYPE_UDF,
     CL_TYPE_OTHER,  /* on-the-fly, used for target 14 (OTHER) */
     CL_TYPE_IGNORED /* please don't add anything below */
 } cli_file_t;
