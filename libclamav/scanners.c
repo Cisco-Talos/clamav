@@ -100,6 +100,7 @@
 #include "gif.h"
 #include "png.h"
 #include "iso9660.h"
+#include "udf.h"
 #include "dmg.h"
 #include "xar.h"
 #include "hfsplus.h"
@@ -3490,8 +3491,20 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
                                 // Reassign type of current layer based on what we discovered
                                 cli_recursion_stack_change_type(ctx, fpt->type);
 
-                                cli_dbgmsg("DMG signature found at %u\n", (unsigned int)fpt->offset);
+                                cli_dbgmsg("ISO signature found at %u\n", (unsigned int)fpt->offset);
                                 nret = cli_scaniso(ctx, fpt->offset);
+                            }
+                        }
+                        break;
+
+                    case CL_TYPE_UDF:
+                        if (SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_UDF)) {
+                            {
+                                // Reassign type of current layer based on what we discovered
+                                cli_recursion_stack_change_type(ctx, fpt->type);
+
+                                cli_dbgmsg("UDF signature found at %u\n", (unsigned int)fpt->offset);
+                                nret = cli_scanudf(ctx, fpt->offset);
                             }
                         }
                         break;

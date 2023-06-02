@@ -137,6 +137,7 @@ static const struct ftmap_s {
     { "CL_TYPE_LNK",          CL_TYPE_LNK          },
     { "CL_TYPE_EGG",          CL_TYPE_EGG          },
     { "CL_TYPE_EGGSFX",       CL_TYPE_EGGSFX       },
+    { "CL_TYPE_UDF",          CL_TYPE_UDF          },
     { NULL,                   CL_TYPE_IGNORED      }
 };
 // clang-format on
