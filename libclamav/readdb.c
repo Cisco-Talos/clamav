@@ -4875,9 +4875,11 @@ cl_error_t cli_load(const char *filename, struct cl_engine *engine, unsigned int
     if (fs)
         fclose(fs);
 
-    if (engine->cb_sigload_progress) {
-        /* Let the progress callback function know how we're doing */
-        (void)engine->cb_sigload_progress(engine->num_total_signatures, *signo, engine->cb_sigload_progress_ctx);
+    if (CL_SUCCESS == ret) {
+        if (engine->cb_sigload_progress) {
+            /* Let the progress callback function know how we're doing */
+            (void)engine->cb_sigload_progress(engine->num_total_signatures, *signo, engine->cb_sigload_progress_ctx);
+        }
     }
 
     return ret;
