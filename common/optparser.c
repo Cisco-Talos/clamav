@@ -63,7 +63,7 @@
 #define MAXCMDOPTS 150
 
 #define MATCH_NUMBER "^[0-9]+$"
-#define MATCH_SIZE   "^[0-9]+[KM]?$"
+#define MATCH_SIZE   "^[0-9]+[KMG]?$"
 #define MATCH_BOOL   "^(yes|true|1|no|false|0)$"
 
 #define FLAG_MULTIPLE 1 /* option can be used multiple times */
@@ -440,7 +440,7 @@ const struct clam_option __clam_options[] = {
 
     {"MaxScanTime", "max-scantime", 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option sets the maximum amount of time a scan may take to complete.\nThe value of 0 disables the limit.\nWARNING: disabling this limit or setting it too high may result allow scanning\nof certain files to lock up the scanning process/threads resulting in a Denial of Service.\nThe value is in milliseconds.", "120000"},
 
-    {"MaxScanSize", "max-scansize", 0, CLOPT_TYPE_SIZE, MATCH_SIZE, CLI_DEFAULT_MAXSCANSIZE, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option sets the maximum amount of data to be scanned for each input file.\nArchives and other containers are recursively extracted and scanned up to this\nvalue.\nThe value of 0 disables the limit.\nWARNING: disabling this limit or setting it too high may result in severe\ndamage.", "400M"},
+    {"MaxScanSize", "max-scansize", 0, CLOPT_TYPE_SIZE64, MATCH_SIZE, CLI_DEFAULT_MAXSCANSIZE, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option sets the maximum amount of data to be scanned for each input file.\nArchives and other containers are recursively extracted and scanned up to this\nvalue.\nThe value of 0 disables the limit.\nWARNING: disabling this limit or setting it too high may result in severe\ndamage.", "400M"},
 
     {"MaxFileSize", "max-filesize", 0, CLOPT_TYPE_SIZE, MATCH_SIZE, CLI_DEFAULT_MAXFILESIZE, NULL, 0, OPT_CLAMD | OPT_MILTER | OPT_CLAMSCAN, "Files/messages larger than this limit won't be scanned. Affects the input\nfile itself as well as files contained inside it (when the input file is\nan archive, a document or some other kind of container).\nThe value of 0 disables the limit.\nWARNING: disabling this limit or setting it too high may result in severe\ndamage to the system.", "100M"},
 
@@ -646,7 +646,7 @@ const struct clam_option __clam_options[] = {
     {"LeaveTemporaryFiles", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, -1, NULL, 0, OPT_MILTER | OPT_DEPRECATED, "", ""},
     {"LocalSocket", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_MILTER | OPT_DEPRECATED, "", ""},
     {"MailFollowURLs", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, -1, NULL, 0, OPT_MILTER | OPT_DEPRECATED, "", ""},
-    {"MaxScanSize", NULL, 0, CLOPT_TYPE_SIZE, MATCH_SIZE, -1, NULL, 0, OPT_MILTER | OPT_DEPRECATED, "", ""},
+    {"MaxScanSize", NULL, 0, CLOPT_TYPE_SIZE64, MATCH_SIZE, -1, NULL, 0, OPT_MILTER | OPT_DEPRECATED, "", ""},
     {"MaxFiles", NULL, 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, -1, NULL, 0, OPT_MILTER | OPT_DEPRECATED, "", ""},
     {"MaxRecursion", NULL, 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, -1, NULL, 0, OPT_MILTER | OPT_DEPRECATED, "", ""},
     {"PhishingSignatures", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, -1, NULL, 0, OPT_MILTER | OPT_DEPRECATED, "", ""},
@@ -923,7 +923,7 @@ struct optstruct *optparse(const char *cfgfile, int argc, char **argv, int verbo
     struct option longopts[MAXCMDOPTS];
     char shortopts[MAXCMDOPTS];
     regex_t regex;
-    long long numarg, lnumarg;
+    long long numarg, lnumarg, lnumlimit;
     int regflags = REG_EXTENDED | REG_NOSUB;
 
 #ifdef _WIN32
@@ -1204,25 +1204,40 @@ struct optstruct *optparse(const char *cfgfile, int argc, char **argv, int verbo
                 break;
 
             case CLOPT_TYPE_SIZE:
+            case CLOPT_TYPE_SIZE64:
+                if (optentry->argtype == CLOPT_TYPE_SIZE64)
+                    /* guaranteed to be "long long" (64 bit but possibly signed) further down the line */
+                    lnumlimit = LLONG_MAX;
+                else
+                    /* probably mostly "unsigned long int" (32 or 64 bit unsigned depending on platform),
+                     * but may be expected to fit into a "long long" (64-bit signed) */
+                    lnumlimit = LLONG_MAX < ULONG_MAX ? LLONG_MAX : ULONG_MAX;
                 errno = 0;
                 if (arg)
-                    lnumarg = strtoul(arg, &buff, 0);
+                    lnumarg = strtoll(arg, &buff, 0);
                 else {
                     numarg = 0;
                     break;
                 }
                 if (errno != ERANGE) {
                     switch (*buff) {
+                        case 'G':
+                        case 'g':
+                            if (lnumarg <= lnumlimit / (1024 * 1024 * 1024))
+                                lnumarg *= 1024 * 1024 * 1024;
+                            else
+                                errno = ERANGE;
+                            break;
                         case 'M':
                         case 'm':
-                            if (lnumarg <= UINT_MAX / (1024 * 1024))
+                            if (lnumarg <= lnumlimit / (1024 * 1024))
                                 lnumarg *= 1024 * 1024;
                             else
                                 errno = ERANGE;
                             break;
                         case 'K':
                         case 'k':
-                            if (lnumarg <= UINT_MAX / 1024)
+                            if (lnumarg <= lnumlimit / 1024)
                                 lnumarg *= 1024;
                             else
                                 errno = ERANGE;
@@ -1246,17 +1261,17 @@ struct optstruct *optparse(const char *cfgfile, int argc, char **argv, int verbo
                 if (err) break;
                 if (errno == ERANGE) {
                     if (cfgfile) {
-                        fprintf(stderr, "WARNING: Numerical value for option %s too high, resetting to 4G\n", name);
+                        fprintf(stderr, "WARNING: Numerical value for option %s too high, resetting to %lld\n", name, lnumlimit);
                     } else {
                         if (optentry->shortopt)
-                            fprintf(stderr, "WARNING: Numerical value for option --%s (-%c) too high, resetting to 4G\n", optentry->longopt, optentry->shortopt);
+                            fprintf(stderr, "WARNING: Numerical value for option --%s (-%c) too high, resetting to %lld\n", optentry->longopt, optentry->shortopt, lnumlimit);
                         else
-                            fprintf(stderr, "WARNING: Numerical value for option %s too high, resetting to 4G\n", optentry->longopt);
+                            fprintf(stderr, "WARNING: Numerical value for option %s too high, resetting to %lld\n", optentry->longopt, lnumlimit);
                     }
-                    lnumarg = UINT_MAX;
+                    lnumarg = lnumlimit;
                 }
 
-                numarg = lnumarg ? lnumarg : UINT_MAX;
+                numarg = lnumarg ? lnumarg : lnumlimit;
                 break;
 
             case CLOPT_TYPE_BOOL:
@@ -1319,7 +1334,7 @@ struct optstruct *optadditem(const char *name, const char *arg, int verbose, int
     struct optstruct *opts = NULL, *opts_last = NULL, *opt;
     char *buff;
     regex_t regex;
-    long long numarg, lnumarg;
+    long long numarg, lnumarg, lnumlimit;
     int regflags                       = REG_EXTENDED | REG_NOSUB;
     const struct clam_option *optentry = NULL;
 
@@ -1417,25 +1432,40 @@ struct optstruct *optadditem(const char *name, const char *arg, int verbose, int
                 break;
 
             case CLOPT_TYPE_SIZE:
+            case CLOPT_TYPE_SIZE64:
+                if (optentry->argtype == CLOPT_TYPE_SIZE64)
+                    /* guaranteed to be "long long" (64 bit but possibly signed) further down the line */
+                    lnumlimit = LLONG_MAX;
+                else
+                    /* probably mostly "unsigned long int" (32 or 64 bit unsigned depending on platform),
+                     * but may be expected to fit into a "long long" (64-bit signed) */
+                    lnumlimit = LLONG_MAX < ULONG_MAX ? LLONG_MAX : ULONG_MAX;
                 errno = 0;
                 if (arg)
-                    lnumarg = strtoul(arg, &buff, 0);
+                    lnumarg = strtoll(arg, &buff, 0);
                 else {
                     numarg = 0;
                     break;
                 }
                 if (errno != ERANGE) {
                     switch (*buff) {
+                        case 'G':
+                        case 'g':
+                            if (lnumarg <= lnumlimit / (1024 * 1024 * 1024))
+                                lnumarg *= 1024 * 1024 * 1024;
+                            else
+                                errno = ERANGE;
+                            break;
                         case 'M':
                         case 'm':
-                            if (lnumarg <= UINT_MAX / (1024 * 1024))
+                            if (lnumarg <= lnumlimit / (1024 * 1024))
                                 lnumarg *= 1024 * 1024;
                             else
                                 errno = ERANGE;
                             break;
                         case 'K':
                         case 'k':
-                            if (lnumarg <= UINT_MAX / 1024)
+                            if (lnumarg <= lnumlimit / 1024)
                                 lnumarg *= 1024;
                             else
                                 errno = ERANGE;
