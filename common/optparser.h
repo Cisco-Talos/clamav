@@ -38,8 +38,9 @@
 
 #define CLOPT_TYPE_STRING   1    /* quoted/regular string */
 #define CLOPT_TYPE_NUMBER   2    /* raw number */
-#define CLOPT_TYPE_SIZE     3    /* number possibly followed by modifiers (M/m or K/k) */
+#define CLOPT_TYPE_SIZE     3    /* number possibly followed by modifiers (K/k, M/m or G/g) */
 #define CLOPT_TYPE_BOOL     4    /* boolean */
+#define CLOPT_TYPE_SIZE64   5    /* 64-bit number possibly followed by modifiers (K/k, M/m or G/g) */
 
 #ifdef _WIN32
 extern char _DATADIR[MAX_PATH];
