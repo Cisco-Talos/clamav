@@ -978,8 +978,12 @@ static int scan_files(struct cl_engine *engine, const struct optstruct *opts, st
             ret = scanstdin(engine, options);
         } else if (LSTAT(file, &sb) == -1) {
             /* Can't access the file */
-            perror(file);
-            logg(LOGG_WARNING, "%s: Can't access file\n", file);
+            perror("Error");  // change the argument to a constant string
+            if(optget(opts, "file-list")->enabled){
+                logg(LOGG_WARNING, "ERROR: Unable to access file on line %d\n", get_filelist_line_number());
+            } else {
+                logg(LOGG_WARNING, "ERROR: Unable to access a file\n");
+            }
             ret = 2;
         } else {
             /* Can access the file. Now have to identify what type of file it is */
@@ -1116,8 +1120,6 @@ int scanmanager(const struct optstruct *opts)
 #endif
     }
 
-    if ((opt = optget(opts, "cache-size"))->enabled)
-        cl_engine_set_num(engine, CL_ENGINE_CACHE_SIZE, opt->numarg);
     if (optget(opts, "disable-cache")->enabled)
         cl_engine_set_num(engine, CL_ENGINE_DISABLE_CACHE, 1);
 
