@@ -191,6 +191,13 @@ int check_flevel(void)
     return 0;
 }
 
+
+static unsigned int line_number = 0; // Add this line to keep track of the current line number
+
+unsigned int get_filelist_line_number() {
+    return line_number;
+}
+
 const char *filelist(const struct optstruct *opts, int *err)
 {
     static char buff[1025];
@@ -220,6 +227,7 @@ const char *filelist(const struct optstruct *opts, int *err)
             len--;
             while (len && ((buff[len] == '\n') || (buff[len] == '\r')))
                 buff[len--] = '\0';
+            line_number++;
             return buff;
         } else {
             fclose(fs);
