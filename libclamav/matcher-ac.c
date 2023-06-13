@@ -2951,6 +2951,7 @@ cl_error_t cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
             cli_warnmsg("cli_ac_addsig: cannot use filter for trie\n");
             MPOOL_FREE(root->mempool, root->filter);
             root->filter = NULL;
+            return CL_EMALFDB;
         }
 
         /* TODO: should this affect maxpatlen? */
