@@ -72,6 +72,7 @@ cl_error_t cli_bm_addpatt(struct cli_matcher *root, struct cli_bm_patt *pattern,
             cli_warnmsg("cli_bm_addpatt: cannot use filter for trie\n");
             MPOOL_FREE(root->mempool, root->filter);
             root->filter = NULL;
+            return CL_EMALFDB;
         }
         /* TODO: should this affect maxpatlen? */
     }
