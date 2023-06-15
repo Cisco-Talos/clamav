@@ -29,6 +29,7 @@
  * @param curl Pointer to the curl connection handle.
  */
 void set_tls_ca_bundle(CURL *curl);
+void set_tls_client_certificate(CURL *curl);
 #endif
 
 /**
