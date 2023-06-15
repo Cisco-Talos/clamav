@@ -728,6 +728,7 @@ static fc_error_t create_curl_handle(
     }
 #else
     set_tls_ca_bundle(curl);
+    set_tls_client_certificate(curl);
 #endif
 
     *curlHandle = curl;
