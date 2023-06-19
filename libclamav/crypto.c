@@ -170,7 +170,7 @@ unsigned char *cl_hash_data(const char *alg, const void *buf, size_t len, unsign
     size_t cur;
     int winres = 0;
 
-    md = EVP_get_digestbyname(alg);
+    md = EVP_MD_fetch(NULL, alg, "-fips");
     if (!(md))
         return NULL;
 
@@ -260,7 +260,7 @@ unsigned char *cl_hash_file_fd(int fd, const char *alg, unsigned int *olen)
     const EVP_MD *md;
     unsigned char *res;
 
-    md = EVP_get_digestbyname(alg);
+    md = EVP_MD_fetch(NULL, alg, "-fips");
     if (!(md))
         return NULL;
 
@@ -392,7 +392,7 @@ int cl_verify_signature_hash(EVP_PKEY *pkey, const char *alg, unsigned char *sig
     const EVP_MD *md;
     size_t mdsz;
 
-    md = EVP_get_digestbyname(alg);
+    md = EVP_MD_fetch(NULL, alg, "-fips");
     if (!(md))
         return -1;
 
@@ -437,7 +437,7 @@ int cl_verify_signature_fd(EVP_PKEY *pkey, const char *alg, unsigned char *sig, 
     if (!(digest))
         return -1;
 
-    md = EVP_get_digestbyname(alg);
+    md = EVP_MD_fetch(NULL, alg, "-fips");
     if (!(md)) {
         free(digest);
         return -1;
@@ -506,7 +506,7 @@ int cl_verify_signature(EVP_PKEY *pkey, const char *alg, unsigned char *sig, uns
         return -1;
     }
 
-    md = EVP_get_digestbyname(alg);
+    md = EVP_MD_fetch(NULL, alg, "-fips");
     if (!(md)) {
         free(digest);
         if (decode)
@@ -725,7 +725,7 @@ unsigned char *cl_sign_data(EVP_PKEY *pkey, const char *alg, unsigned char *hash
     unsigned int siglen;
     unsigned char *sig;
 
-    md = EVP_get_digestbyname(alg);
+    md = EVP_MD_fetch(NULL, alg, "-fips");
     if (!(md))
         return NULL;
 
@@ -1148,7 +1148,7 @@ void *cl_hash_init(const char *alg)
     EVP_MD_CTX *ctx;
     const EVP_MD *md;
 
-    md = EVP_get_digestbyname(alg);
+    md = EVP_MD_fetch(NULL, alg, "-fips");
     if (!(md))
         return NULL;
 
