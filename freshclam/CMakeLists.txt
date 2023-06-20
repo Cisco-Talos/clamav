@@ -47,7 +47,7 @@ else()
 endif()
 
 # Install an empty database directory
-INSTALL(CODE "FILE(MAKE_DIRECTORY \${ENV}\${CMAKE_INSTALL_PREFIX}/\${DATABASE_DIRECTORY})" COMPONENT programs)
+INSTALL(CODE "FILE(MAKE_DIRECTORY \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/\${DATABASE_DIRECTORY}\")" COMPONENT programs)
 
 # Now we rename freshclam-bin executable to freshclam using target properties
 set_target_properties( freshclam-bin
