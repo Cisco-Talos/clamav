@@ -1,0 +1,12 @@
+[Unit]
+Description=Update ClamAV virus database once
+Documentation=man:freshclam(1) man:freshclam.conf(5) https://docs.clamav.net/
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=@prefix@/bin/freshclam
+
+[Install]
+WantedBy=multi-user.target

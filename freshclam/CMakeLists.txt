@@ -61,4 +61,18 @@ if(SYSTEMD_FOUND)
         FILES ${CMAKE_CURRENT_BINARY_DIR}/clamav-freshclam.service
         DESTINATION ${SYSTEMD_UNIT_DIR}
         COMPONENT programs)
+    configure_file(
+        ${CMAKE_CURRENT_SOURCE_DIR}/clamav-freshclam-once.service.in
+        ${CMAKE_CURRENT_BINARY_DIR}/clamav-freshclam-once.service @ONLY)
+    install(
+        FILES ${CMAKE_CURRENT_BINARY_DIR}/clamav-freshclam-once.service
+        DESTINATION ${SYSTEMD_UNIT_DIR}
+        COMPONENT programs)
+    configure_file(
+        ${CMAKE_CURRENT_SOURCE_DIR}/clamav-freshclam-once.timer.in
+        ${CMAKE_CURRENT_BINARY_DIR}/clamav-freshclam-once.timer @ONLY)
+    install(
+        FILES ${CMAKE_CURRENT_BINARY_DIR}/clamav-freshclam-once.timer
+        DESTINATION ${SYSTEMD_UNIT_DIR}
+        COMPONENT programs)
 endif()
