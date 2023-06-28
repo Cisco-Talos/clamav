@@ -295,6 +295,8 @@ CLAMAV_PRIVATE {
     init_domain_list;
     lsig_increment_subsig_match;
     readdb_parse_ldb_subsignature;
+    fuzzy_hash_calculate_image;
+    ffierror_fmt;
 
     __cli_strcasestr;
     __cli_strndup;
