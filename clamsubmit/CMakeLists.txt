@@ -34,6 +34,8 @@ target_link_libraries( clamsubmit
     PRIVATE
         ClamAV::libclamav
         ClamAV::common
+        OpenSSL::SSL
+        OpenSSL::Crypto
         JSONC::jsonc
         CURL::libcurl )
 if(APPLE)
