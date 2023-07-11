@@ -294,6 +294,21 @@ function(add_rust_library)
             WORKING_DIRECTORY "${ARGS_SOURCE_DIRECTORY}"
             DEPENDS ${LIB_SOURCES}
             COMMENT "Building ${ARGS_TARGET} in ${ARGS_BINARY_DIRECTORY} with:  ${cargo_EXECUTABLE} ${MY_CARGO_ARGS_STRING}")
+    elseif("${CMAKE_OSX_ARCHITECTURES}" MATCHES "^(arm64)$")
+        add_custom_command(
+            OUTPUT "${OUTPUT}"
+            COMMAND ${CMAKE_COMMAND} -E env "CARGO_CMD=build" "CARGO_TARGET_DIR=${ARGS_BINARY_DIRECTORY}" "MAINTAINER_MODE=${MAINTAINER_MODE}" "RUSTFLAGS=${RUSTFLAGS}" ${cargo_EXECUTABLE} ${MY_CARGO_ARGS} --target=aarch64-apple-darwin
+            WORKING_DIRECTORY "${ARGS_SOURCE_DIRECTORY}"
+            DEPENDS ${LIB_SOURCES}
+            COMMENT "Building ${ARGS_TARGET} in ${ARGS_BINARY_DIRECTORY} with:  ${cargo_EXECUTABLE} ${MY_CARGO_ARGS_STRING}")
+    elseif("${CMAKE_OSX_ARCHITECTURES}" MATCHES "^(x86_64)$")
+        add_custom_command(
+            OUTPUT "${OUTPUT}"
+            COMMAND ${CMAKE_COMMAND} -E env "CARGO_CMD=build" "CARGO_TARGET_DIR=${ARGS_BINARY_DIRECTORY}" "MAINTAINER_MODE=${MAINTAINER_MODE}" "RUSTFLAGS=${RUSTFLAGS}" ${cargo_EXECUTABLE} ${MY_CARGO_ARGS} --target=x86_64-apple-darwin
+            COMMAND ${CMAKE_COMMAND} -E make_directory "${ARGS_BINARY_DIRECTORY}/${RUST_COMPILER_TARGET}/${CARGO_BUILD_TYPE}"
+            WORKING_DIRECTORY "${ARGS_SOURCE_DIRECTORY}"
+            DEPENDS ${LIB_SOURCES}
+            COMMENT "Building ${ARGS_TARGET} in ${ARGS_BINARY_DIRECTORY} with:  ${cargo_EXECUTABLE} ${MY_CARGO_ARGS_STRING}")
     else()
         add_custom_command(
             OUTPUT "${OUTPUT}"
