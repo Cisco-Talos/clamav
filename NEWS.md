@@ -9,6 +9,60 @@ ClamAV 1.2.0 includes the following improvements and changes:
 
 ### Major changes
 
+- Added support for extracting Universal Disk Format (UDF) partitions.
+
+  Specifically, this version adds support for the Beginning Extended Area
+  Descriptor (BEA01) type of UDF files.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/941
+
+- Added an option to customize the size of ClamAV's clean file cache.
+
+  Increasing the size of the clean file cache may improve scan performance
+  but will require more RAM. The cache size value should be a square number
+  or will be rounded up to the nearest square number.
+
+  The cache size option for `clamd` and `clamscan` is `--cache-size`.
+  Alternatively, you can customize the cache size for ClamD by setting
+  `CacheSize` in `clamd.conf`.
+
+  Patch courtesy of Craig Andrews.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/882
+
+- Introduced a SystemD timer for running Freshclam updates, without sending
+  Freshclam into the background. This takes the "burden of timing the updates"
+  from Freshclam and puts it onto SystemD.
+  The timer can be activated, audited, and the logs inspected:
+  ```sh
+  sudo systemctl enable --now clamav-freshclam-once.timer
+  sudo systemctl list-timers
+  sudo systemctl status clamav-freshclam-once.timer
+  sudo systemctl status clamav-freshclam-once.service
+  journalctl -u clamav-freshclam-once.service
+  ```
+  If you want a different update interval you can edit the timer unit file:
+  ```sh
+  sudo systemctl edit clamav-freshclam-once.timer
+  ```
+  Patch courtesy of Nils Werner.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/962
+
+- Raised the MaxScanSize limit so the total amount of data scanned when
+  scanning a file or archive may exceed 4 gigabytes.
+
+  Introduced the ability to suffix the MaxScanSize and other config file size
+  options with a "G" or "g" for the number of gigabytes.
+  For example, for ClamD you may now specify `MaxScanSize 10G` in `clamd.conf`.
+  And for ClamScan, you may now specify `--max-scansize=10g`.
+
+  The `MaxFileSize` is still limited internally in ClamAV to 2 gigabytes.
+  Any file, or embedded file, larger than 2GB will be skipped.
+  You may use `clamscan --alert-exceeds-max`, or the `clamd.conf` option
+  `AlertExceedsMax yes` to tell if a scan is not completed because of
+  the scan limits.
+
+  Patch courtesy of matthias-fratz-bsz.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/945
+
 - Added ability for Freshclam to use a client certificate PEM file and a
   private key PEM file for authentication to a private mirror by setting the
   following environment variables:
@@ -20,15 +74,63 @@ ClamAV 1.2.0 includes the following improvements and changes:
     PEM file, if it is password protected.
 
   Patch courtesy of jedrzej.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/955
 
 ## Other improvements
 
+- Fix an issue extracting files from ISO9660 partitions where the files are
+  listed in the plain ISO tree and there also exists an empty Joliet tree.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/938
+
+- CMake build system improvement to support compiling with OpenSSL 3.x on
+  macOS with the Xcode toolchain.
+
+  The official ClamAV installers and packages are now built with OpenSSL 3.1.1
+  or newer.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/970
+
+- The suggested path for the `clamd.pid` and `clamd.sock` file in the sample
+  configs have been updated to reflect the recommended locations for these files
+  in the Docker images. These are:
+  - `/run/clamav/clamd.pid`
+  - `/run/clamav/clamd.sock`
+
+  For consistency, it now specifies `clamd.sock` instead of `clamd.socket`.
+
+  Patch courtesy of computersalat.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/931
+
 ### Bug fixes
+
+- Fixed an issue where ClamAV does not abort the signature load process after
+  partially loading an invalid signature. The bug would later cause a crash when
+  scanning certain files.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/934
+
+- Fixed a possible buffer over-read bug when unpacking PE files.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/927
+
+- Removed a warning message showing the HTTP response codes during the
+  Freshclam database update process.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/935
+
+- Added missing command line options to the ClamD and ClamAV-Milter `--help`
+  message and manpages.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/936
+
+- ClamOnAcc: Fix error message when using `--wait` without `--ping` option.
+  Patch courtesy of Răzvan Cojocaru.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/984
 
 ### Acknowledgments
 
 Special thanks to the following people for code contributions and bug reports:
+- computersalat
+- Craig Andrews
 - jedrzej
+- matthias-fratz-bsz
+- Nils Werner
+- Răzvan Cojocaru
 
 ## 1.1.0
 
@@ -1344,7 +1446,7 @@ Other fixes backported from 0.104.0:
   callback for the "virus found" event.
   Patch courtesy of Markus Strehle.
 
-- Added checks to the the SIS archive parser to prevent an SIS file entry from
+- Added checks to the SIS archive parser to prevent an SIS file entry from
   pointing to the archive, which would result in a loop. This was not an actual
   infinite loop, as ClamAV's scan recursion limit limits the depth of nested
   archive extraction.
