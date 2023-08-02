@@ -697,3 +697,35 @@ done:
 
     return status;
 }
+
+void set_tls_client_certificate(CURL *curl)
+{
+    char *client_certificate;
+    char *client_key;
+    char *client_key_passwd;
+
+    client_certificate = getenv("FRESHCLAM_CLIENT_CERT");
+    if (client_certificate == NULL) {
+        return;
+    }
+
+    client_key = getenv("FRESHCLAM_CLIENT_KEY");
+    if (client_key == NULL) {
+        return;
+    }
+
+    client_key_passwd = getenv("FRESHCLAM_CLIENT_KEY_PASSWD");
+
+    /* set the cert for client authentication */
+    curl_easy_setopt(curl, CURLOPT_SSLCERTTYPE, "PEM");
+    curl_easy_setopt(curl, CURLOPT_SSLCERT, client_certificate);
+
+    /* set the private key type and path */
+    curl_easy_setopt(curl, CURLOPT_SSLKEYTYPE, "PEM");
+    curl_easy_setopt(curl, CURLOPT_SSLKEY, client_key);
+
+    /* the private key may require a password */
+    if (client_key_passwd == NULL) {
+        curl_easy_setopt(curl, CURLOPT_KEYPASSWD, client_key_passwd);
+    }
+}
