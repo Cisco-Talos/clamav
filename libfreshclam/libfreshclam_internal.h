@@ -34,6 +34,7 @@
 
 #define SIZEOF_UUID_V4 37                 /** For uuid_v4_gen(), includes NULL byte */
 #define MIRRORS_DAT_MAGIC "FreshClamData" /** Magic bytes for freshclam.dat found before freshclam_dat_v1_t */
+
 typedef struct _freshclam_dat_v1 {
     uint32_t version;          /** version of this dat format */
     char uuid[SIZEOF_UUID_V4]; /** uuid to be used in user-agent */

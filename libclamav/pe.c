@@ -2335,7 +2335,7 @@ static inline int hash_impfns(cli_ctx *ctx, void **hashctx, uint32_t *impsz, str
 
             thuoff += sizeof(struct pe_image_thunk32);
 
-            temp = EC32(thunk32.u.Ordinal);
+            temp              = EC32(thunk32.u.Ordinal);
             thunk32.u.Ordinal = temp;
 
             if (!(thunk32.u.Ordinal & PE_IMAGEDIR_ORDINAL_FLAG32)) {
