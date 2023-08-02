@@ -784,7 +784,6 @@ cl_error_t cli_scan_desc(int desc, cli_ctx *ctx, cli_file_t ftype, bool filetype
     cl_error_t status = CL_CLEAN;
     int empty;
     fmap_t *new_map = NULL;
-    fmap_t *map     = ctx->fmap; /* Store off the parent fmap for easy reference */
 
     new_map = fmap_check_empty(desc, 0, 0, &empty, name);
     if (NULL == new_map) {
