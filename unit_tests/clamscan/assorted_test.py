@@ -212,3 +212,29 @@ class TC(testcase.TestCase):
         unexpected_results = ['OK']
 
         self.verify_output(output.out, expected=expected_results, unexpected=unexpected_results)
+
+    def test_iso_missing_joliet(self):
+        self.step_name('Test that we correctly extract files from an ISO even if the joliet file path is empty.')
+
+        test_path = TC.path_source / 'unit_tests' / 'input' / 'other_scanfiles'
+        sig_path = TC.path_source / 'unit_tests' / 'input' / 'other_sigs' / 'logo.hsb'
+
+        command = '{valgrind} {valgrind_args} {clamscan} \
+             -d {sig_path} \
+             --allmatch {testfile1} {testfile2}'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan,
+            sig_path=sig_path,
+            testfile1=test_path / 'iso_normal.logo.iso',
+            testfile2=test_path / 'iso_no_joliet.logo.iso',
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 1
+
+        expected_results = [
+            'iso_normal.logo.iso: logo.png.UNOFFICIAL FOUND',
+            'iso_no_joliet.logo.iso: logo.png.UNOFFICIAL FOUND',
+        ]
+        unexpected_results = ['OK']
+
+        self.verify_output(output.out, expected=expected_results, unexpected=unexpected_results)
