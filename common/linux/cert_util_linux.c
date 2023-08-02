@@ -38,34 +38,13 @@ void set_tls_ca_bundle(CURL *curl)
     char *ca_bundle;
 
     ca_bundle = getenv("CURL_CA_BUNDLE");
-    if (ca_bundle == NULL)
+    if (ca_bundle == NULL) {
         return;
+    }
 
     if (curl_easy_setopt(curl, CURLOPT_CAINFO, ca_bundle) != CURLE_OK) {
         fprintf(stderr, "Failed to set CURLOPT_CAINFO!\n");
     }
-}
-
-void set_tls_client_certificate(CURL *curl)
-{
-    char *client_certificate;
-    char *client_key;
-
-    client_certificate = getenv("CURL_CLIENT_CERT");
-    if (client_certificate == NULL)
-        return;
-
-    client_key = getenv("CURL_CLIENT_KEY");
-    if (client_key == NULL)
-        return;
-
-    /* set the cert for client authentication */
-    curl_easy_setopt(curl, CURLOPT_SSLCERTTYPE, "PEM");
-    curl_easy_setopt(curl, CURLOPT_SSLCERT, client_certificate);
-
-    /* set the private key type and path */
-    curl_easy_setopt(curl, CURLOPT_SSLKEYTYPE, "PEM");
-    curl_easy_setopt(curl, CURLOPT_SSLKEY, client_key);
 }
 
 cl_error_t cert_store_load(X509 **trusted_certs, size_t trusted_cert_count)

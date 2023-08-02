@@ -727,9 +727,12 @@ static fc_error_t create_curl_handle(
         logg(LOGG_DEBUG, "create_curl_handle: Failed to set SSL CTX function. Your libcurl may use an SSL backend that does not support CURLOPT_SSL_CTX_FUNCTION.\n");
     }
 #else
+    /* Use an alternate CA bundle, if specified by the CURL_CA_BUNDLE environment variable. */
     set_tls_ca_bundle(curl);
-    set_tls_client_certificate(curl);
 #endif
+
+    /* Authenticate using a client certificate and private key, if specified by the FRESHCLAM_CLIENT_CERT, FRESHCLAM_CLIENT_KEY, and FRESHCLAM_CLIENT_KEY_PASSWD environment variables. */
+    set_tls_client_certificate(curl);
 
     *curlHandle = curl;
     status      = FC_SUCCESS;

@@ -9,6 +9,18 @@ ClamAV 1.2.0 includes the following improvements and changes:
 
 ### Major changes
 
+- Added ability for Freshclam to use a client certificate PEM file and a
+  private key PEM file for authentication to a private mirror by setting the
+  following environment variables:
+  - `FRESHCLAM_CLIENT_CERT`: May be set to the path of a file (PEM) containing
+    the client certificate.
+  - `FRESHCLAM_CLIENT_KEY`: May be set to the path of a file (PEM) containing
+    the client private key.
+  - `FRESHCLAM_CLIENT_KEY_PASSWD`: May be set to a password for the client key
+    PEM file, if it is password protected.
+
+  Patch courtesy of jedrzej.
+
 ## Other improvements
 
 ### Bug fixes
@@ -16,6 +28,7 @@ ClamAV 1.2.0 includes the following improvements and changes:
 ### Acknowledgments
 
 Special thanks to the following people for code contributions and bug reports:
+- jedrzej
 
 ## 1.1.0
 

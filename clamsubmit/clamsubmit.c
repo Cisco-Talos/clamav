@@ -292,6 +292,7 @@ int main(int argc, char *argv[])
         logg(LOGG_ERROR, "ERROR: Failed to set SSL CTX function!\n");
     }
 #else
+    /* Use an alternate CA bundle, if specified by the CURL_CA_BUNDLE environment variable. */
     set_tls_ca_bundle(clam_curl);
 #endif
 
@@ -466,6 +467,7 @@ int main(int argc, char *argv[])
         logg(LOGG_ERROR, "ERROR: Failed to set SSL CTX function!\n");
     }
 #else
+    /* Use an alternate CA bundle, if specified by the CURL_CA_BUNDLE environment variable. */
     set_tls_ca_bundle(aws_curl);
 #endif
 
