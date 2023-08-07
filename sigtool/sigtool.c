@@ -1073,7 +1073,7 @@ static int build(const struct optstruct *opts)
     strcat(header, builder);
 
     /* add current time */
-    sprintf(header + strlen(header), ":%u", (unsigned int)timet);
+    sprintf(header + strlen(header), ":" STDu64, (uint64_t)timet);
 
     if (writeinfo(dbname, builder, header, opts, dblist2, dblist2cnt) == -1) {
         mprintf(LOGG_ERROR, "build: Can't generate info file\n");
@@ -1177,7 +1177,7 @@ static int build(const struct optstruct *opts)
     strcat(header, builder);
 
     /* add current time */
-    sprintf(header + strlen(header), ":%u", (unsigned int)timet);
+    sprintf(header + strlen(header), ":" STDu64, (uint64_t)timet);
 
     /* fill up with spaces */
     while (strlen(header) < sizeof(header) - 1)
