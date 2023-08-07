@@ -36,7 +36,7 @@ void set_tls_ca_bundle(CURL *curl);
  *
  * @param curl Pointer to the curl connection handle.
  */
-void set_tls_client_certificate(CURL *curl);
+cl_error_t set_tls_client_certificate(CURL *curl);
 
 /**
  * @brief Load system and trusted root certificates into memory. Any errors
