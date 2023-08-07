@@ -928,7 +928,7 @@ static size_t find_length(struct pdf_struct *pdf, struct pdf_obj *obj, const cha
 
     /* Step the index into the "/Length" string. */
     index++;
-    bytes_remaining -= index - obj_start;
+    bytes_remaining--;
 
     /* Find the start of the next direct or indirect object.
      * pdf_nextobject() assumes we started searching from within a previous object */
