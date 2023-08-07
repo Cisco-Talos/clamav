@@ -156,7 +156,7 @@ static cl_error_t extractFile(cli_ctx *ctx, PartitionDescriptor *pPartitionDescr
 
         break;
         default:
-            //impossible unless the file is malformed.
+            // impossible unless the file is malformed.
             cli_warnmsg("extractFile: Unknown descriptor type found.\n");
             goto done;
     }
@@ -716,9 +716,9 @@ cl_error_t cli_scanudf(cli_ctx *ctx, const size_t offset)
     LogicalVolumeIntegrityDescriptor *lvid  = NULL;
     AnchorVolumeDescriptorPointer *avdp     = NULL;
 
-    bool isInitialized = false;
-    PointerList fileIdentifierList;
-    PointerList fileEntryList;
+    bool isInitialized             = false;
+    PointerList fileIdentifierList = {0};
+    PointerList fileEntryList      = {0};
 
     if (offset < 32768) {
         return CL_SUCCESS; /* Need 16 sectors at least 2048 bytes long */
@@ -755,9 +755,6 @@ cl_error_t cli_scanudf(cli_ctx *ctx, const size_t offset)
 
         idx += VOLUME_DESCRIPTOR_SIZE;
     }
-
-    memset(&fileIdentifierList, 0, sizeof(PointerList));
-    memset(&fileEntryList, 0, sizeof(PointerList));
 
     while (1) {
 
@@ -853,8 +850,8 @@ cl_error_t cli_scanudf(cli_ctx *ctx, const size_t offset)
                     size_t cnt = fileIdentifierList.cnt;
 
                     /* The number of file entries should match the number of file identifiers, but in the
-                              * case that the file is malformed, we are going to do the best we can to extract as much as we can.
-                              */
+                     * case that the file is malformed, we are going to do the best we can to extract as much as we can.
+                     */
                     if (fileEntryList.cnt < cnt) {
                         cnt = fileEntryList.cnt;
                     }
