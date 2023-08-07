@@ -205,12 +205,21 @@ static char *clamd_header       = NULL;
 static void resize(void)
 {
     char *p;
-    unsigned new_maxy, new_maxx;
+    int new_maxy, new_maxx;
+
     getmaxyx(stdscr, new_maxy, new_maxx);
-    if (new_maxy == maxy && new_maxx == maxx)
+    if (new_maxy == -1 || new_maxx == -1) {
+        fprintf(stderr, "Failed to get terminal size\n");
         return;
-    maxx = new_maxx;
-    maxy = new_maxy;
+    }
+
+    if ((unsigned int)new_maxy == maxy && (unsigned int)new_maxx == maxx) {
+        // no change
+        return;
+    }
+
+    maxx = (unsigned int)new_maxx;
+    maxy = (unsigned int)new_maxy;
     free(queue_header);
     free(clamd_header);
     queue_header = malloc(maxx + 1);
