@@ -210,7 +210,7 @@ int blobAddData(blob *b, const unsigned char *data, size_t len)
 #if HAVE_CLI_GETPAGESIZE
     if (pagesize == 0) {
         pagesize = cli_getpagesize();
-        if (pagesize == 0)
+        if (pagesize <= 0)
             pagesize = 4096;
     }
     growth = pagesize;
