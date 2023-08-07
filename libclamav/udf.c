@@ -89,11 +89,13 @@ done:
         fd = -1;
     }
     if (!ctx->engine->keeptmp) {
-        if (cli_unlink(tmpf)) {
-            /* If status is already set to virus or something, that should take priority of the
-             * error unlinking the file. */
-            if (CL_CLEAN == status) {
-                status = CL_EUNLINK;
+        if (NULL != tmpf) {
+            if (cli_unlink(tmpf)) {
+                /* If status is already set to virus or something, that should take priority of the
+                 * error unlinking the file. */
+                if (CL_CLEAN == status) {
+                    status = CL_EUNLINK;
+                }
             }
         }
     }
