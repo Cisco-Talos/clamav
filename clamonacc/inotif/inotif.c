@@ -138,12 +138,12 @@ static int onas_ddd_grow_wdlt(void)
 int onas_ddd_init(uint64_t nwatches, size_t ht_size)
 {
 
-    const char *nwatch_file = "/proc/sys/fs/inotify/max_user_watches";
-    int nwfd                = 0;
-    int ret                 = 0;
-    char nwatch_str[MAX_WATCH_LEN];
-    char *p  = NULL;
-    nwatches = 0;
+    const char *nwatch_file            = "/proc/sys/fs/inotify/max_user_watches";
+    int nwfd                           = 0;
+    int ret                            = 0;
+    char nwatch_str[MAX_WATCH_LEN + 1] = {0};
+    char *p                            = NULL;
+    nwatches                           = 0;
 
     nwfd = open(nwatch_file, O_RDONLY);
     if (nwfd < 0) return CL_EOPEN;
