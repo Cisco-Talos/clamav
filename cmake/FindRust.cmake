@@ -397,10 +397,17 @@ if(RUSTC_MINIMUM_REQUIRED AND rustc_VERSION VERSION_LESS RUSTC_MINIMUM_REQUIRED)
     ${rustc_VERSION} < ${RUSTC_MINIMUM_REQUIRED}")
 endif()
 
+if(WIN32)
+    file(TOUCH ${CMAKE_BINARY_DIR}/empty-file)
+    set(EMPTY_FILE "${CMAKE_BINARY_DIR}/empty-file")
+else()
+    set(EMPTY_FILE "/dev/null")
+endif()
+
 # Determine the native libs required to link w/ rust static libs
-# message(STATUS "Detecting native static libs for rust: ${rustc_EXECUTABLE} --crate-type staticlib --print=native-static-libs /dev/null")
+# message(STATUS "Detecting native static libs for rust: ${rustc_EXECUTABLE} --crate-type staticlib --print=native-static-libs ${EMPTY_FILE}")
 execute_process(
-    COMMAND ${CMAKE_COMMAND} -E env "CARGO_TARGET_DIR=${CMAKE_BINARY_DIR}" ${rustc_EXECUTABLE} --crate-type staticlib --print=native-static-libs /dev/null
+    COMMAND ${CMAKE_COMMAND} -E env "CARGO_TARGET_DIR=${CMAKE_BINARY_DIR}" ${rustc_EXECUTABLE} --crate-type staticlib --print=native-static-libs ${EMPTY_FILE}
     OUTPUT_VARIABLE RUST_NATIVE_STATIC_LIBS_OUTPUT
     ERROR_VARIABLE RUST_NATIVE_STATIC_LIBS_ERROR
     RESULT_VARIABLE RUST_NATIVE_STATIC_LIBS_RESULT
