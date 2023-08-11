@@ -37,7 +37,7 @@ properties(
                        defaultValue: 'fuzz-regression-1.0',
                        description: 'test-pipelines branch for fuzz regression tests'),
                 string(name: 'FUZZ_CORPUS_BRANCH',
-                       defaultValue: 'master',
+                       defaultValue: '1.0',
                        description: 'private-fuzz-corpus branch'),
                 string(name: 'APPCHECK_PIPELINE',
                        defaultValue: 'appcheck-1.0',
