@@ -7,7 +7,19 @@ Note: This file refers to the source tarball. Things described here may differ
 
 ClamAV 0.103.9 is a critical patch release with the following fixes:
 
+- [CVE-2023-20197](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2023-20197)
+  Fixed a possible denial of service vulnerability in the HFS+ file parser.
+  This issue affects versions 1.1.0, 1.0.1 through 1.0.0, 0.105.2 through 0.105.0,
+  0.104.4 through 0.104.0, and 0.103.8 through 0.103.0.
+  Thank you to Steve Smith for reporting this issue.
+
+- Fixed compiler warnings that may turn into errors in Clang 16.
+  Patch courtesy of Michael Orlitzky.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/747
+
 Special thanks to the following people for code contributions and bug reports:
+- Michael Orlitzky
+- Steve Smith
 
 ## 0.103.8
 
