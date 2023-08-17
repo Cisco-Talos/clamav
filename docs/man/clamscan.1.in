@@ -214,10 +214,10 @@ Dump authenticode certificate chain in PE files.
 The maximum time to scan before giving up. The value is in milliseconds. The value of 0 disables the limit. This option protects your system against DoS attacks (default: 120000 = 120s or 2min)
 .TP
 \fB\-\-max\-filesize=#n\fR
-Extract and scan at most #n bytes from each archive. You may pass the value in kilobytes in format xK or xk, or megabytes in format xM or xm, where x is a number. This option protects your system against DoS attacks (default: 25 MB, max: <4 GB)
+Extract and scan at most #n bytes from each archive. You may pass the value in kilobytes in format xK or xk, or megabytes in format xM or xm, where x is a number. This option protects your system against DoS attacks (default: 100 MB, max: 2 GB)
 .TP
 \fB\-\-max\-scansize=#n\fR
-Extract and scan at most #n bytes from each archive. The size the archive plus the sum of the sizes of all files within archive count toward the scan size. For example, a 1M uncompressed archive containing a single 1M inner file counts as 2M toward max-scansize. You may pass the value in kilobytes in format xK or xk, or megabytes in format xM or xm, where x is a number. This option protects your system against DoS attacks (default: 100 MB, max: <4 GB)
+Extract and scan at most #n bytes from each archive. The size the archive plus the sum of the sizes of all files within archive count toward the scan size. For example, a 1M uncompressed archive containing a single 1M inner file counts as 2M toward max-scansize. You may pass the value in kilobytes in format xK or xk, or megabytes in format xM or xm, where x is a number. This option protects your system against DoS attacks (default: 400 MB)
 .TP
 \fB\-\-max\-files=#n\fR
 Extract at most #n files from each scanned file (when this is an archive, a document or another kind of container). This option protects your system against DoS attacks (default: 10000)
@@ -230,19 +230,19 @@ Maximum depth directories are scanned at (default: 15).
 
 .TP
 \fB\-\-max\-embeddedpe=#n\fR
-Maximum size file to check for embedded PE. You may pass the value in kilobytes in format xK or xk, or megabytes in format xM or xm, where x is a number (default: 10 MB, max: <4 GB).
+Maximum size file to check for embedded PE. You may pass the value in kilobytes in format xK or xk, or megabytes in format xM or xm, where x is a number (default: 40 MB).
 .TP
 \fB\-\-max\-htmlnormalize=#n\fR
-Maximum size of HTML file to normalize. You may pass the value in kilobytes in format xK or xk, or megabytes in format xM or xm, where x is a number (default: 10 MB, max: <4 GB).
+Maximum size of HTML file to normalize. You may pass the value in kilobytes in format xK or xk, or megabytes in format xM or xm, where x is a number (default: 40 MB).
 .TP
 \fB\-\-max\-htmlnotags=#n\fR
-Maximum size of normalized HTML file to scan. You may pass the value in kilobytes in format xK or xk, or megabytes in format xM or xm, where x is a number (default: 2 MB, max: <4 GB).
+Maximum size of normalized HTML file to scan. You may pass the value in kilobytes in format xK or xk, or megabytes in format xM or xm, where x is a number (default: 8 MB).
 .TP
 \fB\-\-max\-scriptnormalize=#n\fR
-Maximum size of script file to normalize. You may pass the value in kilobytes in format xK or xk, or megabytes in format xM or xm, where x is a number (default: 5 MB, max: <4 GB).
+Maximum size of script file to normalize. You may pass the value in kilobytes in format xK or xk, or megabytes in format xM or xm, where x is a number (default: 20 MB).
 .TP
 \fB\-\-max\-ziptypercg=#n\fR
-Maximum size zip to type reanalyze. You may pass the value in kilobytes in format xK or xk, or megabytes in format xM or xm, where x is a number (default: 1 MB, max: <4 GB).
+Maximum size zip to type reanalyze. You may pass the value in kilobytes in format xK or xk, or megabytes in format xM or xm, where x is a number (default: 1 MB).
 .TP
 \fB\-\-max\-partitions=#n\fR
 This option sets the maximum number of partitions of a raw disk image to be scanned. This must be a positive integer (default: 50).
@@ -260,7 +260,7 @@ Maximum calls to the PCRE match function (default: 100000).
 Maximum recursive calls to the PCRE match function (default: 2000).
 .TP
 \fB\-\-pcre-max-filesize=#n\fR
-Maximum size file to perform PCRE subsig matching (default: 25 MB, max: <4 GB).
+Maximum size file to perform PCRE subsig matching (default: 100 MB).
 .TP
 \fB\-\-disable\-cache\fR
 Disable caching and cache checks for hash sums of scanned files.

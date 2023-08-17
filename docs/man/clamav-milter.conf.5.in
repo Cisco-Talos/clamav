@@ -121,7 +121,7 @@ Default: unset (no allowing based on SMTP auth)
 \fBMaxFileSize SIZE\fR
 Messages larger than this value won\'t be scanned. Make sure this value is lower or equal than StreamMaxLength in clamd.conf
 .br
-Default: 25M
+Default: 100M
 .SH "ACTIONS"
 The following group of options controls the delivery process under  different circumstances. The following actions are available:
 .br
