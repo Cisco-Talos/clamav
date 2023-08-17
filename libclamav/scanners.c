@@ -5737,8 +5737,12 @@ cl_error_t cl_scandesc_callback(int desc, const char *filename, const char **vir
     if ((engine->maxfilesize > 0) && ((uint64_t)sb.st_size > engine->maxfilesize)) {
         cli_dbgmsg("cl_scandesc_callback: File too large (" STDu64 " bytes), ignoring\n", (uint64_t)sb.st_size);
         if (scanoptions->heuristic & CL_SCAN_HEURISTIC_EXCEEDS_MAX) {
-            if (engine->cb_virus_found)
+            if (engine->cb_virus_found) {
                 engine->cb_virus_found(desc, "Heuristics.Limits.Exceeded.MaxFileSize", context);
+                if (virname){
+                    *virname = "Heuristics.Limits.Exceeded.MaxFileSize";
+                }
+            }
             status = CL_VIRUS;
         } else {
             status = CL_CLEAN;
