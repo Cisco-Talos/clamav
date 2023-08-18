@@ -587,11 +587,22 @@
 #define inline @INLINE_KEYWORD@
 #endif
 
-/* Define to `long int' if <sys/types.h> does not define. */
-#cmakedefine off_t @off_t@
-
 /* Define to `int' if <sys/types.h> does not define. */
-#cmakedefine ssize_t @ssize_t@
+#ifndef SSIZE_T_DEFINED
+   #if defined(_MSC_VER)
+      #include <BaseTsd.h>
+      typedef SSIZE_T ssize_t;
+   #else
+      @SSIZE_T_DEF@
+   #endif
+   # define SSIZE_T_DEFINED
+#endif
+
+/* Define to `long int' if <sys/types.h> does not define. */
+#ifndef OFF_T_DEFINED
+   @OFF_T_DEF@
+   #define OFF_T_DEFINED
+#endif
 
 /* Define to the equivalent of the C99 'restrict' keyword, or to
    nothing if this is not supported.  Do not define if restrict is
