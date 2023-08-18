@@ -24,8 +24,14 @@
 
 /* Don't include clamav-config.h, because that brings in platform.h
    and platform.h will make these functions recursive ;-). */
-#ifndef ssize_t
+#ifndef SSIZE_T_DEFINED
+#if defined(_MSC_VER)
+#include <BaseTsd.h>
+typedef SSIZE_T ssize_t;
+#else
 typedef int ssize_t;
+#endif
+#define SSIZE_T_DEFINED
 #endif
 
 #define F_GETFL 1
