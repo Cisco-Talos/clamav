@@ -210,9 +210,9 @@ int main(int argc, char **argv)
 
     /* scan file descriptor */
     memset(&options, 0, sizeof(struct cl_scan_options));
-    options.parse |= ~0;                                 /* enable all parsers */
-    options.general |= CL_SCAN_GENERAL_HEURISTICS;       /* enable heuristic alert options */
-    options.general |= CL_SCAN_GENERAL_ALLMATCHES;       /* run in all-match mode, so it keeps looking for alerts after the first one */
+    options.parse |= ~0;                           /* enable all parsers */
+    options.general |= CL_SCAN_GENERAL_HEURISTICS; /* enable heuristic alert options */
+    options.general |= CL_SCAN_GENERAL_ALLMATCHES; /* run in all-match mode, so it keeps looking for alerts after the first one */
 
     options.heuristic |= CL_SCAN_HEURISTIC_ENCRYPTED_ARCHIVE;
     options.heuristic |= CL_SCAN_HEURISTIC_ENCRYPTED_DOC;
