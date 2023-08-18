@@ -676,13 +676,13 @@ check_type_size("ssize_t" SIZEOF_SSIZE_T)
 if(SIZEOF_SSIZE_T STREQUAL "")
     # ssize_t is a signed type in POSIX storing at least -1.
     # Set it to "int" to match the behavior of AC_TYPE_SSIZE_T (autotools).
-    set(ssize_t int)
+    set(SSIZE_T_DEF "typedef int ssize_t;")
 endif()
 check_type_size("off_t" SIZEOF_OFF_T)
 if(SIZEOF_OFF_T STREQUAL "")
     # off_t is a signed type in POSIX no narrower than int.
     # Set it to "long int" to match the behavior of AC_TYPE_OFF_T (autotools).
-    set(off_t long int)
+    set(OFF_T_DEF "typedef long int off_t;")
 endif()
 
 check_type_size("int" SIZEOF_INT)
