@@ -624,8 +624,8 @@ static unsigned int parse_local_file_header(
     uint32_t csize, usize;
     unsigned int size_of_fileheader_and_data = 0;
 
-    uint32_t nsize;
-    const char *src;
+    uint32_t nsize  = 0;
+    const char *src = NULL;
 
     if (!(local_header = fmap_need_off(map, loff, SIZEOF_LOCAL_HEADER))) {
         cli_dbgmsg("cli_unzip: local header - out of file\n");
@@ -652,7 +652,7 @@ static unsigned int parse_local_file_header(
     }
 
     nsize = (LOCAL_HEADER_flen >= sizeof(name)) ? sizeof(name) - 1 : LOCAL_HEADER_flen;
-    src = fmap_need_ptr_once(map, zip, nsize);
+    src   = fmap_need_ptr_once(map, zip, nsize);
     if (nsize && (NULL != src)) {
         memcpy(name, zip, nsize);
         name[nsize] = '\0';
