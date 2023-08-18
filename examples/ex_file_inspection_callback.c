@@ -213,7 +213,6 @@ int main(int argc, char **argv)
     options.parse |= ~0;                                 /* enable all parsers */
     options.general |= CL_SCAN_GENERAL_HEURISTICS;       /* enable heuristic alert options */
     options.general |= CL_SCAN_GENERAL_ALLMATCHES;       /* run in all-match mode, so it keeps looking for alerts after the first one */
-    options.general |= CL_SCAN_GENERAL_COLLECT_METADATA; /* collect metadata may enable collecting additional filenames (like in zip) */
 
     options.heuristic |= CL_SCAN_HEURISTIC_ENCRYPTED_ARCHIVE;
     options.heuristic |= CL_SCAN_HEURISTIC_ENCRYPTED_DOC;
