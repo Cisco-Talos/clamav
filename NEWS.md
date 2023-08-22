@@ -7,6 +7,9 @@ Note: This file refers to the source tarball. Things described here may differ
 
 ClamAV 0.103.10 is a critical patch release with the following fixes:
 
+- Upgrade the bundled UnRAR library (libclamunrar) to version 6.2.10.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/1009
+
 ## 0.103.9
 
 ClamAV 0.103.9 is a critical patch release with the following fixes:
