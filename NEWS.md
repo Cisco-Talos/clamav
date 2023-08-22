@@ -3,6 +3,20 @@
 Note: This file refers to the official packages. Things described here may
 differ slightly from third-party binary packages.
 
+## 1.3.0
+
+ClamAV 1.3.0 includes the following improvements and changes:
+
+### Major changes
+
+## Other improvements
+
+### Bug fixes
+
+### Acknowledgments
+
+Special thanks to the following people for code contributions and bug reports:
+
 ## 1.2.0
 
 ClamAV 1.2.0 includes the following improvements and changes:
@@ -151,6 +165,37 @@ Special thanks to the following people for code contributions and bug reports:
 - matthias-fratz-bsz
 - Nils Werner
 - Răzvan Cojocaru
+
+## 1.1.1
+
+ClamAV 1.1.1 is a critical patch release with the following fixes:
+
+- [CVE-2023-20197](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2023-20197)
+  Fixed a possible denial of service vulnerability in the HFS+ file parser.
+  This issue affects versions 1.1.0, 1.0.1 through 1.0.0, 0.105.2 through 0.105.0,
+  0.104.4 through 0.104.0, and 0.103.8 through 0.103.0.
+  Thank you to Steve Smith for reporting this issue.
+
+- Fixed a build issue when using the Rust nightly toolchain, which was
+  affecting the oss-fuzz build environment used for regression tests.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/997
+
+- Fixed a build issue on Windows when using Rust version 1.70 or newer.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/994
+
+- CMake build system improvement to support compiling with OpenSSL 3.x on
+  macOS with the Xcode toolchain.
+
+  The official ClamAV installers and packages are now built with OpenSSL 3.1.1
+  or newer.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/972
+
+- Removed a warning message showing the HTTP response codes during the
+  Freshclam database update process.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/939
+
+Special thanks to the following people for code contributions and bug reports:
+- Steve Smith
 
 ## 1.1.0
 
@@ -324,6 +369,65 @@ Special thanks to the following people for code contributions and bug reports:
 - Shawn Iverson
 - Sebastian Andrzej Siewior
 - The OSS-Fuzz project
+
+## 1.0.2
+
+ClamAV 1.0.2 is a critical patch release with the following fixes:
+
+- [CVE-2023-20197](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2023-20197)
+  Fixed a possible denial of service vulnerability in the HFS+ file parser.
+  This issue affects versions 1.1.0, 1.0.1 through 1.0.0, 0.105.2 through 0.105.0,
+  0.104.4 through 0.104.0, and 0.103.8 through 0.103.0.
+  Thank you to Steve Smith for reporting this issue.
+
+- [CVE-2023-20212](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2023-20212)
+  Fixed a possible denial of service vulnerability in the AutoIt file parser.
+  This issue affects versions 1.0.1 and 1.0.0.
+  This issue does not affect version 1.1.0.
+
+- Fixed a build issue when using the Rust nightly toolchain, which was
+  affecting the oss-fuzz build environment used for regression tests.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/996
+
+- Fixed a build issue on Windows when using Rust version 1.70 or newer.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/993
+
+- CMake build system improvement to support compiling with OpenSSL 3.x on
+  macOS with the Xcode toolchain.
+
+  The official ClamAV installers and packages are now built with OpenSSL 3.1.1
+  or newer.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/973
+
+- Fixed an issue where ClamAV does not abort the signature load process after
+  partially loading an invalid signature.
+  The bug would later cause a crash when scanning certain files.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/952
+
+- Fixed an issue so that ClamAV correctly removes temporary files generated
+  by the VBA and XLM extraction modules so that the files are not leaked in
+  patched versions of ClamAV where temporary files are written directly to the
+  temp-directory instead of writing to a unique subdirectory.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/900
+
+- Set Git attributes to prevent Git from altering line endings for bundled Rust
+  libraries. Third-party Rust libraries are bundled in the ClamAV release
+  tarball. We do not commit them to our own Git repository, but community
+  package maintainers may now store the tarball contents in Git.
+  The Rust build system verifies the library manifest, and this change
+  ensures that the hashes are correct.
+  Improvement courtesy of Nicolas R.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/856
+
+- Fixed two bugs that would cause Freshclam to fail update when applying a
+  CDIFF database patch if that patch adds a file to the database archive
+  or removes a file from the database archive.
+  This bug also caused Sigtool to fail to create such a patch.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/901
+
+Special thanks to the following people for code contributions and bug reports:
+- Nicolas R.
+- Steve Smith
 
 ## 1.0.1
 
@@ -1270,6 +1374,24 @@ The ClamAV team thanks the following individuals for their code submissions:
 - Tom Briden
 - Vasile Papp
 - Yasuhiro Kimura
+
+## 0.103.9
+
+ClamAV 0.103.9 is a critical patch release with the following fixes:
+
+- [CVE-2023-20197](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2023-20197)
+  Fixed a possible denial of service vulnerability in the HFS+ file parser.
+  This issue affects versions 1.1.0, 1.0.1 through 1.0.0, 0.105.2 through 0.105.0,
+  0.104.4 through 0.104.0, and 0.103.8 through 0.103.0.
+  Thank you to Steve Smith for reporting this issue.
+
+- Fixed compiler warnings that may turn into errors in Clang 16.
+  Patch courtesy of Michael Orlitzky.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/747
+
+Special thanks to the following people for code contributions and bug reports:
+- Michael Orlitzky
+- Steve Smith
 
 ## 0.103.8
 
