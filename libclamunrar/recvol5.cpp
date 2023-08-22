@@ -4,7 +4,7 @@ static const uint MaxVolumes=65535;
 // rev files by mistake.
 #define MAX_REV_TO_DATA_RATIO 10 // 1000% of rev files.
 
-RecVolumes5::RecVolumes5(RAROptions *Cmd,bool TestOnly)
+RecVolumes5::RecVolumes5(CommandData *Cmd,bool TestOnly)
 {
   RealBuf=NULL;
   RealReadBuffer=NULL;
@@ -70,7 +70,7 @@ THREAD_PROC(RecThreadRS)
 #endif
 
 
-void RecVolumes5::ProcessRS(RAROptions *Cmd,uint DataNum,const byte *Data,uint MaxRead,bool Encode)
+void RecVolumes5::ProcessRS(CommandData *Cmd,uint DataNum,const byte *Data,uint MaxRead,bool Encode)
 {
 /*
   RSCoder16 RS;
@@ -141,7 +141,7 @@ void RecVolumes5::ProcessAreaRS(RecRSThreadData *td)
 
 
 
-bool RecVolumes5::Restore(RAROptions *Cmd,const wchar *Name,bool Silent)
+bool RecVolumes5::Restore(CommandData *Cmd,const wchar *Name,bool Silent)
 {
   wchar ArcName[NM];
   wcsncpyz(ArcName,Name,ASIZE(ArcName));
@@ -494,7 +494,7 @@ uint RecVolumes5::ReadHeader(File *RecFile,bool FirstRev)
 }
 
 
-void RecVolumes5::Test(RAROptions *Cmd,const wchar *Name)
+void RecVolumes5::Test(CommandData *Cmd,const wchar *Name)
 {
   wchar VolName[NM];
   wcsncpyz(VolName,Name,ASIZE(VolName));

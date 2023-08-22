@@ -39,6 +39,7 @@ void ExtractStreams20(Archive &Arc,const wchar *FileName)
   CharToWide(Arc.StreamHead.StreamName,StoredName,ASIZE(StoredName));
   ConvertPath(StoredName+1,StoredName+1,ASIZE(StoredName)-1);
 
+
   wcsncatz(StreamName,StoredName,ASIZE(StreamName));
 
   FindData fd;
@@ -111,16 +112,23 @@ void ExtractStreams(Archive &Arc,const wchar *FileName,bool TestMode)
 
   wcsncatz(FullName,StreamName,ASIZE(FullName));
 
+
   FindData fd;
-  bool Found=FindFile::FastFind(FileName,&fd);
+  bool HostFound=FindFile::FastFind(FileName,&fd);
 
   if ((fd.FileAttr & FILE_ATTRIBUTE_READONLY)!=0)
     SetFileAttr(FileName,fd.FileAttr & ~FILE_ATTRIBUTE_READONLY);
   File CurFile;
-  if (CurFile.WCreate(FullName) && Arc.ReadSubData(NULL,&CurFile,false))
-    CurFile.Close();
+
+  if (CurFile.WCreate(FullName))
+  {
+    if (Arc.ReadSubData(NULL,&CurFile,false))
+      CurFile.Close();
+  }
+
+  // Restoring original file timestamps.
   File HostFile;
-  if (Found && HostFile.Open(FileName,FMF_OPENSHARED|FMF_UPDATE))
+  if (HostFound && HostFile.Open(FileName,FMF_OPENSHARED|FMF_UPDATE))
     SetFileTime(HostFile.GetHandle(),&fd.ftCreationTime,&fd.ftLastAccessTime,
                 &fd.ftLastWriteTime);
 

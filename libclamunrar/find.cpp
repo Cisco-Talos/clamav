@@ -117,7 +117,7 @@ bool FindFile::FastFind(const wchar *FindMask,FindData *fd,bool GetSymLink)
   if (hFind==INVALID_HANDLE_VALUE)
     return false;
   FindClose(hFind);
-#else
+#elif defined(_UNIX)
   char FindMaskA[NM];
   WideToChar(FindMask,FindMaskA,ASIZE(FindMaskA));
 
@@ -143,21 +143,7 @@ bool FindFile::FastFind(const wchar *FindMask,FindData *fd,bool GetSymLink)
   fd->FileAttr=st.st_mode;
   fd->Size=st.st_size;
 
-#ifdef UNIX_TIME_NS
-#if defined(_APPLE)
-  fd->mtime.SetUnixNS(st.st_mtimespec.tv_sec*(uint64)1000000000+st.st_mtimespec.tv_nsec);
-  fd->atime.SetUnixNS(st.st_atimespec.tv_sec*(uint64)1000000000+st.st_atimespec.tv_nsec);
-  fd->ctime.SetUnixNS(st.st_ctimespec.tv_sec*(uint64)1000000000+st.st_ctimespec.tv_nsec);
-#else
-  fd->mtime.SetUnixNS(st.st_mtim.tv_sec*(uint64)1000000000+st.st_mtim.tv_nsec);
-  fd->atime.SetUnixNS(st.st_atim.tv_sec*(uint64)1000000000+st.st_atim.tv_nsec);
-  fd->ctime.SetUnixNS(st.st_ctim.tv_sec*(uint64)1000000000+st.st_ctim.tv_nsec);
-#endif
-#else
-  fd->mtime.SetUnix(st.st_mtime);
-  fd->atime.SetUnix(st.st_atime);
-  fd->ctime.SetUnix(st.st_ctime);
-#endif
+  File::StatToRarTime(st,&fd->mtime,&fd->ctime,&fd->atime);
 
   wcsncpyz(fd->Name,FindMask,ASIZE(fd->Name));
 #endif
