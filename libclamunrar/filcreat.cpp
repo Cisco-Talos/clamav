@@ -3,7 +3,7 @@
 // If NewFile==NULL, we delete created file after user confirmation.
 // It is useful if we need to overwrite an existing folder or file,
 // but need user confirmation for that.
-bool FileCreate(RAROptions *Cmd,File *NewFile,wchar *Name,size_t MaxNameSize,
+bool FileCreate(CommandData *Cmd,File *NewFile,wchar *Name,size_t MaxNameSize,
                 bool *UserReject,int64 FileSize,RarTime *FileTime,bool WriteOnly)
 {
   if (UserReject!=NULL)

@@ -26,9 +26,10 @@ void CommandData::Init()
   FileArgs.Reset();
   ExclArgs.Reset();
   InclArgs.Reset();
-  StoreArgs.Reset();
   ArcNames.Reset();
-  NextVolSizes.Reset();
+  StoreArgs.Reset();
+  Password.Clean();
+  NextVolSizes.clear();
 }
 
 
@@ -314,6 +315,21 @@ void CommandData::ProcessSwitch(const wchar *Switch)
         case 'I':
           IgnoreGeneralAttr=true;
           break;
+        case 'M':
+          switch(toupperw(Switch[2]))
+          {
+            case 0:
+            case 'S':
+              ArcMetadata=ARCMETA_SAVE;
+              break;
+            case 'R':
+              ArcMetadata=ARCMETA_RESTORE;
+              break;
+            default:
+              BadSwitch(Switch);
+              break;
+          }
+          break;
         case 'N': // Reserved for archive name.
           break;
         case 'O':
@@ -415,7 +431,7 @@ void CommandData::ProcessSwitch(const wchar *Switch)
           else
             if (!Password.IsSet())
             {
-              uiGetPassword(UIPASSWORD_GLOBAL,NULL,&Password);
+              uiGetPassword(UIPASSWORD_GLOBAL,NULL,&Password,NULL);
               eprintf(L"\n");
             }
           break;
@@ -685,7 +701,7 @@ void CommandData::ProcessSwitch(const wchar *Switch)
     case 'P':
       if (Switch[1]==0)
       {
-        uiGetPassword(UIPASSWORD_GLOBAL,NULL,&Password);
+        uiGetPassword(UIPASSWORD_GLOBAL,NULL,&Password,NULL);
         eprintf(L"\n");
       }
       else
@@ -927,6 +943,7 @@ void CommandData::ProcessSwitch(const wchar *Switch)
 void CommandData::BadSwitch(const wchar *Switch)
 {
   mprintf(St(MUnknownOption),Switch);
+  mprintf(L"\n");
   ErrHandler.Exit(RARX_USERERROR);
 }
 #endif
