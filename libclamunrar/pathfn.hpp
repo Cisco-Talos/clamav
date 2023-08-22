@@ -29,7 +29,6 @@ void GetConfigName(const wchar *Name,wchar *FullName,size_t MaxSize,bool CheckEx
 wchar* GetVolNumPart(const wchar *ArcName);
 void NextVolumeName(wchar *ArcName,uint MaxLength,bool OldNumbering);
 bool IsNameUsable(const wchar *Name);
-void MakeNameUsable(char *Name,bool Extended);
 void MakeNameUsable(wchar *Name,bool Extended);
 
 void UnixSlashToDos(const char *SrcName,char *DestName,size_t MaxLength);

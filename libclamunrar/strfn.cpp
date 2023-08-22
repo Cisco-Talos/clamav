@@ -357,6 +357,32 @@ void itoa(int64 n,wchar *Str,size_t MaxSize)
 }
 
 
+// Convert the number to string using thousand separators.
+void fmtitoa(int64 n,wchar *Str,size_t MaxSize)
+{
+  static wchar ThSep=0; // Thousands separator.
+#ifdef _WIN_ALL
+  wchar Info[10];
+  if (!ThSep!=0 && GetLocaleInfo(LOCALE_USER_DEFAULT,LOCALE_STHOUSAND,Info,ASIZE(Info))>0)
+    ThSep=*Info;
+#elif defined(_UNIX)
+  ThSep=*localeconv()->thousands_sep;
+#endif
+  if (ThSep==0) // If failed to detect the actual separator value.
+    ThSep=' ';
+  wchar RawText[30]; // 20 characters are enough for largest unsigned 64 bit int.
+  itoa(n,RawText,ASIZE(RawText));
+  uint S=0,D=0,L=wcslen(RawText)%3;
+  while (RawText[S]!=0 && D+1<MaxSize)
+  {
+    if (S!=0 && (S+3-L)%3==0)
+      Str[D++]=ThSep;
+    Str[D++]=RawText[S++];
+  }
+  Str[D]=0;
+}
+
+
 const wchar* GetWide(const char *Src)
 {
   const size_t MaxLength=NM;

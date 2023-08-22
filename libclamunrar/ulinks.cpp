@@ -70,7 +70,8 @@ static bool SafeCharToWide(const char *Src,wchar *Dest,size_t DestSize)
 }
 
 
-bool ExtractUnixLink30(CommandData *Cmd,ComprDataIO &DataIO,Archive &Arc,const wchar *LinkName)
+static bool ExtractUnixLink30(CommandData *Cmd,ComprDataIO &DataIO,Archive &Arc,
+                              const wchar *LinkName,bool &UpLink)
 {
   char Target[NM];
   if (IsLink(Arc.FileHead.FileAttr))
@@ -100,13 +101,14 @@ bool ExtractUnixLink30(CommandData *Cmd,ComprDataIO &DataIO,Archive &Arc,const w
     if (!Cmd->AbsoluteLinks && (IsFullPath(TargetW) ||
         !IsRelativeSymlinkSafe(Cmd,Arc.FileHead.FileName,LinkName,TargetW)))
       return false;
+    UpLink=strstr(Target,"..")!=NULL;
     return UnixSymlink(Cmd,Target,LinkName,&Arc.FileHead.mtime,&Arc.FileHead.atime);
   }
   return false;
 }
 
 
-bool ExtractUnixLink50(CommandData *Cmd,const wchar *Name,FileHeader *hd)
+static bool ExtractUnixLink50(CommandData *Cmd,const wchar *Name,FileHeader *hd)
 {
   char Target[NM];
   WideToChar(hd->RedirName,Target,ASIZE(Target));
@@ -127,8 +129,6 @@ bool ExtractUnixLink50(CommandData *Cmd,const wchar *Name,FileHeader *hd)
   // Use hd->FileName instead of LinkName, since LinkName can include
   // the destination path as a prefix, which can confuse
   // IsRelativeSymlinkSafe algorithm.
-  // 2022.05.04: Use TargetW instead of previously used hd->RedirName
-  // for security reason.
   if (!Cmd->AbsoluteLinks && (IsFullPath(TargetW) ||
       !IsRelativeSymlinkSafe(Cmd,hd->FileName,Name,TargetW)))
     return false;

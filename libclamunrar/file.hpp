@@ -14,8 +14,6 @@
   #define FILE_BAD_HANDLE NULL
 #endif
 
-class RAROptions;
-
 enum FILE_HANDLETYPE {FILE_HANDLENORMAL,FILE_HANDLESTD};
 
 enum FILE_ERRORTYPE {FILE_SUCCESS,FILE_NOTFOUND,FILE_READERROR};
@@ -88,6 +86,9 @@ class File
     wchar FileName[NM];
 
     FILE_ERRORTYPE ErrorType;
+
+    byte *SeekBuf; // To read instead of seek for stdin files.
+    static const size_t SeekBufSize=0x10000;
   public:
     File();
     virtual ~File();
@@ -118,7 +119,10 @@ class File
     void SetOpenFileTime(RarTime *ftm,RarTime *ftc=NULL,RarTime *fta=NULL);
     void SetCloseFileTime(RarTime *ftm,RarTime *fta=NULL);
     static void SetCloseFileTimeByName(const wchar *Name,RarTime *ftm,RarTime *fta);
-    void GetOpenFileTime(RarTime *ft);
+#ifdef _UNIX
+    static void StatToRarTime(struct stat &st,RarTime *ftm,RarTime *ftc,RarTime *fta);
+#endif
+    void GetOpenFileTime(RarTime *ftm,RarTime *ftc=NULL,RarTime *fta=NULL);
     virtual bool IsOpened() {return hFile!=FILE_BAD_HANDLE;} // 'virtual' for MultiFile class.
     int64 FileLength();
     void SetHandleType(FILE_HANDLETYPE Type) {HandleType=Type;}
