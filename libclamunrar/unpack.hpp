@@ -93,17 +93,17 @@ struct UnpackBlockTables
 
 #ifdef RAR_SMP
 enum UNP_DEC_TYPE {
-  UNPDT_LITERAL,UNPDT_MATCH,UNPDT_FULLREP,UNPDT_REP,UNPDT_FILTER
+  UNPDT_LITERAL=0,UNPDT_MATCH,UNPDT_FULLREP,UNPDT_REP,UNPDT_FILTER
 };
 
 struct UnpackDecodedItem
 {
-  UNP_DEC_TYPE Type;
+  byte Type; // 'byte' instead of enum type to reduce memory use.
   ushort Length;
   union
   {
     uint Distance;
-    byte Literal[4];
+    byte Literal[8]; // Store up to 8 chars here to speed up extraction.
   };
 };
 

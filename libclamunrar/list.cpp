@@ -36,6 +36,7 @@ void ListArchive(CommandData *Cmd)
         {
           Arc.ViewComment();
           mprintf(L"\n%s: %s",St(MListArchive),Arc.FileName);
+
           mprintf(L"\n%s: ",St(MListDetails));
           uint SetCount=0;
           const wchar *Fmt=Arc.Format==RARFMT14 ? L"RAR 1.4":(Arc.Format==RARFMT15 ? L"RAR 4":L"RAR 5");
@@ -61,6 +62,16 @@ void ListArchive(CommandData *Cmd)
             mprintf(L"%s%s", SetCount++ > 0 ? L", ":L"", St(MListLock));
           if (Arc.Encrypted)
             mprintf(L"%s%s", SetCount++ > 0 ? L", ":L"", St(MListEncHead));
+
+          if (!Arc.MainHead.OrigName.empty())
+            mprintf(L"\n%s: %s",St(MOrigName),Arc.MainHead.OrigName.c_str());
+          if (Arc.MainHead.OrigTime.IsSet())
+          {
+            wchar DateStr[50];
+            Arc.MainHead.OrigTime.GetText(DateStr,ASIZE(DateStr),Technical);
+            mprintf(L"\n%s: %s",St(MOriginalTime),DateStr);
+          }
+
           mprintf(L"\n");
         }
 

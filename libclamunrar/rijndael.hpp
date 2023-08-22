@@ -18,6 +18,16 @@ class Rijndael
 
     bool AES_NI;
 #endif
+#ifdef USE_NEON
+    // Set "crypto" attribute as replacement of -march=armv8-a+crypto switch.
+    __attribute__((target("crypto")))
+    void blockEncryptNeon(const byte *input,size_t numBlocks,byte *outBuffer);
+    __attribute__((target("crypto")))
+    void blockDecryptNeon(const byte *input, size_t numBlocks, byte *outBuffer);
+
+    bool AES_Neon;
+#endif
+
     void keySched(byte key[_MAX_KEY_COLUMNS][4]);
     void keyEncToDec();
     void GenerateTables();
