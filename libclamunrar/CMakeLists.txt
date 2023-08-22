@@ -66,6 +66,9 @@ target_include_directories( unrar_obj
     PRIVATE "${CMAKE_BINARY_DIR}"
 	PUBLIC  "${CMAKE_CURRENT_SOURCE_DIR}" )
 
+set_target_properties( unrar_obj PROPERTIES
+	CXX_STANDARD 11 )
+
 if(NOT WIN32)
 	set_target_properties( unrar_obj PROPERTIES
 		COMPILE_FLAGS "-Wno-logical-op-parentheses -Wno-switch -Wno-dangling-else")
