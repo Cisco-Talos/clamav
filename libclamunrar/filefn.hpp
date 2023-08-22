@@ -27,9 +27,7 @@ bool IsDeleteAllowed(uint FileAttr);
 void PrepareToDelete(const wchar *Name);
 uint GetFileAttr(const wchar *Name);
 bool SetFileAttr(const wchar *Name,uint Attr);
-#if 0
 wchar* MkTemp(wchar *Name,size_t MaxSize);
-#endif
 
 enum CALCFSUM_FLAGS {CALCFSUM_SHOWTEXT=1,CALCFSUM_SHOWPERCENT=2,CALCFSUM_SHOWPROGRESS=4,CALCFSUM_CURPOS=8};
 
