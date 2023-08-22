@@ -31,11 +31,17 @@ wchar* ConvertPath(const wchar *SrcPath,wchar *DestPath,size_t DestSize)
     const wchar *s=DestPtr;
     if (s[0]!=0 && IsDriveDiv(s[1]))
       s+=2;
-    if (s[0]=='\\' && s[1]=='\\')
+
+    // Skip UNC Windows \\server\share\ or Unix //server/share/
+    if (IsPathDiv(s[0]) && IsPathDiv(s[1]))
     {
-      const wchar *Slash=wcschr(s+2,'\\');
-      if (Slash!=NULL && (Slash=wcschr(Slash+1,'\\'))!=NULL)
-        s=Slash+1;
+      uint SlashCount=0;
+      for (const wchar *t=s+2;*t!=0;t++)
+        if (IsPathDiv(*t) && ++SlashCount==2)
+        {
+          s=t+1; // Found two more path separators after leading two.
+          break;
+        }
     }
     for (const wchar *t=s;*t!=0;t++)
       if (IsPathDiv(*t))
@@ -422,50 +428,39 @@ void NextVolumeName(wchar *ArcName,uint MaxLength,bool OldNumbering)
 
 bool IsNameUsable(const wchar *Name)
 {
-#ifndef _UNIX
-  if (Name[0] && Name[1] && wcschr(Name+2,':')!=NULL)
+  // We were asked to apply Windows-like conversion in Linux in case
+  // files are unpacked to Windows share. This code is invoked only
+  // if file failed to be created, so it doesn't affect extraction
+  // of Unix compatible names to native Unix drives.
+#ifdef _UNIX
+  // Windows shares in Unix do not allow the drive letter,
+  // so unlike Windows version, we check all characters here.
+  if (wcschr(Name,':')!=NULL)
     return false;
+#else
+  if (Name[0]!=0 && Name[1]!=0 && wcschr(Name+2,':')!=NULL)
+    return false;
+#endif
   for (const wchar *s=Name;*s!=0;s++)
   {
     if ((uint)*s<32)
       return false;
+
+     // It is for Windows shares in Unix. We can create such names in Windows.
+#ifdef _UNIX
+    // No spaces or dots before the path separator are allowed in Windows
+    // shares. But they are allowed and automtically removed at the end of
+    // file or folder name, so it is useless to replace them here.
+    // Since such files or folders are created successfully, a supposed
+    // conversion here would never be invoked.
     if ((*s==' ' || *s=='.') && IsPathDiv(s[1]))
       return false;
-  }
 #endif
+  }
   return *Name!=0 && wcspbrk(Name,L"?*<>|\"")==NULL;
 }
 
 
-void MakeNameUsable(char *Name,bool Extended)
-{
-#ifdef _WIN_ALL
-  // In Windows we also need to convert characters not defined in current
-  // code page. This double conversion changes them to '?', which is
-  // catched by code below.
-  size_t NameLength=strlen(Name);
-  wchar NameW[NM];
-  CharToWide(Name,NameW,ASIZE(NameW));
-  WideToChar(NameW,Name,NameLength+1);
-  Name[NameLength]=0;
-#endif
-  for (char *s=Name;*s!=0;s=charnext(s))
-  {
-    if (strchr(Extended ? "?*<>|\"":"?*",*s)!=NULL || Extended && (byte)*s<32)
-      *s='_';
-#ifdef _EMX
-    if (*s=='=')
-      *s='_';
-#endif
-#ifndef _UNIX
-    if (s-Name>1 && *s==':')
-      *s='_';
-    // Remove ' ' and '.' before path separator, but allow .\ and ..\.
-    if ((*s==' ' || *s=='.' && s>Name && !IsPathDiv(s[-1]) && s[-1]!='.') && IsPathDiv(s[1]))
-      *s='_';
-#endif
-  }
-}
 
 
 void MakeNameUsable(wchar *Name,bool Extended)
@@ -474,7 +469,27 @@ void MakeNameUsable(wchar *Name,bool Extended)
   {
     if (wcschr(Extended ? L"?*<>|\"":L"?*",*s)!=NULL || Extended && (uint)*s<32)
       *s='_';
-#ifndef _UNIX
+#ifdef _UNIX
+    // We were asked to apply Windows-like conversion in Linux in case
+    // files are unpacked to Windows share. This code is invoked only
+    // if file failed to be created, so it doesn't affect extraction
+    // of Unix compatible names to native Unix drives.
+    if (Extended)
+    {
+      // Windows shares in Unix do not allow the drive letter,
+      // so unlike Windows version, we check all characters here.
+      if (*s==':')
+        *s='_';
+
+      // No spaces or dots before the path separator are allowed on Windows
+      // shares. But they are allowed and automatically removed at the end of
+      // file or folder name, so it is useless to replace them here.
+      // Since such files or folders are created successfully, a supposed
+      // conversion here would never be invoked.
+      if ((*s==' ' || *s=='.') && IsPathDiv(s[1]))
+        *s='_';
+    }
+#else
     if (s-Name>1 && *s==':')
       *s='_';
 #if 0  // We already can create such files.
@@ -731,7 +746,7 @@ static void GenArcName(wchar *ArcName,size_t MaxSize,const wchar *GenerateMask,u
       // Here we ensure that we have enough 'N' characters to fit all digits
       // of archive number. We'll replace them by actual number later
       // in this function.
-      if (NCount<Digits)
+      if (NCount<Digits && wcslen(Mask)+Digits-NCount<ASIZE(Mask))
       {
         wmemmove(Mask+I+Digits,Mask+I+NCount,wcslen(Mask+I+NCount)+1);
         wmemset(Mask+I,'N',Digits);
@@ -768,7 +783,7 @@ static void GenArcName(wchar *ArcName,size_t MaxSize,const wchar *GenerateMask,u
   if (StartWeekDay%7>=4)
     CurWeek++;
 
-  char Field[10][6];
+  char Field[10][11];
 
   sprintf(Field[0],"%04u",rlt.Year);
   sprintf(Field[1],"%02u",rlt.Month);

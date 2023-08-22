@@ -3,15 +3,15 @@
 #include "arccmt.cpp"
 
 
-Archive::Archive(RAROptions *InitCmd)
+Archive::Archive(CommandData *InitCmd)
 {
   Cmd=NULL; // Just in case we'll have an exception in 'new' below.
 
   DummyCmd=(InitCmd==NULL);
-  Cmd=DummyCmd ? (new RAROptions):InitCmd;
+  Cmd=DummyCmd ? (new CommandData):InitCmd;
 
   OpenShared=Cmd->OpenShared;
-  Format=RARFMT15;
+  Format=RARFMT_NONE;
   Solid=false;
   Volume=false;
   MainComment=false;
@@ -31,9 +31,9 @@ Archive::Archive(RAROptions *InitCmd)
   NextBlockPos=0;
 
 
-  memset(&MainHead,0,sizeof(MainHead));
-  memset(&CryptHead,0,sizeof(CryptHead));
-  memset(&EndArcHead,0,sizeof(EndArcHead));
+  MainHead.Reset();
+  CryptHead={};
+  EndArcHead.Reset();
 
   VolNumber=0;
   VolWrite=0;

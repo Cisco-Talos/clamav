@@ -2,7 +2,7 @@
 #define _RAR_CMDDATA_
 
 
-#define DefaultStoreList L"7z;ace;arj;bz2;cab;gz;jpeg;jpg;lha;lz;lzh;mp3;rar;taz;tgz;xz;z;zip;zipx"
+#define DefaultStoreList L"7z;ace;arj;bz2;cab;gz;jpeg;jpg;lha;lz;lzh;mp3;rar;taz;tbz;tbz2;tgz;txz;xz;z;zip;zipx;zst;tzst"
 
 enum RAR_CMD_LIST_MODE {RCLM_AUTO,RCLM_REJECT_LISTS,RCLM_ACCEPT_LISTS};
 
@@ -65,6 +65,10 @@ class CommandData:public RAROptions
     StringList InclArgs;
     StringList ArcNames;
     StringList StoreArgs;
+
+    SecPassword Password;
+
+    std::vector<int64> NextVolSizes;
 };
 
 #endif
