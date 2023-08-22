@@ -289,8 +289,8 @@ int CommandData::IsProcessFile(FileHeader &FileHead,bool *ExactMatch,int MatchTy
     return 0;
   if ((FileHead.FileAttr & ExclFileAttr)!=0 || FileHead.Dir && ExclDir)
     return 0;
-  if (InclAttrSet && (!FileHead.Dir && (FileHead.FileAttr & InclFileAttr)==0 ||
-      FileHead.Dir && !InclDir))
+  if (InclAttrSet && (FileHead.FileAttr & InclFileAttr)==0 &&
+      (!FileHead.Dir || !InclDir))
     return 0;
   if (!Dir && SizeCheck(FileHead.UnpSize))
     return 0;

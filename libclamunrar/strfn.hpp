@@ -42,6 +42,7 @@ int wcsnicompc(const wchar *s1,const wchar *s2,size_t n);
 
 void itoa(int64 n,char *Str,size_t MaxSize);
 void itoa(int64 n,wchar *Str,size_t MaxSize);
+void fmtitoa(int64 n,wchar *Str,size_t MaxSize);
 const wchar* GetWide(const char *Src);
 const wchar* GetCmdParam(const wchar *CmdLine,wchar *Param,size_t MaxSize);
 #ifndef RARDLL

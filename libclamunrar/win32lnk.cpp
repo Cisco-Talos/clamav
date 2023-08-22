@@ -40,7 +40,7 @@ bool CreateReparsePoint(CommandData *Cmd,const wchar *Name,FileHeader *hd)
     PrivSet=true;
   }
 
-  const DWORD BufSize=sizeof(REPARSE_DATA_BUFFER)+2*NM+1024;
+  const DWORD BufSize=sizeof(REPARSE_DATA_BUFFER)+2*NM*sizeof(wchar)+1024;
   Array<byte> Buf(BufSize);
   REPARSE_DATA_BUFFER *rdb=(REPARSE_DATA_BUFFER *)&Buf[0];
 

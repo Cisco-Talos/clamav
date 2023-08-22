@@ -155,7 +155,7 @@ void ComprDataIO::UnpWrite(byte *Addr,size_t Count)
 {
 
 #ifdef RARDLL
-  RAROptions *Cmd=((Archive *)SrcFile)->GetRAROptions();
+  CommandData *Cmd=((Archive *)SrcFile)->GetCommandData();
   if (Cmd->DllOpMode!=RAR_SKIP)
   {
     if (Cmd->Callback!=NULL &&
@@ -204,7 +204,7 @@ void ComprDataIO::ShowUnpRead(int64 ArcPos,int64 ArcSize)
     ArcPos+=ProcessedArcSize;
 
     Archive *SrcArc=(Archive *)SrcFile;
-    RAROptions *Cmd=SrcArc->GetRAROptions();
+    CommandData *Cmd=SrcArc->GetCommandData();
 
     int CurPercent=ToPercent(ArcPos,ArcSize);
     if (!Cmd->DisablePercentage && CurPercent!=LastPercent)

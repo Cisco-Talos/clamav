@@ -92,6 +92,13 @@ void CommandData::OutHelp(RAR_EXIT ExitCode)
     if (Found)
       continue;
 #endif
+#ifdef _UNIX
+    if (CmpMSGID(Help[I],MRARTitle2))
+    {
+      mprintf(St(MFwrSlTitle2));
+      continue;
+    }
+#endif
 #if !defined(_UNIX) && !defined(_WIN_ALL)
     if (CmpMSGID(Help[I],MCHelpSwOW))
       continue;
