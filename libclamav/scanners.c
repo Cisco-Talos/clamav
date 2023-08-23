@@ -1272,9 +1272,9 @@ static cl_error_t cli_scanbzip(cli_ctx *ctx)
     char buf[FILEBUFF];
 
     memset(&strm, 0, sizeof(strm));
-    strm.next_out = buf;
+    strm.next_out  = buf;
     strm.avail_out = sizeof(buf);
-    rc = BZ2_bzDecompressInit(&strm, 0, 0);
+    rc             = BZ2_bzDecompressInit(&strm, 0, 0);
     if (BZ_OK != rc) {
         cli_dbgmsg("Bzip: DecompressInit failed: %d\n", rc);
         return CL_EOPEN;
@@ -1288,7 +1288,7 @@ static cl_error_t cli_scanbzip(cli_ctx *ctx)
 
     do {
         if (!strm.avail_in) {
-            strm.next_in = (void *)fmap_need_off_once_len(ctx->fmap, off, FILEBUFF, &avail);
+            strm.next_in  = (void *)fmap_need_off_once_len(ctx->fmap, off, FILEBUFF, &avail);
             strm.avail_in = avail;
             off += avail;
             if (!strm.avail_in) {
@@ -1324,7 +1324,7 @@ static cl_error_t cli_scanbzip(cli_ctx *ctx)
             if (cli_checklimits("Bzip", ctx, size, 0, 0) != CL_CLEAN)
                 break;
 
-            strm.next_out = buf;
+            strm.next_out  = buf;
             strm.avail_out = sizeof(buf);
         }
     } while (BZ_STREAM_END != rc);
@@ -5739,7 +5739,7 @@ cl_error_t cl_scandesc_callback(int desc, const char *filename, const char **vir
         if (scanoptions->heuristic & CL_SCAN_HEURISTIC_EXCEEDS_MAX) {
             if (engine->cb_virus_found) {
                 engine->cb_virus_found(desc, "Heuristics.Limits.Exceeded.MaxFileSize", context);
-                if (virname){
+                if (virname) {
                     *virname = "Heuristics.Limits.Exceeded.MaxFileSize";
                 }
             }
@@ -5778,8 +5778,12 @@ cl_error_t cl_scanmap_callback(cl_fmap_t *map, const char *filename, const char 
     if ((engine->maxfilesize > 0) && (map->len > engine->maxfilesize)) {
         cli_dbgmsg("cl_scandesc_callback: File too large (%zu bytes), ignoring\n", map->len);
         if (scanoptions->heuristic & CL_SCAN_HEURISTIC_EXCEEDS_MAX) {
-            if (engine->cb_virus_found)
+            if (engine->cb_virus_found) {
                 engine->cb_virus_found(fmap_fd(map), "Heuristics.Limits.Exceeded.MaxFileSize", context);
+                if (virname) {
+                    *virname = "Heuristics.Limits.Exceeded.MaxFileSize";
+                }
+            }
             return CL_VIRUS;
         }
         return CL_CLEAN;
