@@ -130,7 +130,7 @@ ClamAV 1.2.0 includes the following improvements and changes:
 - Windows: Fixed a build issue with the CMake-Rust integration regarding
   detecting native static libraries that caused builds to fail with Rust
   version 1.70 and newer.
-  - Github pull request: https://github.com/Cisco-Talos/clamav/pull/992
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/992
 
 - Fixed a bounds check issue in the PDF parser that may result in a 1-byte
   buffer over read but does not cause a crash.
