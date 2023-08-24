@@ -118,9 +118,29 @@ ClamAV 1.2.0 includes the following improvements and changes:
   message and manpages.
   - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/936
 
-- ClamOnAcc: Fix error message when using `--wait` without `--ping` option.
+- ClamOnAcc: Fixed error message when using `--wait` without `--ping` option.
   Patch courtesy of Răzvan Cojocaru.
   - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/984
+
+- Fixed an assortment of code quality issues identified by Coverity:
+  - Github pull requests:
+    - https://github.com/Cisco-Talos/clamav/pull/989
+    - https://github.com/Cisco-Talos/clamav/pull/998
+
+- Windows: Fixed a build issue with the CMake-Rust integration regarding
+  detecting native static libraries that caused builds to fail with Rust
+  version 1.70 and newer.
+  - Github pull request: https://github.com/Cisco-Talos/clamav/pull/992
+
+- Fixed a bounds check issue in the PDF parser that may result in a 1-byte
+  buffer over read but does not cause a crash.
+  - Github pull request: https://github.com/Cisco-Talos/clamav/pull/988
+
+- Upgraded the bundled UnRAR library (libclamunrar) to version 6.2.10.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/1008
+
+- Fixed a compatibility issue with libjson-c version 0.17.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/1002
 
 ### Acknowledgments
 
