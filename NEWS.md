@@ -123,7 +123,7 @@ ClamAV 1.2.0 includes the following improvements and changes:
   - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/984
 
 - Fixed an assortment of code quality issues identified by Coverity:
-  - Github pull requests:
+  - GitHub pull requests:
     - https://github.com/Cisco-Talos/clamav/pull/989
     - https://github.com/Cisco-Talos/clamav/pull/998
 
