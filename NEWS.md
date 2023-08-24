@@ -134,7 +134,7 @@ ClamAV 1.2.0 includes the following improvements and changes:
 
 - Fixed a bounds check issue in the PDF parser that may result in a 1-byte
   buffer over read but does not cause a crash.
-  - Github pull request: https://github.com/Cisco-Talos/clamav/pull/988
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/988
 
 - Upgraded the bundled UnRAR library (libclamunrar) to version 6.2.10.
   - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/1008
