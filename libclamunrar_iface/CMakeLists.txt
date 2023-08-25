@@ -34,9 +34,11 @@ if(ENABLE_UNRAR)
     if(ENABLE_SHARED_LIB)
         # The clamunrar_iface SHARED library.
         add_library( clamunrar_iface SHARED )
-        set_target_properties(clamunrar_iface PROPERTIES
+        set_target_properties( clamunrar_iface PROPERTIES
             VERSION ${LIBCLAMAV_VERSION}
-            SOVERSION ${LIBCLAMAV_SOVERSION})
+            SOVERSION ${LIBCLAMAV_SOVERSION}
+            CXX_STANDARD 11
+        )
 
         target_sources( clamunrar_iface
             PRIVATE
@@ -86,6 +88,9 @@ if(ENABLE_UNRAR)
     if(ENABLE_STATIC_LIB)
         # The clamunrar_iface static library.
         add_library( clamunrar_iface_static STATIC)
+        set_target_properties( clamunrar_iface_static PROPERTIES
+            CXX_STANDARD 11
+        )
 
         target_sources( clamunrar_iface_static
             PRIVATE
