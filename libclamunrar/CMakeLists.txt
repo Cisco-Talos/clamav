@@ -68,7 +68,7 @@ endif()
 if(ENABLE_SHARED_LIB)
     # The unrar shared library.
     add_library( clamunrar SHARED )
-    set_target_properties(clamunrar PROPERTIES
+    set_target_properties( clamunrar PROPERTIES
         VERSION ${LIBCLAMAV_VERSION}
         SOVERSION ${LIBCLAMAV_SOVERSION}
         CXX_STANDARD 11
@@ -115,7 +115,7 @@ endif()
 if(ENABLE_STATIC_LIB)
     # The clamunrar static library.
     add_library( clamunrar_static STATIC)
-    set_target_properties(clamunrar_static PROPERTIES
+    set_target_properties( clamunrar_static PROPERTIES
         CXX_STANDARD 11
     )
     target_sources( clamunrar_static
