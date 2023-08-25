@@ -28,9 +28,11 @@ add_library( ClamAV::libclamunrar_iface_iface ALIAS clamunrar_iface_iface )
 if(ENABLE_UNRAR)
     # The clamunrar_iface SHARED library.
     add_library( clamunrar_iface SHARED )
-    set_target_properties(clamunrar_iface PROPERTIES
+    set_target_properties( clamunrar_iface PROPERTIES
         VERSION ${LIBCLAMAV_VERSION}
-        SOVERSION ${LIBCLAMAV_SOVERSION})
+        SOVERSION ${LIBCLAMAV_SOVERSION}
+        CXX_STANDARD 11
+    )
     target_sources( clamunrar_iface
         PRIVATE
             unrar_iface.cpp )
