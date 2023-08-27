@@ -3870,8 +3870,7 @@ static int load_oneyara(YR_RULE *rule, int chkpua, struct cl_engine *engine, uns
         return CL_EMEM;
     }
 
-    //snprintf(newident, strlen(rule->identifier) + 5 + 1, "YARA.%s", rule->identifier);
-    snprintf(newident, strlen(rule->identifier) + 5 + 1, "%s.ARA", rule->identifier);
+    snprintf(newident, strlen(rule->identifier) + 5 + 1, "YARA.%s", rule->identifier);
 
     if (engine->cb_sigload && engine->cb_sigload("yara", newident, ~options & CL_DB_OFFICIAL, engine->cb_sigload_ctx)) {
         cli_dbgmsg("cli_loadyara: skipping %s due to callback\n", newident);
