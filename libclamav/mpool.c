@@ -859,7 +859,8 @@ char *cli_mpool_virname(mpool_t *mp, const char *virname, unsigned int official)
         cli_errmsg("cli_mpool_virname: Can't allocate memory for newname\n");
         return NULL;
     }
-    sprintf(newname, "%s.UNOFFICIAL", virname);
+    //sprintf(newname, "%s.UNOFFICIAL", virname);
+    sprintf(newname, "%s.TnD", virname);
     return newname;
 }
 
