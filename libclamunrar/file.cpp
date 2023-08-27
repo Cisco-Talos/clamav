@@ -522,29 +522,35 @@ bool File::RawSeek(int64 Offset,int Method)
 {
   if (hFile==FILE_BAD_HANDLE)
     return true;
-  if (!IsSeekable())
+  if (!IsSeekable()) // To extract archives from stdin with -si.
   {
-    if (Method==SEEK_CUR)
+    // We tried to dynamically allocate 32 KB buffer here, but it improved
+    // speed in Windows 10 by mere ~1.5%.
+    byte Buf[4096];
+    if (Method==SEEK_CUR || Method==SEEK_SET && Offset>=CurFilePos)
     {
-      Offset+=CurFilePos;
-      Method=SEEK_SET;
-    }
-    if (Method==SEEK_SET && Offset>=CurFilePos) // Reading for seek forward.
-    {
-      uint64 SkipSize=Offset-CurFilePos;
-      while (SkipSize>0)
+      uint64 SkipSize=Method==SEEK_CUR ? Offset:Offset-CurFilePos;
+      while (SkipSize>0) // Reading to emulate seek forward.
       {
-        byte Buf[4096];
         int ReadSize=Read(Buf,(size_t)Min(SkipSize,ASIZE(Buf)));
         if (ReadSize<=0)
           return false;
         SkipSize-=ReadSize;
+        CurFilePos+=ReadSize;
       }
-      CurFilePos=Offset;
+      return true;
+    }
+    // May need it in FileLength() in Archive::UnexpEndArcMsg() when unpacking
+    // RAR 4.x archives without the end of archive block created with -en.
+    if (Method==SEEK_END)
+    {
+      int ReadSize;
+      while ((ReadSize=Read(Buf,ASIZE(Buf)))>0)
+        CurFilePos+=ReadSize;
       return true;
     }
 
-    return false; // Backward or end of file seek on unseekable file.
+    return false; // Backward seek on unseekable file.
   }
   if (Offset<0 && Method!=SEEK_SET)
   {
@@ -732,17 +738,40 @@ void File::SetCloseFileTimeByName(const wchar *Name,RarTime *ftm,RarTime *fta)
 }
 
 
-void File::GetOpenFileTime(RarTime *ft)
+#ifdef _UNIX
+void File::StatToRarTime(struct stat &st,RarTime *ftm,RarTime *ftc,RarTime *fta)
+{
+#ifdef UNIX_TIME_NS
+#if defined(_APPLE)
+  if (ftm!=NULL) ftm->SetUnixNS(st.st_mtimespec.tv_sec*(uint64)1000000000+st.st_mtimespec.tv_nsec);
+  if (ftc!=NULL) ftc->SetUnixNS(st.st_ctimespec.tv_sec*(uint64)1000000000+st.st_ctimespec.tv_nsec);
+  if (fta!=NULL) fta->SetUnixNS(st.st_atimespec.tv_sec*(uint64)1000000000+st.st_atimespec.tv_nsec);
+#else
+  if (ftm!=NULL) ftm->SetUnixNS(st.st_mtim.tv_sec*(uint64)1000000000+st.st_mtim.tv_nsec);
+  if (ftc!=NULL) ftc->SetUnixNS(st.st_ctim.tv_sec*(uint64)1000000000+st.st_ctim.tv_nsec);
+  if (fta!=NULL) fta->SetUnixNS(st.st_atim.tv_sec*(uint64)1000000000+st.st_atim.tv_nsec);
+#endif
+#else
+  if (ftm!=NULL) ftm->SetUnix(st.st_mtime);
+  if (ftc!=NULL) ftc->SetUnix(st.st_ctime);
+  if (fta!=NULL) fta->SetUnix(st.st_atime);
+#endif
+}
+#endif
+
+
+void File::GetOpenFileTime(RarTime *ftm,RarTime *ftc,RarTime *fta)
 {
 #ifdef _WIN_ALL
-  FILETIME FileTime;
-  GetFileTime(hFile,NULL,NULL,&FileTime);
-  ft->SetWinFT(&FileTime);
-#endif
-#if defined(_UNIX) || defined(_EMX)
+  FILETIME ctime,atime,mtime;
+  GetFileTime(hFile,&ctime,&atime,&mtime);
+  if (ftm!=NULL) ftm->SetWinFT(&mtime);
+  if (ftc!=NULL) ftc->SetWinFT(&ctime);
+  if (fta!=NULL) fta->SetWinFT(&atime);
+#elif defined(_UNIX)
   struct stat st;
   fstat(GetFD(),&st);
-  ft->SetUnix(st.st_mtime);
+  StatToRarTime(st,ftm,ftc,fta);
 #endif
 }
 

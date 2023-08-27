@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2021-2022 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2021-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *
  *  Authors: John Humlick
  *
@@ -25,8 +25,8 @@ use std::{
     io::{prelude::*, BufReader, BufWriter, Read, Seek, SeekFrom, Write},
     iter::*,
     os::raw::c_char,
-    path::PathBuf,
-    str,
+    path::{Path, PathBuf},
+    str::{self, FromStr},
 };
 
 use crate::sys;
@@ -97,8 +97,12 @@ pub enum CdiffError {
     ///
     /// This error *may* wrap a processing error if the command has side effects
     /// (e.g., MOVE or CLOSE)
-    #[error("{1} on line {0}")]
-    Input(usize, InputError),
+    #[error("{err} on line {line}: {operation}")]
+    Input {
+        line: usize,
+        err: InputError,
+        operation: String,
+    },
 
     /// An error encountered while handling a particular CDiff command
     #[error("processing {1} command on line {2}: {0}")]
@@ -155,14 +159,20 @@ pub enum InputError {
     #[error("No DB open for action {0}")]
     NoDBForAction(&'static str),
 
+    #[error("Invalid DB \"{0}\" open for action {1}")]
+    InvalidDBForAction(String, &'static str),
+
     #[error("File {0} not closed before opening {1}")]
     NotClosedBeforeOpening(String, String),
 
     #[error("{0} not Unicode")]
     NotUnicode(&'static str),
 
-    #[error("Forbidden characters found in database name {0}")]
-    ForbiddenCharactersInDB(String),
+    #[error("Invalid database name {0}. Characters must be alphanumeric or '.'")]
+    InvalidDBNameForbiddenCharacters(String),
+
+    #[error("Invalid database name {0}. Must not specify parent directory.")]
+    InvalidDBNameNoParentDirectory(String),
 
     #[error("{0} missing for {1}")]
     MissingParameter(&'static str, &'static str),
@@ -183,6 +193,9 @@ pub enum InputError {
 
     #[error("no final newline")]
     MissingNL,
+
+    #[error("Database file is still open: {0}")]
+    DBStillOpen(String),
 }
 
 /// Errors encountered while processing
@@ -283,6 +296,43 @@ impl<'a> DelOp<'a> {
             .ok_or(InputError::MissingParameter("DEL", "orig_line"))?;
 
         Ok(DelOp { line_no, del_line })
+    }
+}
+
+#[derive(Debug)]
+pub struct UnlinkOp<'a> {
+    db_name: &'a str,
+}
+
+/// Method to parse the cdiff line describing an unlink operation
+impl<'a> UnlinkOp<'a> {
+    pub fn new(data: &'a [u8]) -> Result<Self, InputError> {
+        let mut iter = data.split(|b| *b == b' ');
+        let db_name = str::from_utf8(
+            iter.next()
+                .ok_or(InputError::MissingParameter("UNLINK", "db_name"))?,
+        )
+        .map_err(|_| InputError::NotUnicode("database name"))?;
+
+        if !db_name
+            .chars()
+            .all(|x: char| x.is_alphanumeric() || x == '.')
+        {
+            // DB Name contains invalid characters.
+            return Err(InputError::InvalidDBNameForbiddenCharacters(
+                db_name.to_owned(),
+            ));
+        }
+
+        let db_path = PathBuf::from_str(db_name).unwrap();
+        if db_path.parent() != Some(Path::new("")) {
+            // DB Name must be not include a parent directory.
+            return Err(InputError::InvalidDBNameNoParentDirectory(
+                db_name.to_owned(),
+            ));
+        }
+
+        Ok(UnlinkOp { db_name })
     }
 }
 
@@ -448,7 +498,7 @@ pub fn script2cdiff(script_file_name: &str, builder: &str, server: &str) -> Resu
         .map_err(|e| CdiffError::FileCreate(cdiff_file_name.to_owned(), e))?;
 
     // Open the original script file for reading
-    let script_file: File = File::open(&script_file_name)
+    let script_file: File = File::open(script_file_name)
         .map_err(|e| CdiffError::FileOpen(script_file_name.to_owned(), e))?;
 
     // Get file length
@@ -570,7 +620,7 @@ pub fn cdiff_apply(file: &mut File, mode: ApplyMode) -> Result<(), CdiffError> {
             let dsig = read_dsig(file)?;
             debug!("cdiff_apply() - final dsig length is {}", dsig.len());
             if is_debug_enabled() {
-                print_file_data(dsig.clone(), dsig.len() as usize);
+                print_file_data(dsig.clone(), dsig.len());
             }
 
             // Get file length
@@ -644,10 +694,22 @@ fn cmd_open(ctx: &mut Context, db_name: Option<&[u8]>) -> Result<(), InputError>
 
     if !db_name
         .chars()
-        .all(|x: char| x.is_alphanumeric() || x == '\\' || x == '/' || x == '.')
+        .all(|x: char| x.is_alphanumeric() || x == '.')
     {
-        return Err(InputError::ForbiddenCharactersInDB(db_name.to_owned()));
+        // DB Name contains invalid characters.
+        return Err(InputError::InvalidDBNameForbiddenCharacters(
+            db_name.to_owned(),
+        ));
     }
+
+    let db_path = PathBuf::from_str(db_name).unwrap();
+    if db_path.parent() != Some(Path::new("")) {
+        // DB Name must be not include a parent directory.
+        return Err(InputError::InvalidDBNameNoParentDirectory(
+            db_name.to_owned(),
+        ));
+    }
+
     ctx.open_db = Some(db_name.to_owned());
 
     Ok(())
@@ -912,6 +974,7 @@ fn cmd_close(ctx: &mut Context) -> Result<(), InputError> {
     // Test for lines to add
     if !ctx.additions.is_empty() {
         let mut db_file = OpenOptions::new()
+            .create(true)
             .append(true)
             .open(&open_db)
             .map_err(ProcessingError::from)?;
@@ -927,12 +990,16 @@ fn cmd_close(ctx: &mut Context) -> Result<(), InputError> {
 }
 
 /// Set up Context structure with data parsed from command unlink
-fn cmd_unlink(ctx: &mut Context) -> Result<(), InputError> {
+fn cmd_unlink(ctx: &mut Context, unlink_op: UnlinkOp) -> Result<(), InputError> {
     if let Some(open_db) = &ctx.open_db {
-        fs::remove_file(open_db).map_err(ProcessingError::from)?;
-    } else {
-        return Err(InputError::NoDBForAction("UNLINK"));
+        return Err(InputError::DBStillOpen(open_db.clone()));
     }
+
+    // We checked that the db_name doesn't have any '/' or '\\' in it before
+    // adding to the UnlinkOp struct, so it's safe to say the path is just a local file and
+    // won't accidentally delete something in a different directory.
+    fs::remove_file(unlink_op.db_name).map_err(ProcessingError::from)?;
+
     Ok(())
 }
 
@@ -960,9 +1027,12 @@ fn process_line(ctx: &mut Context, line: &[u8]) -> Result<(), InputError> {
             cmd_move(ctx, move_op)
         }
         b"CLOSE" => cmd_close(ctx),
-        b"UNLINK" => cmd_unlink(ctx),
+        b"UNLINK" => {
+            let unlink_op = UnlinkOp::new(remainder.unwrap())?;
+            cmd_unlink(ctx, unlink_op)
+        }
         _ => Err(InputError::UnknownCommand(
-            String::from_utf8(cmd.to_owned()).unwrap(),
+            String::from_utf8_lossy(cmd).to_string(),
         )),
     }
 }
@@ -986,10 +1056,14 @@ where
             0 => break,
             n_read => {
                 decompressed_bytes = decompressed_bytes + n_read + 1;
-                match linebuf.get(0) {
+                match linebuf.first() {
                     // Skip comment lines
                     Some(b'#') => continue,
-                    _ => process_line(ctx, &linebuf).map_err(|e| CdiffError::Input(line_no, e))?,
+                    _ => process_line(ctx, &linebuf).map_err(|e| CdiffError::Input {
+                        line: line_no,
+                        err: e,
+                        operation: String::from_utf8_lossy(&linebuf).to_string(),
+                    })?,
                 }
             }
         }
@@ -1035,7 +1109,7 @@ fn read_dsig(file: &mut File) -> Result<Vec<u8>, SignatureError> {
 // as the offset in the file that the header ends.
 fn read_size(file: &mut File) -> Result<(u32, usize), HeaderError> {
     // Seek to beginning of file.
-    file.seek(SeekFrom::Start(0))?;
+    file.rewind()?;
 
     // File should always start with "ClamAV-Diff".
     let prefix = b"ClamAV-Diff";
@@ -1080,7 +1154,7 @@ fn get_hash(file: &mut File, len: usize) -> Result<[u8; 32], CdiffError> {
     let mut hasher = Sha256::new();
 
     // Seek to beginning of file
-    file.seek(SeekFrom::Start(0))?;
+    file.rewind()?;
 
     let mut sum: usize = 0;
 

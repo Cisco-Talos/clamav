@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2022 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2013 Sourcefire, Inc.
  *
  *  Authors: David Raynor <draynor@sourcefire.com>
@@ -54,7 +54,8 @@ static cl_error_t hfsplus_scanfile(cli_ctx *, hfsPlusVolumeHeader *, hfsHeaderRe
                                    hfsPlusForkData *, const char *, char **, char *);
 static cl_error_t hfsplus_validate_catalog(cli_ctx *, hfsPlusVolumeHeader *, hfsHeaderRecord *);
 static cl_error_t hfsplus_fetch_node(cli_ctx *, hfsPlusVolumeHeader *, hfsHeaderRecord *,
-                                     hfsHeaderRecord *, hfsPlusForkData *, uint32_t, uint8_t *);
+                                     hfsHeaderRecord *, hfsPlusForkData *, uint32_t, uint8_t *,
+                                     size_t);
 static cl_error_t hfsplus_walk_catalog(cli_ctx *, hfsPlusVolumeHeader *, hfsHeaderRecord *,
                                        hfsHeaderRecord *, hfsHeaderRecord *, const char *);
 
@@ -321,7 +322,7 @@ static cl_error_t hfsplus_scanfile(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader,
     hfsPlusExtentDescriptor *currExt;
     const uint8_t *mPtr = NULL;
     char *tmpname       = NULL;
-    int ofd;
+    int ofd             = -1;
     uint64_t targetSize;
     uint32_t outputBlocks = 0;
     uint8_t ext;
@@ -546,7 +547,7 @@ static cl_error_t hfsplus_check_attribute(cli_ctx *ctx, hfsPlusVolumeHeader *vol
         }
 
         /* fetch node into buffer */
-        status = hfsplus_fetch_node(ctx, volHeader, attrHeader, NULL, &(volHeader->attributesFile), thisNode, nodeBuf);
+        status = hfsplus_fetch_node(ctx, volHeader, attrHeader, NULL, &(volHeader->attributesFile), thisNode, nodeBuf, nodeSize);
         if (status != CL_SUCCESS) {
             cli_dbgmsg("hfsplus_check_attribute: node fetch failed.\n");
             goto done;
@@ -656,7 +657,8 @@ done:
 
 /* Fetch a node's contents into the buffer */
 static cl_error_t hfsplus_fetch_node(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader, hfsHeaderRecord *catHeader,
-                                     hfsHeaderRecord *extHeader, hfsPlusForkData *catFork, uint32_t node, uint8_t *buff)
+                                     hfsHeaderRecord *extHeader, hfsPlusForkData *catFork, uint32_t node, uint8_t *buff,
+                                     size_t buffSize)
 {
     bool foundBlock = false;
     uint64_t catalogOffset;
@@ -739,6 +741,11 @@ static cl_error_t hfsplus_fetch_node(cli_ctx *ctx, hfsPlusVolumeHeader *volHeade
             fileOffset += startOffset;
         } else if (curBlock == endBlock) {
             readSize = endSize;
+        }
+
+        if ((buffOffset + readSize) > buffSize) {
+            cli_dbgmsg("hfsplus_fetch_node: Not enough space for read\n");
+            return CL_EFORMAT;
         }
 
         if (fmap_readn(ctx->fmap, buff + buffOffset, fileOffset, readSize) != readSize) {
@@ -964,7 +971,7 @@ static cl_error_t hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHea
         }
 
         /* fetch node into buffer */
-        status = hfsplus_fetch_node(ctx, volHeader, catHeader, extHeader, &(volHeader->catalogFile), thisNode, nodeBuf);
+        status = hfsplus_fetch_node(ctx, volHeader, catHeader, extHeader, &(volHeader->catalogFile), thisNode, nodeBuf, nodeSize);
         if (status != CL_SUCCESS) {
             cli_dbgmsg("hfsplus_walk_catalog: node fetch failed.\n");
             goto done;
@@ -1316,6 +1323,11 @@ static cl_error_t hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHea
                                                         stream.next_out  = uncompressed_block;
 
                                                         extracted_file = true;
+
+                                                        if (stream.avail_in > 0 && Z_STREAM_END == z_ret) {
+                                                            cli_dbgmsg("hfsplus_walk_catalog: Reached end of stream even though there's still some available bytes left!\n");
+                                                            break;
+                                                        }
                                                     }
                                                 } else {
                                                     if (cli_writen(ofd, &block[streamBeginning ? 1 : 0], readLen - (streamBeginning ? 1 : 0)) != readLen - (streamBeginning ? 1 : 0)) {

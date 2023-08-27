@@ -1,4 +1,4 @@
-# Copyright (C) 2020-2022 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+# Copyright (C) 2020-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
 
 """
 Run clamscan tests.
@@ -6,6 +6,7 @@ Run clamscan tests.
 
 import unittest
 import sys
+from zipfile import ZIP_DEFLATED, ZipFile
 
 sys.path.append('../unit_tests')
 import testcase
@@ -158,5 +159,82 @@ class TC(testcase.TestCase):
         # The broken sig files are all given the signature name, so we can verify that the correct sigs were found.
         # TODO: When we fix section signatures, we can move them to the alerting sigs directory and get rid of this line.
         unexpected_results = ['{sig} FOUND'.format(sig=f.stem) for f in (test_path / 'broken-sigs').iterdir()]
+
+        self.verify_output(output.out, expected=expected_results, unexpected=unexpected_results)
+
+    def test_pe_cert_trust_archive(self):
+        self.step_name('Test that clam\'s trust of an EXE based on a cert check doesn\'t trust a whole archive.')
+
+        test_path = TC.path_source / 'unit_tests' / 'input' / 'pe_allmatch'
+
+        # This file we'll trust.
+        test_exe = test_path / 'test.exe'
+
+        # This file we'll match on for an alert
+        clam_exe = TC.path_build / 'unit_tests' / 'input' / 'clamav_hdb_scanfiles' / 'clam.exe'
+
+        # Build a ZIP that first has file that we trust, followed by a file we would alert on.
+        trusted_plus_mal_zip = TC.path_tmp / 'trust_plus_mal.zip'
+        with ZipFile(str(trusted_plus_mal_zip), 'w', ZIP_DEFLATED) as zf:
+            zf.writestr('test.exe', test_exe.read_bytes())
+            zf.writestr('clam.exe', clam_exe.read_bytes())
+
+        # Build another ZIP, but with files added in reverse order, for good measure.
+        trusted_plus_mal_zip_2 = TC.path_tmp / 'trust_plus_mal2.zip'
+        with ZipFile(str(trusted_plus_mal_zip_2), 'w', ZIP_DEFLATED) as zf:
+            zf.writestr('clam.exe', clam_exe.read_bytes())
+            zf.writestr('test.exe', test_exe.read_bytes())
+
+        command = '{valgrind} {valgrind_args} {clamscan} \
+             -d {alerting_dbs} \
+             -d {weak_dbs} \
+             -d {broken_dbs} \
+             -d {trust_dbs} \
+             -d {clamav_hdb} \
+             --allmatch --bytecode-unsigned {testfile1} {testfile2}'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan,
+            alerting_dbs=test_path / 'alert-sigs',
+            weak_dbs=test_path / 'weak-sigs',
+            broken_dbs=test_path / 'broken-sigs',
+            trust_dbs=test_path / 'trust-sigs',
+            clamav_hdb=TC.path_source / 'unit_tests' / 'input' / 'clamav.hdb',
+            testfile1=trusted_plus_mal_zip,
+            testfile2=trusted_plus_mal_zip_2,
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 1
+
+        expected_results = [
+            'trust_plus_mal.zip: ClamAV-Test-File.UNOFFICIAL FOUND',
+            'trust_plus_mal2.zip: ClamAV-Test-File.UNOFFICIAL FOUND',
+        ]
+        unexpected_results = ['OK']
+
+        self.verify_output(output.out, expected=expected_results, unexpected=unexpected_results)
+
+    def test_iso_missing_joliet(self):
+        self.step_name('Test that we correctly extract files from an ISO even if the joliet file path is empty.')
+
+        test_path = TC.path_source / 'unit_tests' / 'input' / 'other_scanfiles'
+        sig_path = TC.path_source / 'unit_tests' / 'input' / 'other_sigs' / 'logo.hsb'
+
+        command = '{valgrind} {valgrind_args} {clamscan} \
+             -d {sig_path} \
+             --allmatch {testfile1} {testfile2}'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan,
+            sig_path=sig_path,
+            testfile1=test_path / 'iso_normal.logo.iso',
+            testfile2=test_path / 'iso_no_joliet.logo.iso',
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 1
+
+        expected_results = [
+            'iso_normal.logo.iso: logo.png.UNOFFICIAL FOUND',
+            'iso_no_joliet.logo.iso: logo.png.UNOFFICIAL FOUND',
+        ]
+        unexpected_results = ['OK']
 
         self.verify_output(output.out, expected=expected_results, unexpected=unexpected_results)

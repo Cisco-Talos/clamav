@@ -1,7 +1,7 @@
 /*
  *  Detect phishing, based on URL spoofing detection.
  *
- *  Copyright (C) 2013-2022 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Török Edvin
@@ -211,6 +211,7 @@ static void url_check_init(struct url_check* urls)
     string_init_c(&urls->realLink, NULL);
     string_init_c(&urls->displayLink, NULL);
     string_init_c(&urls->pre_fixup.pre_displayLink, NULL);
+    urls->flags = 0;
 }
 
 /* string reference counting implementation,
@@ -264,7 +265,7 @@ static int string_assign_concatenated(struct string* dest, const char* prefix, c
         cli_errmsg("Phishcheck: Unable to allocate memory for string_assign_concatenated\n");
         return CL_EMEM;
     }
-    strncpy(ret, prefix, prefix_len);
+    strncpy(ret, prefix, prefix_len + end - begin + 1);
     strncpy(ret + prefix_len, begin, end - begin);
     ret[prefix_len + end - begin] = '\0';
     string_free(dest);

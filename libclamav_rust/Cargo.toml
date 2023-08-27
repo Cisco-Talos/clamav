@@ -16,11 +16,15 @@ image = "0.24"
 rustdct = "0.7"
 transpose = "0.2"
 num-traits = "0.2"
+base64 = "0.21.0"
+sha1 = "0.10.5"
+unicode-segmentation = "1.10.1"
+bindgen = "0.65"
 
 [lib]
 crate-type = ["staticlib"]
 name = "clamav_rust"
 
 [build-dependencies]
-cbindgen = "0.20"
-bindgen = "0.59"
+cbindgen = "0.24"
+bindgen = "0.65"

@@ -1,4 +1,4 @@
-# Copyright (C) 2020-2022 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+# Copyright (C) 2020-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
 
 if(WIN32)
     add_definitions(-DWIN32_LEAN_AND_MEAN)
@@ -59,6 +59,20 @@ if(SYSTEMD_FOUND)
         ${CMAKE_CURRENT_BINARY_DIR}/clamav-freshclam.service @ONLY)
     install(
         FILES ${CMAKE_CURRENT_BINARY_DIR}/clamav-freshclam.service
+        DESTINATION ${SYSTEMD_UNIT_DIR}
+        COMPONENT programs)
+    configure_file(
+        ${CMAKE_CURRENT_SOURCE_DIR}/clamav-freshclam-once.service.in
+        ${CMAKE_CURRENT_BINARY_DIR}/clamav-freshclam-once.service @ONLY)
+    install(
+        FILES ${CMAKE_CURRENT_BINARY_DIR}/clamav-freshclam-once.service
+        DESTINATION ${SYSTEMD_UNIT_DIR}
+        COMPONENT programs)
+    configure_file(
+        ${CMAKE_CURRENT_SOURCE_DIR}/clamav-freshclam-once.timer.in
+        ${CMAKE_CURRENT_BINARY_DIR}/clamav-freshclam-once.timer @ONLY)
+    install(
+        FILES ${CMAKE_CURRENT_BINARY_DIR}/clamav-freshclam-once.timer
         DESTINATION ${SYSTEMD_UNIT_DIR}
         COMPONENT programs)
 endif()

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2022 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
@@ -301,6 +301,7 @@ enum cl_engine_field {
     CL_ENGINE_MAX_SCRIPTNORMALIZE, /* uint64_t */
     CL_ENGINE_MAX_ZIPTYPERCG,      /* uint64_t */
     CL_ENGINE_FORCETODISK,         /* uint32_t */
+    CL_ENGINE_CACHE_SIZE,          /* uint32_t */
     CL_ENGINE_DISABLE_CACHE,       /* uint32_t */
     CL_ENGINE_DISABLE_PE_STATS,    /* uint32_t */
     CL_ENGINE_STATS_TIMEOUT,       /* uint32_t */
@@ -814,6 +815,27 @@ typedef int (*clcb_file_props)(const char *j_propstr, int rc, void *cbdata);
  */
 extern void cl_engine_set_clcb_file_props(struct cl_engine *engine, clcb_file_props callback);
 
+/**
+ * @brief generic data callback function.
+ *
+ * Callback handler prototype for callbacks passing back data and application context.
+ *
+ * @param data      A pointer to some data. Should be treated as read-only and may be freed after callback.
+ * @param data_len  The length of data.
+ * @param cbdata    Opaque application provided data.
+ */
+typedef int (*clcb_generic_data)(const unsigned char *const data, const size_t data_len, void *cbdata);
+
+/**
+ * @brief Set a custom VBA macro callback function.
+ *
+ * Caution: changing options for an engine that is in-use is not thread-safe!
+ *
+ * @param engine    The initialized scanning engine.
+ * @param callback  The callback function pointer.
+ */
+extern void cl_engine_set_clcb_vba(struct cl_engine *engine, clcb_generic_data callback);
+
 /* ----------------------------------------------------------------------------
  * Statistics/telemetry gathering callbacks.
  *
@@ -1131,6 +1153,18 @@ extern void cl_cvdfree(struct cl_cvd *cvd);
  * @return cl_error_t   CL_SUCCESS if success, else a CL_E* error code.
  */
 extern cl_error_t cl_cvdunpack(const char *file, const char *dir, bool dont_verify);
+
+/**
+ * @brief Retrieve the age of CVD disk data.
+ *
+ * Will retrieve the age of the youngest file in a database directory,
+ * or the age of a single CVD (or CLD) file.
+ *
+ * @param path          Filepath of CVD directory or file.
+ * @param age_seconds   Age of the directory or file.
+ * @return cl_error_t   CL_SUCCESS if success, else a CL_E* error code.
+ */
+extern cl_error_t cl_cvdgetage(const char *path, time_t *age_seconds);
 
 /* ----------------------------------------------------------------------------
  * DB directory stat functions.

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2022 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm, aCaB
@@ -225,7 +225,7 @@ void help(void)
     mprintf(LOGG_INFO, "\n");
     mprintf(LOGG_INFO, "                      Clam AntiVirus: Daemon Client %s\n", get_version());
     mprintf(LOGG_INFO, "           By The ClamAV Team: https://www.clamav.net/about.html#credits\n");
-    mprintf(LOGG_INFO, "           (C) 2022 Cisco Systems, Inc.\n");
+    mprintf(LOGG_INFO, "           (C) 2023 Cisco Systems, Inc.\n");
     mprintf(LOGG_INFO, "\n");
     mprintf(LOGG_INFO, "    clamdscan [options] [file/directory/-]\n");
     mprintf(LOGG_INFO, "\n");
@@ -242,7 +242,7 @@ void help(void)
     mprintf(LOGG_INFO, "    --remove                           Remove infected files. Be careful!\n");
     mprintf(LOGG_INFO, "    --move=DIRECTORY                   Move infected files into DIRECTORY\n");
     mprintf(LOGG_INFO, "    --copy=DIRECTORY                   Copy infected files into DIRECTORY\n");
-    mprintf(LOGG_INFO, "    --config-file=FILE                 Read configuration from FILE.\n");
+    mprintf(LOGG_INFO, "    --config-file=FILE    -c           Read configuration from FILE.\n");
 #ifdef _WIN32
     mprintf(LOGG_INFO, "    --memory                           Scan loaded executable modules\n");
     mprintf(LOGG_INFO, "    --kill                             Kill/Unload infected loaded modules\n");

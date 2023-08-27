@@ -1,5 +1,5 @@
 
-# Copyright (C) 2019-2022 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+# Copyright (C) 2019-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
 
 if(WIN32)
     cmake_minimum_required( VERSION 3.16 ) # For file(GET_RUNTIME_DEPENDENCIES)
@@ -19,10 +19,10 @@ cmake_policy(SET CMP0087 NEW) # support generator expressions in install(CODE) a
 #  For release candidate:     set(VERSION_SUFFIX "-rc")
 #  For release:               set(VERSION_SUFFIX "")
 string(TIMESTAMP TODAY "%Y%m%d")
-set(VERSION_SUFFIX "-devel-${TODAY}")
+set(VERSION_SUFFIX "")
 
 project( ClamAV
-         VERSION "1.1.0"
+         VERSION "1.2.0"
          DESCRIPTION "ClamAV open source email, web, and end-point anti-virus toolkit." )
 
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
@@ -36,16 +36,16 @@ set(PACKAGE_URL       "https://www.clamav.net/")
 HexVersion(PACKAGE_VERSION_NUM ${PROJECT_VERSION_MAJOR} ${PROJECT_VERSION_MINOR} ${PROJECT_VERSION_PATCH})
 
 # libtool library versioning rules: http://www.gnu.org/software/libtool/manual/html_node/Updating-version-info.html
-set(LIBCLAMAV_CURRENT  11)
-set(LIBCLAMAV_REVISION 0)
+set(LIBCLAMAV_CURRENT  12)
+set(LIBCLAMAV_REVISION 1)
 set(LIBCLAMAV_AGE      0)
 
 math(EXPR LIBCLAMAV_SOVERSION "${LIBCLAMAV_CURRENT} - ${LIBCLAMAV_AGE}")
 set(LIBCLAMAV_VERSION "${LIBCLAMAV_SOVERSION}.${LIBCLAMAV_AGE}.${LIBCLAMAV_REVISION}")
 HexVersion(LIBCLAMAV_VERSION_NUM ${LIBCLAMAV_CURRENT} ${LIBCLAMAV_REVISION} ${LIBCLAMAV_AGE})
 
-set(LIBFRESHCLAM_CURRENT  2)
-set(LIBFRESHCLAM_REVISION 2)
+set(LIBFRESHCLAM_CURRENT  3)
+set(LIBFRESHCLAM_REVISION 1)
 set(LIBFRESHCLAM_AGE      0)
 
 math(EXPR LIBFRESHCLAM_SOVERSION "${LIBFRESHCLAM_CURRENT} - ${LIBFRESHCLAM_AGE}")
@@ -174,13 +174,13 @@ endif()
 #
 # Set RPATH for custom install prefixes
 #
-if(APPLE)
+if(APPLE AND NOT DO_NOT_SET_RPATH)
     set(CMAKE_MACOSX_RPATH 1)
 endif()
 
 include(GNUInstallDirs)
 
-if (NOT DEFINED CMAKE_INSTALL_RPATH)
+if (NOT DEFINED CMAKE_INSTALL_RPATH AND NOT DO_NOT_SET_RPATH)
     if(CMAKE_INSTALL_FULL_LIBDIR)
         set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_FULL_LIBDIR}")
     else()
@@ -223,20 +223,26 @@ if(ENABLE_TESTS)
     find_package(Libcheck REQUIRED)
 
     # Used to generate the test files and for the application feature test framework
-    find_package(Python3 REQUIRED)
-
-    # First try using pytest from the PATH
-    execute_process(
-        COMMAND pytest --version
-        RESULT_VARIABLE PYTEST_EXIT_CODE
-        ERROR_QUIET OUTPUT_QUIET
-    )
-
-    if(${PYTEST_EXIT_CODE} EQUAL 0)
-        # pytest found in the path.
-        set(PythonTest_COMMAND "pytest;-v")
+    # In distros that support multiple implementations of python it is helpful to specify the impl to use
+    if(DEFINED PYTHON_FIND_VERSION)
+        find_package(Python3 EXACT ${PYTHON_FIND_VERSION} REQUIRED)
     else()
-        # Not in the path, try using: python3 -m pytest
+        find_package(Python3 REQUIRED)
+        # Not requesting a specific python impl; try using pytest from the PATH
+        execute_process(
+            COMMAND pytest --version
+            RESULT_VARIABLE PYTEST_EXIT_CODE
+            ERROR_QUIET OUTPUT_QUIET
+        )
+
+        if(${PYTEST_EXIT_CODE} EQUAL 0)
+            # pytest found in the path.
+            set(PythonTest_COMMAND "pytest;-v")
+        endif()
+    endif()
+
+    if("${PythonTest_COMMAND}" STREQUAL "")
+        # Not in the path or specified a python impl; try using: python3 -m pytest
         execute_process(
             COMMAND ${Python3_EXECUTABLE} -m pytest --version
             RESULT_VARIABLE PYTEST_MODULE_EXIT_CODE
@@ -339,7 +345,7 @@ if (WIN32)
     NumberToHex(${PROJECT_VERSION_MINOR} HEX_MINOR)
     NumberToHex(${PROJECT_VERSION_PATCH} HEX_PATCH)
     SET(CPACK_WIX_PRODUCT_GUID           "D9F136C1-3691-47E3-9079-4FE9C9${HEX_MAJOR}${HEX_MINOR}${HEX_PATCH}")
-    SET(CPACK_WIX_UPGRADE_GUID           "D9F136C1-3691-47E3-9079-4FE9C9${HEX_MAJOR}${HEX_MINOR}00")
+    SET(CPACK_WIX_UPGRADE_GUID           "D9F136C1-3691-47E3-9079-4FE9C9${HEX_MAJOR}0000")
 
     SET(CPACK_WIX_PRODUCT_ICON           ${CMAKE_CURRENT_SOURCE_DIR}/win32/res/clam.ico)
     SET(CPACK_WIX_UI_BANNER              ${CMAKE_CURRENT_SOURCE_DIR}/win32/wix_ui_banner.bmp)
@@ -676,13 +682,13 @@ check_type_size("ssize_t" SIZEOF_SSIZE_T)
 if(SIZEOF_SSIZE_T STREQUAL "")
     # ssize_t is a signed type in POSIX storing at least -1.
     # Set it to "int" to match the behavior of AC_TYPE_SSIZE_T (autotools).
-    set(ssize_t int)
+    set(SSIZE_T_DEF "typedef int ssize_t;")
 endif()
 check_type_size("off_t" SIZEOF_OFF_T)
 if(SIZEOF_OFF_T STREQUAL "")
     # off_t is a signed type in POSIX no narrower than int.
     # Set it to "long int" to match the behavior of AC_TYPE_OFF_T (autotools).
-    set(off_t long int)
+    set(OFF_T_DEF "typedef long int off_t;")
 endif()
 
 check_type_size("int" SIZEOF_INT)
@@ -984,7 +990,7 @@ if(WIN32)
     set(CLAMAV_RES "")
     configure_file(
         win32/res/common.rc.in
-        ${CMAKE_BINARY_DIR}/version.rc
+        ${CMAKE_SOURCE_DIR}/win32/res/common.rc
         @ONLY)
 else()
     #

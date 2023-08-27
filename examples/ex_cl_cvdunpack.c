@@ -1,7 +1,7 @@
 /*
  *  Compilation: gcc -Wall ex1.c -o ex1 -lclamav
  *
- *  Copyright (C) 2013-2022 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *  Author: Tomasz Kojm <tkojm@clamav.net>
  *
@@ -41,21 +41,11 @@
  */
 int main(int argc, char **argv)
 {
-    int fd;
     cl_error_t ret;
 
     const char *filename;
     const char *destination_directory;
     bool dont_verify = false;
-
-    char dest_buff[1024];
-
-    unsigned long int size = 0;
-    unsigned int sigs      = 0;
-    long double mb;
-    const char *virname;
-    struct cl_engine *engine;
-    struct cl_scan_options options;
 
     switch (argc) {
         case 2:

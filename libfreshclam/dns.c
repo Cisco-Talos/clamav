@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2022 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *  Copyright (C) 2004-2007 Tomasz Kojm <tkojm@clamav.net>2004 Tomasz Kojm <tkojm@clamav.net>
  *
@@ -71,12 +71,12 @@ dnsquery(const char *domain, int qtype, unsigned int *ttl)
         if (qtype == T_TXT)
             qtype = T_ANY;
         if ((len = res_query(domain, C_IN, qtype, answer, PACKETSZ)) < 0) {
-            logg(LOGG_INFO, "%cCan't query %s\n",
-                 (qtype == T_TXT || qtype == T_ANY) ? '^' : '*', domain);
+            logg((qtype == T_TXT || qtype == T_ANY) ? LOGG_WARNING : LOGG_DEBUG, "Can't query %s\n",
+                 domain);
             return NULL;
         }
 #else
-        logg(LOGG_INFO, "%cCan't query %s\n", (qtype == T_TXT) ? '^' : '*', domain);
+        logg((qtype == T_TXT) ? LOGG_WARNING : LOGG_DEBUG, "Can't query %s\n", domain);
         return NULL;
 #endif
     }

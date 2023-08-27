@@ -1,7 +1,7 @@
 /*
  *  Match a string against a list of patterns/regexes.
  *
- *  Copyright (C) 2013-2022 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Török Edvin
@@ -153,10 +153,10 @@ cl_error_t regex_list_match(struct regex_matcher *matcher, char *real_url, const
     struct regex_list *regex;
     size_t real_len, display_len, buffer_len;
 
-    char *buffer  = NULL;
-    char *bufrev  = NULL;
-    cl_error_t rc = CL_SUCCESS;
-    // int filter_search_rc = 0;
+    char *buffer         = NULL;
+    char *bufrev         = NULL;
+    cl_error_t rc        = CL_SUCCESS;
+    int filter_search_rc = 0;
     int root;
     struct cli_ac_data mdata;
     struct cli_ac_result *res = NULL;
@@ -206,7 +206,7 @@ cl_error_t regex_list_match(struct regex_matcher *matcher, char *real_url, const
         return CL_EMEM;
     }
 
-    strncpy(buffer, real_url, real_len);
+    strncpy(buffer, real_url, buffer_len);
     buffer[real_len] = (!is_allow_list_lookup && hostOnly) ? '/' : ':';
 
     /*
@@ -215,7 +215,7 @@ cl_error_t regex_list_match(struct regex_matcher *matcher, char *real_url, const
      */
     if (!hostOnly || is_allow_list_lookup) {
         /* For all other PDB and WDB signatures concatenate Real:Displayed. */
-        strncpy(buffer + real_len + 1, display_url, display_len);
+        strncpy(buffer + real_len + 1, display_url, buffer_len - real_len);
     }
     buffer[buffer_len - 1] = '/';
     buffer[buffer_len]     = 0;
@@ -229,39 +229,16 @@ cl_error_t regex_list_match(struct regex_matcher *matcher, char *real_url, const
         return CL_EMEM;
 
     reverse_string(bufrev);
-    // TODO Add this back in once we improve the regex parsing code that finds
-    // suffixes to add to the filter.
-    //
-    // Reviewing Coverity bug reports we found that the return value to this
-    // filter_search call was effectively being ignored, causing no filtering
-    // to occur. Fixing this issue resulted in a unit test that uses the
-    // following match list regex to fail when searching for `ebay.com`.:
-    //
-    // .+\\.paypal\\.(com|de|fr|it)([/?].*)?:.+\\.ebay\\.(at|be|ca|ch|co\\.uk|de|es|fr|ie|in|it|nl|ph|pl|com(\\.(au|cn|hk|my|sg))?)/
-    //
-    // After investigating further, this is because the regex_list_add_pattern
-    // call, which parses the regex for suffixes and attempts to add these to
-    // the filter, can't handle the `com(\\.(au|cn|hk|my|sg))?` portion of
-    // the regex. As a result, it only adds `ebay.at`, `ebay.be`, `ebay.ca`, up
-    // through `ebay.pl` into the filter). With the commented out code below
-    // uncommented, these suffixes not existing in the filter are treated as
-    // there not being a corresponding regex for ebay.com, causing no regex
-    // rules to be evaluated against the URL.
-    //
-    // We should get the regex parsing code working (and ensure it handles any
-    // other complex cases in daily.cdb) before re-enabling this code. The code
-    // has had no effect for 12+ years at this point, though, so it's probably
-    // safe to wait a bit longer without it.
-    //
-    // filter_search_rc = filter_search(&matcher->filter, (const unsigned char *)bufrev, buffer_len);
-    // if (filter_search_rc == -1) {
-    //    free(buffer);
-    //    free(bufrev);
-    //    /* filter says this suffix doesn't match.
-    //     * The filter has false positives, but no false
-    //     * negatives */
-    //    return CL_SUCCESS;
-    //}
+
+    filter_search_rc = filter_search(&matcher->filter, (const unsigned char *)bufrev, buffer_len);
+    if (filter_search_rc == -1) {
+        free(buffer);
+        free(bufrev);
+        /* filter says this suffix doesn't match.
+        * The filter has false positives, but no false
+        * negatives */
+        return CL_SUCCESS;
+    }
 
     rc = cli_ac_scanbuff((const unsigned char *)bufrev, buffer_len, NULL, (void *)&regex, &res, &matcher->suffixes, &mdata, 0, 0, NULL, AC_SCAN_VIR, NULL);
     free(bufrev);
@@ -403,15 +380,27 @@ static int functionality_level_check(char *line)
 
 static int add_hash(struct regex_matcher *matcher, char *pattern, const char fl, int is_prefix)
 {
-    int rc;
-    struct cli_bm_patt *pat = MPOOL_CALLOC(matcher->mempool, 1, sizeof(*pat));
-    struct cli_matcher *bm;
-    const char *vname = NULL;
-    if (!pat)
-        return CL_EMEM;
+    int rc                  = CL_SUCCESS;
+    struct cli_bm_patt *pat = NULL;
+    struct cli_matcher *bm  = NULL;
+    const char *vname       = NULL;
+
+    if (0 == strlen(pattern)) {
+        cli_errmsg("add_hash: Invalid pattern '%s' in database\n", pattern);
+        rc = CL_EMALFDB;
+        goto done;
+    }
+
+    pat = MPOOL_CALLOC(matcher->mempool, 1, sizeof(*pat));
+    if (!pat) {
+        rc = CL_EMEM;
+        goto done;
+    }
     pat->pattern = (unsigned char *)CLI_MPOOL_HEX2STR(matcher->mempool, pattern);
-    if (!pat->pattern)
-        return CL_EMALFDB;
+    if (!pat->pattern) {
+        rc = CL_EMALFDB;
+        goto done;
+    }
     pat->length = 32;
     if (is_prefix) {
         pat->length = 4;
@@ -422,7 +411,7 @@ static int add_hash(struct regex_matcher *matcher, char *pattern, const char fl,
 
     if (!matcher->sha256_pfx_set.keys) {
         if ((rc = cli_hashset_init(&matcher->sha256_pfx_set, 1048576, 90))) {
-            return rc;
+            goto done;
         }
     }
 
@@ -432,27 +421,37 @@ static int add_hash(struct regex_matcher *matcher, char *pattern, const char fl,
         if (*vname == 'W') {
             /* hash is allowed in local.gdb */
             cli_dbgmsg("Skipping hash %s\n", pattern);
-            MPOOL_FREE(matcher->mempool, pat->pattern);
-            MPOOL_FREE(matcher->mempool, pat);
-            return CL_SUCCESS;
+            rc = CL_SUCCESS;
+            goto done;
         }
     }
     pat->virname = MPOOL_MALLOC(matcher->mempool, 1);
     if (!pat->virname) {
-        free(pat);
         cli_errmsg("add_hash: Unable to allocate memory for path->virname\n");
-        return CL_EMEM;
+        rc = CL_EMEM;
+        goto done;
     }
     *pat->virname = fl;
     cli_hashset_addkey(&matcher->sha256_pfx_set, cli_readint32(pat->pattern));
     if ((rc = cli_bm_addpatt(bm, pat, "*"))) {
         cli_errmsg("add_hash: failed to add BM pattern\n");
-        free(pat->pattern);
-        free(pat->virname);
-        free(pat);
-        return CL_EMALFDB;
+        rc = CL_EMALFDB;
+        goto done;
     }
-    return CL_SUCCESS;
+
+    pat = NULL;
+done:
+    if (pat) {
+        if (pat->pattern) {
+            MPOOL_FREE(matcher->mempool, pat->pattern);
+        }
+        if (pat->virname) {
+            MPOOL_FREE(matcher->mempool, pat->virname);
+        }
+        MPOOL_FREE(matcher->mempool, pat);
+    }
+
+    return rc;
 }
 
 /* Load patterns/regexes from file */

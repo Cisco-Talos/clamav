@@ -1,7 +1,7 @@
 /*
  *  Javascript normalizer.
  *
- *  Copyright (C) 2013-2022 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2008-2013 Sourcefire, Inc.
  *
  *  Authors: Török Edvin
@@ -787,6 +787,10 @@ static void handle_df(const yystype *tokens, size_t start, struct decode_result 
 static void handle_eval(struct tokens *tokens, size_t start, struct decode_result *res)
 {
     res->txtbuf.data = TOKEN_GET(&tokens->data[start], string);
+
+    if (start + 1 >= tokens->cnt)
+        return;
+
     if (res->txtbuf.data && tokens->data[start + 1].type == TOK_PAR_CLOSE) {
         TOKEN_SET(&tokens->data[start], string, NULL);
         res->txtbuf.pos = strlen(res->txtbuf.data);

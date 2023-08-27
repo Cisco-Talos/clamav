@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2022 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
@@ -73,7 +73,7 @@
  * in re-enabling affected modules.
  */
 
-#define CL_FLEVEL 180
+#define CL_FLEVEL 190
 #define CL_FLEVEL_DCONF CL_FLEVEL
 #define CL_FLEVEL_SIGTOOL CL_FLEVEL
 
@@ -327,6 +327,7 @@ struct cl_engine {
     char *tmpdir;
     uint32_t keeptmp;
     uint64_t engine_options;
+    uint32_t cache_size;
 
     /* Limits */
     uint32_t maxscantime;         /* Time limit (in milliseconds) */
@@ -416,6 +417,7 @@ struct cl_engine {
     void *cb_sigload_ctx;
     clcb_hash cb_hash;
     clcb_meta cb_meta;
+    clcb_generic_data cb_vba;
     clcb_file_props cb_file_props;
     clcb_progress cb_sigload_progress;
     void *cb_sigload_progress_ctx;
@@ -491,6 +493,7 @@ struct cl_settings {
     enum bytecode_mode bytecode_mode;
     char *pua_cats;
     uint64_t engine_options;
+    uint32_t cache_size;
 
     /* callbacks */
     clcb_pre_cache cb_pre_cache;

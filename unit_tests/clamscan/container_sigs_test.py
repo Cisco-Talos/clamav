@@ -1,4 +1,4 @@
-# Copyright (C) 2020-2022 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+# Copyright (C) 2020-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
 
 """
 Run clamscan tests.
@@ -90,7 +90,7 @@ class TC(testcase.TestCase):
 
         not_eicar_file = TC.path_tmp / 'not_eicar'
         if not not_eicar_file.exists():
-            with open(not_eicar_file, 'wb') as f:
+            with not_eicar_file.open('wb') as f:
                 f.write(b"CLAMAV-TEST-STRING-NOT-EICAR")
 
         not_eicar_zip = TC.path_tmp / 'not_eicar.zip'
@@ -131,7 +131,7 @@ class TC(testcase.TestCase):
 
         not_eicar_file = TC.path_tmp / 'not_eicar'
         if not not_eicar_file.exists():
-            with open(not_eicar_file, 'wb') as f:
+            with not_eicar_file.open('wb') as f:
                 f.write(b"CLAMAV-TEST-STRING-NOT-EICAR")
 
         not_eicar_zip = TC.path_tmp / 'not_eicar.zip'

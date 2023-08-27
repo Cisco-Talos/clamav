@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2022 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
@@ -100,6 +100,7 @@
 #include "gif.h"
 #include "png.h"
 #include "iso9660.h"
+#include "udf.h"
 #include "dmg.h"
 #include "xar.h"
 #include "hfsplus.h"
@@ -1271,9 +1272,9 @@ static cl_error_t cli_scanbzip(cli_ctx *ctx)
     char buf[FILEBUFF];
 
     memset(&strm, 0, sizeof(strm));
-    strm.next_out = buf;
+    strm.next_out  = buf;
     strm.avail_out = sizeof(buf);
-    rc = BZ2_bzDecompressInit(&strm, 0, 0);
+    rc             = BZ2_bzDecompressInit(&strm, 0, 0);
     if (BZ_OK != rc) {
         cli_dbgmsg("Bzip: DecompressInit failed: %d\n", rc);
         return CL_EOPEN;
@@ -1287,7 +1288,7 @@ static cl_error_t cli_scanbzip(cli_ctx *ctx)
 
     do {
         if (!strm.avail_in) {
-            strm.next_in = (void *)fmap_need_off_once_len(ctx->fmap, off, FILEBUFF, &avail);
+            strm.next_in  = (void *)fmap_need_off_once_len(ctx->fmap, off, FILEBUFF, &avail);
             strm.avail_in = avail;
             off += avail;
             if (!strm.avail_in) {
@@ -1323,7 +1324,7 @@ static cl_error_t cli_scanbzip(cli_ctx *ctx)
             if (cli_checklimits("Bzip", ctx, size, 0, 0) != CL_CLEAN)
                 break;
 
-            strm.next_out = buf;
+            strm.next_out  = buf;
             strm.avail_out = sizeof(buf);
         }
     } while (BZ_STREAM_END != rc);
@@ -1632,7 +1633,8 @@ static cl_error_t cli_ole2_tempdir_scan_vba_new(const char *dir, cli_ctx *ctx, s
     char *hash       = NULL;
     char path[PATH_MAX];
     char filename[PATH_MAX];
-    int tempfd = -1;
+    int tempfd     = -1;
+    char *tempfile = NULL;
 
     if (CL_SUCCESS != (ret = uniq_get(U, "dir", 3, &hash, &hashcnt))) {
         cli_dbgmsg("cli_ole2_tempdir_scan_vba_new: uniq_get('dir') failed with ret code (%d)!\n", ret);
@@ -1649,11 +1651,20 @@ static cl_error_t cli_ole2_tempdir_scan_vba_new(const char *dir, cli_ctx *ctx, s
 
         if (CL_SUCCESS == find_file(filename, dir, path, sizeof(path))) {
             cli_dbgmsg("cli_ole2_tempdir_scan_vba_new: Found dir file: %s\n", path);
-            if ((ret = cli_vba_readdir_new(ctx, path, U, hash, hashcnt, &tempfd, has_macros)) != CL_SUCCESS) {
+            if ((ret = cli_vba_readdir_new(ctx, path, U, hash, hashcnt, &tempfd, has_macros, &tempfile)) != CL_SUCCESS) {
                 // FIXME: Since we only know the stream name of the OLE2 stream, but not its path inside the
                 //        OLE2 archive, we don't know if we have the right file. The only thing we can do is
                 //        iterate all of them until one succeeds.
                 cli_dbgmsg("cli_ole2_tempdir_scan_vba_new: Failed to read dir from %s, trying others (error: %s (%d))\n", path, cl_strerror(ret), (int)ret);
+
+                if (tempfile) {
+                    if (!ctx->engine->keeptmp) {
+                        remove(tempfile);
+                    }
+                    free(tempfile);
+                    tempfile = NULL;
+                }
+
                 ret = CL_SUCCESS;
                 hashcnt--;
                 continue;
@@ -1693,6 +1704,14 @@ static cl_error_t cli_ole2_tempdir_scan_vba_new(const char *dir, cli_ctx *ctx, s
 
             close(tempfd);
             tempfd = -1;
+
+            if (tempfile) {
+                if (!ctx->engine->keeptmp) {
+                    remove(tempfile);
+                }
+                free(tempfile);
+                tempfile = NULL;
+            }
         }
 
         hashcnt--;
@@ -1702,6 +1721,14 @@ done:
     if (tempfd != -1) {
         close(tempfd);
         tempfd = -1;
+    }
+
+    if (tempfile) {
+        if (!ctx->engine->keeptmp) {
+            remove(tempfile);
+        }
+        free(tempfile);
+        tempfile = NULL;
     }
 
     return ret;
@@ -2045,6 +2072,10 @@ done:
         free(fullname);
     }
 
+    if (fd >= 0) {
+        close(fd);
+    }
+
     return status;
 }
 
@@ -2110,7 +2141,7 @@ static cl_error_t cli_scanhtml(cli_ctx *ctx)
 
     cli_dbgmsg("cli_scanhtml: using tempdir %s\n", tempname);
 
-    (void)html_normalise_map(map, tempname, NULL, ctx->dconf);
+    (void)html_normalise_map(ctx, map, tempname, NULL, ctx->dconf);
 
     snprintf(fullname, 1024, "%s" PATHSEP "nocomment.html", tempname);
     fd = open(fullname, O_RDONLY | O_BINARY);
@@ -3460,8 +3491,20 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
                                 // Reassign type of current layer based on what we discovered
                                 cli_recursion_stack_change_type(ctx, fpt->type);
 
-                                cli_dbgmsg("DMG signature found at %u\n", (unsigned int)fpt->offset);
+                                cli_dbgmsg("ISO signature found at %u\n", (unsigned int)fpt->offset);
                                 nret = cli_scaniso(ctx, fpt->offset);
+                            }
+                        }
+                        break;
+
+                    case CL_TYPE_UDF:
+                        if (SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_UDF)) {
+                            {
+                                // Reassign type of current layer based on what we discovered
+                                cli_recursion_stack_change_type(ctx, fpt->type);
+
+                                cli_dbgmsg("UDF signature found at %u\n", (unsigned int)fpt->offset);
+                                nret = cli_scanudf(ctx, fpt->offset);
                             }
                         }
                         break;
@@ -5471,57 +5514,6 @@ static cl_error_t scan_common(cl_fmap_t *map, const char *filepath, const char *
 
     status = cli_magic_scan(&ctx, CL_TYPE_ANY);
 
-    // If any alerts occurred, set the output pointer to the "latest" alert signature name.
-    if (0 < evidence_num_alerts(ctx.evidence)) {
-        *virname = cli_get_last_virus_str(&ctx);
-        verdict  = CL_VIRUS;
-    }
-
-    /*
-     * Report PUA alerts here.
-     */
-    num_potentially_unwanted_indicators = evidence_num_indicators_type(
-        ctx.evidence,
-        IndicatorType_PotentiallyUnwanted);
-    if (0 != num_potentially_unwanted_indicators) {
-        // We have "potentially unwanted" indicators that would not have been reported yet.
-        // We may wish to report them now, ... depending ....
-
-        if (ctx.options->general & CL_SCAN_GENERAL_ALLMATCHES) {
-            // We're in allmatch mode, so report all "potentially unwanted" matches now.
-
-            size_t i;
-
-            for (i = 0; i < num_potentially_unwanted_indicators; i++) {
-                const char *pua_alert = evidence_get_indicator(
-                    ctx.evidence,
-                    IndicatorType_PotentiallyUnwanted,
-                    i);
-
-                if (NULL != pua_alert) {
-                    // We don't know exactly which layer the alert happened at.
-                    // There's a decent chance it wasn't at this layer, and in that case we wouldn't
-                    // even have access to that file anymore (it's gone!). So we'll pass back -1 for the
-                    // file descriptor rather than using `cli_virus_found_cb() which would pass back
-                    // The top level file descriptor.
-                    if (ctx.engine->cb_virus_found) {
-                        ctx.engine->cb_virus_found(
-                            -1,
-                            pua_alert,
-                            ctx.cb_ctx);
-                    }
-                }
-            }
-
-        } else {
-            // Not allmatch mode. Only want to report one thing...
-            if (0 == evidence_num_indicators_type(ctx.evidence, IndicatorType_Strong)) {
-                // And it looks like we haven't reported anything else, so report the last "potentially unwanted" one.
-                cli_virus_found_cb(&ctx, cli_get_last_virus(&ctx));
-            }
-        }
-    }
-
 #if HAVE_JSON
     if (ctx.options->general & CL_SCAN_GENERAL_COLLECT_METADATA && (ctx.properties != NULL)) {
         json_object *jobj;
@@ -5617,6 +5609,57 @@ static cl_error_t scan_common(cl_fmap_t *map, const char *filepath, const char *
     }
 #endif // HAVE_JSON
 
+    // If any alerts occurred, set the output pointer to the "latest" alert signature name.
+    if (0 < evidence_num_alerts(ctx.evidence)) {
+        *virname = cli_get_last_virus_str(&ctx);
+        verdict  = CL_VIRUS;
+    }
+
+    /*
+     * Report PUA alerts here.
+     */
+    num_potentially_unwanted_indicators = evidence_num_indicators_type(
+        ctx.evidence,
+        IndicatorType_PotentiallyUnwanted);
+    if (0 != num_potentially_unwanted_indicators) {
+        // We have "potentially unwanted" indicators that would not have been reported yet.
+        // We may wish to report them now, ... depending ....
+
+        if (ctx.options->general & CL_SCAN_GENERAL_ALLMATCHES) {
+            // We're in allmatch mode, so report all "potentially unwanted" matches now.
+
+            size_t i;
+
+            for (i = 0; i < num_potentially_unwanted_indicators; i++) {
+                const char *pua_alert = evidence_get_indicator(
+                    ctx.evidence,
+                    IndicatorType_PotentiallyUnwanted,
+                    i);
+
+                if (NULL != pua_alert) {
+                    // We don't know exactly which layer the alert happened at.
+                    // There's a decent chance it wasn't at this layer, and in that case we wouldn't
+                    // even have access to that file anymore (it's gone!). So we'll pass back -1 for the
+                    // file descriptor rather than using `cli_virus_found_cb() which would pass back
+                    // The top level file descriptor.
+                    if (ctx.engine->cb_virus_found) {
+                        ctx.engine->cb_virus_found(
+                            -1,
+                            pua_alert,
+                            ctx.cb_ctx);
+                    }
+                }
+            }
+
+        } else {
+            // Not allmatch mode. Only want to report one thing...
+            if (0 == evidence_num_indicators_type(ctx.evidence, IndicatorType_Strong)) {
+                // And it looks like we haven't reported anything else, so report the last "potentially unwanted" one.
+                cli_virus_found_cb(&ctx, cli_get_last_virus(&ctx));
+            }
+        }
+    }
+
     if (verdict != CL_CLEAN) {
         // Reporting "VIRUS" is more important than reporting and error,
         // because... unfortunately we can only do one with the current API.
@@ -5694,8 +5737,12 @@ cl_error_t cl_scandesc_callback(int desc, const char *filename, const char **vir
     if ((engine->maxfilesize > 0) && ((uint64_t)sb.st_size > engine->maxfilesize)) {
         cli_dbgmsg("cl_scandesc_callback: File too large (" STDu64 " bytes), ignoring\n", (uint64_t)sb.st_size);
         if (scanoptions->heuristic & CL_SCAN_HEURISTIC_EXCEEDS_MAX) {
-            if (engine->cb_virus_found)
+            if (engine->cb_virus_found) {
                 engine->cb_virus_found(desc, "Heuristics.Limits.Exceeded.MaxFileSize", context);
+                if (virname) {
+                    *virname = "Heuristics.Limits.Exceeded.MaxFileSize";
+                }
+            }
             status = CL_VIRUS;
         } else {
             status = CL_CLEAN;
@@ -5731,8 +5778,12 @@ cl_error_t cl_scanmap_callback(cl_fmap_t *map, const char *filename, const char 
     if ((engine->maxfilesize > 0) && (map->len > engine->maxfilesize)) {
         cli_dbgmsg("cl_scandesc_callback: File too large (%zu bytes), ignoring\n", map->len);
         if (scanoptions->heuristic & CL_SCAN_HEURISTIC_EXCEEDS_MAX) {
-            if (engine->cb_virus_found)
+            if (engine->cb_virus_found) {
                 engine->cb_virus_found(fmap_fd(map), "Heuristics.Limits.Exceeded.MaxFileSize", context);
+                if (virname) {
+                    *virname = "Heuristics.Limits.Exceeded.MaxFileSize";
+                }
+            }
             return CL_VIRUS;
         }
         return CL_CLEAN;

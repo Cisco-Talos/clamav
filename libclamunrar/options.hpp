@@ -45,6 +45,12 @@ enum OVERWRITE_MODE
   OVERWRITE_FORCE_ASK
 };
 
+enum ARC_METADATA
+{
+  ARCMETA_NONE=0,
+  ARCMETA_SAVE,    // -ams
+  ARCMETA_RESTORE  // -amr
+};
 
 enum QOPEN_MODE { QOPEN_NONE, QOPEN_AUTO, QOPEN_ALWAYS };
 
@@ -84,11 +90,12 @@ struct FilterMode
 #define MAX_GENERATE_MASK  128
 
 
+// Here we store simple data types, which we can clear and move all together
+// quickly. Rest of data types goes to CommandData.
 class RAROptions
 {
   public:
     RAROptions();
-    ~RAROptions();
     void Init();
 
     uint ExclFileAttr;
@@ -118,7 +125,6 @@ class RAROptions
 
     wchar ArcPath[NM]; // For -ap<path>.
     wchar ExclArcPath[NM]; // For -ep4<path> switch.
-    SecPassword Password;
     bool EncryptHeaders;
     bool SkipEncrypted;
     
@@ -132,6 +138,7 @@ class RAROptions
     HASH_TYPE HashType;
     int Recovery;
     int RecVolNumber;
+    ARC_METADATA ArcMetadata;
     bool DisablePercentage;
     bool DisableCopyright;
     bool DisableDone;
@@ -147,7 +154,6 @@ class RAROptions
     PATH_EXCL_MODE ExclPath;
     RECURSE_MODE Recurse;
     int64 VolSize;
-    Array<int64> NextVolSizes;
     uint CurVolNum;
     bool AllYes;
     bool VerboseOutput; // -iv, display verbose output, used only in "WinRAR t" now.

@@ -1,7 +1,7 @@
 /*
  *  Extract component parts of ARJ archives.
  *
- *  Copyright (C) 2013-2022 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Trog
@@ -972,7 +972,7 @@ done:
 static cl_error_t arj_read_file_header(arj_metadata_t *metadata)
 {
     uint16_t header_size, count;
-    const char *filename, *comment;
+    const char *filename = NULL, *comment = NULL;
     arj_file_hdr_t file_hdr;
     struct text_norm_state fnstate, comstate;
     unsigned char *fnnorm  = NULL;

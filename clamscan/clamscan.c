@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2022 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
@@ -232,7 +232,7 @@ void help(void)
     mprintf(LOGG_INFO, "\n");
     mprintf(LOGG_INFO, "                       Clam AntiVirus: Scanner %s\n", get_version());
     mprintf(LOGG_INFO, "           By The ClamAV Team: https://www.clamav.net/about.html#credits\n");
-    mprintf(LOGG_INFO, "           (C) 2022 Cisco Systems, Inc.\n");
+    mprintf(LOGG_INFO, "           (C) 2023 Cisco Systems, Inc.\n");
     mprintf(LOGG_INFO, "\n");
     mprintf(LOGG_INFO, "    clamscan [options] [file/directory/-]\n");
     mprintf(LOGG_INFO, "\n");
@@ -255,6 +255,7 @@ void help(void)
     mprintf(LOGG_INFO, "                                         A JSON file will dropped to the temp directory if --leave-temps is enabled.\n");
     mprintf(LOGG_INFO, "    --database=FILE/DIR   -d FILE/DIR    Load virus database from FILE or load all supported db files from DIR\n");
     mprintf(LOGG_INFO, "    --official-db-only[=yes/no(*)]       Only load official signatures\n");
+    mprintf(LOGG_INFO, "    --fail-if-cvd-older-than=days        Return with a nonzero error code if virus database outdated.\n");
     mprintf(LOGG_INFO, "    --log=FILE            -l FILE        Save scan report to FILE\n");
     mprintf(LOGG_INFO, "    --recursive[=yes/no(*)]  -r          Scan subdirectories recursively\n");
     mprintf(LOGG_INFO, "    --allmatch[=yes/no(*)]   -z          Continue scanning within file after finding a match\n");

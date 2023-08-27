@@ -1,7 +1,7 @@
 /*
  *  Unit tests for HTML normalizer;
  *
- *  Copyright (C) 2013-2022 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2008-2013 Sourcefire, Inc.
  *
  *  Authors: Török Edvin
@@ -144,23 +144,23 @@ START_TEST(test_htmlnorm_api)
     ck_assert_msg(!!map, "fmap failed");
 
     ck_assert_msg(mkdir(dir, 0700) == 0, "mkdir failed: %s", dir);
-    ck_assert_msg(html_normalise_map(map, dir, NULL, dconf) == 1, "html_normalise_map failed");
+    ck_assert_msg(html_normalise_map(NULL, map, dir, NULL, dconf) == 1, "html_normalise_map failed");
     check_dir(dir, &tests[_i]);
     ck_assert_msg(cli_rmdirs(dir) == 0, "rmdirs failed: %s", dir);
 
     ck_assert_msg(mkdir(dir, 0700) == 0, "mkdir failed: %s", dir);
-    ck_assert_msg(html_normalise_map(map, dir, NULL, NULL) == 1, "html_normalise_map failed");
+    ck_assert_msg(html_normalise_map(NULL, map, dir, NULL, NULL) == 1, "html_normalise_map failed");
     ck_assert_msg(cli_rmdirs(dir) == 0, "rmdirs failed: %s", dir);
 
     ck_assert_msg(mkdir(dir, 0700) == 0, "mkdir failed: %s", dir);
-    ck_assert_msg(html_normalise_map(map, dir, &hrefs, dconf) == 1, "html_normalise_map failed");
+    ck_assert_msg(html_normalise_map(NULL, map, dir, &hrefs, dconf) == 1, "html_normalise_map failed");
     ck_assert_msg(cli_rmdirs(dir) == 0, "rmdirs failed: %s", dir);
     html_tag_arg_free(&hrefs);
 
     memset(&hrefs, 0, sizeof(hrefs));
     hrefs.scanContents = 1;
     ck_assert_msg(mkdir(dir, 0700) == 0, "mkdir failed: %s", dir);
-    ck_assert_msg(html_normalise_map(map, dir, &hrefs, dconf) == 1, "html_normalise_map failed");
+    ck_assert_msg(html_normalise_map(NULL, map, dir, &hrefs, dconf) == 1, "html_normalise_map failed");
     ck_assert_msg(cli_rmdirs(dir) == 0, "rmdirs failed: %s", dir);
     html_tag_arg_free(&hrefs);
 

@@ -57,7 +57,7 @@ Rotate log file. Requires LogFileMaxSize option set prior to this option.
 Default: no
 .TP
 \fBPidFile STRING\fR
-This option allows you to save the process identifier of the daemon to a file specified in the argument.
+Write the daemon's pid to the specified file.
 .br
 Default: disabled
 .TP

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2022 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
@@ -44,7 +44,6 @@
 #include <errno.h>
 
 // libclamav
-#include "clamav.h"
 #include "cvd.h"
 #include "others.h" /* for cli_rmdirs() */
 #include "regex/regex.h"
@@ -486,4 +485,22 @@ unsigned int countlines(const char *filename)
 
     fclose(fh);
     return lines;
+}
+
+cl_error_t check_if_cvd_outdated(const char *path, long long days)
+{
+    cl_error_t status;
+    time_t cvd_age;
+
+    if ((status = cl_cvdgetage(path, &cvd_age)) != CL_SUCCESS) {
+        logg(LOGG_ERROR, "%s\n", cl_strerror(status));
+        return status;
+    }
+
+    if (days * 86400 < cvd_age) {
+        logg(LOGG_ERROR, "Virus database is older than %lld days!\n", days);
+        return CL_ECVD;
+    }
+
+    return CL_SUCCESS;
 }

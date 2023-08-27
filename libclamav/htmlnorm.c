@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2022 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Trog
@@ -49,6 +49,9 @@
 #include "entconv.h"
 #include "jsparse/js-norm.h"
 
+#include "clamav_rust.h"
+#include "scanners.h"
+
 #define HTML_STR_LENGTH 1024
 #define MAX_TAG_CONTENTS_LENGTH HTML_STR_LENGTH
 
@@ -79,6 +82,12 @@ typedef enum {
     HTML_RFC2397_ESC,
     HTML_ESCAPE_CHAR
 } html_state;
+
+typedef enum {
+    TAG_DONT_EXTRACT,
+    TAG_SCRIPT,
+    TAG_STYLE,
+} tag_type;
 
 typedef enum {
     SINGLE_QUOTED,
@@ -365,18 +374,18 @@ void html_tag_arg_add(tag_arguments_t *tags,
     tags->tag = (unsigned char **)cli_realloc2(tags->tag,
                                                tags->count * sizeof(char *));
     if (!tags->tag) {
-        goto abort;
+        goto done;
     }
     tags->value = (unsigned char **)cli_realloc2(tags->value,
                                                  tags->count * sizeof(char *));
     if (!tags->value) {
-        goto abort;
+        goto done;
     }
     if (tags->scanContents) {
         tags->contents = (unsigned char **)cli_realloc2(tags->contents,
                                                         tags->count * sizeof(*tags->contents));
         if (!tags->contents) {
-            goto abort;
+            goto done;
         }
         tags->contents[tags->count - 1] = NULL;
     }
@@ -396,7 +405,7 @@ void html_tag_arg_add(tag_arguments_t *tags,
     }
     return;
 
-abort:
+done:
     /* Bad error - can't do 100% recovery */
     tags->count--;
     for (i = 0; i < tags->count; i++) {
@@ -621,7 +630,7 @@ static void screnc_decode(unsigned char *ptr, struct screnc_state *s)
 }
 
 static void js_process(struct parser_state *js_state, const unsigned char *js_begin, const unsigned char *js_end,
-                       const unsigned char *line, const unsigned char *ptr, int in_script, const char *dirname)
+                       const unsigned char *line, const unsigned char *ptr, tag_type in_tag, const char *dirname)
 {
     if (!js_begin)
         js_begin = line;
@@ -632,7 +641,7 @@ static void js_process(struct parser_state *js_state, const unsigned char *js_be
         CLI_ISCONTAINED(line, 8192, js_end, 1)) {
         cli_js_process_buffer(js_state, (const char *)js_begin, js_end - js_begin);
     }
-    if (!in_script) {
+    if (in_tag == TAG_DONT_EXTRACT) {
         /*  we found a /script, normalize script now */
         cli_js_parse_done(js_state);
         cli_js_output(js_state, dirname);
@@ -640,11 +649,13 @@ static void js_process(struct parser_state *js_state, const unsigned char *js_be
     }
 }
 
-static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag_arguments_t *hrefs, const struct cli_dconf *dconf)
+static bool cli_html_normalise(cli_ctx *ctx, int fd, m_area_t *m_area, const char *dirname, tag_arguments_t *hrefs, const struct cli_dconf *dconf)
 {
-    int fd_tmp, tag_length = 0, tag_arg_length = 0, binary;
-    int64_t retval = FALSE, escape = FALSE, value = 0, hex = FALSE, tag_val_length = 0;
-    int look_for_screnc = FALSE, in_screnc = FALSE, in_script = FALSE, text_space_written = FALSE;
+    int fd_tmp, tag_length = 0, tag_arg_length = 0;
+    bool binary, retval = false, escape = false, hex = false;
+    int64_t value = 0, tag_val_length = 0;
+    bool look_for_screnc = false, in_screnc = false, text_space_written = false;
+    tag_type in_tag  = TAG_DONT_EXTRACT;
     FILE *stream_in  = NULL;
     html_state state = HTML_NORM, next_state = HTML_BAD_STATE, saved_next_state = HTML_BAD_STATE;
     char filename[1024], tag[HTML_STR_LENGTH + 1], tag_arg[HTML_STR_LENGTH + 1];
@@ -669,6 +680,9 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
     /* dconf for phishing engine sets scanContents, so no need for a flag here */
     struct parser_state *js_state = NULL;
     const unsigned char *js_begin = NULL, *js_end = NULL;
+    uint8_t *style_buff              = NULL;
+    size_t style_buff_size           = 0;
+    const unsigned char *style_begin = NULL, *style_end = NULL;
     struct tag_contents contents;
     uint32_t mbchar  = 0;
     uint32_t mbchar2 = 0;
@@ -687,17 +701,17 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
     if (!m_area) {
         if (fd < 0) {
             cli_dbgmsg("Invalid HTML fd\n");
-            return FALSE;
+            return false;
         }
         lseek(fd, 0, SEEK_SET);
         fd_tmp = dup(fd);
         if (fd_tmp < 0) {
-            return FALSE;
+            return false;
         }
         stream_in = fdopen(fd_tmp, "r");
         if (!stream_in) {
             close(fd_tmp);
-            return FALSE;
+            return false;
         }
     }
 
@@ -710,7 +724,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
         if (!file_buff_o2) {
             cli_errmsg("cli_html_normalise: Unable to allocate memory for file_buff_o2\n");
             file_buff_o2 = file_buff_text = NULL;
-            goto abort;
+            goto done;
         }
 
         /* this will still contains scripts that are inside comments */
@@ -720,7 +734,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
             cli_dbgmsg("open failed: %s\n", filename);
             free(file_buff_o2);
             file_buff_o2 = file_buff_text = NULL;
-            goto abort;
+            goto done;
         }
 
         file_buff_text = (file_buff_t *)cli_malloc(sizeof(file_buff_t));
@@ -729,7 +743,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
             free(file_buff_o2);
             file_buff_o2 = file_buff_text = NULL;
             cli_errmsg("cli_html_normalise: Unable to allocate memory for file_buff_text\n");
-            goto abort;
+            goto done;
         }
 
         snprintf(filename, 1024, "%s" PATHSEP "notags.html", dirname);
@@ -740,7 +754,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
             free(file_buff_o2);
             free(file_buff_text);
             file_buff_o2 = file_buff_text = NULL;
-            goto abort;
+            goto done;
         }
         file_buff_o2->length   = 0;
         file_buff_text->length = 0;
@@ -749,7 +763,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
         file_buff_text = NULL;
     }
 
-    binary = FALSE;
+    binary = false;
 
     ptr = line = cli_readchunk(stream_in, m_area, 8192);
 
@@ -776,7 +790,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                 case HTML_BAD_STATE:
                     /* An engine error has occurred */
                     cli_dbgmsg("HTML Engine Error\n");
-                    goto abort;
+                    goto done;
                 case HTML_SKIP_WS:
                     if (isspace(*ptr)) {
                         ptr++;
@@ -789,8 +803,9 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                     if (isspace(*ptr)) {
                         ptr++;
                     } else {
-                        if (!in_script)
+                        if (in_tag == TAG_DONT_EXTRACT) {
                             html_output_c(file_buff_o2, ' ');
+                        }
                         state      = next_state;
                         next_state = HTML_BAD_STATE;
                     }
@@ -834,9 +849,9 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                     if (*ptr == '<') {
                         ptrend = ptr; /* for use by scanContents */
                         html_output_c(file_buff_o2, '<');
-                        if (!in_script && !text_space_written) {
+                        if (in_tag == TAG_DONT_EXTRACT && !text_space_written) {
                             html_output_c(file_buff_text, ' ');
-                            text_space_written = TRUE;
+                            text_space_written = true;
                         }
                         if (hrefs && hrefs->scanContents && in_ahref && href_contents_begin) {
                             /*append this text portion to the contents of <a>*/
@@ -848,16 +863,16 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                         tag_length = 0;
                         next_state = HTML_TAG;
                     } else if (isspace(*ptr)) {
-                        if (!text_space_written && !in_script) {
+                        if (!text_space_written && in_tag == TAG_DONT_EXTRACT) {
                             html_output_c(file_buff_text, ' ');
-                            text_space_written = TRUE;
+                            text_space_written = true;
                         }
                         state      = HTML_TRIM_WS;
                         next_state = HTML_NORM;
                     } else if (*ptr == '&') {
-                        if (!text_space_written && !in_script) {
+                        if (!text_space_written && in_tag == TAG_DONT_EXTRACT) {
                             html_output_c(file_buff_text, ' ');
-                            text_space_written = TRUE;
+                            text_space_written = true;
                         }
                         state      = HTML_CHAR_REF;
                         next_state = HTML_NORM;
@@ -870,17 +885,17 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                     } else {
                         unsigned char c = tolower(*ptr);
                         /* normalize ' to " for scripts */
-                        if (in_script && c == '\'') c = '"';
+                        if (in_tag != TAG_DONT_EXTRACT && c == '\'') c = '"';
                         html_output_c(file_buff_o2, c);
-                        if (!in_script) {
+                        if (in_tag == TAG_DONT_EXTRACT) {
                             if (*ptr < 0x20) {
                                 if (!text_space_written) {
                                     html_output_c(file_buff_text, ' ');
-                                    text_space_written = TRUE;
+                                    text_space_written = true;
                                 }
                             } else {
                                 html_output_c(file_buff_text, c);
-                                text_space_written = FALSE;
+                                text_space_written = false;
                             }
                         }
                         ptr++;
@@ -889,7 +904,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                 case HTML_TAG:
                     if ((tag_length == 0) && (*ptr == '!')) {
                         /* Comment */
-                        if (in_script) {
+                        if (in_tag != TAG_DONT_EXTRACT) {
                             /* we still write scripts to nocomment.html */
                             html_output_c(file_buff_o2, '!');
                         } else {
@@ -910,7 +925,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                     } else if (!isspace(*ptr)) {
                         html_output_c(file_buff_o2, tolower(*ptr));
                         /* if we're inside a script we only care for </script>.*/
-                        if (in_script && tag_length == 0 && *ptr != '/') {
+                        if (in_tag != TAG_DONT_EXTRACT && tag_length == 0 && *ptr != '/') {
                             state = HTML_NORM;
                         }
                         if (tag_length < HTML_STR_LENGTH) {
@@ -921,8 +936,8 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                         tag[tag_length] = '\0';
                         state           = HTML_SKIP_WS;
                         tag_arg_length  = 0;
-                        /* if we'd go to HTML_TAG_ARG whitespace would be inconsistently normalized for in_script*/
-                        next_state = !in_script ? HTML_TAG_ARG : HTML_PROCESS_TAG;
+                        /* if we'd go to HTML_TAG_ARG whitespace would be inconsistently normalized for in_tag*/
+                        next_state = in_tag == TAG_DONT_EXTRACT ? HTML_TAG_ARG : HTML_PROCESS_TAG;
                     }
                     break;
                 case HTML_TAG_ARG:
@@ -931,7 +946,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                         tag_arg[tag_arg_length] = '\0';
                         ptr++;
                         state          = HTML_SKIP_WS;
-                        escape         = FALSE;
+                        escape         = false;
                         quoted         = NOT_QUOTED;
                         tag_val_length = 0;
                         next_state     = HTML_TAG_ARG_VAL;
@@ -966,7 +981,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                         html_output_c(file_buff_o2, '=');
                         ptr++;
                         state          = HTML_SKIP_WS;
-                        escape         = FALSE;
+                        escape         = false;
                         quoted         = NOT_QUOTED;
                         tag_val_length = 0;
                         next_state     = HTML_TAG_ARG_VAL;
@@ -1087,7 +1102,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                                 }
                             }
                             state      = HTML_SKIP_WS;
-                            escape     = FALSE;
+                            escape     = false;
                             quoted     = NOT_QUOTED;
                             next_state = HTML_TAG_ARG_VAL;
                             ptr++;
@@ -1134,13 +1149,13 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                     }
 
                     if (*ptr == '\\') {
-                        escape = TRUE;
+                        escape = true;
                     } else {
-                        escape = FALSE;
+                        escape = false;
                     }
                     break;
                 case HTML_COMMENT:
-                    if (in_script && !isspace(*ptr)) {
+                    if (in_tag != TAG_DONT_EXTRACT && !isspace(*ptr)) {
                         unsigned char c = tolower(*ptr);
                         /* dump script to nocomment.html, since we no longer have
                          * comment.html/script.html */
@@ -1162,17 +1177,44 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                         /* End tag */
                         state      = HTML_SKIP_WS;
                         next_state = HTML_NORM;
+
                         if (strcmp(tag, "/script") == 0) {
-                            in_script = FALSE;
+                            in_tag = TAG_DONT_EXTRACT;
                             if (js_state) {
                                 js_end = ptr;
-                                js_process(js_state, js_begin, js_end, line, ptr, in_script, dirname);
+                                js_process(js_state, js_begin, js_end, line, ptr, in_tag, dirname);
                                 js_state = NULL;
                                 js_begin = js_end = NULL;
                             }
                             /*don't output newlines in nocomment.html
                              * html_output_c(file_buff_o2, '\n');*/
+                        } else if ((strcmp(tag, "/style") == 0) && (in_tag == TAG_STYLE)) {
+                            size_t chunk_size;
+
+                            style_end = ptr - strlen("</style>");
+
+                            if (style_end < style_begin) {
+                                cli_errmsg("cli_html_normalise: style chunk size underflow\n");
+                                goto done;
+                            }
+
+                            chunk_size = style_end - style_begin;
+
+                            if (style_buff == NULL) {
+                                CLI_MALLOC(style_buff, chunk_size + 1);
+                            } else {
+                                CLI_REALLOC(style_buff, style_buff_size + chunk_size + 1);
+                            }
+
+                            memcpy(style_buff + style_buff_size, style_begin, chunk_size);
+
+                            style_buff_size += chunk_size;
+                            style_buff[style_buff_size] = '\0';
+
+                            in_tag      = TAG_DONT_EXTRACT;
+                            style_begin = style_end = NULL;
                         }
+
                         if (hrefs && hrefs->scanContents && in_ahref) {
                             if (strcmp(tag, "/a") == 0) {
                                 html_tag_contents_done(hrefs, in_ahref, &contents);
@@ -1202,7 +1244,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                             /* we already output the old tag, output the new tag now */
                             html_output_tag(file_buff_o2, tag, &tag_args);
                         }
-                        in_script = TRUE;
+                        in_tag = TAG_SCRIPT;
                         if (dconf_js && !js_state) {
                             js_state = cli_js_init();
                             if (!js_state) {
@@ -1211,6 +1253,10 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                             js_begin = ptr;
                             js_end   = NULL;
                         }
+                    } else if (strcmp(tag, "style") == 0) {
+                        in_tag      = TAG_STYLE;
+                        style_begin = ptr;
+                        style_end   = NULL;
                     } else if (strcmp(tag, "%@") == 0) {
                         arg_value = html_tag_arg_value(&tag_args, "language");
                         if (arg_value && (strcasecmp((const char *)arg_value, "jscript.encode") == 0 ||
@@ -1218,7 +1264,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 
                             saved_next_state = next_state;
                             next_state       = state;
-                            look_for_screnc  = FALSE;
+                            look_for_screnc  = false;
                             state            = HTML_LOOKFOR_SCRENC;
                         }
                     } else if (hrefs) {
@@ -1339,14 +1385,14 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                         if (arg_value && arg_value[0]) {
                             html_output_str(file_buff_text, (const unsigned char *)arg_value, strlen((const char *)arg_value));
                             html_output_c(file_buff_text, ' ');
-                            text_space_written = TRUE;
+                            text_space_written = true;
                         }
                     } else if (strcmp(tag, "img") == 0) {
                         arg_value = html_tag_arg_value(&tag_args, "src");
                         if (arg_value && arg_value[0]) {
                             html_output_str(file_buff_text, (const unsigned char *)arg_value, strlen((const char *)arg_value));
                             html_output_c(file_buff_text, ' ');
-                            text_space_written = TRUE;
+                            text_space_written = true;
                         }
                     }
                     html_tag_arg_free(&tag_args);
@@ -1354,7 +1400,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                 case HTML_CHAR_REF:
                     if (*ptr == '#') {
                         value = 0;
-                        hex   = FALSE;
+                        hex   = false;
                         state = HTML_CHAR_REF_DECODE;
                         ptr++;
                     } else {
@@ -1430,7 +1476,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                     break;
                 case HTML_CHAR_REF_DECODE:
                     if ((value == 0) && ((*ptr == 'x') || (*ptr == 'X'))) {
-                        hex = TRUE;
+                        hex = true;
                         ptr++;
                     } else if (*ptr == ';') {
                         if (next_state == HTML_TAG_ARG_VAL && tag_val_length < HTML_STR_LENGTH) {
@@ -1488,7 +1534,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                     }
                     break;
                 case HTML_LOOKFOR_SCRENC:
-                    look_for_screnc = TRUE;
+                    look_for_screnc = true;
                     ptr_screnc      = (unsigned char *)strstr((char *)ptr, "#@~^");
                     if (ptr_screnc) {
                         ptr_screnc[0] = '/';
@@ -1527,7 +1573,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                     screnc_state.length += (base64_chars[ptr[4]] < 0 ? 0 : base64_chars[ptr[4]] << 2) << 24;
                     screnc_state.length += ((base64_chars[ptr[5]] >> 4) < 0 ? 0 : (base64_chars[ptr[5]] >> 4)) << 24;
                     state      = HTML_JSDECODE_DECRYPT;
-                    in_screnc  = TRUE;
+                    in_screnc  = true;
                     next_state = HTML_BAD_STATE;
                     /* for JS normalizer */
                     ptr[7] = '\n';
@@ -1538,7 +1584,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                     if (!screnc_state.length) {
                         state      = HTML_NORM;
                         next_state = HTML_BAD_STATE;
-                        in_screnc  = FALSE;
+                        in_screnc  = false;
                         break;
                     } else {
                         state      = HTML_NORM;
@@ -1587,7 +1633,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                                 }
                             }
                             state      = HTML_SKIP_WS;
-                            escape     = FALSE;
+                            escape     = false;
                             quoted     = NOT_QUOTED;
                             next_state = HTML_RFC2397_TYPE;
                             ptr++;
@@ -1596,7 +1642,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                         /* Beginning of data */
                         tag_val[tag_val_length] = '\0';
                         state                   = HTML_RFC2397_INIT;
-                        escape                  = FALSE;
+                        escape                  = false;
                         next_state              = HTML_BAD_STATE;
                         ptr++;
 
@@ -1607,9 +1653,9 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                         ptr++;
                     }
                     if (*ptr == '\\') {
-                        escape = TRUE;
+                        escape = true;
                     } else {
-                        escape = FALSE;
+                        escape = false;
                     }
                     break;
                 case HTML_RFC2397_INIT:
@@ -1628,7 +1674,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                         file_tmp_o1 = (file_buff_t *)cli_malloc(sizeof(file_buff_t));
                         if (!file_tmp_o1) {
                             cli_errmsg("cli_html_normalise: Unable to allocate memory for file_tmp_o1\n");
-                            goto abort;
+                            goto done;
                         }
                         file_tmp_o1->fd = -1;
 
@@ -1637,20 +1683,20 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                         if (LSTAT(filename, &statbuf) == -1) {
                             if (mkdir(filename, 0700) && errno != EEXIST) {
                                 cli_errmsg("Failed to create directory: %s\n", dirname);
-                                goto abort;
+                                goto done;
                             }
                         }
 
                         tmp_file = cli_gentemp(filename);
                         if (!tmp_file) {
-                            goto abort;
+                            goto done;
                         }
                         cli_dbgmsg("RFC2397 data file: %s\n", tmp_file);
                         file_tmp_o1->fd = open(tmp_file, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY, S_IWUSR | S_IRUSR);
                         free(tmp_file);
                         if (file_tmp_o1->fd < 0) {
                             cli_dbgmsg("open failed: %s\n", filename);
-                            goto abort;
+                            goto done;
                         }
                         file_tmp_o1->length = 0;
 
@@ -1669,7 +1715,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                         file_tmp_o1 = NULL;
                     }
                     state  = HTML_RFC2397_DATA;
-                    binary = TRUE;
+                    binary = true;
                     break;
                 case HTML_RFC2397_DATA:
                     if (*ptr == '&') {
@@ -1711,9 +1757,9 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                         ptr++;
                     }
                     if (*ptr == '\\') {
-                        escape = TRUE;
+                        escape = true;
                     } else {
-                        escape = FALSE;
+                        escape = false;
                     }
                     break;
                 case HTML_RFC2397_FINISH:
@@ -1727,10 +1773,10 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                         file_tmp_o1 = NULL;
                     }
                     state      = HTML_SKIP_WS;
-                    escape     = FALSE;
+                    escape     = false;
                     quoted     = NOT_QUOTED;
                     next_state = HTML_TAG_ARG;
-                    binary     = FALSE;
+                    binary     = false;
                     break;
                 case HTML_RFC2397_ESC:
                     if (length == 2) {
@@ -1775,12 +1821,33 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
         ptrend = NULL;
 
         if (js_state) {
-            js_process(js_state, js_begin, js_end, line, ptr, in_script, dirname);
+            js_process(js_state, js_begin, js_end, line, ptr, in_tag, dirname);
             js_begin = js_end = NULL;
-            if (!in_script) {
+            if (in_tag == TAG_DONT_EXTRACT) {
                 js_state = NULL;
             }
         }
+
+        if (in_tag == TAG_STYLE) {
+            if (ptr < style_begin) {
+                cli_errmsg("cli_html_normalise: style chunk size underflow\n");
+                goto done;
+            }
+
+            size_t chunk_size = ptr - style_begin;
+
+            if (style_buff == NULL) {
+                CLI_MALLOC(style_buff, chunk_size + 1);
+            } else {
+                CLI_REALLOC(style_buff, style_buff_size + chunk_size + 1);
+            }
+
+            memcpy(style_buff + style_buff_size, style_begin, chunk_size);
+
+            style_buff_size += chunk_size;
+            style_buff[style_buff_size] = '\0';
+        }
+
         if (look_for_screnc && ptr_screnc) {
             /* start found, and stuff before it already processed */
             ptr        = ptr_screnc;
@@ -1791,6 +1858,12 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
         }
         free(line);
         ptr = line = cli_readchunk(stream_in, m_area, 8192);
+
+        if (in_tag == TAG_STYLE) {
+            // reset style_begin to start of the next line
+            style_begin = line;
+        }
+
         if (in_screnc) {
             state      = HTML_JSDECODE_DECRYPT;
             next_state = HTML_BAD_STATE;
@@ -1800,11 +1873,46 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
             next_state       = state;
             state            = HTML_LOOKFOR_SCRENC;
         }
+
         if (next_state == state) {
             /* safeguard against infloop */
             cli_dbgmsg("htmlnorm.c: next_state == state, changing next_state\n");
             next_state = HTML_BAD_STATE;
         }
+    }
+
+    if (style_buff != NULL) {
+        // Found contents of <style> ... </style> block
+
+        // Create image extractor for style block
+        css_image_extractor_t extractor = new_css_image_extractor((const char *)style_buff);
+        if (NULL != extractor) {
+            uint8_t *image                  = NULL;
+            size_t image_len                = 0;
+            css_image_handle_t image_handle = NULL;
+
+            // Extract until there are no more images remaining.
+            while (false != css_image_extract_next(extractor,
+                                                   (const uint8_t **)&image,
+                                                   &image_len,
+                                                   &image_handle)) {
+                // Scan each extracted image. The magic scan will figure out the file type.
+                cl_error_t ret = cli_magic_scan_buff(image, image_len, ctx, NULL, LAYER_ATTRIBUTES_NONE);
+                if (CL_SUCCESS != ret) {
+                    cli_dbgmsg("Scan of image extracted from html <style> block returned: %s\n", cl_strerror(ret));
+                    free_extracted_image(image_handle);
+                    free_css_image_extractor(extractor);
+                    goto done;
+                }
+                free_extracted_image(image_handle);
+                image_handle = NULL;
+            }
+
+            free_css_image_extractor(extractor);
+        }
+
+        free(style_buff);
+        style_buff = NULL;
     }
 
     if (dconf_entconv) {
@@ -1824,9 +1932,11 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
             }
         }
     }
-    retval = TRUE;
-abort:
-    if (line) /* only needed for abort case */
+
+    retval = true;
+
+done:
+    if (line) /* only needed for done case */
         free(line);
     if (in_form_action)
         free(in_form_action);
@@ -1864,10 +1974,13 @@ abort:
         }
         free(file_tmp_o1);
     }
+    if (style_buff != NULL) {
+        free(style_buff);
+    }
     return retval;
 }
 
-int html_normalise_mem(unsigned char *in_buff, off_t in_size, const char *dirname, tag_arguments_t *hrefs, const struct cli_dconf *dconf)
+bool html_normalise_mem(cli_ctx *ctx, unsigned char *in_buff, off_t in_size, const char *dirname, tag_arguments_t *hrefs, const struct cli_dconf *dconf)
 {
     m_area_t m_area;
 
@@ -1876,24 +1989,25 @@ int html_normalise_mem(unsigned char *in_buff, off_t in_size, const char *dirnam
     m_area.offset = 0;
     m_area.map    = NULL;
 
-    return cli_html_normalise(-1, &m_area, dirname, hrefs, dconf);
+    return cli_html_normalise(ctx, -1, &m_area, dirname, hrefs, dconf);
 }
 
-int html_normalise_map(fmap_t *map, const char *dirname, tag_arguments_t *hrefs, const struct cli_dconf *dconf)
+bool html_normalise_map(cli_ctx *ctx, fmap_t *map, const char *dirname, tag_arguments_t *hrefs, const struct cli_dconf *dconf)
 {
-    int retval = FALSE;
+    bool retval = false;
     m_area_t m_area;
 
     m_area.length = map->len;
     m_area.offset = 0;
     m_area.map    = map;
-    retval        = cli_html_normalise(-1, &m_area, dirname, hrefs, dconf);
+    retval        = cli_html_normalise(ctx, -1, &m_area, dirname, hrefs, dconf);
     return retval;
 }
 
-int html_screnc_decode(fmap_t *map, const char *dirname)
+bool html_screnc_decode(fmap_t *map, const char *dirname)
 {
-    int count, retval = FALSE;
+    int count;
+    bool retval         = false;
     unsigned char *line = NULL, tmpstr[6];
     unsigned char *ptr, filename[1024];
     int ofd;
@@ -1910,7 +2024,7 @@ int html_screnc_decode(fmap_t *map, const char *dirname)
 
     if (ofd < 0) {
         cli_dbgmsg("open failed: %s\n", filename);
-        return FALSE;
+        return false;
     }
 
     while ((line = cli_readchunk(NULL, &m_area, 8192)) != NULL) {
@@ -1922,7 +2036,7 @@ int html_screnc_decode(fmap_t *map, const char *dirname)
         line = NULL;
     }
     if (!line) {
-        goto abort;
+        goto done;
     }
 
     /* Calculate the length of the encoded string */
@@ -1933,7 +2047,7 @@ int html_screnc_decode(fmap_t *map, const char *dirname)
             free(line);
             ptr = line = cli_readchunk(NULL, &m_area, 8192);
             if (!line) {
-                goto abort;
+                goto done;
             }
         }
         if (count < 6)
@@ -1964,9 +2078,9 @@ int html_screnc_decode(fmap_t *map, const char *dirname)
     cli_writen(ofd, "</script>", strlen("</script>"));
     if (screnc_state.length)
         cli_dbgmsg("html_screnc_decode: missing %u bytes\n", screnc_state.length);
-    retval = TRUE;
+    retval = true;
 
-abort:
+done:
     close(ofd);
     if (line) {
         free(line);

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2022 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2011-2013 Sourcefire, Inc.
  *
  *  Authors: aCaB <acab@clamav.net>
@@ -228,25 +228,36 @@ cl_error_t cli_scaniso(cli_ctx *ctx, size_t offset)
     const uint8_t *privol, *next;
     iso9660_t iso;
     int i;
+    cl_error_t status   = CL_SUCCESS;
+    cl_error_t ret      = CL_SUCCESS;
+    uint32_t nextJoliet = 0;
 
-    if (offset < 32768)
-        return CL_SUCCESS; /* Need 16 sectors at least 2048 bytes long */
+    if (offset < 32768) {
+        /* Need 16 sectors at least 2048 bytes long */
+        goto done;
+    }
 
     privol = fmap_need_off(ctx->fmap, offset, 2448 + 6);
-    if (!privol)
-        return CL_SUCCESS;
+    if (!privol) {
+        goto done;
+    }
 
     next = (uint8_t *)cli_memstr((char *)privol + 2049, 2448 + 6 - 2049, "CD001", 5);
-    if (!next)
-        return CL_SUCCESS; /* Find next volume descriptor */
+    if (!next) {
+        /* Find next volume descriptor */
+        goto done;
+    }
 
     iso.sectsz = (next - privol) - 1;
-    if (iso.sectsz * 16 > offset)
-        return CL_SUCCESS; /* Need room for 16 system sectors */
+    if (iso.sectsz * 16 > offset) {
+        /* Need room for 16 system sectors */
+        goto done;
+    }
 
     iso.blocksz = cli_readint32(privol + 128) & 0xffff;
     if (iso.blocksz != 512 && iso.blocksz != 1024 && iso.blocksz != 2048)
-        return CL_SUCCESS; /* Likely not a cdrom image */
+        /* Likely not a cdrom image */
+        goto done;
 
     iso.base_offset = offset - iso.sectsz * 16;
     iso.joliet      = 0;
@@ -283,59 +294,94 @@ cl_error_t cli_scaniso(cli_ctx *ctx, size_t offset)
 
     /* NOTE: freeing sector now. it is still safe to access as we don't alloc anymore */
     fmap_unneed_off(ctx->fmap, offset, 2448);
-    if (iso.joliet)
-        privol = next;
+    if (!iso.joliet) {
+        next = NULL;
+    }
 
-    cli_dbgmsg("in cli_scaniso\n");
-    if (cli_debug_flag) {
-        cli_dbgmsg("cli_scaniso: Raw sector size: %u\n", iso.sectsz);
-        cli_dbgmsg("cli_scaniso: Block size: %u\n", iso.blocksz);
+    nextJoliet = iso.joliet;
+    iso.joliet = 0;
 
-        cli_dbgmsg("cli_scaniso: Volume descriptor version: %u\n", privol[6]);
+    do {
+        cli_dbgmsg("in cli_scaniso\n");
+        if (cli_debug_flag) {
+            cli_dbgmsg("cli_scaniso: Raw sector size: %u\n", iso.sectsz);
+            cli_dbgmsg("cli_scaniso: Block size: %u\n", iso.blocksz);
+
+            cli_dbgmsg("cli_scaniso: Volume descriptor version: %u\n", privol[6]);
 
 #define ISOSTRING(src, len) iso_string(&iso, (src), (len))
-        cli_dbgmsg("cli_scaniso: System: %s\n", ISOSTRING(privol + 8, 32));
-        cli_dbgmsg("cli_scaniso: Volume: %s\n", ISOSTRING(privol + 40, 32));
+            cli_dbgmsg("cli_scaniso: System: %s\n", ISOSTRING(privol + 8, 32));
+            cli_dbgmsg("cli_scaniso: Volume: %s\n", ISOSTRING(privol + 40, 32));
 
-        cli_dbgmsg("cli_scaniso: Volume space size: 0x%x blocks\n", cli_readint32(&privol[80]));
-        cli_dbgmsg("cli_scaniso: Volume %u of %u\n", cli_readint32(privol + 124) & 0xffff, cli_readint32(privol + 120) & 0xffff);
+            cli_dbgmsg("cli_scaniso: Volume space size: 0x%x blocks\n", cli_readint32(&privol[80]));
+            cli_dbgmsg("cli_scaniso: Volume %u of %u\n", cli_readint32(privol + 124) & 0xffff, cli_readint32(privol + 120) & 0xffff);
 
-        cli_dbgmsg("cli_scaniso: Volume Set: %s\n", ISOSTRING(privol + 190, 128));
-        cli_dbgmsg("cli_scaniso: Publisher: %s\n", ISOSTRING(privol + 318, 128));
-        cli_dbgmsg("cli_scaniso: Data Preparer: %s\n", ISOSTRING(privol + 446, 128));
-        cli_dbgmsg("cli_scaniso: Application: %s\n", ISOSTRING(privol + 574, 128));
+            cli_dbgmsg("cli_scaniso: Volume Set: %s\n", ISOSTRING(privol + 190, 128));
+            cli_dbgmsg("cli_scaniso: Publisher: %s\n", ISOSTRING(privol + 318, 128));
+            cli_dbgmsg("cli_scaniso: Data Preparer: %s\n", ISOSTRING(privol + 446, 128));
+            cli_dbgmsg("cli_scaniso: Application: %s\n", ISOSTRING(privol + 574, 128));
 
 #define ISOTIME(s, n) cli_dbgmsg("cli_scaniso: "s                         \
                                  ": %c%c%c%c-%c%c-%c%c %c%c:%c%c:%c%c\n", \
                                  privol[n], privol[n + 1], privol[n + 2], privol[n + 3], privol[n + 4], privol[n + 5], privol[n + 6], privol[n + 7], privol[n + 8], privol[n + 9], privol[n + 10], privol[n + 11], privol[n + 12], privol[n + 13])
-        ISOTIME("Volume creation time", 813);
-        ISOTIME("Volume modification time", 830);
-        ISOTIME("Volume expiration time", 847);
-        ISOTIME("Volume effective time", 864);
+            ISOTIME("Volume creation time", 813);
+            ISOTIME("Volume modification time", 830);
+            ISOTIME("Volume expiration time", 847);
+            ISOTIME("Volume effective time", 864);
 
-        cli_dbgmsg("cli_scaniso: Path table size: 0x%x\n", cli_readint32(privol + 132) & 0xffff);
-        cli_dbgmsg("cli_scaniso: LSB Path Table: 0x%x\n", cli_readint32(privol + 140));
-        cli_dbgmsg("cli_scaniso: Opt LSB Path Table: 0x%x\n", cli_readint32(privol + 144));
-        cli_dbgmsg("cli_scaniso: MSB Path Table: 0x%x\n", cbswap32(cli_readint32(privol + 148)));
-        cli_dbgmsg("cli_scaniso: Opt MSB Path Table: 0x%x\n", cbswap32(cli_readint32(privol + 152)));
-        cli_dbgmsg("cli_scaniso: File Structure Version: %u\n", privol[881]);
+            cli_dbgmsg("cli_scaniso: Path table size: 0x%x\n", cli_readint32(privol + 132) & 0xffff);
+            cli_dbgmsg("cli_scaniso: LSB Path Table: 0x%x\n", cli_readint32(privol + 140));
+            cli_dbgmsg("cli_scaniso: Opt LSB Path Table: 0x%x\n", cli_readint32(privol + 144));
+            cli_dbgmsg("cli_scaniso: MSB Path Table: 0x%x\n", cbswap32(cli_readint32(privol + 148)));
+            cli_dbgmsg("cli_scaniso: Opt MSB Path Table: 0x%x\n", cbswap32(cli_readint32(privol + 152)));
+            cli_dbgmsg("cli_scaniso: File Structure Version: %u\n", privol[881]);
 
-        if (iso.joliet)
-            cli_dbgmsg("cli_scaniso: Joliet level %u\n", iso.joliet);
+            if (iso.joliet)
+                cli_dbgmsg("cli_scaniso: Joliet level %u\n", iso.joliet);
+        }
+
+        if (privol[156 + 26] || privol[156 + 27]) {
+            cli_dbgmsg("cli_scaniso: Interleaved root directory is not supported\n");
+            status = CL_SUCCESS;
+            goto done;
+        }
+
+        iso.ctx = ctx;
+        ret     = cli_hashset_init(&iso.dir_blocks, 1024, 80);
+        if (ret != CL_SUCCESS) {
+            status = ret;
+            goto done;
+        }
+
+        ret = iso_parse_dir(&iso, cli_readint32(privol + 156 + 2) + privol[156 + 1], cli_readint32(privol + 156 + 10));
+        cli_hashset_destroy(&iso.dir_blocks);
+        switch (ret) {
+            case CL_CLEAN:
+                /* fallthrough */
+            case CL_EFORMAT:
+                /* fallthrough */
+            case CL_EPARSE:
+                break;
+            default:
+                /*Recoverable errors are above, anything else we need to return.*/
+                status = ret;
+                goto done;
+        }
+        if (ret > status) {
+            status = ret;
+        }
+
+        privol     = next;
+        next       = NULL;
+        iso.joliet = nextJoliet;
+
+    } while (privol);
+
+done:
+
+    if (status == CL_BREAK) {
+        status = CL_SUCCESS;
     }
 
-    if (privol[156 + 26] || privol[156 + 27]) {
-        cli_dbgmsg("cli_scaniso: Interleaved root directory is not supported\n");
-        return CL_SUCCESS;
-    }
-
-    iso.ctx = ctx;
-    i       = cli_hashset_init(&iso.dir_blocks, 1024, 80);
-    if (i != CL_SUCCESS)
-        return i;
-    i = iso_parse_dir(&iso, cli_readint32(privol + 156 + 2) + privol[156 + 1], cli_readint32(privol + 156 + 10));
-    cli_hashset_destroy(&iso.dir_blocks);
-    if (i == CL_BREAK)
-        return CL_SUCCESS;
-    return i;
+    return status;
 }

@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily ClamAV virus database update
+
+[Timer]
+OnCalendar=daily
+AccuracySec=1h
+RandomizedDelaySec=1h
+Persistent=true
+
+[Install]
+WantedBy=timers.target

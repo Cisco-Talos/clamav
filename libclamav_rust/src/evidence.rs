@@ -1,7 +1,7 @@
 /*
  *  Functions and structures for recording, reporting evidence towards a scan verdict.
  *
- *  Copyright (C) 2022 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2022-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *
  *  Authors: Micah Snyder
  *
@@ -70,7 +70,7 @@ pub struct IndicatorMeta {
 /// Initialize a match vector
 #[no_mangle]
 pub extern "C" fn evidence_new() -> sys::evidence_t {
-    Box::into_raw(Box::new(Evidence::default())) as sys::evidence_t
+    Box::into_raw(Box::<Evidence>::default()) as sys::evidence_t
 }
 
 /// Free the evidence
@@ -147,7 +147,7 @@ pub unsafe extern "C" fn _evidence_get_indicator(
                 return meta.last().unwrap().static_virname as *const c_char;
             } else {
                 // no alert at that index. return NULL
-                return std::ptr::null();
+                std::ptr::null()
             }
         }
         IndicatorType::PotentiallyUnwanted => {
@@ -155,7 +155,7 @@ pub unsafe extern "C" fn _evidence_get_indicator(
                 return meta.last().unwrap().static_virname as *const c_char;
             } else {
                 // no alert at that index. return NULL
-                return std::ptr::null();
+                std::ptr::null()
             }
         }
     }

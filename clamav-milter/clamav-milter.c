@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2022 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2008-2013 Sourcefire, Inc.
  *
  *  Author: aCaB <acab@clamav.net>
@@ -122,13 +122,14 @@ int main(int argc, char **argv)
         printf("\n");
         printf("                       Clam AntiVirus: Milter Mail Scanner %s\n", get_version());
         printf("           By The ClamAV Team: https://www.clamav.net/about.html#credits\n");
-        printf("           (C) 2022 Cisco Systems, Inc.\n");
+        printf("           (C) 2023 Cisco Systems, Inc.\n");
         printf("\n");
         printf("    %s [-c <config-file>]\n\n", argv[0]);
         printf("\n");
-        printf("    --help                   -h       Show this help\n");
-        printf("    --version                -V       Show version\n");
-        printf("    --config-file <file>     -c       Read configuration from file\n");
+        printf("    --help                   -h             Show this help\n");
+        printf("    --version                -V             Show version\n");
+        printf("    --config-file <file>     -c             Read configuration from file\n");
+        printf("    --pid=FILE               -p FILE        Write the daemon's pid to FILE\n");
         printf("\n");
         optfree(opts);
         return 0;
@@ -178,8 +179,8 @@ int main(int argc, char **argv)
         char myname[255];
 
         if (((opt = optget(opts, "ReportHostname"))->enabled &&
-             strncpy(myname, opt->strarg, sizeof(myname))) ||
-            !gethostname(myname, sizeof(myname))) {
+             strncpy(myname, opt->strarg, sizeof(myname) - 1)) ||
+            !gethostname(myname, sizeof(myname) - 1)) {
 
             myname[sizeof(myname) - 1] = '\0';
             snprintf(xvirushdr, sizeof(xvirushdr), "clamav-milter %s at %s",

@@ -1,7 +1,7 @@
 /*
  *  Unit tests for clamd.
  *
- *  Copyright (C) 2013-2022 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2009-2013 Sourcefire, Inc.
  *
  *  Authors: Török Edvin
@@ -224,23 +224,30 @@ static struct basic_test {
 
 static void *recvpartial(int sd, size_t *len, int partial)
 {
-    char *buf  = NULL;
-    size_t off = 0;
-    int rc;
+    char *buf       = NULL;
+    size_t buf_size = 0;
+    size_t off      = 0;
+    ssize_t bread;
 
     *len = 0;
+
     do {
-        if (off + BUFSIZ > *len) {
-            *len += BUFSIZ + 1;
-            buf = realloc(buf, *len);
+        if (off + BUFSIZ > buf_size) {
+            buf_size += BUFSIZ + 1;
+            buf = realloc(buf, buf_size);
             ck_assert_msg(!!buf, "Cannot realloc buffer\n");
         }
-        rc = recv(sd, buf + off, BUFSIZ, 0);
-        ck_assert_msg(rc != -1, "recv() failed: %s\n", strerror(errno));
-        off += rc;
-    } while (rc && (!partial || !memchr(buf, '\0', off)));
-    *len      = off;
-    buf[*len] = '\0';
+        bread = recv(sd, buf + off, BUFSIZ, 0);
+        ck_assert_msg(bread != -1, "recv() failed: %s\n", strerror(errno));
+
+        off += bread;
+    } while (bread && (!partial || !memchr(buf, '\0', off)));
+
+    // Make sure the response buffer is NULL terminated.
+    // But note that off-1 will likely be a '\n' newline character, and we don't want to overwrite that.
+    buf[MIN(off, buf_size - 1)] = '\0';
+
+    *len = off;
     return buf;
 }
 
@@ -516,7 +523,7 @@ static struct cmds {
 START_TEST(test_fildes)
 {
     char nreply[BUFSIZ], nsend[BUFSIZ];
-    int fd        = open(SCANFILE, O_RDONLY);
+    int fd;
     int closefd   = 0;
     int singlemsg = 0;
     const struct cmds *cmd;
@@ -672,6 +679,7 @@ START_TEST(test_connections)
     num_fds = MIN(rlim.rlim_cur - 5, 250);
 
     sock = malloc(sizeof(int) * num_fds);
+    memset(sock, -1, sizeof(int) * num_fds);
 
     ck_assert_msg(!!sock, "malloc failed\n");
 
@@ -681,8 +689,10 @@ START_TEST(test_connections)
         if (sockd == -1) {
             /* close the previous one, to leave space for one more connection */
             i--;
-            close(sock[i]);
-            sock[i] = -1;
+            if (sock[i] > 0) {
+                close(sock[i]);
+                sock[i] = -1;
+            }
 
             num_fds = i;
             break;

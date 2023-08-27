@@ -46,7 +46,8 @@ Example
 # Default: no
 #LogRotate yes
 
-# This option allows you to save the process identifier of the daemon
+# Write the daemon's pid to the specified file.
+# You must run freshclam with --daemon (-d) for freshclam to run as a daemon.
 # Default: disabled
 #PidFile "C:\Program Files\ClamAV\freshclam.pid"
 

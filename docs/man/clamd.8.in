@@ -112,6 +112,15 @@ Enable debug mode.
 .TP
 \fB\-c FILE, \-\-config\-file=FILE\fR
 Read configuration from FILE.
+.TP
+\fB\-\-fail\-if\-cvd\-older\-than=days\fR
+Return with a nonzero error code if the virus database is older than the specified number of days.
+.TP
+\fB\-\-datadir=DIRECTORY\fR
+Load signatures from DIRECTORY.
+.TP
+\fB\-p FILE, \-\-pid=FILE\fR
+Write the daemon's pid to FILE.
 
 .SH "ENVIRONMENT VARIABLES"
 .LP

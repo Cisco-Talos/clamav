@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2022 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Alberto Wu
@@ -72,8 +72,10 @@ static char exec86(uint8_t aelle, uint8_t cielle, char *curremu, int *retval)
         switch (opcode) {
             case 0xeb:
                 len++;
+                /* fall-through */
             case 0x0a:
                 len++;
+                /* fall-through */
             case 0x90:
             case 0xf8:
             case 0xf9:

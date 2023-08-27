@@ -24,12 +24,19 @@
 
 #if !(defined(C_DARWIN) || defined(_WIN32))
 /**
- * @brief Set the tls ca bundle to a custom value using the CURL_CA_BUNDLE env var
+ * @brief Set the tls ca bundle to a custom value using the CURL_CA_BUNDLE environment variable.
  *
  * @param curl Pointer to the curl connection handle.
  */
 void set_tls_ca_bundle(CURL *curl);
 #endif
+
+/**
+ * @brief Set the path for a client certificate PEM file and a private key PEM file using the FRESHCLAM_CLIENT_CERT, FRESHCLAM_CLIENT_KEY, and FRESHCLAM_CLIENT_KEY_PASSWD environment variables.
+ *
+ * @param curl Pointer to the curl connection handle.
+ */
+cl_error_t set_tls_client_certificate(CURL *curl);
 
 /**
  * @brief Load system and trusted root certificates into memory. Any errors

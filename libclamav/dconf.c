@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2022 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
@@ -106,6 +106,7 @@ static struct dconf_module modules[] = {
     {"ARCHIVE", "GPT", ARCH_CONF_GPT, 1},
     {"ARCHIVE", "APM", ARCH_CONF_APM, 1},
     {"ARCHIVE", "EGG", ARCH_CONF_EGG, 1},
+    {"ARCHIVE", "UDF", ARCH_CONF_UDF, 1},
 
     {"DOCUMENT", "HTML", DOC_CONF_HTML, 1},
     {"DOCUMENT", "RTF", DOC_CONF_RTF, 1},

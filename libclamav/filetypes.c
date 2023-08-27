@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2022 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
@@ -137,6 +137,7 @@ static const struct ftmap_s {
     { "CL_TYPE_LNK",          CL_TYPE_LNK          },
     { "CL_TYPE_EGG",          CL_TYPE_EGG          },
     { "CL_TYPE_EGGSFX",       CL_TYPE_EGGSFX       },
+    { "CL_TYPE_UDF",          CL_TYPE_UDF          },
     { NULL,                   CL_TYPE_IGNORED      }
 };
 // clang-format on

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2019-2022 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2019-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *
  *  Authors: Mickey Sola
  *
@@ -138,12 +138,12 @@ static int onas_ddd_grow_wdlt(void)
 int onas_ddd_init(uint64_t nwatches, size_t ht_size)
 {
 
-    const char *nwatch_file = "/proc/sys/fs/inotify/max_user_watches";
-    int nwfd                = 0;
-    int ret                 = 0;
-    char nwatch_str[MAX_WATCH_LEN];
-    char *p  = NULL;
-    nwatches = 0;
+    const char *nwatch_file            = "/proc/sys/fs/inotify/max_user_watches";
+    int nwfd                           = 0;
+    int ret                            = 0;
+    char nwatch_str[MAX_WATCH_LEN + 1] = {0};
+    char *p                            = NULL;
+    nwatches                           = 0;
 
     nwfd = open(nwatch_file, O_RDONLY);
     if (nwfd < 0) return CL_EOPEN;
@@ -202,15 +202,20 @@ static int onas_ddd_watch_hierarchy(const char *pathname, size_t len, int fd, ui
     struct onas_element *elem = NULL;
     int wd                    = 0;
 
-    if (onas_ht_get(ddd_ht, pathname, len, &elem) != CL_SUCCESS) return CL_EARG;
+    if (onas_ht_get(ddd_ht, pathname, len, &elem) != CL_SUCCESS) {
+        logg(LOGG_ERROR, "ClamInotif: could not add element to hash table for %s\n", pathname);
+        return CL_EARG;
+    }
 
     hnode = elem->data;
 
     if (type & ONAS_IN) {
         wd = inotify_add_watch(fd, pathname, (uint32_t)mask);
 
-        if (wd < 0) return CL_EARG;
-
+        if (wd < 0) {
+            logg(LOGG_ERROR, "ClamInotif: watch descriptor issue when adding watch for %s\n", pathname);
+            return CL_EARG;
+        }
         if ((uint32_t)wd >= wdlt_len) {
             onas_ddd_grow_wdlt();
         }
@@ -221,9 +226,13 @@ static int onas_ddd_watch_hierarchy(const char *pathname, size_t len, int fd, ui
 
         hnode->watched |= ONAS_INWATCH;
     } else if (type & ONAS_FAN) {
-        if (fanotify_mark(fd, FAN_MARK_ADD, mask, AT_FDCWD, hnode->pathname) < 0) return CL_EARG;
+        if (fanotify_mark(fd, FAN_MARK_ADD, mask, AT_FDCWD, hnode->pathname) < 0) {
+            logg(LOGG_ERROR, "ClamInotif: error when marking %s to be watched by fanotify\n", hnode->pathname);
+            return CL_EARG;
+        }
         hnode->watched |= ONAS_FANWATCH;
     } else {
+        logg(LOGG_ERROR, "ClamInotif: when adding watch for %s, neither fanotify or inotify were specified\n", pathname);
         return CL_EARG;
     }
 
@@ -235,14 +244,18 @@ static int onas_ddd_watch_hierarchy(const char *pathname, size_t len, int fd, ui
 
         size_t size      = len + strlen(curr->dirname) + 2;
         char *child_path = (char *)cli_malloc(size);
-        if (child_path == NULL)
+        if (child_path == NULL) {
+            logg(LOGG_ERROR, "ClamInotif: out of memory when when adding child for %s\n", hnode->pathname);
             return CL_EMEM;
+        }
+
         if (hnode->pathname[len - 1] == '/')
             snprintf(child_path, --size, "%s%s", hnode->pathname, curr->dirname);
         else
             snprintf(child_path, size, "%s/%s", hnode->pathname, curr->dirname);
 
         if (onas_ddd_watch_hierarchy(child_path, strlen(child_path), fd, mask, type)) {
+            logg(LOGG_ERROR, "ClamInotif: issue when adding watch for %s\n", child_path);
             return CL_EARG;
         }
         free(child_path);
@@ -474,7 +487,7 @@ void *onas_ddd_th(void *arg)
 
         include_list = onas_get_opt_list(pt->strarg, &num_indirs, &err);
         if (NULL == include_list) {
-            logg(LOGG_ERROR, "ClamInotif: could not parse include list (%d)\n", err);
+            logg(LOGG_ERROR, "ClamInotif: could not parse include list (%s)\n", cl_strerror(err));
             return NULL;
         }
 
@@ -531,7 +544,7 @@ void *onas_ddd_th(void *arg)
 
         exclude_list = onas_get_opt_list(pt->strarg, &num_exdirs, &err);
         if (NULL == exclude_list) {
-            logg(LOGG_ERROR, "ClamInotif: could not parse exclude list (%d)\n", err);
+            logg(LOGG_ERROR, "ClamInotif: could not parse exclude list (%s)\n", cl_strerror(err));
             return NULL;
         }
 
@@ -568,7 +581,7 @@ void *onas_ddd_th(void *arg)
                 if (err) {
 
                     if (0 == errno) {
-                        logg(LOGG_ERROR, "ClamInotif: could not watch path '%s', %d\n ", pt->strarg, err);
+                        logg(LOGG_ERROR, "ClamInotif: could not watch path '%s', %s\n ", pt->strarg, cl_strerror(err));
                     } else {
                         logg(LOGG_ERROR, "ClamInotif: could not watch path '%s', %s\n", pt->strarg, strerror(errno));
                         if (errno == EINVAL && optget(ctx->clamdopts, "OnAccessPrevention")->enabled) {
@@ -599,7 +612,7 @@ void *onas_ddd_th(void *arg)
                 err = onas_ddd_watch(include_list[idx], ctx->fan_fd, ctx->fan_mask, onas_in_fd, in_mask);
                 if (err) {
                     if (0 == errno) {
-                        logg(LOGG_ERROR, "ClamInotif: could not watch path '%s', %d\n ", include_list[idx], err);
+                        logg(LOGG_ERROR, "ClamInotif: could not watch path '%s', %s\n ", include_list[idx], cl_strerror(err));
                     } else {
                         logg(LOGG_ERROR, "ClamInotif: could not watch path '%s', %s\n", include_list[idx], strerror(errno));
                         if (errno == EINVAL && optget(ctx->clamdopts, "OnAccessPrevention")->enabled) {

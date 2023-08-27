@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2022 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2008-2013 Sourcefire, Inc.
  *
  *  Author: aCaB <acab@clamav.net>
@@ -61,7 +61,7 @@ static sfsistat (*InfectedAction)(SMFICTX *ctx);
 static char *rejectfmt = NULL;
 
 int addxvirus = 0; /* 0 - don't add | 1 - replace | 2 - add */
-char xvirushdr[255];
+char xvirushdr[300];
 char *viraction = NULL;
 int multircpt   = 1;
 

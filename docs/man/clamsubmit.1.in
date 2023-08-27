@@ -34,8 +34,10 @@ The name of the virus detected as false positive. This option is required for fa
 .LP
 clamsubmit uses the following environment variables:
 .TP
-CURL_CA_BUNDLE - May be set to the path of a file (bundle) containing one or more CA certificates. This will override the default openssl certificate path.
+\fBCURL_CA_BUNDLE\fR
+(Linux/Unix only, excluding macOS) May be set to the path of a file (bundle) containing one or more CA certificates. This will override the default openssl certificate path.
 
+.TP
 Note that the CURL_CA_BUNDLE environment variable is also used by the curl command line tool for the same purpose.
 
 .SH "AUTHOR"

@@ -1,4 +1,4 @@
-# Copyright (C) 2020-2022 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+# Copyright (C) 2020-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
 
 if(WIN32)
     add_definitions(-DWIN32_LEAN_AND_MEAN)
@@ -58,6 +58,8 @@ if(ENABLE_SHARED_LIB)
 
     if(WIN32)
         set_target_properties(freshclam PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
+    elseif(UNIX AND NOT APPLE)
+        target_link_options(freshclam PRIVATE "-Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/libfreshclam.map")
     endif()
     set_target_properties(freshclam PROPERTIES
         COMPILE_FLAGS "${WARNCFLAGS}"

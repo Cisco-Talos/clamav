@@ -1,4 +1,4 @@
-# Copyright (C) 2020-2022 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+# Copyright (C) 2020-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
 
 #
 # Decrypt test files
@@ -48,16 +48,7 @@ if(ENABLE_APP)
     target_link_libraries(check_fpu_endian
         PRIVATE
             ClamAV::libclamav
-            libcheck::check
-            tomsfastmath
-            JSONC::jsonc
-            ${LIBMSPACK}
-            OpenSSL::SSL
-            OpenSSL::Crypto
-            ZLIB::ZLIB
-            BZip2::BZip2
-            PCRE2::pcre2
-            LibXml2::LibXml2)
+            libcheck::check)
     if(ENABLE_SHARED_LIB)
         target_link_libraries(check_fpu_endian
             PRIVATE
@@ -84,16 +75,7 @@ if(ENABLE_APP)
         PRIVATE
             ClamAV::libclamav
             ClamAV::common
-            libcheck::check
-            tomsfastmath
-            JSONC::jsonc
-            ${LIBMSPACK}
-            OpenSSL::SSL
-            OpenSSL::Crypto
-            ZLIB::ZLIB
-            BZip2::BZip2
-            PCRE2::pcre2
-            LibXml2::LibXml2)
+            libcheck::check)
     if(ENABLE_SHARED_LIB)
         target_link_libraries(check_clamd
             PRIVATE
@@ -132,16 +114,8 @@ target_sources(check_clamav
 target_link_libraries(check_clamav
     PRIVATE
         ClamAV::libclamav
-        libcheck::check
-        tomsfastmath
-        JSONC::jsonc
-        ${LIBMSPACK}
-        OpenSSL::SSL
-        OpenSSL::Crypto
-        ZLIB::ZLIB
-        BZip2::BZip2
-        PCRE2::pcre2
-        LibXml2::LibXml2)
+        ClamAV::common
+        libcheck::check)
 if (ENABLE_UNRAR)
     if(ENABLE_SHARED_LIB)
         target_link_libraries(check_clamav

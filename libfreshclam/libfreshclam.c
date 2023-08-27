@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2022 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *  Copyright (C) 2002-2007 Tomasz Kojm <tkojm@clamav.net>
  *
@@ -56,6 +56,7 @@
 
 // libclamav
 #include "clamav.h"
+#include "clamav_rust.h"
 #include "others.h"
 #include "regex_list.h"
 #include "str.h"
@@ -130,6 +131,12 @@ fc_error_t fc_initialize(fc_config *fcConfig)
     if (NULL == fcConfig) {
         printf("fc_initialize: Invalid arguments.\n");
         return status;
+    }
+
+    /* Rust logging initialization */
+    if (!clrs_log_init()) {
+        cli_dbgmsg("Unexpected problem occurred while setting up rust logging... continuing without rust logging. \
+                    Please submit an issue to https://github.com/Cisco-Talos/clamav");
     }
 
     /* Initilize libcurl */
@@ -424,6 +431,10 @@ fc_error_t fc_test_database(const char *dbFilename, int bBytecodeEnabled)
         status = FC_ETESTFAIL;
         goto done;
     }
+
+    // Disable cache as testing the database doesn't need caching,
+    // having cache will only waste time and memory.
+    engine->engine_options |= ENGINE_OPTIONS_DISABLE_CACHE;
 
     cl_engine_set_clcb_stats_submit(engine, NULL);
 

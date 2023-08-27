@@ -1,4 +1,4 @@
-# Copyright (C) 2020-2022 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+# Copyright (C) 2020-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
 
 """
 Run clamscan tests.
@@ -29,7 +29,7 @@ class TC(testcase.TestCase):
         TC.heuristics_testfile = TC.path_tmp / 'heuristics-test.zip'
         with ZipFile(str(TC.heuristics_testfile), 'w', ZIP_DEFLATED) as zf:
             # Add truncted PNG file that will alert with  --alert-broken-media
-            with open(TC.path_source / 'logo.png', 'br') as logo_png:
+            with (TC.path_source / 'logo.png').open('br') as logo_png:
                 zf.writestr('logo.png.truncated', logo_png.read(6378))
 
             # Add clam.exe which will alert normally

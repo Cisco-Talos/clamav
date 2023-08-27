@@ -83,7 +83,7 @@ Log additional information about the infected file, such as its size and hash, t
 Default: no
 .TP
 \fBPidFile STRING\fR
-Save the process identifier of a listening daemon (main thread) to a specified file.
+Write the daemon's pid to the specified file.
 .br
 Default: disabled
 .TP
@@ -101,6 +101,11 @@ Default: defined at configuration (/usr/local/share/clamav)
 Only load the official signatures published by the ClamAV project.
 .br
 Default: no
+.TP
+\fBFailIfCvdOlderThan NUMBER\fR
+Return with a nonzero error code if the virus database is older than the specified number of days.
+.br
+Default: -1
 .TP
 \fBLocalSocket STRING\fR
 Path to a local (Unix) socket the daemon will listen on.
@@ -530,6 +535,18 @@ Default: no
 Alert on raw DMG image files containing partition intersections.
 .br
 Default: no
+.TP
+\fBDisableCache\fR
+This option allows you to disable the caching feature of the engine.
+.br
+By default, the engine will store an MD5 in a cache of any files that are not flagged as virus or that hit limits checks. \fBWarning: Disabling the cache will have a negative performance impact on large scans.\fR
+.br
+Default: no
+.TP
+\fBCacheSize\fR
+This option allows you to set the number of entries the cache can store. The value should be a square number or will be rounded up to the nearest square number.
+.br
+Default: 65536
 .TP
 \fBForceToDisk\fR
 This option causes memory or nested map scans to dump the content to disk.

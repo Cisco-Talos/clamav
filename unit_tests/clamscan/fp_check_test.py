@@ -1,4 +1,4 @@
-# Copyright (C) 2020-2022 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+# Copyright (C) 2020-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
 
 """
 Run {valgrind} {valgrind_args} {clamscan} tests.
@@ -19,7 +19,7 @@ class TC(testcase.TestCase):
         super(TC, cls).setUpClass()
 
         TC.test_file = TC.path_tmp / "test_file"
-        with open(TC.test_file, "wb") as testfile:
+        with TC.test_file.open('wb') as testfile:
             testfile.write(
                 b"""<?php
 IGNORE_user_abort(asdf) scandir(asdfasdfasf]);
@@ -50,7 +50,7 @@ rename()
         TC.test_file_zipped = TC.path_tmp / 'test_file.zip'
         with ZipFile(str(TC.test_file_zipped), 'w', ZIP_DEFLATED) as zf:
             # Add truncted PNG file that will alert with  --alert-broken-media
-            with open(TC.path_source / 'logo.png', 'br') as logo_png:
+            with (TC.path_source / 'logo.png').open('br') as logo_png:
                 zf.writestr('test_file', b"""<?php
 IGNORE_user_abort(asdf) scandir(asdfasdfasf]);
 foreach(asdfasfs) strpos(asdfasfsfasf) sdfasdfasdf .php.suspected

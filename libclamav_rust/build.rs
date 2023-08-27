@@ -55,7 +55,13 @@ const BINDGEN_FUNCTIONS: &[&str] = &[
 ];
 
 // Generate bindings for these types (structs, enums):
-const BINDGEN_TYPES: &[&str] = &["cli_matcher", "cli_ac_data", "cli_ac_result"];
+const BINDGEN_TYPES: &[&str] = &[
+    "cli_matcher",
+    "cli_ac_data",
+    "cli_ac_result",
+    "css_image_extractor_t",
+    "css_image_handle_t",
+];
 
 // Find the required functions and types in these headers:
 const BINDGEN_HEADERS: &[&str] = &[
@@ -63,6 +69,7 @@ const BINDGEN_HEADERS: &[&str] = &[
     "../libclamav/matcher-ac.h",
     "../libclamav/others.h",
     "../libclamav/dsig.h",
+    "../libclamav/htmlnorm.h",
 ];
 
 // Find the required headers in these directories:
@@ -185,7 +192,7 @@ fn detect_clamav_build() -> Result<(), &'static str> {
 
         // LLVM is optional, and don't have a path to each library like we do with the other libs.
         let llvm_libs = env::var("LLVM_LIBS").unwrap_or("".into());
-        if llvm_libs != "" {
+        if !llvm_libs.is_empty() {
             match env::var("LLVM_DIRS") {
                 Err(env::VarError::NotPresent) => eprintln!("LLVM_DIRS not set"),
                 Err(env::VarError::NotUnicode(_)) => return Err("environment value not unicode"),
@@ -202,7 +209,7 @@ fn detect_clamav_build() -> Result<(), &'static str> {
 
             llvm_libs
                 .split(',')
-                .for_each(|filepath_str| match parse_lib_path(&filepath_str) {
+                .for_each(|filepath_str| match parse_lib_path(filepath_str) {
                     Ok(parsed_path) => {
                         println!("cargo:rustc-link-search={}", parsed_path.dir);
                         eprintln!("  - requesting that rustc link {:?}", &parsed_path.libname);
@@ -281,7 +288,7 @@ struct ParsedLibraryPath {
 
 // Parse a library path, returning the portion expected after the `-l`, and the
 // directory containing the library
-fn parse_lib_path<'a>(path: &'a str) -> Result<ParsedLibraryPath, &'static str> {
+fn parse_lib_path(path: &str) -> Result<ParsedLibraryPath, &'static str> {
     let path = PathBuf::from(path);
     let file_name = path
         .file_name()

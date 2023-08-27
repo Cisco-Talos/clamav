@@ -1,7 +1,7 @@
 /*
  *  Unit tests for JS normalizer.
  *
- *  Copyright (C) 2013-2022 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2008-2013 Sourcefire, Inc.
  *
  *  Authors: Török Edvin
@@ -187,7 +187,7 @@ START_TEST(js_begin_end)
         buf[p]   = ' ';
     }
     strncpy(buf + 8192, " stuff stuff <script language='javascript'> function () {}", 8192);
-    ck_assert_msg(html_normalise_mem((unsigned char *)buf, sizeof(buf), NULL, NULL, dconf) == 1, "normalise");
+    ck_assert_msg(html_normalise_mem(NULL, (unsigned char *)buf, sizeof(buf), NULL, NULL, dconf) == 1, "normalise");
 }
 END_TEST
 
@@ -198,7 +198,7 @@ START_TEST(multiple_scripts)
                  "<script language='Javascript'> function bar() {} </script>";
 
     ck_assert_msg(!!dconf, "failed to init dconf");
-    ck_assert_msg(html_normalise_mem((unsigned char *)buf, sizeof(buf), NULL, NULL, dconf) == 1, "normalise");
+    ck_assert_msg(html_normalise_mem(NULL, (unsigned char *)buf, sizeof(buf), NULL, NULL, dconf) == 1, "normalise");
     /* TODO: test that both had been normalized */
 }
 END_TEST
@@ -398,18 +398,22 @@ START_TEST(js_buffer)
     const char s_exp[] = "<script>";
     const char e_exp[] = "</script>";
     char *tst          = malloc(len);
-    char *exp          = malloc(len + sizeof(s_exp) + sizeof(e_exp) - 2);
+
+    const size_t explen = len + sizeof(s_exp) + sizeof(e_exp) - 2;
+    char *exp           = malloc(len + sizeof(s_exp) + sizeof(e_exp) - 2);
 
     ck_assert_msg(!!tst, "malloc");
     ck_assert_msg(!!exp, "malloc");
 
-    memset(tst, 'a', len);
+    memset(tst, 'a', len - 1);
     strncpy(tst, s, strlen(s));
     strncpy(tst + len - sizeof(e), e, sizeof(e));
+    tst[len - 1] = '\0';
 
     strncpy(exp, s_exp, len);
     strncpy(exp + sizeof(s_exp) - 1, tst, len - 1);
     strncpy(exp + sizeof(s_exp) + len - 2, e_exp, sizeof(e_exp));
+    exp[explen - 1] = '\0';
 
     tokenizer_test(tst, exp, 1);
     free(exp);
@@ -430,7 +434,7 @@ START_TEST(screnc_infloop)
         buf[p] = 'a';
     }
     strncpy(buf + 24626, "#@~^ ", 10);
-    ck_assert_msg(html_normalise_mem((unsigned char *)buf, sizeof(buf), NULL, NULL, dconf) == 1, "normalise");
+    ck_assert_msg(html_normalise_mem(NULL, (unsigned char *)buf, sizeof(buf), NULL, NULL, dconf) == 1, "normalise");
 }
 END_TEST
 

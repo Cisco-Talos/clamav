@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2022 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Trog
@@ -28,6 +28,7 @@
 #include "clamav-types.h"
 #include "fmap.h"
 #include "dconf.h"
+#include "others.h"
 
 typedef struct tag_arguments_tag {
     int count;
@@ -44,10 +45,13 @@ typedef struct m_area_tag {
     fmap_t *map;
 } m_area_t;
 
-int html_normalise_mem(unsigned char *in_buff, off_t in_size, const char *dirname, tag_arguments_t *hrefs, const struct cli_dconf *dconf);
-int html_normalise_map(fmap_t *map, const char *dirname, tag_arguments_t *hrefs, const struct cli_dconf *dconf);
+typedef void *css_image_extractor_t;
+typedef void *css_image_handle_t;
+
+bool html_normalise_mem(cli_ctx *ctx, unsigned char *in_buff, off_t in_size, const char *dirname, tag_arguments_t *hrefs, const struct cli_dconf *dconf);
+bool html_normalise_map(cli_ctx *ctx, fmap_t *map, const char *dirname, tag_arguments_t *hrefs, const struct cli_dconf *dconf);
 void html_tag_arg_free(tag_arguments_t *tags);
-int html_screnc_decode(fmap_t *map, const char *dirname);
+bool html_screnc_decode(fmap_t *map, const char *dirname);
 void html_tag_arg_add(tag_arguments_t *tags, const char *tag, char *value);
 
 #endif

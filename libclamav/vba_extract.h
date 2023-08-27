@@ -1,7 +1,7 @@
 /*
  *  Extract VBA source code for component MS Office Documents
  *
- *  Copyright (C) 2013-2022 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Trog, Nigel Horne
@@ -40,7 +40,7 @@ typedef struct vba_project_tag {
 } vba_project_t;
 
 vba_project_t *cli_vba_readdir(const char *dir, struct uniq *U, uint32_t which);
-cl_error_t cli_vba_readdir_new(cli_ctx *ctx, const char *dir, struct uniq *U, const char *hash, uint32_t which, int *tempfd, int *has_macros);
+cl_error_t cli_vba_readdir_new(cli_ctx *ctx, const char *dir, struct uniq *U, const char *hash, uint32_t which, int *tempfd, int *has_macros, char **tempfile);
 vba_project_t *cli_wm_readdir(int fd);
 void cli_free_vba_project(vba_project_t *vba_project);
 

@@ -76,7 +76,7 @@ int main(int argc, char **argv)
     long double mb;
     const char *virname;
     const char *filename;
-    struct cl_engine *engine;
+    struct cl_engine *engine = NULL;
     struct cl_scan_options options;
 
     if (argc != 2) {

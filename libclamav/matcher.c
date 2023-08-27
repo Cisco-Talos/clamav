@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2022 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
@@ -766,7 +766,7 @@ int32_t cli_bcapi_matchicon(struct cli_bc_ctx *ctx, const uint8_t *grp1, int32_t
             !ctx->hooks.pedata->dirs[2].Size)
             info.res_addr = 0;
         else
-            info.res_addr = le32_to_host(ctx->hooks.pedata->dirs[2].VirtualAddress);
+            info.res_addr = ctx->hooks.pedata->dirs[2].VirtualAddress;
     } else
         info.res_addr = ctx->resaddr; /* from target_info */
     info.sections  = (struct cli_exe_section *)ctx->sections;
@@ -784,7 +784,6 @@ cl_error_t cli_scan_desc(int desc, cli_ctx *ctx, cli_file_t ftype, bool filetype
     cl_error_t status = CL_CLEAN;
     int empty;
     fmap_t *new_map = NULL;
-    fmap_t *map     = ctx->fmap; /* Store off the parent fmap for easy reference */
 
     new_map = fmap_check_empty(desc, 0, 0, &empty, name);
     if (NULL == new_map) {
@@ -802,10 +801,6 @@ cl_error_t cli_scan_desc(int desc, cli_ctx *ctx, cli_file_t ftype, bool filetype
     }
 
     status = cli_scan_fmap(ctx, ftype, filetype_only, ftoffset, acmode, acres, NULL);
-
-    map->dont_cache_flag = ctx->fmap->dont_cache_flag; /* Set the parent layer's "don't cache" flag to match the child.
-                                                          TODO: This may not be needed since `emax_reached()` should've
-                                                          already done that for us. */
 
     (void)cli_recursion_stack_pop(ctx); /* Restore the parent fmap */
 

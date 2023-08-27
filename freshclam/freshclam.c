@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2022 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *  Copyright (C) 2002-2007 Tomasz Kojm <tkojm@clamav.net>
  *
@@ -162,7 +162,7 @@ static void help(void)
     printf("\n");
     printf("                      Clam AntiVirus: Database Updater %s\n", get_version());
     printf("           By The ClamAV Team: https://www.clamav.net/about.html#credits\n");
-    printf("           (C) 2022 Cisco Systems, Inc.\n");
+    printf("           (C) 2023 Cisco Systems, Inc.\n");
     printf("\n");
     printf("    freshclam [options]\n");
     printf("\n");
@@ -172,7 +172,8 @@ static void help(void)
     printf("    --debug                              Enable debug messages\n");
     printf("    --quiet                              Only output error messages\n");
     printf("    --no-warnings                        Don't print and log warnings\n");
-    printf("    --stdout                             Write to stdout instead of stderr. Does not affect 'debug' messages.\n");
+    printf("    --stdout                             Write to stdout instead of stderr.\n");
+    printf("                                         Does not affect 'debug' messages.\n");
     printf("    --show-progress                      Show download progress percentage\n");
     printf("\n");
     printf("    --config-file=FILE                   Read configuration from FILE.\n");
@@ -182,7 +183,7 @@ static void help(void)
     printf("    --uninstall-service                  Uninstall Windows Service\n");
 #endif
     printf("    --daemon             -d              Run in daemon mode\n");
-    printf("    --pid=FILE           -p FILE         Save daemon's pid in FILE\n");
+    printf("    --pid=FILE           -p FILE         Write the daemon's pid to FILE\n");
 #ifndef _WIN32
     printf("    --foreground         -F              Don't fork into background (for use in daemon mode).\n");
     printf("    --user=USER          -u USER         Run as USER\n");
@@ -197,6 +198,26 @@ static void help(void)
     printf("    --on-error-execute=COMMAND           Execute COMMAND if errors occurred\n");
     printf("    --on-outdated-execute=COMMAND        Execute COMMAND when software is outdated\n");
     printf("    --update-db=DBNAME                   Only update database DBNAME\n");
+    printf("\n");
+    printf("Environment Variables:\n");
+    printf("\n");
+#if !defined(C_DARWIN) && !defined(_WIN32)
+    printf("  CURL_CA_BUNDLE                         May be set to the path of a file (bundle)\n");
+    printf("                                         containing one or more CA certificates.\n");
+    printf("                                         This will override the default openssl\n");
+    printf("                                         certificate path.\n");
+    printf("\n");
+#endif
+    printf("  FRESHCLAM_CLIENT_CERT                  May be set to the path of a file (PEM)\n");
+    printf("                                         containing the client certificate.\n");
+    printf("                                         This may be used for client authentication\n");
+    printf("                                         to a private mirror.\n");
+    printf("  FRESHCLAM_CLIENT_KEY                   May be set to the path of a file (PEM)\n");
+    printf("                                         containing the client private key.\n");
+    printf("                                         This is required if FRESHCLAM_CLIENT_CERT is set.\n");
+    printf("  FRESHCLAM_CLIENT_KEY_PASSWD            May be set to a password for the client key PEM file.\n");
+    printf("                                         This is required if FRESHCLAM_CLIENT_KEY is\n");
+    printf("                                         set and the PEM file is password protected.\n");
     printf("\n");
 }
 

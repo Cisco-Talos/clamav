@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2022 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2011-2013 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm <tkojm@clamav.net>
@@ -314,7 +314,7 @@ cl_error_t cli_parsejpeg(cli_ctx *ctx)
     cl_error_t status = CL_SUCCESS;
 
     fmap_t *map = NULL;
-    jpeg_marker_t marker, prev_marker, prev_segment = JPEG_MARKER_NOT_A_MARKER_0x00;
+    jpeg_marker_t marker = JPEG_MARKER_NOT_A_MARKER_0x00, prev_marker, prev_segment = JPEG_MARKER_NOT_A_MARKER_0x00;
     uint8_t buff[50]; /* 50 should be sufficient for now */
     uint16_t len_u16;
     unsigned int offset = 0, i, len, segment = 0;

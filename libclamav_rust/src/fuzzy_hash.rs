@@ -1,7 +1,7 @@
 /*
  *  Fuzzy hash implementations, matching, and signature support
  *
- *  Copyright (C) 2022 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2022-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *
  *  Authors: Micah Snyder, Mickey Sola, Scott Hutton
  *
@@ -123,7 +123,7 @@ pub struct FuzzyHashMeta {
 /// Initialize the hashmap
 #[no_mangle]
 pub extern "C" fn fuzzy_hashmap_new() -> sys::fuzzyhashmap_t {
-    Box::into_raw(Box::new(FuzzyHashMap::default())) as sys::fuzzyhashmap_t
+    Box::into_raw(Box::<FuzzyHashMap>::default()) as sys::fuzzyhashmap_t
 }
 
 /// Free the hashmap

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2022 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2008-2013 Sourcefire, Inc.
  *
  *  Author: aCaB <acab@clamav.net>
@@ -466,7 +466,8 @@ int islocalnet_name(char *name)
 
 int islocalnet_sock(struct sockaddr *sa)
 {
-    uint32_t host[4], family;
+    uint32_t host[4] = {0};
+    uint32_t family;
 
     if (!lnet) return 0;
 

@@ -89,6 +89,11 @@ For Maintainer-mode only (not recommended):
 - Bison
 - Gperf
 
+On systems with multiple implementations of build-time tools it may be
+desirable to select a specific implementation to use rather than relying on
+CMake's logic. See [Custom CMake Config Options](#custom-cmake-config-options)
+for information on this topic.
+
 ### External Library Dependencies
 
 For installation instructions, see our online documentation:
@@ -392,6 +397,12 @@ The following is a complete list of CMake options unique to configuring ClamAV:
 
   _Default: `ON`_
 
+- `DO_NOT_SET_RPATH`: By default RPATH is set in executeables resulting using
+  paths set at build time instead of using system defaults. By setting this
+  `ON` system defaults are used.
+
+  _Default: `OFF`_
+
 - `ENABLE_WERROR`: Compile time warnings will cause build failures (i.e.
   `-Werror`)
 
@@ -502,6 +513,11 @@ The following is a complete list of CMake options unique to configuring ClamAV:
 
 - `SYSTEMD_UNIT_DIR`: Install SystemD service files to a specific directory.
   This will fail the build if SystemD not found.
+
+  _Default: not set_
+
+- `PYTHON_FIND_VER`: Select a specific implementation of Python that will
+  be called during the test phase.
 
   _Default: not set_
 

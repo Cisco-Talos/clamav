@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2022 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *  Copyright (C) 2002-2007 Tomasz Kojm <tkojm@clamav.net>
  *
@@ -1191,37 +1191,53 @@ static int cli_chkign(const struct cli_matcher *ignored, const char *signame, co
 
 static int cli_chkpua(const char *signame, const char *pua_cats, unsigned int options)
 {
-    char cat[32], *pt;
+    char cat[32], *cat_pt, *pt1, *pt2, *endsig;
     const char *sig;
+    size_t catlen;
     int ret;
+
+    cli_dbgmsg("cli_chkpua: Checking signature [%s]\n", signame);
 
     if (strncmp(signame, "PUA.", 4)) {
         cli_dbgmsg("Skipping signature %s - no PUA prefix\n", signame);
         return 1;
     }
     sig = signame + 3;
-    if (!(pt = strchr(sig + 1, '.'))) {
+    if (!(pt1 = strchr(sig + 1, '.'))) {
         cli_dbgmsg("Skipping signature %s - bad syntax\n", signame);
         return 1;
     }
-
-    if ((unsigned int)(pt - sig + 2) > sizeof(cat)) {
-        cli_dbgmsg("Skipping signature %s - too long category name\n", signame);
+    if ((pt2 = strrchr(sig + 1, '.')) != pt1) {
+        cli_dbgmsg("Signature has at least three dots [%s]\n", signame);
+    }
+    if ((unsigned int)(pt1 - sig + 2) > sizeof(cat)) {
+        cli_dbgmsg("Skipping signature %s - too long category name, length approaching %d characters\n", signame, (unsigned int)(pt1 - sig + 2));
+        return 1;
+    }
+    if ((unsigned int)(pt2 - sig + 2) > sizeof(cat)) {
+        cli_dbgmsg("Skipping signature %s - too long category name, length approaching %d characters\n", signame, (unsigned int)(pt2 - sig + 2));
         return 1;
     }
 
-    strncpy(cat, sig, pt - signame + 1);
-    cat[pt - sig + 1] = 0;
-    pt                = strstr(pua_cats, cat);
+    endsig = strrchr(sig, '.');
 
+    catlen = MIN(sizeof(cat), strlen(sig) - strlen(endsig));
+
+    memcpy(cat, sig, catlen + 1);
+
+    // Add null terminator.
+    cat[catlen + 1] = '\0';
+
+    cat_pt = strstr(cat, pua_cats);
+    cli_dbgmsg("cli_chkpua:                cat=[%s]\n", cat);
+    cli_dbgmsg("cli_chkpua:                sig=[%s]\n", sig);
     if (options & CL_DB_PUA_INCLUDE)
-        ret = pt ? 0 : 1;
+        ret = cat_pt ? 0 : 1;
     else
-        ret = pt ? 1 : 0;
+        ret = cat_pt ? 1 : 0;
 
     if (ret)
-        cli_dbgmsg("Skipping PUA signature %s - excluded category\n", signame);
-
+        cli_dbgmsg("Skipping PUA signature %s - excluded category %s\n", signame, cat);
     return ret;
 }
 
@@ -1997,8 +2013,8 @@ static inline int init_tdb(struct cli_lsig_tdb *tdb, struct cl_engine *engine, c
 
     if (tdb->engine) {
         if (tdb->engine[0] > cl_retflevel()) {
-            FREE_TDB_P(tdb);
             cli_dbgmsg("init_tdb: Signature for %s not loaded (required f-level: %u)\n", virname, tdb->engine[0]);
+            FREE_TDB_P(tdb);
             return CL_BREAK;
         } else if (tdb->engine[1] < cl_retflevel()) {
             FREE_TDB_P(tdb);
@@ -2727,7 +2743,7 @@ static int cli_loadign(FILE *fs, struct cl_engine *engine, unsigned int options,
             int pad = 3 - len;
             /* patch-up for Boyer-Moore minimum length of 3: pad with spaces */
             if (signame != buffer) {
-                strncpy(buffer, signame, len);
+                memcpy(buffer, signame, len);
                 signame = buffer;
             }
             buffer[3] = '\0';
@@ -3310,9 +3326,7 @@ static int cli_loadcrt(FILE *fs, struct cl_engine *engine, struct cli_dbio *dbio
     char *tokens[CRT_TOKENS + 1];
     size_t line = 0, tokens_count;
     cli_crt ca;
-    int ret             = CL_SUCCESS;
-    char *pubkey        = NULL;
-    const uint8_t exp[] = "\x01\x00\x01";
+    int ret = CL_SUCCESS;
 
     if (!(engine->dconf->pe & PE_CONF_CERTS)) {
         cli_dbgmsg("cli_loadcrt: Ignoring .crb sigs due to DCONF configuration\n");
@@ -3324,7 +3338,10 @@ static int cli_loadcrt(FILE *fs, struct cl_engine *engine, struct cli_dbio *dbio
         return ret;
     }
 
-    cli_crt_init(&ca);
+    if (cli_crt_init(&ca) < 0) {
+        cli_dbgmsg("cli_loadcrt: No mem for CA init.\n");
+        return CL_EMEM;
+    }
     memset(ca.issuer, 0xca, sizeof(ca.issuer));
 
     while (cli_dbgets(buffer, FILEBUFF, fs, dbio)) {
@@ -3402,16 +3419,16 @@ static int cli_loadcrt(FILE *fs, struct cl_engine *engine, struct cli_dbio *dbio
             goto done;
         }
 
-        pubkey = cli_hex2str(tokens[4]);
-        if (!pubkey) {
+        if (BN_hex2bn(&ca.n, tokens[4]) == 0) {
             cli_errmsg("cli_loadcrt: line %u: Cannot convert public key to binary string\n", (unsigned int)line);
             ret = CL_EMALFDB;
             goto done;
         }
-
-        fp_read_unsigned_bin(&(ca.n), (const unsigned char *)pubkey, strlen(tokens[4]) / 2);
-
-        fp_read_unsigned_bin(&(ca.e), exp, sizeof(exp) - 1);
+        /* Set the RSA exponent of 65537 */
+        if (!BN_set_word(ca.e, 65537)) {
+            cli_errmsg("cli_loadcrt: Cannot set the exponent.\n");
+            goto done;
+        }
 
         switch (tokens[6][0]) {
             case '1':
@@ -3463,13 +3480,9 @@ static int cli_loadcrt(FILE *fs, struct cl_engine *engine, struct cli_dbio *dbio
 
         ca.hashtype = CLI_HASHTYPE_ANY;
         crtmgr_add(&(engine->cmgr), &ca);
-
-        FREE(pubkey);
     }
 
 done:
-    FREE(pubkey);
-
     cli_dbgmsg("Number of certs: %d\n", engine->cmgr.items);
     cli_crt_clear(&ca);
     return ret;
@@ -4862,9 +4875,11 @@ cl_error_t cli_load(const char *filename, struct cl_engine *engine, unsigned int
     if (fs)
         fclose(fs);
 
-    if (engine->cb_sigload_progress) {
-        /* Let the progress callback function know how we're doing */
-        (void)engine->cb_sigload_progress(engine->num_total_signatures, *signo, engine->cb_sigload_progress_ctx);
+    if (CL_SUCCESS == ret) {
+        if (engine->cb_sigload_progress) {
+            /* Let the progress callback function know how we're doing */
+            (void)engine->cb_sigload_progress(engine->num_total_signatures, *signo, engine->cb_sigload_progress_ctx);
+        }
     }
 
     return ret;

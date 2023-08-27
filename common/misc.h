@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2022 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
@@ -28,6 +28,7 @@
 #endif
 #include <stdbool.h>
 
+#include "clamav.h"
 #include "platform.h"
 #include "optparser.h"
 /* Maximum filenames under various systems - njh */
@@ -104,5 +105,8 @@ const char *get_version(void);
 int match_regex(const char *filename, const char *pattern);
 int cli_is_abspath(const char *path);
 unsigned int countlines(const char *filename);
+
+/* Checks if a virus database file or directory is older than 'days'. */
+cl_error_t check_if_cvd_outdated(const char *path, long long days);
 
 #endif

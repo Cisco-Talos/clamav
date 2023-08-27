@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2022 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Nigel Horne
@@ -217,7 +217,7 @@ static int count_quotes(const char *buf);
 static bool next_is_folded_header(const text *t);
 static bool newline_in_header(const char *line);
 
-static blob *getHrefs(message *m, tag_arguments_t *hrefs);
+static blob *getHrefs(cli_ctx *, message *m, tag_arguments_t *hrefs);
 static void hrefs_done(blob *b, tag_arguments_t *hrefs);
 static void checkURLs(message *m, mbox_ctx *mctx, mbox_status *rc, int is_html);
 
@@ -3855,7 +3855,7 @@ static void extract_text_urls(const unsigned char *mem, size_t len, tag_argument
  * disabled (see ifdef)
  */
 static blob *
-getHrefs(message *m, tag_arguments_t *hrefs)
+getHrefs(cli_ctx *ctx, message *m, tag_arguments_t *hrefs)
 {
     unsigned char *mem;
     blob *b = messageToBlob(m, 0);
@@ -3884,7 +3884,7 @@ getHrefs(message *m, tag_arguments_t *hrefs)
 
     cli_dbgmsg("getHrefs: calling html_normalise_mem\n");
     mem = blobGetData(b);
-    if (!html_normalise_mem(mem, (off_t)len, NULL, hrefs, m->ctx->dconf)) {
+    if (!html_normalise_mem(ctx, mem, (off_t)len, NULL, hrefs, m->ctx->dconf)) {
         blobDestroy(b);
         return NULL;
     }
@@ -3925,7 +3925,7 @@ checkURLs(message *mainMessage, mbox_ctx *mctx, mbox_status *rc, int is_html)
     hrefs.tag = hrefs.value = NULL;
     hrefs.contents          = NULL;
 
-    b = getHrefs(mainMessage, &hrefs);
+    b = getHrefs(mctx->ctx, mainMessage, &hrefs);
     if (b) {
         if (hrefs.scanContents) {
             if (phishingScan(mctx->ctx, &hrefs) == CL_VIRUS) {

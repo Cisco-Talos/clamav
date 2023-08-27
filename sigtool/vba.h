@@ -24,8 +24,7 @@
 #include "uniq.h"
 #include "others.h"
 
-int sigtool_vba_scandir(const char *dirname, int hex_output, struct uniq *U);
-cli_ctx *convenience_ctx(int fd);
-void destroy_ctx(cli_ctx *ctx);
+struct optstruct;
+int sigtool_vba_scandir(const struct optstruct *opts, const char *dirname, int hex_output, struct uniq *U);
 
 #endif

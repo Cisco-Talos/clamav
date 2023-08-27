@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2022 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Nigel Horne
@@ -210,7 +210,7 @@ int blobAddData(blob *b, const unsigned char *data, size_t len)
 #if HAVE_CLI_GETPAGESIZE
     if (pagesize == 0) {
         pagesize = cli_getpagesize();
-        if (pagesize == 0)
+        if (pagesize <= 0)
             pagesize = 4096;
     }
     growth = pagesize;

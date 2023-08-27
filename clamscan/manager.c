@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2022 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
@@ -1116,6 +1116,8 @@ int scanmanager(const struct optstruct *opts)
 #endif
     }
 
+    if ((opt = optget(opts, "cache-size"))->enabled)
+        cl_engine_set_num(engine, CL_ENGINE_CACHE_SIZE, opt->numarg);
     if (optget(opts, "disable-cache")->enabled)
         cl_engine_set_num(engine, CL_ENGINE_DISABLE_CACHE, 1);
 
@@ -1258,6 +1260,13 @@ int scanmanager(const struct optstruct *opts)
 
     if ((opt = optget(opts, "database"))->active) {
         while (opt) {
+            if (optget(opts, "fail-if-cvd-older-than")->enabled) {
+                if (check_if_cvd_outdated(opt->strarg, optget(opts, "fail-if-cvd-older-than")->numarg) != CL_SUCCESS) {
+                    ret = 2;
+                    goto done;
+                }
+            }
+
             if ((ret = cl_load(opt->strarg, engine, &info.sigs, dboptions))) {
                 logg(LOGG_ERROR, "%s\n", cl_strerror(ret));
 
@@ -1269,6 +1278,13 @@ int scanmanager(const struct optstruct *opts)
         }
     } else {
         char *dbdir = freshdbdir();
+
+        if (optget(opts, "fail-if-cvd-older-than")->enabled) {
+            if (check_if_cvd_outdated(dbdir, optget(opts, "fail-if-cvd-older-than")->numarg) != CL_SUCCESS) {
+                ret = 2;
+                goto done;
+            }
+        }
 
         if ((ret = cl_load(dbdir, engine, &info.sigs, dboptions))) {
             logg(LOGG_ERROR, "%s\n", cl_strerror(ret));

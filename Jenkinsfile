@@ -10,38 +10,35 @@ properties(
         parameters(
             [
                 string(name: 'VERSION',
-                       defaultValue: '1.1.0',
+                       defaultValue: '1.2.0',
                        description: 'ClamAV version string'),
                 string(name: 'FRAMEWORK_BRANCH',
-                       defaultValue: '1.1',
+                       defaultValue: '1.2',
                        description: 'test-framework branch'),
                 string(name: 'TESTS_BRANCH',
-                       defaultValue: '1.1',
+                       defaultValue: '1.2',
                        description: 'tests branch'),
                 string(name: 'TESTS_CUSTOM_BRANCH',
-                       defaultValue: '1.1',
+                       defaultValue: '1.2',
                        description: 'tests-custom branch'),
                 string(name: 'TESTS_FUZZ_BRANCH',
-                       defaultValue: '1.1',
+                       defaultValue: '1.2',
                        description: 'tests-fuzz-regression branch'),
                 string(name: 'BUILD_PIPELINE',
-                       defaultValue: 'build-1.1',
+                       defaultValue: 'build-1.2',
                        description: 'test-pipelines branch for build acceptance'),
                 string(name: 'REGULAR_PIPELINE',
-                       defaultValue: 'regular-1.1',
+                       defaultValue: 'regular-1.2',
                        description: 'test-pipelines branch for regular tests.'),
                 string(name: 'CUSTOM_PIPELINE',
-                       defaultValue: 'custom-1.1',
+                       defaultValue: 'custom-1.2',
                        description: 'test-pipelines branch for custom tests'),
                 string(name: 'FUZZ_PIPELINE',
-                       defaultValue: 'fuzz-regression-1.1',
+                       defaultValue: 'fuzz-regression-1.2',
                        description: 'test-pipelines branch for fuzz regression tests'),
                 string(name: 'FUZZ_CORPUS_BRANCH',
                        defaultValue: 'master',
                        description: 'private-fuzz-corpus branch'),
-                string(name: 'APPCHECK_PIPELINE',
-                       defaultValue: 'appcheck-1.1',
-                       description: 'test-pipelines branch for appcheck'),
                 string(name: 'SHARED_LIB_BRANCH',
                        defaultValue: 'master',
                        description: 'tests-jenkins-shared-libraries branch')
@@ -50,7 +47,7 @@ properties(
     ]
 )
 
-node('master') {
+node('ubuntu-18-x64') {
     stage('Generate Tarball') {
         cleanWs()
 
@@ -159,23 +156,6 @@ node('master') {
                     ]
                 )
                 echo "test-pipelines/${params.FUZZ_PIPELINE} #${fuzzResult.number} succeeded."
-            }
-        }
-
-        tasks["appcheck"] = {
-            stage("AppCheck") {
-                final appcheckResult = build(job: "test-pipelines/${params.APPCHECK_PIPELINE}",
-                    propagate: true,
-                    wait: true,
-                    parameters: [
-                        [$class: 'StringParameterValue', name: 'CLAMAV_JOB_NAME', value: "${JOB_NAME}"],
-                        [$class: 'StringParameterValue', name: 'CLAMAV_JOB_NUMBER', value: "${BUILD_NUMBER}"],
-                        [$class: 'StringParameterValue', name: 'BUILD_JOB_NAME', value: "test-pipelines/${params.BUILD_PIPELINE}"],
-                        [$class: 'StringParameterValue', name: 'BUILD_JOB_NUMBER', value: "${buildResult.number}"],
-                        [$class: 'StringParameterValue', name: 'VERSION', value: "${params.VERSION}"]
-                    ]
-                )
-                echo "test-pipelines/${params.APPCHECK_PIPELINE} #${appcheckResult.number} succeeded."
             }
         }
 

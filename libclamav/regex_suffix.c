@@ -1,7 +1,7 @@
 /*
  *  Parse a regular expression, and extract a static suffix.
  *
- *  Copyright (C) 2013-2022 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Török Edvin
@@ -135,7 +135,12 @@ static struct node *dup_node(struct node *p)
 
 static struct node *make_charclass(uint8_t *bitmap)
 {
-    struct node *v = cli_malloc(sizeof(*v));
+    struct node *v = NULL;
+    if (NULL == bitmap) {
+        return NULL;
+    }
+
+    v = cli_malloc(sizeof(*v));
     if (!v) {
         cli_errmsg("make_charclass: Unable to allocate memory for character class\n");
         return NULL;
@@ -179,8 +184,25 @@ static void destroy_tree(struct node *n)
     FREE(n);
 }
 
-static uint8_t *parse_char_class(const uint8_t *pat, size_t *pos)
+static uint8_t *parse_char_class(const uint8_t *pat, size_t patSize, size_t *pos)
 {
+
+#ifndef INC_POS
+#define ADD_POS(posPtr, incVal, posMax)                                \
+    {                                                                  \
+        do {                                                           \
+            if (((*posPtr) + incVal) >= posMax) {                      \
+                cli_warnmsg("parse_char_class: Invalid char class\n"); \
+                FREE(bitmap);                                          \
+                goto done;                                             \
+            }                                                          \
+            (*posPtr)++;                                               \
+        } while (0);                                                   \
+    }
+
+#define INC_POS(posPtr, posMax) ADD_POS(posPtr, 1, posMax)
+#endif
+
     unsigned char range_start = 0;
     int hasprev               = 0;
     uint8_t *bitmap           = NULL;
@@ -190,7 +212,7 @@ static uint8_t *parse_char_class(const uint8_t *pat, size_t *pos)
 
     if (pat[*pos] == '^') {
         memset(bitmap, 0xFF, 32); /*match chars not in brackets*/
-        ++*pos;
+        INC_POS(pos, patSize);
     } else
         memset(bitmap, 0x00, 32);
     do {
@@ -201,10 +223,10 @@ static uint8_t *parse_char_class(const uint8_t *pat, size_t *pos)
             unsigned int c;
             if (0 == range_start) {
                 FREE(bitmap);
-                cli_errmsg("parse_char_class: range_start not initialized");
+                cli_errmsg("parse_char_class: range_start not initialized\n");
                 goto done;
             }
-            ++*pos;
+            INC_POS(pos, patSize);
             if (pat[*pos] == '[')
                 if (pat[*pos + 1] == '.') {
                     /* collating sequence not handled */
@@ -213,9 +235,9 @@ static uint8_t *parse_char_class(const uint8_t *pat, size_t *pos)
                      * filter, be conservative and
                      * tell the filter that anything could
                      * match here */
-                    while (pat[*pos] != ']') ++*pos;
-                    ++*pos;
-                    while (pat[*pos] != ']') ++*pos;
+                    while (pat[*pos] != ']') INC_POS(pos, patSize);
+                    INC_POS(pos, patSize);
+                    while (pat[*pos] != ']') INC_POS(pos, patSize);
                     return dot_bitmap;
                 } else
                     range_end = pat[*pos];
@@ -227,23 +249,26 @@ static uint8_t *parse_char_class(const uint8_t *pat, size_t *pos)
         } else if (pat[*pos] == '[' && pat[*pos] == ':') {
             /* char class */
             FREE(bitmap);
-            while (pat[*pos] != ']') ++*pos;
-            ++*pos;
-            while (pat[*pos] != ']') ++*pos;
+            while (pat[*pos] != ']') INC_POS(pos, patSize);
+            INC_POS(pos, patSize);
+            while (pat[*pos] != ']') INC_POS(pos, patSize);
             return dot_bitmap;
         } else {
             bitmap[pat[*pos] >> 3] ^= 1 << (pat[*pos] & 0x7);
             range_start = pat[*pos];
-            ++*pos;
+            INC_POS(pos, patSize);
             hasprev = 1;
         }
     } while (pat[*pos] != ']');
 
 done:
     return bitmap;
+
+#undef ADD_POS
+#undef INC_POS
 }
 
-static struct node *parse_regex(const uint8_t *p, size_t *last)
+static struct node *parse_regex(const uint8_t *p, const size_t pSize, size_t *last)
 {
     struct node *v = NULL;
     struct node *right;
@@ -253,7 +278,7 @@ static struct node *parse_regex(const uint8_t *p, size_t *last)
         switch (p[*last]) {
             case '|':
                 ++*last;
-                right = parse_regex(p, last);
+                right = parse_regex(p, pSize, last);
                 v     = make_node(alternate, v, right);
                 if (!v) {
                     destroy_tree(right);
@@ -290,7 +315,7 @@ static struct node *parse_regex(const uint8_t *p, size_t *last)
                 break;
             case '(':
                 ++*last;
-                right = parse_regex(p, last);
+                right = parse_regex(p, pSize, last);
                 if (!right) {
                     destroy_tree(v);
                     return NULL;
@@ -313,7 +338,7 @@ static struct node *parse_regex(const uint8_t *p, size_t *last)
                 break;
             case '[':
                 ++*last;
-                right = make_charclass(parse_char_class(p, last));
+                right = make_charclass(parse_char_class(p, pSize, last));
                 if (!right) {
                     destroy_tree(v);
                     return NULL;
@@ -456,7 +481,7 @@ cl_error_t cli_regex2suffix(const char *pattern, regex_t *preg, suffix_callback 
     int rc;
 
     if (NULL == pattern) {
-        cli_errmsg("cli_regex2suffix: pattern can't be NULL");
+        cli_errmsg("cli_regex2suffix: pattern can't be NULL\n");
         rc = REG_INVARG;
         goto done;
     }
@@ -477,10 +502,10 @@ cl_error_t cli_regex2suffix(const char *pattern, regex_t *preg, suffix_callback 
     }
     regex.nxt = NULL;
     CLI_STRDUP(pattern, regex.pattern,
-               cli_errmsg("cli_regex2suffix: unable to strdup regex.pattern");
+               cli_errmsg("cli_regex2suffix: unable to strdup regex.pattern\n");
                rc = REG_ESPACE);
 
-    n = parse_regex((const uint8_t *)pattern, &last);
+    n = parse_regex((const uint8_t *)pattern, strlen(pattern), &last);
     if (!n) {
         rc = REG_ESPACE;
         goto done;

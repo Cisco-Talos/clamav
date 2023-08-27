@@ -22,7 +22,7 @@ jobs:
       matrix:
         path:
           - check: "libclamav"
-            exclude: "(iana_cctld|bytecode_api_|bytecode_hooks|rijndael|yara|inffixed|inflate|queue|tomsfastmath|nsis|7z|regex|c++|generated)"
+            exclude: "(iana_cctld|bytecode_api_|bytecode_hooks|rijndael|yara|inffixed|inflate|queue|nsis|7z|regex|c++|generated)"
           - check: "libfreshclam"
             exclude: ""
           - check: "clamav-milter"

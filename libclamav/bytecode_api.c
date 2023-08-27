@@ -1,7 +1,7 @@
 /*
  *  ClamAV bytecode internal API
  *
- *  Copyright (C) 2013-2022 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2009-2013 Sourcefire, Inc.
  *
  *  Authors: Török Edvin
@@ -2315,7 +2315,7 @@ int32_t cli_bcapi_json_get_string(struct cli_bc_ctx *ctx, int8_t *str, int32_t s
         return str_len;
     } else {
         /* limit on len+1 */
-        strncpy((char *)str, jstr, len);
+        memcpy((char *)str, jstr, len);
         str[len] = '\0';
         return len + 1;
     }

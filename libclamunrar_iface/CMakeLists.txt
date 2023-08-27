@@ -1,4 +1,4 @@
-# Copyright (C) 2019-2022 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+# Copyright (C) 2019-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
 
 if(WIN32)
     add_definitions(-DWIN32_LEAN_AND_MEAN)
@@ -34,9 +34,11 @@ if(ENABLE_UNRAR)
     if(ENABLE_SHARED_LIB)
         # The clamunrar_iface SHARED library.
         add_library( clamunrar_iface SHARED )
-        set_target_properties(clamunrar_iface PROPERTIES
+        set_target_properties( clamunrar_iface PROPERTIES
             VERSION ${LIBCLAMAV_VERSION}
-            SOVERSION ${LIBCLAMAV_SOVERSION})
+            SOVERSION ${LIBCLAMAV_SOVERSION}
+            CXX_STANDARD 11
+        )
 
         target_sources( clamunrar_iface
             PRIVATE
@@ -62,6 +64,8 @@ if(ENABLE_UNRAR)
 
         if(WIN32)
             set_target_properties(clamunrar_iface PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
+        elseif(UNIX AND NOT APPLE)
+            target_link_options(clamunrar_iface PRIVATE "-Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/libclamunrar_iface.map")
         endif()
 
         # Private (internal-only) dependencies.
@@ -84,6 +88,9 @@ if(ENABLE_UNRAR)
     if(ENABLE_STATIC_LIB)
         # The clamunrar_iface static library.
         add_library( clamunrar_iface_static STATIC)
+        set_target_properties( clamunrar_iface_static PROPERTIES
+            CXX_STANDARD 11
+        )
 
         target_sources( clamunrar_iface_static
             PRIVATE

@@ -1,7 +1,7 @@
 /*
  *  Static filetype data for use when daily.ftm is not available.
  *
- *  Copyright (C) 2013-2022 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
@@ -150,6 +150,7 @@ static const char *ftypes_int[] = {
     "0:0:4d53434600000000:MS CAB:CL_TYPE_ANY:CL_TYPE_MSCAB",
     "1:*:4d53434600000000:CAB-SFX:CL_TYPE_ANY:CL_TYPE_CABSFX",
     "1:*:014344303031{2043-2443}4344303031:ISO9660:CL_TYPE_ANY:CL_TYPE_ISO9660:71",
+    "1:0,32768:004245413031:UDF:CL_TYPE_ANY:CL_TYPE_UDF:180",
     "0:0:5b616c69617365735d:TAR-POSIX-CVE-2012-1419:CL_TYPE_ANY:CL_TYPE_POSIX_TAR",
     "1:8,12:19040010:SIS:CL_TYPE_ANY:CL_TYPE_SIS",
     "1:0,1024:44656c6976657265642d546f3a{-256}52656365697665643a:Mail file:CL_TYPE_ANY:CL_TYPE_MAIL",

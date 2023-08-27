@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2015-2022 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2015-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2009 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm, aCaB, Mickey Sola
@@ -165,8 +165,8 @@ int onas_check_remote(struct onas_context **ctx, cl_error_t *err)
 int16_t onas_ping_clamd(struct onas_context **ctx)
 {
 
-    uint64_t attempts           = 0;
-    uint64_t interval           = 0;
+    uint64_t attempts           = ONAS_DEFAULT_PING_ATTEMPTS;
+    uint64_t interval           = ONAS_DEFAULT_PING_INTERVAL;
     char *attempt_str           = NULL;
     char *interval_str          = NULL;
     char *errchk                = NULL;
@@ -207,7 +207,7 @@ int16_t onas_ping_clamd(struct onas_context **ctx)
     /* ping command takes the form --ping [attempts[:interval]] */
     opt = optget((*ctx)->opts, "ping");
 
-    if (opt) {
+    if (opt->enabled) {
         attempt_str = cli_strdup(opt->strarg);
         if (attempt_str) {
             if (NULL == attempt_str) {
@@ -225,8 +225,6 @@ int16_t onas_ping_clamd(struct onas_context **ctx)
                     ret = -1;
                     goto done;
                 }
-            } else {
-                interval = ONAS_DEFAULT_PING_INTERVAL;
             }
             attempts = cli_strntoul(attempt_str, strlen(attempt_str), &errchk, 10);
             if (attempt_str + strlen(attempt_str) > errchk) {
@@ -234,9 +232,6 @@ int16_t onas_ping_clamd(struct onas_context **ctx)
                 ret = -1;
                 goto done;
             }
-        } else {
-            attempts = ONAS_DEFAULT_PING_ATTEMPTS;
-            interval = ONAS_DEFAULT_PING_INTERVAL;
         }
     }
 
@@ -406,7 +401,6 @@ cl_error_t onas_setup_client(struct onas_context **ctx)
 {
 
     const struct optstruct *opts;
-    const struct optstruct *opt;
     cl_error_t err;
     int remote;
 
