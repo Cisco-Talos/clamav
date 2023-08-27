@@ -121,9 +121,7 @@ char *cli_virname(const char *virname, unsigned int official)
         cli_errmsg("cli_virname: Can't allocate memory for newname\n");
         return NULL;
     }
-    //sprintf(newname, "%s.UNOFFICIAL", virname);
-    sprintf(newname, "%s.TnD", virname);
-    
+    sprintf(newname, "%s.UNOFFICIAL", virname);
     return newname;
 }
 
@@ -1134,8 +1132,7 @@ static char *cli_signorm(const char *signame)
         else
             return NULL;
     } else if (nsz > 11) {
-        //if (!strncmp(signame + nsz - 11, ".UNOFFICIAL", 11))
-        if (!strncmp(signame + nsz - 4, ".TnD", 4))
+        if (!strncmp(signame + nsz - 11, ".UNOFFICIAL", 11))
             nsz -= 11;
         else
             return NULL;
