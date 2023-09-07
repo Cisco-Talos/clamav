@@ -26,5 +26,5 @@ crate-type = ["staticlib"]
 name = "clamav_rust"
 
 [build-dependencies]
-cbindgen = "0.24"
+cbindgen = { version ="0.25", default-features = false }
 bindgen = "0.65"
