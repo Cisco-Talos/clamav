@@ -46,4 +46,6 @@ void ResetFileCache(const wchar *Name);
 
 
 
+bool LinksToDirs(const wchar *SrcName,const wchar *SkipPart,std::wstring &LastChecked);
+
 #endif
