@@ -133,7 +133,15 @@ void CryptData::SetKey50(bool Encrypt,SecPassword *Password,const wchar *PwdW,
      byte *PswCheck)
 {
   if (Lg2Cnt>CRYPT5_KDF_LG2_COUNT_MAX)
+  {
+    // Initialize these fields to prevent uninitialized data access warnings
+    // by analyzing tools when accessing returned data.
+    if (HashKey!=nullptr)
+      memset(HashKey,0,SHA256_DIGEST_SIZE);
+    if (PswCheck!=nullptr)
+      memset(PswCheck,0,SIZE_PSWCHECK);
     return;
+  }
 
   byte Key[32],PswCheckValue[SHA256_DIGEST_SIZE],HashKeyValue[SHA256_DIGEST_SIZE];
   bool Found=false;
