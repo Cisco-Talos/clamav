@@ -991,7 +991,7 @@ void Archive::ProcessExtra50(RawRead *Raw,size_t ExtraSize,const BaseBlock *bb)
             if ((Flags & MHEXTRA_METADATA_NAME)!=0)
             {
               uint64 NameSize=Raw->GetV();
-              if (NameSize<0x10000) // Prevent excessive allocation.
+              if (NameSize>0 && NameSize<0x10000) // Prevent excessive allocation.
               {
                 std::vector<char> NameU((size_t)NameSize); // UTF-8 name.
                 Raw->GetB(&NameU[0],(size_t)NameSize);
