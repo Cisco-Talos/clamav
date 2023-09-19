@@ -542,3 +542,65 @@ void ResetFileCache(const wchar *Name)
 
 
 
+
+
+// Delete symbolic links in file path, if any, and replace them by directories.
+// Prevents extracting files outside of destination folder with symlink chains.
+bool LinksToDirs(const wchar *SrcName,const wchar *SkipPart,std::wstring &LastChecked)
+{
+  // Unlike Unix, Windows doesn't expand lnk1 in symlink targets like
+  // "lnk1/../dir", but converts the path to "dir". In Unix we need to call
+  // this function to prevent placing unpacked files outside of destination
+  // folder if previously we unpacked "dir/lnk1" -> "..",
+  // "dir/lnk2" -> "lnk1/.." and "dir/lnk2/anypath/poc.txt".
+  // We may still need this function to prevent abusing symlink chains
+  // in link source path if we remove detection of such chains
+  // in IsRelativeSymlinkSafe. This function seems to make other symlink
+  // related safety checks redundant, but for now we prefer to keep them too.
+  //
+  // 2022.12.01: the performance impact is minimized after adding the check
+  // against the previous path and enabling this verification only after
+  // extracting a symlink with ".." in target. So we enabled it for Windows
+  // as well for extra safety.
+//#ifdef _UNIX
+  wchar Path[NM];
+  if (wcslen(SrcName)>=ASIZE(Path))
+    return false;  // It should not be that long, skip.
+  wcsncpyz(Path,SrcName,ASIZE(Path));
+
+  size_t SkipLength=wcslen(SkipPart);
+
+  if (SkipLength>0 && wcsncmp(Path,SkipPart,SkipLength)!=0)
+    SkipLength=0; // Parameter validation, not really needed now.
+
+  // Do not check parts already checked in previous path to improve performance.
+  for (uint I=0;Path[I]!=0 && I<LastChecked.size() && Path[I]==LastChecked[I];I++)
+    if (IsPathDiv(Path[I]) && I>SkipLength)
+      SkipLength=I;
+
+  wchar *Name=Path;
+  if (SkipLength>0)
+  {
+    // Avoid converting symlinks in destination path part specified by user.
+    Name+=SkipLength;
+    while (IsPathDiv(*Name))
+      Name++;
+  }
+
+  for (wchar *s=Path+wcslen(Path)-1;s>Name;s--)
+    if (IsPathDiv(*s))
+    {
+      *s=0;
+      FindData FD;
+      if (FindFile::FastFind(Path,&FD,true) && FD.IsLink)
+#ifdef _WIN_ALL
+        if (!DelDir(Path))
+#else
+        if (!DelFile(Path))
+#endif
+          return false; // Couldn't delete the symlink to replace it with directory.
+    }
+  LastChecked=SrcName;
+//#endif
+  return true;
+}
