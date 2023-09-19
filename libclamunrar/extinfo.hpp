@@ -1,7 +1,6 @@
 #ifndef _RAR_EXTINFO_
 #define _RAR_EXTINFO_
 
-bool LinksToDirs(const wchar *SrcName,const wchar *SkipPart,std::wstring &LastChecked);
 bool IsRelativeSymlinkSafe(CommandData *Cmd,const wchar *SrcName,const wchar *PrepSrcName,const wchar *TargetName);
 bool ExtractSymlink(CommandData *Cmd,ComprDataIO &DataIO,Archive &Arc,const wchar *LinkName,bool &UpLink);
 #ifdef _UNIX
