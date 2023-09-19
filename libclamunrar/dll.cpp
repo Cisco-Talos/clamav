@@ -242,10 +242,10 @@ int PASCAL RARReadHeaderEx(HANDLE hArcData,struct RARHeaderDataEx *D)
       else
         return Code;
     }
-    wcsncpy(D->ArcNameW,Data->Arc.FileName,ASIZE(D->ArcNameW));
+    wcsncpyz(D->ArcNameW,Data->Arc.FileName,ASIZE(D->ArcNameW));
     WideToChar(D->ArcNameW,D->ArcName,ASIZE(D->ArcName));
 
-    wcsncpy(D->FileNameW,hd->FileName,ASIZE(D->FileNameW));
+    wcsncpyz(D->FileNameW,hd->FileName,ASIZE(D->FileNameW));
     WideToChar(D->FileNameW,D->FileName,ASIZE(D->FileName));
 #ifdef _WIN_ALL
     CharToOemA(D->FileName,D->FileName);
@@ -329,7 +329,7 @@ int PASCAL ProcessFile(HANDLE hArcData,int Operation,char *DestPath,char *DestNa
   {
     Data->Cmd.DllError=0;
     if (Data->OpenMode==RAR_OM_LIST || Data->OpenMode==RAR_OM_LIST_INCSPLIT ||
-        Operation==RAR_SKIP) // && !Data->Arc.Solid)
+        Operation==RAR_SKIP && !Data->Arc.Solid)
     {
       if (Data->Arc.Volume && Data->Arc.GetHeaderType()==HEAD_FILE &&
           Data->Arc.FileHead.SplitAfter)
@@ -377,7 +377,7 @@ int PASCAL ProcessFile(HANDLE hArcData,int Operation,char *DestPath,char *DestNa
 
       if (DestPathW!=NULL)
       {
-        wcsncpy(Data->Cmd.ExtrPath,DestPathW,ASIZE(Data->Cmd.ExtrPath));
+        wcsncpyz(Data->Cmd.ExtrPath,DestPathW,ASIZE(Data->Cmd.ExtrPath));
         AddEndSlash(Data->Cmd.ExtrPath,ASIZE(Data->Cmd.ExtrPath));
       }
 
