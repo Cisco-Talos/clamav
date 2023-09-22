@@ -623,7 +623,20 @@ cl_error_t cl_engine_set_num(struct cl_engine *engine, enum cl_engine_field fiel
             engine->maxscansize = num;
             break;
         case CL_ENGINE_MAX_FILESIZE:
-            engine->maxfilesize = num;
+            /* We have a limit of around 2GB (INT_MAX - 2). Enforce it here.
+             *
+             * TODO: Large file support is large-ly untested. Remove this restriction and test with a large set of large files of various types.
+             * libclamav's integer type safety has come a long way since 2014, so it's possible we could lift this restriction, but at least one
+             * of the parsers is bound to behave badly with large files. */
+            if ((uint64_t)num > INT_MAX - 2) {
+                if ((uint64_t)num > (uint64_t)2 * 1024 * 1024 * 1024 && num != LLONG_MAX) {
+                    // If greater than 2GB, warn. If exactly at 2GB, don't hassle the user.
+                    cli_warnmsg("Max file-size was set to %lld bytes. Unfortunately, scanning files greater than 2147483647 bytes (2 GiB - 1) is not supported.\n", num);
+                }
+                engine->maxfilesize = INT_MAX - 2;
+            } else {
+                engine->maxfilesize = num;
+            }
             break;
         case CL_ENGINE_MAX_RECURSION:
             if (!num) {
