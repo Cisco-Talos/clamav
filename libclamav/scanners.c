@@ -5471,21 +5471,6 @@ static cl_error_t scan_common(cl_fmap_t *map, const char *filepath, const char *
     cli_logg_setup(&ctx);
     logg_initalized = true;
 
-    /* We have a limit of around 2GB (INT_MAX - 2). Enforce it here. */
-    /* TODO: Large file support is large-ly untested. Remove this restriction
-     * and test with a large set of large files of various types. libclamav's
-     * integer type safety has come a long way since 2014, so it's possible
-     * we could lift this restriction, but at least one of the parsers is
-     * bound to behave badly with large files. */
-    if (map->len > INT_MAX - 2) {
-        if (scanoptions->heuristic & CL_SCAN_HEURISTIC_EXCEEDS_MAX) {
-            status = cli_append_potentially_unwanted(&ctx, "Heuristics.Limits.Exceeded.MaxFileSize");
-        } else {
-            status = CL_CLEAN;
-        }
-        goto done;
-    }
-
     status = cli_magic_scan(&ctx, CL_TYPE_ANY);
 
 #if HAVE_JSON
