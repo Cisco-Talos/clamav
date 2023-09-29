@@ -292,6 +292,7 @@ CLAMAV_PRIVATE {
     readdb_parse_ldb_subsignature;
     fuzzy_hash_calculate_image;
     ffierror_fmt;
+    cli_magic_scan_buff;
 
     __cli_strcasestr;
     __cli_strndup;

@@ -434,6 +434,8 @@ const struct clam_option __clam_options[] = {
 
     {"ScanHWP3", "scan-hwp3", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option enables scanning HWP3 files.\nIf you turn off this option, the original files will still be scanned, but\nwithout additional processing.", "yes"},
 
+    {"ScanOneNote", "scan-onenote", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option enables scanning OneNote files.\nIf you turn off this option, the original files will still be scanned, but\nwithout additional processing.", "yes"},
+
     {"ScanArchive", "scan-archive", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Scan within archives and compressed files.\nIf you turn off this option, the original files will still be scanned, but\nwithout unpacking and additional processing.", "yes"},
 
     {"ForceToDisk", "force-to-disk", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option causes memory or nested map scans to dump the content to disk.\nIf you turn on this option, more data is written to disk and is available\nwhen the leave-temps option is enabled at the cost of more disk writes.", "no"},

@@ -24,14 +24,13 @@ use std::{ffi::CStr, mem::ManuallyDrop, os::raw::c_char};
 
 use base64::{engine::general_purpose as base64_engine_standard, Engine as _};
 use log::{debug, error, warn};
-use thiserror::Error;
 use unicode_segmentation::UnicodeSegmentation;
 
 use crate::sys;
 
-/// CdiffError enumerates all possible errors returned by this library.
-#[derive(Error, Debug)]
-pub enum CssExtractError {
+/// Error enumerates all possible errors returned by this library.
+#[derive(thiserror::Error, Debug)]
+pub enum Error {
     #[error("Invalid format")]
     Format,
 
@@ -56,7 +55,7 @@ pub struct CssImageExtractor<'a> {
 }
 
 impl<'a> CssImageExtractor<'a> {
-    pub fn new(css: &'a str) -> Result<Self, CssExtractError> {
+    pub fn new(css: &'a str) -> Result<Self, Error> {
         Ok(Self { remaining: css })
     }
 
@@ -152,7 +151,7 @@ impl<'a> CssImageExtractor<'a> {
             };
 
             // Trim off " at end.
-            let c = url_parameter.graphemes(true).rev().next();
+            let c = url_parameter.graphemes(true).next_back();
             if let Some(c) = c {
                 if c == "\"" {
                     (url_parameter, _) = url_parameter.split_at(url_parameter.len() - 1);

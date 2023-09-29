@@ -109,6 +109,7 @@ struct cli_dconf {
 #define DOC_CONF_MSXML        0x80
 #define DOC_CONF_OOXML        0x100
 #define DOC_CONF_HWP          0x200
+#define DOC_CONF_ONENOTE      0x400
 
 /* Mail flags */
 #define MAIL_CONF_MBOX 0x1
