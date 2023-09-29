@@ -24,9 +24,13 @@
 pub mod sys;
 
 pub mod cdiff;
+pub mod css_image_extract;
+pub mod ctx;
 pub mod evidence;
 pub mod ffi_util;
+pub mod fmap;
 pub mod fuzzy_hash;
 pub mod logging;
+pub mod onenote;
+pub mod scanners;
 pub mod util;
-pub mod css_image_extract;

@@ -36,7 +36,6 @@ use crate::validate_str_param;
 use flate2::{read::GzDecoder, write::GzEncoder, Compression};
 use log::{debug, error, warn};
 use sha2::{Digest, Sha256};
-use thiserror::Error;
 
 /// Size of a digital signature
 const SIG_SIZE: usize = 350;
@@ -88,8 +87,8 @@ struct Context {
 }
 
 /// Possible errors returned by cdiff_apply() and script2cdiff
-#[derive(Debug, Error)]
-pub enum CdiffError {
+#[derive(thiserror::Error, Debug)]
+pub enum Error {
     #[error("Error in header: {0}")]
     Header(#[from] HeaderError),
 
@@ -151,7 +150,7 @@ pub enum CdiffError {
 
 /// Errors particular to input handling (i.e., syntax, or side effects from
 /// handling input)
-#[derive(Error, Debug)]
+#[derive(thiserror::Error, Debug)]
 pub enum InputError {
     #[error("Unsupported command provided: {0}")]
     UnknownCommand(String),
@@ -199,7 +198,7 @@ pub enum InputError {
 }
 
 /// Errors encountered while processing
-#[derive(Debug, Error)]
+#[derive(thiserror::Error, Debug)]
 pub enum ProcessingError {
     #[error("File {0} not closed before calling action MOVE")]
     NotClosedBeforeAction(String),
@@ -238,7 +237,7 @@ pub enum ProcessingError {
     IoError(#[from] std::io::Error),
 }
 
-#[derive(Error, Debug)]
+#[derive(thiserror::Error, Debug)]
 pub enum HeaderError {
     #[error("invalid magic")]
     BadMagic,
@@ -253,7 +252,7 @@ pub enum HeaderError {
     IoError(#[from] std::io::Error),
 }
 
-#[derive(Error, Debug)]
+#[derive(thiserror::Error, Debug)]
 pub enum SignatureError {
     #[error("IO error: {0}")]
     IoError(#[from] std::io::Error),
@@ -265,7 +264,7 @@ pub enum SignatureError {
     TooLarge,
 }
 
-#[derive(Error, Debug)]
+#[derive(thiserror::Error, Debug)]
 pub enum InvalidNumber {
     #[error("not unicode")]
     NotUnicode(#[from] std::str::Utf8Error),
@@ -462,7 +461,7 @@ pub extern "C" fn _script2cdiff(
 /// signature from the sha256 of the contents written.
 ///
 /// This function will panic if any of the &str parameters contain interior NUL bytes
-pub fn script2cdiff(script_file_name: &str, builder: &str, server: &str) -> Result<(), CdiffError> {
+pub fn script2cdiff(script_file_name: &str, builder: &str, server: &str) -> Result<(), Error> {
     // Make a copy of the script file name to use for the cdiff file
     let cdiff_file_name_string = script_file_name.to_string();
     let mut cdiff_file_name = cdiff_file_name_string.as_str();
@@ -476,18 +475,18 @@ pub fn script2cdiff(script_file_name: &str, builder: &str, server: &str) -> Resu
     // Get right-most hyphen index
     let hyphen_index = cdiff_file_name
         .rfind('-')
-        .ok_or(CdiffError::FilenameMissingHyphen)?;
+        .ok_or(Error::FilenameMissingHyphen)?;
 
     // Get the version, which should be to the right of the hyphen
     let version_string = cdiff_file_name
         .get((hyphen_index + 1)..)
-        .ok_or(CdiffError::FilenameMissingVersion)?;
+        .ok_or(Error::FilenameMissingVersion)?;
 
     // Parse the version into usize
     let version = version_string
         .to_string()
         .parse::<usize>()
-        .map_err(CdiffError::VersionParse)?;
+        .map_err(Error::VersionParse)?;
 
     // Add .cdiff suffix
     let cdiff_file_name = format!("{}.{}", cdiff_file_name, "cdiff");
@@ -495,21 +494,21 @@ pub fn script2cdiff(script_file_name: &str, builder: &str, server: &str) -> Resu
 
     // Open cdiff_file_name for writing
     let mut cdiff_file: File = File::create(&cdiff_file_name)
-        .map_err(|e| CdiffError::FileCreate(cdiff_file_name.to_owned(), e))?;
+        .map_err(|e| Error::FileCreate(cdiff_file_name.to_owned(), e))?;
 
     // Open the original script file for reading
     let script_file: File = File::open(script_file_name)
-        .map_err(|e| CdiffError::FileOpen(script_file_name.to_owned(), e))?;
+        .map_err(|e| Error::FileOpen(script_file_name.to_owned(), e))?;
 
     // Get file length
     let script_file_len = script_file
         .metadata()
-        .map_err(|e| CdiffError::FileMeta(script_file_name.to_owned(), e))?
+        .map_err(|e| Error::FileMeta(script_file_name.to_owned(), e))?
         .len();
 
     // Write header to cdiff file
     write!(cdiff_file, "ClamAV-Diff:{}:{}:", version, script_file_len)
-        .map_err(|e| CdiffError::FileWrite(script_file_name.to_owned(), e))?;
+        .map_err(|e| Error::FileWrite(script_file_name.to_owned(), e))?;
 
     // Set up buffered reader and gz writer
     let mut reader = BufReader::new(script_file);
@@ -521,12 +520,12 @@ pub fn script2cdiff(script_file_name: &str, builder: &str, server: &str) -> Resu
     // Get cdiff file writer back from flate2
     let mut cdiff_file = gz
         .finish()
-        .map_err(|e| CdiffError::FileWrite(cdiff_file_name.to_owned(), e))?;
+        .map_err(|e| Error::FileWrite(cdiff_file_name.to_owned(), e))?;
 
     // Get the new cdiff file len
     let cdiff_file_len = cdiff_file
         .metadata()
-        .map_err(|e| CdiffError::FileMeta(cdiff_file_name.to_owned(), e))?
+        .map_err(|e| Error::FileMeta(cdiff_file_name.to_owned(), e))?
         .len();
     debug!(
         "script2cdiff() - wrote {} bytes to {}",
@@ -536,7 +535,7 @@ pub fn script2cdiff(script_file_name: &str, builder: &str, server: &str) -> Resu
     // Calculate SHA2-256 to get the sigature
     // TODO: Do this while the file is being written
     let bytes = std::fs::read(&cdiff_file_name)
-        .map_err(|e| CdiffError::FileRead(cdiff_file_name.to_owned(), e))?;
+        .map_err(|e| Error::FileRead(cdiff_file_name.to_owned(), e))?;
     let sha256 = {
         let mut hasher = Sha256::new();
         hasher.update(&bytes);
@@ -561,12 +560,12 @@ pub fn script2cdiff(script_file_name: &str, builder: &str, server: &str) -> Resu
     // Write cdiff footer delimiter
     cdiff_file
         .write_all(b":")
-        .map_err(|e| CdiffError::FileWrite(cdiff_file_name.to_owned(), e))?;
+        .map_err(|e| Error::FileWrite(cdiff_file_name.to_owned(), e))?;
 
     // Write dsig to cdiff footer
     cdiff_file
         .write_all(dsig.to_bytes())
-        .map_err(|e| CdiffError::FileWrite(cdiff_file_name, e))?;
+        .map_err(|e| Error::FileWrite(cdiff_file_name, e))?;
 
     // Exit success
     Ok(())
@@ -609,7 +608,7 @@ pub extern "C" fn _cdiff_apply(fd: i32, mode: u16) -> i32 {
 /// A cdiff file contains a footer that is the signed signature of the sha256
 /// file contains of the header and the body. The footer begins after the first
 /// ':' character to the left of EOF.
-pub fn cdiff_apply(file: &mut File, mode: ApplyMode) -> Result<(), CdiffError> {
+pub fn cdiff_apply(file: &mut File, mode: ApplyMode) -> Result<(), Error> {
     let path = std::env::current_dir().unwrap();
     debug!("cdiff_apply() - current directory is {}", path.display());
 
@@ -649,7 +648,7 @@ pub fn cdiff_apply(file: &mut File, mode: ApplyMode) -> Result<(), CdiffError> {
             };
             debug!("cdiff_apply() - cli_versig2() result = {}", versig_result);
             if versig_result != 0 {
-                return Err(CdiffError::InvalidDigitalSignature);
+                return Err(Error::InvalidDigitalSignature);
             }
 
             // Read file length from header
@@ -1042,7 +1041,7 @@ fn process_lines<T>(
     ctx: &mut Context,
     reader: &mut T,
     uncompressed_size: usize,
-) -> Result<(), CdiffError>
+) -> Result<(), Error>
 where
     T: BufRead,
 {
@@ -1059,7 +1058,7 @@ where
                 match linebuf.first() {
                     // Skip comment lines
                     Some(b'#') => continue,
-                    _ => process_line(ctx, &linebuf).map_err(|e| CdiffError::Input {
+                    _ => process_line(ctx, &linebuf).map_err(|e| Error::Input {
                         line: line_no,
                         err: e,
                         operation: String::from_utf8_lossy(&linebuf).to_string(),
@@ -1150,7 +1149,7 @@ fn read_size(file: &mut File) -> Result<(u32, usize), HeaderError> {
 }
 
 /// Calculate the sha256 of the first len bytes of a file
-fn get_hash(file: &mut File, len: usize) -> Result<[u8; 32], CdiffError> {
+fn get_hash(file: &mut File, len: usize) -> Result<[u8; 32], Error> {
     let mut hasher = Sha256::new();
 
     // Seek to beginning of file
@@ -1193,7 +1192,7 @@ mod tests {
     use std::path::Path;
 
     /// CdiffTestError enumerates all possible errors returned by this testing library.
-    #[derive(Error, Debug)]
+    #[derive(thiserror::Error, Debug)]
     pub enum CdiffTestError {
         /// Represents all other cases of `std::io::Error`.
         #[error(transparent)]
@@ -1545,7 +1544,7 @@ mod tests {
     fn script2cdiff_missing_hyphen() {
         assert!(matches!(
             script2cdiff("", "", ""),
-            Err(CdiffError::FilenameMissingHyphen)
+            Err(Error::FilenameMissingHyphen)
         ));
     }
 }

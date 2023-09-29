@@ -82,7 +82,7 @@ class TC(testcase.TestCase):
 
         expected_stderr = [
             'LibClamAV Error: Failed to load',
-            'Invalid hash: Image fuzzy hash must be 16 characters in length: abcdef',
+            'Invalid hash: ImageFuzzyHash hash must be 16 characters in length: abcdef',
         ]
         unexpected_stdout = [
             'logo.png.bad.UNOFFICIAL FOUND',

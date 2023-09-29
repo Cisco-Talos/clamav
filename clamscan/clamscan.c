@@ -304,6 +304,7 @@ void help(void)
     mprintf(LOGG_INFO, "    --scan-html[=yes(*)/no]              Scan HTML files\n");
     mprintf(LOGG_INFO, "    --scan-xmldocs[=yes(*)/no]           Scan xml-based document files\n");
     mprintf(LOGG_INFO, "    --scan-hwp3[=yes(*)/no]              Scan HWP3 files\n");
+    mprintf(LOGG_INFO, "    --scan-onenote[=yes(*)/no]           Scan OneNote files\n");
     mprintf(LOGG_INFO, "    --scan-archive[=yes(*)/no]           Scan archive files (supported by libclamav)\n");
     mprintf(LOGG_INFO, "    --alert-broken[=yes/no(*)]           Alert on broken executable files (PE & ELF)\n");
     mprintf(LOGG_INFO, "    --alert-broken-media[=yes/no(*)]     Alert on broken graphics files (JPEG, TIFF, PNG, GIF)\n");

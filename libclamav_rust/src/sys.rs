@@ -375,34 +375,36 @@ pub const cli_file_CL_TYPE_HWP3: cli_file = 550;
 pub const cli_file_CL_TYPE_OOXML_HWP: cli_file = 551;
 pub const cli_file_CL_TYPE_PS: cli_file = 552;
 pub const cli_file_CL_TYPE_EGG: cli_file = 553;
-pub const cli_file_CL_TYPE_PART_ANY: cli_file = 554;
-pub const cli_file_CL_TYPE_PART_HFSPLUS: cli_file = 555;
-pub const cli_file_CL_TYPE_MBR: cli_file = 556;
-pub const cli_file_CL_TYPE_HTML: cli_file = 557;
-pub const cli_file_CL_TYPE_MAIL: cli_file = 558;
-pub const cli_file_CL_TYPE_SFX: cli_file = 559;
-pub const cli_file_CL_TYPE_ZIPSFX: cli_file = 560;
-pub const cli_file_CL_TYPE_RARSFX: cli_file = 561;
-pub const cli_file_CL_TYPE_7ZSFX: cli_file = 562;
-pub const cli_file_CL_TYPE_CABSFX: cli_file = 563;
-pub const cli_file_CL_TYPE_ARJSFX: cli_file = 564;
-pub const cli_file_CL_TYPE_EGGSFX: cli_file = 565;
-pub const cli_file_CL_TYPE_NULSFT: cli_file = 566;
-pub const cli_file_CL_TYPE_AUTOIT: cli_file = 567;
-pub const cli_file_CL_TYPE_ISHIELD_MSI: cli_file = 568;
-pub const cli_file_CL_TYPE_ISO9660: cli_file = 569;
-pub const cli_file_CL_TYPE_DMG: cli_file = 570;
-pub const cli_file_CL_TYPE_GPT: cli_file = 571;
-pub const cli_file_CL_TYPE_APM: cli_file = 572;
-pub const cli_file_CL_TYPE_XDP: cli_file = 573;
-pub const cli_file_CL_TYPE_XML_WORD: cli_file = 574;
-pub const cli_file_CL_TYPE_XML_XL: cli_file = 575;
-pub const cli_file_CL_TYPE_XML_HWP: cli_file = 576;
-pub const cli_file_CL_TYPE_HWPOLE2: cli_file = 577;
-pub const cli_file_CL_TYPE_MHTML: cli_file = 578;
-pub const cli_file_CL_TYPE_LNK: cli_file = 579;
-pub const cli_file_CL_TYPE_OTHER: cli_file = 580;
-pub const cli_file_CL_TYPE_IGNORED: cli_file = 581;
+pub const cli_file_CL_TYPE_ONENOTE: cli_file = 554;
+pub const cli_file_CL_TYPE_PART_ANY: cli_file = 555;
+pub const cli_file_CL_TYPE_PART_HFSPLUS: cli_file = 556;
+pub const cli_file_CL_TYPE_MBR: cli_file = 557;
+pub const cli_file_CL_TYPE_HTML: cli_file = 558;
+pub const cli_file_CL_TYPE_MAIL: cli_file = 559;
+pub const cli_file_CL_TYPE_SFX: cli_file = 560;
+pub const cli_file_CL_TYPE_ZIPSFX: cli_file = 561;
+pub const cli_file_CL_TYPE_RARSFX: cli_file = 562;
+pub const cli_file_CL_TYPE_7ZSFX: cli_file = 563;
+pub const cli_file_CL_TYPE_CABSFX: cli_file = 564;
+pub const cli_file_CL_TYPE_ARJSFX: cli_file = 565;
+pub const cli_file_CL_TYPE_EGGSFX: cli_file = 566;
+pub const cli_file_CL_TYPE_NULSFT: cli_file = 567;
+pub const cli_file_CL_TYPE_AUTOIT: cli_file = 568;
+pub const cli_file_CL_TYPE_ISHIELD_MSI: cli_file = 569;
+pub const cli_file_CL_TYPE_ISO9660: cli_file = 570;
+pub const cli_file_CL_TYPE_DMG: cli_file = 571;
+pub const cli_file_CL_TYPE_GPT: cli_file = 572;
+pub const cli_file_CL_TYPE_APM: cli_file = 573;
+pub const cli_file_CL_TYPE_XDP: cli_file = 574;
+pub const cli_file_CL_TYPE_XML_WORD: cli_file = 575;
+pub const cli_file_CL_TYPE_XML_XL: cli_file = 576;
+pub const cli_file_CL_TYPE_XML_HWP: cli_file = 577;
+pub const cli_file_CL_TYPE_HWPOLE2: cli_file = 578;
+pub const cli_file_CL_TYPE_MHTML: cli_file = 579;
+pub const cli_file_CL_TYPE_LNK: cli_file = 580;
+pub const cli_file_CL_TYPE_UDF: cli_file = 581;
+pub const cli_file_CL_TYPE_OTHER: cli_file = 582;
+pub const cli_file_CL_TYPE_IGNORED: cli_file = 583;
 pub type cli_file = ::std::os::raw::c_uint;
 pub use self::cli_file as cli_file_t;
 #[repr(C)]
@@ -612,6 +614,7 @@ pub struct recursion_level_tag {
 }
 pub type recursion_level_t = recursion_level_tag;
 pub type evidence_t = *mut ::std::os::raw::c_void;
+pub type onedump_t = *mut ::std::os::raw::c_void;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct cli_ctx_tag {
@@ -706,6 +709,7 @@ pub struct cl_engine {
     pub tmpdir: *mut ::std::os::raw::c_char,
     pub keeptmp: u32,
     pub engine_options: u64,
+    pub cache_size: u32,
     pub maxscantime: u32,
     pub maxscansize: u64,
     pub maxfilesize: u64,
@@ -1170,6 +1174,16 @@ extern "C" {
 }
 pub type css_image_extractor_t = *mut ::std::os::raw::c_void;
 pub type css_image_handle_t = *mut ::std::os::raw::c_void;
+extern "C" {
+    #[doc = " @brief   Convenience wrapper for cli_magic_scan_nested_fmap_type().\n\n Creates an fmap and calls cli_magic_scan_nested_fmap_type() for you, with type CL_TYPE_ANY.\n\n @param buffer        Pointer to the buffer to be scanned.\n @param length        Size in bytes of the buffer being scanned.\n @param ctx           Scanning context structure.\n @param name          (optional) Original name of the file (to set fmap name metadata)\n @param attributes    Layer attributes of the file being scanned (is it normalized, decrypted, etc)\n @return int          CL_SUCCESS, or an error code."]
+    pub fn cli_magic_scan_buff(
+        buffer: *const ::std::os::raw::c_void,
+        length: usize,
+        ctx: *mut cli_ctx,
+        name: *const ::std::os::raw::c_char,
+        attributes: u32,
+    ) -> cl_error_t;
+}
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct re_guts {

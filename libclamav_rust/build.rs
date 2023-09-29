@@ -52,6 +52,7 @@ const BINDGEN_FUNCTIONS: &[&str] = &[
     "cli_versig2",
     "cli_getdsig",
     "cli_get_debug_flag",
+    "cli_magic_scan_buff",
 ];
 
 // Generate bindings for these types (structs, enums):
@@ -61,6 +62,7 @@ const BINDGEN_TYPES: &[&str] = &[
     "cli_ac_result",
     "css_image_extractor_t",
     "css_image_handle_t",
+    "onedump_t",
 ];
 
 // Find the required functions and types in these headers:
@@ -70,6 +72,8 @@ const BINDGEN_HEADERS: &[&str] = &[
     "../libclamav/others.h",
     "../libclamav/dsig.h",
     "../libclamav/htmlnorm.h",
+    "../libclamav/fmap.h",
+    "../libclamav/scanners.h",
 ];
 
 // Find the required headers in these directories:
@@ -135,7 +139,7 @@ fn execute_bindgen() -> Result<(), &'static str> {
         // Silence code-style warnings for generated bindings.
         .raw_line("#![allow(non_snake_case, non_camel_case_types, non_upper_case_globals)]")
         // Make the bindings pretty.
-        .rustfmt_bindings(true)
+        .formatter(bindgen::Formatter::Rustfmt)
         // Disable the layout tests.
         // We're committing to source control. Pointer width, integer size, etc
         // are probably not the same when generated as when compiled.
