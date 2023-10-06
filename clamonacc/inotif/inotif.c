@@ -598,8 +598,8 @@ void *onas_ddd_th(void *arg)
                         }
                     }
                 }
-                pt = (struct optstruct *)pt->nextarg;
             }
+            pt = (struct optstruct *)pt->nextarg;
         }
     }
 
