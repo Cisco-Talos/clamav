@@ -54,6 +54,9 @@ set(TESTFILES
     clam.exe.bz2
     clam.bz2.zip
     clam.exe_and_mail.tar.gz
+    clam.exe.2007.one
+    clam.exe.2010.one
+    clam.exe.webapp-export.one
 )
 
 if(ENABLE_UNRAR)
