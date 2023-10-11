@@ -95,7 +95,6 @@ CLAMAV_PRIVATE {
     cli_strlcat;
     cli_strlcpy;
     cli_strntoul;
-    cli_cvdunpack;
     cli_regcomp;
     cli_regexec;
     cli_regfree;
@@ -112,7 +111,6 @@ CLAMAV_PRIVATE {
     cli_ole2_extract;
     cli_errmsg;
     cli_debug_flag;
-    cli_dbgmsg_internal;
     cli_vba_readdir;
     cli_vba_inflate;
     cli_ppt_vba_read;
@@ -161,8 +159,6 @@ CLAMAV_PRIVATE {
     regex_list_match;
     cli_hashset_destroy;
     phishing_init;
-    init_domainlist;
-    init_whitelist;
     phishing_done;
     blobCreate;
     blobAddData;
@@ -184,7 +180,6 @@ CLAMAV_PRIVATE {
     cli_ac_free;
     cli_ac_chklsig;
     cli_sigopts_handler;
-    cli_parse_add;
     cli_bm_init;
     cli_bm_scanbuff;
     cli_bm_free;
@@ -224,7 +219,7 @@ CLAMAV_PRIVATE {
     cli_bytecode_context_setparam_ptr;
     cli_bytecode_context_setfile;
     cli_bytecode_context_getresult_int;
-    cli_bytecode_context_clear;
+
     cli_bytecode_init;
     cli_bytecode_done;
     cli_bytecode_debug;
