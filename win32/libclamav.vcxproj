@@ -96,7 +96,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>libmspack.lib;win32_compat.lib;ws2_32.lib;json-c.lib;libbz2.lib;libcrypto.lib;libcurl_imp.lib;libssh2.lib;libssl.lib;libxml2.lib;nghttp2.lib;pcre2-8.lib;pthreadVC2.lib;zlibstatic.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libmspack.lib;win32_compat.lib;ws2_32.lib;json-c.lib;libbz2.lib;libcrypto.lib;libcurl_imp.lib;libssh2.lib;libssl.lib;libxml2.lib;nghttp2.lib;pcre2-8.lib;pthreadVC3.lib;zlibstatic.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ModuleDefinitionFile>$(SolutionDir)libclamav.def</ModuleDefinitionFile>
       <AdditionalLibraryDirectories>$(SolutionDir)$(PlatformName)\$(Configuration);$(CLAM_DEPENDENCIES)\$(PlatformName)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
@@ -114,7 +114,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>libmspack.lib;win32_compat.lib;ws2_32.lib;json-c.lib;libbz2.lib;libcrypto.lib;libcurl_imp.lib;libssh2.lib;libssl.lib;libxml2.lib;nghttp2.lib;pcre2-8.lib;pthreadVC2.lib;zlibstatic.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libmspack.lib;win32_compat.lib;ws2_32.lib;json-c.lib;libbz2.lib;libcrypto.lib;libcurl_imp.lib;libssh2.lib;libssl.lib;libxml2.lib;nghttp2.lib;pcre2-8.lib;pthreadVC3.lib;zlibstatic.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ModuleDefinitionFile>$(SolutionDir)libclamav.def</ModuleDefinitionFile>
       <AdditionalLibraryDirectories>$(SolutionDir)$(PlatformName)\$(Configuration);$(CLAM_DEPENDENCIES)\$(PlatformName)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
@@ -136,7 +136,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>libmspack.lib;win32_compat.lib;ws2_32.lib;json-c.lib;libbz2.lib;libcrypto.lib;libcurl_imp.lib;libssh2.lib;libssl.lib;libxml2.lib;nghttp2.lib;pcre2-8.lib;pthreadVC2.lib;zlibstatic.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libmspack.lib;win32_compat.lib;ws2_32.lib;json-c.lib;libbz2.lib;libcrypto.lib;libcurl_imp.lib;libssh2.lib;libssl.lib;libxml2.lib;nghttp2.lib;pcre2-8.lib;pthreadVC3.lib;zlibstatic.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ModuleDefinitionFile>$(SolutionDir)libclamav.def</ModuleDefinitionFile>
       <AdditionalLibraryDirectories>$(SolutionDir)$(PlatformName)\$(Configuration);$(CLAM_DEPENDENCIES)\$(PlatformName)\lib</AdditionalLibraryDirectories>
     </Link>
@@ -158,7 +158,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>libmspack.lib;win32_compat.lib;ws2_32.lib;json-c.lib;libbz2.lib;libcrypto.lib;libcurl_imp.lib;libssh2.lib;libssl.lib;libxml2.lib;nghttp2.lib;pcre2-8.lib;pthreadVC2.lib;zlibstatic.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libmspack.lib;win32_compat.lib;ws2_32.lib;json-c.lib;libbz2.lib;libcrypto.lib;libcurl_imp.lib;libssh2.lib;libssl.lib;libxml2.lib;nghttp2.lib;pcre2-8.lib;pthreadVC3.lib;zlibstatic.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ModuleDefinitionFile>$(SolutionDir)libclamav.def</ModuleDefinitionFile>
       <AdditionalLibraryDirectories>$(SolutionDir)$(PlatformName)\$(Configuration);$(CLAM_DEPENDENCIES)\$(PlatformName)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>

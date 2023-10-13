@@ -51,14 +51,14 @@ Source: "x64\Release\libmspack.dll"; DestDir: "{app}"; DestName: "libmspack.dll"
 Source: "x64\Release\sigtool.exe"; DestDir: "{app}"; DestName: "sigtool.exe"; Check: Is64BitInstallMode
 Source: "C:\clam_dependencies\x64\lib\json-c.dll"; DestDir: "{app}"; DestName: "json-c.dll"; Check: Is64BitInstallMode
 Source: "C:\clam_dependencies\x64\lib\libbz2.dll"; DestDir: "{app}"; DestName: "libbz2.dll"; Check: Is64BitInstallMode
-Source: "C:\clam_dependencies\x64\lib\libcrypto-1_1-x64.dll"; DestDir: "{app}"; DestName: "libcrypto-1_1-x64.dll"; Check: Is64BitInstallMode
-Source: "C:\clam_dependencies\x64\lib\libssl-1_1-x64.dll"; DestDir: "{app}"; DestName: "libssl-1_1-x64.dll"; Check: Is64BitInstallMode
+Source: "C:\clam_dependencies\x64\lib\libcrypto-3-x64.dll"; DestDir: "{app}"; DestName: "libcrypto-3-x64.dll"; Check: Is64BitInstallMode
+Source: "C:\clam_dependencies\x64\lib\libssl-3-x64.dll"; DestDir: "{app}"; DestName: "libssl-3-x64.dll"; Check: Is64BitInstallMode
 Source: "C:\clam_dependencies\x64\lib\libcurl.dll"; DestDir: "{app}"; DestName: "libcurl.dll"; Check: Is64BitInstallMode
 Source: "C:\clam_dependencies\x64\lib\libssh2.dll"; DestDir: "{app}"; DestName: "libssh2.dll"; Check: Is64BitInstallMode
 Source: "C:\clam_dependencies\x64\lib\libxml2.dll"; DestDir: "{app}"; DestName: "libxml2.dll"; Check: Is64BitInstallMode
 Source: "C:\clam_dependencies\x64\lib\nghttp2.dll"; DestDir: "{app}"; DestName: "nghttp2.dll"; Check: Is64BitInstallMode
 Source: "C:\clam_dependencies\x64\lib\pcre2-8.dll"; DestDir: "{app}"; DestName: "pcre2-8.dll"; Check: Is64BitInstallMode
-Source: "C:\clam_dependencies\x64\lib\pthreadVC2.dll"; DestDir: "{app}"; DestName: "pthreadVC2.dll"; Check: Is64BitInstallMode
+Source: "C:\clam_dependencies\x64\lib\pthreadVC3.dll"; DestDir: "{app}"; DestName: "pthreadVC3.dll"; Check: Is64BitInstallMode
 Source: "C:\clam_dependencies\x64\lib\pdcurses.dll"; DestDir: "{app}"; DestName: "pdcurses.dll"; Check: Is64BitInstallMode
 Source: "C:\clam_dependencies\vcredist\vc_redist.x64.exe"; DestDir: "{tmp}"; Flags: deleteafterinstall; Check: Is64BitInstallMode
 
@@ -79,14 +79,14 @@ Source: "Win32\Release\libmspack.dll"; DestDir: "{app}"; DestName: "libmspack.dl
 Source: "Win32\Release\sigtool.exe"; DestDir: "{app}"; DestName: "sigtool.exe"; Check: not Is64BitInstallMode
 Source: "C:\clam_dependencies\Win32\lib\json-c.dll"; DestDir: "{app}"; DestName: "json-c.dll"; Check: not Is64BitInstallMode
 Source: "C:\clam_dependencies\Win32\lib\libbz2.dll"; DestDir: "{app}"; DestName: "libbz2.dll"; Check: not Is64BitInstallMode
-Source: "C:\clam_dependencies\Win32\lib\libcrypto-1_1.dll"; DestDir: "{app}"; DestName: "libcrypto-1_1.dll"; Check: not Is64BitInstallMode
-Source: "C:\clam_dependencies\Win32\lib\libssl-1_1.dll"; DestDir: "{app}"; DestName: "libssl-1_1.dll"; Check: not Is64BitInstallMode
+Source: "C:\clam_dependencies\Win32\lib\libcrypto-3.dll"; DestDir: "{app}"; DestName: "libcrypto-3.dll"; Check: not Is64BitInstallMode
+Source: "C:\clam_dependencies\Win32\lib\libssl-3.dll"; DestDir: "{app}"; DestName: "libssl-3.dll"; Check: not Is64BitInstallMode
 Source: "C:\clam_dependencies\Win32\lib\libcurl.dll"; DestDir: "{app}"; DestName: "libcurl.dll"; Check: not Is64BitInstallMode
 Source: "C:\clam_dependencies\Win32\lib\libssh2.dll"; DestDir: "{app}"; DestName: "libssh2.dll"; Check: not Is64BitInstallMode
 Source: "C:\clam_dependencies\Win32\lib\libxml2.dll"; DestDir: "{app}"; DestName: "libxml2.dll"; Check: not Is64BitInstallMode
 Source: "C:\clam_dependencies\Win32\lib\nghttp2.dll"; DestDir: "{app}"; DestName: "nghttp2.dll"; Check: not Is64BitInstallMode
 Source: "C:\clam_dependencies\Win32\lib\pcre2-8.dll"; DestDir: "{app}"; DestName: "pcre2-8.dll"; Check: not Is64BitInstallMode
-Source: "C:\clam_dependencies\Win32\lib\pthreadVC2.dll"; DestDir: "{app}"; DestName: "pthreadVC2.dll"; Check: not Is64BitInstallMode
+Source: "C:\clam_dependencies\Win32\lib\pthreadVC3.dll"; DestDir: "{app}"; DestName: "pthreadVC3.dll"; Check: not Is64BitInstallMode
 Source: "C:\clam_dependencies\Win32\lib\pdcurses.dll"; DestDir: "{app}"; DestName: "pdcurses.dll"; Check: not Is64BitInstallMode
 Source: "C:\clam_dependencies\vcredist\vc_redist.x86.exe"; DestDir: "{tmp}"; Flags: deleteafterinstall; Check: not Is64BitInstallMode
 
