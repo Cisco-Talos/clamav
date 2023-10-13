@@ -101,7 +101,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>shared.lib;ws2_32.lib;pthreadVC2.lib;json-c.lib;libcrypto.lib;libcurl_imp.lib;libssh2.lib;libssl.lib;nghttp2.lib;zlibstatic.lib;libclamav.lib;Dnsapi.lib;Crypt32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>shared.lib;ws2_32.lib;pthreadVC3.lib;json-c.lib;libcrypto.lib;libcurl_imp.lib;libssh2.lib;libssl.lib;nghttp2.lib;zlibstatic.lib;libclamav.lib;Dnsapi.lib;Crypt32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(SolutionDir)$(PlatformName)\$(Configuration);$(CLAM_DEPENDENCIES)\$(PlatformName)\lib</AdditionalLibraryDirectories>
       <ModuleDefinitionFile>$(SolutionDir)libfreshclam.def</ModuleDefinitionFile>
     </Link>
@@ -118,7 +118,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>shared.lib;ws2_32.lib;pthreadVC2.lib;json-c.lib;libcrypto.lib;libcurl_imp.lib;libssh2.lib;libssl.lib;nghttp2.lib;zlibstatic.lib;libclamav.lib;Dnsapi.lib;Crypt32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>shared.lib;ws2_32.lib;pthreadVC3.lib;json-c.lib;libcrypto.lib;libcurl_imp.lib;libssh2.lib;libssl.lib;nghttp2.lib;zlibstatic.lib;libclamav.lib;Dnsapi.lib;Crypt32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(SolutionDir)$(PlatformName)\$(Configuration);$(CLAM_DEPENDENCIES)\$(PlatformName)\lib</AdditionalLibraryDirectories>
       <ModuleDefinitionFile>$(SolutionDir)libfreshclam.def</ModuleDefinitionFile>
     </Link>
@@ -140,7 +140,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)$(PlatformName)\$(Configuration);$(CLAM_DEPENDENCIES)\$(PlatformName)\lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>shared.lib;ws2_32.lib;pthreadVC2.lib;json-c.lib;libcrypto.lib;libcurl_imp.lib;libssh2.lib;libssl.lib;nghttp2.lib;zlibstatic.lib;libclamav.lib;Dnsapi.lib;Crypt32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>shared.lib;ws2_32.lib;pthreadVC3.lib;json-c.lib;libcrypto.lib;libcurl_imp.lib;libssh2.lib;libssl.lib;nghttp2.lib;zlibstatic.lib;libclamav.lib;Dnsapi.lib;Crypt32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ModuleDefinitionFile>$(SolutionDir)libfreshclam.def</ModuleDefinitionFile>
     </Link>
   </ItemDefinitionGroup>
@@ -161,7 +161,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)$(PlatformName)\$(Configuration);$(CLAM_DEPENDENCIES)\$(PlatformName)\lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>shared.lib;ws2_32.lib;pthreadVC2.lib;json-c.lib;libcrypto.lib;libcurl_imp.lib;libssh2.lib;libssl.lib;nghttp2.lib;zlibstatic.lib;libclamav.lib;Dnsapi.lib;Crypt32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>shared.lib;ws2_32.lib;pthreadVC3.lib;json-c.lib;libcrypto.lib;libcurl_imp.lib;libssh2.lib;libssl.lib;nghttp2.lib;zlibstatic.lib;libclamav.lib;Dnsapi.lib;Crypt32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ModuleDefinitionFile>$(SolutionDir)libfreshclam.def</ModuleDefinitionFile>
     </Link>
   </ItemDefinitionGroup>
