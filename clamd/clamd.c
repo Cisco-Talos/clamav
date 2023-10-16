@@ -568,6 +568,13 @@ int main(int argc, char **argv)
                 ret = 1;
                 break;
             }
+
+            STATBUF sb;
+            if (CLAMSTAT(opt->strarg, &sb) != 0 && !S_ISDIR(sb.st_mode)) {
+                logg(LOGG_ERROR, "Current configuration of TemporaryDirectory: %s does not exist, or is not valid \n", opt->strarg);
+                ret = 1;
+                break;
+            }
         }
 
         cl_engine_set_clcb_hash(engine, hash_callback);
