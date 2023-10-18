@@ -612,7 +612,7 @@ endforeach()
 
 # Always use '-fPIC'/'-fPIE' option if OS is not Haiku.
 if(NOT HAIKU)
-       set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+    set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 endif()
 
 # Checks for header files.
