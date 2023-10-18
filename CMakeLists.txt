@@ -610,8 +610,10 @@ foreach(_cxx1x_flag -std=c++14 -std=c++11)
     endif()
 endforeach()
 
-# Always use '-fPIC'/'-fPIE' option.
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+# Always use '-fPIC'/'-fPIE' option if OS is not Haiku.
+if(NOT HAIKU)
+    set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+endif()
 
 # Checks for header files.
 include(CheckIncludeFile)
