@@ -109,7 +109,8 @@ typedef short int16_t;
 typedef unsigned short uint16_t;
 typedef signed char int8_t;
 typedef unsigned char uint8_t;
-typedef signed int ssize_t;
+#include <BaseTsd.h>
+typedef SSIZE_T ssize_t;
 /* Certain compatibility updates to VC++ introduce the `cstdint'
 * header, which defines the INT*_C macros. On default installs they
 * are absent. */
