@@ -573,7 +573,8 @@
 /* #undef off_t */
 
 /* Define to `int' */
-typedef int ssize_t;
+#include <BaseTsd.h>
+typedef SSIZE_T ssize_t;
 
 /* Define to the equivalent of the C99 'restrict' keyword, or to
    nothing if this is not supported.  Do not define if restrict is
