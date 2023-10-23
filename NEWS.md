@@ -5,9 +5,29 @@ differ slightly from third-party binary packages.
 
 ## 1.0.4
 
-ClamAV 1.0.4 is a critical patch release with the following fixes:
+ClamAV 1.0.4 is a patch release with the following fixes:
+
+- Eliminate security warning about unused "atty" dependency.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/1035
+
+- Upgrade the bundled UnRAR library (libclamunrar) to version 6.2.12.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/1054
+
+- Windows: libjson-c 0.17 compatibility fix. with ssize_t type definition.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/1064
+
+- Freshclam: Removed a verbose warning printed for each Freshclam HTTP request.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/1042
+
+- Build system: Fix link error with Clang/LLVM/LLD version 17.
+  Patch courtesy of Yasuhiro Kimura.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/1058
+
+- Fix alert-exceeds-max feature for files > 2GB and < max-filesize.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/1041
 
 Special thanks to the following people for code contributions and bug reports:
+- Yasuhiro Kimura
 
 ## 1.0.3
 
