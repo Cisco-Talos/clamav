@@ -5,9 +5,16 @@ Note: This file refers to the source tarball. Things described here may differ
 
 ## 0.103.11
 
-ClamAV 0.103.11 is a critical patch release with the following fixes:
+ClamAV 0.103.11 is a patch release with the following fixes:
 
-Special thanks to the following people for code contributions and bug reports:
+- Upgrade the bundled UnRAR library (libclamunrar) to version 6.2.12.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/1053
+
+- Windows: libjson-c 0.17 compatibility fix. with ssize_t type definition.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/1065
+
+- Windows: Update build system to use OpenSSL 3 and PThreads-Win32 v3.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/1057
 
 ## 0.103.10
 
