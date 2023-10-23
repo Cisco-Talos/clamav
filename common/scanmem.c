@@ -532,7 +532,7 @@ int dump_pe(const char *filename, PROCESSENTRY32 ProcStruct,
 int scanfile(const char *filename, scanmem_data *scan_data, struct mem_info *info)
 {
     int fd;
-    int scantype;
+    scantype_t scantype;
     int ret             = CL_CLEAN;
     const char *virname = NULL;
 
@@ -548,8 +548,6 @@ int scanfile(const char *filename, scanmem_data *scan_data, struct mem_info *inf
             scantype = STREAM;
         else if (optget(info->opts, "multiscan")->enabled)
             scantype = MULTI;
-        else if (optget(info->opts, "allmatch")->enabled)
-            scantype = ALLMATCH;
         else
             scantype = CONT;
 
@@ -557,7 +555,7 @@ int scanfile(const char *filename, scanmem_data *scan_data, struct mem_info *inf
             info->errors++;
             return -1;
         }
-        if (dsresult(sock, scantype, filename, NULL, &info->errors, clamdopts) > 0) {
+        if (dsresult(sock, scantype, info->options, filename, NULL, &info->errors, clamdopts) > 0) {
             info->ifiles++;
             ret = CL_VIRUS;
         }

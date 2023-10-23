@@ -24,6 +24,7 @@
 
 // libclamav
 #include "clamav.h"
+#include "clamdcom.h"
 
 #ifndef ONAS_DEBUG
 #define ONAS_DEBUG
@@ -59,7 +60,8 @@ struct onas_context {
     uint64_t sizelimit;
     uint64_t extinfo;
 
-    int scantype;
+    scantype_t scantype;
+    struct cl_scan_options *options;
     int isremote;
     int session;
     int timeout;

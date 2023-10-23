@@ -68,7 +68,7 @@
 #include "client.h"
 #include "socket.h"
 
-static const char *scancmd[] = {"CONTSCAN", "MULTISCAN", "INSTREAM", "FILDES", "ALLMATCHSCAN"};
+static const char *scancmd[] = {"CONTSCAN", "MULTISCAN", "INSTREAM", "FILDES"};
 
 /* Issues an INSTREAM command to clamd and streams the given file
  * Returns >0 on success, 0 soft fail, -1 hard fail */
@@ -79,8 +79,7 @@ static int onas_send_stream(CURL *curl, const char *filename, int fd, int64_t ti
     int ret        = 1;
     int close_flag = 0;
     STATBUF statbuf;
-    uint64_t bytesRead     = 0;
-    const char zINSTREAM[] = "zINSTREAM";
+    uint64_t bytesRead = 0;
 
     if (-1 == fd) {
         if (NULL == filename) {
@@ -112,7 +111,7 @@ static int onas_send_stream(CURL *curl, const char *filename, int fd, int64_t ti
         goto strm_out;
     }
 
-    if (onas_sendln(curl, zINSTREAM, sizeof(zINSTREAM), timeout)) {
+    if (onas_sendln(curl, "INSTREAM", sizeof("INSTREAM"), timeout)) {
         ret = -1;
         goto strm_out;
     }
@@ -160,9 +159,8 @@ static int onas_send_fdpass(int sockd, int fd)
     struct msghdr msg;
     struct cmsghdr *cmsg;
     unsigned char fdbuf[CMSG_SPACE(sizeof(int))];
-    const char zFILDES[] = "zFILDES";
 
-    if (sendln(sockd, zFILDES, sizeof(zFILDES))) {
+    if (sendln(sockd, "FILDES", sizeof("FILDES"))) {
         return -1;
     }
 
@@ -232,10 +230,11 @@ fd_out:
  * This is used only in non IDSESSION mode
  * Returns the number of infected files or -1 on error
  * NOTE: filename may be NULL for STREAM scantype. */
-int onas_dsresult(CURL *curl, int scantype, uint64_t maxstream, const char *filename, int fd, int64_t timeout, int *printok, int *errors, cl_error_t *ret_code)
+int onas_dsresult(CURL *curl, scantype_t scantype, struct cl_scan_options *options, uint64_t maxstream, const char *filename, int fd, int64_t timeout, int *printok, int *errors, cl_error_t *ret_code)
 {
     int infected = 0, len = 0, beenthere = 0;
     char *bol, *eol;
+    char *scan_command = NULL;
     struct onas_rcvln rcv;
     STATBUF sb;
     int sockd                                                        = -1;
@@ -252,8 +251,9 @@ int onas_dsresult(CURL *curl, int scantype, uint64_t maxstream, const char *file
 
     switch (scantype) {
         case MULTI:
-        case CONT:
-        case ALLMATCH:
+        case CONT: {
+            const char *allmatch = "";
+
             if (!filename) {
                 logg(LOGG_INFO, "Filename cannot be NULL for MULTISCAN or CONTSCAN.\n");
                 if (ret_code) {
@@ -262,7 +262,12 @@ int onas_dsresult(CURL *curl, int scantype, uint64_t maxstream, const char *file
                 infected = -1;
                 goto done;
             }
-            len = strlen(filename) + strlen(scancmd[scantype]) + 3;
+
+            if (options->general & CL_SCAN_GENERAL_ALLMATCHES) {
+                allmatch = "ALLMATCH ";
+            }
+
+            len = strlen("zOPTSCAN ") + strlen(allmatch) + strlen(scancmd[scantype]) + 1 + strlen(filename) + 1;
             if (!(bol = malloc(len))) {
                 logg(LOGG_ERROR, "Cannot allocate a command buffer: %s\n", strerror(errno));
                 if (ret_code) {
@@ -271,7 +276,7 @@ int onas_dsresult(CURL *curl, int scantype, uint64_t maxstream, const char *file
                 infected = -1;
                 goto done;
             }
-            sprintf(bol, "z%s %s", scancmd[scantype], filename);
+            sprintf(scan_command, "zOPTSCAN %s%s %s", allmatch, scancmd[scantype], filename);
             if (onas_sendln(curl, bol, len, timeout)) {
                 if (ret_code) {
                     *ret_code = CL_EWRITE;
@@ -282,7 +287,7 @@ int onas_dsresult(CURL *curl, int scantype, uint64_t maxstream, const char *file
             }
             free(bol);
             break;
-
+        }
         case STREAM:
             /* NULL filename safe in send_stream() */
             len = onas_send_stream(curl, filename, fd, timeout, maxstream);
@@ -355,7 +360,7 @@ int onas_dsresult(CURL *curl, int scantype, uint64_t maxstream, const char *file
                 *(eol - 7)                              = 0;
                 *printok                                = 0;
 
-                if (scantype != ALLMATCH) {
+                if (!options->general & CL_SCAN_GENERAL_ALLMATCHES) {
                     infected++;
                 } else {
                     if (filename != NULL && strcmp(filename, last_filename)) {
@@ -458,8 +463,13 @@ int onas_dsresult(CURL *curl, int scantype, uint64_t maxstream, const char *file
     }
 
 done:
+    if (NULL != scan_command) {
+        free(scan_command);
+    }
+
     if (sockd > 0) {
         closesocket(sockd);
     }
+
     return infected;
 }

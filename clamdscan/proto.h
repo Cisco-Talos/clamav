@@ -23,6 +23,6 @@
 #define PROTO_H
 #include "misc.h"
 
-int serial_client_scan(char *file, int scantype, int *infected, int *err, int maxlevel, int flags);
-int parallel_client_scan(char *file, int scantype, int *infected, int *err, int maxlevel, int flags);
+int serial_client_scan(char *file, scantype_t scantype, struct cl_scan_options *options, int *infected, int *err, int maxlevel, int flags);
+int parallel_client_scan(char *file, scantype_t scantype, struct cl_scan_options *options, int *infected, int *err, int maxlevel, int flags);
 #endif

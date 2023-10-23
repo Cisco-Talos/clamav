@@ -127,7 +127,7 @@ static cl_error_t onas_scan_safe(struct onas_scan_event *event_data, const char 
 
     pthread_mutex_lock(&onas_scan_lock);
 
-    ret = onas_client_scan(event_data->tcpaddr, event_data->portnum, event_data->scantype, event_data->maxstream,
+    ret = onas_client_scan(event_data->tcpaddr, event_data->portnum, event_data->scantype, event_data->options, event_data->maxstream,
                            fname, fd, event_data->timeout, sb, infected, err, ret_code);
 
     pthread_mutex_unlock(&onas_scan_lock);
@@ -400,6 +400,7 @@ cl_error_t onas_map_context_info_to_event_data(struct onas_context *ctx, struct 
     }
 
     (*event_data)->scantype       = ctx->scantype;
+    (*event_data)->options        = ctx->options;
     (*event_data)->timeout        = ctx->timeout;
     (*event_data)->maxstream      = ctx->maxstream;
     (*event_data)->fan_fd         = ctx->fan_fd;

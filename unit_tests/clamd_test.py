@@ -472,7 +472,7 @@ class TC(testcase.TestCase):
 
     def test_clamd_09_clamdscan_ExcludePath(self):
         '''
-        Verify that ExcudePath works and does not cause other  on works as expected.
+        Verify that ExcudePath works as expected.
         We'll use valgrind on clamdscan instead of clamd for this one, if enabled
         as a regression for clamdscan memory leak fixes.
 
@@ -485,9 +485,9 @@ class TC(testcase.TestCase):
         (TC.path_tmp / 'beta').mkdir()
         (TC.path_tmp / 'charlie').mkdir()
 
-        shutil.copy(str(TC.path_build / 'unit_tests' / 'input' / 'clamav_hdb_scanfiles' / 'clam.exe'), str(TC.path_tmp / 'alpha' / 'a_found'))     # This should be found (first)
-        shutil.copy(str(TC.path_build / 'unit_tests' / 'input' / 'clamav_hdb_scanfiles' / 'clam.exe'), str(TC.path_tmp / 'beta' / 'b_excluded'))  # This one should be excluded
-        shutil.copy(str(TC.path_build / 'unit_tests' / 'input' / 'clamav_hdb_scanfiles' / 'clam.exe'), str(TC.path_tmp / 'charlie' / 'c_found'))     # This one should still be found after excluding the previous
+        shutil.copy(str(TC.path_build / 'unit_tests' / 'input' / 'clamav_hdb_scanfiles' / 'clam.exe'), str(TC.path_tmp / 'alpha' / 'a_found'))   # This should be found (first)
+        shutil.copy(str(TC.path_build / 'unit_tests' / 'input' / 'clamav_hdb_scanfiles' / 'clam.exe'), str(TC.path_tmp / 'beta' / 'b_excluded')) # This one should be excluded
+        shutil.copy(str(TC.path_build / 'unit_tests' / 'input' / 'clamav_hdb_scanfiles' / 'clam.exe'), str(TC.path_tmp / 'charlie' / 'c_found')) # This one should still be found after excluding the previous
 
         with TC.clamd_config.open('a') as config:
             exclude_path = 'beta'
@@ -496,7 +496,7 @@ class TC(testcase.TestCase):
                 ExcludePath {}
                 '''.format(exclude_path))
 
-        self.start_clamd(use_valgrind=False)
+        self.start_clamd(use_valgrind=True)
 
         poll = self.proc.poll()
         assert poll == None  # subprocess is alive if poll() returns None
@@ -515,7 +515,7 @@ class TC(testcase.TestCase):
 
         self.run_clamdscan('{}'.format(TC.path_tmp),
             expected_ec=1, expected_out=expected_out, unexpected_out=unexpected_out,
-            use_valgrind=True)
+            use_valgrind=False)
 
     def test_clamd_10_allmatch_not_sticky(self):
         '''

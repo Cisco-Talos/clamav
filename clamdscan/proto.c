@@ -78,7 +78,8 @@ static int ftw_chkpath(const char *path, struct cli_ftw_cbdata *data)
 /* Used by serial_callback() */
 struct client_serial_data {
     int infected;
-    int scantype;
+    scantype_t scantype;
+    struct cl_scan_options *options;
     int printok;
     int files;
     int errors;
@@ -148,7 +149,7 @@ static cl_error_t serial_callback(STATBUF *sb, char *filename, const char *path,
         c->errors++;
         goto done;
     }
-    ret = dsresult(sockd, c->scantype, f, &c->printok, &c->errors, clamdopts);
+    ret = dsresult(sockd, c->scantype, c->options, f, &c->printok, &c->errors, clamdopts);
     closesocket(sockd);
     if (ret < 0) {
         c->errors++;
@@ -171,7 +172,7 @@ done:
 
 /* Non-IDSESSION handler
  * Returns non zero for serious errors, zero otherwise */
-int serial_client_scan(char *file, int scantype, int *infected, int *err, int maxlevel, int flags)
+int serial_client_scan(char *file, scantype_t scantype, struct cl_scan_options *options, int *infected, int *err, int maxlevel, int flags)
 {
     struct cli_ftw_cbdata data;
     struct client_serial_data cdata;
@@ -182,6 +183,7 @@ int serial_client_scan(char *file, int scantype, int *infected, int *err, int ma
     cdata.errors   = 0;
     cdata.printok  = printinfected ^ 1;
     cdata.scantype = scantype;
+    cdata.options  = options;
     data.data      = &cdata;
 
     ftw = cli_ftw(file, flags, maxlevel ? maxlevel : INT_MAX, serial_callback, &data, ftw_chkpath);
@@ -204,7 +206,8 @@ struct client_parallel_data {
     int infected;
     int files;
     int errors;
-    int scantype;
+    scantype_t scantype;
+    struct cl_scan_options *options;
     int sockd;
     int lastid;
     int printok;
@@ -212,7 +215,7 @@ struct client_parallel_data {
         unsigned int id;
         const char *file;
         struct SCANID *next;
-    } * ids;
+    } *ids;
 };
 
 /* Sends a proper scan request to clamd and parses its replies
@@ -357,11 +360,15 @@ static cl_error_t parallel_callback(STATBUF *sb, char *filename, const char *pat
     switch (c->scantype) {
 #ifdef HAVE_FD_PASSING
         case FILDES:
-            res = send_fdpass(c->sockd, filename);
+            res = send_fdpass(c->sockd, filename, c->options);
             break;
 #endif
         case STREAM:
-            res = send_stream(c->sockd, filename, clamdopts);
+            res = send_stream(c->sockd, filename, clamdopts, c->options);
+            break;
+
+        default:
+            // Ignore other cases (MULTI and CONT)
             break;
     }
     if (res <= 0) {
@@ -397,7 +404,7 @@ done:
 
 /* IDSESSION handler
  * Returns non zero for serious errors, zero otherwise */
-int parallel_client_scan(char *file, int scantype, int *infected, int *err, int maxlevel, int flags)
+int parallel_client_scan(char *file, scantype_t scantype, struct cl_scan_options *options, int *infected, int *err, int maxlevel, int flags)
 {
     struct cli_ftw_cbdata data;
     struct client_parallel_data cdata;
@@ -417,6 +424,7 @@ int parallel_client_scan(char *file, int scantype, int *infected, int *err, int 
     cdata.files    = 0;
     cdata.errors   = 0;
     cdata.scantype = scantype;
+    cdata.options  = options;
     cdata.lastid   = 0;
     cdata.ids      = NULL;
     cdata.printok  = printinfected ^ 1;

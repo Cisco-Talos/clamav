@@ -22,33 +22,6 @@
 #ifndef __SESSION_H
 #define __SESSION_H
 
-#define CMD1 "SCAN"
-/* #define CMD2 "RAWSCAN" */ /* removed, was deprecated */
-#define CMD3 "QUIT"
-#define CMD4 "RELOAD"
-#define CMD5 "PING"
-#define CMD6 "CONTSCAN"
-#define CMD7 "VERSION"
-/* #define CMD8 "STREAM" */  /* removed, was deprecated */
-/* #define CMD9 "SESSION" */ /* removed, was deprecated */
-#define CMD10 "END"
-#define CMD11 "SHUTDOWN"
-/* #define CMD12 "FD" */
-#define CMD13 "MULTISCAN"
-#define CMD14 "FILDES"
-#define CMD15 "STATS"
-#define CMD16 "IDSESSION"
-#define CMD17 "INSTREAM"
-#define CMD18 "VERSIONCOMMANDS"
-#define CMD19 "DETSTATSCLEAR"
-#define CMD20 "DETSTATS"
-
-#define CMD21 "ALLMATCHSCAN"
-
-#define CMD22 "GET / HTTP/1.1"
-#define CMD23 "GET / HTTP/2"
-#define CMD24 ""
-
 // libclamav
 #include "clamav.h"
 
@@ -80,9 +53,7 @@ enum commands {
     COMMAND_MULTISCANFILE,
     COMMAND_INSTREAMSCAN,
     COMMAND_ALLMATCHSCAN,
-    COMMAND_SYNACK,
-    COMMAND_ACK,
-    COMMAND_GOPHER
+    COMMAND_OPTSCAN,
 };
 
 typedef struct client_conn_tag {
@@ -103,7 +74,7 @@ typedef struct client_conn_tag {
 } client_conn_t;
 
 int command(client_conn_t *conn, int *virus);
-enum commands parse_command(const char *cmd, const char **argument, int oldstyle);
+enum commands parse_command(const char *cmd, size_t cmd_len, const char **argument, size_t *argument_len, int oldstyle);
 int execute_or_dispatch_command(client_conn_t *conn, enum commands command, const char *argument);
 
 int conn_reply(const client_conn_t *conn, const char *path, const char *msg, const char *status);

@@ -103,6 +103,7 @@ int main(int argc, char **argv)
     const struct optstruct *opts;
     const struct optstruct *opt;
     const struct optstruct *clamdopts;
+    struct cl_scan_options options = {0};
     struct onas_context *ctx;
     int ret = 0;
 
@@ -146,6 +147,8 @@ int main(int argc, char **argv)
         return 2;
     }
     ctx->clamdopts = clamdopts;
+
+    ctx->options = &options;
 
     /* Make sure we're good to begin spinup */
     ret = startup_checks(ctx);

@@ -377,7 +377,8 @@ cl_error_t scanfd(
     struct cl_scan_options *options,
     const struct optstruct *opts,
     int odesc,
-    int stream)
+    int stream,
+    struct scan_cb_data *scandata)
 {
     cl_error_t ret      = -1;
     int fd              = conn->scanfd;
@@ -426,7 +427,7 @@ cl_error_t scanfd(
     thrmgr_setactivetask(fdstr, NULL);
     context.filename = fdstr;
     context.virsize  = 0;
-    context.scandata = NULL;
+    context.scandata = scandata;
     ret              = cl_scandesc_callback(fd, log_filename, &virname, scanned, engine, options, &context);
     thrmgr_setactivetask(NULL, NULL);
 
@@ -437,13 +438,17 @@ cl_error_t scanfd(
     }
 
     if (ret == CL_VIRUS) {
-        virusaction(log_filename, virname, opts);
-        if (conn_reply_virus(conn, reply_fdstr, virname) == -1)
-            ret = CL_ETIMEOUT;
-        if (context.virsize && optget(opts, "ExtendedDetectionInfo")->enabled)
-            logg(LOGG_INFO, "%s: %s(%s:%llu) FOUND\n", log_filename, virname, context.virhash, context.virsize);
-        else
-            logg(LOGG_INFO, "%s: %s FOUND\n", log_filename, virname);
+        if (options->general & CL_SCAN_GENERAL_ALLMATCHES || options->general & CL_SCAN_GENERAL_HEURISTIC_PRECEDENCE) {
+            virusaction(log_filename, virname, opts);
+        } else {
+            virusaction(log_filename, virname, opts);
+            if (conn_reply_virus(conn, reply_fdstr, virname) == -1)
+                ret = CL_ETIMEOUT;
+            if (context.virsize && optget(opts, "ExtendedDetectionInfo")->enabled)
+                logg(LOGG_INFO, "%s: %s(%s:%llu) FOUND\n", log_filename, virname, context.virhash, context.virsize);
+            else
+                logg(LOGG_INFO, "%s: %s FOUND\n", log_filename, virname);
+        }
     } else if (ret != CL_CLEAN) {
         if (conn_reply(conn, reply_fdstr, cl_strerror(ret), "ERROR") == -1)
             ret = CL_ETIMEOUT;
@@ -469,7 +474,8 @@ int scanstream(
     const struct cl_engine *engine,
     struct cl_scan_options *options,
     const struct optstruct *opts,
-    char term)
+    char term,
+    struct scan_cb_data *scandata)
 {
     int ret, sockfd, acceptd;
     int tmpd, bread, retval, firsttimeout, timeout, btread;
@@ -606,7 +612,7 @@ int scanstream(
         thrmgr_setactivetask(peer_addr, NULL);
         context.filename = peer_addr;
         context.virsize  = 0;
-        context.scandata = NULL;
+        context.scandata = scandata;
         ret              = cl_scandesc_callback(tmpd, tmpname, &virname, scanned, engine, options, &context);
         thrmgr_setactivetask(NULL, NULL);
     } else {
@@ -621,14 +627,18 @@ int scanstream(
     closesocket(sockfd);
 
     if (ret == CL_VIRUS) {
-        if (context.virsize && optget(opts, "ExtendedDetectionInfo")->enabled) {
-            mdprintf(odesc, "stream: %s(%s:%llu) FOUND%c", virname, context.virhash, context.virsize, term);
-            logg(LOGG_INFO, "stream(%s@%u): %s(%s:%llu) FOUND\n", peer_addr, port, virname, context.virhash, context.virsize);
+        if (options->general & CL_SCAN_GENERAL_ALLMATCHES || options->general & CL_SCAN_GENERAL_HEURISTIC_PRECEDENCE) {
+            virusaction("stream", virname, opts);
         } else {
-            mdprintf(odesc, "stream: %s FOUND%c", virname, term);
-            logg(LOGG_INFO, "stream(%s@%u): %s FOUND\n", peer_addr, port, virname);
+            if (context.virsize && optget(opts, "ExtendedDetectionInfo")->enabled) {
+                mdprintf(odesc, "stream: %s(%s:%llu) FOUND%c", virname, context.virhash, context.virsize, term);
+                logg(LOGG_INFO, "stream(%s@%u): %s(%s:%llu) FOUND\n", peer_addr, port, virname, context.virhash, context.virsize);
+            } else {
+                mdprintf(odesc, "stream: %s FOUND%c", virname, term);
+                logg(LOGG_INFO, "stream(%s@%u): %s FOUND\n", peer_addr, port, virname);
+            }
+            virusaction("stream", virname, opts);
         }
-        virusaction("stream", virname, opts);
     } else if (ret != CL_CLEAN) {
         if (retval == 1) {
             mdprintf(odesc, "stream: %s ERROR%c", cl_strerror(ret), term);

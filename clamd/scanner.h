@@ -33,6 +33,7 @@
 
 #include "thrmgr.h"
 #include "session.h"
+#include "clamdcom.h"
 
 enum scan_type { TYPE_INIT      = -1,
                  TYPE_SCAN      = 0,
@@ -40,7 +41,7 @@ enum scan_type { TYPE_INIT      = -1,
                  TYPE_MULTISCAN = 2 };
 
 struct scan_cb_data {
-    int scantype;
+    scantype_t scantype;
     int odesc;
     int type;
     int infected;
@@ -65,8 +66,8 @@ struct cb_context {
     struct scan_cb_data *scandata;
 };
 
-cl_error_t scanfd(const client_conn_t *conn, unsigned long int *scanned, const struct cl_engine *engine, struct cl_scan_options *options, const struct optstruct *opts, int odesc, int stream);
-int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *engine, struct cl_scan_options *options, const struct optstruct *opts, char term);
+cl_error_t scanfd(const client_conn_t *conn, unsigned long int *scanned, const struct cl_engine *engine, struct cl_scan_options *options, const struct optstruct *opts, int odesc, int stream, struct scan_cb_data *scandata);
+int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *engine, struct cl_scan_options *options, const struct optstruct *opts, char term, struct scan_cb_data *scandata);
 cl_error_t scan_callback(STATBUF *sb, char *filename, const char *msg, enum cli_ftw_reason reason, struct cli_ftw_cbdata *data);
 int scan_pathchk(const char *path, struct cli_ftw_cbdata *data);
 void hash_callback(int fd, unsigned long long size, const unsigned char *md5, const char *virname, void *ctx);

@@ -444,12 +444,14 @@ cl_error_t onas_setup_client(struct onas_context **ctx)
     } else if (optget(opts, "multiscan")->enabled) {
         logg(LOGG_DEBUG, "ClamClient: client setup to scan in multiscan mode\n");
         (*ctx)->scantype = MULTI;
-    } else if (optget(opts, "allmatch")->enabled) {
-        logg(LOGG_DEBUG, "ClamClient: client setup to scan in all-match mode\n");
-        (*ctx)->scantype = ALLMATCH;
     } else {
         logg(LOGG_DEBUG, "ClamClient: client setup for continuous scanning\n");
         (*ctx)->scantype = CONT;
+    }
+
+    if (optget(opts, "allmatch")->enabled) {
+        logg(LOGG_DEBUG, "ClamClient: client setup to scan in all-match mode\n");
+        (*ctx)->options->general |= CL_SCAN_GENERAL_ALLMATCHES;
     }
 
     (*ctx)->maxstream = optget((*ctx)->clamdopts, "StreamMaxLength")->numarg;
@@ -517,19 +519,20 @@ int onas_get_clamd_version(struct onas_context **ctx)
 /**
  * @brief kick off scanning and return results
  *
- * @param tcpaddr   string string which refers to either the TCPaddress or the local socket to connect to
- * @param portnum   the port to use in case of TCP connection, set to 0 if connecting to a local socket
- * @param scantype  the type of scan to perform, e.g. fdpass, stream
- * @param maxstream the max streamsize (in bytes) allowed across the socket per file
- * @param fname     the name of the file to be scanned
- * @param fd        the file descriptor for the file to be scanned, often (but not always) this is held by fanotify
- * @param timeout   time in ms to allow curl before timing out connection attempts
- * @param sb        variable to store and pass all of our stat info on the file so we don't have to access it multiple times (triggering multiple events)
- * @param infected  return variable indicating whether daemon returned with an infected verdict or not
- * @param err       return variable passed to the daemon protocol interface indicating how many things went wrong in the course of scanning
- * @param ret_code  return variable passed to the daemon protocol interface indicating last known issue or success
+ * @param tcpaddr     string string which refers to either the TCPaddress or the local socket to connect to
+ * @param portnum     the port to use in case of TCP connection, set to 0 if connecting to a local socket
+ * @param scantype    the type of scan to perform, e.g. fdpass, stream, contscan, mutliscan
+ * @param options     any additional scan options to pass, e.g. allmatch
+ * @param maxstream   the max streamsize (in bytes) allowed across the socket per file
+ * @param fname       the name of the file to be scanned
+ * @param fd          the file descriptor for the file to be scanned, often (but not always) this is held by fanotify
+ * @param timeout     time in ms to allow curl before timing out connection attempts
+ * @param sb          variable to store and pass all of our stat info on the file so we don't have to access it multiple times (triggering multiple events)
+ * @param infected    return variable indincating whether daemon returned with an infected verdict or not
+ * @param err         return variable passed to the daemon protocol interface indicating how many things went wrong in the course of scanning
+ * @param ret_code    return variable passed to the daemon protocol interface indicating last known issue or success
  */
-int onas_client_scan(const char *tcpaddr, int64_t portnum, int32_t scantype, uint64_t maxstream, const char *fname, int fd, int64_t timeout, STATBUF sb, int *infected, int *err, cl_error_t *ret_code)
+int onas_client_scan(const char *tcpaddr, int64_t portnum, scantype_t scantype, struct cl_scan_options *options, uint64_t maxstream, const char *fname, int fd, int64_t timeout, STATBUF sb, int *infected, int *err, cl_error_t *ret_code)
 {
     CURL *curl        = NULL;
     CURLcode curlcode = CURLE_OK;
@@ -564,7 +567,7 @@ int onas_client_scan(const char *tcpaddr, int64_t portnum, int32_t scantype, uin
         disconnected = false;
     }
 
-    if ((ret = onas_dsresult(curl, scantype, maxstream, fname, fd, timeout, &ret, err, ret_code)) >= 0) {
+    if ((ret = onas_dsresult(curl, scantype, options, maxstream, fname, fd, timeout, &ret, err, ret_code)) >= 0) {
         *infected = ret;
     } else {
         logg(LOGG_DEBUG, "ClamClient: connection could not be established ... return code %d\n", *ret_code);

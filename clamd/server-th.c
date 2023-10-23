@@ -152,6 +152,7 @@ static void scanner_thread(void *arg)
         closesocket(conn->sd);
     }
     cl_engine_free(conn->engine);
+    free(conn->options);
     free(conn);
     return;
 }
@@ -669,6 +670,136 @@ static void *acceptloop_th(void *arg)
     return NULL;
 }
 
+enum scanopts {
+    /* Scan options. */
+    OPTSCAN_ALLMATCH,
+
+    /* Scan commands. */
+    OPTSCAN_CONTSCAN,
+    OPTSCAN_FILDES,
+    OPTSCAN_INSTREAM,
+    OPTSCAN_MULTISCAN,
+
+    /* Error case. */
+    OPTSCAN_UNKNOWN,
+};
+
+static struct {
+    const char *cmd;
+    const size_t len;
+    enum scanopts option;
+    bool need_value;
+} scanopt_options[] = {
+    /* The following are scan options to modify a scan. */
+    {"ALLMATCH", sizeof("ALLMATCH") - 1, OPTSCAN_ALLMATCH, false},
+
+    /* The following are traditional clamd scan commands.
+       A single scan command should always follow any scan options in a OPTSCAN request. */
+    {"CONTSCAN", sizeof("CONTSCAN") - 1, OPTSCAN_CONTSCAN, false},
+    {"FILDES", sizeof("FILDES") - 1, OPTSCAN_FILDES, false},
+    {"INSTREAM", sizeof("INSTREAM") - 1, OPTSCAN_INSTREAM, false},
+    {"MULTISCAN", sizeof("MULTISCAN") - 1, OPTSCAN_MULTISCAN, false}};
+
+/**
+ * @brief Identify the option type and separate out the rest of the message for further processing.
+ *
+ * @param cmd The command, which may be like: ALLMATCH FILEPATH\nFILEDATATOSCAN...
+ * @param [out] remaining Bytes remamining after the option. E.g. "FILEPATH\nFILEDATATOSCAN..."
+ * @param [out] value A text value accompanying the option after an '=' symbol.
+ *                    For example, the `cmd` could be something this like: STOPAFTER=5 FILEPATH\n/some/file/path
+ *                    In this example the value for this hypothetical "STOPAFTER" option would be "5".
+ * @return enum scanopts Returns which type of option was found.
+ */
+enum scanopts parse_scanopt(const char *cmd, const char **remaining, size_t *remaining_len, char **value)
+{
+    size_t i;
+
+    // First initialize the argument to NULL in case there isn't one.
+    *remaining = NULL;
+    *value     = NULL;
+
+    // Look through all the scanopt_options and find one that matches what was sent to us.
+    for (i = 0; i < sizeof(scanopt_options) / sizeof(scanopt_options[0]); i++) {
+        const size_t len = scanopt_options[i].len;
+
+        // Does the command sent match one of the known options?
+        if (!strncmp(cmd, scanopt_options[i].cmd, len)) {
+            // Yes! Found a matching option.
+
+            // The remaining is everything after the command.
+            const char *arg = cmd + len;
+            size_t arg_left = *remaining_len - len;
+
+            if (arg_left == 0) {
+                // There is nothing after the command.
+                // This is an error because we expect a value.
+                logg(LOGG_ERROR, "OPTSCAN option %s is missing a value!\n", scanopt_options[i].cmd);
+                return OPTSCAN_UNKNOWN;
+            }
+
+            // But wait! What if there is a value for this option?
+            if (*arg == '=') {
+                const char *value_start;
+
+                if (!scanopt_options[i].need_value) {
+                    // This option doesn't need a value. This is an error.
+                    logg(LOGG_ERROR, "OPTSCAN option %s does not take a value!\n", scanopt_options[i].cmd);
+                    return OPTSCAN_UNKNOWN;
+                }
+
+                // There is a value for this option. Skip the '='.
+                arg++;
+                arg_left--;
+
+                // The value is everything after the '=' until a space.
+                value_start = arg;
+
+                // So let's find that space.
+                while (arg_left > 0 && *arg != ' ') {
+                    arg++;
+                    arg_left--;
+                }
+
+                if (arg_left == 0) {
+                    // There is no space after the value.
+                    // This is an error because we at least a scan command to appear later.
+                    logg(LOGG_ERROR, "OPTSCAN command appears to be missing scan command after scan options!\n");
+                    return OPTSCAN_UNKNOWN;
+                }
+
+                *value = strndup(value_start, arg - value_start);
+
+                *remaining     = arg + 1;
+                *remaining_len = arg_left - 1;
+
+                logg(LOGG_DEBUG_NV, "Found OPTSCAN option %s with value %s!\n", scanopt_options[i].cmd, *value);
+            } else if (*arg == ' ') {
+                // There is no value for this option.
+
+                if (scanopt_options[i].need_value) {
+                    // This option needs a value. This is an error.
+                    logg(LOGG_ERROR, "OPTSCAN option %s requires a value!\n", scanopt_options[i].cmd);
+                    return OPTSCAN_UNKNOWN;
+                }
+
+                *remaining     = arg + 1;
+                *remaining_len = arg_left - 1;
+
+                logg(LOGG_DEBUG_NV, "Found OPTSCAN option %s!\n", scanopt_options[i].cmd);
+            } else {
+                // There should've been a space. This is an error.
+                logg(LOGG_ERROR, "OPTSCAN command improperly formatted. There should be a space between options and before the final scan command and command arguments!\n");
+                return OPTSCAN_UNKNOWN;
+            }
+
+            return scanopt_options[i].option;
+        }
+    }
+
+    logg(LOGG_ERROR, "OPTSCAN command appears to be missing scan command after scan options!\n");
+    return OPTSCAN_UNKNOWN;
+}
+
 static const char *parse_dispatch_cmd(client_conn_t *conn, struct fd_buf *buf, size_t *ppos, int *error, const struct optstruct *opts, int readtimeout)
 {
     const char *cmd = NULL;
@@ -677,20 +808,86 @@ static const char *parse_dispatch_cmd(client_conn_t *conn, struct fd_buf *buf, s
     char term;
     int oldstyle;
     size_t pos = *ppos;
+
+    *error = 0;
+
     /* Parse & dispatch commands */
     while ((conn->mode == MODE_COMMAND) &&
            (cmd = get_cmd(buf, pos, &cmdlen, &term, &oldstyle)) != NULL) {
         const char *argument;
+        size_t argument_len;
         enum commands cmdtype;
+
+        // Verify that commands inside of an IDSESSION group as all the newer n or z prefixed commands.
         if (conn->group && oldstyle) {
             logg(LOGG_DEBUG_NV, "Received oldstyle command inside IDSESSION: %s\n", cmd);
-            conn_reply_error(conn, "Only nCMDS\\n and zCMDS\\0 are accepted inside IDSESSION.");
+            conn_reply_error(conn, "Only new-line terminated nCMDS or NULL-terminated zCMDS are accepted inside IDSESSION.");
             *error = 1;
             break;
         }
-        cmdtype = parse_command(cmd, &argument, oldstyle);
+
+        // Identify what command was received, and collect the argument, if there is one.
+        cmdtype = parse_command(cmd, cmdlen, &argument, &argument_len, oldstyle);
         logg(LOGG_DEBUG_NV, "got command %s (%u, %u), argument: %s\n",
              cmd, (unsigned)cmdlen, (unsigned)cmdtype, argument ? argument : "");
+
+        // For OPTSCAN commands, collect scan options followed by actual scan command type.
+        while ((cmdtype == COMMAND_OPTSCAN) && (*error == 0)) {
+            char *option_value = NULL;
+            enum scanopts opttype;
+
+            opttype = parse_scanopt(argument, &argument, &argument_len, &option_value);
+
+            switch (opttype) {
+                case OPTSCAN_ALLMATCH: {
+                    logg(LOGG_DEBUG, "Received ALLMATCH scan option.\n");
+
+                    // First verify that the clamd.conf allows allmatch.
+                    if (!optget(opts, "AllowAllMatchScan")->enabled) {
+                        logg(LOGG_DEBUG_NV, "Rejecting ALLMATCHSCAN command.\n");
+                        conn_reply(conn, conn->filename, "ALLMATCHSCAN command disabled by clamd configuration.", "ERROR");
+                        *error = 1;
+                        break;
+                    }
+
+                    conn->options->general |= CL_SCAN_GENERAL_ALLMATCHES;
+                    break;
+                }
+                case OPTSCAN_CONTSCAN: {
+                    logg(LOGG_DEBUG, "Received CONTSCAN scan option.\n");
+                    cmdtype = COMMAND_CONTSCAN;
+                    break;
+                }
+                case OPTSCAN_FILDES: {
+                    logg(LOGG_DEBUG, "Received FILEDES scan option.\n");
+                    cmdtype = COMMAND_FILDES;
+                    break;
+                }
+                case OPTSCAN_INSTREAM: {
+                    logg(LOGG_DEBUG, "Received INSTREAM scan option.\n");
+                    cmdtype = COMMAND_INSTREAM;
+                    break;
+                }
+                case OPTSCAN_MULTISCAN: {
+                    logg(LOGG_DEBUG, "Received MULTISCAN scan option.\n");
+                    cmdtype = COMMAND_MULTISCAN;
+                    break;
+                }
+                case OPTSCAN_UNKNOWN: {
+                    // An error occured, and we already complained about it.
+                    *error = 1;
+                    break;
+                }
+            }
+
+            // Get next option.
+            FREE(option_value);
+        }
+
+        if (*error != 0) {
+            break;
+        }
+
         if (cmdtype == COMMAND_FILDES) {
             if (buf->buffer + buf->off <= cmd + strlen("FILDES\n")) {
                 /* we need the extra byte from recvmsg */
@@ -718,6 +915,7 @@ static const char *parse_dispatch_cmd(client_conn_t *conn, struct fd_buf *buf, s
             }
             *error = 1;
         }
+
         if (thrmgr_group_need_terminate(conn->group)) {
             logg(LOGG_DEBUG_NV, "Receive thread: have to terminate group\n");
             *error = CL_ETIMEOUT;
@@ -1622,6 +1820,9 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
             }
             while (!error && buf->fd != -1 && buf->buffer && pos < buf->off &&
                    buf->mode != MODE_WAITANCILL) {
+
+                struct cl_scan_options og_options;
+
                 client_conn_t conn;
                 const char *cmd = NULL;
                 int rc;
@@ -1642,6 +1843,9 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
                 conn.mode     = buf->mode;
                 conn.term     = buf->term;
 
+                // Save off the scan options no scan options set by the command will affect future scans
+                memcpy(&og_options, conn.options, sizeof(struct cl_scan_options));
+
                 /* Parse & dispatch command */
                 cmd = parse_dispatch_cmd(&conn, buf, &pos, &error, opts, readtimeout);
 
@@ -1656,15 +1860,24 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
                         error = 1;
                     } else if (buf->mode == MODE_STREAM) {
                         rc = handle_stream(&conn, buf, opts, &error, &pos, readtimeout);
-                        if (rc == -1)
+
+                        if (rc == -1) {
                             break;
-                        else
+                        } else {
+
+                            // Reset the scan options so we don't affect future scans:
+                            memcpy(conn.options, &og_options, sizeof(struct cl_scan_options));
+
                             continue;
+                        }
                     }
                 }
                 if (error && error != CL_ETIMEOUT) {
                     conn_reply_error(&conn, "Error processing command.");
                 }
+
+                // Reset the scan options so we don't affect future scans:
+                memcpy(conn.options, &og_options, sizeof(struct cl_scan_options));
             }
             if (error) {
                 if (buf->dumpfd != -1) {

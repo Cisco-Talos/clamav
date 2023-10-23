@@ -24,6 +24,7 @@
 #endif
 
 #include <stdio.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 #ifdef HAVE_UNISTD_H
@@ -66,47 +67,64 @@
 #include "session.h"
 #include "thrmgr.h"
 
-#ifndef HAVE_FDPASSING
-#define FEATURE_FDPASSING 0
-#else
-#define FEATURE_FDPASSING 1
-#endif
-
 static struct {
     const char *cmd;
     const size_t len;
     enum commands cmdtype;
-    int need_arg;
-    int support_old;
-    int enabled;
+    bool need_arg;
+    bool support_old;
 } commands[] = {
-    {CMD1, sizeof(CMD1) - 1, COMMAND_SCAN, 1, 1, 0},
-    {CMD3, sizeof(CMD3) - 1, COMMAND_SHUTDOWN, 0, 1, 0},
-    {CMD4, sizeof(CMD4) - 1, COMMAND_RELOAD, 0, 1, 0},
-    {CMD5, sizeof(CMD5) - 1, COMMAND_PING, 0, 1, 0},
-    {CMD6, sizeof(CMD6) - 1, COMMAND_CONTSCAN, 1, 1, 0},
+    {"SCAN", sizeof("SCAN") - 1, COMMAND_SCAN, true, true},
+    {"QUIT", sizeof("QUIT") - 1, COMMAND_SHUTDOWN, false, true},
+    {"RELOAD", sizeof("RELOAD") - 1, COMMAND_RELOAD, false, true},
+    {"PING", sizeof("PING") - 1, COMMAND_PING, false, true},
+    {"CONTSCAN", sizeof("CONTSCAN") - 1, COMMAND_CONTSCAN, true, true},
+    {"OPTSCAN", sizeof("OPTSCAN") - 1, COMMAND_OPTSCAN, true, true},
     /* must be before VERSION, because they share common prefix! */
-    {CMD18, sizeof(CMD18) - 1, COMMAND_COMMANDS, 0, 0, 1},
-    {CMD7, sizeof(CMD7) - 1, COMMAND_VERSION, 0, 1, 1},
-    {CMD10, sizeof(CMD10) - 1, COMMAND_END, 0, 0, 1},
-    {CMD11, sizeof(CMD11) - 1, COMMAND_SHUTDOWN, 0, 1, 1},
-    {CMD13, sizeof(CMD13) - 1, COMMAND_MULTISCAN, 1, 1, 1},
-    {CMD14, sizeof(CMD14) - 1, COMMAND_FILDES, 0, 1, FEATURE_FDPASSING},
-    {CMD15, sizeof(CMD15) - 1, COMMAND_STATS, 0, 0, 1},
-    {CMD16, sizeof(CMD16) - 1, COMMAND_IDSESSION, 0, 0, 1},
-    {CMD17, sizeof(CMD17) - 1, COMMAND_INSTREAM, 0, 0, 1},
-    {CMD19, sizeof(CMD19) - 1, COMMAND_DETSTATSCLEAR, 0, 1, 1},
-    {CMD20, sizeof(CMD20) - 1, COMMAND_DETSTATS, 0, 1, 1},
-    {CMD21, sizeof(CMD21) - 1, COMMAND_ALLMATCHSCAN, 1, 0, 1}};
+    {"VERSIONCOMMANDS", sizeof("VERSIONCOMMANDS") - 1, COMMAND_COMMANDS, false, false},
+    {"VERSION", sizeof("VERSION") - 1, COMMAND_VERSION, false, true},
+    {"END", sizeof("END") - 1, COMMAND_END, false, false},
+    {"SHUTDOWN", sizeof("SHUTDOWN") - 1, COMMAND_SHUTDOWN, false, true},
+    {"MULTISCAN", sizeof("MULTISCAN") - 1, COMMAND_MULTISCAN, true, true},
+    {"FILDES", sizeof("FILDES") - 1, COMMAND_FILDES, false, true},
+    {"STATS", sizeof("STATS") - 1, COMMAND_STATS, false, true},
+    {"IDSESSION", sizeof("IDSESSION") - 1, COMMAND_IDSESSION, false, false},
+    {"INSTREAM", sizeof("INSTREAM") - 1, COMMAND_INSTREAM, false, false},
+    {"DETSTATSCLEAR", sizeof("DETSTATSCLEAR") - 1, COMMAND_DETSTATSCLEAR, false, true},
+    {"DETSTATS", sizeof("DETSTATS") - 1, COMMAND_DETSTATS, false, true},
+    {"ALLMATCHSCAN", sizeof("ALLMATCHSCAN") - 1, COMMAND_ALLMATCHSCAN, true, false}};
 
-enum commands parse_command(const char *cmd, const char **argument, int oldstyle)
+/**
+ * @brief Identify the command type, parse out the argument, and verify that commands have arguments if needed, etc.
+ *
+ * @param cmd The command, which may be like: INSTREAM\nFILEDATATOSCAN...
+ * @param cmd_len The length of the command string.
+ * @param [out] argument The argument.  E.g. "FILEDATATOSCAN..."
+ * @param [out] argument_len The length in bytes of the argument.
+ * @param oldstyle A boolean indicating if the command was sent without a 'z' or 'n' prefix.
+ * @return enum commands
+ */
+enum commands parse_command(const char *cmd, size_t cmd_len, const char **argument, size_t *argument_len, int oldstyle)
 {
     size_t i;
+
+    // First initialize the argument to NULL in case there isn't one.
     *argument = NULL;
+    *argument_len = 0;
+
+    // Look through all the commands and find one that matches what was sent to us.
     for (i = 0; i < sizeof(commands) / sizeof(commands[0]); i++) {
         const size_t len = commands[i].len;
+
+        // Does the command sent match one of the known commands?
         if (!strncmp(cmd, commands[i].cmd, len)) {
+            // Yes! Found a matching command.
+
+            // The argument is everything after the command.
             const char *arg = cmd + len;
+
+            // Verify that commands which need an argument have an argument.
+            // And that commands which don't need an argument do not have an argument.
             if (commands[i].need_arg) {
                 if (!*arg) { /* missing argument */
                     logg(LOGG_DEBUG_NV, "Command %s missing argument!\n", commands[i].cmd);
@@ -120,10 +138,16 @@ enum commands parse_command(const char *cmd, const char **argument, int oldstyle
                 }
                 *argument = NULL;
             }
+
+            // Verify that commands sent without a 'z' or 'n' prefix (aka "old-style" commands) are allowed
+            // to be used this way.
+            // Some commands MUST have the z or n prefix.
             if (oldstyle && !commands[i].support_old) {
                 logg(LOGG_DEBUG_NV, "Command sent as old-style when not supported: %s\n", commands[i].cmd);
                 return COMMAND_UNKNOWN;
             }
+
+            *argument_len = cmd_len - commands[i].len;
             return commands[i].cmdtype;
         }
     }
@@ -142,27 +166,22 @@ int conn_reply_single(const client_conn_t *conn, const char *path, const char *s
     return mdprintf(conn->sd, "%s%c", status, conn->term);
 }
 
-int conn_reply(const client_conn_t *conn, const char *path,
-               const char *msg, const char *status)
+int conn_reply(const client_conn_t *conn, const char *path, const char *msg, const char *status)
 {
     if (conn->id) {
         if (path)
-            return mdprintf(conn->sd, "%u: %s: %s %s%c", conn->id, path, msg,
-                            status, conn->term);
-        return mdprintf(conn->sd, "%u: %s %s%c", conn->id, msg, status,
-                        conn->term);
+            return mdprintf(conn->sd, "%u: %s: %s %s%c", conn->id, path, msg, status, conn->term);
+        return mdprintf(conn->sd, "%u: %s %s%c", conn->id, msg, status, conn->term);
     }
     if (path)
         return mdprintf(conn->sd, "%s: %s %s%c", path, msg, status, conn->term);
     return mdprintf(conn->sd, "%s %s%c", msg, status, conn->term);
 }
 
-int conn_reply_virus(const client_conn_t *conn, const char *file,
-                     const char *virname)
+int conn_reply_virus(const client_conn_t *conn, const char *file, const char *virname)
 {
     if (conn->id) {
-        return mdprintf(conn->sd, "%u: %s: %s FOUND%c", conn->id, file, virname,
-                        conn->term);
+        return mdprintf(conn->sd, "%u: %s: %s FOUND%c", conn->id, file, virname, conn->term);
     }
     return mdprintf(conn->sd, "%s: %s FOUND%c", file, virname, conn->term);
 }
@@ -298,7 +317,7 @@ int command(client_conn_t *conn, int *virus)
                 conn_reply_error(conn, "FILDES: didn't receive file descriptor.");
                 return 1;
             } else {
-                ret = scanfd(conn, NULL, engine, &options, opts, desc, 0);
+                ret = scanfd(conn, NULL, engine, &options, opts, desc, 0, &scandata);
                 if (ret == CL_VIRUS) {
                     *virus = 1;
                     ret    = 0;
@@ -329,7 +348,7 @@ int command(client_conn_t *conn, int *virus)
             return 0;
         case COMMAND_INSTREAMSCAN:
             thrmgr_setactivetask(NULL, "INSTREAM");
-            ret = scanfd(conn, NULL, engine, &options, opts, desc, 1);
+            ret = scanfd(conn, NULL, engine, &options, opts, desc, 1, &scandata);
             if (ret == CL_VIRUS) {
                 *virus = 1;
                 ret    = 0;
@@ -411,12 +430,21 @@ static int dispatch_command(client_conn_t *conn, enum commands cmd, const char *
     int ret = 0;
     int bulk;
     client_conn_t *dup_conn = (client_conn_t *)malloc(sizeof(struct client_conn_tag));
-
     if (!dup_conn) {
         logg(LOGG_ERROR, "Can't allocate memory for client_conn\n");
         return -1;
     }
+
     memcpy(dup_conn, conn, sizeof(*conn));
+
+    dup_conn->options = (struct cl_scan_options*)malloc(sizeof(struct cl_scan_options));
+    if (!dup_conn->options) {
+        logg(LOGG_ERROR, "Can't allocate memory for client_conn options\n");
+        return -1;
+    }
+
+    memcpy(dup_conn->options, conn->options, sizeof(struct cl_scan_options));
+
     dup_conn->cmdtype = cmd;
     if (cl_engine_addref(dup_conn->engine)) {
         logg(LOGG_ERROR, "cl_engine_addref() failed\n");
@@ -467,6 +495,7 @@ static int dispatch_command(client_conn_t *conn, enum commands cmd, const char *
     }
     if (ret) {
         cl_engine_free(dup_conn->engine);
+        free(dup_conn->options);
         free(dup_conn);
     }
     return ret;

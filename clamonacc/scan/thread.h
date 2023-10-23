@@ -60,7 +60,8 @@ struct onas_scan_event {
 #endif
     uint8_t retry_attempts;
     uint64_t sizelimit;
-    int32_t scantype;
+    uint32_t scantype;
+    struct cl_scan_options *options;
     int64_t maxstream;
     int64_t timeout;
     uint8_t bool_opts;

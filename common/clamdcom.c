@@ -50,7 +50,7 @@
 struct sockaddr_un nixsock;
 #endif
 
-static const char *scancmd[] = {"CONTSCAN", "MULTISCAN", "INSTREAM", "FILDES", "ALLMATCHSCAN"};
+static const char *scancmd[] = {"CONTSCAN", "MULTISCAN", "INSTREAM", "FILDES"};
 
 /* Sends bytes over a socket
  * Returns 0 on success */
@@ -172,7 +172,7 @@ done:
 #ifdef HAVE_FD_PASSING
 /* Issues a FILDES command and pass a FD to clamd
  * Returns >0 on success, 0 soft fail, -1 hard fail */
-int send_fdpass(int sockd, const char *filename)
+int send_fdpass(int sockd, const char *filename, struct cl_scan_options *options)
 {
     struct iovec iov[1];
     struct msghdr msg;
@@ -180,16 +180,24 @@ int send_fdpass(int sockd, const char *filename)
     unsigned char fdbuf[CMSG_SPACE(sizeof(int))];
     char dummy[] = "";
     int fd;
-    const char zFILDES[] = "zFILDES";
+    const char *cmd;
 
     if (filename) {
         if ((fd = open(filename, O_RDONLY)) < 0) {
             logg(LOGG_INFO, "%s: Failed to open file\n", filename);
             return 0;
         }
-    } else
+    } else {
         fd = 0;
-    if (sendln(sockd, zFILDES, sizeof(zFILDES))) {
+    }
+
+    if (options->general & CL_SCAN_GENERAL_ALLMATCHES) {
+        cmd = "zOPTSCAN ALLMATCH FILDES ";
+    } else {
+        cmd = "zOPTSCAN FILDES ";
+    }
+
+    if (sendln(sockd, cmd, strlen(cmd) + 1)) {
         close(fd);
         return -1;
     }
@@ -218,12 +226,12 @@ int send_fdpass(int sockd, const char *filename)
 
 /* Issues an INSTREAM command to clamd and streams the given file
  * Returns >0 on success, 0 soft fail, -1 hard fail */
-int send_stream(int sockd, const char *filename, struct optstruct *clamdopts)
+int send_stream(int sockd, const char *filename, struct optstruct *clamdopts, struct cl_scan_options *options)
 {
     uint32_t buf[BUFSIZ / sizeof(uint32_t)];
     int fd, len;
     unsigned long int todo = optget(clamdopts, "StreamMaxLength")->numarg;
-    const char zINSTREAM[] = "zINSTREAM";
+    const char *cmd;
 
     if (filename) {
         if ((fd = safe_open(filename, O_RDONLY | O_BINARY)) < 0) {
@@ -235,7 +243,13 @@ int send_stream(int sockd, const char *filename, struct optstruct *clamdopts)
         fd = 0;
     }
 
-    if (sendln(sockd, zINSTREAM, sizeof(zINSTREAM))) {
+    if (options->general & CL_SCAN_GENERAL_ALLMATCHES) {
+        cmd = "zOPTSCAN ALLMATCH INSTREAM ";
+    } else {
+        cmd = "zOPTSCAN INSTREAM ";
+    }
+
+    if (sendln(sockd, cmd, strlen(cmd) + 1)) {
         close(fd);
         return -1;
     }
@@ -334,9 +348,10 @@ int dconnect(struct optstruct *clamdopts)
  * This is used only in non IDSESSION mode
  * Returns the number of infected files or -1 on error
  * NOTE: filename may be NULL for STREAM scantype. */
-int dsresult(int sockd, int scantype, const char *filename, int *printok, int *errors, struct optstruct *clamdopts)
+int dsresult(int sockd, scantype_t scantype, struct cl_scan_options *options, const char *filename, int *printok, int *errors, struct optstruct *clamdopts)
 {
     int infected = 0, len = 0, beenthere = 0;
+    char *scan_command = NULL;
     char *bol, *eol;
     struct RCVLN rcv;
     STATBUF sb;
@@ -351,36 +366,44 @@ int dsresult(int sockd, int scantype, const char *filename, int *printok, int *e
 
     switch (scantype) {
         case MULTI:
-        case CONT:
-        case ALLMATCH:
+        case CONT: {
+            const char *allmatch = "";
+
             if (!filename) {
                 logg(LOGG_INFO, "Filename cannot be NULL for MULTISCAN or CONTSCAN.\n");
                 infected = -1;
                 goto done;
             }
-            len = strlen(filename) + strlen(scancmd[scantype]) + 3;
-            if (!(bol = malloc(len))) {
+
+            if (options->general & CL_SCAN_GENERAL_ALLMATCHES) {
+                allmatch = "ALLMATCH ";
+            }
+
+            len = strlen("zOPTSCAN ") + strlen(allmatch) + strlen(scancmd[scantype]) + 1 + strlen(filename) + 1;
+            if (!(scan_command = malloc(len))) {
                 logg(LOGG_ERROR, "Cannot allocate a command buffer: %s\n", strerror(errno));
                 infected = -1;
                 goto done;
             }
-            sprintf(bol, "z%s %s", scancmd[scantype], filename);
-            if (sendln(sockd, bol, len)) {
-                free(bol);
+
+            sprintf(scan_command, "zOPTSCAN %s%s %s", allmatch, scancmd[scantype], filename);
+            if (sendln(sockd, scan_command, len)) {
                 infected = -1;
                 goto done;
             }
-            free(bol);
-            break;
+            free(scan_command);
+            scan_command = NULL;
 
+            break;
+        }
         case STREAM:
             /* NULL filename safe in send_stream() */
-            len = send_stream(sockd, filename, clamdopts);
+            len = send_stream(sockd, filename, clamdopts, options);
             break;
 #ifdef HAVE_FD_PASSING
         case FILDES:
             /* NULL filename safe in send_fdpass() */
-            len = send_fdpass(sockd, filename);
+            len = send_fdpass(sockd, filename, options);
             break;
 #endif
     }
@@ -425,7 +448,8 @@ int dsresult(int sockd, int scantype, const char *filename, int *printok, int *e
                 *(eol - 7)                              = 0;
                 if (printok)
                     *printok = 0;
-                if (scantype != ALLMATCH) {
+
+                if (!options->general & CL_SCAN_GENERAL_ALLMATCHES) {
                     infected++;
                 } else {
                     if (filename != NULL && strcmp(filename, last_filename)) {
@@ -479,5 +503,9 @@ int dsresult(int sockd, int scantype, const char *filename, int *printok, int *e
     }
 
 done:
+    if (NULL != scan_command) {
+        free(scan_command);
+    }
+
     return infected;
 }

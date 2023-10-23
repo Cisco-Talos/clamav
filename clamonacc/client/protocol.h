@@ -27,5 +27,5 @@
 #include "misc.h"
 #include "../clamonacc.h"
 
-int onas_dsresult(CURL *curl, int scantype, uint64_t maxstream, const char *filename, int fd, int64_t timeout, int *printok, int *errors, cl_error_t *ret_code);
+int onas_dsresult(CURL *curl, scantype_t scantype, struct cl_scan_options *options, uint64_t maxstream, const char *filename, int fd, int64_t timeout, int *printok, int *errors, cl_error_t *ret_code);
 #endif

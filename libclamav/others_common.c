@@ -691,7 +691,7 @@ cl_error_t cli_ftw(char *path, int flags, int maxdepth, cli_ftw_cb callback, str
 
     if (((flags & CLI_FTW_TRIM_SLASHES) || pathchk) && path[0] && path[1]) {
         char *pathend;
-        /* trim slashes so that dir and dir/ behave the same when
+        /* trim slashes so that dir and dir/ behave the same when 
          * they are symlinks, and we are not following symlinks */
 #ifndef _WIN32
         while (path[0] == *PATHSEP && path[1] == *PATHSEP) path++;

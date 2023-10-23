@@ -307,7 +307,7 @@ static char *makeabs(const char *basepath)
 
 /* Recursively scans a path with the given scantype
  * Returns non zero for serious errors, zero otherwise */
-static int client_scan(const char *file, int scantype, int *infected, int *err, int maxlevel, int session, int flags)
+static int client_scan(const char *file, scantype_t scantype, struct cl_scan_options *options, int *infected, int *err, int maxlevel, int session, int flags)
 {
     int ret;
     char *real_path = NULL;
@@ -329,9 +329,9 @@ static int client_scan(const char *file, int scantype, int *infected, int *err, 
     if (!fullpath)
         return 0;
     if (!session)
-        ret = serial_client_scan(fullpath, scantype, infected, err, maxlevel, flags);
+        ret = serial_client_scan(fullpath, scantype, options, infected, err, maxlevel, flags);
     else
-        ret = parallel_client_scan(fullpath, scantype, infected, err, maxlevel, flags);
+        ret = parallel_client_scan(fullpath, scantype, options, infected, err, maxlevel, flags);
     free(fullpath);
     return ret;
 }
@@ -391,8 +391,10 @@ int reload_clamd_database(const struct optstruct *opts)
 
 int client(const struct optstruct *opts, int *infected, int *err)
 {
-    int remote, scantype, session = 0, errors = 0, scandash = 0, maxrec, flags = 0;
+    int remote, session = 0, errors = 0, scandash = 0, maxrec, flags = 0;
     const char *fname;
+    scantype_t scantype;
+    struct cl_scan_options options = {0};
 
     if (optget(opts, "wait")->enabled) {
         int16_t ping_result = ping_clamd(opts);
@@ -417,12 +419,17 @@ int client(const struct optstruct *opts, int *infected, int *err)
         if (remote || scandash) {
         scantype = STREAM;
         session  = optget(opts, "multiscan")->enabled;
-    } else if (optget(opts, "multiscan")->enabled)
+    } else if (optget(opts, "multiscan")->enabled) {
         scantype = MULTI;
-    else if (optget(opts, "allmatch")->enabled)
-        scantype = ALLMATCH;
-    else
+    } else {
         scantype = CONT;
+    }
+
+    // Get scan options
+    if (optget(opts, "allmatch")->enabled) {
+        logg(LOGG_DEBUG, "ClamClient: client setup to scan in all-match mode\n");
+        options.general |= CL_SCAN_GENERAL_ALLMATCHES;
+    }
 
     maxrec    = optget(clamdopts, "MaxDirectoryRecursion")->numarg;
     maxstream = optget(clamdopts, "StreamMaxLength")->numarg;
@@ -443,7 +450,7 @@ int client(const struct optstruct *opts, int *infected, int *err)
             return 2;
         }
         if ((sb.st_mode & S_IFMT) != S_IFREG) scantype = STREAM;
-        if ((sockd = dconnect(clamdopts)) >= 0 && (ret = dsresult(sockd, scantype, NULL, &ret, NULL, clamdopts)) >= 0)
+        if ((sockd = dconnect(clamdopts)) >= 0 && (ret = dsresult(sockd, scantype, &options, NULL, &ret, NULL, clamdopts)) >= 0)
             *infected = ret;
         else
             errors = 1;
@@ -457,7 +464,7 @@ int client(const struct optstruct *opts, int *infected, int *err)
                 logg(LOGG_ERROR, "Scanning from standard input requires \"-\" to be the only file argument\n");
                 continue;
             }
-            errors += client_scan(fname, scantype, infected, err, maxrec, session, flags);
+            errors += client_scan(fname, scantype, &options, infected, err, maxrec, session, flags);
             /* this may be too strict
             if(errors >= 10) {
                 logg(LOGG_ERROR, "Too many errors\n");
@@ -479,7 +486,7 @@ int client(const struct optstruct *opts, int *infected, int *err)
     }
 #endif
     else {
-        errors = client_scan("", scantype, infected, err, maxrec, session, flags);
+        errors = client_scan("", scantype, &options, infected, err, maxrec, session, flags);
     }
     return *infected ? 1 : (errors ? 2 : 0);
 }
