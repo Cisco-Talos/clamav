@@ -38,7 +38,7 @@ use std::{
 ///
 /// Example (on the Rust side)
 /// ```
-/// use frs_error::{frs_result, FFIError};
+/// use ffi_util::{ffi_result, FFIError};
 /// use num_traits::CheckedDiv;
 ///
 /// pub fn checked_div<T>(numerator: T, denominator: T) -> Result<T, MyError>
@@ -150,7 +150,7 @@ macro_rules! rrf_call {
 ///    // ...
 ///
 ///    // Finally return
-///    frs_result!(result_in = div_result, out = out, err = err)
+///    ffi_result!(result_in = div_result, out = out, err = err)
 /// }
 /// ```
 ///
