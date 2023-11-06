@@ -53,3 +53,12 @@ you need to tell the build script where it is located:
 ```
 export OPENSSL_ROOT_DIR=/usr/local/Cellar/openssl@1.1/1.1.1i/
 ```
+
+## Versioning
+The version number of `libclamav-sys` tracks ClamAV's version number. That is,
+you'll require at least ClamAV 1.0.0 to build `libclamav-sys` 1.0.0. As ClamAV
+usually doesn't do breaking API changes, you'll be able to use `libclamav-sys`
+with newer ClamAV versions.
+
+No attempt at preserving downward compatibility (using a `libclamav-sys` with
+a version number greater than ClamAV's) is made.

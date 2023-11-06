@@ -2,15 +2,15 @@
 authors = ["Jonas Zaddach <jonas.zaddach@gmail.com>"]
 categories = ["external-ffi-bindings"]
 description = "ClamAV low level bindings for Rust"
-edition = "2018"
+edition = "2021"
 homepage = "https://github.com/zaddach/clamav-sys/"
 license = "GPL-2.0"
 name = "clamav-sys"
 repository = "https://github.com/zaddach/clamav-sys/"
-version = "0.0.5"
+version = "1.0.0"
 
 [build-dependencies]
-bindgen = "0.56.0"
+bindgen = "0.64.0"
 
 [target.'cfg(unix)'.build-dependencies]
 pkg-config = "0.3"

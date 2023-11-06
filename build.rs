@@ -18,42 +18,118 @@
 use std::env;
 use std::path::PathBuf;
 
+// Generate bindings for these functions:
+const BINDGEN_FUNCTIONS: &[&str] = &[
+    "cl_cleanup_crypto",
+    "cl_cvdfree",
+    "cl_cvdparse",
+    "cl_debug",
+    "cl_engine_addref",
+    "cl_engine_compile",
+    "cl_engine_free",
+    "cl_engine_get_num",
+    "cl_engine_get_str",
+    "cl_engine_new",
+    "cl_engine_set_clcb_engine_compile_progress",
+    "cl_engine_set_clcb_engine_free_progress",
+    "cl_engine_set_clcb_file_inspection",
+    "cl_engine_set_clcb_file_props",
+    "cl_engine_set_clcb_hash",
+    "cl_engine_set_clcb_meta",
+    "cl_engine_set_clcb_post_scan",
+    "cl_engine_set_clcb_pre_cache",
+    "cl_engine_set_clcb_pre_scan",
+    "cl_engine_set_clcb_sigload",
+    "cl_engine_set_clcb_sigload_progress",
+    "cl_engine_set_clcb_stats_add_sample",
+    "cl_engine_set_clcb_stats_decrement_count",
+    "cl_engine_set_clcb_stats_flush",
+    "cl_engine_set_clcb_stats_get_hostid",
+    "cl_engine_set_clcb_stats_get_num",
+    "cl_engine_set_clcb_stats_get_size",
+    "cl_engine_set_clcb_stats_remove_sample",
+    "cl_engine_set_clcb_stats_submit",
+    "cl_engine_set_clcb_virus_found",
+    "cl_engine_set_num",
+    "cl_engine_set_stats_set_cbdata",
+    "cl_engine_set_str",
+    "cl_engine_settings_apply",
+    "cl_engine_settings_copy",
+    "cl_engine_settings_free",
+    "cl_engine_stats_enable",
+    "cl_fmap_close",
+    "cl_fmap_open_handle",
+    "cl_fmap_open_memory",
+    "cl_init",
+    "cl_initialize_crypto",
+    "cl_load",
+    "cl_retdbdir",
+    "cl_retflevel",
+    "cl_retver",
+    "cl_scandesc",
+    "cl_scandesc_callback",
+    "cl_scanfile",
+    "cl_scanfile_callback",
+    "cl_scanmap_callback",
+    "cl_set_clcb_msg",
+    "cl_strerror",
+    "cli_append_virus",
+    "cli_ctx",
+    "cli_dbgmsg_no_inline",
+    "cli_errmsg",
+    "cli_get_debug_flag",
+    "cli_getdsig",
+    "cli_infomsg_simple",
+    "cli_versig2",
+    "cli_warnmsg",
+    "lsig_increment_subsig_match",
+];
+
+// Generate bindings for these types (structs, prototypes, etc.):
+const BINDGEN_TYPES: &[&str] = &[
+    "cl_cvd",
+    "clcb_file_props",
+    "clcb_meta",
+    "clcb_post_scan",
+    "clcb_pre_scan",
+    "cli_ac_data",
+    "cli_ac_result",
+    "cli_matcher",
+    "time_t",
+];
+
+// Generate "newtype" enums for these C enums
+const BINDGEN_ENUMS: &[&str] = &["cl_engine_field", "cl_error_t", "cl_msg"];
+
+const BINDGEN_CONSTANTS: &[&str] = &[
+    "CL_DB_.*",
+    "CL_INIT_DEFAULT",
+    "CL_SCAN_.*",
+    "ENGINE_OPTIONS_.*",
+    "LAYER_ATTRIBUTES_.*",
+];
+
+const CLAMAV_LIBRARY_NAME: &str = "clamav";
+
 fn generate_bindings(customize_bindings: &dyn Fn(bindgen::Builder) -> bindgen::Builder) {
-    let mut bindings = bindgen::Builder::default()
-        // The input header we would like to generate
-        // bindings for.
-        //Whitelist wanted functions
-        .whitelist_function("cl_cleanup_crypto")
-        .whitelist_function("cl_engine_compile")
-        .whitelist_function("cl_engine_free")
-        .whitelist_function("cl_engine_get_num")
-        .whitelist_function("cl_engine_get_str")
-        .whitelist_function("cl_engine_new")
-        .whitelist_function("cl_engine_set_num")
-        .whitelist_function("cl_engine_set_str")
-        .whitelist_function("cl_fmap_close")
-        .whitelist_function("cl_fmap_open_handle")
-        .whitelist_function("cl_fmap_open_memory")
-        .whitelist_function("cl_init")
-        .whitelist_function("cl_initialize_crypto")
-        .whitelist_function("cl_load")
-        .whitelist_function("cl_retdbdir")
-        .whitelist_function("cl_retflevel")
-        .whitelist_function("cl_retver")
-        .whitelist_function("cl_scandesc")
-        .whitelist_function("cl_scanfile")
-        .whitelist_function("cl_scanmap_callback")
-        .whitelist_function("cl_set_clcb_msg")
-        .whitelist_function("cl_strerror")
-        //Whitelist wanted types
-        .rustified_enum("cl_engine_field")
-        .rustified_enum("cl_error_t")
-        .rustified_enum("cl_msg")
-        .whitelist_type("time_t")
-        //Whitelist wanted constants
-        .whitelist_var("CL_DB_.*")
-        .whitelist_var("CL_INIT_DEFAULT")
-        .whitelist_var("CL_SCAN_.*")
+    let mut bindings = bindgen::Builder::default();
+    for function in BINDGEN_FUNCTIONS {
+        bindings = bindings.allowlist_function(function);
+    }
+
+    for typename in BINDGEN_TYPES {
+        bindings = bindings.allowlist_type(typename);
+    }
+
+    for typename in BINDGEN_ENUMS {
+        bindings = bindings.newtype_enum(typename);
+    }
+
+    for constant in BINDGEN_CONSTANTS {
+        bindings = bindings.allowlist_var(constant);
+    }
+
+    bindings = bindings
         .header("wrapper.h")
         // Tell cargo to invalidate the built crate whenever any of the
         // included header files changed.
@@ -74,7 +150,7 @@ fn generate_bindings(customize_bindings: &dyn Fn(bindgen::Builder) -> bindgen::B
 }
 
 fn cargo_common() {
-    println!("cargo:rustc-link-lib=dylib={}", "clamav");
+    println!("cargo:rustc-link-lib=dylib={}", CLAMAV_LIBRARY_NAME);
 
     // Tell cargo to invalidate the built crate whenever the wrapper changes
     println!("cargo:rerun-if-changed=wrapper.h");
@@ -130,7 +206,7 @@ fn main() {
         .probe("libclamav")
         .unwrap();
 
-    let mut include_paths = libclamav.include_paths.clone();
+    let mut include_paths = libclamav.include_paths;
 
     if let Some(val) = std::env::var_os("OPENSSL_ROOT_DIR") {
         let mut openssl_include_dir = PathBuf::from(val);
