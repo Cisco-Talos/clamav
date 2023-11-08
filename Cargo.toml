@@ -1,12 +1,15 @@
 [package]
-authors = ["Jonas Zaddach <jonas.zaddach@gmail.com>"]
+authors = [
+    "Jonas Zaddach <jonas.zaddach@gmail.com>",
+    "Scott Hutton <schutton@cisco.com>",
+]
 categories = ["external-ffi-bindings"]
 description = "ClamAV low level bindings for Rust"
 edition = "2021"
 homepage = "https://github.com/zaddach/clamav-sys/"
 license = "GPL-2.0"
 name = "clamav-sys"
-repository = "https://github.com/zaddach/clamav-sys/"
+repository = "https://github.com/Cisco-Talos/clamav-sys/"
 version = "1.0.0"
 
 [build-dependencies]
