@@ -53,6 +53,8 @@ const BINDGEN_FUNCTIONS: &[&str] = &[
     "cli_getdsig",
     "cli_get_debug_flag",
     "cli_magic_scan_buff",
+    "cli_checklimits",
+    "cli_matchmeta",
 ];
 
 // Generate bindings for these types (structs, enums):

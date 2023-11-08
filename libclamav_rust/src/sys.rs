@@ -808,6 +808,15 @@ extern "C" {
     pub fn cli_dbgmsg_no_inline(str_: *const ::std::os::raw::c_char, ...);
 }
 extern "C" {
+    pub fn cli_checklimits(
+        who: *const ::std::os::raw::c_char,
+        ctx: *mut cli_ctx,
+        need1: ::std::os::raw::c_ulong,
+        need2: ::std::os::raw::c_ulong,
+        need3: ::std::os::raw::c_ulong,
+    ) -> cl_error_t;
+}
+extern "C" {
     #[doc = " @brief   Get the libclamav debug flag (e.g. if debug logging is enabled)\n\n This is required for unit tests to be able to link with clamav.dll and not\n directly manipulate libclamav global variables."]
     pub fn cli_get_debug_flag() -> u8;
 }
@@ -1157,6 +1166,17 @@ pub struct cli_cdb {
     pub res1: ::std::os::raw::c_int,
     pub res2: *mut ::std::os::raw::c_void,
     pub next: *mut cli_cdb,
+}
+extern "C" {
+    pub fn cli_matchmeta(
+        ctx: *mut cli_ctx,
+        fname: *const ::std::os::raw::c_char,
+        fsizec: usize,
+        fsizer: usize,
+        encrypted: ::std::os::raw::c_int,
+        filepos: ::std::os::raw::c_uint,
+        res1: ::std::os::raw::c_int,
+    ) -> cl_error_t;
 }
 extern "C" {
     pub fn cli_versig2(

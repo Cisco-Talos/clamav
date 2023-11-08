@@ -654,7 +654,7 @@ cl_error_t fileblobScan(const fileblob *fb)
     lseek(fb->fd, 0, SEEK_SET);
     FSTAT(fb->fd, &sb);
 
-    rc = cli_matchmeta(fb->ctx, fb->b.name, sb.st_size, sb.st_size, 0, 0, 0, NULL);
+    rc = cli_matchmeta(fb->ctx, fb->b.name, sb.st_size, sb.st_size, 0, 0, 0);
     if (rc != CL_SUCCESS) {
         return rc;
     }

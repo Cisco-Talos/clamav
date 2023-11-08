@@ -205,7 +205,7 @@ static cl_error_t cli_unrar_scanmetadata(unrar_metadata_t *metadata, cli_ctx *ct
                (unsigned int)metadata->unpack_size, metadata->method,
                metadata->pack_size ? (unsigned int)(metadata->unpack_size / metadata->pack_size) : 0);
 
-    if (CL_VIRUS == cli_matchmeta(ctx, metadata->filename, metadata->pack_size, metadata->unpack_size, metadata->encrypted, files, metadata->crc, NULL)) {
+    if (CL_VIRUS == cli_matchmeta(ctx, metadata->filename, metadata->pack_size, metadata->unpack_size, metadata->encrypted, files, metadata->crc)) {
         status = CL_VIRUS;
     } else if (SCAN_HEURISTIC_ENCRYPTED_ARCHIVE && metadata->encrypted) {
         cli_dbgmsg("RAR: Encrypted files found in archive.\n");
@@ -610,7 +610,7 @@ static cl_error_t cli_egg_scanmetadata(cl_egg_metadata *metadata, cli_ctx *ctx, 
                (unsigned int)metadata->unpack_size,
                metadata->pack_size ? (unsigned int)(metadata->unpack_size / metadata->pack_size) : 0);
 
-    if (CL_VIRUS == cli_matchmeta(ctx, metadata->filename, metadata->pack_size, metadata->unpack_size, metadata->encrypted, files, 0, NULL)) {
+    if (CL_VIRUS == cli_matchmeta(ctx, metadata->filename, metadata->pack_size, metadata->unpack_size, metadata->encrypted, files, 0)) {
         status = CL_VIRUS;
     } else if (SCAN_HEURISTIC_ENCRYPTED_ARCHIVE && metadata->encrypted) {
         cli_dbgmsg("EGG: Encrypted files found in archive.\n");
@@ -1011,7 +1011,7 @@ static cl_error_t cli_scanarj(cli_ctx *ctx)
 
         file++;
 
-        if (CL_VIRUS == cli_matchmeta(ctx, metadata.filename, metadata.comp_size, metadata.orig_size, metadata.encrypted, file, 0, NULL)) {
+        if (CL_VIRUS == cli_matchmeta(ctx, metadata.filename, metadata.comp_size, metadata.orig_size, metadata.encrypted, file, 0)) {
             cli_rmdirs(dir);
             free(dir);
             return CL_VIRUS;
@@ -4585,6 +4585,11 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
         case CL_TYPE_ONENOTE:
             if (SCAN_PARSE_ONENOTE && (DCONF_ARCH & DOC_CONF_ONENOTE))
                 ret = scan_onenote(ctx);
+            break;
+
+        case CL_TYPE_LHA_LZH:
+            if (SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_LHA_LZH))
+                ret = scan_lha_lzh(ctx);
             break;
 
         case CL_TYPE_OOXML_WORD:

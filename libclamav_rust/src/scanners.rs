@@ -22,17 +22,24 @@
 
 use std::{
     ffi::{c_char, CString},
+    io::Read,
+    panic,
     path::Path,
     ptr::null_mut,
 };
 
+use delharc::LhaDecodeReader;
 use libc::c_void;
 use log::{debug, error, warn};
 
 use crate::{
     ctx,
     onenote::OneNote,
-    sys::{cl_error_t, cl_error_t_CL_ERROR, cl_error_t_CL_SUCCESS, cli_ctx, cli_magic_scan_buff},
+    sys::{
+        cl_error_t, cl_error_t_CL_EFORMAT, cl_error_t_CL_ERROR, cl_error_t_CL_SUCCESS, cli_ctx,
+        cli_magic_scan_buff,
+    },
+    util::{check_scan_limits, scan_archive_metadata},
 };
 
 /// Rust wrapper of libclamav's cli_magic_scan_buff() function.
@@ -126,4 +133,165 @@ pub unsafe extern "C" fn scan_onenote(ctx: *mut cli_ctx) -> cl_error_t {
     });
 
     scan_result
+}
+
+/// Scan the contents of a LHA or LZH archive
+///
+/// # Safety
+///
+/// Must be a valid ctx pointer.
+#[no_mangle]
+pub unsafe extern "C" fn scan_lha_lzh(ctx: *mut cli_ctx) -> cl_error_t {
+    let fmap = match ctx::current_fmap(ctx) {
+        Ok(fmap) => fmap,
+        Err(e) => {
+            warn!("Error getting FMap from ctx: {e}");
+            return cl_error_t_CL_ERROR;
+        }
+    };
+
+    let file_bytes = match fmap.need_off(0, fmap.len()) {
+        Ok(bytes) => bytes,
+        Err(err) => {
+            error!(
+                "Failed to get file bytes for fmap of size {}: {err}",
+                fmap.len()
+            );
+            return cl_error_t_CL_ERROR;
+        }
+    };
+
+    // Try to parse the LHA/LZH file data using the delharc crate.
+    debug!("Attempting to parse the LHA/LZH file data using the delharc crate.");
+
+    // Attempt to catch panics in case the parser encounter unexpected issues.
+    let result_result = panic::catch_unwind(
+        || -> Result<LhaDecodeReader<&[u8]>, delharc::decode::LhaDecodeError<&[u8]>> {
+            LhaDecodeReader::new(file_bytes)
+        },
+    );
+
+    // Check if it panicked. If no panic, grab the parse result.
+    let result = match result_result {
+        Ok(result) => result,
+        Err(_) => {
+            debug!("Panic occured when trying to open LHA archive with delharc crate");
+            return cl_error_t_CL_EFORMAT;
+        }
+    };
+
+    // Check if any issue opening the archive.
+    let mut decoder = match result {
+        Ok(result) => result,
+        Err(err) => {
+            debug!("Unable to parse LHA archive with delharc crate: {err}");
+            return cl_error_t_CL_EFORMAT;
+        }
+    };
+
+    debug!("Opened the LHA/LZH archive");
+
+    let mut index: usize = 0;
+    loop {
+        // Check if we've already exceeded the limits and should bail out.
+        let ret = check_scan_limits("LHA", ctx, 0, 0, 0);
+        if ret != cl_error_t_CL_SUCCESS {
+            debug!("Exceeded scan limits. Bailing out.");
+            break;
+        }
+
+        // Get the file header.
+        let header = decoder.header();
+
+        // Verify the CRC check. This is important because LHA/LZH does not have particularly identifiable magic bytes.
+        match decoder.crc_check() {
+            Ok(crc) => {
+                // CRC is valid.  Very likely it is indeed an LHA/LZH archive.
+                debug!("CRC check passed.  Very likely this is an LHA or LZH archive.  CRC: {crc}");
+            }
+            Err(err) => {
+                // Error checking CRC.
+                // Use debug-level because may not actually be an LHA/LZH archive.
+                // LHA/LZH does not have particularly identifiable magic bytes.
+                debug!("An error occured when checking the CRC of this LHA or LZH archive: {err}");
+                // break;
+            }
+        }
+
+        let filepath = header.parse_pathname();
+        let filename = filepath.to_string_lossy();
+        if header.is_directory() {
+            debug!("Skipping directory {filename}");
+        } else {
+            debug!("Found file in LHA archive: {filename}");
+
+            // Scan the archive metadata first.
+            if scan_archive_metadata(
+                ctx,
+                &filename,
+                header.compressed_size as usize,
+                header.original_size as usize,
+                false,
+                index,
+                header.file_crc as i32,
+            ) != cl_error_t_CL_SUCCESS
+            {
+                debug!("Extracted file '{filename}' would exceed size limits. Skipping.");
+            } else {
+                // Check if scanning the next file would exceed the limits and should be skipped.
+                if check_scan_limits("LHA", ctx, header.original_size, 0, 0)
+                    != cl_error_t_CL_SUCCESS
+                {
+                    debug!("Extracted file '{filename}' would exceed size limits. Skipping.");
+                } else {
+                    if !decoder.is_decoder_supported() {
+                        debug!("err: unsupported compression method");
+                    } else {
+                        // Read the file into a buffer.
+                        let mut file_data = Vec::<u8>::new();
+
+                        match decoder.read_to_end(&mut file_data) {
+                            Ok(bytes_read) => {
+                                if bytes_read > 0 {
+                                    let ret =
+                                        magic_scan(ctx, &file_data, Some(filename.to_string()));
+                                    if ret != cl_error_t_CL_SUCCESS {
+                                        debug!("cl_scandesc_magic returned error: {}", ret);
+                                        return ret;
+                                    }
+                                } else {
+                                    debug!("Read zero-byte file.");
+                                }
+                            }
+                            err => {
+                                debug!("Error reading file {err:?}");
+                            }
+                        }
+                    }
+                }
+            }
+
+            index += 1;
+        }
+
+        // Get the next file.
+        match decoder.next_file() {
+            Ok(true) => {
+                debug!("Found another file in the archive!");
+            }
+            Ok(false) => {
+                debug!("No more files in the archive.");
+                break;
+            }
+            Err(err) => {
+                // Error getting the next file.
+                // Use debug-level because may not actually be an LHA/LZH archive.
+                // LHA/LZH does not have particularly identifiable magic bytes.
+                debug!("An error occured when checking for the next file in this LHA or LZH archive: {err}");
+                break;
+            }
+        }
+    }
+
+    cl_error_t_CL_SUCCESS
 }
