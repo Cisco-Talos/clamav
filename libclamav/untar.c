@@ -302,7 +302,7 @@ cl_error_t cli_untar(const char *dir, unsigned int posix, cli_ctx *ctx)
 
             strncpy(name, block, 100);
             name[100] = '\0';
-            if (cli_matchmeta(ctx, name, size, size, 0, files, 0, NULL) == CL_VIRUS) {
+            if (cli_matchmeta(ctx, name, size, size, 0, files, 0) == CL_VIRUS) {
                 return CL_VIRUS;
             }
 

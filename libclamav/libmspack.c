@@ -383,7 +383,7 @@ cl_error_t cli_scanmscab(cli_ctx *ctx, off_t sfx_offset)
         uint64_t max_size;
 
         ret = cli_matchmeta(ctx, cab_f->filename, 0, cab_f->length, 0,
-                            files, 0, NULL);
+                            files, 0);
         if (CL_SUCCESS != ret) {
             goto done;
         }
@@ -512,7 +512,7 @@ cl_error_t cli_scanmschm(cli_ctx *ctx)
         uint64_t max_size;
 
         ret = cli_matchmeta(ctx, mschm_f->filename, 0, mschm_f->length,
-                            0, files, 0, NULL);
+                            0, files, 0);
         if (CL_SUCCESS != ret) {
             goto done;
         }

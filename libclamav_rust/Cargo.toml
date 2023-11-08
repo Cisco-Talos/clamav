@@ -16,12 +16,13 @@ image = "0.24"
 rustdct = "0.7"
 transpose = "0.2"
 num-traits = "0.2"
-base64 = "0.21.0"
-sha1 = "0.10.5"
-unicode-segmentation = "1.10.1"
+base64 = "0.21"
+sha1 = "0.10"
+unicode-segmentation = "1.10"
 bindgen = "0.65"
 onenote_parser = { git = "https://github.com/Cisco-Talos/onenote.rs.git", branch = "CLAM-2329-new-from-slice" }
-hex-literal = "0.4.1"
+hex-literal = "0.4"
+delharc = "0.5"
 
 [lib]
 crate-type = ["staticlib"]

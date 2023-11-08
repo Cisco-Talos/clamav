@@ -22,6 +22,10 @@
 
 use std::{ffi::CStr, fs::File};
 
+use log::error;
+
+use crate::sys;
+
 /// Obtain a std::fs::File from an i32 in a platform-independent manner.
 ///
 /// On Unix-like platforms, this is done with File::from_raw_fd().
@@ -47,7 +51,7 @@ pub fn file_from_fd_or_handle(fd: i32) -> File {
     compile_error!("implemented only for unix and windows targets")
 }
 
-/// Get a string from a pointer
+/// Get a string from a pointer.
 ///
 /// # Safety
 ///
@@ -55,10 +59,72 @@ pub fn file_from_fd_or_handle(fd: i32) -> File {
 /// exceeds the lifetime of the output string.
 ///
 /// ptr must be a valid pointer to a C string.
-pub unsafe fn str_from_ptr(ptr: *const ::std::os::raw::c_char) -> Result<Option<&'static str>, std::str::Utf8Error> {
+pub unsafe fn str_from_ptr(
+    ptr: *const ::std::os::raw::c_char,
+) -> Result<Option<&'static str>, std::str::Utf8Error> {
     if ptr.is_null() {
         return Ok(None);
     }
 
     Some(unsafe { CStr::from_ptr(ptr) }.to_str()).transpose()
+}
+
+/// Check scan limits in case we need to abort the scan.
+///
+/// # Safety
+///
+/// ctx must be a valid pointer to a clamav scan context structure
+///
+pub unsafe fn check_scan_limits(
+    module_name: &str,
+    ctx: *mut sys::cli_ctx,
+    need1: u64,
+    need2: u64,
+    need3: u64,
+) -> sys::cl_error_t {
+    let module_name = match std::ffi::CString::new(module_name) {
+        Ok(name) => name,
+        Err(_) => {
+            error!("Invalid module_name: {}", module_name);
+            return sys::cl_error_t_CL_EFORMAT;
+        }
+    };
+
+    unsafe { sys::cli_checklimits(module_name.into_raw(), ctx, need1, need2, need3) }
+}
+
+/// Scan archive metadata.
+///
+/// # Safety
+///
+/// ctx must be a valid pointer to a clamav scan context structure
+///
+pub unsafe fn scan_archive_metadata(
+    ctx: *mut sys::cli_ctx,
+    filename: &str,
+    filesize_compressed: usize,
+    filesize_original: usize,
+    is_encrypted: bool,
+    filepos: usize,
+    res1: i32,
+) -> sys::cl_error_t {
+    let module_name = match std::ffi::CString::new(filename) {
+        Ok(name) => name,
+        Err(_) => {
+            error!("Invalid module_name: {}", filename);
+            return sys::cl_error_t_CL_EFORMAT;
+        }
+    };
+
+    unsafe {
+        sys::cli_matchmeta(
+            ctx,
+            module_name.into_raw(),
+            filesize_compressed,
+            filesize_original,
+            i32::from(is_encrypted),
+            filepos as u32,
+            res1,
+        )
+    }
 }
