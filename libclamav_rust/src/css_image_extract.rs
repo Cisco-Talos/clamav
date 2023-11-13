@@ -288,16 +288,10 @@ pub unsafe extern "C" fn new_css_image_extractor(
         return 0 as sys::css_image_extractor_t;
     } else {
         #[allow(unused_unsafe)]
-        match unsafe { CStr::from_ptr(file_bytes) }.to_str() {
-            Err(e) => {
-                warn!("{} is not valid unicode: {}", stringify!(file_bytes), e);
-                return 0 as sys::css_image_extractor_t;
-            }
-            Ok(s) => s,
-        }
+        unsafe { CStr::from_ptr(file_bytes) }.to_string_lossy()
     };
 
-    if let Ok(extractor) = CssImageExtractor::new(css_input) {
+    if let Ok(extractor) = CssImageExtractor::new(&css_input) {
         Box::into_raw(Box::new(extractor)) as sys::css_image_extractor_t
     } else {
         0 as sys::css_image_extractor_t
