@@ -1,5 +1,6 @@
+// Copyright (C) 2020-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
 //
-// Copyright (C) 2020 Jonas Zaddach.
+// Authors: Jonas Zaddach, Scott Hutton
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License version 2 as
@@ -15,7 +16,12 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 // MA 02110-1301, USA.
 
-#![allow(non_camel_case_types, non_upper_case_globals)]
+#![warn(clippy::all, clippy::pedantic)]
+#![allow(
+    non_camel_case_types,
+    non_upper_case_globals,
+    clippy::unreadable_literal
+)]
 
 use std::ffi::CStr;
 
