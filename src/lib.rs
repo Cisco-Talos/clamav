@@ -15,7 +15,12 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 // MA 02110-1301, USA.
 
-#![allow(non_camel_case_types, non_upper_case_globals)]
+#![warn(clippy::all, clippy::pedantic)]
+#![allow(
+    non_camel_case_types,
+    non_upper_case_globals,
+    clippy::unreadable_literal
+)]
 
 use std::ffi::CStr;
 
