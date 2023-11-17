@@ -511,7 +511,7 @@ cl_error_t cli_regex2suffix(const char *pattern, regex_t *preg, suffix_callback 
         goto done;
     }
     memset(&buf, 0, sizeof(buf));
-    memset(&root_node, 0, sizeof(root_node));
+    memset(&root_node, 0, sizeof(buf));
     n->parent = &root_node;
 
     rc = build_suffixtree_descend(n, &buf, cb, cbdata, &regex);
