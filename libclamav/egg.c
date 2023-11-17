@@ -475,7 +475,7 @@ static cl_error_t egg_parse_encrypt_header(const uint8_t* index, size_t size, eg
      *     |               |         | 6 | LEA256                                                                                                 |
      *     |---------------|---------|---|--------------------------------------------------------------------------------------------------------|
      *
-     * Depending on the Method (XOR / AES/LEA128 / AES/LEA256) The above will be be followed one of the following Method Headers:
+     * Depending on the Method (XOR / AES/LEA128 / AES/LEA256) The above will be followed by one of the following Method Headers:
      *
      *   XOR (KeyBase):
      *     |---------------|---------|------------------------------------------------------------------------------------------------------------|
@@ -1214,7 +1214,7 @@ static cl_error_t egg_parse_file_extra_field(egg_handle* handle, egg_file* eggFi
                 cli_dbgmsg("egg_parse_file_extra_field: Issue parsing comment header. Error code: %u\n", retval);
                 // Don't fail out with a `goto done;`. We're making a best effort to process the file, so just move on.
             } else if (comment == NULL) {
-                cli_errmsg("egg_parse_file_extra_field: Logic error! Succesfully parsed comment header,"
+                cli_errmsg("egg_parse_file_extra_field: Logic error! Successfully parsed comment header,"
                            " but did not return egg_comment information!\n");
                 goto done;
             } else {
@@ -1662,7 +1662,7 @@ cl_error_t cli_egg_open(fmap_t* map, void** hArchive, char*** comments, uint32_t
                 cli_dbgmsg("cli_egg_open: Issue parsing file header. Error code: %u\n", retval);
                 goto done;
             } else if (found_file == NULL) {
-                cli_errmsg("cli_egg_open: Logic error! Succesfully parsed file headers,"
+                cli_errmsg("cli_egg_open: Logic error! Successfully parsed file headers,"
                            " but did not return egg_file information!\n");
                 goto done;
             } else {
@@ -1683,7 +1683,7 @@ cl_error_t cli_egg_open(fmap_t* map, void** hArchive, char*** comments, uint32_t
                 cli_dbgmsg("cli_egg_open: Issue parsing block header. Error code: %u\n", retval);
                 goto done;
             } else if (found_block == NULL) {
-                cli_errmsg("cli_egg_open: Logic error! Succesfully parsed block headers,"
+                cli_errmsg("cli_egg_open: Logic error! Successfully parsed block headers,"
                            " but did not return egg_block information!\n");
                 goto done;
             } else {
@@ -1778,7 +1778,7 @@ cl_error_t cli_egg_open(fmap_t* map, void** hArchive, char*** comments, uint32_t
                  */
                 if (comment == NULL) {
                     /* Uh... no. */
-                    cli_errmsg("cli_egg_open: Logic error! Succesfully parsed comment header,"
+                    cli_errmsg("cli_egg_open: Logic error! Successfully parsed comment header,"
                                " but did not return egg_comment information!\n");
                     goto done;
                 } else {

@@ -641,7 +641,7 @@ bool Unpack::ReadTables(BitInput &Inp,UnpackBlockHeader &Header,UnpackBlockTable
         {
           // We cannot have "repeat previous" code at the first position.
           // Multiple such codes would shift Inp position without changing I,
-          // which can lead to reading beyond of Inp boundary in mutithreading
+          // which can lead to reading beyond of Inp boundary in multithreading
           // mode, where Inp.ExternalBuffer disables bounds check and we just
           // reserve a lot of buffer space to not need such check normally.
           return false;

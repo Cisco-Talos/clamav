@@ -1766,7 +1766,7 @@ static int yylex(YYSTYPE *lvalp, yyscan_t scanner)
             cli_dbgmsg(MODULE "infloop detected, skipping character\n");
             scanner->pos++;
         }
-        /* its not necesarely an infloop if it changed
+        /* its not necessarily an infloop if it changed
          * state, and it shouldn't infloop between states */
     }
     scanner->lastpos    = scanner->pos;

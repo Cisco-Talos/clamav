@@ -164,7 +164,7 @@ static int isremote(const struct optstruct *opts)
 }
 
 /* pings clamd at the specified interval the number of time specified
- * return 0 on a succesful connection, 1 upon timeout, -1 on error */
+ * return 0 on a successful connection, 1 upon timeout, -1 on error */
 int16_t ping_clamd(const struct optstruct *opts)
 {
 

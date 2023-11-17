@@ -492,7 +492,7 @@ const struct clam_option __clam_options[] = {
 
     {"OnAccessExtraScanning", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD, "Enables extra scanning and notification after catching certain inotify events. Only works with the DDD system enabled.", "yes"},
 
-    {"OnAccessCurlTimeout", NULL, 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 5000l, NULL, 0, OPT_CLAMD, "Max amount of time (in milliseconds) that the OnAccess client should spend for every connect, send, and recieve attempt when communicating with clamd via curl (5s default)", "10000L"},
+    {"OnAccessCurlTimeout", NULL, 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 5000l, NULL, 0, OPT_CLAMD, "Max amount of time (in milliseconds) that the OnAccess client should spend for every connect, send, and receive attempt when communicating with clamd via curl (5s default)", "10000L"},
 
     {"OnAccessMaxThreads", NULL, 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 5, NULL, 0, OPT_CLAMD, "Max number of scanning threads to allocate to the OnAccess thread pool at startup--these threads are the ones responsible for creating a connection with the daemon and kicking off scanning after an event has been processed. To prevent clamonacc from consuming all clamd's resources keep this lower than clamd's max threads. Default is 5", "10"},
 

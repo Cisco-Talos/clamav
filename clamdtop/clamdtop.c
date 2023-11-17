@@ -316,7 +316,7 @@ static void init_ncurses(int num_clamd, int use_default)
     keypad(stdscr, TRUE);            /* enable keyboard mapping */
     nonl();                          /* tell curses not to do NL->CR/NL on output */
     halfdelay(UPDATE_INTERVAL * 10); /* timeout of 2s when waiting for input*/
-    noecho();                        /* dont echo input */
+    noecho();                        /* don't echo input */
     curs_set(0);                     /* turn off cursor */
     if (use_default)
         use_default_colors();

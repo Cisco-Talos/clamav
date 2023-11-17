@@ -137,7 +137,7 @@ fn execute_bindgen() -> Result<(), &'static str> {
         // Make the bindings pretty.
         .rustfmt_bindings(true)
         // Disable the layout tests.
-        // We're commiting to source control. Pointer width, integer size, etc
+        // We're committing to source control. Pointer width, integer size, etc
         // are probably not the same when generated as when compiled.
         .layout_tests(false)
         // Enable bindgen to find generated headers in the build directory, too.

@@ -85,11 +85,11 @@ const char *fc_strerror(fc_error_t fcerror)
         case FC_UPTODATE:
             return "Up-to-date";
         case FC_EINIT:
-            return "Failed to initalize";
+            return "Failed to initialize";
         case FC_EDIRECTORY:
-            return "Invalid, nonexistant, or inaccessible directory";
+            return "Invalid, nonexistent, or inaccessible directory";
         case FC_EFILE:
-            return "Invalid, nonexistant, or inaccessible file";
+            return "Invalid, nonexistent, or inaccessible file";
         case FC_ECONNECTION:
             return "Connection failed";
         case FC_EEMPTYFILE:
@@ -139,7 +139,7 @@ fc_error_t fc_initialize(fc_config *fcConfig)
                     Please submit an issue to https://github.com/Cisco-Talos/clamav");
     }
 
-    /* Initilize libcurl */
+    /* Initialize libcurl */
     curl_global_init(CURL_GLOBAL_ALL);
 
     /* Initialize mprintf options */

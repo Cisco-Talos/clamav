@@ -62,12 +62,12 @@ impl<'a> CssImageExtractor<'a> {
 
     fn next_base64_image(&mut self) -> Option<&str> {
         'outer: loop {
-            // Find occurence of "url" with
+            // Find occurrence of "url" with
             if let Some(pos) = self.remaining.find("url") {
                 (_, self.remaining) = self.remaining.split_at(pos + "url".len());
                 // Found 'url'.
             } else {
-                // No occurence of "url"
+                // No occurrence of "url"
                 // No more 'url's.
                 self.remaining = "";
                 return None;
@@ -199,7 +199,7 @@ impl<'a> CssImageExtractor<'a> {
                 (_, url_parameter) = url_parameter.split_at(pos + ";".len());
                 // Found ";"
             } else {
-                // No occurence of ";" in the url() parameter.
+                // No occurrence of ";" in the url() parameter.
                 continue 'outer;
             };
 

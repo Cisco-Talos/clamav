@@ -240,7 +240,7 @@ static cl_error_t find_stream_bounds(
             goto done;
         bytesleft -= idx - start;
 
-        /* Skip any new line charcters. */
+        /* Skip any new line characters. */
         if (bytesleft >= 2 && idx[0] == '\xd' && idx[1] == '\xa') {
             idx += 2;
             bytesleft -= 2;

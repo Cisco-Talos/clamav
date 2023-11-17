@@ -334,7 +334,7 @@ int daemonize_parent_wait(const char *const user, const char *const log_file)
         return -1;
     } else if (daemonizePid) { // parent
         /* The parent will wait until either the child process
-         * exits, or signals the parent that it's initialization is
+         * exits, or signals the parent that its initialization is
          * complete.  If it exits, it is due to an error condition,
          * so the parent should exit with the same error code as the child.
          * If the child signals the parent that initialization is complete, it

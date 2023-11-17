@@ -162,7 +162,7 @@
 	returning NULL in a custom mspack_system.alloc() implementation.
 
 	However, it would be good to validate chunk size further. With no
-	offical specification, only empirical data is available. All files
+	official specification, only empirical data is available. All files
 	created by hhc.exe have a chunk size of 4096 bytes, and this is
 	matched by all the files I've found in the wild, except for one
 	which has a chunk size of 8192 bytes, which was created by someone

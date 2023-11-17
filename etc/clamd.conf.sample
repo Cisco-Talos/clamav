@@ -682,7 +682,7 @@ Example
 #OnAccessMaxThreads 10
 
 # Max amount of time (in milliseconds) that the OnAccess client should spend
-# for every connect, send, and recieve attempt when communicating with clamd
+# for every connect, send, and receive attempt when communicating with clamd
 # via curl.
 # Default: 5000 (5 seconds)
 # OnAccessCurlTimeout 10000

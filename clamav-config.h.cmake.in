@@ -439,7 +439,7 @@
 /* Define if dlsym() requires a leading underscore in symbol names. */
 #cmakedefine NEED_USCORE 1
 
-/* bzip funtions do not have bz2 prefix */
+/* bzip functions do not have bz2 prefix */
 #cmakedefine NOBZ2PREFIX 1
 
 /* "no fd_set" */

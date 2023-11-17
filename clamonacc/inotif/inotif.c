@@ -245,7 +245,7 @@ static int onas_ddd_watch_hierarchy(const char *pathname, size_t len, int fd, ui
         size_t size      = len + strlen(curr->dirname) + 2;
         char *child_path = (char *)cli_malloc(size);
         if (child_path == NULL) {
-            logg(LOGG_ERROR, "ClamInotif: out of memory when when adding child for %s\n", hnode->pathname);
+            logg(LOGG_ERROR, "ClamInotif: out of memory when adding child for %s\n", hnode->pathname);
             return CL_EMEM;
         }
 
@@ -375,7 +375,7 @@ cl_error_t onas_enable_inotif_ddd(struct onas_context **ctx)
 
 void *onas_ddd_th(void *arg)
 {
-    /* Set thread name for profiling and debuging */
+    /* Set thread name for profiling and debugging */
     const char thread_name[] = "clamonacc-ddd";
 
 #if defined(__linux__)
@@ -671,9 +671,9 @@ void *onas_ddd_th(void *arg)
                 }
 
                 if (event->mask & IN_UNMOUNT) {
-                    logg(LOGG_ERROR, "ClamInotif: inofify event IN_UNMOUNT (mask:%d) occured, clamonacc should be restartet because a filesystem monitored by inotify was umounted.\n", event->mask);
+                    logg(LOGG_ERROR, "ClamInotif: inotify event IN_UNMOUNT (mask:%d) occurred, clamonacc should be restarted because a filesystem monitored by inotify was umounted.\n", event->mask);
                 } else if (event->mask & IN_Q_OVERFLOW) {
-                    logg(LOGG_ERROR, "ClamInotif: inotify event IN_Q_OVERFLOW (mask:%d) occured, clamonacc should be restartet because a inotify events were dropped by the kernel and the internal clamonacc inotify data structures are likely invalid.\n", event->mask);
+                    logg(LOGG_ERROR, "ClamInotif: inotify event IN_Q_OVERFLOW (mask:%d) occurred, clamonacc should be restarted because inotify events were dropped by the kernel and the internal clamonacc inotify data structures are likely invalid.\n", event->mask);
                 } else if (event->mask & IN_IGNORED) {
                     // Ignore for debugging purposes
                 } else {

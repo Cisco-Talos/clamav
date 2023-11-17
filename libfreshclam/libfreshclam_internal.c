@@ -815,7 +815,7 @@ static size_t WriteFileCallback(void *contents, size_t size, size_t nmemb, void 
  * @param[out] cvd          CVD header of newest available CVD, if FC_SUCCESS
  * @return fc_error_t       FC_SUCCESS if CVD header obtained.
  * @return fc_error_t       FC_UPTODATE if received 304 in response to ifModifiedSince date.
- * @return fc_error_t       Another error code if failure occured.
+ * @return fc_error_t       Another error code if failure occurred.
  */
 static fc_error_t remote_cvdhead(
     const char *cvdfile,

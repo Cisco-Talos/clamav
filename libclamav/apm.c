@@ -191,7 +191,7 @@ cl_error_t cli_scanapm(cli_ctx *ctx)
             goto done;
         }
 
-        /* check if a out-of-order partition map */
+        /* check if an out-of-order partition map */
         if (!strncmp((char *)apentry.type, "Apple_Partition_Map", 32) ||
             !strncmp((char *)apentry.type, "Apple_partition_map", 32) ||
             !strncmp((char *)apentry.type, "Apple_patition_map", 32)) {

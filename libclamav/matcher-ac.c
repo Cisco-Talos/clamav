@@ -3046,7 +3046,7 @@ cl_error_t cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
             return CL_EMALFDB;
         }
 
-        // Store those intial bytes as the pattern "prefix" (the stuff before what goes in the AC Trie)
+        // Store those initial bytes as the pattern "prefix" (the stuff before what goes in the AC Trie)
         new->prefix = new->pattern;
         // The "prefix" length is the number of bytes before the starting position of the pattern that goes in the AC Trie.
         new->prefix_length[0] = ppos;

@@ -713,7 +713,7 @@ char* yr_compiler_get_error_message(
             snprintf(
                 buffer,
                 buffer_size,
-                "\"%s\" is not a array",
+                "\"%s\" is not an array",
                 compiler->last_error_extra_info);
             break;
         case ERROR_INVALID_FIELD_NAME:

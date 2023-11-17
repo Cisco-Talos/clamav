@@ -581,7 +581,7 @@ static int crtmgr_rsa_verify(cli_crt *x509, BIGNUM *sig, cli_crt_hashtype hashty
 }
 
 /* For a given cli_crt, returns a pointer to the signer x509 certificate if
- * one is found in the crtmgr and it's signature can be validated (NULL is
+ * one is found in the crtmgr and its signature can be validated (NULL is
  * returned otherwise.) */
 cli_crt *crtmgr_verify_crt(crtmgr *m, cli_crt *x509)
 {
