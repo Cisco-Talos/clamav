@@ -157,12 +157,14 @@ int smtpauth_init(const char *r)
             if (len <= 0) continue;
             if (len * 3 + 1 > rxavail) {
                 ptr   = regex;
-                regex = realloc(regex, rxsize + 2048);
-                if (!regex) {
+                char *temp = realloc(regex, rxsize + 2048);
+                if (!temp) {
+                    free(regex);
                     logg(LOGG_ERROR, "Cannot allocate memory for SkipAuthenticated file\n");
                     fclose(f);
                     return 1;
                 }
+                regex = temp;
                 rxavail = 2048;
                 rxsize += 2048;
                 if (!ptr) {
