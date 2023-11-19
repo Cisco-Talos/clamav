@@ -246,7 +246,7 @@ static uint8_t *parse_char_class(const uint8_t *pat, size_t patSize, size_t *pos
             for (c = range_start + 1; c <= range_end; c++)
                 bitmap[c >> 3] ^= 1 << (c & 0x7);
             hasprev = 0;
-        } else if (pat[*pos] == '[' && pat[*pos] == ':') {
+        } else if (pat[*pos] == '[' && pat[*pos + 1] == ':') {
             /* char class */
             FREE(bitmap);
             while (pat[*pos] != ']') INC_POS(pos, patSize);
