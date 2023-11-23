@@ -123,7 +123,7 @@ static void XFA_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname_a
 static int pdf_readint(const char *q0, int len, const char *key);
 static const char *pdf_getdict(const char *q0, int *len, const char *key);
 static char *pdf_readval(const char *q, int len, const char *key);
-static char *pdf_readstring(const char *q0, int len, const char *key, unsigned *slen, const char **qend, int noescape);
+static char *pdf_readstring(const char *q0, int len, const char *key, unsigned *slen, const char **qend, bool noescape);
 
 static int xrefCheck(const char *xref, const char *eof)
 {
@@ -2120,7 +2120,7 @@ static void pdf_parse_trailer(struct pdf_struct *pdf, const char *s, long length
 
         pdf->flags |= 1 << ENCRYPTED_PDF;
         pdf_parse_encrypt(pdf, enc, s + length - enc);
-        newID = pdf_readstring(s, length, "/ID", &newIDlen, NULL, 0);
+        newID = pdf_readstring(s, length, "/ID", &newIDlen, NULL, false);
 
         if (newID) {
             free(pdf->fileID);
@@ -2571,7 +2571,18 @@ static const char *pdf_getdict(const char *q0, int *len, const char *key)
     return q;
 }
 
-static char *pdf_readstring(const char *q0, int len, const char *key, unsigned *slen, const char **qend, int noescape)
+/**
+ * @brief Read the value string from a PDF dictionary key/value pair.
+ *
+ * @param q0            A pointer into the PDF dictionary.
+ * @param len           The bytes remaining in the file.
+ * @param key           The key we're looking for.
+ * @param [out] slen    The length of the output string
+ * @param [out] qend    The pointer we wound up at, after the end of the value.
+ * @param noescape      Select 'true' to ignore escape characters, 'false' to process them.
+ * @return char*
+ */
+static char *pdf_readstring(const char *q0, int len, const char *key, unsigned *slen, const char **qend, bool noescape)
 {
     char *s, *s0;
     const char *start, *q, *end;
@@ -2870,7 +2881,7 @@ static void compute_hash_r6(const char *password, size_t pwlen, const unsigned c
 
 static void check_user_password(struct pdf_struct *pdf, int R, const char *O,
                                 const char *U, int32_t P, int EM,
-                                const char *UE,
+                                const char *UE, size_t UE_len,
                                 unsigned length, unsigned oulen)
 {
     unsigned i;
@@ -2891,11 +2902,9 @@ static void check_user_password(struct pdf_struct *pdf, int R, const char *O,
         cl_sha256(U + 32, 8, result2, NULL);
         dbg_printhex("Computed U", (const char *)result2, 32);
         if (!memcmp(result2, U, 32)) {
-            size_t UE_len;
-
             /* Algorithm 3.2a could be used to recover encryption key */
             cl_sha256(U + 40, 8, result2, NULL);
-            UE_len = UE ? strlen(UE) : 0;
+
             if (UE_len != 32) {
                 cli_dbgmsg("check_user_password: UE length is not 32: %zu\n", UE_len);
                 noisy_warnmsg("check_user_password: UE length is not 32: %zu\n", UE_len);
@@ -2927,10 +2936,9 @@ static void check_user_password(struct pdf_struct *pdf, int R, const char *O,
 
         compute_hash_r6(password, pwlen, (const unsigned char *)(U + 32), validationkey);
         if (!memcmp(U, validationkey, sizeof(validationkey))) {
-            size_t UE_len;
 
             compute_hash_r6(password, pwlen, (const unsigned char *)(U + 40), hash);
-            UE_len = strlen(UE);
+
             if (UE_len != 32) {
                 cli_dbgmsg("check_user_password: UE length is not 32: %zu\n", UE_len);
                 noisy_warnmsg("check_user_password: UE length is not 32: %zu\n", UE_len);
@@ -3103,6 +3111,7 @@ void pdf_handle_enc(struct pdf_struct *pdf)
     struct pdf_obj *obj;
     uint32_t len, n, R, P, length, EM = 1, i, oulen;
     char *O, *U, *UE, *StmF, *StrF, *EFF;
+    size_t UE_len = 0;
     const char *q, *q2;
 
     if (pdf->enc_objid == ~0u)
@@ -3213,7 +3222,8 @@ void pdf_handle_enc(struct pdf_struct *pdf)
                 length = 128;
             } else {
                 n      = 0;
-                UE     = pdf_readstring(q, len, "/UE", &n, NULL, 0);
+                UE     = pdf_readstring(q, len, "/UE", &n, NULL, false);
+                UE_len = n;
                 length = 256;
             }
         }
@@ -3222,7 +3232,7 @@ void pdf_handle_enc(struct pdf_struct *pdf)
             length = 40;
 
         n = 0;
-        O = pdf_readstring(q, len, "/O", &n, NULL, 0);
+        O = pdf_readstring(q, len, "/O", &n, NULL, false);
         if (!O || n < oulen) {
             cli_dbgmsg("pdf_handle_enc: invalid O: %d\n", n);
             cli_dbgmsg("pdf_handle_enc: invalid O: %d\n", n);
@@ -3244,7 +3254,7 @@ void pdf_handle_enc(struct pdf_struct *pdf)
         }
 
         n = 0;
-        U = pdf_readstring(q, len, "/U", &n, NULL, 0);
+        U = pdf_readstring(q, len, "/U", &n, NULL, false);
         if (!U || n < oulen) {
             cli_dbgmsg("pdf_handle_enc: invalid U: %u\n", n);
             noisy_warnmsg("pdf_handle_enc: invalid U: %u\n", n);
@@ -3271,7 +3281,7 @@ void pdf_handle_enc(struct pdf_struct *pdf)
             noisy_warnmsg("pdf_handle_enc: wrong key length, not multiple of 8\n");
             break;
         }
-        check_user_password(pdf, R, O, U, P, EM, UE, length, oulen);
+        check_user_password(pdf, R, O, U, P, EM, UE, UE_len, length, oulen);
     } while (0);
 
     free(O);
