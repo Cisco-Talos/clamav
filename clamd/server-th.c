@@ -404,7 +404,7 @@ static cl_error_t reload_db(struct cl_engine **engine, unsigned int dboptions, c
                 goto done;
 
             default:
-                logg(LOGG_ERROR, "An unknown error occured when waiting for the database reload thread: %d\n", join_ret);
+                logg(LOGG_ERROR, "An unknown error occurred when waiting for the database reload thread: %d\n", join_ret);
                 goto done;
         }
     }
@@ -926,7 +926,7 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
     memset(&sigact, 0, sizeof(struct sigaction));
 #endif
 
-    /* Initalize scan options struct */
+    /* Initialize scan options struct */
     memset(&options, 0, sizeof(struct cl_scan_options));
 
     /* set up limits */
@@ -1216,7 +1216,7 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
 
     if (optget(opts, "AlertBrokenMedia")->enabled) {
         options.heuristic |= CL_SCAN_HEURISTIC_BROKEN_MEDIA;
-        logg(LOGG_INFO, "Media (Graphics) Format Validatation enabled\n");
+        logg(LOGG_INFO, "Media (Graphics) Format Validation enabled\n");
     }
 
     if (optget(opts, "ScanMail")->enabled) {

@@ -270,7 +270,7 @@ SCAN_CODE ScanTree::FindProc(FindData *FD)
     // SearchAll means that we'll use "*" mask for search, so we'll find
     // subdirectories and will be able to recurse into them.
     // We do not use "*" for directories at any level or for files
-    // at top level in recursion mode. We always comrpess the entire directory
+    // at top level in recursion mode. We always compress the entire directory
     // if folder wildcard is specified.
     bool SearchAll=!IsDir && (Depth>0 || Recurse==RECURSE_ALWAYS ||
                    FolderWildcards && Recurse!=RECURSE_DISABLE || 

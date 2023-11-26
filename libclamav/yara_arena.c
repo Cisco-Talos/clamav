@@ -319,7 +319,7 @@ void* yr_arena_base_address(
 // yr_arena_next_address
 //
 // Given an address and an offset, returns the address where
-// address + offset resides. The arena is a collection of non-contigous
+// address + offset resides. The arena is a collection of non-contiguous
 // regions of memory (pages), if address is pointing at the end of a page,
 // address + offset could cross the page boundary and point at somewhere
 // within the next page, this function handles these situations. It works
@@ -591,7 +591,7 @@ int yr_arena_allocate_memory(
 // yr_arena_allocate_struct
 //
 // Allocates a structure within the arena. This function is similar to
-// yr_arena_allocate_memory but additionaly receives a variable-length
+// yr_arena_allocate_memory but additionally receives a variable-length
 // list of offsets within the structure where pointers reside. This allows
 // the arena to keep track of pointers that must be adjusted when memory
 // is relocated. This is an example on how to invoke this function:

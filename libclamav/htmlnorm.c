@@ -188,7 +188,7 @@ static unsigned char *cli_readchunk(FILE *stream, m_area_t *m_area, unsigned int
         return NULL;
     }
 
-    /* Try and use the memory buffer first */
+    /* Try to use the memory buffer first */
     if (m_area) {
         /* maximum we can copy into the buffer,
          * we could have less than max_len bytes available */

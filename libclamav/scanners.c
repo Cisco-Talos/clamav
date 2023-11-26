@@ -2101,7 +2101,7 @@ static cl_error_t cli_ole2_tempdir_scan_for_xlm_and_images(const char *dir, cli_
                 case CL_EMEM:
                     goto done;
                 default:
-                    cli_dbgmsg("cli_ole2_tempdir_scan_for_xlm_and_images: An error occured when parsing XLM BIFF temp file, skipping to next file.\n");
+                    cli_dbgmsg("cli_ole2_tempdir_scan_for_xlm_and_images: An error occurred when parsing XLM BIFF temp file, skipping to next file.\n");
             }
         }
     }
@@ -3320,7 +3320,7 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
         (type != CL_TYPE_OLD_TAR) &&   /* Omit OLD TAR files because it's a raw archive format that we can extract and scan manually. */
         (type != CL_TYPE_POSIX_TAR)) { /* Omit POSIX TAR files because it's a raw archive format that we can extract and scan manually. */
         /*
-         * Enable file type recognition scan mode if requested, except for some some problematic types (above).
+         * Enable file type recognition scan mode if requested, except for some problematic types (above).
          */
         acmode |= AC_SCAN_FT;
     }
@@ -4203,7 +4203,7 @@ static inline bool result_should_goto_done(cli_ctx *ctx, cl_error_t result_in, c
          * Reasons to halt the scan but report a successful scan.
          */
 
-        // Exceeding the time limit should definitly halt the scan.
+        // Exceeding the time limit should definitely halt the scan.
         // But unless the user enabled alert-exceeds-max, we don't want to complain about it.
         case CL_ETIMEOUT:
 
@@ -4796,7 +4796,7 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
             }
 
             if (CL_SUCCESS != ret) {
-                // do not calculate the fuzzy image hash if parsing failed, or a heuristic alert occured.
+                // do not calculate the fuzzy image hash if parsing failed, or a heuristic alert occurred.
                 break;
             }
 
@@ -4812,7 +4812,7 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
             }
 
             if (CL_SUCCESS != ret) {
-                // do not calculate the fuzzy image hash if parsing failed, or a heuristic alert occured.
+                // do not calculate the fuzzy image hash if parsing failed, or a heuristic alert occurred.
                 break;
             }
 
@@ -4828,7 +4828,7 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
             }
 
             if (CL_SUCCESS != ret) {
-                // do not calculate the fuzzy image hash if parsing failed, or a heuristic alert occured.
+                // do not calculate the fuzzy image hash if parsing failed, or a heuristic alert occurred.
                 break;
             }
 
@@ -4844,7 +4844,7 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
             }
 
             if (CL_SUCCESS != ret) {
-                // do not calculate the fuzzy image hash if parsing failed, or a heuristic alert occured.
+                // do not calculate the fuzzy image hash if parsing failed, or a heuristic alert occurred.
                 break;
             }
 
@@ -5353,7 +5353,7 @@ cl_error_t cli_magic_scan_buff(const void *buffer, size_t length, cli_ctx *ctx, 
  * @param engine            The scanning engine.
  * @param scanoptions       Scanning options.
  * @param[in,out] context   An opaque context structure allowing the caller to record details about the sample being scanned.
- * @return int              CL_CLEAN, CL_VIRUS, or an error code if an error occured during the scan.
+ * @return int              CL_CLEAN, CL_VIRUS, or an error code if an error occurred during the scan.
  */
 static cl_error_t scan_common(cl_fmap_t *map, const char *filepath, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, struct cl_scan_options *scanoptions, void *context)
 {

@@ -6,7 +6,7 @@ class BitInput
   public:
     enum BufferSize {MAX_SIZE=0x8000}; // Size of input buffer.
 
-    int InAddr; // Curent byte position in the buffer.
+    int InAddr; // Current byte position in the buffer.
     int InBit;  // Current bit position in the current byte.
 
     bool ExternalBuffer;

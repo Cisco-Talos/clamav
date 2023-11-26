@@ -378,7 +378,7 @@ function(add_rust_test)
 endfunction()
 
 #
-# Cargo is the primary tool for using the Rust Toolchain to to build static
+# Cargo is the primary tool for using the Rust Toolchain to build static
 # libs that can include other crate dependencies.
 #
 find_rust_program(cargo)

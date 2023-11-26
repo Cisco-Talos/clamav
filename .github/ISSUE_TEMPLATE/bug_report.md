@@ -34,7 +34,7 @@ If applicable, add screenshots to help explain your problem.
 
 If the issue is reproducible only when scanning a specific file, attach it to the ticket.
 
-<!-- CAUTION: Do not attach malware unless in an encrypted zip. Better yet, provide a link to the file on on VirusTotal.
+<!-- CAUTION: Do not attach malware unless in an encrypted zip. Better yet, provide a link to the file on VirusTotal.
 
 The maximum size for file attachments on GitHub Issues is 25MB and the maximum size for images is 10MB. If the file is too big, you can upload it to a password protected website and send us the URL and the credentials to access it.
 

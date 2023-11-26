@@ -291,9 +291,9 @@ class TC(testcase.TestCase):
     def test_clamd_02_clamdscan_version(self):
         '''
         Verify that clamdscan --version returns the expected version #
-        Explanation: clamdscan --version will query clamd for it's version
+        Explanation: clamdscan --version will query clamd for its version
           and print out clamd's version.  If it can't connect to clamd, it'll
-          throw and error saying as much and then report it's own version.
+          throw and error saying as much and then report its own version.
 
         In this test, we want to check clamd's version through clamdscan.
         '''
@@ -305,7 +305,7 @@ class TC(testcase.TestCase):
         assert poll == None  # subprocess is alive if poll() returns None
 
         # First we'll ping-pong to make sure clamd is up
-        # If clamd isn't up before the version test, clamdscan will return it's
+        # If clamd isn't up before the version test, clamdscan will return its
         # own version, which isn't really the point of the test.
         output = self.execute_command('{clamdscan} --ping 5 -c {clamd_config}'.format(
             clamdscan=TC.clamdscan, clamd_config=TC.clamd_config))

@@ -153,7 +153,7 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, uint32_t bufsz, struct cli
             /*
              * Our encryption is pathetic and out software is lame but
              * we need to claim it's unbreakable.
-             * So why dont we just mangle the imports and encrypt the EP?!
+             * So why don't we just mangle the imports and encrypt the EP?!
              */
 
             /* Decrypts old entrypoint if we got enough clues */

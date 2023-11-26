@@ -421,7 +421,7 @@ cl_error_t fmap_dump_to_file(fmap_t *map, const char *filepath, const char *tmpd
 
 /* deprecated */
 /**
- * @brief   Return the open file desciptor for the fmap (if available).
+ * @brief   Return the open file descriptor for the fmap (if available).
  *
  * This function will only provide the file descriptor if the fmap handle is set,
  * and if the handle is in fact a file descriptor (handle_is_fd != 0).

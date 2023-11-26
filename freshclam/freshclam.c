@@ -455,7 +455,7 @@ done:
  * @return fc_error_t       FC_SUCCESS if success.
  * @return fc_error_t       FC_EARG if invalid args.
  * @return fc_error_t       FC_EMEM if malloc failed.
- * @return fc_error_t       FC_ECONFIG if a parsing issue occured.
+ * @return fc_error_t       FC_ECONFIG if a parsing issue occurred.
  */
 static fc_error_t get_server_node(
     const char *server,
@@ -811,7 +811,7 @@ static fc_error_t initialize(struct optstruct *opts)
 
 #ifdef HAVE_PWD_H
     /* Drop database privileges here if we are not planning on daemonizing.  If
-     * we are, we should wait until after we craete the PidFile to drop
+     * we are, we should wait until after we create the PidFile to drop
      * privileges.  That way, it is owned by root (or whoever started freshclam),
      * and no one can change it.  */
     if (!optget(opts, "daemon")->enabled) {
@@ -830,7 +830,7 @@ static fc_error_t initialize(struct optstruct *opts)
 #endif /* HAVE_PWD_H */
 
     /*
-     * Initilize libclamav.
+     * Initialize libclamav.
      */
     if (CL_SUCCESS != (cl_init_retcode = cl_init(CL_INIT_DEFAULT))) {
         mprintf(LOGG_ERROR, "initialize: Can't initialize libclamav: %s\n", cl_strerror(cl_init_retcode));
@@ -982,7 +982,7 @@ static fc_error_t initialize(struct optstruct *opts)
     fcConfig.bCompressLocalDatabase = optget(opts, "CompressLocalDatabase")->enabled;
 
     /*
-     * Initilize libfreshclam.
+     * Initialize libfreshclam.
      */
     if (FC_SUCCESS != (ret = fc_initialize(&fcConfig))) {
         mprintf(LOGG_ERROR, "initialize: libfreshclam init failed.\n");
@@ -1082,7 +1082,7 @@ done:
  *
  * Select:
  *   all standard databases excluding those in the opt-out list,
- *   any optional databases includedd in the opt-in list.
+ *   any optional databases included in the opt-in list.
  *
  * databaseList should be free'd with free_string_list().
  *
@@ -1420,13 +1420,13 @@ done:
  * @param nServers              Number of servers in list.
  * @param dnsUpdateInfoServer   (optional) DNS update info server.  May be NULl to disable use of DNS.
  * @param bScriptedUpdates      Nonzero to enable incremental/scripted (efficient) updates.
- * @param bPrune                Prune official databases that are no longer desired or avaialable.
- * @param onUpdateExecute       (optional) Command to to run after 1+ databases have been updated.
+ * @param bPrune                Prune official databases that are no longer desired or available.
+ * @param onUpdateExecute       (optional) Command to run after 1+ databases have been updated.
  * @param onOutdatedExecute     (optional) Command to run if new version of ClamAV is available.
  * @param bDaemonized           Non-zero if process has daemonized.
  * @param notifyClamd           (optional) Path to clamd.conf to notify clamd.
  * @param fc_context            (optional) Context information for callback functions.
- * @return fc_error_t           FC_SUCCESS if all databases upddated successfully.
+ * @return fc_error_t           FC_SUCCESS if all databases updated successfully.
  */
 fc_error_t perform_database_update(
     char **databaseList,

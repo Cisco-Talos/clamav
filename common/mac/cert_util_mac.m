@@ -244,7 +244,7 @@ cl_error_t cert_store_load(X509 **trusted_certs, size_t trusted_cert_count)
     }
 
     /* Load certificates from keychains before entering the critical section.
-     * On a default 10.12 installation loading the the system roots keychain
+     * On a default 10.12 installation loading the system roots keychain
      * could take up to 300 ms to complete. */
 
     for (kc_index = 0; kc_index < ARRAY_SIZE(keychains); kc_index++) {

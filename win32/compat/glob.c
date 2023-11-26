@@ -35,7 +35,7 @@
 
     The other suggested approach is to override the crt-builtin "_setargv" with a
     custom routine to manually process the command line args before they are fed to main.
-    Now this is even funnier: the hook is indeed called bedore main(), but then its work
+    Now this is even funnier: the hook is indeed called before main(), but then its work
     is discarded and replaced with that of the default parser... how useful!
     After some debugging the problem turned out to be in the design. The flow is like:
     pre_c_init -> _setargv

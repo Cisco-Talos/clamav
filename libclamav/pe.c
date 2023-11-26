@@ -2882,7 +2882,7 @@ int cli_scanpe(cli_ctx *ctx)
             // TODO Regarding the commented out check below:
             // This used to check that the section name was NULL, but now that
             // header parsing is done in cli_peheader (and since we don't yet
-            // make the section name availabe via peinfo->sections[]) it would
+            // make the section name available via peinfo->sections[]) it would
             // be a pain to fetch the name here.  Since this is the only place
             // in cli_scanpe that needs the section name, and since I verified
             // that detection still occurs for Polipos without this check,
@@ -4172,7 +4172,7 @@ int cli_scanpe(cli_ctx *ctx)
             // If the number of alerts has increased, then bail.
             //
             // This preserves the intention of https://github.com/Cisco-Talos/clamav/commit/771c23099893f02f1316960fbe84f62b115a3556
-            // although that commit had it bailing if a match occured even in allmatch-mode, which we do not want to do.
+            // although that commit had it bailing if a match occurred even in allmatch-mode, which we do not want to do.
             if (!SCAN_ALLMATCHES && num_alerts != evidence_num_alerts(ctx->evidence)) {
                 cli_exe_info_destroy(peinfo);
                 return CL_VIRUS;
@@ -4789,7 +4789,7 @@ cl_error_t cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts,
 #endif
 
     // Ensure there are enough bytes to cover the full optional header,
-    // not including the data directory entries (which aren't all gauranteed
+    // not including the data directory entries (which aren't all guaranteed
     // to be there)
     if (opt_hdr_size < sizeof(struct pe_image_optional_hdr32)) {
         cli_dbgmsg("cli_peheader: SizeOfOptionalHeader too small\n");
@@ -5154,7 +5154,7 @@ cl_error_t cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts,
         section->ursz = EC32(section_hdr->SizeOfRawData);
 
         /* First, if a section exists totally outside of a file, remove the
-         * section from the list or zero out it's size. */
+         * section from the list or zero out its size. */
         if (section->rsz) { /* Don't bother with virtual only sections */
             if (section->raw >= fsize || section->uraw >= fsize) {
                 cli_dbgmsg("cli_peheader: Broken PE file - Section %zu starts or exists beyond the end of file (Offset@ %lu, Total filesize %lu)\n", section_pe_idx, (unsigned long)section->raw, (unsigned long)fsize);
@@ -5183,7 +5183,7 @@ cl_error_t cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts,
                 }
             } else {
 
-                /* If a section is truncated, adjust it's size value */
+                /* If a section is truncated, adjust its size value */
                 if (!CLI_ISCONTAINED_0_TO(fsize, section->raw, section->rsz)) {
                     cli_dbgmsg("cli_peheader: PE Section %zu raw+rsz extends past the end of the file by %lu bytes\n", section_pe_idx, (section->raw + section->rsz) - fsize);
                     section->rsz = fsize - section->raw;
@@ -5512,7 +5512,7 @@ cl_error_t cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts,
         break;
     } /* while(dirs[2].Size) */
 
-    // Do final preperations for peinfo to be passed back
+    // Do final preparations for peinfo to be passed back
     peinfo->is_dll = is_dll;
 
     ret = CL_SUCCESS;

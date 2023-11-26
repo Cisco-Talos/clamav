@@ -108,7 +108,7 @@ typedef struct ole2_header_tag {
      * The following is not part of the ole2 header, but stuff we need in
      * order to decode.
      *
-     * IMPORANT: These must take account of the size of variables below here
+     * IMPORTANT: These must take account of the size of variables below here
      * when calculating hdr_size to read the header.
      *
      * See the top of cli_ole2_extract().
@@ -1127,7 +1127,7 @@ static cl_error_t scan_biff_for_xlm_macros_and_images(
  * @brief Scan for XLM (Excel 4.0) macro sheets and images in an OLE2 Workbook stream.
  *
  * The stream should be encoded with <= BIFF8.
- * The found_macro and found_image out-params should be checked even if an error occured.
+ * The found_macro and found_image out-params should be checked even if an error occurred.
  *
  * @param hdr
  * @param prop

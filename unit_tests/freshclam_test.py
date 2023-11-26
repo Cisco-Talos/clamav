@@ -501,7 +501,7 @@ class TC(testcase.TestCase):
 
         # using these CDIFFs
         shutil.copy(str(TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles' /'test-4.cdiff'), str(TC.path_www))
-        # shutil.copy(str(TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles' /'test-5.cdiff'), str(TC.path_www))  <--- dont' give them the second to last, either!
+        # shutil.copy(str(TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles' /'test-5.cdiff'), str(TC.path_www))  <--- don't give them the second to last, either!
         # shutil.copy(str(TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles' /'test-6.cdiff'), str(TC.path_www))  <--- don't give them the last CDIFF
 
         handler = partial(WebServerHandler_WWW, TC.path_www)

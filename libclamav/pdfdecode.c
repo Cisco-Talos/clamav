@@ -99,7 +99,7 @@ static cl_error_t filter_lzwdecode(struct pdf_struct *pdf, struct pdf_obj *obj, 
  * @param stream    Filter stream buffer pointer.
  * @param streamlen Length of filter stream buffer.
  * @param xref      Indicates if the stream is an /XRef stream.  Do not apply forced decryption on /XRef streams.
- * @param fout      File descriptor to write to to be scanned.
+ * @param fout      File descriptor to write to be scanned.
  * @param[out] rc   Return code ()
  * @param objstm    (optional) Object stream context structure.
  * @return size_t   The number of bytes written to 'fout' to be scanned.
@@ -212,7 +212,7 @@ done:
  * @param obj           The object we found the filter content in.
  * @param params        (optional) Dictionary parameters describing the filter data.
  * @param token         Pointer to and length of filter data.
- * @param fout          File handle to write data to to be scanned.
+ * @param fout          File handle to write data to be scanned.
  * @param[out] status   CL_CLEAN/CL_SUCCESS or CL_VIRUS/CL_E<error>
  * @param objstm        (optional) Object stream context structure.
  * @return ptrdiff_t    The number of bytes we wrote to 'fout'. -1 if failed out.

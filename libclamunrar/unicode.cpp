@@ -139,7 +139,7 @@ bool WideToCharMap(const wchar *Src,char *Dest,size_t DestSize,bool &Success)
     return false;
 
   // Seems to be that wcrtomb in some memory analyzing libraries
-  // can produce uninitilized output while reporting success on garbage input.
+  // can produce uninitialized output while reporting success on garbage input.
   // So we clean the destination to calm analyzers.
   memset(Dest,0,DestSize);
   

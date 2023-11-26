@@ -143,7 +143,7 @@ static void onas_destroy_event_queue(void)
 
 void *onas_scan_queue_th(void *arg)
 {
-    /* Set thread name for profiling and debuging */
+    /* Set thread name for profiling and debugging */
     const char thread_name[] = "clamonacc-sq";
 
 #if defined(__linux__)

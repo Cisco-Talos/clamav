@@ -998,7 +998,7 @@ cl_error_t fmap_dump_to_file(fmap_t *map, const char *filepath, const char *tmpd
         if (CL_SUCCESS != cli_basename(filepath, strlen(filepath), &filebase)) {
             cli_dbgmsg("fmap_dump_to_file: Unable to determine basename from filepath.\n");
         } else if ((start_offset != 0) && (end_offset != map->real_len)) {
-            /* If we're only dumping a portion of the file, inlcude the offsets in the prefix,...
+            /* If we're only dumping a portion of the file, include the offsets in the prefix,...
              * e.g. tmp filename will become something like:  filebase.500-1200.<randhex> */
             size_t prefix_len = strlen(filebase) + 1 + SIZE_T_CHARLEN + 1 + SIZE_T_CHARLEN + 1;
             prefix            = malloc(prefix_len);

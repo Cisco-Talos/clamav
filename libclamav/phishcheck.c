@@ -92,7 +92,7 @@ The _domain_list_ is a list of pairs of realLink, displayedLink (any of which ca
 This is the list of domains we do phishing detection for (such as ebay,paypal,chase,....)
 We can't decide to stop processing here or not, so we just set a flag.
 
-Note(*!*): the flags are modified by the the domain list checker. If domain is found, then the flags associated with it filter the default compile-time flags.
+Note(*!*): the flags are modified by the domain list checker. If domain is found, then the flags associated with it filter the default compile-time flags.
 
 5. _Hostname_ is extracted from the _displayed URL_.
 It is checked against the _allow_list_, and _domain_list_.
@@ -1481,7 +1481,7 @@ static enum phish_status phishingCheck(cli_ctx* ctx, struct url_check* urls)
                                                urls->realLink.data,
                                                strlen(urls->realLink.data),
                                                &phishing_verdict))) {
-        cli_dbgmsg("Error occured in url_hash_match\n");
+        cli_dbgmsg("Error occurred in url_hash_match\n");
         goto done;
     } else if (phishing_verdict != CL_PHISH_NODECISION) {
         if (phishing_verdict == CL_PHISH_CLEAN) {
@@ -1535,7 +1535,7 @@ static enum phish_status phishingCheck(cli_ctx* ctx, struct url_check* urls)
      * Eg:
      *      R:.+\.malicious\.net([/?].*)?:.+\.benign\.com
      */
-    /* Provide copies of the oirinal URL's, because domain_list_match() may modify the buffer,
+    /* Provide copies of the original URL's, because domain_list_match() may modify the buffer,
        and we don't want that to happen in this case. */
     realData = cli_strdup(urls->realLink.data);
     if (!realData) {

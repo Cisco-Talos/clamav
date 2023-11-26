@@ -90,7 +90,7 @@ void pbkdf2(const byte *Pwd, size_t PwdLength,
   byte SaltData[MaxSalt+4];
   memcpy(SaltData, Salt, Min(SaltLength,MaxSalt));
 
-  SaltData[SaltLength + 0] = 0; // Block index appened to salt.
+  SaltData[SaltLength + 0] = 0; // Block index appended to salt.
   SaltData[SaltLength + 1] = 0; //
   SaltData[SaltLength + 2] = 0; // Since we do not request the key width
   SaltData[SaltLength + 3] = 1; // exceeding HMAC width, it is always 1.

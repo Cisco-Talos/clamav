@@ -153,7 +153,7 @@ To do so, you have two options:
    ```
 
    When doing this, it's best to use the `<version>_base` image tags so as to
-   save on bandwith. E.g.:
+   save on bandwidth. E.g.:
    ```bash
    docker run -it --rm \
        --name "clam_container_01" \
@@ -381,7 +381,7 @@ The healthcheck results can be viewed with `docker inspect`.
 
 When the container starts up, the health-check also starts up. As loading the
 virus database can take some time, there is a delay configured in the
-`Dockerfile` to try and avoid this race condition.
+`Dockerfile` to try to avoid this race condition.
 
 ## Performance
 

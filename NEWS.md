@@ -836,7 +836,7 @@ ClamAV 0.105.0 includes the following improvements and changes.
   Using LLVM JIT for the bytecode runtime may improve scan performance over the
   built-in bytecode interpreter runtime, which is the default.
   If you wish to build using LLVM, you must obtain a complete build of
-  the LLVM libraries including the devopment headers and static libraries.
+  the LLVM libraries including the development headers and static libraries.
 
   There are some known issues both compiling and running the test suite with
   some LLVM installations. We are working to further stabilize LLVM bytecode
@@ -1699,7 +1699,7 @@ ClamAV 0.103.2 is a security patch release with the following fixes:
   For more details, see:
   https://blog.clamav.net/2020/06/the-future-of-clamav-safebrowsing.html
 
-  > _Tip_: If creating and hosting your own `safebrowing.gdb` database, you can
+  > _Tip_: If creating and hosting your own `safebrowsing.gdb` database, you can
   > use the `DatabaseCustomURL` option in `freshclam.conf` to download it.
 
 - FreshClam: Improved HTTP 304, 403, & 429 handling.
@@ -1823,7 +1823,7 @@ ClamAV 0.103.0 includes the following improvements and changes.
   a community effort.
 
   Non-blocking database reloads are now the default behavior. Some systems that
-  are more contrained on RAM may need to disable non-blocking reloads as it will
+  are more constrained on RAM may need to disable non-blocking reloads as it will
   temporarily consume 2x as much memory. For this purpose we have added a new
   clamd config option `ConcurrentDatabaseReload` which may be set to `no`.
 
@@ -1842,7 +1842,7 @@ ClamAV 0.103.0 includes the following improvements and changes.
 
 - The DLP module has been enhanced with additional credit card ranges and a new
   engine option which allows ClamAV to alert only on credit cards (and not, for
-  instance, gift cards) when scannning with the DLP module. This feature
+  instance, gift cards) when scanning with the DLP module. This feature
   enhancement was made by John Schember, with input from Alexander Sulfrian.
 
 - Support for Adobe Reader X PDF encryption, an overhaul of PNG scanning to
@@ -1903,8 +1903,8 @@ ClamAV 0.103.0 includes the following improvements and changes.
   `sigtool` is separate from the one used for scanning and will still need to be
   updated or replaced in the future.
 
-- Improvements to the layout and legitibility of temp files created during a
-  scan. Improvements to legitibility and content of the metadata JSON generated
+- Improvements to the layout and legibility of temp files created during a
+  scan. Improvements to legibility and content of the metadata JSON generated
   during a scan.
 
   To review the scan temp files and metadata JSON, run:
@@ -2104,7 +2104,7 @@ ClamAV 0.102.2 is a bug patch release to address the following issues.
 
 - Re-applied a fix to alleviate file access issues when scanning RAR files in
   downstream projects that use libclamav where the scanning engine is operating
-  in a low-privelege process. This bug was originally fixed in 0.101.2 and the
+  in a low-privilege process. This bug was originally fixed in 0.101.2 and the
   fix was mistakenly omitted from 0.102.0.
 
 - Fixed an issue wherein freshclam failed to update if the database version
@@ -2117,7 +2117,7 @@ ClamAV 0.102.2 is a bug patch release to address the following issues.
   slower internet connections.
 
 - Correctly display number of kilobytes (KiB) in progress bar and reduced the
-  size of the progress bar to accomodate 80-char width terminals.
+  size of the progress bar to accommodate 80-char width terminals.
 
 - Fixed an issue where running freshclam manually causes a daemonized freshclam
   process to fail when it updates because the manual instance deletes the
@@ -2686,7 +2686,7 @@ infrastructure that's so easy to take for granted.
     CI server.
 
     Similar to the feature testing framework, our build acceptance framework
-    tests accross 64bit and 32bit (where available):
+    tests across 64bit and 32bit (where available):
     - macOS 10 (.10, .11, .13)
     - Windows (7, 10)
     - Debian (8, 9), Ubuntu (16.04, 18.04), CentOS (6, 7)
@@ -3641,7 +3641,7 @@ version:
   (clamd: ExcludePUA, IncludePUA; clamscan: --exclude-pua, --include-pua)
 
 - Data Loss Prevention (DLP): This version includes a new module that, when
-  enabled, scans data for the inclusion of US formated Social Security
+  enabled, scans data for the inclusion of US formatted Social Security
   Numbers and credit card numbers (clamd: StructuredDataDetection,
   clamscan: --detect-structured; additional fine-tuning options are available)
 
@@ -4272,7 +4272,7 @@ Important note to clamdwatch users: please upgrade to the latest version
 - freshclam:
   - the DNS mode is now enabled by default (no need for DNSDatabaseInfo in
     freshclam.conf)
-  - --no-dns uses a If-Modified-Since method instead of a range GET
+  - --no-dns uses an If-Modified-Since method instead of a range GET
   - added support for AllowSupplementaryGroups
 
 - sigtool:
@@ -5027,7 +5027,7 @@ configure:
    Tru64 support (thanks to Christophe Varoqui <ext.devoteam.varoqui@sncf.fr>)
 
 - documentation:
-  - included how-to in Portugese by Alexandre de Jesus Marcolino
+  - included how-to in Portuguese by Alexandre de Jesus Marcolino
   - clamdoc.pdf and system manual updates
 
 Many thanks to Luca 'NERvOus' Gibelli from ElektraPro for his support,
@@ -5086,7 +5086,7 @@ This release has removed the limit for a file name length in clamscan. Some
 viruses (eg. W32/Yaha.E) are using very long file names, and they were
 ignored in mbox mode. Users of AMaViS-ng and other wrappers were not
 vulnerable to this problem, because that programs don't use original
-attachement file names.
+attachment file names.
 
 - clamscan:
   - removed limit for a file name length (thanks to Odhiambo Washington
@@ -5237,9 +5237,9 @@ Documentation:
 update viruses.db2 and supports OpenAntiVirus.org site only (the last
 update of the OAV database was 1 July !). Nicholas Chua <nicholas@ncmbox.net>
 has generated over 200 new signatures, ClamAV's database is also frequently
-updated (expecially when new wild virus/worm appears, eg. W32/BugBear.A).
+updated (especially when new wild virus/worm appears, eg. W32/BugBear.A).
 
-    This software is still in developement (new software == new bugs), however
+    This software is still in development (new software == new bugs), however
 clamscan should be very stable. You shouldn't use clamd/clamuko (well, clamd is
 stable, clamuko isn't) on production systems, yet. Please wait for 0.51 at
 least ;). ClamAV 0.50 was tested on Linux and Solaris and should work fine.
@@ -5309,7 +5309,7 @@ There are binary packages for AIX available. Please check the documentation.
 ## 0.22
 
 This release fixes bug with scanning archives in unaccessible directories with
-*superuser* priviledges (after dropping priviledges scanner wasn't able to
+*superuser* privileges (after dropping privileges scanner wasn't able to
 access the archive, although the same archive was accessible), thanks
 for Sergei Pronin <sp@finndesign.fi> for the problem description. Now all
 archives unaccessible directly by the clamav user are copied (with a respect to

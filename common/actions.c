@@ -113,9 +113,9 @@ typedef void (*PRIUS)(
     PCWSTR SourceString);
 
 /**
- * @brief A openat equivalent for Win32 with a check to NOFOLLOW soft-links.
+ * @brief An openat equivalent for Win32 with a check to NOFOLLOW soft-links.
  *
- * The caller is resposible for closing the HANDLE.
+ * The caller is responsible for closing the HANDLE.
  *
  * For the desiredAccess, fileAttributes, createOptions, and shareAccess parameters
  * see https://docs.microsoft.com/en-us/windows/win32/api/winternl/nf-winternl-ntcreatefile

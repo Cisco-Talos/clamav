@@ -987,7 +987,7 @@ const char *cli_gettmpdir(void);
  * @brief Sanitize a relative path, so it cannot have a negative depth.
  *
  * Caller is responsible for freeing the sanitized filepath.
- * The optioal sanitized_filebase output param is a pointer into the filepath,
+ * The optional sanitized_filebase output param is a pointer into the filepath,
  * if set, and does not need to be freed.
  *
  * @param filepath                  The filepath to sanitize

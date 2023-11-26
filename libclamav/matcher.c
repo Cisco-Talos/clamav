@@ -899,7 +899,7 @@ static cl_error_t lsig_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_a
              * Create an fmap window into our current fmap using the original offset & length, and rescan as the new type
              *
              * TODO: Unsure if creating an fmap is the right move, or if we should rescan with the current fmap as-is,
-             * since it's not really a container so much as it is type reassignment. This new fmap layer protect agains
+             * since it's not really a container so much as it is type reassignment. This new fmap layer protect against
              * a possible infinite loop by applying the scan recursion limit, but maybe there's a better way?
              * Testing with both HandlerType type reassignment sigs + Container/Intermediates sigs should indicate if
              * a change is needed.
@@ -1406,14 +1406,14 @@ cl_error_t cli_scan_fmap(cli_ctx *ctx, cli_file_t ftype, bool filetype_only, str
     /*
      * Evaluate the logical expressions for clamav logical signatures and YARA rules.
      */
-    // Evalute for the target-specific signature AC matches.
+    // Evaluate for the target-specific signature AC matches.
     if (NULL != target_ac_root) {
         if (ret != CL_VIRUS) {
             ret = cli_exp_eval(ctx, target_ac_root, &target_ac_data, &info, (const char *)refhash);
         }
     }
 
-    // Evalute for the generic signature AC matches.
+    // Evaluate for the generic signature AC matches.
     if (NULL != generic_ac_root) {
         if (ret != CL_VIRUS) {
             ret = cli_exp_eval(ctx, generic_ac_root, &generic_ac_data, &info, (const char *)refhash);

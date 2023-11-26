@@ -1007,7 +1007,7 @@ bool GetWinLongPath(const wchar *Src,wchar *Dest,size_t MaxSize)
 }
 
 
-// Convert Unix, OS X and Android decomposed chracters to Windows precomposed.
+// Convert Unix, OS X and Android decomposed characters to Windows precomposed.
 void ConvertToPrecomposed(wchar *Name,size_t NameSize)
 {
   wchar FileName[NM];

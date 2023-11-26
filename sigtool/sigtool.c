@@ -1815,7 +1815,7 @@ static int vbadump(const struct optstruct *opts)
 
     const char *filename = NULL;
 
-    /* Initalize scan options struct */
+    /* Initialize scan options struct */
     memset(&options, 0, sizeof(struct cl_scan_options));
 
     if ((ret = cl_init(CL_INIT_DEFAULT))) {

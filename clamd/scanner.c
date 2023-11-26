@@ -414,7 +414,7 @@ cl_error_t scanfd(
         goto done;
     }
 
-    /* Try and get the real filename, for logging purposes */
+    /* Try to get the real filename, for logging purposes */
     if (!stream) {
         if (CL_SUCCESS != cli_get_filepath_from_filedesc(fd, &filepath)) {
             logg(LOGG_DEBUG, "%s: Unable to determine the filepath given the file descriptor.\n", fdstr);

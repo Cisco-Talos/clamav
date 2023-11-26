@@ -143,7 +143,7 @@ void chmd_extract_test_01() {
     struct mspack_system xor_files = read_files_write_md5;
     xor_files.read = &read_xor;
 
-    /* source file is obfuscafted with XOR because clamav calls it
+    /* source file is obfuscated with XOR because clamav calls it
      * "BC.Legacy.Exploit.CVE_2012_1458-1" and blocks distributing libmspack
      * https://github.com/kyz/libmspack/issues/17#issuecomment-411583917 */
     TEST(chmd = mspack_create_chm_decompressor(&xor_files));

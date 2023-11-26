@@ -116,8 +116,8 @@
  * - #MSPACK_ERR_DATAFORMAT indicates that the file being used or read
  *   is corrupt.
  * - #MSPACK_ERR_CHECKSUM indicates that a data checksum has failed.
- * - #MSPACK_ERR_CRUNCH indicates an error occured during compression.
- * - #MSPACK_ERR_DECRUNCH indicates an error occured during decompression.
+ * - #MSPACK_ERR_CRUNCH indicates an error occurred during compression.
+ * - #MSPACK_ERR_DECRUNCH indicates an error occurred during decompression.
  *
  * \section threading Multi-threading
  *
@@ -886,7 +886,7 @@ struct mscabd_file {
    * The following attributes are defined:
    * - #MSCAB_ATTRIB_RDONLY indicates the file is write protected.
    * - #MSCAB_ATTRIB_HIDDEN indicates the file is hidden.
-   * - #MSCAB_ATTRIB_SYSTEM indicates the file is a operating system file.
+   * - #MSCAB_ATTRIB_SYSTEM indicates the file is an operating system file.
    * - #MSCAB_ATTRIB_ARCH indicates the file is "archived".
    * - #MSCAB_ATTRIB_EXEC indicates the file is an executable program.
    * - #MSCAB_ATTRIB_UTF_NAME indicates the filename is in UTF8 format rather
@@ -962,7 +962,7 @@ struct mscab_decompressor {
    * and a mscabd_cabinet structure will be returned, with a full list of
    * folders and files.
    *
-   * In the case of an error occuring, NULL is returned and the error code
+   * In the case of an error occurring, NULL is returned and the error code
    * is available from last_error().
    *
    * The filename pointer should be considered "in use" until close() is
@@ -1024,7 +1024,7 @@ struct mscab_decompressor {
    * this method. Any further cabinets found will be chained in a list
    * using the mscabd_cabinet::next field.
    *
-   * In the case of an error occuring anywhere other than the simulated
+   * In the case of an error occurring anywhere other than the simulated
    * open(), NULL is returned and the error code is available from
    * last_error().
    *
@@ -1070,7 +1070,7 @@ struct mscab_decompressor {
    *   filename is mscabd_cabinet::nextname
    *
    * If the cabinets do not match, an error code will be returned. Neither
-   * cabinet has been altered, and both should be closed seperately.
+   * cabinet has been altered, and both should be closed separately.
    *
    * Files and folders in a cabinet set are a single entity. All cabinets
    * in a set use the same file list, which is updated as cabinets in the
@@ -1582,7 +1582,7 @@ struct mschm_decompressor {
    * and a mschmd_header structure will be returned, with a full list of
    * files.
    *
-   * In the case of an error occuring, NULL is returned and the error code
+   * In the case of an error occurring, NULL is returned and the error code
    * is available from last_error().
    *
    * The filename pointer should be considered "in use" until close() is
@@ -1662,7 +1662,7 @@ struct mschm_decompressor {
    * files details will be automatically read.  The fast_find() method
    * must be used to obtain file details.
    *
-   * In the case of an error occuring, NULL is returned and the error code
+   * In the case of an error occurring, NULL is returned and the error code
    * is available from last_error().
    *
    * The filename pointer should be considered "in use" until close() is
@@ -1711,7 +1711,7 @@ struct mschm_decompressor {
    *                  instance being called
    * @param  chm      the CHM helpfile to search for the file
    * @param  filename the filename of the file to search for
-   * @param  f_ptr    a pointer to a caller-provded mschmd_file structure
+   * @param  f_ptr    a pointer to a caller-provided mschmd_file structure
    * @param  f_size   <tt>sizeof(struct mschmd_file)</tt>
    * @return an error code, or MSPACK_ERR_OK if successful
    * @see open(), close(), fast_find(), extract()
@@ -1880,7 +1880,7 @@ struct msszdd_decompressor {
    * If the file opened is a valid SZDD file, all headers will be read and
    * a msszddd_header structure will be returned.
    *
-   * In the case of an error occuring, NULL is returned and the error code
+   * In the case of an error occurring, NULL is returned and the error code
    * is available from last_error().
    *
    * The filename pointer should be considered "in use" until close() is
@@ -2160,7 +2160,7 @@ struct mskwaj_decompressor {
    * If the file opened is a valid KWAJ file, all headers will be read and
    * a mskwajd_header structure will be returned.
    *
-   * In the case of an error occuring, NULL is returned and the error code
+   * In the case of an error occurring, NULL is returned and the error code
    * is available from last_error().
    *
    * The filename pointer should be considered "in use" until close() is

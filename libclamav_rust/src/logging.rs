@@ -86,7 +86,7 @@ mod tests {
 }
 
 /// API exported for C code to log to standard error using Rust.
-/// This would be be an alternative to fputs, and reliably prints
+/// This would be an alternative to fputs, and reliably prints
 /// non-ASCII UTF8 characters on Windows, where fputs does not.
 ///
 /// # Safety

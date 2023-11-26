@@ -347,7 +347,7 @@ read_fd_data(struct fd_buf *buf)
                         close(buf->recvfd);
                     }
                     buf->recvfd = *(int *)CMSG_DATA(cmsg);
-                    logg(LOGG_DEBUG_NV, "Receveived a file descriptor: %d\n", buf->recvfd);
+                    logg(LOGG_DEBUG_NV, "Received a file descriptor: %d\n", buf->recvfd);
                 }
             }
         }

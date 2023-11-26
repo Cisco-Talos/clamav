@@ -356,7 +356,7 @@ $({letter}|{digit}|_)*  {
 
   if (strlen(yytext) > 128)
   {
-    yyerror(yyscanner, compiler, "indentifier too long");
+    yyerror(yyscanner, compiler, "identifier too long");
   }
 
   yylval->c_string = yr_strdup(yytext);

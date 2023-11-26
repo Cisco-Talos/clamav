@@ -63,7 +63,7 @@ void QuickOpen::Load(uint64 BlockPos)
 {
   if (!Loaded)
   {
-    // If loading for the first time, perform additional intialization.
+    // If loading for the first time, perform additional initialization.
     SeekPos=Arc->Tell();
     UnsyncSeekPos=false;
 

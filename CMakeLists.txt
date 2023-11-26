@@ -271,7 +271,7 @@ if(ENABLE_TESTS)
                 # No unittest either!
                 # Some weird Python installations do exist that lack standard modules like unittest.
                 # Let's make sure these folks know the Python 3 install we found won't cut it.
-                message("Python 3 found: ${Python3_EXECUTABLE}, but it is missing the unittest module (wierd!).")
+                message("Python 3 found: ${Python3_EXECUTABLE}, but it is missing the unittest module (weird!).")
                 message(FATAL_ERROR "The tests won't work with this Python installation. You can disable the tests by reconfiguring with: -D ENABLE_TESTS=OFF")
             endif()
         endif()

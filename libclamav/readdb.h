@@ -175,7 +175,7 @@ cl_error_t cli_add_content_match_pattern(struct cli_matcher *root, const char *v
  * Called once for each subsignature in a logical signature.
  * Not for use in other signature types (ndb, yara, etc).
  *
- * This function determines what type of subsiganture it is, whether that's:
+ * This function determines what type of subsignature it is, whether that's:
  * - a macro subsignature
  * - a pcre subsignature
  * - a byte compare subsignature
