@@ -133,6 +133,13 @@ if(ENABLE_STATIC_LIB)
             COMPILE_FLAGS "-Wno-logical-op-parentheses -Wno-switch -Wno-dangling-else")
     endif()
 
+    if(WIN32)
+        install(TARGETS clamunrar_static DESTINATION . COMPONENT libraries)
+        install(FILES $<TARGET_PDB_FILE:clamunrar> DESTINATION . OPTIONAL COMPONENT libraries)
+    else()
+        install(TARGETS clamunrar_static DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT libraries)
+    endif()
+
     add_library( ClamAV::libunrar_static ALIAS clamunrar_static )
     if(NOT ENABLE_SHARED_LIB)
         add_library( ClamAV::libunrar ALIAS clamunrar_static )
