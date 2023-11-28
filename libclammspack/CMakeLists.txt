@@ -105,7 +105,6 @@ if(ENABLE_STATIC_LIB)
 
     if(WIN32)
         install(TARGETS clammspack_static DESTINATION . COMPONENT libraries)
-        install(FILES $<TARGET_PDB_FILE:clammspack> DESTINATION . OPTIONAL COMPONENT libraries)
     else()
         install(TARGETS clammspack_static DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT libraries)
     endif()
