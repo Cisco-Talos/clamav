@@ -3,6 +3,12 @@
 Note: This file refers to the official packages. Things described here may
 differ slightly from third-party binary packages.
 
+## 1.2.2
+
+ClamAV 1.2.2 is a critical patch release with the following fixes:
+
+Special thanks to the following people for code contributions and bug reports:
+
 ## 1.2.1
 
 ClamAV 1.2.1 is a patch release with the following fixes:
