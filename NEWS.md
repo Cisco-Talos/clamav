@@ -9,13 +9,95 @@ ClamAV 1.3.0 includes the following improvements and changes:
 
 ### Major changes
 
-## Other improvements
+- Added support for extracting and scanning attachments found in Microsoft
+  OneNote section files.
+  OneNote parsing will be enabled by default, but may be optionally disabled
+  using one of the following options:
+  a. The `clamscan` command line option: `--scan-onenote=no`,
+  b. The `clamd.conf` config option: `ScanOneNote no`,
+  c. The libclamav scan option `options.parse &= ~CL_SCAN_PARSE_ONENOTE;`,
+  d. A signature change to the `daily.cfg` dynamic configuration (DCONF).
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1048)
+
+### Other improvements
+
+- Fixed issue when building ClamAV on the Haiku (BeOS-like) operating system.
+  Patch courtesy of Luca D'Amico
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1061)
+
+- ClamD: When starting, ClamD will now check if the directory specified by
+  `TemporaryDirectory` in `clamd.conf` exists. If it doesn't, ClamD
+  will print an error message and will exit with exit code 1.
+  Patch courtesy of Andrew Kiggins.
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1037)
+
+- CMake: If configured to build static libraries, CMake will now also
+  install the libclamav_rust, libclammspack, libclamunrar_iface, and
+  libclamunrar static libraries required by libclamav.
+
+  Note: These libraries are all linked into the clamscan, clamd, sigtool,
+  and freshclam programs, which is why they did not need to be installed
+  to function. However, these libraries would be required if you wish to
+  build some other program that uses the libclamav static library.
+
+  Patch courtesy of driverxdw.
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1100)
+
+- Added file type recognition for compiled Python (`.pyc`) files.
+  The file type appears as a string parameter for these callback functions:
+  - `clcb_pre_cache`
+  - `clcb_pre_scan`
+  - `clcb_file_inspection`
+  When scanning a `.pyc` file, the `type` parameter will now show
+  "CL_TYPE_PYTHON_COMPILED" instead of "CL_TYPE_BINARY_DATA".
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1111)
+
+- Assorted minor improvements and typo fixes.
 
 ### Bug fixes
+
+- Fixed a warning when scanning some HTML files.
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1084)
+
+- Fixed an issue decrypting some PDF's with an empty password.
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1079)
+
+- ClamOnAcc: Fixed an infinite loop when a watched directory does not exist.
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1047)
+
+- Fixed a possible crash when processing VBA files on HP-UX/IA 64bit.
+  Patch courtesy of Albert Chin-A-Young.
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/526)
 
 ### Acknowledgments
 
 Special thanks to the following people for code contributions and bug reports:
+- Albert Chin-A-Young
+- Andrew Kiggins
+- driverxdw
+- Luca D'Amico
+- RainRat
+
+## 1.2.1
+
+ClamAV 1.2.1 is a patch release with the following fixes:
+
+- Eliminate security warning about unused "atty" dependency.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/1033
+
+- Upgrade the bundled UnRAR library (libclamunrar) to version 6.2.12.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/1056
+
+- Build system: Fix link error with Clang/LLVM/LLD version 17.
+  Patch courtesy of Yasuhiro Kimura.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/1060
+
+- Fixed the alert-exceeds-max feature for files greater than 2 GiB and less
+  than max file size.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/1039
+
+Special thanks to the following people for code contributions and bug reports:
+- Yasuhiro Kimura
 
 ## 1.2.0
 
@@ -165,6 +247,36 @@ Special thanks to the following people for code contributions and bug reports:
 - matthias-fratz-bsz
 - Nils Werner
 - Răzvan Cojocaru
+
+## 1.1.3
+
+ClamAV 1.1.3 is a patch release with the following fixes:
+
+- Eliminate security warning about unused "atty" dependency.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/1034
+
+- Upgrade the bundled UnRAR library (libclamunrar) to version 6.2.12.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/1055
+
+- Windows: libjson-c 0.17 compatibility fix. with ssize_t type definition.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/1063
+
+- Build system: Fix link error with Clang/LLVM/LLD version 17.
+  Patch courtesy of Yasuhiro Kimura.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/1059
+
+- Fix alert-exceeds-max feature for files > 2GB and < max-filesize.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/1040
+
+Special thanks to the following people for code contributions and bug reports:
+- Yasuhiro Kimura
+
+## 1.1.2
+
+ClamAV 1.1.2 is a critical patch release with the following fixes:
+
+- Upgrade the bundled UnRAR library (libclamunrar) to version 6.2.10.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/1011
 
 ## 1.1.1
 
@@ -369,6 +481,39 @@ Special thanks to the following people for code contributions and bug reports:
 - Shawn Iverson
 - Sebastian Andrzej Siewior
 - The OSS-Fuzz project
+
+## 1.0.4
+
+ClamAV 1.0.4 is a patch release with the following fixes:
+
+- Eliminate security warning about unused "atty" dependency.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/1035
+
+- Upgrade the bundled UnRAR library (libclamunrar) to version 6.2.12.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/1054
+
+- Windows: libjson-c 0.17 compatibility fix. with ssize_t type definition.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/1064
+
+- Freshclam: Removed a verbose warning printed for each Freshclam HTTP request.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/1042
+
+- Build system: Fix link error with Clang/LLVM/LLD version 17.
+  Patch courtesy of Yasuhiro Kimura.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/1058
+
+- Fix alert-exceeds-max feature for files > 2GB and < max-filesize.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/1041
+
+Special thanks to the following people for code contributions and bug reports:
+- Yasuhiro Kimura
+
+## 1.0.3
+
+ClamAV 1.0.3 is a critical patch release with the following fixes:
+
+- Upgrade the bundled UnRAR library (libclamunrar) to version 6.2.10.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/1010
 
 ## 1.0.2
 
@@ -1374,6 +1519,26 @@ The ClamAV team thanks the following individuals for their code submissions:
 - Tom Briden
 - Vasile Papp
 - Yasuhiro Kimura
+
+## 0.103.11
+
+ClamAV 0.103.11 is a patch release with the following fixes:
+
+- Upgrade the bundled UnRAR library (libclamunrar) to version 6.2.12.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/1053
+
+- Windows: libjson-c 0.17 compatibility fix. with ssize_t type definition.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/1065
+
+- Windows: Update build system to use OpenSSL 3 and PThreads-Win32 v3.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/1057
+
+## 0.103.10
+
+ClamAV 0.103.10 is a critical patch release with the following fixes:
+
+- Upgrade the bundled UnRAR library (libclamunrar) to version 6.2.10.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/1009
 
 ## 0.103.9
 
