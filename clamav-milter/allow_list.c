@@ -156,7 +156,7 @@ int smtpauth_init(const char *r)
             }
             if (len <= 0) continue;
             if (len * 3 + 1 > rxavail) {
-                ptr   = regex;
+                ptr        = regex;
                 char *temp = realloc(regex, rxsize + 2048);
                 if (!temp) {
                     free(regex);
