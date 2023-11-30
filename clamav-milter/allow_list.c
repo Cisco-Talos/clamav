@@ -164,7 +164,7 @@ int smtpauth_init(const char *r)
                     fclose(f);
                     return 1;
                 }
-                regex = temp;
+                regex   = temp;
                 rxavail = 2048;
                 rxsize += 2048;
                 if (!ptr) {
