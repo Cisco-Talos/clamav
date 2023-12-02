@@ -408,7 +408,7 @@ done:
  * @brief Rename (move) a file from Source to Destination without following symlinks.
  *
  * This approach mitigates the possibility that one of the directories
- * in the path has been replaces with a malicious symlink.
+ * in the path has been replaced with a malicious symlink.
  *
  * @param source        Source pathname.
  * @param destination   Destination pathname (including file name)
@@ -530,7 +530,7 @@ done:
  * @brief Unlink (delete) a target file without following symlinks.
  *
  * This approach mitigates the possibility that one of the directories
- * in the path has been replaces with a malicious symlink.
+ * in the path has been replaced with a malicious symlink.
  *
  * @param target    A file to be deleted.
  * @return 0        Unlink succeeded.
