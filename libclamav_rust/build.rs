@@ -133,6 +133,7 @@ fn main() -> Result<(), &'static str> {
 fn execute_bindgen() -> Result<(), &'static str> {
     let build_dir = PathBuf::from(env::var("CARGO_TARGET_DIR").unwrap_or_else(|_| ".".into()));
     let build_include_path = format!("-I{}", build_dir.join(".").to_str().unwrap());
+    let has_include_directories = env::var("CARGO_INCLUDE_DIRECTORIES").ok();
 
     // Configure and generate bindings.
     let mut builder = builder()
@@ -146,6 +147,14 @@ fn execute_bindgen() -> Result<(), &'static str> {
         .layout_tests(false)
         // Enable bindgen to find generated headers in the build directory, too.
         .clang_arg(build_include_path);
+
+    // If include directories were specified, add them to the builder.
+    if let Some(include_directories) = has_include_directories {
+        for include_directory in include_directories.split(';') {
+            // Enable bindgen to find dependencies headers.
+            builder = builder.clang_arg(format!("-I{include_directory}"));
+        }
+    }
 
     for &include_path in BINDGEN_INCLUDE_PATHS {
         builder = builder.clang_arg(include_path);
