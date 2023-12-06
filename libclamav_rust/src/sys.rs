@@ -268,14 +268,15 @@ pub struct cl_fmap {
     pub handle: *mut ::std::os::raw::c_void,
     pub pread_cb: clcb_pread,
     pub data: *const ::std::os::raw::c_void,
-    pub mtime: time_t,
+    pub mtime: u64,
     pub pages: u64,
     pub pgsz: u64,
     pub paged: u64,
-    pub aging: u16,
+    pub aging: bool,
+    #[doc = " indicates if we should age off memory mapped pages"]
     pub dont_cache_flag: bool,
     #[doc = " indicates if we should not cache scan results for this fmap. Used if limits exceeded"]
-    pub handle_is_fd: u16,
+    pub handle_is_fd: bool,
     #[doc = " non-zero if map->handle is an fd."]
     pub offset: usize,
     #[doc = " file offset representing start of original fmap, if the fmap created reading from a file starting at offset other than 0"]
@@ -311,6 +312,8 @@ pub struct cl_fmap {
     >,
     pub unneed_off:
         ::std::option::Option<unsafe extern "C" fn(arg1: *mut fmap_t, at: usize, len: usize)>,
+    pub windows_file_handle: *mut ::std::os::raw::c_void,
+    pub windows_map_handle: *mut ::std::os::raw::c_void,
     pub have_md5: bool,
     pub md5: [::std::os::raw::c_uchar; 16usize],
     pub have_sha1: bool,
