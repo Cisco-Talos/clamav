@@ -585,6 +585,14 @@ But if you:
   -D OPENSSL_SSL_LIBRARY="_filepath of libssl library_"
 ```
 
+_Tip_: For Windows, you may need to do this instead:
+```sh
+  -D OPENSSL_ROOT_DIR="_path to openssl install root_"
+  -D OPENSSL_INCLUDE_DIR="_filepath of openssl header directory_"
+  -D LIB_EAY_RELEASE="_filepath of libcrypto library_"  # or LIB_EAY_DEBUG for Debug builds
+  -D SSL_EAY_RELEASE="_filepath of libssl library_"     # or SSL_EAY_DEBUG for Debug builds
+```
+
 ### `libjson-c`
 
 _Tip_: You're strongly encouraged to link with the a static json-c library.
