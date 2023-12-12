@@ -57,7 +57,7 @@ typedef enum cl_unrar_error_tag {
 typedef struct unrar_metadata_tag {
     uint64_t pack_size;
     uint64_t unpack_size;
-    char *filename;
+    char filename[1024];
     uint32_t crc;
     unsigned int encrypted;
     uint8_t method;

@@ -1291,6 +1291,13 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
         logg(LOGG_INFO, "HWP3 support disabled.\n");
     }
 
+    if (optget(opts, "ScanOneNote")->enabled) {
+        logg(LOGG_INFO, "OneNote support enabled.\n");
+        options.parse |= CL_SCAN_PARSE_ONENOTE;
+    } else {
+        logg(LOGG_INFO, "OneNote support disabled.\n");
+    }
+
     if (optget(opts, "PhishingScanURLs")->enabled) {
         /* TODO: Remove deprecated option in a future feature release */
         if ((optget(opts, "PhishingAlwaysBlockCloak")->enabled) ||

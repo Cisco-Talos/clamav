@@ -20,7 +20,7 @@
  *  MA 02110-1301, USA.
  */
 
-use std::fs::File;
+use std::{ffi::CStr, fs::File};
 
 /// Obtain a std::fs::File from an i32 in a platform-independent manner.
 ///
@@ -45,4 +45,20 @@ pub fn file_from_fd_or_handle(fd: i32) -> File {
 
     #[cfg(not(any(windows, unix)))]
     compile_error!("implemented only for unix and windows targets")
+}
+
+/// Get a string from a pointer
+///
+/// # Safety
+///
+/// The caller is responsible for making sure the lifetime of the pointer
+/// exceeds the lifetime of the output string.
+///
+/// ptr must be a valid pointer to a C string.
+pub unsafe fn str_from_ptr(ptr: *const i8) -> Result<Option<&'static str>, std::str::Utf8Error> {
+    if ptr.is_null() {
+        return Ok(None);
+    }
+
+    Some(unsafe { CStr::from_ptr(ptr) }.to_str()).transpose()
 }

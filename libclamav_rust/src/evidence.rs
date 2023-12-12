@@ -23,13 +23,12 @@
 use std::{collections::HashMap, ffi::CStr, mem::ManuallyDrop, os::raw::c_char};
 
 use log::{debug, error, warn};
-use thiserror::Error;
 
 use crate::{ffi_util::FFIError, rrf_call, sys, validate_str_param};
 
-/// CdiffError enumerates all possible errors returned by this library.
-#[derive(Error, Debug)]
-pub enum EvidenceError {
+/// Error enumerates all possible errors returned by this library.
+#[derive(thiserror::Error, Debug)]
+pub enum Error {
     #[error("Invalid format")]
     Format,
 
@@ -240,21 +239,21 @@ impl Evidence {
         name: &str,
         static_virname: *const c_char,
         indicator_type: IndicatorType,
-    ) -> Result<(), EvidenceError> {
+    ) -> Result<(), Error> {
         let meta: IndicatorMeta = IndicatorMeta { static_virname };
 
         match indicator_type {
             IndicatorType::Strong => {
                 self.strong
                     .entry(name.to_string())
-                    .or_insert_with(Vec::new)
+                    .or_default()
                     .push(meta);
             }
 
             IndicatorType::PotentiallyUnwanted => {
                 self.pua
                     .entry(name.to_string())
-                    .or_insert_with(Vec::new)
+                    .or_default()
                     .push(meta);
             }
 
@@ -265,7 +264,7 @@ impl Evidence {
             IndicatorType::Weak => {
                 self.weak
                     .entry(name.to_string())
-                    .or_insert_with(Vec::new)
+                    .or_default()
                     .push(meta);
             }
         }

@@ -191,6 +191,7 @@ typedef struct recursion_level_tag {
 } recursion_level_t;
 
 typedef void *evidence_t;
+typedef void *onedump_t;
 
 /* internal clamav context */
 typedef struct cli_ctx_tag {
@@ -568,6 +569,7 @@ extern LIBCLAMAV_EXPORT int have_rar;
 #define SCAN_PARSE_OLE2 (ctx->options->parse & CL_SCAN_PARSE_OLE2)
 #define SCAN_PARSE_HTML (ctx->options->parse & CL_SCAN_PARSE_HTML)
 #define SCAN_PARSE_PE (ctx->options->parse & CL_SCAN_PARSE_PE)
+#define SCAN_PARSE_ONENOTE (ctx->options->parse & CL_SCAN_PARSE_ONENOTE)
 
 #define SCAN_HEURISTIC_BROKEN (ctx->options->heuristic & CL_SCAN_HEURISTIC_BROKEN)
 #define SCAN_HEURISTIC_BROKEN_MEDIA (ctx->options->heuristic & CL_SCAN_HEURISTIC_BROKEN_MEDIA)

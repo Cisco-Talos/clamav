@@ -92,6 +92,7 @@ typedef enum cli_file {
     CL_TYPE_OOXML_HWP,
     CL_TYPE_PS,
     CL_TYPE_EGG,
+    CL_TYPE_ONENOTE,
 
     /* Section for partition types */
     CL_TYPE_PART_ANY, /* unknown partition type */

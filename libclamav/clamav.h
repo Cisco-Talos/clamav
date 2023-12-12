@@ -180,6 +180,7 @@ struct cl_scan_options {
 #define CL_SCAN_PARSE_OLE2                          0x80
 #define CL_SCAN_PARSE_HTML                          0x100
 #define CL_SCAN_PARSE_PE                            0x200
+#define CL_SCAN_PARSE_ONENOTE                       0x400
 
 /* heuristic alerting options */
 #define CL_SCAN_HEURISTIC_BROKEN                    0x2    /* alert on broken PE and broken ELF files */

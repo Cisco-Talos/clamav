@@ -473,10 +473,6 @@ static cl_error_t cli_scanrar_file(const char *filepath, int desc, cli_ctx *ctx)
         /*
          * Free up any malloced metadata...
          */
-        if (metadata.filename != NULL) {
-            free(metadata.filename);
-            metadata.filename = NULL;
-        }
         if (NULL != filename_base) {
             free(filename_base);
             filename_base = NULL;
@@ -510,11 +506,6 @@ done:
     if (NULL != filename_base) {
         free(filename_base);
         filename_base = NULL;
-    }
-
-    if (metadata.filename != NULL) {
-        free(metadata.filename);
-        metadata.filename = NULL;
     }
 
     if (NULL != extract_fullpath) {
@@ -4589,6 +4580,11 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
         case CL_TYPE_EGG:
             if (SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_EGG))
                 ret = cli_scanegg(ctx);
+            break;
+
+        case CL_TYPE_ONENOTE:
+            if (SCAN_PARSE_ONENOTE && (DCONF_ARCH & DOC_CONF_ONENOTE))
+                ret = scan_onenote(ctx);
             break;
 
         case CL_TYPE_OOXML_WORD:

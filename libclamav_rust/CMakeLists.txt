@@ -8,6 +8,7 @@
 add_rust_library(TARGET clamav_rust
     SOURCE_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
     BINARY_DIRECTORY "${CMAKE_BINARY_DIR}"
+    INCLUDE_DIRECTORIES "$<TARGET_PROPERTY:ClamAV::libclamav,INCLUDE_DIRECTORIES>"
     # Tests cannot be pre-compiled here, because there are circular dependencies
     # between libclamav_rust and libclamav to include calls like `cli_getdsig()`
     # as well as the logging functions.

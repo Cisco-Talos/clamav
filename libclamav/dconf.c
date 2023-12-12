@@ -118,6 +118,7 @@ static struct dconf_module modules[] = {
     {"DOCUMENT", "OOXML", DOC_CONF_OOXML, 1},
     {"DOCUMENT", "MSPML", DOC_CONF_MSXML, 1},
     {"DOCUMENT", "HWP", DOC_CONF_HWP, 1},
+    {"DOCUMENT", "ONENOTE", DOC_CONF_ONENOTE, 1},
 
     {"MAIL", "MBOX", MAIL_CONF_MBOX, 1},
     {"MAIL", "TNEF", MAIL_CONF_TNEF, 1},

@@ -1552,6 +1552,9 @@ int scanmanager(const struct optstruct *opts)
     if (optget(opts, "scan-hwp3")->enabled)
         options.parse |= CL_SCAN_PARSE_HWP3;
 
+    if (optget(opts, "scan-onenote")->enabled)
+        options.parse |= CL_SCAN_PARSE_ONENOTE;
+
     /* TODO: Remove deprecated option in a future feature release */
     if ((optget(opts, "algorithmic-detection")->enabled) && /* && used due to default-yes for both options */
         (optget(opts, "heuristic-alerts")->enabled)) {

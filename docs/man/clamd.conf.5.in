@@ -479,6 +479,13 @@ If you turn off this option, the original files will still be scanned, but witho
 .br
 Default: yes
 .TP
+\fBScanOneNote BOOL\fR
+This option enables scanning OneNote files.
+.br
+If you turn off this option, the original files will still be scanned, but without additional processing.
+.br
+Default: yes
+.TP
 \fBScanArchive BOOL\fR
 Scan within archives and compressed files.
 .br
