@@ -4986,6 +4986,7 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
             perf_nested_stop(ctx, PERFT_MACHO, PERFT_SCAN);
             break;
 
+        case CL_TYPE_PYTHON_COMPILED:
         case CL_TYPE_BINARY_DATA:
             ret = cli_scan_fmap(ctx, CL_TYPE_OTHER, false, NULL, AC_SCAN_VIR, NULL, NULL);
             break;
