@@ -55,7 +55,7 @@ pub fn file_from_fd_or_handle(fd: i32) -> File {
 /// exceeds the lifetime of the output string.
 ///
 /// ptr must be a valid pointer to a C string.
-pub unsafe fn str_from_ptr(ptr: *const i8) -> Result<Option<&'static str>, std::str::Utf8Error> {
+pub unsafe fn str_from_ptr(ptr: *const ::std::os::raw::c_char) -> Result<Option<&'static str>, std::str::Utf8Error> {
     if ptr.is_null() {
         return Ok(None);
     }
