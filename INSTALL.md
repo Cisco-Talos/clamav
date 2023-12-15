@@ -782,6 +782,10 @@ Run `rustup target add --help` for help.
 For a list of available target triples, see:
 https://doc.rust-lang.org/nightly/rustc/platform-support.html
 
+Step-by-step instructions for cross-compiling ClamAV:
+- [Linux GCC amd64 to arm64](./INSTALL-cross-linux-arm64.md)
+- [Windows MSVC x64 to arm64](./INSTALL-cross-windows-arm64.md)
+
 ## Un-install
 
 CMake doesn't provide a simple command to uninstall. However, CMake does build
