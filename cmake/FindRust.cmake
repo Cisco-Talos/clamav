@@ -184,28 +184,28 @@ function(cargo_vendor)
     set(oneValueArgs TARGET SOURCE_DIRECTORY BINARY_DIRECTORY)
     cmake_parse_arguments(ARGS "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
-    if(NOT EXISTS ${ARGS_SOURCE_DIRECTORY}/.cargo/config.toml)
-        # Vendor the dependencies and create .cargo/config.toml
-        # Vendored dependencies will be used during the build.
-        # This will allow us to package vendored dependencies in source tarballs
-        # for online builds when we run `cpack --config CPackSourceConfig.cmake`
-        message(STATUS "Running `cargo vendor` to collect dependencies for ${ARGS_TARGET}. This may take a while if the local crates.io index needs to be updated ...")
-        make_directory(${ARGS_SOURCE_DIRECTORY}/.cargo)
-        execute_process(
-            COMMAND ${CMAKE_COMMAND} -E env "CARGO_TARGET_DIR=${ARGS_BINARY_DIRECTORY}" ${cargo_EXECUTABLE} vendor ".cargo/vendor"
-            WORKING_DIRECTORY "${ARGS_SOURCE_DIRECTORY}"
-            OUTPUT_VARIABLE CARGO_VENDOR_OUTPUT
-            ERROR_VARIABLE CARGO_VENDOR_ERROR
-            RESULT_VARIABLE CARGO_VENDOR_RESULT
-        )
+    # Vendor the dependencies and create .cargo/config.toml
+    # Vendored dependencies will be used during the build.
+    # This will allow us to package vendored dependencies in source tarballs
+    # for online builds when we run `cpack --config CPackSourceConfig.cmake`
+    message(STATUS "Running `cargo vendor` to collect dependencies for ${ARGS_TARGET}. This may take a while if the local crates.io index needs to be updated ...")
+    make_directory(${CMAKE_SOURCE_DIR}/.cargo)
+    execute_process(
+        COMMAND ${CMAKE_COMMAND} -E env "CARGO_TARGET_DIR=${ARGS_BINARY_DIRECTORY}" ${cargo_EXECUTABLE} vendor "${CMAKE_SOURCE_DIR}/.cargo/vendor"
+        WORKING_DIRECTORY "${ARGS_SOURCE_DIRECTORY}"
+        OUTPUT_VARIABLE CARGO_VENDOR_OUTPUT
+        ERROR_VARIABLE CARGO_VENDOR_ERROR
+        RESULT_VARIABLE CARGO_VENDOR_RESULT
+    )
 
-        if(NOT ${CARGO_VENDOR_RESULT} EQUAL 0)
-            message(FATAL_ERROR "Failed!\n${CARGO_VENDOR_ERROR}")
-        else()
-            message("Success!")
-        endif()
+    if(NOT ${CARGO_VENDOR_RESULT} EQUAL 0)
+        message(FATAL_ERROR "Failed!\n${CARGO_VENDOR_ERROR}")
+    else()
+        message("Success!")
+    endif()
 
-        write_file(${ARGS_SOURCE_DIRECTORY}/.cargo/config.toml "
+    if(NOT EXISTS ${CMAKE_SOURCE_DIR}/.cargo/config.toml)
+        write_file(${CMAKE_SOURCE_DIR}/.cargo/config.toml "
 [source.crates-io]
 replace-with = \"vendored-sources\"
 
@@ -459,6 +459,10 @@ if(NOT RUST_COMPILER_TARGET)
 endif()
 
 set(CARGO_ARGS "build")
+
+if(EXISTS "${CMAKE_SOURCE_DIR}/.cargo/vendor")
+    list(APPEND CARGO_ARGS "--offline")
+endif()
 
 if(NOT "${RUST_COMPILER_TARGET}" MATCHES "^universal-apple-darwin$")
     # Don't specify the target for macOS universal builds, we'll do that manually for each build.
