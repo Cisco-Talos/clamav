@@ -7,7 +7,35 @@ differ slightly from third-party binary packages.
 
 ClamAV 1.0.5 is a critical patch release with the following fixes:
 
-Special thanks to the following people for code contributions and bug reports:
+- [CVE-2024-20290](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2024-20290):
+  Fixed a possible heap overflow read bug in the OLE2 file parser that could
+  cause a denial-of-service (DoS) condition.
+
+  Affected versions:
+  - 1.0.0 through 1.0.4 (LTS)
+  - 1.1 (all patch versions)
+  - 1.2.0 and 1.2.1
+
+  Thank you to OSS-Fuzz for identifying this issue.
+
+- [CVE-2024-20328](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2024-20328):
+  Fixed a possible command injection vulnerability in the `VirusEvent` feature
+  of ClamAV's ClamD service.
+
+  To fix this issue, we disabled the '%f' format string parameter.
+  ClamD administrators may continue to use the `CLAM_VIRUSEVENT_FILENAME`
+  environment variable, instead of '%f'. But you should do so only from within
+  an executable, such as a Python script, and not directly in the `clamd.conf`
+  `VirusEvent` command.
+
+  Affected versions:
+  - 0.104 (all patch versions)
+  - 0.105 (all patch versions)
+  - 1.0.0 through 1.0.4 (LTS)
+  - 1.1 (all patch versions)
+  - 1.2.0 and 1.2.1
+
+  Thank you to Amit Schendel for identifying this issue.
 
 ## 1.0.4
 
