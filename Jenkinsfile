@@ -120,51 +120,52 @@ pipeline {
 
         stage('Tests') {
             parallel {
-                stages {
-                    stage("Regular Pipeline") {
-                        steps {
-                            script{
-                                regularResult = build(job: "test-pipelines/${params.REGULAR_PIPELINE}",
-                                        propagate: true,
-                                        wait: true,
-                                        parameters: [
-                                                [$class: 'StringParameterValue', name: 'CLAMAV_JOB_NAME', value: "${JOB_NAME}"],
-                                                [$class: 'StringParameterValue', name: 'CLAMAV_JOB_NUMBER', value: "${BUILD_NUMBER}"],
-                                                [$class: 'StringParameterValue', name: 'BUILD_JOB_NAME', value: "test-pipelines/${params.BUILD_PIPELINE}"],
-                                                [$class: 'StringParameterValue', name: 'BUILD_JOB_NUMBER', value: "${buildResult.number}"],
-                                                [$class: 'StringParameterValue', name: 'TESTS_BRANCH', value: "${params.TESTS_BRANCH}"],
-                                                [$class: 'StringParameterValue', name: 'FRAMEWORK_BRANCH', value: "${params.FRAMEWORK_BRANCH}"],
-                                                [$class: 'StringParameterValue', name: 'VERSION', value: "${params.VERSION}"],
-                                                [$class: 'StringParameterValue', name: 'SHARED_LIB_BRANCH', value: "${params.SHARED_LIB_BRANCH}"]
-                                        ]
-                                )
-                                echo "test-pipelines/${params.REGULAR_PIPELINE} #${regularResult.number} succeeded."
+                stage('Pipeline') {
+                    stages{
+                        // Regular and custom tests run sequentially on same infra
+                        stage("Regular") {
+                            steps {
+                                script{
+                                    regularResult = build(job: "test-pipelines/${params.REGULAR_PIPELINE}",
+                                            propagate: true,
+                                            wait: true,
+                                            parameters: [
+                                                    [$class: 'StringParameterValue', name: 'CLAMAV_JOB_NAME', value: "${JOB_NAME}"],
+                                                    [$class: 'StringParameterValue', name: 'CLAMAV_JOB_NUMBER', value: "${BUILD_NUMBER}"],
+                                                    [$class: 'StringParameterValue', name: 'BUILD_JOB_NAME', value: "test-pipelines/${params.BUILD_PIPELINE}"],
+                                                    [$class: 'StringParameterValue', name: 'BUILD_JOB_NUMBER', value: "${buildResult.number}"],
+                                                    [$class: 'StringParameterValue', name: 'TESTS_BRANCH', value: "${params.TESTS_BRANCH}"],
+                                                    [$class: 'StringParameterValue', name: 'FRAMEWORK_BRANCH', value: "${params.FRAMEWORK_BRANCH}"],
+                                                    [$class: 'StringParameterValue', name: 'VERSION', value: "${params.VERSION}"],
+                                                    [$class: 'StringParameterValue', name: 'SHARED_LIB_BRANCH', value: "${params.SHARED_LIB_BRANCH}"]
+                                            ]
+                                    )
+                                    echo "test-pipelines/${params.REGULAR_PIPELINE} #${regularResult.number} succeeded."
+                                }
+                            }
+                        }
+
+                        stage("Custom") {
+                            steps {
+                                script{
+                                    customResult = build(job: "test-pipelines/${params.CUSTOM_PIPELINE}",
+                                            propagate: true,
+                                            wait: true,
+                                            parameters: [
+                                                    [$class: 'StringParameterValue', name: 'CLAMAV_JOB_NAME', value: "${JOB_NAME}"],
+                                                    [$class: 'StringParameterValue', name: 'CLAMAV_JOB_NUMBER', value: "${BUILD_NUMBER}"],
+                                                    [$class: 'StringParameterValue', name: 'TESTS_BRANCH', value: "${params.TESTS_CUSTOM_BRANCH}"],
+                                                    [$class: 'StringParameterValue', name: 'FRAMEWORK_BRANCH', value: "${params.FRAMEWORK_BRANCH}"],
+                                                    [$class: 'StringParameterValue', name: 'VERSION', value: "${params.VERSION}"],
+                                                    [$class: 'StringParameterValue', name: 'SHARED_LIB_BRANCH', value: "${params.SHARED_LIB_BRANCH}"]
+                                            ]
+                                    )
+                                    echo "test-pipelines/${params.CUSTOM_PIPELINE} #${customResult.number} succeeded."
+                                }
                             }
                         }
                     }
-
-                    stage("Custom Pipeline") {
-                        steps {
-                            script{
-                                customResult = build(job: "test-pipelines/${params.CUSTOM_PIPELINE}",
-                                        propagate: true,
-                                        wait: true,
-                                        parameters: [
-                                                [$class: 'StringParameterValue', name: 'CLAMAV_JOB_NAME', value: "${JOB_NAME}"],
-                                                [$class: 'StringParameterValue', name: 'CLAMAV_JOB_NUMBER', value: "${BUILD_NUMBER}"],
-                                                [$class: 'StringParameterValue', name: 'TESTS_BRANCH', value: "${params.TESTS_CUSTOM_BRANCH}"],
-                                                [$class: 'StringParameterValue', name: 'FRAMEWORK_BRANCH', value: "${params.FRAMEWORK_BRANCH}"],
-                                                [$class: 'StringParameterValue', name: 'VERSION', value: "${params.VERSION}"],
-                                                [$class: 'StringParameterValue', name: 'SHARED_LIB_BRANCH', value: "${params.SHARED_LIB_BRANCH}"]
-                                        ]
-                                )
-                                echo "test-pipelines/${params.CUSTOM_PIPELINE} #${customResult.number} succeeded."
-                            }
-                        }
-                    }
-
                 }
-                // Running Regular and custom tests in sequential order
                 stage("Fuzz Regression") {
                     steps {
                         script{
