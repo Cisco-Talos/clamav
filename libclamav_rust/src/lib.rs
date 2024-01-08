@@ -21,7 +21,7 @@
  */
 
 /// cbindgen:ignore
-pub mod sys;
+pub use clamav_sys::sys;
 
 pub mod cdiff;
 pub mod css_image_extract;
