@@ -1,6 +1,6 @@
 [package]
 authors = [
-    "Jonas Zaddach <jonas.zaddach@gmail.com>",
+    "Jonas Zaddach <jzaddach@cisco.com>",
     "Scott Hutton <schutton@cisco.com>",
 ]
 categories = ["external-ffi-bindings"]
