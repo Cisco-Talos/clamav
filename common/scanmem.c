@@ -101,7 +101,7 @@ static inline char *wc2mb(const wchar_t *wc, DWORD flags)
         return NULL;
     }
 
-    mb = cli_max_malloc(len + 1);
+    mb = malloc(len + 1);
     if (!mb) return NULL;
 
     res = WideCharToMultiByte(CP_ACP, flags, wc, -1, mb, len, NULL, &invalid);
