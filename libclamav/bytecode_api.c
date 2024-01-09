@@ -470,7 +470,14 @@ uint8_t *cli_bcapi_malloc(struct cli_bc_ctx *ctx, uint32_t size)
             return NULL;
         }
     }
-    v = MPOOL_MALLOC(ctx->mpool, size);
+
+    if (0 == size || size > CLI_MAX_ALLOCATION) {
+        cli_warnmsg("cli_bcapi_malloc(): File or section is too large to scan (%zu bytes). For your safety, ClamAV limits how much memory an operation can allocate to %d bytes\n",
+                    size, CLI_MAX_ALLOCATION);
+        v = NULL;
+    } else {
+        v = MPOOL_MALLOC(ctx->mpool, size);
+    }
 #else
     /* TODO: implement using a list of pointers we allocated! */
     cli_errmsg("cli_bcapi_malloc not implemented for systems without mmap yet!\n");
