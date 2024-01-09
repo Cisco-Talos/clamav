@@ -269,7 +269,7 @@ static void *get_module_function(HMODULE handle, const char *name)
 static void *get_module_function(void *handle, const char *name)
 {
     void *procAddress = NULL;
-    procAddress = dlsym(handle, name);
+    procAddress       = dlsym(handle, name);
     if (NULL == procAddress) {
         const char *err = dlerror();
         if (NULL == err) {
@@ -1665,7 +1665,7 @@ size_t cli_recursion_stack_get_size(cli_ctx *ctx, int index)
 /*
  * Windows doesn't allow you to delete a directory while it is still open
  */
-int cli_rmdirs(const char *name)
+int cli_rmdirs(const char *dirname)
 {
     int rc;
     STATBUF statb;
@@ -1673,17 +1673,17 @@ int cli_rmdirs(const char *name)
     struct dirent *dent;
     char err[128];
 
-    if (CLAMSTAT(name, &statb) < 0) {
-        cli_warnmsg("cli_rmdirs: Can't locate %s: %s\n", name, cli_strerror(errno, err, sizeof(err)));
+    if (CLAMSTAT(dirname, &statb) < 0) {
+        cli_warnmsg("cli_rmdirs: Can't locate %s: %s\n", dirname, cli_strerror(errno, err, sizeof(err)));
         return -1;
     }
 
     if (!S_ISDIR(statb.st_mode)) {
-        if (cli_unlink(name)) return -1;
+        if (cli_unlink(dirname)) return -1;
         return 0;
     }
 
-    if ((dd = opendir(name)) == NULL)
+    if ((dd = opendir(dirname)) == NULL)
         return -1;
 
     rc = 0;
@@ -1696,15 +1696,14 @@ int cli_rmdirs(const char *name)
         if (strcmp(dent->d_name, "..") == 0)
             continue;
 
-        path = cli_max_malloc(strlen(name) + strlen(dent->d_name) + 2);
-
+        path = malloc(strlen(dirname) + strlen(dent->d_name) + 2);
         if (path == NULL) {
-            cli_errmsg("cli_rmdirs: Unable to allocate memory for path %u\n", strlen(name) + strlen(dent->d_name) + 2);
+            cli_errmsg("cli_rmdirs: Unable to allocate memory for path %u\n", strlen(dirname) + strlen(dent->d_name) + 2);
             closedir(dd);
             return -1;
         }
 
-        sprintf(path, "%s\\%s", name, dent->d_name);
+        sprintf(path, "%s\\%s", dirname, dent->d_name);
         rc = cli_rmdirs(path);
         free(path);
         if (rc != 0)
@@ -1713,8 +1712,8 @@ int cli_rmdirs(const char *name)
 
     closedir(dd);
 
-    if (rmdir(name) < 0) {
-        cli_errmsg("cli_rmdirs: Can't remove temporary directory %s: %s\n", name, cli_strerror(errno, err, sizeof(err)));
+    if (rmdir(dirname) < 0) {
+        cli_errmsg("cli_rmdirs: Can't remove temporary directory %s: %s\n", dirname, cli_strerror(errno, err, sizeof(err)));
         return -1;
     }
 
@@ -1742,7 +1741,7 @@ int cli_rmdirs(const char *dirname)
             while ((dent = readdir(dd))) {
                 if (dent->d_ino) {
                     if (strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..")) {
-                        path = cli_max_malloc(strlen(dirname) + strlen(dent->d_name) + 2);
+                        path = malloc(strlen(dirname) + strlen(dent->d_name) + 2);
                         if (!path) {
                             cli_errmsg("cli_rmdirs: Unable to allocate memory for path %llu\n", (long long unsigned)(strlen(dirname) + strlen(dent->d_name) + 2));
                             closedir(dd);

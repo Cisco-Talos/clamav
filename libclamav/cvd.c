@@ -88,7 +88,7 @@ static int cli_untgz(int fd, const char *destdir)
         return -1;
     }
 
-    path = (char *)cli_max_calloc(sizeof(char), pathlen);
+    path = (char *)calloc(sizeof(char), pathlen);
     if (!path) {
         cli_errmsg("cli_untgz: Can't allocate memory for path\n");
         cli_untgz_cleanup(NULL, infile, NULL, fdd);
@@ -259,7 +259,7 @@ static int cli_tgzload(int fd, struct cl_engine *engine, unsigned int *signo, un
     }
 
     dbio->bufsize = CLI_DEFAULT_DBIO_BUFSIZE;
-    dbio->buf     = cli_max_malloc(dbio->bufsize);
+    dbio->buf     = malloc(dbio->bufsize);
     if (!dbio->buf) {
         cli_errmsg("cli_tgzload: Can't allocate memory for dbio->buf\n");
         cli_tgzload_cleanup(compr, dbio, fdd);
