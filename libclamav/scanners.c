@@ -2256,7 +2256,7 @@ static cl_error_t cli_scanscript(cli_ctx *ctx)
         goto done;
     }
 
-    if (!(normalized = cli_max_malloc(SCANBUFF + maxpatlen))) {
+    if (!(normalized = malloc(SCANBUFF + maxpatlen))) {
         cli_dbgmsg("cli_scanscript: Unable to malloc %u bytes\n", SCANBUFF);
         ret = CL_EMEM;
         goto done;
@@ -5421,7 +5421,7 @@ static cl_error_t scan_common(cl_fmap_t *map, const char *filepath, const char *
     }
 
     ctx.recursion_stack_size = ctx.engine->max_recursion_level;
-    ctx.recursion_stack      = cli_max_calloc(sizeof(recursion_level_t), ctx.recursion_stack_size);
+    ctx.recursion_stack      = calloc(sizeof(recursion_level_t), ctx.recursion_stack_size);
     if (!ctx.recursion_stack) {
         status = CL_EMEM;
         goto done;

@@ -539,7 +539,7 @@ struct cl_engine *cl_engine_new(void)
     }
 
     /* Set up default stats/intel gathering callbacks */
-    intel = cli_max_calloc(1, sizeof(cli_intel_t));
+    intel = calloc(1, sizeof(cli_intel_t));
     if ((intel)) {
 #ifdef CL_THREAD_SAFE
         if (pthread_mutex_init(&(intel->mutex), NULL)) {
@@ -1279,7 +1279,7 @@ char *cli_hashstream(FILE *fs, unsigned char *digcpy, int type)
 
     cl_finish_hash(ctx, digest);
 
-    if (!(hashstr = (char *)cli_max_calloc(size * 2 + 1, sizeof(char))))
+    if (!(hashstr = (char *)calloc(size * 2 + 1, sizeof(char))))
         return NULL;
 
     pt = hashstr;
@@ -1819,7 +1819,7 @@ bitset_t *cli_bitset_init(void)
         return NULL;
     }
     bs->length = BITSET_DEFAULT_SIZE;
-    bs->bitset = cli_max_calloc(BITSET_DEFAULT_SIZE, 1);
+    bs->bitset = calloc(BITSET_DEFAULT_SIZE, 1);
     if (!bs->bitset) {
         cli_errmsg("cli_bitset_init: Unable to allocate memory for bs->bitset %u\n", BITSET_DEFAULT_SIZE);
         free(bs);
