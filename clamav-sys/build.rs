@@ -165,57 +165,15 @@ fn cargo_common() {
     println!("cargo:rerun-if-changed=wrapper.h");
 }
 
-#[cfg(windows)]
-pub fn main() {
-    let include_paths = match vcpkg::find_package("clamav") {
-        Ok(pkg) => pkg.include_paths,
-        Err(err) => {
-            println!(
-                "cargo:warning=Either vcpkg is not installed, or an error occurred in vcpkg: {}",
-                err
-            );
-            let clamav_source = PathBuf::from(env::var("CLAMAV_SOURCE").expect("CLAMAV_SOURCE environment variable must be set and point to ClamAV's source directory"));
-            let clamav_build = PathBuf::from(env::var("CLAMAV_BUILD").expect("CLAMAV_BUILD environment variable must be set and point to ClamAV's build directory"));
-            let openssl_include = PathBuf::from(env::var("OPENSSL_INCLUDE").expect("OPENSSL_INCLUDE environment variable must be set and point to openssl's include directory"));
-            let profile = env::var("PROFILE").unwrap();
-
-            let library_path = match profile.as_str() {
-                "debug" => std::path::Path::new(&clamav_build).join("libclamav/Debug"),
-                "release" => std::path::Path::new(&clamav_build).join("libclamav/Release"),
-                _ => panic!("Unexpected build profile"),
-            };
-
-            println!(
-                "cargo:rustc-link-search=native={}",
-                library_path.to_str().unwrap()
-            );
-
-            vec![
-                clamav_source.join("libclamav"),
-                clamav_build,
-                openssl_include,
-            ]
-        }
-    };
-
-    cargo_common();
-    generate_bindings(&|x: bindgen::Builder| -> bindgen::Builder {
-        let mut x = x;
-        for include_path in &include_paths {
-            x = x.clang_arg("-I").clang_arg(include_path.to_str().unwrap());
-        }
-        x
-    });
-}
-
-#[cfg(unix)]
 fn main() -> anyhow::Result<()> {
     let mut include_paths = vec![];
 
+    // Test whether being built as part of ClamAV source
+    let local_include_path = local_clamav_include_path();
+
+    // Generate temporary path for the generated "internal" module
     let mut output_path_intmod = PathBuf::from(env::var("OUT_DIR")?);
     output_path_intmod.push("sys.rs");
-
-    let local_include_path = local_clamav_include_path();
 
     if let Some(include_path) = &local_include_path {
         // It seems we're being compiled from within the ClamAV source tree.
@@ -228,12 +186,46 @@ fn main() -> anyhow::Result<()> {
         // This crate is being referenced from an external project. Utilize the
         // system-installed copy of libclamav (as located using pkg-config).
 
-        let libclamav = pkg_config::Config::new()
-            .atleast_version("0.103")
-            .probe("libclamav")
-            .unwrap();
+        #[cfg(not(windows))]
+        {
+            let libclamav = pkg_config::Config::new()
+                .atleast_version("0.103")
+                .probe("libclamav")
+                .unwrap();
 
-        include_paths.extend_from_slice(&libclamav.include_paths);
+            include_paths.extend_from_slice(&libclamav.include_paths);
+        }
+
+        #[cfg(windows)]
+        match vcpkg::find_package("clamav") {
+            Ok(pkg) => include_paths.extend_from_slice(&pkg.include_paths),
+            Err(err) => {
+                println!(
+                    "cargo:warning=Either vcpkg is not installed, or an error occurred in vcpkg: {}",
+                    err
+                );
+                // Attempt to examine user-supplied variables to find the dependencies
+                let clamav_source = PathBuf::from(env::var("CLAMAV_SOURCE").expect("CLAMAV_SOURCE environment variable must be set and point to ClamAV's source directory"));
+                let clamav_build = PathBuf::from(env::var("CLAMAV_BUILD").expect("CLAMAV_BUILD environment variable must be set and point to ClamAV's build directory"));
+                let openssl_include = PathBuf::from(env::var("OPENSSL_INCLUDE").expect("OPENSSL_INCLUDE environment variable must be set and point to openssl's include directory"));
+                let profile = env::var("PROFILE").unwrap();
+
+                let library_path = match profile.as_str() {
+                    "debug" => std::path::Path::new(&clamav_build).join("libclamav/Debug"),
+                    "release" => std::path::Path::new(&clamav_build).join("libclamav/Release"),
+                    _ => panic!("Unexpected build profile"),
+                };
+
+                println!(
+                    "cargo:rustc-link-search=native={}",
+                    library_path.to_str().unwrap()
+                );
+
+                include_paths.push(clamav_source.join("libclamav"));
+                include_paths.push(clamav_build);
+                include_paths.push(openssl_include);
+            }
+        };
 
         // Build a vestigial `sys` module, as there will be no access to
         // internal APIs.
