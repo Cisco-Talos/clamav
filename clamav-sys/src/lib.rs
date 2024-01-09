@@ -27,6 +27,11 @@ use std::ffi::CStr;
 
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 
+#[allow(non_snake_case, non_camel_case_types, non_upper_case_globals)]
+pub mod sys {
+    include!(concat!(env!("OUT_DIR"), "/sys.rs"));
+}
+
 impl Default for cl_scan_options {
     fn default() -> Self {
         cl_scan_options {

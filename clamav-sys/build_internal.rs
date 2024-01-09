@@ -1,6 +1,7 @@
 use std::env;
 use std::path::{Path, PathBuf};
 
+use anyhow::anyhow;
 use bindgen::builder;
 
 // Note to maintainers: this is currently a hybrid of examination of the
@@ -83,15 +84,13 @@ const BINDGEN_INCLUDE_PATHS: &[&str] = &[
     "-I../libclammspack",
 ];
 
-// Write the bindings to this file:
-const BINDGEN_OUTPUT_FILE: &str = "src/sys.rs";
-
-const C_HEADER_OUTPUT: &str = "clamav_rust.h";
+// Write the internal bindings to this file in maintainer mode
+const BINDGEN_OUTPUT_FILE: &str = "no-libclang/sys.rs";
 
 // Environment variable name prefixes worth including for diags
 const ENV_PATTERNS: &[&str] = &["CARGO_", "RUST", "LIB"];
 
-fn main() -> Result<(), &'static str> {
+pub fn bindgen_internal(output_path: &Path) -> anyhow::Result<()> {
     // Dump the command line and interesting environment variables for diagnostic
     // purposes. These will end up in a 'stderr' file under the target directory,
     // in a ".../clamav_rust-<hex>" subdirectory
@@ -101,16 +100,12 @@ fn main() -> Result<(), &'static str> {
     std::env::vars()
         .filter(|(k, _)| ENV_PATTERNS.iter().any(|prefix| k.starts_with(prefix)))
         .for_each(|(k, v)| eprintln!("  {}={:?}", k, v));
-
     detect_clamav_build()?;
 
     // We only want to generate bindings for `cargo build`, not `cargo test`.
     // FindRust.cmake defines $CARGO_CMD so we can differentiate.
     let cargo_cmd = env::var("CARGO_CMD").unwrap_or_else(|_| "".into());
     if cargo_cmd == "build" {
-        // Always generate the C-headers when CMake kicks off a build.
-        execute_cbindgen()?;
-
         // Only generate the `.rs` bindings when maintainer-mode is enabled.
         //
         // Bindgen requires libclang, which may not readily available, so we
@@ -118,9 +113,14 @@ fn main() -> Result<(), &'static str> {
         // to update them, as needed.
         // On the plus-side, this means that our `.rs` file is present before our
         // first build, so at least rust-analyzer will be happy.
-        let maintainer_mode = env::var("MAINTAINER_MODE").unwrap_or_else(|_| "".into());
-        if maintainer_mode == "ON" {
-            execute_bindgen()?;
+        if super::in_maintainer_mode() {
+            execute_bindgen(output_path)?;
+            // And place a copy in the source tree (for potential check-in)
+            std::fs::copy(output_path, BINDGEN_OUTPUT_FILE)?;
+        } else {
+            // Otherwise, just copy the pre-generated file to the specified
+            // location.
+            std::fs::copy(BINDGEN_OUTPUT_FILE, output_path)?;
         }
     } else {
         eprintln!("NOTE: Not generating bindings because CARGO_CMD != build");
@@ -130,15 +130,13 @@ fn main() -> Result<(), &'static str> {
 }
 
 /// Use bindgen to generate Rust bindings to call into C libraries.
-fn execute_bindgen() -> Result<(), &'static str> {
+fn execute_bindgen(output_path: &Path) -> anyhow::Result<()> {
     let build_dir = PathBuf::from(env::var("CARGO_TARGET_DIR").unwrap_or_else(|_| ".".into()));
     let build_include_path = format!("-I{}", build_dir.join(".").to_str().unwrap());
     let has_include_directories = env::var("CARGO_INCLUDE_DIRECTORIES").ok();
 
     // Configure and generate bindings.
     let mut builder = builder()
-        // Silence code-style warnings for generated bindings.
-        .raw_line("#![allow(non_snake_case, non_camel_case_types, non_upper_case_globals)]")
         // Make the bindings pretty.
         .formatter(bindgen::Formatter::Rustfmt)
         // Disable the layout tests.
@@ -173,30 +171,15 @@ fn execute_bindgen() -> Result<(), &'static str> {
     builder
         .generate()
         .expect("Generating Rust bindings for C code")
-        .write_to_file(BINDGEN_OUTPUT_FILE)
+        .write_to_file(output_path)
         .expect("Writing Rust bindings to output file");
 
-    eprintln!("bindgen outputting \"{}\"", BINDGEN_OUTPUT_FILE);
+    eprintln!("bindgen outputting \"{:?}\"", output_path);
 
     Ok(())
 }
 
-/// Use cbindgen to generate C-header's for Rust static libraries.
-fn execute_cbindgen() -> Result<(), &'static str> {
-    let crate_dir = env::var("CARGO_MANIFEST_DIR").or(Err("CARGO_MANIFEST_DIR not specified"))?;
-    let build_dir = PathBuf::from(env::var("CARGO_TARGET_DIR").unwrap_or_else(|_| ".".into()));
-    let outfile_path = build_dir.join(C_HEADER_OUTPUT);
-
-    // Useful for build diagnostics
-    eprintln!("cbindgen outputting {:?}", &outfile_path);
-    cbindgen::generate(crate_dir)
-        .expect("Unable to generate bindings")
-        .write_to_file(&outfile_path);
-
-    Ok(())
-}
-
-fn detect_clamav_build() -> Result<(), &'static str> {
+fn detect_clamav_build() -> anyhow::Result<()> {
     println!("cargo:rerun-if-env-changed=LIBCLAMAV");
 
     if search_and_link_lib("LIBCLAMAV")? {
@@ -208,7 +191,9 @@ fn detect_clamav_build() -> Result<(), &'static str> {
         if !llvm_libs.is_empty() {
             match env::var("LLVM_DIRS") {
                 Err(env::VarError::NotPresent) => eprintln!("LLVM_DIRS not set"),
-                Err(env::VarError::NotUnicode(_)) => return Err("environment value not unicode"),
+                Err(env::VarError::NotUnicode(_)) => {
+                    return Err(anyhow!("environment value not unicode"))
+                }
                 Ok(s) => {
                     if s.is_empty() {
                         eprintln!("LLVM_DIRS not set");
@@ -268,11 +253,11 @@ fn detect_clamav_build() -> Result<(), &'static str> {
 // Return whether the specified environment variable has been set, and output
 // linking directives as a side-effect
 //
-fn search_and_link_lib(environment_variable: &str) -> Result<bool, &'static str> {
+fn search_and_link_lib(environment_variable: &str) -> anyhow::Result<bool> {
     eprintln!("  - checking for {:?} in environment", environment_variable);
     let filepath_str = match env::var(environment_variable) {
         Err(env::VarError::NotPresent) => return Ok(false),
-        Err(env::VarError::NotUnicode(_)) => return Err("environment value not unicode"),
+        Err(env::VarError::NotUnicode(_)) => return Err(anyhow!("environment value not unicode")),
         Ok(s) => {
             if s.is_empty() {
                 return Ok(false);
@@ -301,13 +286,13 @@ struct ParsedLibraryPath {
 
 // Parse a library path, returning the portion expected after the `-l`, and the
 // directory containing the library
-fn parse_lib_path(path: &str) -> Result<ParsedLibraryPath, &'static str> {
+fn parse_lib_path(path: &str) -> anyhow::Result<ParsedLibraryPath> {
     let path = PathBuf::from(path);
     let file_name = path
         .file_name()
-        .ok_or("file name not found")?
+        .ok_or(anyhow!("file name not found"))?
         .to_str()
-        .ok_or("file name not unicode")?;
+        .ok_or(anyhow!("file name not unicode"))?;
 
     // This can't fail because it came from a &str
     let dir = path
@@ -321,7 +306,7 @@ fn parse_lib_path(path: &str) -> Result<ParsedLibraryPath, &'static str> {
     let full_libname = file_name
         .split('.')
         .next()
-        .ok_or("no '.' found in file name")?;
+        .ok_or(anyhow!("no '.' found in file name"))?;
 
     // Windows typically requires the full filename when linking system libraries,
     // but not when it's one of the locally-generated libraries.
@@ -331,7 +316,7 @@ fn parse_lib_path(path: &str) -> Result<ParsedLibraryPath, &'static str> {
     let libname = if should_trim_leading_lib {
         full_libname
             .strip_prefix("lib")
-            .ok_or(r#"file name doesn't begin with "lib""#)?
+            .ok_or(anyhow!(r#"file name doesn't begin with "lib""#))?
     } else {
         full_libname
     }
