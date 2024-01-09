@@ -1018,7 +1018,14 @@ void *cli_safer_realloc(void *ptr, size_t size);
  */
 void *cli_safer_realloc2(void *ptr, size_t size);
 
+/**
+ * @brief Wrapper around strdup that does a NULL check.
+ *
+ * @param s
+ * @return char* Returns the allocated string or NULL if allocation failed. This includes if allocation fails because s==NULL.
+ */
 char *cli_strdup(const char *s);
+
 int cli_rmdirs(const char *dirname);
 char *cli_hashstream(FILE *fs, unsigned char *digcpy, int type);
 char *cli_hashfile(const char *filename, int type);
@@ -1342,14 +1349,14 @@ uint8_t cli_set_debug_flag(uint8_t debug_flag);
 
 #ifndef CLI_MAX_MALLOC
 #define CLI_MAX_MALLOC(var, size, ...) \
-    do {                           \
+    do {                               \
         var = cli_max_malloc(size);    \
-        if (NULL == var) {         \
-            do {                   \
-                __VA_ARGS__;       \
-            } while (0);           \
-            goto done;             \
-        }                          \
+        if (NULL == var) {             \
+            do {                       \
+                __VA_ARGS__;           \
+            } while (0);               \
+            goto done;                 \
+        }                              \
     } while (0)
 #endif
 
@@ -1368,14 +1375,14 @@ uint8_t cli_set_debug_flag(uint8_t debug_flag);
 
 #ifndef CLI_MAX_CALLOC
 #define CLI_MAX_CALLOC(var, nmemb, size, ...) \
-    do {                                  \
+    do {                                      \
         (var) = cli_max_calloc(nmemb, size);  \
-        if (NULL == var) {                \
-            do {                          \
-                __VA_ARGS__;              \
-            } while (0);                  \
-            goto done;                    \
-        }                                 \
+        if (NULL == var) {                    \
+            do {                              \
+                __VA_ARGS__;                  \
+            } while (0);                      \
+            goto done;                        \
+        }                                     \
     } while (0)
 #endif
 
@@ -1429,29 +1436,15 @@ uint8_t cli_set_debug_flag(uint8_t debug_flag);
  */
 #ifndef CLI_SAFER_REALLOC
 #define CLI_SAFER_REALLOC(ptr, size, ...)          \
-    do {                                         \
+    do {                                           \
         void *vTmp = cli_safer_realloc(ptr, size); \
-        if (NULL == vTmp) {                      \
-            do {                                 \
-                __VA_ARGS__;                     \
-            } while (0);                         \
-            goto done;                           \
-        }                                        \
-        ptr = vTmp;                              \
-    } while (0)
-#endif
-
-/*This is a duplicate from other PR's.*/
-#ifndef CLI_STRDUP
-#define CLI_STRDUP(buf, var, ...) \
-    do {                          \
-        var = cli_strdup(buf);    \
-        if (NULL == var) {        \
-            do {                  \
-                __VA_ARGS__;      \
-            } while (0);          \
-            goto done;            \
-        }                         \
+        if (NULL == vTmp) {                        \
+            do {                                   \
+                __VA_ARGS__;                       \
+            } while (0);                           \
+            goto done;                             \
+        }                                          \
+        ptr = vTmp;                                \
     } while (0)
 #endif
 
