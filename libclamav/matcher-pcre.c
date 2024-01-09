@@ -46,7 +46,7 @@
 #endif
 
 /* DEBUGGING */
-//#define MATCHER_PCRE_DEBUG
+// #define MATCHER_PCRE_DEBUG
 #ifdef MATCHER_PCRE_DEBUG
 #define pm_dbgmsg(...) cli_dbgmsg(__VA_ARGS__)
 #else
@@ -471,12 +471,12 @@ cl_error_t cli_pcre_recaloff(struct cli_matcher *root, struct cli_pcre_off *data
     }
 
     /* allocate data structures */
-    data->shift = (uint32_t *)cli_max_calloc(root->pcre_metas, sizeof(uint32_t));
+    data->shift = (uint32_t *)calloc(root->pcre_metas, sizeof(uint32_t));
     if (!data->shift) {
         cli_errmsg("cli_pcre_initoff: cannot allocate memory for data->shift\n");
         return CL_EMEM;
     }
-    data->offset = (uint32_t *)cli_max_calloc(root->pcre_metas, sizeof(uint32_t));
+    data->offset = (uint32_t *)calloc(root->pcre_metas, sizeof(uint32_t));
     if (!data->offset) {
         cli_errmsg("cli_pcre_initoff: cannot allocate memory for data->offset\n");
         free(data->shift);

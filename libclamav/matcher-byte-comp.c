@@ -36,7 +36,7 @@
 #include "str.h"
 
 /* DEBUGGING */
-//#define MATCHER_BCOMP_DEBUG
+// #define MATCHER_BCOMP_DEBUG
 #ifdef MATCHER_BCOMP_DEBUG
 #define bcm_dbgmsg(...) cli_dbgmsg(__VA_ARGS__)
 #else
@@ -855,7 +855,7 @@ uint16_t cli_bcomp_chk_hex(const unsigned char *buffer, uint16_t opt, uint32_t l
 }
 
 /**
- * @brief multipurpose buffer normalization support function for bytecompare
+ * @brief multipurpose buffer normalization support function for byte-compare
  *
  * Currently can be used to normalize a little endian hex buffer to big endian.
  * Can also be used to trim whitespace from the front of the buffer.

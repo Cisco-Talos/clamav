@@ -472,7 +472,7 @@ uint8_t *cli_bcapi_malloc(struct cli_bc_ctx *ctx, uint32_t size)
     }
 
     if (0 == size || size > CLI_MAX_ALLOCATION) {
-        cli_warnmsg("cli_bcapi_malloc(): File or section is too large to scan (%zu bytes). For your safety, ClamAV limits how much memory an operation can allocate to %d bytes\n",
+        cli_warnmsg("cli_bcapi_malloc(): File or section is too large to scan (%u bytes). For your safety, ClamAV limits how much memory an operation can allocate to %d bytes\n",
                     size, CLI_MAX_ALLOCATION);
         v = NULL;
     } else {

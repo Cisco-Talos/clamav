@@ -324,7 +324,7 @@ static int build_regex(regex_t* preg, const char* regex, int nosub)
     if (rc) {
 
         size_t buflen = cli_regerror(rc, preg, NULL, 0);
-        char* errbuf  = cli_max_malloc(buflen);
+        char* errbuf  = malloc(buflen);
 
         if (errbuf) {
             cli_regerror(rc, preg, errbuf, buflen);
