@@ -2297,7 +2297,7 @@ static inline int hash_impfns(cli_ctx *ctx, void **hashctx, uint32_t *impsz, str
                 break;                                                              \
             }                                                                       \
                                                                                     \
-            fname = cli_max_calloc(funclen + dlllen + 3, sizeof(char));                 \
+            fname = cli_max_calloc(funclen + dlllen + 3, sizeof(char));             \
             if (fname == NULL) {                                                    \
                 cli_dbgmsg("scan_pe: cannot allocate memory for imphash string\n"); \
                 ret = CL_EMEM;                                                      \
@@ -2335,7 +2335,7 @@ static inline int hash_impfns(cli_ctx *ctx, void **hashctx, uint32_t *impsz, str
 
             thuoff += sizeof(struct pe_image_thunk32);
 
-            temp = EC32(thunk32.u.Ordinal);
+            temp              = EC32(thunk32.u.Ordinal);
             thunk32.u.Ordinal = temp;
 
             if (!(thunk32.u.Ordinal & PE_IMAGEDIR_ORDINAL_FLAG32)) {
@@ -5849,22 +5849,22 @@ cl_error_t cli_genhash_pe(cli_ctx *ctx, unsigned int class, int type, stats_sect
         case 1:
             genhash[CLI_HASH_MD5] = 1;
             hlen                  = hashlen[CLI_HASH_MD5];
-            hash = hashset[CLI_HASH_MD5] = cli_max_calloc(hlen, sizeof(char));
+            hash = hashset[CLI_HASH_MD5] = calloc(hlen, sizeof(char));
             break;
         case 2:
             genhash[CLI_HASH_SHA1] = 1;
             hlen                   = hashlen[CLI_HASH_SHA1];
-            hash = hashset[CLI_HASH_SHA1] = cli_max_calloc(hlen, sizeof(char));
+            hash = hashset[CLI_HASH_SHA1] = calloc(hlen, sizeof(char));
             break;
         default:
             genhash[CLI_HASH_SHA256] = 1;
             hlen                     = hashlen[CLI_HASH_SHA256];
-            hash = hashset[CLI_HASH_SHA256] = cli_max_calloc(hlen, sizeof(char));
+            hash = hashset[CLI_HASH_SHA256] = calloc(hlen, sizeof(char));
             break;
     }
 
     if (!hash) {
-        cli_errmsg("cli_genhash_pe: cli_max_calloc failed!\n");
+        cli_errmsg("cli_genhash_pe: calloc failed!\n");
         cli_exe_info_destroy(peinfo);
         return CL_EMEM;
     }

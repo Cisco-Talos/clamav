@@ -581,8 +581,8 @@ static void init_testfiles(void)
         if (strncmp(dirent->d_name, "clam", 4))
             continue;
         i++;
-        testfiles = cli_max_realloc(testfiles, i * sizeof(*testfiles));
-        ck_assert_msg(!!testfiles, "cli_max_realloc");
+        testfiles = cli_safer_realloc(testfiles, i * sizeof(*testfiles));
+        ck_assert_msg(!!testfiles, "cli_safer_realloc");
         testfiles[i - 1] = strdup(dirent->d_name);
     }
     testfiles_n = i;
@@ -1921,8 +1921,8 @@ int open_testfile(const char *name, int flags)
         srcdir = SRCDIR;
     }
 
-    str = cli_max_malloc(strlen(name) + strlen(srcdir) + 2);
-    ck_assert_msg(!!str, "cli_max_malloc");
+    str = malloc(strlen(name) + strlen(srcdir) + 2);
+    ck_assert_msg(!!str, "malloc");
     sprintf(str, "%s" PATHSEP "%s", srcdir, name);
 
     fd = open(str, flags);
@@ -1935,7 +1935,7 @@ void diff_file_mem(int fd, const char *ref, size_t len)
 {
     char c1, c2;
     size_t p, reflen = len;
-    char *buf = cli_max_malloc(len);
+    char *buf = malloc(len);
 
     ck_assert_msg(!!buf, "unable to malloc buffer: %zu", len);
     p = read(fd, buf, len);
@@ -1964,7 +1964,7 @@ void diff_files(int fd, int ref_fd)
     off_t siz = lseek(ref_fd, 0, SEEK_END);
     ck_assert_msg(siz != -1, "lseek failed");
 
-    ref = cli_max_malloc(siz);
+    ref = malloc(siz);
     ck_assert_msg(!!ref, "unable to malloc buffer: " STDi64, (int64_t)siz);
 
     ck_assert_msg(lseek(ref_fd, 0, SEEK_SET) == 0, "lseek failed");

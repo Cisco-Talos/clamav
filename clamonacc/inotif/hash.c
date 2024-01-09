@@ -145,7 +145,7 @@ int onas_ht_init(struct onas_ht **ht, uint32_t size)
         .nbckts = 0,
     };
 
-    if (!((*ht)->htable = (struct onas_bucket **)cli_max_calloc(size, sizeof(struct onas_bucket *)))) {
+    if (!((*ht)->htable = (struct onas_bucket **)calloc(size, sizeof(struct onas_bucket *)))) {
         onas_free_ht(*ht);
         return CL_EMEM;
     }
@@ -794,7 +794,7 @@ int onas_ht_rm_hierarchy(struct onas_ht *ht, const char *pathname, size_t len, i
         curr = curr->next;
 
         size_t size      = len + strlen(curr->dirname) + 2;
-        char *child_path = (char *)cli_max_malloc(size);
+        char *child_path = (char *)malloc(size);
         if (child_path == NULL)
             return CL_EMEM;
         if (hnode->pathname[len - 1] == '/')

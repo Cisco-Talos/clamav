@@ -2762,7 +2762,7 @@ static int decodehex(const char *hexsig)
         trigger[tlen] = '\0';
 
         /* get the regex expression */
-        regex = cli_max_calloc(rlen + 1, sizeof(char));
+        regex = calloc(rlen + 1, sizeof(char));
         if (!regex) {
             mprintf(LOGG_ERROR, "cannot allocate memory for regex expression\n");
             free(trigger);
@@ -2773,7 +2773,7 @@ static int decodehex(const char *hexsig)
 
         /* get the compile flags */
         if (clen) {
-            cflags = cli_max_calloc(clen + 1, sizeof(char));
+            cflags = calloc(clen + 1, sizeof(char));
             if (!cflags) {
                 mprintf(LOGG_ERROR, "cannot allocate memory for compile flags\n");
                 free(trigger);
