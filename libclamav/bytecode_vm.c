@@ -286,17 +286,17 @@ static always_inline struct stack_entry *pop_stack(struct stack *stack,
     *(uint8_t *)&values[p] = x
 #define WRITE16(p, x)                \
     CHECK_GT(func->numBytes, p + 1); \
-    CHECK_EQ((p)&1, 0);              \
+    CHECK_EQ((p) & 1, 0);            \
     TRACE_W(x, p, 16);               \
     *(uint16_t *)&values[p] = x
 #define WRITE32(p, x)                \
     CHECK_GT(func->numBytes, p + 3); \
-    CHECK_EQ((p)&3, 0);              \
+    CHECK_EQ((p) & 3, 0);            \
     TRACE_W(x, p, 32);               \
     *(uint32_t *)&values[p] = x
 #define WRITE64(p, x)                \
     CHECK_GT(func->numBytes, p + 7); \
-    CHECK_EQ((p)&7, 0);              \
+    CHECK_EQ((p) & 7, 0);            \
     TRACE_W(x, p, 64);               \
     *(uint64_t *)&values[p] = x
 #define WRITEP(x, p)                         \
@@ -346,16 +346,16 @@ static always_inline struct stack_entry *pop_stack(struct stack *stack,
         }                                              \
         TRACE_R(x)                                     \
     }
-#define READPOP(x, p, asize)                 \
-    {                                        \
-        if ((p)&0x40000000) {                \
-            unsigned ptr__ = (p)&0xbfffffff; \
-            CHECK_GT(func->numBytes, ptr__); \
-            TRACE_PTR(ptr__, asize);         \
-            x = (void *)&values[ptr__];      \
-        } else {                             \
-            READP(x, p, asize)               \
-        }                                    \
+#define READPOP(x, p, asize)                   \
+    {                                          \
+        if ((p) & 0x40000000) {                \
+            unsigned ptr__ = (p) & 0xbfffffff; \
+            CHECK_GT(func->numBytes, ptr__);   \
+            TRACE_PTR(ptr__, asize);           \
+            x = (void *)&values[ptr__];        \
+        } else {                               \
+            READP(x, p, asize)                 \
+        }                                      \
     }
 
 #define READOLD8(x, p)              \
@@ -364,17 +364,17 @@ static always_inline struct stack_entry *pop_stack(struct stack *stack,
     TRACE_R(x)
 #define READOLD16(x, p)              \
     CHECK_GT(func->numBytes, p + 1); \
-    CHECK_EQ((p)&1, 0);              \
+    CHECK_EQ((p) & 1, 0);            \
     x = *(uint16_t *)&old_values[p]; \
     TRACE_R(x)
 #define READOLD32(x, p)              \
     CHECK_GT(func->numBytes, p + 3); \
-    CHECK_EQ((p)&3, 0);              \
+    CHECK_EQ((p) & 3, 0);            \
     x = *(uint32_t *)&old_values[p]; \
     TRACE_R(x)
 #define READOLD64(x, p)              \
     CHECK_GT(func->numBytes, p + 7); \
-    CHECK_EQ((p)&7, 0);              \
+    CHECK_EQ((p) & 7, 0);            \
     x = *(uint64_t *)&old_values[p]; \
     TRACE_R(x)
 
@@ -596,8 +596,8 @@ static inline int64_t ptr_register_stack(struct ptr_infos *infos,
                                          uint32_t off, uint32_t size)
 {
     unsigned n              = infos->nstacks + 1;
-    struct ptr_info *sinfos = cli_max_realloc(infos->stack_infos,
-                                          sizeof(*sinfos) * n);
+    struct ptr_info *sinfos = cli_safer_realloc(infos->stack_infos,
+                                                sizeof(*sinfos) * n);
     if (!sinfos)
         return 0;
     infos->stack_infos = sinfos;
@@ -613,7 +613,7 @@ static inline int64_t ptr_register_glob_fixedid(struct ptr_infos *infos,
 {
     struct ptr_info *sinfos;
     if (n > infos->nglobs) {
-        sinfos = cli_max_realloc(infos->glob_infos, sizeof(*sinfos) * n);
+        sinfos = cli_safer_realloc(infos->glob_infos, sizeof(*sinfos) * n);
         if (!sinfos)
             return 0;
         memset(sinfos + infos->nglobs, 0, (n - infos->nglobs) * sizeof(*sinfos));

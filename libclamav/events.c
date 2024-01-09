@@ -54,7 +54,7 @@ cli_events_t *cli_events_new(unsigned max_event)
     if (!ev)
         return NULL;
     ev->max    = max_event;
-    ev->events = cli_max_calloc(max_event, sizeof(*ev->events));
+    ev->events = calloc(max_event, sizeof(*ev->events));
     if (!ev->events) {
         free(ev);
         return NULL;
@@ -132,7 +132,7 @@ static inline void ev_chain(cli_events_t *ctx, struct cli_event *ev, union ev_va
     union ev_val *chain;
     uint32_t siz = sizeof(*chain) * (ev->count + 1);
 
-    chain = cli_max_realloc(ev->u.v_chain, siz);
+    chain = cli_safer_realloc(ev->u.v_chain, siz);
     if (!chain) {
         cli_event_error_oom(ctx, siz);
         return;
@@ -294,7 +294,7 @@ void cli_event_data(cli_events_t *ctx, unsigned id, const void *data, uint32_t l
     }
     switch (ev->multiple) {
         case multiple_last: {
-            void *v_data = cli_max_realloc2(ev->u.v_data, len);
+            void *v_data = cli_safer_realloc2(ev->u.v_data, len);
             if (v_data) {
                 ev->u.v_data = v_data;
                 memcpy(v_data, data, len);
@@ -305,7 +305,7 @@ void cli_event_data(cli_events_t *ctx, unsigned id, const void *data, uint32_t l
             break;
         }
         case multiple_concat: {
-            void *v_data = cli_max_realloc2(ev->u.v_data, ev->count + len);
+            void *v_data = cli_safer_realloc2(ev->u.v_data, ev->count + len);
             if (v_data) {
                 ev->u.v_data = v_data;
                 memcpy((char *)v_data + ev->count, data, len);
