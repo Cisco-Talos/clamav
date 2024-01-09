@@ -278,12 +278,12 @@ void *cli_safer_realloc(void *ptr, size_t size)
     }
 }
 
-void *cli_safer_realloc2(void *ptr, size_t size)
+void *cli_safer_realloc_or_free(void *ptr, size_t size)
 {
     void *alloc;
 
     if (0 == size) {
-        cli_errmsg("cli_max_realloc2(): Attempt to allocate 0 bytes. Please report to https://github.com/Cisco-Talos/clamav/issues\n");
+        cli_errmsg("cli_max_realloc_or_free(): Attempt to allocate 0 bytes. Please report to https://github.com/Cisco-Talos/clamav/issues\n");
         return NULL;
     }
 
@@ -291,7 +291,7 @@ void *cli_safer_realloc2(void *ptr, size_t size)
 
     if (!alloc) {
         perror("realloc_problem");
-        cli_errmsg("cli_max_realloc2(): Can't re-allocate memory to %lu bytes.\n", (unsigned long int)size);
+        cli_errmsg("cli_max_realloc_or_free(): Can't re-allocate memory to %lu bytes.\n", (unsigned long int)size);
 
         // free the original pointer
         if (ptr) {
@@ -325,12 +325,12 @@ void *cli_max_realloc(void *ptr, size_t size)
     }
 }
 
-void *cli_max_realloc2(void *ptr, size_t size)
+void *cli_max_realloc_or_free(void *ptr, size_t size)
 {
     void *alloc;
 
     if (0 == size || size > CLI_MAX_ALLOCATION) {
-        cli_warnmsg("cli_max_realloc2(): File or section is too large to scan (%zu bytes). For your safety, ClamAV limits how much memory an operation can allocate to %d bytes\n",
+        cli_warnmsg("cli_max_realloc_or_free(): File or section is too large to scan (%zu bytes). For your safety, ClamAV limits how much memory an operation can allocate to %d bytes\n",
                     size, CLI_MAX_ALLOCATION);
         return NULL;
     }
@@ -339,7 +339,7 @@ void *cli_max_realloc2(void *ptr, size_t size)
 
     if (!alloc) {
         perror("realloc_problem");
-        cli_errmsg("cli_max_realloc2(): Can't re-allocate memory to %zu bytes.\n", size);
+        cli_errmsg("cli_max_realloc_or_free(): Can't re-allocate memory to %zu bytes.\n", size);
 
         // free the original pointer
         if (ptr) {
@@ -352,12 +352,12 @@ void *cli_max_realloc2(void *ptr, size_t size)
     }
 }
 
-char *cli_strdup(const char *s)
+char *cli_safer_strdup(const char *s)
 {
     char *alloc;
 
     if (s == NULL) {
-        cli_errmsg("cli_strdup(): passed reference is NULL, nothing to duplicate\n");
+        cli_errmsg("cli_safer_strdup(): passed reference is NULL, nothing to duplicate\n");
         return NULL;
     }
 
@@ -365,7 +365,7 @@ char *cli_strdup(const char *s)
 
     if (!alloc) {
         perror("strdup_problem");
-        cli_errmsg("cli_strdup(): Can't allocate memory (%u bytes).\n", (unsigned int)strlen(s));
+        cli_errmsg("cli_safer_strdup(): Can't allocate memory (%u bytes).\n", (unsigned int)strlen(s));
         return NULL;
     }
 
@@ -687,7 +687,7 @@ static cl_error_t handle_filetype(const char *fname, int flags,
 
     if (*stated == -1) {
         /* we failed a stat() or lstat() */
-        char *fname_copy = cli_strdup(fname);
+        char *fname_copy = cli_safer_strdup(fname);
         if (NULL == fname_copy) {
             goto done;
         }
@@ -699,7 +699,7 @@ static cl_error_t handle_filetype(const char *fname, int flags,
         *ft = ft_unknown;
     } else if (*ft == ft_skipped_link || *ft == ft_skipped_special) {
         /* skipped filetype */
-        char *fname_copy = cli_strdup(fname);
+        char *fname_copy = cli_safer_strdup(fname);
         if (NULL == fname_copy) {
             goto done;
         }
@@ -777,7 +777,7 @@ cl_error_t cli_ftw(char *path, int flags, int maxdepth, cli_ftw_cb callback, str
      */
     if (entry.is_dir) {
         /* Allocate the filename for the callback function. TODO: this FTW code is spaghetti, refactor. */
-        filename_for_callback = cli_strdup(path);
+        filename_for_callback = cli_safer_strdup(path);
         if (NULL == filename_for_callback) {
             goto done;
         }
@@ -800,7 +800,7 @@ cl_error_t cli_ftw(char *path, int flags, int maxdepth, cli_ftw_cb callback, str
         entry.dirname = path;
     } else {
         /* Allocate the filename for the callback function within the handle_entry function. TODO: this FTW code is spaghetti, refactor. */
-        filename_for_handleentry = cli_strdup(path);
+        filename_for_handleentry = cli_safer_strdup(path);
         if (NULL == filename_for_handleentry) {
             goto done;
         }

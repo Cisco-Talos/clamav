@@ -114,7 +114,7 @@ char *cli_virname(const char *virname, unsigned int official)
     }
 
     if (official)
-        return cli_strdup(virname);
+        return cli_safer_strdup(virname);
 
     newname = (char *)malloc(strlen(virname) + 11 + 1);
     if (!newname) {
@@ -142,7 +142,7 @@ cl_error_t cli_sigopts_handler(struct cli_matcher *root, const char *virname, co
         return CL_EPARSE;
     }
 
-    hexcpy = cli_strdup(hexsig);
+    hexcpy = cli_safer_strdup(hexsig);
     if (!hexcpy)
         return CL_EMEM;
 
@@ -373,7 +373,7 @@ static cl_error_t readdb_load_regex_subsignature(struct cli_matcher *root, const
     }
 
     /* get copied */
-    hexcpy = cli_strdup(sig);
+    hexcpy = cli_safer_strdup(sig);
     if (!hexcpy) {
         status = CL_EMEM;
         goto done;
@@ -420,7 +420,7 @@ static cl_error_t readdb_load_regex_subsignature(struct cli_matcher *root, const
 
 done:
 
-    FREE(hexcpy);
+    CLI_FREE_AND_SET_NULL(hexcpy);
 
     return status;
 }
@@ -634,7 +634,7 @@ done:
         ffierror_free(fuzzy_hash_load_error);
     }
 
-    FREE(hexcpy);
+    CLI_FREE_AND_SET_NULL(hexcpy);
 
     return status;
 }
@@ -795,7 +795,7 @@ cl_error_t cli_add_content_match_pattern(struct cli_matcher *root, const char *v
 
         // Make a copy of the whole pattern so that we can NULL-terminate the hexsig
         // and pass it to cli_ac_addsig() without having to pass the part-length.
-        if (!(hexcpy = cli_strdup(hexsig)))
+        if (!(hexcpy = cli_safer_strdup(hexsig)))
             return CL_EMEM;
 
         start = pt = hexcpy;
@@ -2330,7 +2330,7 @@ static int cli_loadcbc(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
         return CL_SUCCESS;
     }
 
-    bcs->all_bcs = cli_safer_realloc2(bcs->all_bcs, sizeof(*bcs->all_bcs) * (bcs->count + 1));
+    bcs->all_bcs = cli_safer_realloc_or_free(bcs->all_bcs, sizeof(*bcs->all_bcs) * (bcs->count + 1));
     if (!bcs->all_bcs) {
         cli_errmsg("cli_loadcbc: Can't allocate memory for bytecode entry\n");
         return CL_EMEM;
@@ -2401,7 +2401,7 @@ static int cli_loadcbc(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
         if (bc->kind >= _BC_START_HOOKS && bc->kind < _BC_LAST_HOOK) {
             unsigned hook       = bc->kind - _BC_START_HOOKS;
             unsigned cnt        = ++engine->hooks_cnt[hook];
-            engine->hooks[hook] = cli_safer_realloc2(engine->hooks[hook],
+            engine->hooks[hook] = cli_safer_realloc_or_free(engine->hooks[hook],
                                                      sizeof(*engine->hooks[0]) * cnt);
             if (!engine->hooks[hook]) {
                 cli_errmsg("Out of memory allocating memory for hook %u", hook);
@@ -3720,7 +3720,7 @@ static cl_error_t ytable_add_attrib(struct cli_ytable *ytable, const char *hexsi
         if (ytable->table[lookup]->offset)
             free(ytable->table[lookup]->offset);
 
-        ytable->table[lookup]->offset = cli_strdup(value);
+        ytable->table[lookup]->offset = cli_safer_strdup(value);
 
         if (!ytable->table[lookup]->offset) {
             cli_yaramsg("ytable_add_attrib: ran out of memory for offset\n");
@@ -3747,7 +3747,7 @@ static int ytable_add_string(struct cli_ytable *ytable, const char *hexsig)
         return CL_EMEM;
     }
 
-    new->hexstr = cli_strdup(hexsig);
+    new->hexstr = cli_safer_strdup(hexsig);
     if (!new->hexstr) {
         cli_yaramsg("ytable_add_string: out of memory for hexsig copy\n");
         free(new);
@@ -4221,10 +4221,10 @@ static int load_oneyara(YR_RULE *rule, int chkpua, struct cl_engine *engine, uns
 
     /* TDB */
     if (rule->cl_flags & RULE_EP && ytable.tbl_cnt == 1)
-        target_str = cli_strdup(YARATARGET1);
+        target_str = cli_safer_strdup(YARATARGET1);
     else
 #endif
-    target_str = cli_strdup(YARATARGET0);
+    target_str = cli_safer_strdup(YARATARGET0);
 
     memset(&tdb, 0, sizeof(tdb));
     if (CL_SUCCESS != (ret = init_tdb(&tdb, engine, target_str, newident))) {
@@ -4592,7 +4592,7 @@ static int cli_loadpwdb(FILE *fs, struct cl_engine *engine, unsigned int options
 
         /* append target type 0 to tdb string if needed */
         if ((tokens[1][0] == '\0') || (strstr(tokens[1], "Target:") != NULL)) {
-            attribs = cli_strdup(tokens[1]);
+            attribs = cli_safer_strdup(tokens[1]);
             if (!attribs) {
                 cli_errmsg("cli_loadpwdb: Can't allocate memory for attributes\n");
                 ret = CL_EMEM;
@@ -5397,7 +5397,7 @@ cl_error_t cl_statinidir(const char *dirname, struct cl_stat *dbstat)
         dbstat->entries   = 0;
         dbstat->stattab   = NULL;
         dbstat->statdname = NULL;
-        dbstat->dir       = cli_strdup(dirname);
+        dbstat->dir       = cli_safer_strdup(dirname);
     } else {
         cli_errmsg("cl_statdbdir(): Null argument passed.\n");
         return CL_ENULLARG;
@@ -5415,7 +5415,7 @@ cl_error_t cl_statinidir(const char *dirname, struct cl_stat *dbstat)
         if (dent->d_ino) {
             if (strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..") && CLI_DBEXT(dent->d_name)) {
                 dbstat->entries++;
-                dbstat->stattab = (STATBUF *)cli_safer_realloc2(dbstat->stattab, dbstat->entries * sizeof(STATBUF));
+                dbstat->stattab = (STATBUF *)cli_safer_realloc_or_free(dbstat->stattab, dbstat->entries * sizeof(STATBUF));
                 if (!dbstat->stattab) {
                     cl_statfree(dbstat);
                     closedir(dd);
@@ -5423,7 +5423,7 @@ cl_error_t cl_statinidir(const char *dirname, struct cl_stat *dbstat)
                 }
 
 #ifdef _WIN32
-                dbstat->statdname = (char **)cli_safer_realloc2(dbstat->statdname, dbstat->entries * sizeof(char *));
+                dbstat->statdname = (char **)cli_safer_realloc_or_free(dbstat->statdname, dbstat->entries * sizeof(char *));
                 if (!dbstat->statdname) {
                     cli_errmsg("cl_statinidir: Can't allocate memory for dbstat->statdname\n");
                     cl_statfree(dbstat);

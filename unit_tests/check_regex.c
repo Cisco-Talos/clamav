@@ -273,8 +273,8 @@ START_TEST(regex_list_match_test)
 
     ck_assert_msg(rtest->result == RTR_PHISH || rtest->result == RTR_ALLOWED || rtest->result == RTR_INVALID_REGEX,
                   "Allow list test result must be either RTR_PHISH or RTR_ALLOWED or RTR_INVALID_REGEX");
-    pattern = cli_strdup(rtest->pattern);
-    ck_assert_msg(!!pattern, "cli_strdup");
+    pattern = cli_safer_strdup(rtest->pattern);
+    ck_assert_msg(!!pattern, "cli_safer_strdup");
 
     rc = regex_list_add_pattern(&matcher, pattern);
     if (rtest->result == RTR_INVALID_REGEX) {
@@ -292,7 +292,7 @@ START_TEST(regex_list_match_test)
 
     ck_assert_msg(is_regex_ok(&matcher), "is_regex_ok");
 
-    realurl = cli_strdup(rtest->realurl);
+    realurl = cli_safer_strdup(rtest->realurl);
     rc      = regex_list_match(&matcher, realurl, rtest->displayurl, NULL, 1, &info, 1);
     ck_assert_msg(rc == rtest->result, "regex_list_match");
     /* regex_list_match is not supposed to modify realurl in this case */
@@ -393,8 +393,8 @@ static void do_phishing_test(const struct rtest *rtest)
     memset(&options, 0, sizeof(struct cl_scan_options));
     ctx.options = &options;
 
-    realurl = cli_strdup(rtest->realurl);
-    ck_assert_msg(!!realurl, "cli_strdup");
+    realurl = cli_safer_strdup(rtest->realurl);
+    ck_assert_msg(!!realurl, "cli_safer_strdup");
 
     hrefs.count = 1;
     hrefs.value = malloc(sizeof(*hrefs.value));
@@ -404,8 +404,8 @@ static void do_phishing_test(const struct rtest *rtest)
     ck_assert_msg(!!hrefs.contents, "malloc");
     hrefs.tag = malloc(sizeof(*hrefs.tag));
     ck_assert_msg(!!hrefs.tag, "malloc");
-    hrefs.tag[0]      = (unsigned char *)cli_strdup("href");
-    hrefs.contents[0] = (unsigned char *)cli_strdup(rtest->displayurl);
+    hrefs.tag[0]      = (unsigned char *)cli_safer_strdup("href");
+    hrefs.contents[0] = (unsigned char *)cli_safer_strdup(rtest->displayurl);
 
     ctx.engine   = engine;
     ctx.evidence = evidence_new();
@@ -480,8 +480,8 @@ static void do_phishing_test_allscan(const struct rtest *rtest)
     memset(&options, 0, sizeof(struct cl_scan_options));
     ctx.options = &options;
 
-    realurl = cli_strdup(rtest->realurl);
-    ck_assert_msg(!!realurl, "cli_strdup");
+    realurl = cli_safer_strdup(rtest->realurl);
+    ck_assert_msg(!!realurl, "cli_safer_strdup");
 
     hrefs.count = 1;
     hrefs.value = malloc(sizeof(*hrefs.value));
@@ -491,8 +491,8 @@ static void do_phishing_test_allscan(const struct rtest *rtest)
     ck_assert_msg(!!hrefs.contents, "malloc");
     hrefs.tag = malloc(sizeof(*hrefs.tag));
     ck_assert_msg(!!hrefs.tag, "malloc");
-    hrefs.tag[0]      = (unsigned char *)cli_strdup("href");
-    hrefs.contents[0] = (unsigned char *)cli_strdup(rtest->displayurl);
+    hrefs.tag[0]      = (unsigned char *)cli_safer_strdup("href");
+    hrefs.contents[0] = (unsigned char *)cli_safer_strdup(rtest->displayurl);
 
     ctx.engine   = engine;
     ctx.evidence = evidence_new();

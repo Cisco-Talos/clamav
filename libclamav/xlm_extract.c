@@ -4790,7 +4790,7 @@ cl_error_t cli_extract_xlm_macros_and_images(const char *dir, cli_ctx *ctx, char
                 } else {
                     /* already found the beginning of a drawing group, extract the remaining chunks */
                     drawinggroup_len += biff_header.length;
-                    CLI_MAX_REALLOC(drawinggroup, drawinggroup_len, status = CL_EMEM);
+                    CLI_MAX_REALLOC_OR_GOTO_DONE(drawinggroup, drawinggroup_len, status = CL_EMEM);
                     memcpy(drawinggroup + (drawinggroup_len - biff_header.length), data, biff_header.length);
                     // cli_dbgmsg("Collected %d drawing group bytes\n", biff_header.length);
                 }
@@ -4801,7 +4801,7 @@ cl_error_t cli_extract_xlm_macros_and_images(const char *dir, cli_ctx *ctx, char
                     (NULL != drawinggroup)) {
                     /* already found the beginning of an image, extract the remaining chunks */
                     drawinggroup_len += biff_header.length;
-                    CLI_MAX_REALLOC(drawinggroup, drawinggroup_len, status = CL_EMEM);
+                    CLI_MAX_REALLOC_OR_GOTO_DONE(drawinggroup, drawinggroup_len, status = CL_EMEM);
                     memcpy(drawinggroup + (drawinggroup_len - biff_header.length), data, biff_header.length);
                     // cli_dbgmsg("Collected %d image bytes\n", biff_header.length);
                 }
@@ -4977,7 +4977,7 @@ cl_error_t cli_extract_xlm_macros_and_images(const char *dir, cli_ctx *ctx, char
     status = CL_SUCCESS;
 
 done:
-    FREE(drawinggroup);
+    CLI_FREE_AND_SET_NULL(drawinggroup);
 
     if (in_fd != -1) {
         close(in_fd);
@@ -4992,12 +4992,12 @@ done:
         out_fd = -1;
     }
 
-    FREE(data);
+    CLI_FREE_AND_SET_NULL(data);
 
     if (tempfile && !ctx->engine->keeptmp) {
         remove(tempfile);
     }
-    FREE(tempfile);
+    CLI_FREE_AND_SET_NULL(tempfile);
 
     return status;
 }

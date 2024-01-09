@@ -158,7 +158,7 @@ fc_error_t fc_initialize(fc_config *fcConfig)
     logg_size    = fcConfig->maxLogSize;
     /* Set a log file if requested, and is not already set */
     if ((NULL == logg_file) && (NULL != fcConfig->logFile)) {
-        logg_file = cli_strdup(fcConfig->logFile);
+        logg_file = cli_safer_strdup(fcConfig->logFile);
         if (0 != logg(LOGG_INFO_NF, "--------------------------------------\n")) {
             mprintf(LOGG_ERROR, "Problem with internal logger (UpdateLogFile = %s).\n", logg_file);
             status = FC_ELOGGING;
@@ -188,14 +188,14 @@ fc_error_t fc_initialize(fc_config *fcConfig)
         mprintf(LOGG_ERROR, "Your installation was built with libcurl version %u.%u.%u.\n", LIBCURL_VERSION_MAJOR, LIBCURL_VERSION_MINOR, LIBCURL_VERSION_PATCH);
         mprintf(LOGG_ERROR, "LocalIP requires libcurl version 7.33.0 or higher and must include the c-ares optional dependency.\n");
 #else
-        g_localIP = cli_strdup(fcConfig->localIP);
+        g_localIP = cli_safer_strdup(fcConfig->localIP);
 #endif
     }
     if (NULL != fcConfig->userAgent) {
-        g_userAgent = cli_strdup(fcConfig->userAgent);
+        g_userAgent = cli_safer_strdup(fcConfig->userAgent);
     }
     if (NULL != fcConfig->proxyServer) {
-        g_proxyServer = cli_strdup(fcConfig->proxyServer);
+        g_proxyServer = cli_safer_strdup(fcConfig->proxyServer);
         if (0 != fcConfig->proxyPort) {
             g_proxyPort = fcConfig->proxyPort;
         } else {
@@ -215,10 +215,10 @@ fc_error_t fc_initialize(fc_config *fcConfig)
         }
     }
     if (NULL != fcConfig->proxyUsername) {
-        g_proxyUsername = cli_strdup(fcConfig->proxyUsername);
+        g_proxyUsername = cli_safer_strdup(fcConfig->proxyUsername);
     }
     if (NULL != fcConfig->proxyPassword) {
-        g_proxyPassword = cli_strdup(fcConfig->proxyPassword);
+        g_proxyPassword = cli_safer_strdup(fcConfig->proxyPassword);
     }
 
 #ifdef _WIN32
@@ -234,7 +234,7 @@ fc_error_t fc_initialize(fc_config *fcConfig)
             "%s" PATHSEP,
             fcConfig->databaseDirectory);
     } else {
-        g_databaseDirectory = cli_strdup(fcConfig->databaseDirectory);
+        g_databaseDirectory = cli_safer_strdup(fcConfig->databaseDirectory);
     }
 
     /* Validate that the database directory exists, and store it. */
@@ -249,7 +249,7 @@ fc_error_t fc_initialize(fc_config *fcConfig)
         goto done;
     }
 
-    g_tempDirectory = cli_strdup(fcConfig->tempDirectory);
+    g_tempDirectory = cli_safer_strdup(fcConfig->tempDirectory);
 
     g_maxAttempts    = fcConfig->maxAttempts;
     g_connectTimeout = fcConfig->connectTimeout;
@@ -573,7 +573,7 @@ fc_error_t fc_dns_query_update_info(
                 logg(LOGG_WARNING, "Your ClamAV installation is OUTDATED!\n");
                 logg(LOGG_WARNING, "Local version: %s Recommended version: %s\n", version_string, reply_token);
                 logg(LOGG_INFO, "DON'T PANIC! Read https://docs.clamav.net/manual/Installing.html\n");
-                *newVersion = cli_strdup(reply_token);
+                *newVersion = cli_safer_strdup(reply_token);
             }
         }
     }

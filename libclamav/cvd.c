@@ -633,7 +633,7 @@ cl_error_t cli_cvdload(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 
     if (dbtype <= 1) {
         /* check for duplicate db */
-        dupname = cli_strdup(filename);
+        dupname = cli_safer_strdup(filename);
         if (!dupname)
             return CL_EMEM;
         dupname[strlen(dupname) - 2] = (dbtype == 1 ? 'v' : 'l');

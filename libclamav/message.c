@@ -343,7 +343,7 @@ void messageSetMimeSubtype(message *m, const char *subtype)
     if (m->mimeSubtype)
         free(m->mimeSubtype);
 
-    m->mimeSubtype = cli_strdup(subtype);
+    m->mimeSubtype = cli_safer_strdup(subtype);
 }
 
 const char *
@@ -375,7 +375,7 @@ void messageSetDispositionType(message *m, const char *disptype)
     while (*disptype && isspace((int)*disptype))
         disptype++;
     if (*disptype) {
-        m->mimeDispositionType = cli_strdup(disptype);
+        m->mimeDispositionType = cli_safer_strdup(disptype);
         if (m->mimeDispositionType)
             strstrip(m->mimeDispositionType);
     } else
@@ -558,7 +558,7 @@ void messageAddArguments(message *m, const char *s)
              * The field is in quotes, so look for the
              * closing quotes
              */
-            kcopy = cli_strdup(key);
+            kcopy = cli_safer_strdup(key);
 
             if (kcopy == NULL)
                 return;
@@ -588,7 +588,7 @@ void messageAddArguments(message *m, const char *s)
                 continue;
             }
 
-            data = cli_strdup(cptr);
+            data = cli_safer_strdup(cptr);
 
             if (!data) {
                 cli_dbgmsg("Can't parse header \"%s\" - if you believe this file contains a missed virus, report it to bugs@clamav.net\n", s);
@@ -704,7 +704,7 @@ messageFindArgument(const message *m, const char *variable)
             ptr++;
             if ((strlen(ptr) > 1) && (*ptr == '"') && (strchr(&ptr[1], '"') != NULL)) {
                 /* Remove any quote characters */
-                char *ret = cli_strdup(++ptr);
+                char *ret = cli_safer_strdup(++ptr);
                 char *p;
 
                 if (ret == NULL)
@@ -725,7 +725,7 @@ messageFindArgument(const message *m, const char *variable)
                 }
                 return ret;
             }
-            return cli_strdup(ptr);
+            return cli_safer_strdup(ptr);
         }
     }
     return NULL;
@@ -1278,7 +1278,7 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
             f      = lineGetData(t_line->t_line);
 
             if ((filename = strstr(f, " name=")) != NULL) {
-                filename = cli_strdup(&filename[6]);
+                filename = cli_safer_strdup(&filename[6]);
                 if (filename) {
                     cli_chomp(filename);
                     strstrip(filename);
@@ -1903,7 +1903,7 @@ decodeLine(message *m, encoding_type et, const char *line, unsigned char *buf, s
                 strcpy(base64buf, line);
                 copy = base64buf;
             } else {
-                copy = cli_strdup(line);
+                copy = cli_safer_strdup(line);
                 if (copy == NULL)
                     break;
             }
@@ -2386,7 +2386,7 @@ rfc2231(const char *in)
     }
 
     if (ptr == NULL) { /* quick return */
-        out = ret = cli_strdup(in);
+        out = ret = cli_safer_strdup(in);
         while (*out)
             *out++ &= 0x7F;
         return ret;
@@ -2461,7 +2461,7 @@ rfc2231(const char *in)
     if (field != CONTENTS) {
         free(ret);
         cli_dbgmsg("Invalid RFC2231 header: '%s'\n", in);
-        return cli_strdup("");
+        return cli_safer_strdup("");
     }
 
     *out = '\0';
@@ -2509,9 +2509,9 @@ simil(const char *str1, const char *str2)
     if (strcasecmp(str1, str2) == 0)
         return 100;
 
-    if ((s1 = cli_strdup(str1)) == NULL)
+    if ((s1 = cli_safer_strdup(str1)) == NULL)
         return OUT_OF_MEMORY;
-    if ((s2 = cli_strdup(str2)) == NULL) {
+    if ((s2 = cli_safer_strdup(str2)) == NULL) {
         free(s1);
         return OUT_OF_MEMORY;
     }
@@ -2629,7 +2629,7 @@ push(LINK1 *top, const char *string)
 
     if ((element = (LINK1)malloc(sizeof(ELEMENT1))) == NULL)
         return OUT_OF_MEMORY;
-    if ((element->d1 = cli_strdup(string)) == NULL) {
+    if ((element->d1 = cli_safer_strdup(string)) == NULL) {
         free(element);
         return OUT_OF_MEMORY;
     }

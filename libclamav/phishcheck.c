@@ -1537,13 +1537,13 @@ static enum phish_status phishingCheck(cli_ctx* ctx, struct url_check* urls)
      */
     /* Provide copies of the original URL's, because domain_list_match() may modify the buffer,
        and we don't want that to happen in this case. */
-    realData = cli_strdup(urls->realLink.data);
+    realData = cli_safer_strdup(urls->realLink.data);
     if (!realData) {
         cli_errmsg("Phishcheck: Failed to allocate memory for temporary real link string.\n");
         phishing_verdict = CL_PHISH_CLEAN;
         goto done;
     }
-    displayData = cli_strdup(urls->displayLink.data);
+    displayData = cli_safer_strdup(urls->displayLink.data);
     if (!displayData) {
         cli_errmsg("Phishcheck: Failed to allocate memory for temporary display link string.\n");
         phishing_verdict = CL_PHISH_CLEAN;

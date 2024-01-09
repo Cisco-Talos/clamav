@@ -2434,7 +2434,7 @@ create_vba_project(int record_count, const char *dir, struct uniq *U)
 
     ret->name   = (char **)cli_max_malloc(sizeof(char *) * record_count);
     ret->colls  = (uint32_t *)cli_max_malloc(sizeof(uint32_t) * record_count);
-    ret->dir    = cli_strdup(dir);
+    ret->dir    = cli_safer_strdup(dir);
     ret->offset = (uint32_t *)cli_max_malloc(sizeof(uint32_t) * record_count);
 
     if ((ret->colls == NULL) || (ret->name == NULL) || (ret->dir == NULL) || (ret->offset == NULL)) {

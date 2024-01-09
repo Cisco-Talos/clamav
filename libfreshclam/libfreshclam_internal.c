@@ -1722,7 +1722,7 @@ static struct cl_cvd *currentdb(const char *database, char **localname)
     }
 
     if (localname) {
-        *localname = cli_strdup(filename);
+        *localname = cli_safer_strdup(filename);
     }
 
 done:
@@ -2045,9 +2045,9 @@ static fc_error_t query_remote_database_version(
     }
 
     if (remote_is_cld) {
-        *remoteFilename = cli_strdup(cldfile);
+        *remoteFilename = cli_safer_strdup(cldfile);
     } else {
-        *remoteFilename = cli_strdup(cvdfile);
+        *remoteFilename = cli_safer_strdup(cvdfile);
     }
     *remoteVersion = newVersion;
 
@@ -2174,7 +2174,7 @@ static fc_error_t check_for_new_database_version(
 
     *remoteVersion = remotever;
     if (NULL != remotename) {
-        *remoteFilename = cli_strdup(remotename);
+        *remoteFilename = cli_safer_strdup(remotename);
         if (NULL == *remoteFilename) {
             logg(LOGG_ERROR, "check_for_new_database_version: Failed to allocate memory for remote filename.\n");
             status = FC_EMEM;
@@ -2183,7 +2183,7 @@ static fc_error_t check_for_new_database_version(
     }
     if (NULL != localname) {
         *localVersion  = localver;
-        *localFilename = cli_strdup(localname);
+        *localFilename = cli_safer_strdup(localname);
         if (NULL == *localFilename) {
             logg(LOGG_ERROR, "check_for_new_database_version: Failed to allocate memory for local filename.\n");
             status = FC_EMEM;
@@ -2268,7 +2268,7 @@ fc_error_t updatedb(
     }
 
     if ((localVersion >= remoteVersion) && (NULL != localFilename)) {
-        *dbFilename = cli_strdup(localFilename);
+        *dbFilename = cli_safer_strdup(localFilename);
         goto up_to_date;
     }
 
@@ -2288,7 +2288,7 @@ fc_error_t updatedb(
             logg(LOGG_WARNING, "Expected newer version of %s database but the server's copy is not newer than our local file (version %d).\n", database, localVersion);
             if (NULL != localFilename) {
                 /* Received a 304 (not modified), must be up-to-date after all */
-                *dbFilename = cli_strdup(localFilename);
+                *dbFilename = cli_safer_strdup(localFilename);
             }
             goto up_to_date;
         } else if (FC_EMIRRORNOTSYNC == ret) {
@@ -2302,7 +2302,7 @@ fc_error_t updatedb(
             goto done;
         }
 
-        newLocalFilename = cli_strdup(remoteFilename);
+        newLocalFilename = cli_safer_strdup(remoteFilename);
     } else {
         /*
          * Attempt scripted/CDIFF incremental update.
@@ -2387,10 +2387,10 @@ fc_error_t updatedb(
                 }
             }
 
-            newLocalFilename = cli_strdup(remoteFilename);
+            newLocalFilename = cli_safer_strdup(remoteFilename);
         } else if (0 == numPatchesReceived) {
             logg(LOGG_INFO, "The database server doesn't have the latest patch for the %s database (version %u). The server will likely have updated if you check again in a few hours.\n", database, remoteVersion);
-            *dbFilename = cli_strdup(localFilename);
+            *dbFilename = cli_safer_strdup(localFilename);
             goto up_to_date;
         } else {
             /*
@@ -2488,7 +2488,7 @@ fc_error_t updatedb(
 
     *signo      = cvd->sigs;
     *bUpdated   = 1;
-    *dbFilename = cli_strdup(newLocalFilename);
+    *dbFilename = cli_safer_strdup(newLocalFilename);
     if (NULL == *dbFilename) {
         logg(LOGG_ERROR, "updatedb: Failed to allocate memory for database filename.\n");
         status = FC_EMEM;
@@ -2709,7 +2709,7 @@ fc_error_t updatecustomdb(
 
 up_to_date:
 
-    *dbFilename = cli_strdup(databaseName);
+    *dbFilename = cli_safer_strdup(databaseName);
     if (NULL == *dbFilename) {
         logg(LOGG_ERROR, "Failed to allocate memory for database filename.\n");
         status = FC_EMEM;

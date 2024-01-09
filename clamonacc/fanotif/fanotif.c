@@ -255,7 +255,7 @@ int onas_fan_eloop(struct onas_context **ctx)
                         return 2;
                     }
                     memcpy(event_data->fmd, fmd, sizeof(struct fanotify_event_metadata));
-                    event_data->pathname = cli_strdup(fname);
+                    event_data->pathname = cli_safer_strdup(fname);
                     if (NULL == event_data->pathname) {
                         close(fmd->fd);
                         free(event_data->fmd);

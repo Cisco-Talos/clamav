@@ -2519,7 +2519,7 @@ inline static int ac_special_altstr(const char *hexpr, uint8_t sigopts, struct c
     char *hexprcpy, *h, *c;
     int i, ret, num, fixed, slen;
 
-    if (!(hexprcpy = cli_strdup(hexpr))) {
+    if (!(hexprcpy = cli_safer_strdup(hexpr))) {
         cli_errmsg("ac_special_altstr: Can't duplicate alternate expression\n");
         return CL_EDUP;
     }
@@ -2646,7 +2646,7 @@ cl_error_t cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
     }
 
     if (strchr(hexsig, '[')) {
-        if (!(hexcpy = cli_strdup(hexsig))) {
+        if (!(hexcpy = cli_safer_strdup(hexsig))) {
             MPOOL_FREE(root->mempool, new);
             return CL_EMEM;
         }
@@ -2730,7 +2730,7 @@ cl_error_t cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
             return error;
         }
 
-        hex = cli_strdup(hex);
+        hex = cli_safer_strdup(hex);
         free(hexcpy);
         if (!hex) {
             MPOOL_FREE(root->mempool, new);
@@ -2745,7 +2745,7 @@ cl_error_t cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
 
         if (hex) {
             hexcpy = hex;
-        } else if (!(hexcpy = cli_strdup(hexsig))) {
+        } else if (!(hexcpy = cli_safer_strdup(hexsig))) {
             MPOOL_FREE(root->mempool, new);
             return CL_EMEM;
         }

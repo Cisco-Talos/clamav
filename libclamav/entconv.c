@@ -656,7 +656,7 @@ static iconv_t iconv_open_cached(const char* fromcode)
         idx = cache->last++;
         if (idx >= cache->len) {
             cache->len += 16;
-            cache->tab = cli_max_realloc2(cache->tab, cache->len * sizeof(cache->tab[0]));
+            cache->tab = cli_max_realloc_or_free(cache->tab, cache->len * sizeof(cache->tab[0]));
             if (!cache->tab) {
                 cli_dbgmsg(MODULE_NAME "!Out of mem in iconv-pool\n");
                 errno = ENOMEM;
@@ -1121,7 +1121,7 @@ char* cli_utf16_to_utf8(const char* utf16, size_t length, encoding_t type)
     char* s2;
 
     if (length < 2)
-        return cli_strdup("");
+        return cli_safer_strdup("");
     if (length % 2) {
         cli_warnmsg("utf16 length is not multiple of two: %lu\n", (long)length);
         length--;

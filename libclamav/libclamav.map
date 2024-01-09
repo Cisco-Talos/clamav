@@ -127,7 +127,7 @@ CLAMAV_PRIVATE {
     cli_utf16toascii;
 
     cli_memstr;
-    cli_strdup;
+    cli_safer_strdup;
     cli_max_calloc;
     cli_max_malloc;
     cli_max_realloc;

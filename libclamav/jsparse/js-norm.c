@@ -881,7 +881,7 @@ static void run_decoders(struct parser_state *state)
                 cli_js_process_buffer(state, res.txtbuf.data, res.txtbuf.pos);
                 --state->rec;
             }
-            FREE(res.txtbuf.data);
+            CLI_FREE_AND_SET_NULL(res.txtbuf.data);
             /* state->tokens still refers to the embedded/nested context here */
             if (!res.append) {
                 if (CL_EARG == replace_token_range(&parent_tokens, res.pos_begin, res.pos_end, &state->tokens)) {
@@ -1044,7 +1044,7 @@ void cli_js_process_buffer(struct parser_state *state, const char *buf, size_t n
                 if (current->last_token == TOK_DOT) {
                     /* this is a member name, don't normalize
                      */
-                    TOKEN_SET(&val, string, cli_strdup(text));
+                    TOKEN_SET(&val, string, cli_safer_strdup(text));
                     val.type = TOK_UNNORM_IDENTIFIER;
                 } else {
                     switch (current->fsm_state) {
@@ -1197,7 +1197,7 @@ void cli_js_process_buffer(struct parser_state *state, const char *buf, size_t n
         }
         if (val.vtype == vtype_undefined) {
             text = yyget_text(state->scanner);
-            TOKEN_SET(&val, string, cli_strdup(text));
+            TOKEN_SET(&val, string, cli_safer_strdup(text));
             abort();
         }
         add_token(state, &val);

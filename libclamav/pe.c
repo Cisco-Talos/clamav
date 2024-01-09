@@ -2211,7 +2211,7 @@ static char *pe_ordinal(const char *dll, uint16_t ord)
     if (name[0] == '\0')
         sprintf(name, "ord%u", ord);
 
-    return cli_strdup(name);
+    return cli_safer_strdup(name);
 }
 
 static int validate_impname(const char *name, uint32_t length, int dll)
@@ -3218,7 +3218,7 @@ int cli_scanpe(cli_ctx *ctx)
                 if (xsjs == 1280)
                     break;
 
-                if (!(jumps = (uint32_t *)cli_max_realloc2(jumps, (xsjs + 128) * sizeof(uint32_t)))) {
+                if (!(jumps = (uint32_t *)cli_max_realloc_or_free(jumps, (xsjs + 128) * sizeof(uint32_t)))) {
                     cli_exe_info_destroy(peinfo);
                     return CL_EMEM;
                 }
