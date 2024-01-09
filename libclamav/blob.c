@@ -154,7 +154,7 @@ void blobSetFilename(blob *b, const char *dir, const char *filename)
     if (b->name)
         free(b->name);
 
-    b->name = cli_strdup(filename);
+    b->name = cli_safer_strdup(filename);
 
     if (b->name)
         sanitiseName(b->name);
@@ -526,7 +526,7 @@ void fileblobPartialSet(fileblob *fb, const char *fullname, const char *arg)
             fb->b.len = fb->b.size = 0;
             fb->isNotEmpty         = 1;
         }
-    fb->fullname = cli_strdup(fullname);
+    fb->fullname = cli_safer_strdup(fullname);
 }
 
 void fileblobSetFilename(fileblob *fb, const char *dir, const char *filename)

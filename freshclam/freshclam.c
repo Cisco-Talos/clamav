@@ -480,7 +480,7 @@ static fc_error_t get_server_node(
      * Ensure that URL contains protocol.
      */
     if (!strncmp(server, "db.", 3) && strstr(server, ".clamav.net")) {
-        url = cli_strdup("https://database.clamav.net");
+        url = cli_safer_strdup("https://database.clamav.net");
         if (NULL == url) {
             logg(LOGG_ERROR, "get_server_node: Failed to duplicate string for database.clamav.net url.\n");
             status = FC_EMEM;
@@ -497,7 +497,7 @@ static fc_error_t get_server_node(
         snprintf(url, urlLen + 1, "%s://%s", defaultProtocol, server);
     } else {
         urlLen = strlen(server);
-        url    = cli_strdup(server);
+        url    = cli_safer_strdup(server);
         if (NULL == url) {
             logg(LOGG_ERROR, "get_server_node: Failed to duplicate string for server url.\n");
             status = FC_EMEM;
@@ -544,7 +544,7 @@ static fc_error_t string_list_add(const char *item, char ***stringList, uint32_t
 
     *stringList = newList;
 
-    newList[nItems - 1] = cli_strdup(item);
+    newList[nItems - 1] = cli_safer_strdup(item);
     if (newList[nItems - 1] == NULL) {
         mprintf(LOGG_ERROR, "string_list_add: Failed to allocate memory for optional database list item.\n");
         status = FC_EMEM;
@@ -1663,7 +1663,7 @@ int main(int argc, char **argv)
     /*
      * Parse the config file.
      */
-    cfgfile = cli_strdup(optget(opts, "config-file")->strarg);
+    cfgfile = cli_safer_strdup(optget(opts, "config-file")->strarg);
     if ((opts = optparse(cfgfile, 0, NULL, 1, OPT_FRESHCLAM, 0, opts)) == NULL) {
         fprintf(stderr, "ERROR: Can't open/parse the config file %s\n", cfgfile);
         status = FC_EINIT;

@@ -208,7 +208,7 @@ int16_t onas_ping_clamd(struct onas_context **ctx)
     opt = optget((*ctx)->opts, "ping");
 
     if (opt->enabled) {
-        attempt_str = cli_strdup(opt->strarg);
+        attempt_str = cli_safer_strdup(opt->strarg);
         if (attempt_str) {
             if (NULL == attempt_str) {
                 logg(LOGG_ERROR, "could not allocate memory for string\n");

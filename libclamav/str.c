@@ -974,7 +974,7 @@ char *cli_unescape(const char *str)
         R[i++] = c;
     }
     R[i++] = '\0';
-    R      = cli_max_realloc2(R, i);
+    R      = cli_max_realloc_or_free(R, i);
     return R;
 }
 

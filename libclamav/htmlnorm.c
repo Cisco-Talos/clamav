@@ -360,7 +360,7 @@ static void html_tag_arg_set(tag_arguments_t *tags, const char *tag, const char 
     for (i = 0; i < tags->count; i++) {
         if (strcmp((const char *)tags->tag[i], tag) == 0) {
             free(tags->value[i]);
-            tags->value[i] = (unsigned char *)cli_strdup(value);
+            tags->value[i] = (unsigned char *)cli_safer_strdup(value);
             return;
         }
     }
@@ -371,34 +371,34 @@ void html_tag_arg_add(tag_arguments_t *tags,
 {
     int len, i;
     tags->count++;
-    tags->tag = (unsigned char **)cli_max_realloc2(tags->tag,
+    tags->tag = (unsigned char **)cli_max_realloc_or_free(tags->tag,
                                                tags->count * sizeof(char *));
     if (!tags->tag) {
         goto done;
     }
-    tags->value = (unsigned char **)cli_max_realloc2(tags->value,
+    tags->value = (unsigned char **)cli_max_realloc_or_free(tags->value,
                                                  tags->count * sizeof(char *));
     if (!tags->value) {
         goto done;
     }
     if (tags->scanContents) {
-        tags->contents = (unsigned char **)cli_max_realloc2(tags->contents,
+        tags->contents = (unsigned char **)cli_max_realloc_or_free(tags->contents,
                                                         tags->count * sizeof(*tags->contents));
         if (!tags->contents) {
             goto done;
         }
         tags->contents[tags->count - 1] = NULL;
     }
-    tags->tag[tags->count - 1] = (unsigned char *)cli_strdup(tag);
+    tags->tag[tags->count - 1] = (unsigned char *)cli_safer_strdup(tag);
     if (value) {
         if (*value == '"') {
-            tags->value[tags->count - 1] = (unsigned char *)cli_strdup(value + 1);
+            tags->value[tags->count - 1] = (unsigned char *)cli_safer_strdup(value + 1);
             len                          = strlen((const char *)value + 1);
             if (len > 0) {
                 tags->value[tags->count - 1][len - 1] = '\0';
             }
         } else {
-            tags->value[tags->count - 1] = (unsigned char *)cli_strdup(value);
+            tags->value[tags->count - 1] = (unsigned char *)cli_safer_strdup(value);
         }
     } else {
         tags->value[tags->count - 1] = NULL;
@@ -1201,9 +1201,9 @@ static bool cli_html_normalise(cli_ctx *ctx, int fd, m_area_t *m_area, const cha
                             chunk_size = style_end - style_begin;
 
                             if (style_buff == NULL) {
-                                CLI_MAX_MALLOC(style_buff, chunk_size + 1);
+                                CLI_MAX_MALLOC_OR_GOTO_DONE(style_buff, chunk_size + 1);
                             } else {
-                                CLI_MAX_REALLOC(style_buff, style_buff_size + chunk_size + 1);
+                                CLI_MAX_REALLOC_OR_GOTO_DONE(style_buff, style_buff_size + chunk_size + 1);
                             }
 
                             memcpy(style_buff + style_buff_size, style_begin, chunk_size);
@@ -1312,7 +1312,7 @@ static bool cli_html_normalise(cli_ctx *ctx, int fd, m_area_t *m_area, const cha
                             if (arg_action_value) {
                                 if (in_form_action)
                                     free(in_form_action);
-                                in_form_action = (unsigned char *)cli_strdup(arg_action_value);
+                                in_form_action = (unsigned char *)cli_safer_strdup(arg_action_value);
                             }
                         } else if (strcmp(tag, "img") == 0) {
                             arg_value = html_tag_arg_value(&tag_args, "src");
@@ -1320,7 +1320,7 @@ static bool cli_html_normalise(cli_ctx *ctx, int fd, m_area_t *m_area, const cha
                                 html_tag_arg_add(hrefs, "src", arg_value);
                                 if (hrefs->scanContents && in_ahref)
                                     /* "contents" of an img tag, is the URL of its parent <a> tag */
-                                    hrefs->contents[hrefs->count - 1] = (unsigned char *)cli_strdup((const char *)hrefs->value[in_ahref - 1]);
+                                    hrefs->contents[hrefs->count - 1] = (unsigned char *)cli_safer_strdup((const char *)hrefs->value[in_ahref - 1]);
                                 if (in_form_action) {
                                     /* form action is the real URL, and href is the 'displayed' */
                                     html_tag_arg_add(hrefs, "form", arg_value);
@@ -1335,7 +1335,7 @@ static bool cli_html_normalise(cli_ctx *ctx, int fd, m_area_t *m_area, const cha
                                 html_tag_arg_add(hrefs, "dynsrc", arg_value);
                                 if (hrefs->scanContents && in_ahref)
                                     /* see above */
-                                    hrefs->contents[hrefs->count - 1] = (unsigned char *)cli_strdup((const char *)hrefs->value[in_ahref - 1]);
+                                    hrefs->contents[hrefs->count - 1] = (unsigned char *)cli_safer_strdup((const char *)hrefs->value[in_ahref - 1]);
                                 if (in_form_action) {
                                     /* form action is the real URL, and href is the 'displayed' */
                                     html_tag_arg_add(hrefs, "form", arg_value);
@@ -1351,7 +1351,7 @@ static bool cli_html_normalise(cli_ctx *ctx, int fd, m_area_t *m_area, const cha
                                 html_tag_arg_add(hrefs, "iframe", arg_value);
                                 if (hrefs->scanContents && in_ahref)
                                     /* see above */
-                                    hrefs->contents[hrefs->count - 1] = (unsigned char *)cli_strdup((const char *)hrefs->value[in_ahref - 1]);
+                                    hrefs->contents[hrefs->count - 1] = (unsigned char *)cli_safer_strdup((const char *)hrefs->value[in_ahref - 1]);
                                 if (in_form_action) {
                                     /* form action is the real URL, and href is the 'displayed' */
                                     html_tag_arg_add(hrefs, "form", arg_value);
@@ -1367,7 +1367,7 @@ static bool cli_html_normalise(cli_ctx *ctx, int fd, m_area_t *m_area, const cha
                                 html_tag_arg_add(hrefs, "area", arg_value);
                                 if (hrefs->scanContents && in_ahref)
                                     /* see above */
-                                    hrefs->contents[hrefs->count - 1] = (unsigned char *)cli_strdup((const char *)hrefs->value[in_ahref - 1]);
+                                    hrefs->contents[hrefs->count - 1] = (unsigned char *)cli_safer_strdup((const char *)hrefs->value[in_ahref - 1]);
                                 if (in_form_action) {
                                     /* form action is the real URL, and href is the 'displayed' */
                                     html_tag_arg_add(hrefs, "form", arg_value);
@@ -1837,9 +1837,9 @@ static bool cli_html_normalise(cli_ctx *ctx, int fd, m_area_t *m_area, const cha
             size_t chunk_size = ptr - style_begin;
 
             if (style_buff == NULL) {
-                CLI_MAX_MALLOC(style_buff, chunk_size + 1);
+                CLI_MAX_MALLOC_OR_GOTO_DONE(style_buff, chunk_size + 1);
             } else {
-                CLI_MAX_REALLOC(style_buff, style_buff_size + chunk_size + 1);
+                CLI_MAX_REALLOC_OR_GOTO_DONE(style_buff, style_buff_size + chunk_size + 1);
             }
 
             memcpy(style_buff + style_buff_size, style_begin, chunk_size);

@@ -196,7 +196,7 @@ int ole2_list_push(ole2_list_t *list, uint32_t val)
     ole2_list_node_t *new_node = NULL;
     int status                 = CL_EMEM;
 
-    MALLOC(new_node, sizeof(ole2_list_node_t),
+    CLI_MALLOC_OR_GOTO_DONE(new_node, sizeof(ole2_list_node_t),
            cli_dbgmsg("OLE2: could not allocate new node for worklist!\n"));
 
     new_node->Val  = val;
@@ -256,7 +256,7 @@ cli_ole2_get_property_name2(const char *name, int size)
     if ((name[0] == 0 && name[1] == 0) || size <= 0 || size > 128) {
         return NULL;
     }
-    CLI_MAX_MALLOC(newname, size * 7,
+    CLI_MAX_MALLOC_OR_GOTO_DONE(newname, size * 7,
                cli_errmsg("OLE2 [cli_ole2_get_property_name2]: Unable to allocate memory for newname: %u\n", size * 7));
 
     j = 0;
@@ -304,7 +304,7 @@ get_property_name(char *name, int size)
         return NULL;
     }
 
-    CLI_MAX_MALLOC(newname, size,
+    CLI_MAX_MALLOC_OR_GOTO_DONE(newname, size,
                cli_errmsg("OLE2 [get_property_name]: Unable to allocate memory for newname %u\n", size));
     cname = newname;
 
@@ -313,7 +313,7 @@ get_property_name(char *name, int size)
 
         oname += 2;
         if (u > 0x1040) {
-            FREE(newname);
+            CLI_FREE_AND_SET_NULL(newname);
             return cli_ole2_get_property_name2(name, size);
         }
         lo = u % 64;
@@ -888,7 +888,7 @@ static cl_error_t handler_writefile(ole2_header_t *hdr, property_t *prop, const 
     current_block = prop->start_block;
     len           = prop->size;
 
-    CLI_MAX_MALLOC(buff, 1 << hdr->log2_big_block_size,
+    CLI_MAX_MALLOC_OR_GOTO_DONE(buff, 1 << hdr->log2_big_block_size,
                cli_errmsg("OLE2 [handler_writefile]: Unable to allocate memory for buff: %u\n", 1 << hdr->log2_big_block_size);
                ret = CL_EMEM);
 
@@ -956,11 +956,11 @@ static cl_error_t handler_writefile(ole2_header_t *hdr, property_t *prop, const 
     ret = CL_SUCCESS;
 
 done:
-    FREE(name);
+    CLI_FREE_AND_SET_NULL(name);
     if (-1 != ofd) {
         close(ofd);
     }
-    FREE(buff);
+    CLI_FREE_AND_SET_NULL(buff);
     if (NULL != blk_bitset) {
         cli_bitset_free(blk_bitset);
     }
@@ -1157,7 +1157,7 @@ static cl_error_t scan_for_xlm_macros_and_images(ole2_header_t *hdr, property_t 
     current_block = prop->start_block;
     len           = prop->size;
 
-    CLI_MAX_MALLOC(buff, 1 << hdr->log2_big_block_size,
+    CLI_MAX_MALLOC_OR_GOTO_DONE(buff, 1 << hdr->log2_big_block_size,
                cli_errmsg("OLE2 [scan_for_xlm_macros_and_images]: Unable to allocate memory for buff: %u\n", 1 << hdr->log2_big_block_size);
                status = CL_EMEM);
 
@@ -1207,7 +1207,7 @@ static cl_error_t scan_for_xlm_macros_and_images(ole2_header_t *hdr, property_t 
     status = CL_SUCCESS;
 
 done:
-    FREE(buff);
+    CLI_FREE_AND_SET_NULL(buff);
 
     if (blk_bitset) {
         cli_bitset_free(blk_bitset);
@@ -1282,7 +1282,7 @@ static cl_error_t handler_enum(ole2_header_t *hdr, property_t *prop, const char 
         }
         if (name) {
             if (!strcmp(name, "fileheader")) {
-                CLI_MAX_CALLOC(hwp_check, 1, 1 << hdr->log2_big_block_size, status = CL_EMEM);
+                CLI_MAX_CALLOC_OR_GOTO_DONE(hwp_check, 1, 1 << hdr->log2_big_block_size, status = CL_EMEM);
 
                 /* reading safety checks; do-while used for breaks */
                 do {
@@ -1316,7 +1316,7 @@ static cl_error_t handler_enum(ole2_header_t *hdr, property_t *prop, const char 
 #if HAVE_JSON
                         cli_jsonstr(ctx->wrkproperty, "FileType", "CL_TYPE_HWP5");
 #endif
-                        CALLOC(hwp_new, 1, sizeof(hwp5_header_t), status = CL_EMEM);
+                        CLI_CALLOC_OR_GOTO_DONE(hwp_new, 1, sizeof(hwp5_header_t), status = CL_EMEM);
 
                         /*
                          * Copy the header information into our header struct.
@@ -1349,8 +1349,8 @@ static cl_error_t handler_enum(ole2_header_t *hdr, property_t *prop, const char 
     status = CL_SUCCESS;
 
 done:
-    FREE(name);
-    FREE(hwp_check);
+    CLI_FREE_AND_SET_NULL(name);
+    CLI_FREE_AND_SET_NULL(hwp_check);
 
     return status;
 }
@@ -1567,7 +1567,7 @@ static cl_error_t handler_otf(ole2_header_t *hdr, property_t *prop, const char *
         cli_dbgmsg("OLE2 [handler_otf]: Dumping '%s' to '%s'\n", name, tempfile);
     }
 
-    CLI_MAX_MALLOC(buff, 1 << hdr->log2_big_block_size, ret = CL_EMEM);
+    CLI_MAX_MALLOC_OR_GOTO_DONE(buff, 1 << hdr->log2_big_block_size, ret = CL_EMEM);
 
     blk_bitset = cli_bitset_init();
     if (!blk_bitset) {
@@ -1677,11 +1677,11 @@ static cl_error_t handler_otf(ole2_header_t *hdr, property_t *prop, const char *
     ret = ret == CL_VIRUS ? CL_VIRUS : CL_SUCCESS;
 
 done:
-    FREE(name);
+    CLI_FREE_AND_SET_NULL(name);
     if (-1 != ofd) {
         close(ofd);
     }
-    FREE(buff);
+    CLI_FREE_AND_SET_NULL(buff);
     if (NULL != blk_bitset) {
         cli_bitset_free(blk_bitset);
     }
@@ -1746,7 +1746,7 @@ static cl_error_t handler_otf_encrypted(ole2_header_t *hdr, property_t *prop, co
         goto done;
     }
 
-    CLI_MAX_MALLOC(rk, RKLENGTH(key->key_length_bits) * sizeof(uint64_t), ret = CL_EMEM);
+    CLI_MAX_MALLOC_OR_GOTO_DONE(rk, RKLENGTH(key->key_length_bits) * sizeof(uint64_t), ret = CL_EMEM);
 
     print_ole2_property(prop);
 
@@ -1774,8 +1774,8 @@ static cl_error_t handler_otf_encrypted(ole2_header_t *hdr, property_t *prop, co
     }
 
     uint32_t blockSize = 1 << hdr->log2_big_block_size;
-    CLI_MAX_MALLOC(buff, blockSize + sizeof(uint64_t), ret = CL_EMEM);
-    CLI_MAX_MALLOC(decryptDst, blockSize, ret = CL_EMEM);
+    CLI_MAX_MALLOC_OR_GOTO_DONE(buff, blockSize + sizeof(uint64_t), ret = CL_EMEM);
+    CLI_MAX_MALLOC_OR_GOTO_DONE(decryptDst, blockSize, ret = CL_EMEM);
 
     blk_bitset = cli_bitset_init();
     if (!blk_bitset) {
@@ -1921,11 +1921,11 @@ static cl_error_t handler_otf_encrypted(ole2_header_t *hdr, property_t *prop, co
     ret = ret == CL_VIRUS ? CL_VIRUS : CL_SUCCESS;
 
 done:
-    FREE(name);
+    CLI_FREE_AND_SET_NULL(name);
     if (-1 != ofd) {
         close(ofd);
     }
-    FREE(buff);
+    CLI_FREE_AND_SET_NULL(buff);
     if (NULL != blk_bitset) {
         cli_bitset_free(blk_bitset);
     }
@@ -1938,8 +1938,8 @@ done:
         free(tempfile);
         tempfile = NULL;
     }
-    FREE(decryptDst);
-    FREE(rk);
+    CLI_FREE_AND_SET_NULL(decryptDst);
+    CLI_FREE_AND_SET_NULL(rk);
 
     return ret;
 }
@@ -2136,7 +2136,7 @@ static cl_error_t generate_key_aes(const char *const password, encryption_key_t 
     memcpy(key->key, doubleSha, tmp);
     ret = CL_SUCCESS;
 done:
-    FREE(buffer);
+    CLI_FREE_AND_SET_NULL(buffer);
 
     return ret;
 }

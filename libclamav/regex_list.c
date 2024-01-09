@@ -224,7 +224,7 @@ cl_error_t regex_list_match(struct regex_matcher *matcher, char *real_url, const
     if (CL_SUCCESS != (rc = cli_ac_initdata(&mdata, 0, 0, 0, CLI_DEFAULT_AC_TRACKLEN)))
         return rc;
 
-    bufrev = cli_strdup(buffer);
+    bufrev = cli_safer_strdup(buffer);
     if (!bufrev)
         return CL_EMEM;
 
@@ -774,14 +774,14 @@ static cl_error_t add_pattern_suffix(void *cbdata, const char *suffix, size_t su
         goto done;
     }
 
-    MALLOC(regex, sizeof(*regex),
+    CLI_MALLOC_OR_GOTO_DONE(regex, sizeof(*regex),
            cli_errmsg("add_pattern_suffix: Unable to allocate memory for regex\n");
            ret = CL_EMEM);
 
     if (NULL == iregex->pattern) {
         regex->pattern = NULL;
     } else {
-        CLI_STRDUP(iregex->pattern, regex->pattern,
+        CLI_SAFER_STRDUP_OR_GOTO_DONE(iregex->pattern, regex->pattern,
                    cli_errmsg("add_pattern_suffix: unable to strdup iregex->pattern");
                    ret = CL_EMEM);
     }
@@ -802,7 +802,7 @@ static cl_error_t add_pattern_suffix(void *cbdata, const char *suffix, size_t su
         /* new suffix */
         size_t n = matcher->suffix_cnt;
         el       = cli_hashtab_insert(&matcher->suffix_hash, suffix, suffix_len, (cli_element_data)n);
-        CLI_MAX_REALLOC(matcher->suffix_regexes,
+        CLI_MAX_REALLOC_OR_GOTO_DONE(matcher->suffix_regexes,
                         (n + 1) * sizeof(*matcher->suffix_regexes),
                         cli_errmsg("add_pattern_suffix: Unable to reallocate memory for matcher->suffix_regexes\n");
                         ret = CL_EMEM);
@@ -817,7 +817,7 @@ static cl_error_t add_pattern_suffix(void *cbdata, const char *suffix, size_t su
         if (CL_SUCCESS != ret) {
             cli_hashtab_delete(&matcher->suffix_hash, suffix, suffix_len);
             /*shrink the size back to what it was.*/
-            CLI_MAX_REALLOC(matcher->suffix_regexes, n * sizeof(*matcher->suffix_regexes));
+            CLI_MAX_REALLOC_OR_GOTO_DONE(matcher->suffix_regexes, n * sizeof(*matcher->suffix_regexes));
         } else {
             matcher->suffix_cnt++;
         }
@@ -825,8 +825,8 @@ static cl_error_t add_pattern_suffix(void *cbdata, const char *suffix, size_t su
 
 done:
     if (CL_SUCCESS != ret) {
-        FREE(regex->pattern);
-        FREE(regex);
+        CLI_FREE_AND_SET_NULL(regex->pattern);
+        CLI_FREE_AND_SET_NULL(regex);
     }
 
     return ret;
@@ -869,13 +869,13 @@ static cl_error_t add_static_pattern(struct regex_matcher *matcher, char *patter
 
     len       = reverse_string(pattern);
     regex.nxt = NULL;
-    CLI_STRDUP(pattern, regex.pattern,
+    CLI_SAFER_STRDUP_OR_GOTO_DONE(pattern, regex.pattern,
                cli_errmsg("add_static_pattern: Cannot allocate memory for regex.pattern\n");
                rc = CL_EMEM);
     regex.preg = NULL;
     rc         = add_pattern_suffix(matcher, pattern, len, &regex);
 done:
-    FREE(regex.pattern);
+    CLI_FREE_AND_SET_NULL(regex.pattern);
     return rc;
 }
 

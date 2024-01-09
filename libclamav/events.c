@@ -294,7 +294,7 @@ void cli_event_data(cli_events_t *ctx, unsigned id, const void *data, uint32_t l
     }
     switch (ev->multiple) {
         case multiple_last: {
-            void *v_data = cli_safer_realloc2(ev->u.v_data, len);
+            void *v_data = cli_safer_realloc_or_free(ev->u.v_data, len);
             if (v_data) {
                 ev->u.v_data = v_data;
                 memcpy(v_data, data, len);
@@ -305,7 +305,7 @@ void cli_event_data(cli_events_t *ctx, unsigned id, const void *data, uint32_t l
             break;
         }
         case multiple_concat: {
-            void *v_data = cli_safer_realloc2(ev->u.v_data, ev->count + len);
+            void *v_data = cli_safer_realloc_or_free(ev->u.v_data, ev->count + len);
             if (v_data) {
                 ev->u.v_data = v_data;
                 memcpy((char *)v_data + ev->count, data, len);

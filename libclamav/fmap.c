@@ -135,7 +135,7 @@ fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty, const cha
     m->mtime = (uint64_t)st.st_mtime;
 
     if (NULL != name) {
-        m->name = cli_strdup(name);
+        m->name = cli_safer_strdup(name);
         if (NULL == m->name) {
             funmap(m);
             return NULL;
@@ -220,7 +220,7 @@ fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty, const cha
     m->unmap               = unmap_win32;
 
     if (NULL != name) {
-        m->name = cli_strdup(name);
+        m->name = cli_safer_strdup(name);
         if (NULL == m->name) {
             funmap(m);
             return NULL;
@@ -293,7 +293,7 @@ fmap_t *fmap_duplicate(cl_fmap_t *map, size_t offset, size_t length, const char 
     }
 
     if (NULL != name) {
-        duplicate_map->name = cli_strdup(name);
+        duplicate_map->name = cli_safer_strdup(name);
         if (NULL == duplicate_map->name) {
             status = CL_EMEM;
             goto done;
@@ -862,7 +862,7 @@ fmap_t *fmap_open_memory(const void *start, size_t len, const char *name)
 
     if (NULL != name) {
         /* Copy the name, if one is given */
-        m->name = cli_strdup(name);
+        m->name = cli_safer_strdup(name);
         if (NULL == m->name) {
             cli_warnmsg("fmap: failed to duplicate map name\n");
             goto done;

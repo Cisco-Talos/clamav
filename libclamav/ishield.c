@@ -246,7 +246,7 @@ cl_error_t cli_scanishield_msi(cli_ctx *ctx, off_t off)
             return CL_SUCCESS;
         }
 
-        filename = cli_strdup((const char *)key);
+        filename = cli_safer_strdup((const char *)key);
 
         /* FIXMEISHIELD: cleanup the spam below */
         cli_dbgmsg("ishield-msi: File %s (csize: %llx, unk1:%x unk2:%x unk3:%x unk4:%x unk5:%x unk6:%x unk7:%x unk8:%x unk9:%x unk10:%x unk11:%x)\n", key, (long long)csize, fb.unk1, fb.unk2, fb.unk3, fb.unk4, fb.unk5, fb.unk6, fb.unk7, fb.unk8, fb.unk9, fb.unk10, fb.unk11);
@@ -432,7 +432,7 @@ cl_error_t cli_scanishield(cli_ctx *ctx, off_t off, size_t sz)
                 }
                 if (i == c.cabcnt) {
                     c.cabcnt++;
-                    if (!(c.cabs = cli_max_realloc2(c.cabs, sizeof(struct CABARRAY) * c.cabcnt))) {
+                    if (!(c.cabs = cli_max_realloc_or_free(c.cabs, sizeof(struct CABARRAY) * c.cabcnt))) {
                         ret = CL_EMEM;
                         break;
                     }

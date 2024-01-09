@@ -480,7 +480,7 @@ int pdf_findobj_in_objstm(struct pdf_struct *pdf, struct objstm_struct *objstm, 
 
     /* Success! Add the object to the list of all objects found. */
     pdf->nobjs++;
-    CLI_MAX_REALLOC(pdf->objs, sizeof(struct pdf_obj *) * pdf->nobjs,
+    CLI_MAX_REALLOC_OR_GOTO_DONE(pdf->objs, sizeof(struct pdf_obj *) * pdf->nobjs,
                     cli_warnmsg("pdf_findobj_in_objstm: out of memory finding objects in stream\n"),
                     status = CL_EMEM);
     pdf->objs[pdf->nobjs - 1] = obj;
@@ -545,7 +545,7 @@ cl_error_t pdf_findobj(struct pdf_struct *pdf)
         goto done;
     }
     pdf->nobjs++;
-    CLI_MAX_REALLOC(pdf->objs, sizeof(struct pdf_obj *) * pdf->nobjs, status = CL_EMEM);
+    CLI_MAX_REALLOC_OR_GOTO_DONE(pdf->objs, sizeof(struct pdf_obj *) * pdf->nobjs, status = CL_EMEM);
 
     obj = malloc(sizeof(struct pdf_obj));
     if (!obj) {
@@ -1627,7 +1627,7 @@ cl_error_t pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t
             } else {
                 /* Add objstm to pdf struct, so it can be freed eventually */
                 pdf->nobjstms++;
-                pdf->objstms = cli_max_realloc2(pdf->objstms, sizeof(struct objstm_struct *) * pdf->nobjstms);
+                pdf->objstms = cli_max_realloc_or_free(pdf->objstms, sizeof(struct objstm_struct *) * pdf->nobjstms);
                 if (!pdf->objstms) {
                     cli_warnmsg("pdf_extract_obj: out of memory parsing object stream (%u)\n", pdf->nobjstms);
                     pdf_free_dict(dparams);
@@ -1692,7 +1692,7 @@ cl_error_t pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t
                             free(pdf->objstms);
                             pdf->objstms = NULL;
                         } else {
-                            pdf->objstms = cli_max_realloc2(pdf->objstms, sizeof(struct objstm_struct *) * pdf->nobjstms);
+                            pdf->objstms = cli_max_realloc_or_free(pdf->objstms, sizeof(struct objstm_struct *) * pdf->nobjstms);
 
                             if (!pdf->objstms) {
                                 cli_warnmsg("pdf_extract_obj: out of memory when shrinking down objstm array\n");

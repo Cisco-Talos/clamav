@@ -4014,7 +4014,7 @@ static cl_error_t dispatch_file_inspection_callback(clcb_file_inspection cb, cli
     fmap = ctx->recursion_stack[fmap_index].fmap;
     fd   = fmap_fd(fmap);
 
-    CLI_MAX_CALLOC(ancestors, ctx->recursion_level + 1, sizeof(char *), status = CL_EMEM);
+    CLI_MAX_CALLOC_OR_GOTO_DONE(ancestors, ctx->recursion_level + 1, sizeof(char *), status = CL_EMEM);
 
     file_name   = fmap->name;
     file_buffer = fmap_need_off_once_len(fmap, 0, fmap->len, &file_size);
@@ -4056,7 +4056,7 @@ static cl_error_t dispatch_file_inspection_callback(clcb_file_inspection cb, cli
 
 done:
 
-    FREE(ancestors);
+    CLI_FREE_AND_SET_NULL(ancestors);
     return status;
 }
 
@@ -5406,7 +5406,7 @@ static cl_error_t scan_common(cl_fmap_t *map, const char *filepath, const char *
 
     ctx.engine  = engine;
     ctx.scanned = scanned;
-    MALLOC(ctx.options, sizeof(struct cl_scan_options), status = CL_EMEM);
+    CLI_MALLOC_OR_GOTO_DONE(ctx.options, sizeof(struct cl_scan_options), status = CL_EMEM);
 
     memcpy(ctx.options, scanoptions, sizeof(struct cl_scan_options));
 

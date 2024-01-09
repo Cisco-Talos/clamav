@@ -415,7 +415,7 @@ static cl_error_t crtmgr_get_recov_data(BIGNUM *sig, cli_crt *x509,
     if (!x)
         goto done;
 
-    MALLOC(d, keylen);
+    CLI_MALLOC_OR_GOTO_DONE(d, keylen);
 
     if (!BN_mod_exp(x, sig, x509->e, x509->n, bnctx)) {
         cli_warnmsg("crtmgr_rsa_verify: verification failed: BN_mod_exp failed.\n");

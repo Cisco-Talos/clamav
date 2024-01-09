@@ -317,7 +317,7 @@ cl_error_t cli_bcomp_addpatt(struct cli_matcher *root, const char *virname, cons
     bcomp->byte_len = byte_length;
 
     /* we can have up to two comparison eval statements, each separated by a comma, let's parse them in a separate string */
-    comp_buf = cli_strdup(tokens[2]);
+    comp_buf = cli_safer_strdup(tokens[2]);
     if (!comp_buf) {
         cli_errmsg("cli_bcomp_addpatt: Unable to allocate memory for comparison buffer\n");
         cli_bcomp_freemeta(root, bcomp);

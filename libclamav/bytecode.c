@@ -507,7 +507,7 @@ static inline operand_t readOperand(struct cli_bc_func *func, unsigned char *p,
         uint16_t ty;
         p[*off] |= 0x20;
         /* TODO: unique constants */
-        func->constants = cli_safer_realloc2(func->constants, (func->numConstants + 1) * sizeof(*func->constants));
+        func->constants = cli_safer_realloc_or_free(func->constants, (func->numConstants + 1) * sizeof(*func->constants));
         if (!func->constants) {
             *ok = false;
             return MAX_OP;
@@ -698,13 +698,13 @@ static cl_error_t parseLSig(struct cli_bc *bc, char *buffer)
     // char *vnames;
     char *vend = strchr(buffer, ';');
     if (vend) {
-        bc->lsig = cli_strdup(buffer);
+        bc->lsig = cli_safer_strdup(buffer);
         *vend++  = '\0';
         // prefix   = buffer;
         // vnames   = strchr(vend, '{');
     } else {
         /* Not a logical signature, but we still have a virusname */
-        bc->hook_name = cli_strdup(buffer);
+        bc->hook_name = cli_safer_strdup(buffer);
         bc->lsig      = NULL;
     }
 
@@ -2407,7 +2407,7 @@ static cl_error_t add_selfcheck(struct cli_all_bc *bcs)
     struct cli_bc_inst *inst;
     struct cli_bc *bc;
 
-    bcs->all_bcs = cli_safer_realloc2(bcs->all_bcs, sizeof(*bcs->all_bcs) * (bcs->count + 1));
+    bcs->all_bcs = cli_safer_realloc_or_free(bcs->all_bcs, sizeof(*bcs->all_bcs) * (bcs->count + 1));
     if (!bcs->all_bcs) {
         cli_errmsg("cli_loadcbc: Can't allocate memory for bytecode entry\n");
         return CL_EMEM;

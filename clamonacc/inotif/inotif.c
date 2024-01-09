@@ -821,7 +821,7 @@ static void onas_ddd_handle_extra_scanning(struct onas_context *ctx, const char 
 
     /* general mapping */
     onas_map_context_info_to_event_data(ctx, &event_data);
-    event_data->pathname = cli_strdup(pathname);
+    event_data->pathname = cli_safer_strdup(pathname);
     event_data->bool_opts |= ONAS_SCTH_B_SCAN;
 
     /* inotify specific stuffs */

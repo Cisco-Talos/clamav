@@ -428,7 +428,7 @@ static cl_error_t real_scansis(cli_ctx *ctx, const char *tmpd)
                 }
                 if ((install_filepath = getsistring(map, pdname, sdname))) {
                     cli_dbgmsg("\tInstalled to: %s\n", install_filepath);
-                    FREE(install_filepath);
+                    CLI_FREE_AND_SET_NULL(install_filepath);
                 }
 
                 if (!(ptrs = cli_max_malloc(fcount * sizeof(uint32_t) * 3))) {
@@ -492,7 +492,7 @@ static cl_error_t real_scansis(cli_ctx *ctx, const char *tmpd)
                             }
                             if (uncompress(decomp, &olen, comp, lens[j]) != Z_OK) {
                                 cli_dbgmsg("\tUnpacking failure\n");
-                                FREE(decomp);
+                                CLI_FREE_AND_SET_NULL(decomp);
                                 continue;
                             }
                             decompp = decomp;
@@ -515,7 +515,7 @@ static cl_error_t real_scansis(cli_ctx *ctx, const char *tmpd)
                             goto done;
                         }
 
-                        FREE(decomp);
+                        CLI_FREE_AND_SET_NULL(decomp);
 
                         status = cli_magic_scan_desc(fd, ofn, ctx, original_filepath, LAYER_ATTRIBUTES_NONE);
                         if (CL_SUCCESS != status) {
@@ -529,8 +529,8 @@ static cl_error_t real_scansis(cli_ctx *ctx, const char *tmpd)
                     }
                 }
 
-                FREE(original_filepath);
-                FREE(ptrs);
+                CLI_FREE_AND_SET_NULL(original_filepath);
+                CLI_FREE_AND_SET_NULL(ptrs);
 
                 fcount = 2 * sizeof(uint32_t);
                 break;
@@ -569,10 +569,10 @@ done:
     if (-1 != fd) {
         close(fd);
     }
-    FREE(original_filepath);
-    FREE(decomp);
-    FREE(ptrs);
-    FREE(alangs);
+    CLI_FREE_AND_SET_NULL(original_filepath);
+    CLI_FREE_AND_SET_NULL(decomp);
+    CLI_FREE_AND_SET_NULL(ptrs);
+    CLI_FREE_AND_SET_NULL(alangs);
 
     return status;
 }

@@ -175,13 +175,13 @@ static void destroy_tree(struct node *n)
             break;
         case leaf_class:
             if (n->u.leaf_class_bitmap != dot_bitmap)
-                FREE(n->u.leaf_class_bitmap);
+                CLI_FREE_AND_SET_NULL(n->u.leaf_class_bitmap);
             break;
         case root:
         case leaf:
             break;
     }
-    FREE(n);
+    CLI_FREE_AND_SET_NULL(n);
 }
 
 static uint8_t *parse_char_class(const uint8_t *pat, size_t patSize, size_t *pos)
@@ -193,7 +193,7 @@ static uint8_t *parse_char_class(const uint8_t *pat, size_t patSize, size_t *pos
         do {                                                           \
             if (((*posPtr) + incVal) >= posMax) {                      \
                 cli_warnmsg("parse_char_class: Invalid char class\n"); \
-                FREE(bitmap);                                          \
+                CLI_FREE_AND_SET_NULL(bitmap);                                          \
                 goto done;                                             \
             }                                                          \
             (*posPtr)++;                                               \
@@ -207,7 +207,7 @@ static uint8_t *parse_char_class(const uint8_t *pat, size_t patSize, size_t *pos
     int hasprev               = 0;
     uint8_t *bitmap           = NULL;
 
-    MALLOC(bitmap, 32,
+    CLI_MALLOC_OR_GOTO_DONE(bitmap, 32,
            cli_errmsg("parse_char_class: Unable to allocate memory for bitmap\n"));
 
     if (pat[*pos] == '^') {
@@ -222,7 +222,7 @@ static uint8_t *parse_char_class(const uint8_t *pat, size_t patSize, size_t *pos
             unsigned char range_end;
             unsigned int c;
             if (0 == range_start) {
-                FREE(bitmap);
+                CLI_FREE_AND_SET_NULL(bitmap);
                 cli_errmsg("parse_char_class: range_start not initialized\n");
                 goto done;
             }
@@ -230,7 +230,7 @@ static uint8_t *parse_char_class(const uint8_t *pat, size_t patSize, size_t *pos
             if (pat[*pos] == '[')
                 if (pat[*pos + 1] == '.') {
                     /* collating sequence not handled */
-                    FREE(bitmap);
+                    CLI_FREE_AND_SET_NULL(bitmap);
                     /* we are parsing the regex for a
                      * filter, be conservative and
                      * tell the filter that anything could
@@ -248,7 +248,7 @@ static uint8_t *parse_char_class(const uint8_t *pat, size_t patSize, size_t *pos
             hasprev = 0;
         } else if (pat[*pos] == '[' && pat[*pos] == ':') {
             /* char class */
-            FREE(bitmap);
+            CLI_FREE_AND_SET_NULL(bitmap);
             while (pat[*pos] != ']') INC_POS(pos, patSize);
             INC_POS(pos, patSize);
             while (pat[*pos] != ']') INC_POS(pos, patSize);
@@ -501,7 +501,7 @@ cl_error_t cli_regex2suffix(const char *pattern, regex_t *preg, suffix_callback 
         return rc;
     }
     regex.nxt = NULL;
-    CLI_STRDUP(pattern, regex.pattern,
+    CLI_SAFER_STRDUP_OR_GOTO_DONE(pattern, regex.pattern,
                cli_errmsg("cli_regex2suffix: unable to strdup regex.pattern\n");
                rc = REG_ESPACE);
 
@@ -517,8 +517,8 @@ cl_error_t cli_regex2suffix(const char *pattern, regex_t *preg, suffix_callback 
     rc = build_suffixtree_descend(n, &buf, cb, cbdata, &regex);
 
 done:
-    FREE(regex.pattern);
-    FREE(buf.data);
+    CLI_FREE_AND_SET_NULL(regex.pattern);
+    CLI_FREE_AND_SET_NULL(buf.data);
     destroy_tree(n);
     return rc;
 }
