@@ -372,18 +372,18 @@ void html_tag_arg_add(tag_arguments_t *tags,
     int len, i;
     tags->count++;
     tags->tag = (unsigned char **)cli_max_realloc_or_free(tags->tag,
-                                               tags->count * sizeof(char *));
+                                                          tags->count * sizeof(char *));
     if (!tags->tag) {
         goto done;
     }
     tags->value = (unsigned char **)cli_max_realloc_or_free(tags->value,
-                                                 tags->count * sizeof(char *));
+                                                            tags->count * sizeof(char *));
     if (!tags->value) {
         goto done;
     }
     if (tags->scanContents) {
         tags->contents = (unsigned char **)cli_max_realloc_or_free(tags->contents,
-                                                        tags->count * sizeof(*tags->contents));
+                                                                   tags->count * sizeof(*tags->contents));
         if (!tags->contents) {
             goto done;
         }

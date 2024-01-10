@@ -197,7 +197,7 @@ int ole2_list_push(ole2_list_t *list, uint32_t val)
     int status                 = CL_EMEM;
 
     CLI_MALLOC_OR_GOTO_DONE(new_node, sizeof(ole2_list_node_t),
-           cli_dbgmsg("OLE2: could not allocate new node for worklist!\n"));
+                            cli_dbgmsg("OLE2: could not allocate new node for worklist!\n"));
 
     new_node->Val  = val;
     new_node->Next = list->Head;
@@ -257,7 +257,7 @@ cli_ole2_get_property_name2(const char *name, int size)
         return NULL;
     }
     CLI_MAX_MALLOC_OR_GOTO_DONE(newname, size * 7,
-               cli_errmsg("OLE2 [cli_ole2_get_property_name2]: Unable to allocate memory for newname: %u\n", size * 7));
+                                cli_errmsg("OLE2 [cli_ole2_get_property_name2]: Unable to allocate memory for newname: %u\n", size * 7));
 
     j = 0;
     /* size-2 to ignore trailing NULL */
@@ -305,7 +305,7 @@ get_property_name(char *name, int size)
     }
 
     CLI_MAX_MALLOC_OR_GOTO_DONE(newname, size,
-               cli_errmsg("OLE2 [get_property_name]: Unable to allocate memory for newname %u\n", size));
+                                cli_errmsg("OLE2 [get_property_name]: Unable to allocate memory for newname %u\n", size));
     cname = newname;
 
     while (--csize) {
@@ -889,8 +889,8 @@ static cl_error_t handler_writefile(ole2_header_t *hdr, property_t *prop, const 
     len           = prop->size;
 
     CLI_MAX_MALLOC_OR_GOTO_DONE(buff, 1 << hdr->log2_big_block_size,
-               cli_errmsg("OLE2 [handler_writefile]: Unable to allocate memory for buff: %u\n", 1 << hdr->log2_big_block_size);
-               ret = CL_EMEM);
+                                cli_errmsg("OLE2 [handler_writefile]: Unable to allocate memory for buff: %u\n", 1 << hdr->log2_big_block_size);
+                                ret = CL_EMEM);
 
     blk_bitset = cli_bitset_init();
     if (!blk_bitset) {
@@ -1158,8 +1158,8 @@ static cl_error_t scan_for_xlm_macros_and_images(ole2_header_t *hdr, property_t 
     len           = prop->size;
 
     CLI_MAX_MALLOC_OR_GOTO_DONE(buff, 1 << hdr->log2_big_block_size,
-               cli_errmsg("OLE2 [scan_for_xlm_macros_and_images]: Unable to allocate memory for buff: %u\n", 1 << hdr->log2_big_block_size);
-               status = CL_EMEM);
+                                cli_errmsg("OLE2 [scan_for_xlm_macros_and_images]: Unable to allocate memory for buff: %u\n", 1 << hdr->log2_big_block_size);
+                                status = CL_EMEM);
 
     blk_bitset = cli_bitset_init();
     if (!blk_bitset) {

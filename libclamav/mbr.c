@@ -38,8 +38,8 @@
 #include "scanners.h"
 #include "dconf.h"
 
-//#define DEBUG_MBR_PARSE
-//#define DEBUG_EBR_PARSE
+// #define DEBUG_MBR_PARSE
+// #define DEBUG_EBR_PARSE
 
 #ifdef DEBUG_MBR_PARSE
 #define mbr_parsemsg(...) cli_dbgmsg(__VA_ARGS__)

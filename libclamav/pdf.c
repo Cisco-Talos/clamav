@@ -481,8 +481,8 @@ int pdf_findobj_in_objstm(struct pdf_struct *pdf, struct objstm_struct *objstm, 
     /* Success! Add the object to the list of all objects found. */
     pdf->nobjs++;
     CLI_MAX_REALLOC_OR_GOTO_DONE(pdf->objs, sizeof(struct pdf_obj *) * pdf->nobjs,
-                    cli_warnmsg("pdf_findobj_in_objstm: out of memory finding objects in stream\n"),
-                    status = CL_EMEM);
+                                 cli_warnmsg("pdf_findobj_in_objstm: out of memory finding objects in stream\n"),
+                                 status = CL_EMEM);
     pdf->objs[pdf->nobjs - 1] = obj;
 
     *obj_found = obj;
@@ -3032,7 +3032,8 @@ static void check_user_password(struct pdf_struct *pdf, int R, const char *O,
         case 3:
         case 4: {
             unsigned char *d;
-            size_t sz = 68 + pdf->fileIDlen + (R >= 4 && !EM ? 4 : 0);            d         = calloc(1, sz);
+            size_t sz = 68 + pdf->fileIDlen + (R >= 4 && !EM ? 4 : 0);
+            d         = calloc(1, sz);
 
             if (!(d))
                 goto done;

@@ -268,7 +268,7 @@ static char *pdf_decrypt_string(struct pdf_struct *pdf, struct pdf_obj *obj, con
             bin_length = *length / 2;
 
             // Convert the hex string to binary
-            CLI_MAX_CALLOC(decoded_bin, 1, bin_length);
+            CLI_MAX_CALLOC_OR_GOTO_DONE(decoded_bin, 1, bin_length);
 
             hex2str_ret = cli_hex2str_to(hex, decoded_bin, *length);
             if (hex2str_ret != 0) {

@@ -193,7 +193,7 @@ static uint8_t *parse_char_class(const uint8_t *pat, size_t patSize, size_t *pos
         do {                                                           \
             if (((*posPtr) + incVal) >= posMax) {                      \
                 cli_warnmsg("parse_char_class: Invalid char class\n"); \
-                CLI_FREE_AND_SET_NULL(bitmap);                                          \
+                CLI_FREE_AND_SET_NULL(bitmap);                         \
                 goto done;                                             \
             }                                                          \
             (*posPtr)++;                                               \
@@ -208,7 +208,7 @@ static uint8_t *parse_char_class(const uint8_t *pat, size_t patSize, size_t *pos
     uint8_t *bitmap           = NULL;
 
     CLI_MALLOC_OR_GOTO_DONE(bitmap, 32,
-           cli_errmsg("parse_char_class: Unable to allocate memory for bitmap\n"));
+                            cli_errmsg("parse_char_class: Unable to allocate memory for bitmap\n"));
 
     if (pat[*pos] == '^') {
         memset(bitmap, 0xFF, 32); /*match chars not in brackets*/
@@ -502,8 +502,8 @@ cl_error_t cli_regex2suffix(const char *pattern, regex_t *preg, suffix_callback 
     }
     regex.nxt = NULL;
     CLI_SAFER_STRDUP_OR_GOTO_DONE(pattern, regex.pattern,
-               cli_errmsg("cli_regex2suffix: unable to strdup regex.pattern\n");
-               rc = REG_ESPACE);
+                                  cli_errmsg("cli_regex2suffix: unable to strdup regex.pattern\n");
+                                  rc = REG_ESPACE);
 
     n = parse_regex((const uint8_t *)pattern, strlen(pattern), &last);
     if (!n) {

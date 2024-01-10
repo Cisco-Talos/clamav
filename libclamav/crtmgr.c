@@ -398,7 +398,7 @@ static cl_error_t crtmgr_get_recov_data(BIGNUM *sig, cli_crt *x509,
     int pad_size;
     int keylen;
     uint8_t *d = NULL;
-    BIGNUM *x = NULL;
+    BIGNUM *x  = NULL;
     cl_error_t ret;
 
     *buffer      = NULL;
