@@ -182,12 +182,18 @@ TCPAddr localhost
 # Default: yes
 #ConcurrentDatabaseReload no
 
-# Execute a command when virus is found. In the command string %v will
-# be replaced with the virus name and %f will be replaced with the file name.
-# Additionally, two environment variables will be defined: $CLAM_VIRUSEVENT_FILENAME
-# and $CLAM_VIRUSEVENT_VIRUSNAME.
+# Execute a command when virus is found.
+# Use the following environment variables to identify the file and virus names:
+# - $CLAM_VIRUSEVENT_FILENAME
+# - $CLAM_VIRUSEVENT_VIRUSNAME
+# In the command string, '%v' will also be replaced with the virus name.
+# Note: The '%f' filename format character has been disabled and will no longer
+# be replaced with the file name, due to command injection security concerns.
+# Use the 'CLAM_VIRUSEVENT_FILENAME' environment variable instead.
+# For the same reason, you should NOT use the environment variables in the
+# command directly, but should use it carefully from your executed script.
 # Default: no
-#VirusEvent "C:\example\SendEmail.ps1" email@addresscom "VIRUS ALERT: %v in %f"
+#VirusEvent "C:\example\SendVirusAlertEmail.ps1"
 
 # Run as another user (clamd must be started by root for this option to work)
 # Default: don't drop privileges
