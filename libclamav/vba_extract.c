@@ -470,7 +470,7 @@ cl_error_t cli_vba_readdir_new(cli_ctx *ctx, const char *dir, struct uniq *U, co
             ret = CL_EREAD;
             goto done;
         }
-        memcpy(&val16, &data[data_offset], sizeof (uint16_t));
+        memcpy(&val16, &data[data_offset], sizeof(uint16_t));
         id = le16_to_host(val16);
         data_offset += sizeof(uint16_t);
 
@@ -479,7 +479,7 @@ cl_error_t cli_vba_readdir_new(cli_ctx *ctx, const char *dir, struct uniq *U, co
             ret = CL_EREAD;
             goto done;
         }
-        memcpy(&val32, &data[data_offset], sizeof (uint32_t));
+        memcpy(&val32, &data[data_offset], sizeof(uint32_t));
         size = le32_to_host(val32);
         data_offset += sizeof(uint32_t);
 
@@ -497,7 +497,7 @@ cl_error_t cli_vba_readdir_new(cli_ctx *ctx, const char *dir, struct uniq *U, co
                     ret = CL_EREAD;
                     goto done;
                 }
-                memcpy(&val32, &data[data_offset], sizeof (uint32_t));
+                memcpy(&val32, &data[data_offset], sizeof(uint32_t));
                 uint32_t sys_kind = le32_to_host(val32);
                 data_offset += sizeof(uint32_t);
                 CLI_WRITEN("REM PROJECTSYSKIND: ", 20);
@@ -534,7 +534,7 @@ cl_error_t cli_vba_readdir_new(cli_ctx *ctx, const char *dir, struct uniq *U, co
                     ret = CL_EREAD;
                     goto done;
                 }
-                memcpy(&val32, &data[data_offset], sizeof (uint32_t));
+                memcpy(&val32, &data[data_offset], sizeof(uint32_t));
                 uint32_t lcid = le32_to_host(val32);
                 char buf[64];
                 data_offset += size;
@@ -552,7 +552,7 @@ cl_error_t cli_vba_readdir_new(cli_ctx *ctx, const char *dir, struct uniq *U, co
                     ret = CL_EREAD;
                     goto done;
                 }
-                memcpy(&val32, &data[data_offset], sizeof (uint32_t));
+                memcpy(&val32, &data[data_offset], sizeof(uint32_t));
                 uint32_t lcid_invoke = le32_to_host(val32);
                 char buf[64];
                 data_offset += sizeof(uint32_t);
@@ -570,7 +570,7 @@ cl_error_t cli_vba_readdir_new(cli_ctx *ctx, const char *dir, struct uniq *U, co
                     ret = CL_EREAD;
                     goto done;
                 }
-                memcpy(&val16, &data[data_offset], sizeof (uint16_t));
+                memcpy(&val16, &data[data_offset], sizeof(uint16_t));
                 codepage = le16_to_host(val16);
                 char buf[64];
                 data_offset += sizeof(uint16_t);
@@ -640,7 +640,7 @@ cl_error_t cli_vba_readdir_new(cli_ctx *ctx, const char *dir, struct uniq *U, co
                     ret = CL_EREAD;
                     goto done;
                 }
-                memcpy(&val16, &data[data_offset], sizeof (uint16_t));
+                memcpy(&val16, &data[data_offset], sizeof(uint16_t));
                 id = le16_to_host(val16);
                 if (id != 0x003d) {
                     cli_warnmsg("vba_readdir_new: PROJECTHELPFILEPATH is not followed by PROJECTHELPFILEPATH2\n");
@@ -655,7 +655,7 @@ cl_error_t cli_vba_readdir_new(cli_ctx *ctx, const char *dir, struct uniq *U, co
                     goto done;
                 }
                 uint32_t size2;
-                memcpy(&val32, &data[data_offset], sizeof (uint32_t));
+                memcpy(&val32, &data[data_offset], sizeof(uint32_t));
                 size2 = le32_to_host(val32);
                 data_offset += sizeof(uint32_t);
 
@@ -692,7 +692,7 @@ cl_error_t cli_vba_readdir_new(cli_ctx *ctx, const char *dir, struct uniq *U, co
                     ret = CL_EREAD;
                     goto done;
                 }
-                memcpy(&val32, &data[data_offset], sizeof (uint32_t));
+                memcpy(&val32, &data[data_offset], sizeof(uint32_t));
                 uint32_t context = le32_to_host(val32);
                 char buf[64];
                 data_offset += size;
@@ -710,7 +710,7 @@ cl_error_t cli_vba_readdir_new(cli_ctx *ctx, const char *dir, struct uniq *U, co
                     ret = CL_EREAD;
                     goto done;
                 }
-                memcpy(&val32, &data[data_offset], sizeof (uint32_t));
+                memcpy(&val32, &data[data_offset], sizeof(uint32_t));
                 uint32_t libflags = le32_to_host(val32);
                 char buf[64];
                 data_offset += sizeof(uint32_t);
@@ -729,7 +729,7 @@ cl_error_t cli_vba_readdir_new(cli_ctx *ctx, const char *dir, struct uniq *U, co
                     ret = CL_EREAD;
                     goto done;
                 }
-                memcpy(&val32, &data[data_offset], sizeof (uint32_t));
+                memcpy(&val32, &data[data_offset], sizeof(uint32_t));
                 uint32_t major = le32_to_host(val32);
                 data_offset += size;
 
@@ -738,7 +738,7 @@ cl_error_t cli_vba_readdir_new(cli_ctx *ctx, const char *dir, struct uniq *U, co
                     ret = CL_EREAD;
                     goto done;
                 }
-                memcpy(&val16, &data[data_offset], sizeof (uint16_t));
+                memcpy(&val16, &data[data_offset], sizeof(uint16_t));
                 uint16_t minor = le16_to_host(val16);
                 data_offset += sizeof(uint16_t);
                 char buf[64];
@@ -756,7 +756,7 @@ cl_error_t cli_vba_readdir_new(cli_ctx *ctx, const char *dir, struct uniq *U, co
                     ret = CL_EREAD;
                     goto done;
                 }
-                memcpy(&val16, &data[data_offset], sizeof (uint16_t));
+                memcpy(&val16, &data[data_offset], sizeof(uint16_t));
                 uint16_t modules = le16_to_host(val16);
                 data_offset += sizeof(uint16_t);
                 char buf[64];
@@ -774,7 +774,7 @@ cl_error_t cli_vba_readdir_new(cli_ctx *ctx, const char *dir, struct uniq *U, co
                     ret = CL_EREAD;
                     goto done;
                 }
-                memcpy(&val16, &data[data_offset], sizeof (uint16_t));
+                memcpy(&val16, &data[data_offset], sizeof(uint16_t));
                 uint16_t cookie = le16_to_host(val16);
                 data_offset += sizeof(uint16_t);
                 char buf[64];
@@ -808,7 +808,7 @@ cl_error_t cli_vba_readdir_new(cli_ctx *ctx, const char *dir, struct uniq *U, co
                     goto done;
                 }
 
-                memcpy(&val16, &data[data_offset], sizeof (uint16_t));
+                memcpy(&val16, &data[data_offset], sizeof(uint16_t));
                 if ((id = le16_to_host(val16)) != 0x0047) {
                     cli_dbgmsg("cli_vba_readdir_new: Expected MODULENAMEUNICODE (0x47) record, but got 0x%04x\n", id);
                     ret = CL_EREAD;
@@ -816,7 +816,7 @@ cl_error_t cli_vba_readdir_new(cli_ctx *ctx, const char *dir, struct uniq *U, co
                 }
                 data_offset += sizeof(uint16_t);
                 CLI_WRITEN("\nREM MODULENAMEUNICODE: ", 24);
-                memcpy(&val32, &data[data_offset], sizeof (uint32_t));
+                memcpy(&val32, &data[data_offset], sizeof(uint32_t));
                 size = le32_to_host(val32);
                 data_offset += sizeof(uint32_t);
 
@@ -859,7 +859,7 @@ cl_error_t cli_vba_readdir_new(cli_ctx *ctx, const char *dir, struct uniq *U, co
                     goto done;
                 }
 
-                memcpy(&val16, &data[data_offset], sizeof (uint16_t));
+                memcpy(&val16, &data[data_offset], sizeof(uint16_t));
                 if ((id = le16_to_host(val16)) != 0x001a) {
                     cli_dbgmsg("cli_vba_readdir_new: Expected MODULESTREAMNAME (0x1a) record, but got 0x%04x\n", id);
                     ret = CL_EREAD;
@@ -867,7 +867,7 @@ cl_error_t cli_vba_readdir_new(cli_ctx *ctx, const char *dir, struct uniq *U, co
                 }
                 data_offset += sizeof(uint16_t);
                 CLI_WRITEN("\nREM MODULESTREAMNAME: ", 23);
-                memcpy(&val32, &data[data_offset], sizeof (uint32_t));
+                memcpy(&val32, &data[data_offset], sizeof(uint32_t));
                 size = le32_to_host(val32);
                 data_offset += sizeof(uint32_t);
 
@@ -894,7 +894,7 @@ cl_error_t cli_vba_readdir_new(cli_ctx *ctx, const char *dir, struct uniq *U, co
                     goto done;
                 }
 
-                memcpy(&val16, &data[data_offset], sizeof (uint16_t));
+                memcpy(&val16, &data[data_offset], sizeof(uint16_t));
                 if ((id = le16_to_host(val16)) != 0x0032) {
                     cli_dbgmsg("cli_vba_readdir_new: Expected MODULESTREAMNAMEUNICODE (0x32) record, but got 0x%04x\n", id);
                     ret = CL_EREAD;
@@ -902,7 +902,7 @@ cl_error_t cli_vba_readdir_new(cli_ctx *ctx, const char *dir, struct uniq *U, co
                 }
                 data_offset += sizeof(uint16_t);
                 CLI_WRITEN("\nREM MODULESTREAMNAMEUNICODE: ", 30);
-                memcpy(&val32, &data[data_offset], sizeof (uint32_t));
+                memcpy(&val32, &data[data_offset], sizeof(uint32_t));
                 uint32_t module_stream_name_size = le32_to_host(val32);
                 data_offset += sizeof(uint32_t);
 
@@ -946,7 +946,7 @@ cl_error_t cli_vba_readdir_new(cli_ctx *ctx, const char *dir, struct uniq *U, co
                     goto done;
                 }
 
-                memcpy(&val16, &data[data_offset], sizeof (uint16_t));
+                memcpy(&val16, &data[data_offset], sizeof(uint16_t));
                 if ((id = le16_to_host(val16)) != 0x001c) {
                     cli_dbgmsg("cli_vba_readdir_new: Expected MODULEDOCSTRING (0x1c) record, but got 0x%04x\n", id);
                     ret = CL_EREAD;
@@ -954,7 +954,7 @@ cl_error_t cli_vba_readdir_new(cli_ctx *ctx, const char *dir, struct uniq *U, co
                 }
                 data_offset += sizeof(uint16_t);
                 CLI_WRITEN("\nREM MODULEDOCSTRING: ", 22);
-                memcpy(&val32, &data[data_offset], sizeof (uint32_t));
+                memcpy(&val32, &data[data_offset], sizeof(uint32_t));
                 size = le32_to_host(val32);
                 data_offset += sizeof(uint32_t);
 
@@ -981,7 +981,7 @@ cl_error_t cli_vba_readdir_new(cli_ctx *ctx, const char *dir, struct uniq *U, co
                     goto done;
                 }
 
-                memcpy(&val16, &data[data_offset], sizeof (uint16_t));
+                memcpy(&val16, &data[data_offset], sizeof(uint16_t));
                 if ((id = le16_to_host(val16)) != 0x0048) {
                     cli_dbgmsg("cli_vba_readdir_new: Expected MODULEDOCSTRINGUNICODE (0x32) record, but got 0x%04x\n", id);
                     ret = CL_EREAD;
@@ -989,7 +989,7 @@ cl_error_t cli_vba_readdir_new(cli_ctx *ctx, const char *dir, struct uniq *U, co
                 }
                 data_offset += sizeof(uint16_t);
                 CLI_WRITEN("\nREM MODULEDOCSTRINGUNICODE: ", 29);
-                memcpy(&val32, &data[data_offset], sizeof (uint32_t));
+                memcpy(&val32, &data[data_offset], sizeof(uint32_t));
                 size = le32_to_host(val32);
                 data_offset += sizeof(uint32_t);
 
@@ -1032,14 +1032,14 @@ cl_error_t cli_vba_readdir_new(cli_ctx *ctx, const char *dir, struct uniq *U, co
                     goto done;
                 }
 
-                memcpy(&val16, &data[data_offset], sizeof (uint16_t));
+                memcpy(&val16, &data[data_offset], sizeof(uint16_t));
                 if ((id = le16_to_host(val16)) != 0x0031) {
                     cli_dbgmsg("cli_vba_readdir_new: Expected MODULEOFFSET (0x31) record, but got 0x%04x\n", id);
                     ret = CL_EREAD;
                     goto done;
                 }
                 data_offset += sizeof(uint16_t);
-                memcpy(&val32, &data[data_offset], sizeof (uint32_t));
+                memcpy(&val32, &data[data_offset], sizeof(uint32_t));
                 size = le32_to_host(val32);
                 data_offset += sizeof(uint32_t);
                 if (size != sizeof(uint32_t)) {
@@ -1054,7 +1054,7 @@ cl_error_t cli_vba_readdir_new(cli_ctx *ctx, const char *dir, struct uniq *U, co
                     goto done;
                 }
 
-                memcpy(&val32, &data[data_offset], sizeof (uint32_t));
+                memcpy(&val32, &data[data_offset], sizeof(uint32_t));
                 uint32_t module_offset = le32_to_host(val32);
                 data_offset += size;
                 char buffer[64];
@@ -1071,7 +1071,7 @@ cl_error_t cli_vba_readdir_new(cli_ctx *ctx, const char *dir, struct uniq *U, co
                     goto done;
                 }
 
-                memcpy(&val16, &data[data_offset], sizeof (uint16_t));
+                memcpy(&val16, &data[data_offset], sizeof(uint16_t));
                 if ((id = le16_to_host(val16)) != 0x001e) {
                     cli_dbgmsg("cli_vba_readdir_new: Expected MODULEHELPCONTEXT (0x1e) record, but got 0x%04x\n", id);
                     ret = CL_EREAD;
@@ -1079,7 +1079,7 @@ cl_error_t cli_vba_readdir_new(cli_ctx *ctx, const char *dir, struct uniq *U, co
                 }
 
                 data_offset += sizeof(uint16_t);
-                memcpy(&val32, &data[data_offset], sizeof (uint32_t));
+                memcpy(&val32, &data[data_offset], sizeof(uint32_t));
                 size = le32_to_host(val32);
                 data_offset += sizeof(uint32_t);
                 if (size != sizeof(uint32_t)) {
@@ -1094,7 +1094,7 @@ cl_error_t cli_vba_readdir_new(cli_ctx *ctx, const char *dir, struct uniq *U, co
                     goto done;
                 }
 
-                memcpy(&val32, &data[data_offset], sizeof (uint32_t));
+                memcpy(&val32, &data[data_offset], sizeof(uint32_t));
                 uint32_t help_context = le32_to_host(val32);
                 data_offset += size;
                 buffer_size = snprintf(buffer, sizeof(buffer), "\nREM MODULEHELPCONTEXT: 0x%08x", help_context);
@@ -1110,14 +1110,14 @@ cl_error_t cli_vba_readdir_new(cli_ctx *ctx, const char *dir, struct uniq *U, co
                     goto done;
                 }
 
-                memcpy(&val16, &data[data_offset], sizeof (uint16_t));
+                memcpy(&val16, &data[data_offset], sizeof(uint16_t));
                 if ((id = le16_to_host(val16)) != 0x002c) {
                     cli_dbgmsg("cli_vba_readdir_new: Expected MODULECOOKIE (0x2c) record, but got 0x%04x\n", id);
                     ret = CL_EREAD;
                     goto done;
                 }
                 data_offset += sizeof(uint16_t);
-                memcpy(&val32, &data[data_offset], sizeof (uint32_t));
+                memcpy(&val32, &data[data_offset], sizeof(uint32_t));
                 size = le32_to_host(val32);
                 data_offset += sizeof(uint32_t);
                 if (size != sizeof(uint16_t)) {
@@ -1132,7 +1132,7 @@ cl_error_t cli_vba_readdir_new(cli_ctx *ctx, const char *dir, struct uniq *U, co
                     goto done;
                 }
 
-                memcpy(&val16, &data[data_offset], sizeof (uint16_t));
+                memcpy(&val16, &data[data_offset], sizeof(uint16_t));
                 uint16_t cookie = le16_to_host(val16);
                 data_offset += size;
                 buffer_size = snprintf(buffer, sizeof(buffer), "\nREM MODULECOOKIE: 0x%04x", cookie);
@@ -1147,7 +1147,7 @@ cl_error_t cli_vba_readdir_new(cli_ctx *ctx, const char *dir, struct uniq *U, co
                     goto done;
                 }
 
-                memcpy(&val16, &data[data_offset], sizeof (uint16_t));
+                memcpy(&val16, &data[data_offset], sizeof(uint16_t));
                 id = le16_to_host(val16);
                 if (id != 0x0021 && id != 0x0022) {
                     cli_dbgmsg("cli_vba_readdir_new: Expected MODULETYPE (0x21/0x22) record, but got 0x%04x\n", id);
@@ -1155,7 +1155,7 @@ cl_error_t cli_vba_readdir_new(cli_ctx *ctx, const char *dir, struct uniq *U, co
                     goto done;
                 }
                 data_offset += sizeof(uint16_t);
-                memcpy(&val32, &data[data_offset], sizeof (uint32_t));
+                memcpy(&val32, &data[data_offset], sizeof(uint32_t));
                 size = le32_to_host(val32);
                 data_offset += sizeof(uint32_t);
                 if (size != 0) {
@@ -1176,7 +1176,7 @@ cl_error_t cli_vba_readdir_new(cli_ctx *ctx, const char *dir, struct uniq *U, co
                     goto done;
                 }
 
-                memcpy(&val16, &data[data_offset], sizeof (uint16_t));
+                memcpy(&val16, &data[data_offset], sizeof(uint16_t));
                 id = le16_to_host(val16);
                 data_offset += sizeof(uint16_t);
 
@@ -1187,7 +1187,7 @@ cl_error_t cli_vba_readdir_new(cli_ctx *ctx, const char *dir, struct uniq *U, co
                         goto done;
                     }
 
-                    memcpy(&val32, &data[data_offset], sizeof (uint32_t));
+                    memcpy(&val32, &data[data_offset], sizeof(uint32_t));
                     size = le32_to_host(val32);
                     data_offset += sizeof(uint32_t);
                     if (size != 0) {
@@ -1203,7 +1203,7 @@ cl_error_t cli_vba_readdir_new(cli_ctx *ctx, const char *dir, struct uniq *U, co
                         goto done;
                     }
 
-                    memcpy(&val16, &data[data_offset], sizeof (uint16_t));
+                    memcpy(&val16, &data[data_offset], sizeof(uint16_t));
                     id = le16_to_host(val16);
                     data_offset += sizeof(uint16_t);
                 }
@@ -1216,7 +1216,7 @@ cl_error_t cli_vba_readdir_new(cli_ctx *ctx, const char *dir, struct uniq *U, co
                         goto done;
                     }
 
-                    memcpy(&val32, &data[data_offset], sizeof (uint32_t));
+                    memcpy(&val32, &data[data_offset], sizeof(uint32_t));
                     size = le32_to_host(val32);
                     data_offset += sizeof(uint32_t);
                     if (size != 0) {
@@ -1232,7 +1232,7 @@ cl_error_t cli_vba_readdir_new(cli_ctx *ctx, const char *dir, struct uniq *U, co
                         goto done;
                     }
 
-                    memcpy(&val16, &data[data_offset], sizeof (uint16_t));
+                    memcpy(&val16, &data[data_offset], sizeof(uint16_t));
                     id = le16_to_host(val16);
                     data_offset += sizeof(uint16_t);
                 }
@@ -1250,7 +1250,7 @@ cl_error_t cli_vba_readdir_new(cli_ctx *ctx, const char *dir, struct uniq *U, co
                     goto done;
                 }
 
-                memcpy(&val32, &data[data_offset], sizeof (uint32_t));
+                memcpy(&val32, &data[data_offset], sizeof(uint32_t));
                 size = le32_to_host(val32);
                 data_offset += sizeof(uint32_t);
                 if (size != 0) {
@@ -2021,7 +2021,7 @@ word_read_macro_entry(int fd, macro_info_t *macro_info)
         uint32_t len __attribute__((packed));
         uint32_t state __attribute__((packed));
         uint32_t offset __attribute__((packed));
-    } * m;
+    } *m;
     const struct macro *n;
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack()

@@ -2402,7 +2402,7 @@ static int cli_loadcbc(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
             unsigned hook       = bc->kind - _BC_START_HOOKS;
             unsigned cnt        = ++engine->hooks_cnt[hook];
             engine->hooks[hook] = cli_safer_realloc_or_free(engine->hooks[hook],
-                                                     sizeof(*engine->hooks[0]) * cnt);
+                                                            sizeof(*engine->hooks[0]) * cnt);
             if (!engine->hooks[hook]) {
                 cli_errmsg("Out of memory allocating memory for hook %u", hook);
                 return CL_EMEM;

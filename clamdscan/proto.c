@@ -212,7 +212,7 @@ struct client_parallel_data {
         unsigned int id;
         const char *file;
         struct SCANID *next;
-    } * ids;
+    } *ids;
 };
 
 /* Sends a proper scan request to clamd and parses its replies
