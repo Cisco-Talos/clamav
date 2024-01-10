@@ -62,3 +62,13 @@ with newer ClamAV versions.
 
 No attempt at preserving downward compatibility (using a `libclamav-sys` with
 a version number greater than ClamAV's) is made.
+
+## Packaging
+
+In order to execute `cargo package` or `cargo publish`, there must be an
+installed copy of the ClamAV include headers and libraries available.  For
+Unix-like environments, this means that the `pkg-config` utility must be able
+to locate the `libclamav` package.  As such, ensure that `PKG_CONFIG_PATH` is
+set correctly when packaging.  It is not critical that the installed copy
+exactly match the version in the source tree, as compilation during packaging
+is done only as a verification step.

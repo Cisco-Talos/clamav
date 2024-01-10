@@ -139,6 +139,7 @@ fn generate_bindings(
         bindings = bindings.allowlist_var(constant);
     }
 
+    // TODO: this wrapper probably isn't necessary.  clamav.h could simply be located
     bindings = bindings
         .header("wrapper.h")
         // Tell cargo to invalidate the built crate whenever any of the
@@ -166,25 +167,32 @@ fn cargo_common() {
 }
 
 fn main() -> anyhow::Result<()> {
+    cargo_common();
+
     let mut include_paths = vec![];
 
     // Test whether being built as part of ClamAV source
     let local_include_path = local_clamav_include_path();
+    if let Some(path) = &local_include_path {
+        eprintln!("Local ClamAV include path: {path:?}",);
+    }
+    eprintln!(
+        "Building as part of ClamAV: {:?}",
+        building_under_clamav_cmake()
+    );
+    eprintln!("Maintainer mode: {:?}", in_maintainer_mode());
 
     // Generate temporary path for the generated "internal" module
     let mut output_path_intmod = PathBuf::from(env::var("OUT_DIR")?);
     output_path_intmod.push("sys.rs");
 
-    if let Some(include_path) = &local_include_path {
-        // It seems we're being compiled from within the ClamAV source tree.
-        // Confirm that clamav.h is there, too
-
-        include_paths.push(include_path.clone());
-
-        build_internal::bindgen_internal(&output_path_intmod)?;
+    // Find headers
+    if let Some(path) = &local_include_path {
+        include_paths.push(path.clone());
     } else {
-        // This crate is being referenced from an external project. Utilize the
-        // system-installed copy of libclamav (as located using pkg-config).
+        // This crate is being referenced from an external project that doesn't
+        // have access to the ClamAV source tree. Utilize the system-installed
+        // copy of libclamav (as located using pkg-config).
 
         #[cfg(not(windows))]
         {
@@ -226,7 +234,11 @@ fn main() -> anyhow::Result<()> {
                 include_paths.push(openssl_include);
             }
         };
+    }
 
+    if building_under_clamav_cmake() {
+        build_internal::bindgen_internal(&output_path_intmod)?;
+    } else {
         // Build a vestigial `sys` module, as there will be no access to
         // internal APIs.
         let mut fh = std::fs::File::create(&output_path_intmod)?;
@@ -236,8 +248,7 @@ fn main() -> anyhow::Result<()> {
     // Write the bindings to the $OUT_DIR/bindings.rs file.
     let mut output_path = PathBuf::from(env::var("OUT_DIR").unwrap());
     output_path.push("bindings.rs");
-    if local_include_path.is_none() || (local_include_path.is_some() && in_maintainer_mode()) {
-        cargo_common();
+    if !building_under_clamav_cmake() || (local_include_path.is_some() && in_maintainer_mode()) {
         generate_bindings(
             &output_path,
             &|builder: bindgen::Builder| -> bindgen::Builder {
@@ -250,12 +261,17 @@ fn main() -> anyhow::Result<()> {
                 builder
             },
         );
-        // And place a copy in the source tree (for potential check-in)
-        std::fs::copy(&output_path, BINDGEN_OUTPUT_FILE)?;
     } else {
-        // Otherwise, just copy the pre-generated file to the specified
-        // location.
+        // If building within ClamAV and not in maintainer mode, just copy the
+        // "cached" version, as libclang may not be available.
         std::fs::copy(BINDGEN_OUTPUT_FILE, &output_path)?;
+    }
+
+    if in_maintainer_mode() {
+        // Copy the pre-generated file to the specified location.  This should
+        // *not* be done when packaging `clamav-sys`, as it will touch the
+        // source tree, and `cargo package` will report an error.
+        std::fs::copy(&output_path, BINDGEN_OUTPUT_FILE)?;
     }
 
     Ok(())
@@ -282,6 +298,16 @@ fn local_clamav_include_path() -> Option<PathBuf> {
     None
 }
 
+/// Return whether "maintiner mode" has been enabled in a ClamAV build.
 pub(crate) fn in_maintainer_mode() -> bool {
     env::var("MAINTAINER_MODE").unwrap_or_default() == "ON"
+}
+
+/// Return whether or not this crate's build is being performed as part of a ClamAV build
+pub(crate) fn building_under_clamav_cmake() -> bool {
+    // Note, PROJECT_NAME is examined rather than CMAKE_PROJECT_NAME, as it's
+    // *possible* for a ClamAV build to be embedded within another CMake-based
+    // build, which would have a global CMAKE_PROJECT_NAME that is *not*
+    // "ClamAV"
+    env::var("PROJECT_NAME").unwrap_or_default() == "ClamAV"
 }
