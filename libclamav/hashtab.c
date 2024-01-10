@@ -889,7 +889,7 @@ cl_error_t cli_map_addkey(struct cli_map *m, const void *key, int32_t keysize)
     if (m->valuesize) {
         void *v;
 
-        v = cli_max_realloc(m->u.sized_values, n * m->valuesize);
+        v = cli_max_realloc(m->u.sized_values, (size_t)n * (size_t)m->valuesize);
         if (!v) {
             return CL_EMEM;
         }
