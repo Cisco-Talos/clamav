@@ -2832,7 +2832,19 @@ static void dbg_printhex(const char *msg, const char *hex, unsigned len)
     }
 }
 
-static void compute_hash_r6(const char *password, size_t pwlen, const unsigned char salt[16], unsigned char hash[32])
+/**
+ * @brief Compute the hash of the password concatenated with the validation salt and (for owner-password checks) the U string.
+ *
+ * Some details and comments for how to compute this hash comes from the PyPDF project:
+ * https://github.com/py-pdf/pypdf/blob/3.17.4/pypdf/_encryption.py#L568
+ *
+ * @param password  The password to hash.
+ * @param pwlen     The length of the password.
+ * @param salt      The validation salt.
+ * @param hash      The resulting hash.
+ * @param U         [Optional] The U string (for owner-password checks).
+ */
+static void compute_hash_r6(const char *password, size_t pwlen, const unsigned char salt[16], unsigned char hash[32], const char *U)
 {
     unsigned char data[(128 + 64 + 48) * 64];
     unsigned char block[64];
@@ -2841,14 +2853,33 @@ static void compute_hash_r6(const char *password, size_t pwlen, const unsigned c
     int32_t i, j, sum;
     uint8_t sha256[32], sha384[48], sha512[64];
 
+    /*
+     * Compute a SHA-256 hash of the UTF-8 password concatenated with the 8 bytes of the owner or user validation salt.
+     */
     memcpy(data, password, pwlen);
     memcpy(data + pwlen, salt, 8);
-    cl_sha256(data, pwlen + 8, block, NULL);
+
+    if (NULL != U) {
+        // If it's for the owner password check, we also concatenate the 48-byte U string.
+        memcpy(data + pwlen + 8, U, 48);
+
+        cl_sha256(data, pwlen + 8 + 48, block, NULL);
+    } else {
+        cl_sha256(data, pwlen + 8, block, NULL);
+    }
 
     for (i = 0; i < 64 || i < (data[(in_data_len * 64) - 1] + 32); i++) {
         memcpy(data, password, pwlen);
         memcpy(data + pwlen, block, block_size);
+
         in_data_len = pwlen + block_size;
+
+        if (NULL != U) {
+            // If it's for the owner password check, we also concatenate the 48-byte U string.
+            memcpy(data + pwlen + block_size, U, 48);
+            in_data_len += 48;
+        }
+
         for (j = 1; j < 64; j++)
             memcpy(data + j * in_data_len, data, in_data_len);
 
@@ -2879,65 +2910,300 @@ static void compute_hash_r6(const char *password, size_t pwlen, const unsigned c
     memcpy(hash, block, 32);
 }
 
+/**
+ * @brief Check if the owner password matches an empty password.
+ *
+ * Will set the DECRYPTABLE_PDF flag if the owner password is empty.
+ * Will also set the key and keylen fields in the pdf_struct.
+ *
+ * Some details and comments for how to check the owner password comes from the PyPDF project:
+ * https://github.com/py-pdf/pypdf/blob/3.17.4/pypdf/_encryption.py#L397
+ *
+ * @param pdf       The PDF context.
+ * @param R         The encryption version.
+ * @param O         The /O string.
+ * @param U         The /U string.
+ * @param OE        The /OE string.
+ * @param OE_len    The length of the /OE string.
+ */
+static void check_owner_password(struct pdf_struct *pdf, int R,
+                                 const char *O, const char *U,
+                                 const char *OE, size_t OE_len)
+{
+    bool password_empty = false;
+
+    dbg_printhex("U: ", U, 32);
+    dbg_printhex("O: ", O, 32);
+
+    switch (R) {
+        case 6: {
+            unsigned char hash[32], validationkey[32];
+
+            size_t pwlen    = 0;
+            char password[] = "";
+
+            if (NULL == OE) {
+                cli_dbgmsg("check_owner_password: Missing OE value!\n");
+                noisy_warnmsg("check_owner_password: Missing OE value!\n");
+                goto done;
+            }
+
+            dbg_printhex("OE: ", OE, OE_len);
+
+            /*
+             * Test the password against the owner key by computing the SHA-256 hash of the UTF-8 password concatenated
+             * with the 8 bytes of owner validation salt, concatenated with the 48-byte U string.
+             */
+            compute_hash_r6(
+                password,
+                pwlen,
+                (const unsigned char *)(O + 32), // owner validation salt
+                validationkey,
+                U);
+
+            /* If the 32-byte result matches the first 32 bytes of the O string, this is the owner password. */
+            if (0 != memcmp(O, validationkey, sizeof(validationkey))) {
+                cli_dbgmsg("check_owner_password: Owner password check did not match!\n");
+                break;
+            }
+
+            /*
+             * Compute an intermediate owner key by computing the SHA-256 hash of the UTF-8 password concatenated with
+             * the 8 bytes of owner key salt, concatenated with the 48-byte U string.
+             */
+            compute_hash_r6(
+                password,
+                pwlen,
+                (const unsigned char *)(O + 40), // owner key salt
+                hash,
+                U);
+
+            if (OE_len != 32) {
+                cli_dbgmsg("check_owner_password: OE length is not 32: %zu\n", OE_len);
+                noisy_warnmsg("check_owner_password: OE length is not 32: %zu\n", OE_len);
+            } else {
+                pdf->keylen = 32;
+                pdf->key    = cli_malloc(pdf->keylen);
+                if (!pdf->key) {
+                    cli_errmsg("check_owner_password: Cannot allocate memory for pdf->key\n");
+                    goto done;
+                }
+
+                aes_256cbc_decrypt((const unsigned char *)OE, &OE_len, (unsigned char *)(pdf->key), (char *)hash, 32, 0);
+                dbg_printhex("check_owner_password: Candidate encryption key", pdf->key, pdf->keylen);
+
+                password_empty = true;
+            }
+
+            break;
+        }
+        default: {
+            cli_dbgmsg("check_owner_password: Unknown or unsupported encryption version. R: %d\n", R);
+            noisy_warnmsg("check_owner_password: Unknown or unsupported encryption version. R: %d\n", R);
+        }
+    }
+
+    if (password_empty) {
+        /* The key we computed above is the key used to encrypt the streams. We could decrypt it now if we wanted to */
+        pdf->flags |= 1 << DECRYPTABLE_PDF;
+
+        cli_dbgmsg("check_owner_password: encrypted PDF found, owner password is empty, will attempt to decrypt\n");
+        noisy_msg(pdf, "check_owner_password: encrypted PDF found, owner password is empty, will attempt to decrypt\n");
+    } else {
+        /* The key is not valid, we would need the user or the owner password to decrypt */
+        cli_dbgmsg("check_owner_password: encrypted PDF found but cannot decrypt with empty owner password\n");
+        noisy_warnmsg("check_owner_password: encrypted PDF found but cannot decrypt with empty owner password\n");
+    }
+
+done:
+
+    return;
+}
+
 static void check_user_password(struct pdf_struct *pdf, int R, const char *O,
                                 const char *U, int32_t P, int EM,
                                 const char *UE, size_t UE_len,
-                                unsigned length, unsigned oulen)
+                                unsigned length)
 {
     unsigned i;
     uint8_t result[16];
     char data[32];
     struct arc4_state arc4;
-    unsigned password_empty = 0;
-
-    UNUSEDPARAM(oulen);
+    bool password_empty = false;
 
     dbg_printhex("U: ", U, 32);
     dbg_printhex("O: ", O, 32);
-    if (R == 5) {
-        uint8_t result2[32];
 
-        /* supplement to ISO3200, 3.5.2 Algorithm 3.11 */
-        /* user validation salt */
-        cl_sha256(U + 32, 8, result2, NULL);
-        dbg_printhex("Computed U", (const char *)result2, 32);
-        if (!memcmp(result2, U, 32)) {
-            /* Algorithm 3.2a could be used to recover encryption key */
-            cl_sha256(U + 40, 8, result2, NULL);
+    switch (R) {
+        case 2:
+        case 3:
+        case 4: {
+            unsigned char *d;
+            size_t sz = 68 + pdf->fileIDlen + (R >= 4 && !EM ? 4 : 0);            d         = calloc(1, sz);
 
-            if (UE_len != 32) {
-                cli_dbgmsg("check_user_password: UE length is not 32: %zu\n", UE_len);
-                noisy_warnmsg("check_user_password: UE length is not 32: %zu\n", UE_len);
+            if (!(d))
+                goto done;
+
+            memcpy(d, key_padding, 32);
+            memcpy(d + 32, O, 32);
+            P = le32_to_host(P);
+            memcpy(d + 64, &P, 4);
+            memcpy(d + 68, pdf->fileID, pdf->fileIDlen);
+
+            /* 7.6.3.3 Algorithm 2 */
+            /* empty password, password == padding */
+            if (R >= 4 && !EM) {
+                uint32_t v = 0xFFFFFFFF;
+                memcpy(d + 68 + pdf->fileIDlen, &v, 4);
+            }
+
+            cl_hash_data("md5", d, sz, result, NULL);
+            free(d);
+            if (length > 128)
+                length = 128;
+            if (R >= 3) {
+                /* Yes, this really is on purpose */
+                for (i = 0; i < 50; i++)
+                    cl_hash_data("md5", result, length / 8, result, NULL);
+            }
+            if (R == 2)
+                length = 40;
+
+            pdf->keylen = length / 8;
+            pdf->key    = cli_malloc(pdf->keylen);
+            if (!pdf->key)
+                goto done;
+
+            memcpy(pdf->key, result, pdf->keylen);
+            dbg_printhex("md5", (const char *)result, 16);
+            dbg_printhex("Candidate encryption key", pdf->key, pdf->keylen);
+
+            /* 7.6.3.3 Algorithm 6 */
+            if (R == 2) {
+                /* 7.6.3.3 Algorithm 4 */
+                memcpy(data, key_padding, 32);
+                if (false == arc4_init(&arc4, (const uint8_t *)(pdf->key), pdf->keylen)) {
+                    noisy_warnmsg("check_user_password: failed to init arc4\n");
+                    goto done;
+                }
+                arc4_apply(&arc4, (uint8_t *)data, 32);
+                dbg_printhex("computed U (R2)", data, 32);
+                if (!memcmp(data, U, 32))
+                    password_empty = true;
             } else {
-                pdf->keylen = 32;
-                pdf->key    = cli_malloc(pdf->keylen);
-                if (!pdf->key) {
-                    cli_errmsg("check_user_password: Cannot allocate memory for pdf->key\n");
-                    return;
+                // R is 3 or 4
+                unsigned len = pdf->keylen;
+                unsigned char *d;
+
+                d = calloc(1, 32 + pdf->fileIDlen);
+                if (!(d))
+                    goto done;
+
+                /* 7.6.3.3 Algorithm 5 */
+                memcpy(d, key_padding, 32);
+                memcpy(d + 32, pdf->fileID, pdf->fileIDlen);
+                cl_hash_data("md5", d, 32 + pdf->fileIDlen, result, NULL);
+                memcpy(data, pdf->key, len);
+
+                if (false == arc4_init(&arc4, (const uint8_t *)data, len)) {
+                    noisy_warnmsg("check_user_password: failed to init arc4\n");
+                    goto done;
+                }
+                arc4_apply(&arc4, result, 16);
+                for (i = 1; i <= 19; i++) {
+                    unsigned j;
+
+                    for (j = 0; j < len; j++)
+                        data[j] = pdf->key[j] ^ i;
+
+                    if (false == arc4_init(&arc4, (const uint8_t *)data, len)) {
+                        noisy_warnmsg("check_user_password: failed to init arc4\n");
+                        goto done;
+                    }
+                    arc4_apply(&arc4, result, 16);
                 }
 
-                aes_256cbc_decrypt((const unsigned char *)UE, &UE_len, (unsigned char *)(pdf->key), (char *)result2, 32, 0);
-                dbg_printhex("check_user_password: Candidate encryption key", pdf->key, pdf->keylen);
-
-                password_empty = 1;
+                dbg_printhex("fileID", pdf->fileID, pdf->fileIDlen);
+                dbg_printhex("computed U (R>=3)", (const char *)result, 16);
+                if (!memcmp(result, U, 16))
+                    password_empty = true;
+                free(d);
             }
+
+            break;
         }
-    } else if (R == 6) {
-        unsigned char hash[32], validationkey[32];
+        case 5: {
+            uint8_t result2[32];
 
-        size_t pwlen    = 0;
-        char password[] = "";
+            /* supplement to ISO3200, 3.5.2 Algorithm 3.11 */
+            /* user validation salt */
+            cl_sha256(U + 32, 8, result2, NULL);
+            dbg_printhex("Computed U", (const char *)result2, 32);
+            if (!memcmp(result2, U, 32)) {
+                /* Algorithm 3.2a could be used to recover encryption key */
+                cl_sha256(U + 40, 8, result2, NULL);
 
-        if (NULL == UE) {
-            cli_dbgmsg("check_user_password: Missing UE value!\n");
-            noisy_warnmsg("check_user_password: Missing UE value!\n");
-            return;
+                if (UE_len != 32) {
+                    cli_dbgmsg("check_user_password: UE length is not 32: %zu\n", UE_len);
+                    noisy_warnmsg("check_user_password: UE length is not 32: %zu\n", UE_len);
+                } else {
+                    pdf->keylen = 32;
+                    pdf->key    = cli_malloc(pdf->keylen);
+                    if (!pdf->key) {
+                        cli_errmsg("check_user_password: Cannot allocate memory for pdf->key\n");
+                        goto done;
+                    }
+
+                    aes_256cbc_decrypt((const unsigned char *)UE, &UE_len, (unsigned char *)(pdf->key), (char *)result2, 32, 0);
+                    dbg_printhex("check_user_password: Candidate encryption key", pdf->key, pdf->keylen);
+
+                    password_empty = true;
+                }
+            }
+
+            break;
         }
+        case 6: {
+            unsigned char hash[32], validationkey[32];
 
-        compute_hash_r6(password, pwlen, (const unsigned char *)(U + 32), validationkey);
-        if (!memcmp(U, validationkey, sizeof(validationkey))) {
+            size_t pwlen    = 0;
+            char password[] = "";
 
-            compute_hash_r6(password, pwlen, (const unsigned char *)(U + 40), hash);
+            if (NULL == UE) {
+                cli_dbgmsg("check_user_password: Missing UE value!\n");
+                noisy_warnmsg("check_user_password: Missing UE value!\n");
+                goto done;
+            }
+
+            dbg_printhex("UE: ", UE, UE_len);
+
+            /*
+             * Test the password against the user key by computing the SHA-256 hash of the UTF-8 password concatenated
+             * with the 8 bytes of user validation salt.
+             */
+            compute_hash_r6(
+                password,
+                pwlen,
+                (const unsigned char *)(U + 32), // user validation salt
+                validationkey,
+                NULL); // no U string for user password check
+
+            /* If the 32-byte result matches the first 32 bytes of the U string, this is the user password. */
+            if (0 != memcmp(U, validationkey, sizeof(validationkey))) {
+                cli_dbgmsg("check_user_password: User password check did not match!\n");
+                break;
+            }
+
+            /*
+             * Compute an intermediate user key by computing the SHA-256 hash of the UTF-8 password concatenated with
+             * the 8 bytes of user key salt.
+             */
+            compute_hash_r6(
+                password,
+                pwlen,
+                (const unsigned char *)(U + 40), // user key salt
+                hash,
+                NULL); // no U string for user password check
 
             if (UE_len != 32) {
                 cli_dbgmsg("check_user_password: UE length is not 32: %zu\n", UE_len);
@@ -2947,116 +3213,22 @@ static void check_user_password(struct pdf_struct *pdf, int R, const char *O,
                 pdf->key    = cli_malloc(pdf->keylen);
                 if (!pdf->key) {
                     cli_errmsg("check_user_password: Cannot allocate memory for pdf->key\n");
-                    return;
+                    goto done;
                 }
 
                 aes_256cbc_decrypt((const unsigned char *)UE, &UE_len, (unsigned char *)(pdf->key), (char *)hash, 32, 0);
                 dbg_printhex("check_user_password: Candidate encryption key", pdf->key, pdf->keylen);
 
-                password_empty = 1;
-            }
-        }
-    } else if ((R >= 2) && (R <= 4)) {
-        unsigned char *d;
-        size_t sz = 68 + pdf->fileIDlen + (R >= 4 && !EM ? 4 : 0);
-        d         = calloc(1, sz);
-
-        if (!(d))
-            return;
-
-        memcpy(d, key_padding, 32);
-        memcpy(d + 32, O, 32);
-        P = le32_to_host(P);
-        memcpy(d + 64, &P, 4);
-        memcpy(d + 68, pdf->fileID, pdf->fileIDlen);
-
-        /* 7.6.3.3 Algorithm 2 */
-        /* empty password, password == padding */
-        if (R >= 4 && !EM) {
-            uint32_t v = 0xFFFFFFFF;
-            memcpy(d + 68 + pdf->fileIDlen, &v, 4);
-        }
-
-        cl_hash_data("md5", d, sz, result, NULL);
-        free(d);
-        if (length > 128)
-            length = 128;
-        if (R >= 3) {
-            /* Yes, this really is on purpose */
-            for (i = 0; i < 50; i++)
-                cl_hash_data("md5", result, length / 8, result, NULL);
-        }
-        if (R == 2)
-            length = 40;
-
-        pdf->keylen = length / 8;
-        pdf->key    = cli_malloc(pdf->keylen);
-        if (!pdf->key)
-            return;
-
-        memcpy(pdf->key, result, pdf->keylen);
-        dbg_printhex("md5", (const char *)result, 16);
-        dbg_printhex("Candidate encryption key", pdf->key, pdf->keylen);
-
-        /* 7.6.3.3 Algorithm 6 */
-        if (R == 2) {
-            /* 7.6.3.3 Algorithm 4 */
-            memcpy(data, key_padding, 32);
-            if (false == arc4_init(&arc4, (const uint8_t *)(pdf->key), pdf->keylen)) {
-                noisy_warnmsg("check_user_password: failed to init arc4\n");
-                return;
-            }
-            arc4_apply(&arc4, (uint8_t *)data, 32);
-            dbg_printhex("computed U (R2)", data, 32);
-            if (!memcmp(data, U, 32))
-                password_empty = 1;
-        } else if (R >= 3) {
-            unsigned len = pdf->keylen;
-            unsigned char *d;
-
-            d = calloc(1, 32 + pdf->fileIDlen);
-            if (!(d))
-                return;
-
-            /* 7.6.3.3 Algorithm 5 */
-            memcpy(d, key_padding, 32);
-            memcpy(d + 32, pdf->fileID, pdf->fileIDlen);
-            cl_hash_data("md5", d, 32 + pdf->fileIDlen, result, NULL);
-            memcpy(data, pdf->key, len);
-
-            if (false == arc4_init(&arc4, (const uint8_t *)data, len)) {
-                noisy_warnmsg("check_user_password: failed to init arc4\n");
-                return;
-            }
-            arc4_apply(&arc4, result, 16);
-            for (i = 1; i <= 19; i++) {
-                unsigned j;
-
-                for (j = 0; j < len; j++)
-                    data[j] = pdf->key[j] ^ i;
-
-                if (false == arc4_init(&arc4, (const uint8_t *)data, len)) {
-                    noisy_warnmsg("check_user_password: failed to init arc4\n");
-                    return;
-                }
-                arc4_apply(&arc4, result, 16);
+                password_empty = true;
             }
 
-            dbg_printhex("fileID", pdf->fileID, pdf->fileIDlen);
-            dbg_printhex("computed U (R>=3)", (const char *)result, 16);
-            if (!memcmp(result, U, 16))
-                password_empty = 1;
-            free(d);
-        } else {
-            cli_dbgmsg("check_user_password: invalid revision %d\n", R);
-            noisy_warnmsg("check_user_password: invalid revision %d\n", R);
+            break;
         }
-    } else {
-        /* Supported R is in {2,3,4,5} */
-        cli_dbgmsg("check_user_password: R value out of range\n");
-        noisy_warnmsg("check_user_password: R value out of range\n");
-
-        return;
+        default: {
+            /* Supported R is in {2,3,4,5} */
+            cli_dbgmsg("check_user_password: R value out of range\n");
+            noisy_warnmsg("check_user_password: R value out of range\n");
+        }
     }
 
     if (password_empty) {
@@ -3070,6 +3242,9 @@ static void check_user_password(struct pdf_struct *pdf, int R, const char *O,
         cli_dbgmsg("check_user_password: user/owner password would be required for decryption\n");
         noisy_warnmsg("check_user_password: encrypted PDF found, user password is NOT empty, cannot decrypt!\n");
     }
+
+done:
+    return;
 }
 
 enum enc_method parse_enc_method(const char *dict, unsigned len, const char *key, enum enc_method def)
@@ -3110,8 +3285,19 @@ void pdf_handle_enc(struct pdf_struct *pdf)
 {
     struct pdf_obj *obj;
     uint32_t len, n, R, P, length, EM = 1, i, oulen;
-    char *O, *U, *UE, *StmF, *StrF, *EFF;
+
+    char *O       = NULL;
+    char *OE      = NULL;
+    size_t OE_len = 0;
+
+    char *U       = NULL;
+    char *UE      = NULL;
     size_t UE_len = 0;
+
+    char *StmF = NULL;
+    char *StrF = NULL;
+    char *EFF  = NULL;
+
     const char *q, *q2;
 
     if (pdf->enc_objid == ~0u)
@@ -3135,158 +3321,185 @@ void pdf_handle_enc(struct pdf_struct *pdf)
                       : (const char *)(obj->start + pdf->map);
 
     O = U = UE = StmF = StrF = EFF = NULL;
-    do {
 
-        pdf->enc_method_string       = ENC_UNKNOWN;
-        pdf->enc_method_stream       = ENC_UNKNOWN;
-        pdf->enc_method_embeddedfile = ENC_UNKNOWN;
+    pdf->enc_method_string       = ENC_UNKNOWN;
+    pdf->enc_method_stream       = ENC_UNKNOWN;
+    pdf->enc_method_embeddedfile = ENC_UNKNOWN;
 
-        q2 = cli_memstr(q, len, "/Standard", 9);
-        if (!q2) {
-            cli_dbgmsg("pdf_handle_enc: /Standard not found\n");
-            noisy_warnmsg("pdf_handle_enc: /Standard not found\n");
-            break;
+    q2 = cli_memstr(q, len, "/Standard", 9);
+    if (!q2) {
+        cli_dbgmsg("pdf_handle_enc: /Standard not found\n");
+        noisy_warnmsg("pdf_handle_enc: /Standard not found\n");
+        goto done;
+    }
+
+    /* we can have both of these:
+     * /AESV2/Length /Standard/Length
+     * /Length /Standard
+     * make sure we don't mistake AES's length for Standard's */
+    length = pdf_readint(q2, len - (q2 - q), "/Length");
+    if (length == ~0u)
+        length = pdf_readint(q, len, "/Length");
+
+    if (length < 40) {
+        cli_dbgmsg("pdf_handle_enc: invalid length: %d\n", length);
+        length = 40;
+    }
+
+    R = pdf_readint(q, len, "/R");
+    if (R == ~0u) {
+        cli_dbgmsg("pdf_handle_enc: invalid R\n");
+        noisy_warnmsg("pdf_handle_enc: invalid R\n");
+        goto done;
+    }
+
+    if ((R > 6) || (R < 2)) {
+        cli_dbgmsg("pdf_handle_enc: R value outside supported range [2..6]\n");
+        noisy_warnmsg("pdf_handle_enc: R value outside supported range [2..6]\n");
+        goto done;
+    }
+
+    P = pdf_readint(q, len, "/P");
+    if (R < 6) { // P field doesn't seem to be required for R6.
+        if (P == ~0u) {
+            cli_dbgmsg("pdf_handle_enc: invalid P\n");
+            noisy_warnmsg("pdf_handle_enc: invalid P\n");
+            goto done;
+        }
+    }
+
+    if (R < 5) {
+        oulen = 32;
+    } else {
+        oulen = 48;
+    }
+
+    if (R == 2 || R == 3) {
+        pdf->enc_method_stream       = ENC_V2;
+        pdf->enc_method_string       = ENC_V2;
+        pdf->enc_method_embeddedfile = ENC_V2;
+    } else if (R == 4 || R == 5 || R == 6) {
+        EM        = pdf_readbool(q, len, "/EncryptMetadata", 1);
+        StmF      = pdf_readval(q, len, "/StmF");
+        StrF      = pdf_readval(q, len, "/StrF");
+        EFF       = pdf_readval(q, len, "/EFF");
+        n         = len;
+        pdf->CF   = pdf_getdict(q, (int *)(&n), "/CF");
+        pdf->CF_n = n;
+
+        if (StmF) {
+            cli_dbgmsg("pdf_handle_enc: StmF: %s\n", StmF);
+        }
+        if (StrF) {
+            cli_dbgmsg("pdf_handle_enc: StrF: %s\n", StrF);
+        }
+        if (EFF) {
+            cli_dbgmsg("pdf_handle_enc: EFF: %s\n", EFF);
         }
 
-        /* we can have both of these:
-         * /AESV2/Length /Standard/Length
-         * /Length /Standard
-         * make sure we don't mistake AES's length for Standard's */
-        length = pdf_readint(q2, len - (q2 - q), "/Length");
-        if (length == ~0u)
-            length = pdf_readint(q, len, "/Length");
+        pdf->enc_method_stream       = parse_enc_method(pdf->CF, n, StmF, ENC_IDENTITY);
+        pdf->enc_method_string       = parse_enc_method(pdf->CF, n, StrF, ENC_IDENTITY);
+        pdf->enc_method_embeddedfile = parse_enc_method(pdf->CF, n, EFF, pdf->enc_method_stream);
 
-        if (length < 40) {
-            cli_dbgmsg("pdf_handle_enc: invalid length: %d\n", length);
-            length = 40;
+        cli_dbgmsg("pdf_handle_enc: EncryptMetadata: %s\n", EM ? "true" : "false");
+
+        if (R == 4) {
+            length = 128;
+        } else {
+            length = 256;
+
+            /*
+             * Read the UE value (for checking user-password)
+             */
+            n      = 0;
+            UE     = pdf_readstring(q, len, "/UE", &n, NULL, false);
+            UE_len = n;
+
+            /*
+             * Read the OE value (for checking owner-password)
+             */
+            n      = 0;
+            OE     = pdf_readstring(q, len, "/OE", &n, NULL, false);
+            OE_len = n;
+        }
+    }
+
+    if (length == ~0u)
+        length = 40;
+
+    /*
+     * Read the O value
+     */
+    n = 0;
+    O = pdf_readstring(q, len, "/O", &n, NULL, false);
+    if (!O || n < oulen) {
+        cli_dbgmsg("pdf_handle_enc: invalid O: %d\n", n);
+        noisy_warnmsg("pdf_handle_enc: invalid O: %d\n", n);
+        if (O) {
+            dbg_printhex("invalid O", O, n);
         }
 
-        R = pdf_readint(q, len, "/R");
-        if (R == ~0u) {
-            cli_dbgmsg("pdf_handle_enc: invalid R\n");
-            noisy_warnmsg("pdf_handle_enc: invalid R\n");
-            break;
-        }
-
-        if ((R > 6) || (R < 2)) {
-            cli_dbgmsg("pdf_handle_enc: R value outside supported range [2..6]\n");
-            noisy_warnmsg("pdf_handle_enc: R value outside supported range [2..6]\n");
-            break;
-        }
-
-        P = pdf_readint(q, len, "/P");
-        if (R < 6) { // P field doesn't seem to be required for R6.
-            if (P == ~0u) {
-                cli_dbgmsg("pdf_handle_enc: invalid P\n");
-                noisy_warnmsg("pdf_handle_enc: invalid P\n");
-                break;
-            }
-        }
-
-        if (R < 5)
-            oulen = 32;
-        else
-            oulen = 48;
-
-        if (R == 2 || R == 3) {
-            pdf->enc_method_stream       = ENC_V2;
-            pdf->enc_method_string       = ENC_V2;
-            pdf->enc_method_embeddedfile = ENC_V2;
-        } else if (R == 4 || R == 5 || R == 6) {
-            EM        = pdf_readbool(q, len, "/EncryptMetadata", 1);
-            StmF      = pdf_readval(q, len, "/StmF");
-            StrF      = pdf_readval(q, len, "/StrF");
-            EFF       = pdf_readval(q, len, "/EFF");
-            n         = len;
-            pdf->CF   = pdf_getdict(q, (int *)(&n), "/CF");
-            pdf->CF_n = n;
-
-            if (StmF)
-                cli_dbgmsg("pdf_handle_enc: StmF: %s\n", StmF);
-            if (StrF)
-                cli_dbgmsg("pdf_handle_enc: StrF: %s\n", StrF);
-            if (EFF)
-                cli_dbgmsg("pdf_handle_enc: EFF: %s\n", EFF);
-
-            pdf->enc_method_stream       = parse_enc_method(pdf->CF, n, StmF, ENC_IDENTITY);
-            pdf->enc_method_string       = parse_enc_method(pdf->CF, n, StrF, ENC_IDENTITY);
-            pdf->enc_method_embeddedfile = parse_enc_method(pdf->CF, n, EFF, pdf->enc_method_stream);
-
-            free(StmF);
-            free(StrF);
-            free(EFF);
-
-            cli_dbgmsg("pdf_handle_enc: EncryptMetadata: %s\n", EM ? "true" : "false");
-
-            if (R == 4) {
-                length = 128;
-            } else {
-                n      = 0;
-                UE     = pdf_readstring(q, len, "/UE", &n, NULL, false);
-                UE_len = n;
-                length = 256;
-            }
-        }
-
-        if (length == ~0u)
-            length = 40;
-
-        n = 0;
-        O = pdf_readstring(q, len, "/O", &n, NULL, false);
-        if (!O || n < oulen) {
-            cli_dbgmsg("pdf_handle_enc: invalid O: %d\n", n);
-            cli_dbgmsg("pdf_handle_enc: invalid O: %d\n", n);
-            if (O)
-                dbg_printhex("invalid O", O, n);
-
-            break;
-        }
-        if (n > oulen) {
-            for (i = oulen; i < n; i++)
-                if (O[i])
-                    break;
-
-            if (i != n) {
+        goto done;
+    }
+    if (n > oulen) {
+        for (i = oulen; i < n; i++) {
+            if (O[i]) {
                 dbg_printhex("pdf_handle_enc: too long O", O, n);
                 noisy_warnmsg("pdf_handle_enc: too long O: %u", n);
-                break;
+                goto done;
             }
         }
+    }
 
-        n = 0;
-        U = pdf_readstring(q, len, "/U", &n, NULL, false);
-        if (!U || n < oulen) {
-            cli_dbgmsg("pdf_handle_enc: invalid U: %u\n", n);
-            noisy_warnmsg("pdf_handle_enc: invalid U: %u\n", n);
-
-            if (U)
-                dbg_printhex("invalid U", U, n);
-
-            break;
+    /*
+     * Read the U value
+     */
+    n = 0;
+    U = pdf_readstring(q, len, "/U", &n, NULL, false);
+    if (!U || n < oulen) {
+        cli_dbgmsg("pdf_handle_enc: invalid U: %u\n", n);
+        noisy_warnmsg("pdf_handle_enc: invalid U: %u\n", n);
+        if (U) {
+            dbg_printhex("invalid U", U, n);
         }
 
-        if (n > oulen) {
-            for (i = oulen; i < n; i++)
-                if (U[i])
-                    break;
-            if (i != n) {
+        goto done;
+    }
+
+    if (n > oulen) {
+        for (i = oulen; i < n; i++) {
+            if (U[i]) {
                 dbg_printhex("too long U", U, n);
-                break;
+                goto done;
             }
         }
+    }
 
-        cli_dbgmsg("pdf_handle_enc: Encrypt R: %d, P %x, length: %u\n", R, P, length);
-        if (length % 8) {
-            cli_dbgmsg("pdf_handle_enc: wrong key length, not multiple of 8\n");
-            noisy_warnmsg("pdf_handle_enc: wrong key length, not multiple of 8\n");
-            break;
-        }
-        check_user_password(pdf, R, O, U, P, EM, UE, UE_len, length, oulen);
-    } while (0);
+    cli_dbgmsg("pdf_handle_enc: Encrypt R: %d, P %x, length: %u\n", R, P, length);
+    if (length % 8) {
+        cli_dbgmsg("pdf_handle_enc: wrong key length, not multiple of 8\n");
+        noisy_warnmsg("pdf_handle_enc: wrong key length, not multiple of 8\n");
+        goto done;
+    }
 
+    // Check the owner password.
+    check_owner_password(pdf, R, O, U, OE, OE_len);
+
+    if (NULL == pdf->key) {
+        // Wasn't the owner password, let's try the user password.
+        check_user_password(pdf, R, O, U, P, EM, UE, UE_len, length);
+    }
+
+done:
     free(O);
+    free(OE);
+
     free(U);
     free(UE);
+
+    free(StmF);
+    free(StrF);
+    free(EFF);
 }
 
 /**
