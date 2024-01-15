@@ -229,14 +229,17 @@ int is_object_reference(char *begin, char **endchar, uint32_t *id)
 static char *pdf_decrypt_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *in, size_t *length)
 {
     enum enc_method enc;
-    const char *hex = NULL;
-    char *bin       = NULL;
-    char *dec       = NULL;
+    const char *hex   = NULL;
+    const char *bin   = NULL;
+    char *decoded_bin = NULL;
+    char *dec         = NULL;
+    size_t bin_length;
 
     /* handled only once in cli_pdf() */
     // pdf_handle_enc(pdf);
     if (pdf->flags & (1 << DECRYPTABLE_PDF)) {
         int hex2str_ret;
+        bool hex_encoded_binary = false;
 
         enc = get_enc_method(pdf, obj);
 
@@ -244,27 +247,36 @@ static char *pdf_decrypt_string(struct pdf_struct *pdf, struct pdf_obj *obj, con
         const char *start = in;
         if (start[0] == '<') {
             start++;
+            hex_encoded_binary = true;
         }
         const char *end = in + *length;
         if (end[-1] == '>') {
             end--;
         }
 
-        *length           = (end - start);
-        size_t bin_length = *length / 2;
+        *length = (end - start);
 
-        hex = start;
+        if (hex_encoded_binary) {
+            hex        = start;
+            bin_length = *length / 2;
 
-        // Convert the hex string to binary
-        bin = cli_calloc(1, bin_length);
-        if (!bin) {
-            return NULL;
-        }
+            // Convert the hex string to binary
+            decoded_bin = cli_calloc(1, bin_length);
+            if (!decoded_bin) {
+                return NULL;
+            }
 
-        hex2str_ret = cli_hex2str_to(hex, bin, *length);
-        if (hex2str_ret != 0) {
-            cli_dbgmsg("pdf_decrypt_string: cli_hex2str_to() failed\n");
-            goto done;
+            hex2str_ret = cli_hex2str_to(hex, decoded_bin, *length);
+            if (hex2str_ret != 0) {
+                cli_dbgmsg("pdf_decrypt_string: cli_hex2str_to() failed\n");
+                goto done;
+            }
+
+            bin = decoded_bin;
+        } else {
+            // Binary is just embedded directly in the file, no encoding.
+            bin        = start;
+            bin_length = *length;
         }
 
         // Decrypt the binary
@@ -278,8 +290,8 @@ static char *pdf_decrypt_string(struct pdf_struct *pdf, struct pdf_obj *obj, con
     }
 
 done:
-    if (NULL != bin) {
-        free(bin);
+    if (NULL != decoded_bin) {
+        free(decoded_bin);
     }
 
     return dec;
