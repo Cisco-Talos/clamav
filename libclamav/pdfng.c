@@ -229,14 +229,60 @@ int is_object_reference(char *begin, char **endchar, uint32_t *id)
 static char *pdf_decrypt_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *in, size_t *length)
 {
     enum enc_method enc;
+    const char *hex = NULL;
+    char *bin       = NULL;
+    char *dec       = NULL;
 
     /* handled only once in cli_pdf() */
     // pdf_handle_enc(pdf);
     if (pdf->flags & (1 << DECRYPTABLE_PDF)) {
+        int hex2str_ret;
+
         enc = get_enc_method(pdf, obj);
-        return decrypt_any(pdf, obj->id, in, length, enc);
+
+        // Strip off the leading `<` and trailing `>`
+        const char *start = in;
+        if (start[0] == '<') {
+            start++;
+        }
+        const char *end = in + *length;
+        if (end[-1] == '>') {
+            end--;
+        }
+
+        *length           = (end - start);
+        size_t bin_length = *length / 2;
+
+        hex = start;
+
+        // Convert the hex string to binary
+        bin = cli_calloc(1, bin_length);
+        if (!bin) {
+            return NULL;
+        }
+
+        hex2str_ret = cli_hex2str_to(hex, bin, *length);
+        if (hex2str_ret != 0) {
+            cli_dbgmsg("pdf_decrypt_string: cli_hex2str_to() failed\n");
+            goto done;
+        }
+
+        // Decrypt the binary
+        dec = decrypt_any(pdf, obj->id, bin, &bin_length, enc);
+        if (!dec) {
+            cli_dbgmsg("pdf_decrypt_string: decrypt_any() failed\n");
+            goto done;
+        }
+
+        *length = bin_length;
     }
-    return NULL;
+
+done:
+    if (NULL != bin) {
+        free(bin);
+    }
+
+    return dec;
 }
 
 char *pdf_finalize_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *in, size_t len)
