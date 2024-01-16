@@ -78,7 +78,6 @@ struct pdf_token {
 };
 
 static size_t pdf_decodestream_internal(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_dict *params, struct pdf_token *token, int fout, cl_error_t *status, struct objstm_struct *objstm);
-static cl_error_t pdf_decode_dump(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_token *token, uint32_t lvl);
 
 static cl_error_t filter_ascii85decode(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_token *token);
 static cl_error_t filter_rldecode(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_token *token);
@@ -338,13 +337,6 @@ static size_t pdf_decodestream_internal(
             break;
         }
         token->success++;
-
-        /* Dump the stream content to a text file if keeptmp is enabled. */
-        if (pdf->ctx->engine->keeptmp) {
-            if (CL_SUCCESS != pdf_decode_dump(pdf, obj, token, i + 1)) {
-                cli_errmsg("pdf_decodestream_internal: failed to write decoded stream content to temp file\n");
-            }
-        }
     }
 
     if ((token->success > 0) && (NULL != token->content)) {
@@ -397,45 +389,6 @@ static size_t pdf_decodestream_internal(
 done:
 
     return bytes_scanned;
-}
-
-/**
- * @brief   Dump PDF filter content such as stream contents to a temp file.
- *
- * Temp file is created in the pdf->dir directory.
- * Filename format is "pdf<pdf->files-1>_<lvl>".
- *
- * @param pdf   Pdf context structure.
- * @param obj   The object we found the filter content in.
- * @param token The struct for the filter contents.
- * @param lvl   A unique index to distinguish the files from each other.
- * @return cl_error_t
- */
-static cl_error_t pdf_decode_dump(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_token *token, uint32_t lvl)
-{
-    char fname[1024];
-    int ifd;
-
-    snprintf(fname, sizeof(fname), "%s" PATHSEP "pdf%02u_%02u", pdf->dir, (pdf->files - 1), lvl);
-    ifd = open(fname, O_RDWR | O_CREAT | O_EXCL | O_TRUNC | O_BINARY, 0600);
-    if (ifd < 0) {
-        char err[128];
-
-        cli_errmsg("cli_pdf: can't create intermediate temporary file %s: %s\n", fname, cli_strerror(errno, err, sizeof(err)));
-        return CL_ETMPFILE;
-    }
-
-    cli_dbgmsg("cli_pdf: decoded filter %u obj %u %u\n", lvl, obj->id >> 8, obj->id & 0xff);
-    cli_dbgmsg("         ... to %s\n", fname);
-
-    if (cli_writen(ifd, token->content, token->length) != token->length) {
-        cli_errmsg("cli_pdf: failed to write output file\n");
-        close(ifd);
-        return CL_EWRITE;
-    }
-
-    close(ifd);
-    return CL_SUCCESS;
 }
 
 /*
