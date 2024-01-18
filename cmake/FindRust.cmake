@@ -142,6 +142,10 @@ if(NOT DEFINED CARGO_HOME)
     endif()
 endif()
 
+#
+# Environment for most invocations of `cargo` 
+#
+
 include(FindPackageHandleStandardArgs)
 
 function(find_rust_program RUST_PROGRAM)
@@ -190,6 +194,7 @@ function(cargo_vendor)
     # for online builds when we run `cpack --config CPackSourceConfig.cmake`
     message(STATUS "Running `cargo vendor` to collect dependencies for ${ARGS_TARGET}. This may take a while if the local crates.io index needs to be updated ...")
     make_directory(${CMAKE_SOURCE_DIR}/.cargo)
+    GetCargoLocalDirEnv(_cargo_local_dir_env)
     execute_process(
         COMMAND ${CMAKE_COMMAND} -E env "CARGO_TARGET_DIR=${ARGS_BINARY_DIRECTORY}" ${cargo_EXECUTABLE} vendor "${CMAKE_SOURCE_DIR}/.cargo/vendor"
         WORKING_DIRECTORY "${ARGS_SOURCE_DIRECTORY}"
@@ -221,6 +226,24 @@ directory = \".cargo/vendor\"
     endif()
 endfunction()
 
+# Export the project name (including upstream project) and maintainer mode
+# status for use by build scripts
+function(GetCargoExtraEnv result)
+    set(_result "PROJECT_NAME=${PROJECT_NAME}")
+    list(APPEND _result "CMAKE_PROJECT_NAME=${CMAKE_PROJECT_NAME}")
+    list(APPEND _result "MAINTAINER_MODE=${MAINTAINER_MODE}")
+    # Propagate any additional Rust compiler flags
+    list(APPEND _result "RUSTFLAGS=${RUSTFLAGS}")
+    set("${result}" "${_result}" PARENT_SCOPE)
+endfunction()
+
+function(GetCargoLocalDirEnv result)
+    # Specify the destination directory for build products
+    set(_env "CARGO_TARGET_DIR=${ARGS_BINARY_DIRECTORY}")
+    list(APPEND _env "CARGO_INCLUDE_DIRECTORIES=\"${ARGS_INCLUDE_DIRECTORIES}\"")
+    set(${result} "${_env}" PARENT_SCOPE)
+endfunction()
+
 function(add_rust_executable)
     set(options)
     set(oneValueArgs TARGET SOURCE_DIRECTORY BINARY_DIRECTORY)
@@ -238,10 +261,14 @@ function(add_rust_executable)
     list(APPEND MY_CARGO_ARGS "--target-dir" ${ARGS_BINARY_DIRECTORY})
     list(JOIN MY_CARGO_ARGS " " MY_CARGO_ARGS_STRING)
 
+    GetCargoExtraEnv(_cargo_extra_env)
+    GetCargoLocalDirEnv(_cargo_local_dir_env)
+
     # Build the executable.
     add_custom_command(
         OUTPUT "${OUTPUT}"
-        COMMAND ${CMAKE_COMMAND} -E env "CARGO_TARGET_DIR=${ARGS_BINARY_DIRECTORY}" "CARGO_INCLUDE_DIRECTORIES=\"${ARGS_INCLUDE_DIRECTORIES}\"" ${cargo_EXECUTABLE} ${MY_CARGO_ARGS}
+        COMMAND ${CMAKE_COMMAND} -E env "${_cargo_extra_env}" "${_cargo_local_dir_env}" ${cargo_EXECUTABLE} ${MY_CARGO_ARGS}
+        COMMAND_EXPAND_LISTS
         WORKING_DIRECTORY "${ARGS_SOURCE_DIRECTORY}"
         DEPENDS ${EXE_SOURCES}
         COMMENT "Building ${ARGS_TARGET} in ${ARGS_BINARY_DIRECTORY} with:\n\t ${cargo_EXECUTABLE} ${MY_CARGO_ARGS_STRING}")
@@ -288,39 +315,42 @@ function(add_rust_library)
     list(APPEND MY_CARGO_ARGS "--target-dir" ${ARGS_BINARY_DIRECTORY})
     list(JOIN MY_CARGO_ARGS " " MY_CARGO_ARGS_STRING)
 
-    # Build the library and generate the c-binding
-    if("${CMAKE_OSX_ARCHITECTURES}" MATCHES "^(arm64;x86_64|x86_64;arm64)$")
+    GetCargoExtraEnv(_cargo_extra_env)
+    GetCargoLocalDirEnv(_cargo_local_dir_env)
+
+    if(RUST_COMPILER_TARGET STREQUAL "universal-apple-darwin")
+        foreach(arch IN LISTS CMAKE_OSX_ARCHITECTURES)
+            message("Making custom command for OSX arch ${arch}")
+            if(arch STREQUAL "arm64")
+                # Convert to rustc's designation
+                set(arch "aarch64")
+            endif()
+            set(this_output "${ARGS_BINARY_DIRECTORY}/${arch}-apple-darwin/${CARGO_BUILD_TYPE}/lib${ARGS_TARGET}.a")
+            list(APPEND lipo_inputs "${this_output}")
+            add_custom_command(
+                OUTPUT "${this_output}"
+                COMMAND ${CMAKE_COMMAND} -E env "CARGO_CMD=build" "${_cargo_extra_env}" "${_cargo_local_dir_env}" ${cargo_EXECUTABLE} ${MY_CARGO_ARGS} --target=${arch}-apple-darwin
+                COMMAND_EXPAND_LISTS
+                WORKING_DIRECTORY "${ARGS_SOURCE_DIRECTORY}"
+                DEPENDS ${LIB_SOURCES}
+                COMMENT "Building ${ARGS_TARGET} for ${arch} in ${ARGS_BINARY_DIRECTORY} with:  ${cargo_EXECUTABLE} ${MY_CARGO_ARGS_STRING}")
+        endforeach()
+        # `lipo` will provide the Universal binary
         add_custom_command(
             OUTPUT "${OUTPUT}"
-            COMMAND ${CMAKE_COMMAND} -E env "CARGO_CMD=build" "CARGO_TARGET_DIR=${ARGS_BINARY_DIRECTORY}" "MAINTAINER_MODE=${MAINTAINER_MODE}" "CARGO_INCLUDE_DIRECTORIES=\"${ARGS_INCLUDE_DIRECTORIES}\"" "RUSTFLAGS=${RUSTFLAGS}" ${cargo_EXECUTABLE} ${MY_CARGO_ARGS} --target=x86_64-apple-darwin
-            COMMAND ${CMAKE_COMMAND} -E env "CARGO_CMD=build" "CARGO_TARGET_DIR=${ARGS_BINARY_DIRECTORY}" "MAINTAINER_MODE=${MAINTAINER_MODE}" "CARGO_INCLUDE_DIRECTORIES=\"${ARGS_INCLUDE_DIRECTORIES}\"" "RUSTFLAGS=${RUSTFLAGS}" ${cargo_EXECUTABLE} ${MY_CARGO_ARGS} --target=aarch64-apple-darwin
             COMMAND ${CMAKE_COMMAND} -E make_directory "${ARGS_BINARY_DIRECTORY}/${RUST_COMPILER_TARGET}/${CARGO_BUILD_TYPE}"
             COMMAND lipo -create ${ARGS_BINARY_DIRECTORY}/x86_64-apple-darwin/${CARGO_BUILD_TYPE}/lib${ARGS_TARGET}.a ${ARGS_BINARY_DIRECTORY}/aarch64-apple-darwin/${CARGO_BUILD_TYPE}/lib${ARGS_TARGET}.a -output "${OUTPUT}"
             WORKING_DIRECTORY "${ARGS_SOURCE_DIRECTORY}"
-            DEPENDS ${LIB_SOURCES}
-            COMMENT "Building ${ARGS_TARGET} in ${ARGS_BINARY_DIRECTORY} with:  ${cargo_EXECUTABLE} ${MY_CARGO_ARGS_STRING}")
-    elseif("${CMAKE_OSX_ARCHITECTURES}" MATCHES "^(arm64)$")
-        add_custom_command(
-            OUTPUT "${OUTPUT}"
-            COMMAND ${CMAKE_COMMAND} -E env "CARGO_CMD=build" "CARGO_TARGET_DIR=${ARGS_BINARY_DIRECTORY}" "MAINTAINER_MODE=${MAINTAINER_MODE}" "CARGO_INCLUDE_DIRECTORIES=\"${ARGS_INCLUDE_DIRECTORIES}\"" "RUSTFLAGS=${RUSTFLAGS}" ${cargo_EXECUTABLE} ${MY_CARGO_ARGS} --target=aarch64-apple-darwin
-            WORKING_DIRECTORY "${ARGS_SOURCE_DIRECTORY}"
-            DEPENDS ${LIB_SOURCES}
-            COMMENT "Building ${ARGS_TARGET} in ${ARGS_BINARY_DIRECTORY} with:  ${cargo_EXECUTABLE} ${MY_CARGO_ARGS_STRING}")
-    elseif("${CMAKE_OSX_ARCHITECTURES}" MATCHES "^(x86_64)$")
-        add_custom_command(
-            OUTPUT "${OUTPUT}"
-            COMMAND ${CMAKE_COMMAND} -E env "CARGO_CMD=build" "CARGO_TARGET_DIR=${ARGS_BINARY_DIRECTORY}" "MAINTAINER_MODE=${MAINTAINER_MODE}" "CARGO_INCLUDE_DIRECTORIES=\"${ARGS_INCLUDE_DIRECTORIES}\"" "RUSTFLAGS=${RUSTFLAGS}" ${cargo_EXECUTABLE} ${MY_CARGO_ARGS} --target=x86_64-apple-darwin
-            COMMAND ${CMAKE_COMMAND} -E make_directory "${ARGS_BINARY_DIRECTORY}/${RUST_COMPILER_TARGET}/${CARGO_BUILD_TYPE}"
-            WORKING_DIRECTORY "${ARGS_SOURCE_DIRECTORY}"
-            DEPENDS ${LIB_SOURCES}
-            COMMENT "Building ${ARGS_TARGET} in ${ARGS_BINARY_DIRECTORY} with:  ${cargo_EXECUTABLE} ${MY_CARGO_ARGS_STRING}")
+            DEPENDS ${lipo_inputs}
+            COMMENT "Composing universal binary in ${ARGS_BINARY_DIRECTORY}")
     else()
         add_custom_command(
             OUTPUT "${OUTPUT}"
-            COMMAND ${CMAKE_COMMAND} -E env "CARGO_CMD=build" "CARGO_TARGET_DIR=${ARGS_BINARY_DIRECTORY}" "MAINTAINER_MODE=${MAINTAINER_MODE}" "CARGO_INCLUDE_DIRECTORIES=\"${ARGS_INCLUDE_DIRECTORIES}\"" "RUSTFLAGS=${RUSTFLAGS}" ${cargo_EXECUTABLE} ${MY_CARGO_ARGS}
+            COMMAND ${CMAKE_COMMAND} -E env "CARGO_CMD=build" "${_cargo_extra_env}" "${_cargo_local_dir_env}" ${cargo_EXECUTABLE} ${MY_CARGO_ARGS}
+            COMMAND_EXPAND_LISTS
             WORKING_DIRECTORY "${ARGS_SOURCE_DIRECTORY}"
             DEPENDS ${LIB_SOURCES}
-            COMMENT "Building ${ARGS_TARGET} in ${ARGS_BINARY_DIRECTORY} with:  ${cargo_EXECUTABLE} ${MY_CARGO_ARGS_STRING}")
+            COMMENT "Building ${ARGS_TARGET} for ${arch} in ${ARGS_BINARY_DIRECTORY} with:  ${cargo_EXECUTABLE} ${MY_CARGO_ARGS_STRING}")
     endif()
 
     # Create a target from the build output
@@ -367,7 +397,7 @@ function(add_rust_test)
     list(JOIN MY_CARGO_ARGS " " MY_CARGO_ARGS_STRING)
 
     if(ARGS_PRECOMPILE_TESTS)
-        list(APPEND ARGS_PRECOMPILE_ENVIRONMENT "CARGO_CMD=test" "CARGO_TARGET_DIR=${ARGS_BINARY_DIRECTORY}")
+        list(APPEND ARGS_PRECOMPILE_ENVIRONMENT "CARGO_CMD=test" "PROJECT_NAME=${PROJECT_NAME}" "CMAKE_PROJECT_NAME=${CMAKE_PROJECT_NAME}" "CARGO_TARGET_DIR=${ARGS_BINARY_DIRECTORY}")
         add_custom_target(${ARGS_NAME}_tests ALL
             COMMAND ${CMAKE_COMMAND} -E env ${ARGS_PRECOMPILE_ENVIRONMENT} ${cargo_EXECUTABLE} ${MY_CARGO_ARGS} --color always --no-run
             DEPENDS ${ARGS_PRECOMPILE_DEPENDS}
@@ -375,9 +405,13 @@ function(add_rust_test)
         )
     endif()
 
+    GetCargoExtraEnv(_cargo_extra_env)
+    GetCargoLocalDirEnv(_cargo_local_dir_env)
+
     add_test(
         NAME ${ARGS_NAME}
-        COMMAND ${CMAKE_COMMAND} -E env "CARGO_CMD=test" "CARGO_TARGET_DIR=${ARGS_BINARY_DIRECTORY}" "RUSTFLAGS=${RUSTFLAGS}" ${cargo_EXECUTABLE} ${MY_CARGO_ARGS} --color always
+        COMMAND ${CMAKE_COMMAND} -E env "CARGO_CMD=test" "${_cargo_extra_env}" "${_cargo_local_dir_env}" "RUSTFLAGS=${RUSTFLAGS}" ${cargo_EXECUTABLE} ${MY_CARGO_ARGS} --color always
+        COMMAND_EXPAND_LISTS
         WORKING_DIRECTORY ${ARGS_SOURCE_DIRECTORY}
     )
 endfunction()
