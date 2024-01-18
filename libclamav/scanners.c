@@ -4900,6 +4900,10 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
                 ret = cli_scan_structured(ctx);
             break;
 
+        case CL_TYPE_PDF:
+            if (SCAN_PARSE_PDF && (DCONF_DOC & DOC_CONF_PDF))
+                (void)calculate_fuzzy_image_hash(ctx, type);
+
         default:
             break;
     }
@@ -4994,9 +4998,6 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
         case CL_TYPE_PDF: /* FIXMELIMITS: pdf should be an archive! */
             if (SCAN_PARSE_PDF && (DCONF_DOC & DOC_CONF_PDF))
                 ret = cli_scanpdf(ctx, 0);
-
-            // we may still want to calculate the fuzzy hash for the rendering page, even if parsing fail as the pdf parser is different and may parse the file sucessfully
-            (void)calculate_fuzzy_image_hash(ctx, type);
 
             break;
 
