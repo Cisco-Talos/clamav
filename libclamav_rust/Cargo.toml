@@ -22,6 +22,7 @@ unicode-segmentation = "1.10.1"
 bindgen = "0.65"
 onenote_parser = { git = "https://github.com/Cisco-Talos/onenote.rs.git", branch = "CLAM-2329-new-from-slice" }
 hex-literal = "0.4.1"
+pdfium-render = "0.8.17"
 
 [lib]
 crate-type = ["staticlib"]

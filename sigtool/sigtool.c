@@ -376,7 +376,7 @@ static int fuzzy_img_file(char *filename)
         goto done;
     }
 
-    if (!fuzzy_hash_calculate_image(mem, (size_t)st.st_size, hash.hash, 8, &fuzzy_hash_calc_error)) {
+    if (!fuzzy_hash_calculate_image(mem, (size_t)st.st_size, hash.hash, 8, 0, &fuzzy_hash_calc_error)) {
         mprintf(LOGG_ERROR, "%s: Failed to calculate image fuzzy hash: %s\n",
                 basename(filename),
                 ffierror_fmt(fuzzy_hash_calc_error));

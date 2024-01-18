@@ -4108,7 +4108,7 @@ static cl_error_t calculate_fuzzy_image_hash(cli_ctx *ctx, cli_file_t type)
         }
     }
 
-    if (!fuzzy_hash_calculate_image(offset, ctx->fmap->real_len, hash.hash, 8, &fuzzy_hash_calc_error)) {
+    if (!fuzzy_hash_calculate_image(offset, ctx->fmap->real_len, hash.hash, 8, type, &fuzzy_hash_calc_error))     {
         cli_dbgmsg("Failed to calculate image fuzzy hash for %s: %s\n",
                    cli_ftname(type),
                    ffierror_fmt(fuzzy_hash_calc_error));
@@ -4994,6 +4994,10 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
         case CL_TYPE_PDF: /* FIXMELIMITS: pdf should be an archive! */
             if (SCAN_PARSE_PDF && (DCONF_DOC & DOC_CONF_PDF))
                 ret = cli_scanpdf(ctx, 0);
+
+            // we may still want to calculate the fuzzy hash for the rendering page, even if parsing fail as the pdf parser is different and may parse the file sucessfully
+            (void)calculate_fuzzy_image_hash(ctx, type);
+
             break;
 
         default:
