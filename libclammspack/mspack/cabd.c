@@ -689,7 +689,7 @@ static int cabd_find(struct mscab_decompressor_p *self, unsigned char *buf,
         /* we spend most of our time in this while loop, looking for
          * a leading 'M' of the 'MSCF' signature */
         while (p < pend && *p != 0x4D) p++;
-        /* if we found tht 'M', advance state */
+        /* if we found the 'M', advance state */
         if (p++ < pend) state = 1;
         break;
 

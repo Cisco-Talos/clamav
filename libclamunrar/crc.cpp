@@ -142,7 +142,7 @@ static void InitTables64()
 }
 
 
-// We cannot place the intialization to CRC64(), because we use this function
+// We cannot place the initialization to CRC64(), because we use this function
 // in multithreaded mode and it conflicts with multithreading.
 struct CallInitCRC64 {CallInitCRC64() {InitTables64();}} static CallInit64;
 

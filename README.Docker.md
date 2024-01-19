@@ -239,7 +239,7 @@ connecting to the dockerized `clamd`. This can be done by either pointing
 ### Dockerized ClamDScan
 
 Running both `clamd` and `clamdscan` is also easily possible, as all that is
-needed is the shared socket between the two containers. The only cavaet here
+needed is the shared socket between the two containers. The only caveat here
 is to:
 1. mount the files to be scanned in the container that will run `clamd`, or
 2. mount the files to be scanned in the container that will `clamdscan` run if

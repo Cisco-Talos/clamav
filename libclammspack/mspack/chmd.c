@@ -678,7 +678,7 @@ static unsigned char *read_chunk(struct mschm_decompressor_p *self,
         return NULL;
     }
 
-    /* check the signature. Is is PMGL or PMGI? */
+    /* check the signature. Is it PMGL or PMGI? */
     if (!((buf[0] == 0x50) && (buf[1] == 0x4D) && (buf[2] == 0x47) &&
           ((buf[3] == 0x4C) || (buf[3] == 0x49))))
     {

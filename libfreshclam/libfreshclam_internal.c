@@ -733,7 +733,7 @@ static fc_error_t create_curl_handle(
 
     /* Authenticate using a client certificate and private key, if specified by the FRESHCLAM_CLIENT_CERT, FRESHCLAM_CLIENT_KEY, and FRESHCLAM_CLIENT_KEY_PASSWD environment variables. */
     if (CL_SUCCESS != set_tls_client_certificate(curl)) {
-        logg(LOGG_DEBUG, "create_curl_handle: Failed to set certificate and private key for client authentiation.\n");
+        logg(LOGG_DEBUG, "create_curl_handle: Failed to set certificate and private key for client authentication.\n");
         goto done;
     }
 

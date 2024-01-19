@@ -4420,7 +4420,7 @@ Important note to clamdwatch users: please upgrade to the latest version
     - a lot of minor improvements, including support for new platforms
 
 - clamd:
-  - new directive ExitOnOOM (stop the deamon when libclamav reports an out of
+  - new directive ExitOnOOM (stop the daemon when libclamav reports an out of
     memory condition)
   - new directives StreamMinPort and StreamMaxPort (port range specification
     for a stream mode)
@@ -5456,7 +5456,7 @@ compression/archive support. Snapshot will be available for a few days.
 - fixed compile problem on FreeBSD (thanks to Wieslaw Glod <wkg@x2.pl> and
   Ken McKittrick <klmac@usadatanet.com>)
 - clamscan reads all .db files from data directory, so you can put your
-  own databases there and they won't be overwrited by the updaters. viruses.db
+  own databases there and they won't be overwritten by the updaters. viruses.db
   is still the main database file (if --database isn't used).
 - --deb (debian binary packages scanning) by Magnus Ekdahl <magnus@debian.org>
 - --remove option, but be careful with it !

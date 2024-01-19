@@ -453,7 +453,7 @@ static cl_error_t egg_parse_encrypt_header(const uint8_t* index, size_t size, eg
      * The EGG specification (last updated 2016) for the encrypt header is not accurate.
      * The following describes my findings of the actual format for the encrypt header.
      *
-     * The significant discrepancy is that the Size includes the size of the header iself, not just the data following it.
+     * The significant discrepancy is that the Size includes the size of the header itself, not just the data following it.
      * No other extra_field header's size field includes the size of itself.
      * This must be accounted for by the caller of this function (see the "Fudge factor" comments where this function is used).
      *
@@ -1702,7 +1702,7 @@ cl_error_t cli_egg_open(fmap_t* map, void** hArchive, char*** comments, uint32_t
                      */
                     if (handle->nFiles == 0) {
                         cli_dbgmsg("cli_egg_open: No file found for block in non-solid archive.\n");
-                        // TODO: create an unamed block.
+                        // TODO: create an unnamed block.
                         egg_free_egg_block(found_block);
                     } else {
                         eggFile = handle->files[handle->nFiles - 1];

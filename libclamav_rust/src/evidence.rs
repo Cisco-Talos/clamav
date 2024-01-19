@@ -35,7 +35,7 @@ pub enum Error {
     #[error("Invalid parameter: {0}")]
     InvalidParameter(String),
 
-    #[error("{0} parmeter is NULL")]
+    #[error("{0} parameter is NULL")]
     NullParam(&'static str),
 }
 

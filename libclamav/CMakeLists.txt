@@ -377,7 +377,7 @@ set(LIBCLAMAV_SOURCES
     egg.c               egg.h
     # Master Boot Record partition
     mbr.c               mbr.h
-    # GUID Parition Table partition
+    # GUID Partition Table partition
     gpt.c               gpt.h
     # Apple Partition Map partition
     apm.c               apm.h

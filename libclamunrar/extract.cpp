@@ -1459,7 +1459,7 @@ bool CmdExtract::CheckUnpVer(Archive &Arc,const wchar *ArcFileName)
 //
 // Alternatively we could collect references while extracting an archive
 // and perform the second extraction pass for references only.
-// But it would be slower for solid archives than scaning headers
+// But it would be slower for solid archives than scanning headers
 // in first pass and extracting everything in second, as implemented now.
 //
 void CmdExtract::AnalyzeArchive(const wchar *ArcName,bool Volume,bool NewNumbering)

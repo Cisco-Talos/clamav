@@ -226,7 +226,7 @@ static cl_error_t unz(
                         break;
                     }
                     if (cli_writen(out_file, obuf, sizeof(obuf) - (*avail_out)) != (size_t)(sizeof(obuf) - (*avail_out))) {
-                        cli_warnmsg("cli_unzip: falied to write %lu inflated bytes\n", (unsigned long int)sizeof(obuf) - (*avail_out));
+                        cli_warnmsg("cli_unzip: failed to write %lu inflated bytes\n", (unsigned long int)sizeof(obuf) - (*avail_out));
                         ret = CL_EWRITE;
                         res = 100;
                         break;
@@ -269,7 +269,7 @@ static cl_error_t unz(
                         break;
                     }
                     if (cli_writen(out_file, obuf, sizeof(obuf) - strm.avail_out) != (size_t)(sizeof(obuf) - strm.avail_out)) {
-                        cli_warnmsg("cli_unzip: falied to write %lu bunzipped bytes\n", (long unsigned int)sizeof(obuf) - strm.avail_out);
+                        cli_warnmsg("cli_unzip: failed to write %lu bunzipped bytes\n", (long unsigned int)sizeof(obuf) - strm.avail_out);
                         ret = CL_EWRITE;
                         res = 100;
                         break;
@@ -305,7 +305,7 @@ static cl_error_t unz(
                         break;
                     }
                     if (cli_writen(out_file, obuf, sizeof(obuf) - strm.avail_out) != (size_t)(sizeof(obuf) - strm.avail_out)) {
-                        cli_warnmsg("cli_unzip: falied to write %lu exploded bytes\n", (unsigned long int)sizeof(obuf) - strm.avail_out);
+                        cli_warnmsg("cli_unzip: failed to write %lu exploded bytes\n", (unsigned long int)sizeof(obuf) - strm.avail_out);
                         ret = CL_EWRITE;
                         res = 100;
                         break;
@@ -1012,7 +1012,7 @@ cl_error_t index_the_central_directory(
         coff = parse_central_directory_file_header(map,
                                                    coff,
                                                    fsize,
-                                                   NULL, // num_files_unziped not required
+                                                   NULL, // num_files_unzipped not required
                                                    index + 1,
                                                    &ret,
                                                    ctx,
