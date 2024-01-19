@@ -3320,7 +3320,7 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
     ret = cli_scan_fmap(ctx, type == CL_TYPE_TEXT_ASCII ? CL_TYPE_ANY : type, false, &ftoffset, acmode, NULL, refhash);
     perf_stop(ctx, PERFT_RAW);
 
-    // In allmatch-mode, ret will never be CL_VIRUS, so ret may be used exlusively for file type detection and for terminal errors.
+    // In allmatch-mode, ret will never be CL_VIRUS, so ret may be used exclusively for file type detection and for terminal errors.
     // When not in allmatch-mode, it's more important to return right away if ret is CL_VIRUS, so we don't care if file type matches were found.
     if (ret >= CL_TYPENO) {
         // Matched 1+ file type signatures. Handle them.
@@ -4272,7 +4272,7 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
     }
 
     if (ctx->fmap->len <= 5) {
-        cli_dbgmsg("cli_magic_scan: File is too too small (%zu bytes), ignoring.\n", ctx->fmap->len);
+        cli_dbgmsg("cli_magic_scan: File is too small (%zu bytes), ignoring.\n", ctx->fmap->len);
         ret = CL_CLEAN;
         goto early_ret;
     }
@@ -5360,7 +5360,7 @@ static cl_error_t scan_common(cl_fmap_t *map, const char *filepath, const char *
 
     cli_ctx ctx = {0};
 
-    bool logg_initalized = false;
+    bool logg_initialized = false;
 
     char *target_basename = NULL;
     char *new_temp_prefix = NULL;
@@ -5492,7 +5492,7 @@ static cl_error_t scan_common(cl_fmap_t *map, const char *filepath, const char *
     }
 
     cli_logg_setup(&ctx);
-    logg_initalized = true;
+    logg_initialized = true;
 
     status = cli_magic_scan(&ctx, CL_TYPE_ANY);
 
@@ -5653,7 +5653,7 @@ done:
     // And to convert CL_VERIFIED -> CL_CLEAN
     (void)result_should_goto_done(&ctx, status, &status);
 
-    if (logg_initalized) {
+    if (logg_initialized) {
         cli_logg_unsetup();
     }
 

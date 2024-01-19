@@ -37,7 +37,7 @@ pub enum Error {
     #[error("Invalid parameter: {0}")]
     InvalidParameter(String),
 
-    #[error("{0} parmeter is NULL")]
+    #[error("{0} parameter is NULL")]
     NullParam(&'static str),
 
     #[error("Failed to decode base64: {0}")]
@@ -182,7 +182,7 @@ impl<'a> CssImageExtractor<'a> {
 
             // Check for embedded image data for the "url"
             if !url_parameter.starts_with("data:") {
-                // It's not embeded image data, let's move along.
+                // It's not embedded image data, let's move along.
                 continue 'outer;
             }
 

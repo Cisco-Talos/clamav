@@ -87,10 +87,10 @@ static keychain_info_t _get_keychain_info(keychain_type_t keychain_type)
 }
 
 /*!
- * @brief       Get a reference to an allocated array of certifcates contained
+ * @brief       Get a reference to an allocated array of certificates contained
  *              in the specified keychain.
  * @param[in]   keychain_type   Keychain type
- * @return      If successful, reference to allocated array of certifcates. The
+ * @return      If successful, reference to allocated array of certificates. The
  *              caller is responsible for calling CFRelease on the returned
  *              reference after use.
  * @return      NULL otherwise

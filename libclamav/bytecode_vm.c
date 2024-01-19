@@ -141,7 +141,7 @@ struct stack {
 };
 
 /* type with largest alignment that we use (in general it is a long double, but
- * thats too big alignment for us) */
+ * that's too big alignment for us) */
 typedef uint64_t align_t;
 
 static always_inline void *cli_stack_alloc(struct stack *stack, unsigned bytes)

@@ -91,7 +91,7 @@ class TC(testcase.TestCase):
         self.verify_output(output.out, unexpected=unexpected_stdout)
 
     def test_sigs_bad_hamming(self):
-        self.step_name('Test Unsupported hamming distancee')
+        self.step_name('Test Unsupported hamming distance')
 
         # Unsupported hamming distance
         (TC.path_tmp / 'invalid-ham.ldb').write_text(

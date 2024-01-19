@@ -117,7 +117,7 @@ static inline void cacheset_destroy(struct cache_set *cs, mpool_t *mempool)
     cs->data = NULL;
 }
 
-/* The left/right cooser for the splay tree */
+/* The left/right chooser for the splay tree */
 static inline int cmp(int64_t *a, ssize_t sa, int64_t *b, ssize_t sb)
 {
     if (a[1] < b[1]) return -1;

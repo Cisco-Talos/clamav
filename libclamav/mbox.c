@@ -2047,7 +2047,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                             inMimeHead = false;
 
                             if (strlen(line) > RFC2821LENGTH) {
-                                cli_dbgmsg("parseEmailBody: line length exceds RFC2821 maximum length (1000)\n");
+                                cli_dbgmsg("parseEmailBody: line length exceeds RFC2821 maximum length (1000)\n");
                                 // We must skip this line because functions like rfc822comments() may accept output buffers
                                 // that [RFC2821LENGTH + 1] in and don't have any length checks to prevent exceeding that max.
                                 // E.g. See `boundaryStart()`.
@@ -2408,7 +2408,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                         }
                         break;
                     default:
-                        cli_dbgmsg("Unepxected mime sub type\n");
+                        cli_dbgmsg("Unexpected mime sub type\n");
                         rc = CL_EFORMAT;
                         break;
                 }

@@ -76,7 +76,7 @@ if(Git_FOUND)
     endif()
 endif()
 
-# Enable use of pkg-config to find depenencies.
+# Enable use of pkg-config to find dependencies.
 find_package(PkgConfig QUIET)
 
 #

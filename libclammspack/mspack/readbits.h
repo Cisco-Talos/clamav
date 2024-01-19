@@ -80,7 +80,7 @@
  */
 
 #ifndef BITS_VAR
-# error "define BITS_VAR as the state structure poiner variable name"
+# error "define BITS_VAR as the state structure pointer variable name"
 #endif
 #ifndef BITS_TYPE
 # error "define BITS_TYPE as the state structure type"

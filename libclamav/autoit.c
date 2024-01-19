@@ -533,7 +533,7 @@ static unsigned int u2a(uint8_t *dest, unsigned int len)
 }
 
 /*********************
-   MT realted stuff
+   MT related stuff
 *********************/
 
 struct MT {
@@ -935,7 +935,7 @@ done:
 }
 
 /*********************
-  LAME realted stuff
+  LAME related stuff
 *********************/
 
 #define ROFL(a, b) ((a << (b % (sizeof(a) << 3))) | (a >> ((sizeof(a) << 3) - (b % (sizeof(a) << 3)))))

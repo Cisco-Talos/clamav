@@ -209,7 +209,7 @@ static int sort_list_fn(const void *a, const void *b)
     RETURN_RES_IF_NE(patt_a->partno, patt_b->partno);
 
     /* 4. Keep close patterns close
-     * (this is for performace) */
+     * (this is for performance) */
     RETURN_RES_IF_NE(patt_a, patt_b);
 
     return 0;
@@ -242,7 +242,7 @@ static int sort_heads_by_partno_fn(const void *a, const void *b)
     }
 
     /* 3. Keep close patterns close
-     * (this is for performace) */
+     * (this is for performance) */
     RETURN_RES_IF_NE(patt_a, patt_b);
 
     return 0;

@@ -787,7 +787,7 @@ def mock_database_mirror(handler, port=8001):
 class WebServerHandler_02(BaseHTTPRequestHandler):
     '''
     Web server handler to send 403 (Forbidden) if a whole file is requested.
-    Will send a CVD header if a Range-requeset is received.
+    Will send a CVD header if a Range-request is received.
     '''
     def do_GET(self):
         if 'Range' in self.headers:
@@ -810,7 +810,7 @@ class WebServerHandler_02(BaseHTTPRequestHandler):
 class WebServerHandler_04(BaseHTTPRequestHandler):
     '''
     Web server handler to send 429 (Too-Many-Requests) if a whole file is requested.
-    Will send a CVD header if a Range-requeset is received.
+    Will send a CVD header if a Range-request is received.
     '''
     def do_GET(self):
         if 'Range' in self.headers:

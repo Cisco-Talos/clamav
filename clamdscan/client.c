@@ -208,7 +208,7 @@ int16_t ping_clamd(const struct optstruct *opts)
             }
             attempts = cli_strntoul(attempt_str, strlen(attempt_str), &errchk, 10);
             if (attempt_str + strlen(attempt_str) > errchk) {
-                logg(LOGG_WARNING, "attmept_str would go past end of buffer\n");
+                logg(LOGG_WARNING, "attempt_str would go past end of buffer\n");
                 ret = -1;
                 goto done;
             }

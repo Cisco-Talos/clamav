@@ -147,7 +147,7 @@ class RarCheckPassword:public CheckPassword
     }
     bool IsSet() {return Crypt!=NULL;}
 
-    // RAR5 provides the higly reliable 64 bit password verification value.
+    // RAR5 provides the highly reliable 64 bit password verification value.
     CONFIDENCE GetConfidence() {return CONFIDENCE_HIGH;}
 
     bool Check(SecPassword *Password)

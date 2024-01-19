@@ -171,7 +171,7 @@ static struct scope *scope_done(struct scope *s)
  * InsideInitializer acts differently, make it only a flag
  * ....................
  *
- * Pushing, Poping is done when entering / exiting function scopes,
+ * Pushing, Popping is done when entering / exiting function scopes,
  * tracking { and function ( is done by the function scope tracker too.
  *
  * we only need to track brackets.

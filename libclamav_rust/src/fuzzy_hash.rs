@@ -65,7 +65,7 @@ pub enum Error {
     #[error("Invalid parameter: {0}")]
     InvalidParameter(String),
 
-    #[error("{0} parmeter is NULL")]
+    #[error("{0} parameter is NULL")]
     NullParam(&'static str),
 
     #[error("{0} hash must be {1} characters in length")]
@@ -371,7 +371,7 @@ impl FuzzyHashMap {
 ///         (i.e., axis=-1).
 ///
 /// For the Python `imagehash` package:
-/// - The `phash_simple()` function is doing a DCT-2 transform on a 2-dimensionals
+/// - The `phash_simple()` function is doing a DCT-2 transform on a 2-dimensional
 /// 32x32 array which means, just on the 2nd axis (just the rows).
 /// - The `phash()` function is doing a 2D DCT-2 transform, by running the DCT-2 on
 /// both X and Y axis, which is the same as transposing before or after each

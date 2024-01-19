@@ -306,7 +306,7 @@ done:
 }
 
 /* Skip past all the empty descriptors and find the ImplementationUseVolumeDescriptor.
- * Return error if the next non-empty descriptor is not a ImplementationUseVolumeDescriptor. */
+ * Return error if the next non-empty descriptor is not an ImplementationUseVolumeDescriptor. */
 static ImplementationUseVolumeDescriptor *getImplementationUseVolumeDescriptor(cli_ctx *ctx, size_t *idxp, size_t *lastOffsetp)
 {
     uint8_t *buffer                         = NULL;
@@ -534,7 +534,7 @@ done:
 }
 
 /* Skip past all the empty descriptors and find the AnchorVolumeDescriptor.
- * Return error if the next non-empty descriptor is not a AnchorVolumeDescriptor. */
+ * Return error if the next non-empty descriptor is not an AnchorVolumeDescriptor. */
 static AnchorVolumeDescriptorPointer *getAnchorVolumeDescriptorPointer(cli_ctx *ctx, size_t *idxp, size_t *lastOffsetp)
 {
     uint8_t *buffer                     = NULL;

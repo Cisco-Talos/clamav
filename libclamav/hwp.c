@@ -442,7 +442,7 @@ cl_error_t cli_scanhwp5_stream(cli_ctx *ctx, hwp5_header_t *hwp5, char *name, in
 
 /*** HWP3 ***/
 
-/* all fields use little endian and unicode encoding, if appliable */
+/* all fields use little endian and unicode encoding, if applicable */
 
 // File Identification Information - (30 total bytes)
 #define HWP3_IDENTITY_INFO_SIZE 30

@@ -186,7 +186,7 @@ pub enum InputError {
     #[error("not unicode")]
     LineNotUnicode(#[from] std::str::Utf8Error),
 
-    /// Errors encountered while excuting a command
+    /// Errors encountered while executing a command
     #[error("processing: {0}")]
     Processing(#[from] ProcessingError),
 
@@ -532,7 +532,7 @@ pub fn script2cdiff(script_file_name: &str, builder: &str, server: &str) -> Resu
         cdiff_file_len, cdiff_file_name
     );
 
-    // Calculate SHA2-256 to get the sigature
+    // Calculate SHA2-256 to get the signature
     // TODO: Do this while the file is being written
     let bytes = std::fs::read(&cdiff_file_name)
         .map_err(|e| Error::FileRead(cdiff_file_name.to_owned(), e))?;

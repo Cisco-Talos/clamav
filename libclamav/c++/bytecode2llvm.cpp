@@ -1973,7 +1973,7 @@ static void *bytecode_watchdog(void *arg)
     } while (1);
     watchdog_running = 0;
     if (cli_debug_flag)
-        cli_dbgmsg_no_inline("bytecode watchdog quiting\n");
+        cli_dbgmsg_no_inline("bytecode watchdog quitting\n");
     pthread_mutex_unlock(&watchdog_mutex);
     return NULL;
 }
