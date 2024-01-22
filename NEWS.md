@@ -52,6 +52,9 @@ ClamAV 1.3.0 includes the following improvements and changes:
   "CL_TYPE_PYTHON_COMPILED" instead of "CL_TYPE_BINARY_DATA".
   - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1111)
 
+- Improved support for decrypting PDF's with empty passwords.
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1141)
+
 - Assorted minor improvements and typo fixes.
 
 ### Bug fixes
@@ -65,9 +68,23 @@ ClamAV 1.3.0 includes the following improvements and changes:
 - ClamOnAcc: Fixed an infinite loop when a watched directory does not exist.
   - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1047)
 
+- ClamOnAcc: Fixed an infinite loop when a file has been deleted before a scan.
+  Patch courtesy of gsuehiro.
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1150)
+
 - Fixed a possible crash when processing VBA files on HP-UX/IA 64bit.
   Patch courtesy of Albert Chin-A-Young.
   - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/526)
+
+- ClamConf: Fixed an issue printing `MaxScanSize` introduced with the change
+  to allow a MaxScanSize greater than 4 GiB.
+  Fix courtesy of teoberi.
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1121)
+
+- Fixed an issue building a ClamAV RPM in some configurations.
+  The issue was caused by faulty CMake logic that intended to create an
+  empty database directory during the install.
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1144)
 
 ### Acknowledgments
 
@@ -75,8 +92,10 @@ Special thanks to the following people for code contributions and bug reports:
 - Albert Chin-A-Young
 - Andrew Kiggins
 - driverxdw
+- gsuehiro
 - Luca D'Amico
 - RainRat
+- teoberi
 
 ## 1.2.1
 
