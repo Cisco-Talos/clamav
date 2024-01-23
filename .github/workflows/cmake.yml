@@ -12,6 +12,7 @@ on:
     branches:
       - rel/*
       - dev/*
+      - feature/*
       - main
 
 env:
