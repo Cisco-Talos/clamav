@@ -88,7 +88,7 @@ static int onas_scan(struct onas_scan_event *event_data, const char *fname, STAT
         }
         if (retry_on_error) {
             logg(LOGG_DEBUG, "ClamMisc: reattempting scan ... \n");
-            while (err) {
+            while (*err) {
                 ret = onas_scan_safe(event_data, fname, sb, infected, err, ret_code);
 
                 i++;
