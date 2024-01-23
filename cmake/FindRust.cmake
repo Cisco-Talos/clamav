@@ -210,7 +210,7 @@ function(cargo_vendor)
 replace-with = \"vendored-sources\"
 
 [source.\"git+https://github.com/Cisco-Talos/onenote.rs.git?branch=CLAM-2329-new-from-slice\"]
-git = \"hhttps://github.com/Cisco-Talos/onenote.rs.git\"
+git = \"https://github.com/Cisco-Talos/onenote.rs.git\"
 branch = \"CLAM-2329-new-from-slice\"
 replace-with = \"vendored-sources\"
 
