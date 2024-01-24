@@ -301,5 +301,6 @@ static const char *ftypes_int[] = {
     "1:2:2d6c68(30|31|32|33|34|35|36|37|64|78)2d:LHA or LZH archive:CL_TYPE_ANY:CL_TYPE_LHA_LZH:210",
     "1:2:2d6c7a(73|34|35)2d:LHA archive using .LZS extension:CL_TYPE_ANY:CL_TYPE_LHA_LZH:210",
     "1:2:2d706d302d:LHA archive using PMarc (.PMA) extension:CL_TYPE_ANY:CL_TYPE_LHA_LZH:210",
+    "0:0:414c5a01:ALZ:CL_TYPE_ANY:CL_TYPE_ALZ:210", 
     NULL};
 #endif

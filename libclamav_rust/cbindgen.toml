@@ -37,6 +37,7 @@ include = [
   "evidence::evidence_add_indicator",
   "evidence::IndicatorType",
   "scanners::scan_onenote",
+  "scanners::cli_scanalz",
 ]
 
 # prefix = "CAPI_"

@@ -22,6 +22,9 @@ unicode-segmentation = "1.10"
 bindgen = "0.65"
 onenote_parser = { git = "https://github.com/Cisco-Talos/onenote.rs.git", branch = "CLAM-2329-new-from-slice" }
 hex-literal = "0.4"
+inflate = "0.4"
+bzip2-rs = "0.1"
+byteorder = "1.5"
 delharc = "0.5"
 
 [lib]
