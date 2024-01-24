@@ -1561,6 +1561,11 @@ int scanmanager(const struct optstruct *opts)
     if (optget(opts, "scan-image-fuzzy-hash")->enabled)
         options.parse |= CL_SCAN_PARSE_IMAGE_FUZZY_HASH;
 
+    if (optget(opts, "scan-alz")->enabled) {
+        /*TODO: Consider just having this for archives.*/
+        options.parse |= CL_SCAN_PARSE_ALZ;
+    }
+
     /* TODO: Remove deprecated option in a future feature release */
     if ((optget(opts, "algorithmic-detection")->enabled) && /* && used due to default-yes for both options */
         (optget(opts, "heuristic-alerts")->enabled)) {

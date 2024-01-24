@@ -20,6 +20,8 @@
  *  MA 02110-1301, USA.
  */
 
+//Rust error handling This error.
+
 use std::{
     ffi::{c_char, CString},
     path::Path,
@@ -30,6 +32,7 @@ use libc::c_void;
 use log::{debug, error, warn};
 
 use crate::{
+    alz::Alz,
     ctx,
     onenote::OneNote,
     sys::{cl_error_t, cl_error_t_CL_ERROR, cl_error_t_CL_SUCCESS, cli_ctx, cli_magic_scan_buff},
@@ -126,4 +129,53 @@ pub unsafe extern "C" fn scan_onenote(ctx: *mut cli_ctx) -> cl_error_t {
     });
 
     scan_result
+}
+
+/// Scan an Alz file for attachments
+///
+/// # Safety
+///
+/// Must be a valid ctx pointer.
+#[no_mangle]
+pub unsafe extern "C" fn extract_alz(ctx: *mut cli_ctx) -> cl_error_t {
+    println!("TODO: Fix flevel in filetypes_int.h");
+    let fmap = match ctx::current_fmap(ctx) {
+        Ok(fmap) => fmap,
+        Err(e) => {
+            warn!("Error getting FMap from ctx: {e}");
+            return cl_error_t_CL_ERROR;
+        }
+    };
+
+    let file_bytes = match fmap.need_off(0, fmap.len()) {
+        Ok(bytes) => bytes,
+        Err(err) => {
+            error!(
+                "Failed to get file bytes for fmap of size {}: {err}",
+                fmap.len()
+            );
+            return cl_error_t_CL_ERROR;
+        }
+    };
+
+    let alz = match Alz::from_bytes(file_bytes) {
+        Ok(x) => x,
+        Err(err) => {
+            error!("Failed to parse Alz file: {}", err.to_string());
+            return cl_error_t_CL_ERROR;
+        }
+    };
+
+    for i in 0..alz.embedded_files.len() {
+        let ret = magic_scan(
+            ctx,
+            &alz.embedded_files[i].data,
+            alz.embedded_files[i].name.clone(),
+        );
+        if ret != cl_error_t_CL_SUCCESS {
+            return ret;
+        }
+    }
+
+    cl_error_t_CL_SUCCESS
 }

@@ -26,8 +26,7 @@ use std::{
     ffi::CStr,
     mem::ManuallyDrop,
     os::raw::c_char,
-    panic,
-    slice,
+    panic, slice,
 };
 
 use image::{imageops::FilterType::Lanczos3, DynamicImage, ImageBuffer, Luma, Pixel, Rgb};
@@ -308,10 +307,7 @@ impl FuzzyHashMap {
 
                 // If the hash key does not exist in the hashmap, insert an empty vec.
                 // Then add the current meta struct to the entry.
-                self.hashmap
-                    .entry(fuzzy_hash)
-                    .or_default()
-                    .push(meta);
+                self.hashmap.entry(fuzzy_hash).or_default().push(meta);
 
                 Ok(())
             }
@@ -415,7 +411,6 @@ impl FuzzyHashMap {
 /// param: hash_out is an output variable
 /// param: hash_out_len indicates the size of the hash_out buffer
 pub fn fuzzy_hash_calculate_image(buffer: &[u8]) -> Result<Vec<u8>, Error> {
-
     // Load image and attempt to catch panics in case the decoders encounter unexpected issues
     let result = panic::catch_unwind(|| -> Result<DynamicImage, Error> {
         let image = image::load_from_memory(buffer).map_err(Error::ImageLoad)?;

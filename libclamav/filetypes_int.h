@@ -298,5 +298,6 @@ static const char *ftypes_int[] = {
     "0:0:00010d0a:PyPy 3.8 byte-compiled (.pyc):CL_TYPE_ANY:CL_TYPE_PYTHON_COMPILED:200",
     "0:0:50010d0a:PyPy 3.9 byte-compiled (.pyc):CL_TYPE_ANY:CL_TYPE_PYTHON_COMPILED:200",
     "1:0:??0d0d0a:Python 3.7 or newer byte-compiled (.pyc):CL_TYPE_ANY:CL_TYPE_PYTHON_COMPILED:200",
+    "0:0:414c5a01:ALZ:CL_TYPE_ANY:CL_TYPE_ALZ:210", 
     NULL};
 #endif

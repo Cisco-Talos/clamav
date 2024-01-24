@@ -306,6 +306,7 @@ void help(void)
     mprintf(LOGG_INFO, "    --scan-xmldocs[=yes(*)/no]           Scan xml-based document files\n");
     mprintf(LOGG_INFO, "    --scan-hwp3[=yes(*)/no]              Scan HWP3 files\n");
     mprintf(LOGG_INFO, "    --scan-onenote[=yes(*)/no]           Scan OneNote files\n");
+    mprintf(LOGG_INFO, "    --scan-alz[=yes(*)/no]               Scan alz files\n");
     mprintf(LOGG_INFO, "    --scan-archive[=yes(*)/no]           Scan archive files (supported by libclamav)\n");
     mprintf(LOGG_INFO, "    --scan-image[=yes(*)/no]             Scan image (graphics) files\n");
     mprintf(LOGG_INFO, "    --scan-image-fuzzy-hash[=yes(*)/no]  Detect files by calculating image (graphics) fuzzy hashes\n");
