@@ -1,6 +1,7 @@
 use std::fs;
 //use std::io;
-
+use std::io::Cursor;
+use byteorder::{LittleEndian, ReadBytesExt};
 
 struct AlzLocalFileHeader {
     file_name_length: u16,
@@ -14,17 +15,16 @@ struct AlzLocalFileHeader {
     unknown: u8,
 }
 
+const ALZ_FILE_HEADER: u32 = 0x015a4c41;
+
 /* Check for the ALZ file header. */
 fn is_alz(file_contents: &Vec<u8>) -> bool {
-    if 4 >= file_contents.len(){
+    let mut cursor = Cursor::new(file_contents);
+    if 4 >= cursor.get_ref().len(){
         return false;
     }
 
-    return (0x41 == file_contents[0])
-        && (0x4c == file_contents[1])
-        && (0x5a == file_contents[2])
-        && (0x01 == file_contents[3])
-        ;
+    return ALZ_FILE_HEADER == cursor.read_u32::<LittleEndian>().unwrap();
 }
 
 fn is_local_file_header(file_contents: &Vec<u8>) -> bool {
@@ -96,6 +96,7 @@ fn main() {
 
     if args.len() < 3 {
         println!("Usage: {} <filename> <outdir>", args[0]);
+        return;
     }
     let file_name = &args[1];
     let out_dir = &args[2];
