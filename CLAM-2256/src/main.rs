@@ -16,10 +16,10 @@ struct AlzLocalFileHeader {
 }
 
 const ALZ_FILE_HEADER: u32 = 0x015a4c41;
+const ALZ_LOCAL_FILE_HEADER: u32 = 0x015a4c42;
 
 /* Check for the ALZ file header. */
 fn is_alz(cursor: &mut std::io::Cursor<&Vec<u8>>) -> bool {
-    //let mut cursor = Cursor::new(file_contents);
     if 4 >= cursor.get_ref().len(){
         return false;
     }
@@ -27,25 +27,21 @@ fn is_alz(cursor: &mut std::io::Cursor<&Vec<u8>>) -> bool {
     return ALZ_FILE_HEADER == cursor.read_u32::<LittleEndian>().unwrap();
 }
 
-fn is_local_file_header(file_contents: &Vec<u8>) -> bool {
-    if 4 >= file_contents.len(){
+fn is_alz_local_file_header(cursor: &mut std::io::Cursor<&Vec<u8>>) -> bool {
+    if 4 >= cursor.get_ref().len(){
         return false;
     }
 
-    return (0x42 == file_contents[0])
-        && (0x4c == file_contents[1])
-        && (0x5a == file_contents[2])
-        && (0x01 == file_contents[3])
-        ;
+    return ALZ_LOCAL_FILE_HEADER == cursor.read_u32::<LittleEndian>().unwrap();
 }
 
-//fn parse_file_header(file_contents: &Vec<u8>) -> i32{
-fn parse_file_header(file_contents: &Vec<u8>) -> i32{
+
+fn parse_file_header(cursor: &mut std::io::Cursor<&Vec<u8>>) -> i32{
     /*TODO: Return an error, and don't have to mess with signed types.*/
-    let mut idx: i32 = 0;
+    let idx: i32 = 0;
     println!("TODO: chagne return type to not have to mess with signedness");
 
-    if !is_local_file_header(file_contents){
+    if !is_alz_local_file_header(cursor){
         println!("Parse ERROR: Not a local file header");
         return -1;
     }
@@ -68,9 +64,10 @@ fn process_file(bytes: &Vec<u8>, out_dir: &String){
         /*Need an exit status for wrong file type.*/
         return;
     }
+    cursor.read_u32::<LittleEndian>().unwrap(); //ignore results, just doing this to skip 4 bytes.
 
     while idx < bytes.len(){
-        let val: i32 = parse_file_header(&bytes[idx..].to_vec()); //TODO: Is it inefficient to do it this way?
+        let val: i32 = parse_file_header(&mut cursor);
         if -1 == val{
             break;
         }
@@ -82,7 +79,7 @@ fn process_file(bytes: &Vec<u8>, out_dir: &String){
 //    println!("bytes : {:02X} {:02x} {:02x}", sv[0], sv[1], sv[2]);
 
 
-//    println!("Is ALZ (so far), continuing");
+    println!("Is ALZ (so far), continuing");
 
     /*After reading the initial header, appears to be skipping 4 bytes  (maybe they are ignored) */
 
