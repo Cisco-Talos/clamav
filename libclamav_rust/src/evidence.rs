@@ -244,17 +244,11 @@ impl Evidence {
 
         match indicator_type {
             IndicatorType::Strong => {
-                self.strong
-                    .entry(name.to_string())
-                    .or_default()
-                    .push(meta);
+                self.strong.entry(name.to_string()).or_default().push(meta);
             }
 
             IndicatorType::PotentiallyUnwanted => {
-                self.pua
-                    .entry(name.to_string())
-                    .or_default()
-                    .push(meta);
+                self.pua.entry(name.to_string()).or_default().push(meta);
             }
 
             #[cfg(feature = "not_ready")]
@@ -262,10 +256,7 @@ impl Evidence {
             // match the archive/extraction level at which each was found.
             // This will be required for alerting signatures to depend on weak-indicators for embedded content.
             IndicatorType::Weak => {
-                self.weak
-                    .entry(name.to_string())
-                    .or_default()
-                    .push(meta);
+                self.weak.entry(name.to_string()).or_default().push(meta);
             }
         }
 
