@@ -1,14 +1,18 @@
 use std::fs;
 use std::io;
 
-/*
-fn readFile(fileName: &String) ->Vec<u8> {
-    let bytes = fs::read(fileName);
+/* Check for the ALZ file header. */
+fn isAlz(fileContents: &Vec<u8>) -> bool {
+    if (4 >= fileContents.len()){
+        return false;
+    }
 
-    return bytes;
+    return (0x41 == fileContents[0])
+        && (0x4c == fileContents[1])
+        && (0x5a == fileContents[2])
+        && (0x01 == fileContents[3])
+        ;
 }
-*/
-
 
 fn main() {
     let args: Vec<_> = std::env::args().collect();
@@ -20,12 +24,20 @@ fn main() {
     println!("Filename = {}", fileName);
     println!("Outdir = {}", outDir);
 
-    let fname = std::path::Path::new(fileName);
-    let file = fs::File::open(fname).unwrap();
+//    let fname = std::path::Path::new(fileName);
+//    let file = fs::File::open(fname).unwrap();
     let bytes: Vec<u8> = fs::read(fileName).unwrap();
 
+    if (!isAlz(&bytes)){
+        println!("NOT ALZ, need to return an exit status here");
 
-    println!("{:02X?} {:02X?} {:02X?} {:02X?} ", bytes[0], bytes[1], bytes[2], bytes[3]);
+        /*Need an exit status for wrong file type.*/
+        return;
+    }
 
-
+    println!("Is ALZ (so far), continuing");
 }
+
+
+
+
