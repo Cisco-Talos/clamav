@@ -36,17 +36,16 @@ fn is_alz_local_file_header(cursor: &mut std::io::Cursor<&Vec<u8>>) -> bool {
 }
 
 
-fn parse_file_header(cursor: &mut std::io::Cursor<&Vec<u8>>) -> i32{
-    /*TODO: Return an error, and don't have to mess with signed types.*/
-    let idx: i32 = 0;
-    println!("TODO: chagne return type to not have to mess with signedness");
+fn parse_local_file_header(cursor: &mut std::io::Cursor<&Vec<u8>>) -> bool{
 
     if !is_alz_local_file_header(cursor){
         println!("Parse ERROR: Not a local file header");
-        return -1;
+        return false;
     }
 
-    return idx;
+    println!("HERE HERE HERE, continue parsing the headers");
+
+    return true;
 }
 
 fn process_file(bytes: &Vec<u8>, out_dir: &String){
@@ -67,11 +66,9 @@ fn process_file(bytes: &Vec<u8>, out_dir: &String){
     cursor.read_u32::<LittleEndian>().unwrap(); //ignore results, just doing this to skip 4 bytes.
 
     while idx < bytes.len(){
-        let val: i32 = parse_file_header(&mut cursor);
-        if -1 == val{
+        if !parse_local_file_header(&mut cursor){
             break;
         }
-        idx += val as usize;
 
         break;
     }
