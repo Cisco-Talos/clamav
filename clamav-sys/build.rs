@@ -16,8 +16,14 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 // MA 02110-1301, USA.
 
+mod build_internal;
+
 use std::env;
-use std::path::PathBuf;
+use std::io::Write as _;
+use std::path::{Path, PathBuf};
+
+// Write the public bindings to this file in maintainer mode
+const BINDGEN_OUTPUT_FILE: &str = "no-libclang/bindings.rs";
 
 // Generate bindings for these functions:
 const BINDGEN_FUNCTIONS: &[&str] = &[
@@ -112,7 +118,10 @@ const BINDGEN_CONSTANTS: &[&str] = &[
 
 const CLAMAV_LIBRARY_NAME: &str = "clamav";
 
-fn generate_bindings(customize_bindings: &dyn Fn(bindgen::Builder) -> bindgen::Builder) {
+fn generate_bindings(
+    output_path: &Path,
+    customize_bindings: &dyn Fn(bindgen::Builder) -> bindgen::Builder,
+) {
     let mut bindings = bindgen::Builder::default();
     for function in BINDGEN_FUNCTIONS {
         bindings = bindings.allowlist_function(function);
@@ -130,97 +139,175 @@ fn generate_bindings(customize_bindings: &dyn Fn(bindgen::Builder) -> bindgen::B
         bindings = bindings.allowlist_var(constant);
     }
 
+    // TODO: this wrapper probably isn't necessary.  clamav.h could simply be located
     bindings = bindings
         .header("wrapper.h")
         // Tell cargo to invalidate the built crate whenever any of the
         // included header files changed.
-        .parse_callbacks(Box::new(bindgen::CargoCallbacks));
+        .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()));
 
     bindings = customize_bindings(bindings);
-
-    // Write the bindings to the $OUT_DIR/bindings.rs file.
-    let out_path = PathBuf::from(env::var("OUT_DIR").unwrap());
 
     bindings
         // Finish the builder and generate the bindings.
         .generate()
         // Unwrap the Result and panic on failure.
         .expect("Unable to generate bindings")
-        .write_to_file(out_path.join("bindings.rs"))
+        .write_to_file(output_path)
         .expect("Couldn't write bindings!");
 }
 
 fn cargo_common() {
-    println!("cargo:rustc-link-lib=dylib={}", CLAMAV_LIBRARY_NAME);
+    if local_clamav_include_path().is_none() {
+        println!("cargo:rustc-link-lib=dylib={}", CLAMAV_LIBRARY_NAME);
+    }
 
     // Tell cargo to invalidate the built crate whenever the wrapper changes
     println!("cargo:rerun-if-changed=wrapper.h");
 }
 
-#[cfg(windows)]
-fn main() {
-    let include_paths = match vcpkg::find_package("clamav") {
-        Ok(pkg) => pkg.include_paths,
-        Err(err) => {
-            println!(
-                "cargo:warning=Either vcpkg is not installed, or an error occurred in vcpkg: {}",
-                err
-            );
-            let clamav_source = PathBuf::from(env::var("CLAMAV_SOURCE").expect("CLAMAV_SOURCE environment variable must be set and point to ClamAV's source directory"));
-            let clamav_build = PathBuf::from(env::var("CLAMAV_BUILD").expect("CLAMAV_BUILD environment variable must be set and point to ClamAV's build directory"));
-            let openssl_include = PathBuf::from(env::var("OPENSSL_INCLUDE").expect("OPENSSL_INCLUDE environment variable must be set and point to openssl's include directory"));
-            let profile = env::var("PROFILE").unwrap();
-
-            let library_path = match profile.as_str() {
-                "debug" => std::path::Path::new(&clamav_build).join("libclamav/Debug"),
-                "release" => std::path::Path::new(&clamav_build).join("libclamav/Release"),
-                _ => panic!("Unexpected build profile"),
-            };
-
-            println!(
-                "cargo:rustc-link-search=native={}",
-                library_path.to_str().unwrap()
-            );
-
-            vec![
-                clamav_source.join("libclamav"),
-                clamav_build,
-                openssl_include,
-            ]
-        }
-    };
-
+fn main() -> anyhow::Result<()> {
     cargo_common();
-    generate_bindings(&|x: bindgen::Builder| -> bindgen::Builder {
-        let mut x = x;
-        for include_path in &include_paths {
-            x = x.clang_arg("-I").clang_arg(include_path.to_str().unwrap());
+
+    let mut include_paths = vec![];
+
+    // Test whether being built as part of ClamAV source
+    let local_include_path = local_clamav_include_path();
+    if let Some(path) = &local_include_path {
+        eprintln!("Local ClamAV include path: {path:?}",);
+    }
+    eprintln!(
+        "Building as part of ClamAV: {:?}",
+        building_under_clamav_cmake()
+    );
+    eprintln!("Maintainer mode: {:?}", in_maintainer_mode());
+
+    // Generate temporary path for the generated "internal" module
+    let mut output_path_intmod = PathBuf::from(env::var("OUT_DIR")?);
+    output_path_intmod.push("sys.rs");
+
+    // Find headers
+    if let Some(path) = &local_include_path {
+        include_paths.push(path.clone());
+    } else {
+        // This crate is being referenced from an external project that doesn't
+        // have access to the ClamAV source tree. Utilize the system-installed
+        // copy of libclamav (as located using pkg-config).
+
+        #[cfg(not(windows))]
+        {
+            let libclamav = pkg_config::Config::new()
+                .atleast_version("0.103")
+                .probe("libclamav")
+                .unwrap();
+
+            include_paths.extend_from_slice(&libclamav.include_paths);
         }
-        x
-    });
-}
 
-#[cfg(unix)]
-fn main() {
-    let libclamav = pkg_config::Config::new()
-        .atleast_version("0.103")
-        .probe("libclamav")
-        .unwrap();
+        #[cfg(windows)]
+        match vcpkg::find_package("clamav") {
+            Ok(pkg) => include_paths.extend_from_slice(&pkg.include_paths),
+            Err(err) => {
+                println!(
+                    "cargo:warning=Either vcpkg is not installed, or an error occurred in vcpkg: {}",
+                    err
+                );
+                // Attempt to examine user-supplied variables to find the dependencies
+                let clamav_source = PathBuf::from(env::var("CLAMAV_SOURCE").expect("CLAMAV_SOURCE environment variable must be set and point to ClamAV's source directory"));
+                let clamav_build = PathBuf::from(env::var("CLAMAV_BUILD").expect("CLAMAV_BUILD environment variable must be set and point to ClamAV's build directory"));
+                let openssl_include = PathBuf::from(env::var("OPENSSL_INCLUDE").expect("OPENSSL_INCLUDE environment variable must be set and point to openssl's include directory"));
+                let profile = env::var("PROFILE").unwrap();
 
-    let mut include_paths = libclamav.include_paths;
+                let library_path = match profile.as_str() {
+                    "debug" => std::path::Path::new(&clamav_build).join("libclamav/Debug"),
+                    "release" => std::path::Path::new(&clamav_build).join("libclamav/Release"),
+                    _ => panic!("Unexpected build profile"),
+                };
 
-    if let Some(val) = std::env::var_os("OPENSSL_ROOT_DIR") {
-        let mut openssl_include_dir = PathBuf::from(val);
-        openssl_include_dir.push("include");
-        include_paths.push(openssl_include_dir);
+                println!(
+                    "cargo:rustc-link-search=native={}",
+                    library_path.to_str().unwrap()
+                );
+
+                include_paths.push(clamav_source.join("libclamav"));
+                include_paths.push(clamav_build);
+                include_paths.push(openssl_include);
+            }
+        };
     }
 
-    cargo_common();
-    generate_bindings(&|x: bindgen::Builder| -> bindgen::Builder {
-        let mut x = x;
-        for include_path in &include_paths {
-            x = x.clang_arg("-I").clang_arg(include_path.to_str().unwrap());
+    if building_under_clamav_cmake() {
+        build_internal::bindgen_internal(&output_path_intmod)?;
+    } else {
+        // Build a vestigial `sys` module, as there will be no access to
+        // internal APIs.
+        let mut fh = std::fs::File::create(&output_path_intmod)?;
+        writeln!(fh, "// This file intentionally left blank").expect("write");
+    }
+
+    // Write the bindings to the $OUT_DIR/bindings.rs file.
+    let mut output_path = PathBuf::from(env::var("OUT_DIR").unwrap());
+    output_path.push("bindings.rs");
+    if !building_under_clamav_cmake() || (local_include_path.is_some() && in_maintainer_mode()) {
+        generate_bindings(
+            &output_path,
+            &|builder: bindgen::Builder| -> bindgen::Builder {
+                let mut builder = builder;
+                for include_path in &include_paths {
+                    builder = builder
+                        .clang_arg("-I")
+                        .clang_arg(include_path.to_str().unwrap());
+                }
+                builder
+            },
+        );
+    } else {
+        // If building within ClamAV and not in maintainer mode, just copy the
+        // "cached" version, as libclang may not be available.
+        std::fs::copy(BINDGEN_OUTPUT_FILE, &output_path)?;
+    }
+
+    if in_maintainer_mode() {
+        // Copy the pre-generated file to the specified location.  This should
+        // *not* be done when packaging `clamav-sys`, as it will touch the
+        // source tree, and `cargo package` will report an error.
+        std::fs::copy(&output_path, BINDGEN_OUTPUT_FILE)?;
+    }
+
+    Ok(())
+}
+
+fn local_clamav_include_path() -> Option<PathBuf> {
+    let manifest_dir =
+        PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").expect("get CARGO_MANIFEST_DIR env"));
+    let mut libclamav_dir = manifest_dir
+        .parent()
+        .expect("get manifest dir parent")
+        .to_path_buf();
+    libclamav_dir.push("libclamav");
+    if libclamav_dir.metadata().is_ok_and(|md| md.is_dir()) {
+        // It seems we're being compiled from within the ClamAV source tree.
+        // Just confirm that clamav.h is there, too
+        let mut clamav_h_path = libclamav_dir.clone();
+        clamav_h_path.push("clamav.h");
+        if clamav_h_path.metadata().is_ok_and(|md| md.is_file()) {
+            return Some(libclamav_dir);
         }
-        x
-    });
+    }
+
+    None
+}
+
+/// Return whether "maintiner mode" has been enabled in a ClamAV build.
+pub(crate) fn in_maintainer_mode() -> bool {
+    env::var("MAINTAINER_MODE").unwrap_or_default() == "ON"
+}
+
+/// Return whether or not this crate's build is being performed as part of a ClamAV build
+pub(crate) fn building_under_clamav_cmake() -> bool {
+    // Note, PROJECT_NAME is examined rather than CMAKE_PROJECT_NAME, as it's
+    // *possible* for a ClamAV build to be embedded within another CMake-based
+    // build, which would have a global CMAKE_PROJECT_NAME that is *not*
+    // "ClamAV"
+    env::var("PROJECT_NAME").unwrap_or_default() == "ClamAV"
 }
