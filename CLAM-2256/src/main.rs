@@ -18,8 +18,8 @@ struct AlzLocalFileHeader {
 const ALZ_FILE_HEADER: u32 = 0x015a4c41;
 
 /* Check for the ALZ file header. */
-fn is_alz(file_contents: &Vec<u8>) -> bool {
-    let mut cursor = Cursor::new(file_contents);
+fn is_alz(cursor: &mut std::io::Cursor<&Vec<u8>>) -> bool {
+    //let mut cursor = Cursor::new(file_contents);
     if 4 >= cursor.get_ref().len(){
         return false;
     }
@@ -53,18 +53,16 @@ fn parse_file_header(file_contents: &Vec<u8>) -> i32{
     return idx;
 }
 
-fn process_file(file_name: &String, out_dir: &String){
+fn process_file(bytes: &Vec<u8>, out_dir: &String){
 
     println!("Outdir = {}", out_dir);
 
     /*The first file header should start at 8,
      * assuming this is actualy an alz file.*/
     let mut idx: usize = 8;
+    let mut cursor = Cursor::new(bytes);
 
-    let bytes: Vec<u8> = fs::read(file_name).unwrap();
-    /*TODO: Should probably have the data passed in, since clam will likely do that.*/
-
-    if !is_alz(&bytes){
+    if !is_alz(&mut cursor){
         println!("NOT ALZ, need to return an exit status here");
 
         /*Need an exit status for wrong file type.*/
@@ -101,7 +99,8 @@ fn main() {
     let file_name = &args[1];
     let out_dir = &args[2];
 
-    process_file(file_name, out_dir);
+    let bytes: Vec<u8> = fs::read(file_name).unwrap();
+    process_file(&bytes, out_dir);
 
 }
 
