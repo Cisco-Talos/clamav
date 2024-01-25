@@ -207,7 +207,6 @@ impl AlzLocalFileHeader {
         println!("");
 
 
-        println!("TODO: MAY need to move these flags to the struct");
         println!("is_encrypted = {}", ret.is_encrypted());
         println!("is_data_descriptor = {}", ret.is_data_descriptor());
 
