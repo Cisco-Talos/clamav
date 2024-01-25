@@ -3,6 +3,9 @@ use std::fs;
 use std::io::Cursor;
 use byteorder::{LittleEndian, ReadBytesExt};
 
+struct ALZParseError {
+}
+
 struct AlzLocalFileHeader {
     file_name_length: u16,
 
@@ -17,12 +20,27 @@ struct AlzLocalFileHeader {
     */
 }
 
+
 impl AlzLocalFileHeader {
     pub fn new() -> Self {
         Self {
             file_name_length: 0,
         }
     }
+
+    pub fn readinit( cursor: &mut std::io::Cursor<&Vec<u8>> ) -> Result<Self, ALZParseError> {
+
+        if std::mem::size_of::<AlzLocalFileHeader>() >= cursor.get_ref().len(){
+            return Err(ALZParseError{});
+        }
+
+        Ok(
+            Self {
+                file_name_length : cursor.read_u16::<LittleEndian>().unwrap(),
+            }
+          )
+    }
+
     pub fn read(&self, cursor: &mut std::io::Cursor<&Vec<u8>>) -> bool {
 
         Self {
@@ -67,6 +85,8 @@ fn parse_local_file_header(cursor: &mut std::io::Cursor<&Vec<u8>>) -> bool{
         return false;
     }
     println!("fnl = {}", alfh.file_name_length);
+
+    //let val = std::mem::size_of::<AlzLocalFileHeader>;
 
     println!("HERE HERE HERE, continue parsing the headers");
 
