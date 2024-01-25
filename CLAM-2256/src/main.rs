@@ -6,6 +6,7 @@ use byteorder::{LittleEndian, ReadBytesExt};
 struct AlzLocalFileHeader {
     file_name_length: u16,
 
+    /*
     file_attribute: u8,
 
     file_time_date: u32,
@@ -13,6 +14,23 @@ struct AlzLocalFileHeader {
     file_descriptor: u8,
 
     unknown: u8,
+    */
+}
+
+impl AlzLocalFileHeader {
+    pub fn new() -> Self {
+        Self {
+            file_name_length: 0,
+        }
+    }
+    pub fn read(&self, cursor: &mut std::io::Cursor<&Vec<u8>>) -> bool {
+
+        Self {
+            file_name_length : cursor.read_u16::<LittleEndian>().unwrap(),
+        };
+
+        return false;
+    }
 }
 
 const ALZ_FILE_HEADER: u32 = 0x015a4c41;
@@ -43,6 +61,13 @@ fn parse_local_file_header(cursor: &mut std::io::Cursor<&Vec<u8>>) -> bool{
         return false;
     }
 
+    let alfh = AlzLocalFileHeader::new();
+    if !alfh.read(cursor){
+        println!("Parse ERROR: Not a local file header");
+        return false;
+    }
+    println!("fnl = {}", alfh.file_name_length);
+
     println!("HERE HERE HERE, continue parsing the headers");
 
     return true;
@@ -54,7 +79,7 @@ fn process_file(bytes: &Vec<u8>, out_dir: &String){
 
     /*The first file header should start at 8,
      * assuming this is actualy an alz file.*/
-    let mut idx: usize = 8;
+    let idx: usize = 8;
     let mut cursor = Cursor::new(bytes);
 
     if !is_alz(&mut cursor){
