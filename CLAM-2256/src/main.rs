@@ -61,7 +61,8 @@ const ALZ_LOCAL_FILE_HEADER: u32 = 0x015a4c42;
 
 /* Check for the ALZ file header. */
 fn is_alz(cursor: &mut std::io::Cursor<&Vec<u8>>) -> bool {
-    if 4 >= cursor.get_ref().len(){
+
+    if std::mem::size_of::<u32>() >= cursor.get_ref().len(){
         return false;
     }
 
@@ -69,7 +70,7 @@ fn is_alz(cursor: &mut std::io::Cursor<&Vec<u8>>) -> bool {
 }
 
 fn is_alz_local_file_header(cursor: &mut std::io::Cursor<&Vec<u8>>) -> bool {
-    if 4 >= cursor.get_ref().len(){
+    if std::mem::size_of::<u32>() >= cursor.get_ref().len(){
         return false;
     }
 
