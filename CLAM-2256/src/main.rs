@@ -40,6 +40,7 @@ struct AlzLocalFileHeader {
 
     _enc_chk: [u8; ALZ_ENCR_HEADER_LEN as usize],
 
+    _start_of_compressed_data: u64,
 }
 
 
@@ -78,6 +79,7 @@ impl AlzLocalFileHeader {
                 _uncompressed_size : 0,
                 _file_name : "".to_string(),
                 _enc_chk: [0; ALZ_ENCR_HEADER_LEN as usize],
+                _start_of_compressed_data: 0,
             };
 
         if 0 == ret._head._file_name_length {
@@ -180,8 +182,8 @@ impl AlzLocalFileHeader {
             cursor.read_exact(&mut ret._enc_chk).unwrap();
         }
 
-
-
+        ret._start_of_compressed_data = cursor.position();
+        cursor.set_position(ret._start_of_compressed_data + ret._compressed_size);
 
         println!("ret._head._file_name_length = {:x}", ret._head._file_name_length);
         println!("ret._head._file_attribute = {:02x}", ret._head._file_attribute);
@@ -210,6 +212,9 @@ impl AlzLocalFileHeader {
         println!("is_encrypted = {}", ret.is_encrypted());
         println!("is_data_descriptor = {}", ret.is_data_descriptor());
 
+        println!("ret._start_of_compressed_data = {}", ret._start_of_compressed_data);
+
+
 
         if ret.is_encrypted() {
             assert!(false, "ENCRYPTION UNIMPLEMENTED");
@@ -218,8 +223,6 @@ impl AlzLocalFileHeader {
         if ret.is_data_descriptor() {
             assert!(false, "IS DATA DESCRIPTOR UNIMPLEMENTED");
         }
-
-
 
         return Ok(ret);
     }
