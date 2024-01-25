@@ -84,16 +84,14 @@ fn parse_local_file_header(cursor: &mut std::io::Cursor<&Vec<u8>>) -> bool{
         return false;
     }
 
-    let alfh = AlzLocalFileHeader::new(cursor).unwrap();
-    /*
-    if !alfh.read(cursor){
-        println!("Parse ERROR: Not a local file header");
+    let res = AlzLocalFileHeader::new(cursor);
+    if res.is_err(){
+        println!("Parse ERROR: Not a local file header (2)");
         return false;
     }
-    */
-    println!("fnl = {}", alfh.file_name_length);
 
-    //let val = std::mem::size_of::<AlzLocalFileHeader>;
+    let alfh = res.unwrap();
+    println!("fnl = {}", alfh.file_name_length);
 
     println!("HERE HERE HERE, continue parsing the headers");
 
