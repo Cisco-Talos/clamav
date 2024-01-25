@@ -4,7 +4,7 @@ use std::io::Cursor;
 use byteorder::{LittleEndian, ReadBytesExt};
 use std::mem::size_of;
 
-//use std::io::Read;
+use std::io::Read;
 
 #[derive(Debug)]
 struct ALZParseError {
@@ -21,7 +21,9 @@ struct AlzLocalFileHeaderHead {
 
     _unknown: u8,
 
-    }
+}
+
+const ALZ_ENCR_HEADER_LEN: u32 = 12;
 
 struct AlzLocalFileHeader {
     _head: AlzLocalFileHeaderHead,
@@ -36,12 +38,14 @@ struct AlzLocalFileHeader {
 
     _file_name: String,
 
+    _enc_chk: [u8; ALZ_ENCR_HEADER_LEN as usize],
+    _is_encrypted: bool,
+
 }
 
 
 impl AlzLocalFileHeader {
     pub fn new( cursor: &mut std::io::Cursor<&Vec<u8>> ) -> Result<Self, ALZParseError> {
-        let mut is_encrypted : bool = false;
         let mut is_data_descriptor : bool = false;
 
         if size_of::<AlzLocalFileHeaderHead>() >= cursor.get_ref().len(){
@@ -66,6 +70,8 @@ impl AlzLocalFileHeader {
                 _compressed_size : 0,
                 _uncompressed_size : 0,
                 _file_name : "".to_string(),
+                _enc_chk: [0; ALZ_ENCR_HEADER_LEN as usize],
+                _is_encrypted : false,
 
             };
 
@@ -74,17 +80,12 @@ impl AlzLocalFileHeader {
             return Err(ALZParseError{});
         }
 
-        if 0 != (ret._head._file_descriptor & 0x1 ) {
-            is_encrypted = true;
-        }
+        ret._is_encrypted = 0 != (ret._head._file_descriptor & 0x1 );
 
         if 0 != (ret._head._file_descriptor  & 0x8) {
             is_data_descriptor = true;
         }
 
-        if is_encrypted {
-            assert!(false, "ENCRYPTION UNIMPLEMENTED");
-        }
 
         if is_data_descriptor {
             assert!(false, "IS DATA DESCRIPTOR UNIMPLEMENTED");
@@ -161,8 +162,24 @@ impl AlzLocalFileHeader {
         if res.is_ok(){
             ret._file_name = res.unwrap();
         } else {
+            /*TODO: Other formats*/
             assert!(false, "NOT sure if other filename formats are supported here");
         }
+
+        if ret._is_encrypted{
+            if ALZ_ENCR_HEADER_LEN as usize > cursor.get_ref().len() {
+                return Err(ALZParseError{});
+            }
+
+            /*TODO: Is it safe to call unwrap here, since I already checked that there are enough
+             * bytes?
+             */
+            cursor.read_exact(&mut ret._enc_chk).unwrap();
+            assert!(false, "ENCRYPTION UNIMPLEMENTED");
+        }
+
+
+
 
         println!("ret._head._file_name_length = {:x}", ret._head._file_name_length);
         println!("ret._head._file_attribute = {:02x}", ret._head._file_attribute);
@@ -178,8 +195,22 @@ impl AlzLocalFileHeader {
 
         println!("ret._file_name = {}", ret._file_name);
 
+        print!("ret._enc_chk = ");
+            for i in 0..ALZ_ENCR_HEADER_LEN {
+                if 0 != i {
+                    print!(" ");
+                }
+                print!("{}", ret._enc_chk[i as usize]);
+            }
+            println!("");
+
+
+
+
+
+
         println!("TODO: MAY need to move these flags to the struct");
-        println!("is_encrypted = {}", is_encrypted);
+        println!("is_encrypted = {}", ret._is_encrypted);
         println!("is_data_descriptor = {}", is_data_descriptor);
 
         return Ok(ret);
