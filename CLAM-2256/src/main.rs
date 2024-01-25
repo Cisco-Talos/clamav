@@ -8,11 +8,11 @@ struct ALZParseError {
 }
 
 struct AlzLocalFileHeader {
-    file_name_length: u16,
+    _file_name_length: u16,
+
+    _file_attribute: u8,
 
     /*
-    file_attribute: u8,
-
     file_time_date: u32,
 
     file_descriptor: u8,
@@ -23,14 +23,6 @@ struct AlzLocalFileHeader {
 
 
 impl AlzLocalFileHeader {
-    /*
-    pub fn new() -> Self {
-        Self {
-            file_name_length: 0,
-        }
-    }
-    */
-
     pub fn new( cursor: &mut std::io::Cursor<&Vec<u8>> ) -> Result<Self, ALZParseError> {
 
         if std::mem::size_of::<AlzLocalFileHeader>() >= cursor.get_ref().len(){
@@ -39,21 +31,14 @@ impl AlzLocalFileHeader {
 
         Ok(
             Self {
-                file_name_length : cursor.read_u16::<LittleEndian>().unwrap(),
+                /*TODO: Is it safe to call unwrap here, since I already checked that there is
+                 * enough space in the buffer?
+                 */
+                _file_name_length : cursor.read_u16::<LittleEndian>().unwrap(),
+                _file_attribute : cursor.read_u8::<>().unwrap(),
             }
           )
     }
-
-    /*
-    pub fn read(&self, cursor: &mut std::io::Cursor<&Vec<u8>>) -> bool {
-
-        Self {
-            file_name_length : cursor.read_u16::<LittleEndian>().unwrap(),
-        };
-
-        return false;
-    }
-    */
 }
 
 const ALZ_FILE_HEADER: u32 = 0x015a4c41;
@@ -91,8 +76,9 @@ fn parse_local_file_header(cursor: &mut std::io::Cursor<&Vec<u8>>) -> bool{
         return false;
     }
 
+    /*TODO: Is it safe to call unwrap here, since I already called 'is_err' */
     let alfh = res.unwrap();
-    println!("fnl = {}", alfh.file_name_length);
+    println!("fnl = {}", alfh._file_name_length);
 
     println!("HERE HERE HERE, continue parsing the headers");
 
