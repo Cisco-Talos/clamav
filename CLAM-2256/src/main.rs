@@ -246,6 +246,7 @@ fn is_alz(cursor: &mut std::io::Cursor<&Vec<u8>>) -> bool {
     return ALZ_FILE_HEADER == cursor.read_u32::<LittleEndian>().unwrap();
 }
 
+/*
 fn is_alz_local_file_header(cursor: &mut std::io::Cursor<&Vec<u8>>) -> bool {
     if std::mem::size_of::<u32>() >= cursor.get_ref().len(){
         return false;
@@ -253,14 +254,17 @@ fn is_alz_local_file_header(cursor: &mut std::io::Cursor<&Vec<u8>>) -> bool {
 
     return ALZ_LOCAL_FILE_HEADER == cursor.read_u32::<LittleEndian>().unwrap();
 }
+*/
 
 
 fn parse_local_file_header(cursor: &mut std::io::Cursor<&Vec<u8>>) -> bool{
 
+    /*
     if !is_alz_local_file_header(cursor){
         println!("Parse ERROR: Not a local file header");
         return false;
     }
+    */
 
     let res = AlzLocalFileHeader::new(cursor);
     if res.is_err(){
@@ -278,6 +282,7 @@ fn parse_local_file_header(cursor: &mut std::io::Cursor<&Vec<u8>>) -> bool{
 }
 
 
+/*
 fn is_central_directory_header(cursor: &mut std::io::Cursor<&Vec<u8>>) -> bool {
     if std::mem::size_of::<u32>() >= cursor.get_ref().len(){
         return false;
@@ -290,13 +295,16 @@ fn is_central_directory_header(cursor: &mut std::io::Cursor<&Vec<u8>>) -> bool {
     println!("tmp = {}", tmp);
     return ALZ_CENTRAL_DIRECTORY_HEADER == tmp;
 }
+*/
 
 fn parse_central_directory_header(cursor: &mut std::io::Cursor<&Vec<u8>>) -> bool{
+    /*
         println!("cursor.position() = {}", cursor.position() );
     if !is_central_directory_header(cursor) {
         println!("Parse ERROR: Not a central directory header");
         return false;
     }
+    */
 
     if 8 >= cursor.get_ref().len(){
         return false;
@@ -313,6 +321,7 @@ fn parse_central_directory_header(cursor: &mut std::io::Cursor<&Vec<u8>>) -> boo
     return true;
 }
 
+/*
 fn is_end_of_central_directory_header(cursor: &mut std::io::Cursor<&Vec<u8>>) -> bool {
     if std::mem::size_of::<u32>() >= cursor.get_ref().len(){
         return false;
@@ -329,6 +338,7 @@ fn parse_end_of_central_directory_record(cursor: &mut std::io::Cursor<&Vec<u8>>)
 
     return true;
 }
+*/
 
 fn process_file(bytes: &Vec<u8>, out_dir: &String) -> bool {
 
@@ -348,6 +358,44 @@ fn process_file(bytes: &Vec<u8>, out_dir: &String) -> bool {
     cursor.read_u32::<LittleEndian>().unwrap(); //ignore results, just doing this to skip 4 bytes.
 
     while 0 < cursor.get_ref().len() {
+
+        println!("number of bytes left = {}", cursor.get_ref().len() );
+
+        if std::mem::size_of::<u32>() >= cursor.get_ref().len(){
+            println!("Error reading directory signature");
+            return false;
+        }
+        let ret = cursor.read_u32::<LittleEndian>();
+        if ret.is_err(){
+            break;
+        }
+        let sig = ret.unwrap();
+
+        match sig {
+            ALZ_LOCAL_FILE_HEADER=>{
+                if parse_local_file_header(&mut cursor){
+                    println!("Found a local file header\n");
+                    continue;
+                }
+            }
+            ALZ_CENTRAL_DIRECTORY_HEADER=>{
+                if parse_central_directory_header(&mut cursor){
+                    println!("Found a central directory header\n");
+                    continue;
+                }
+            }
+            ALZ_END_OF_CENTRAL_DIRECTORY_HEADER=>{
+                /*This is the end, nothing really to do here.*/
+                    println!("Found an end of central directory header\n");
+            }
+            _ => {
+                /*Parse error, maybe try and extract what is there???*/
+                assert!(false, "NOT A VALID FILE IN MATCH");
+            }
+        }
+
+
+        /*
         if parse_local_file_header(&mut cursor){
             println!("Found a local file header\n");
             continue;
@@ -364,6 +412,7 @@ fn process_file(bytes: &Vec<u8>, out_dir: &String) -> bool {
         println!("NOT A VALID FILE");
         assert!(false, "NOT A VALID FILE");
         return false;
+        */
     }
 
 //    println!("bytes : {:02X} {:02x} {:02x}", sv[0], sv[1], sv[2]);
