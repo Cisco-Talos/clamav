@@ -3,6 +3,7 @@ use std::fs;
 use std::io::Cursor;
 use byteorder::{LittleEndian, ReadBytesExt};
 
+#[derive(Debug)]
 struct ALZParseError {
 }
 
@@ -22,13 +23,15 @@ struct AlzLocalFileHeader {
 
 
 impl AlzLocalFileHeader {
+    /*
     pub fn new() -> Self {
         Self {
             file_name_length: 0,
         }
     }
+    */
 
-    pub fn readinit( cursor: &mut std::io::Cursor<&Vec<u8>> ) -> Result<Self, ALZParseError> {
+    pub fn new( cursor: &mut std::io::Cursor<&Vec<u8>> ) -> Result<Self, ALZParseError> {
 
         if std::mem::size_of::<AlzLocalFileHeader>() >= cursor.get_ref().len(){
             return Err(ALZParseError{});
@@ -41,6 +44,7 @@ impl AlzLocalFileHeader {
           )
     }
 
+    /*
     pub fn read(&self, cursor: &mut std::io::Cursor<&Vec<u8>>) -> bool {
 
         Self {
@@ -49,6 +53,7 @@ impl AlzLocalFileHeader {
 
         return false;
     }
+    */
 }
 
 const ALZ_FILE_HEADER: u32 = 0x015a4c41;
@@ -79,11 +84,13 @@ fn parse_local_file_header(cursor: &mut std::io::Cursor<&Vec<u8>>) -> bool{
         return false;
     }
 
-    let alfh = AlzLocalFileHeader::new();
+    let alfh = AlzLocalFileHeader::new(cursor).unwrap();
+    /*
     if !alfh.read(cursor){
         println!("Parse ERROR: Not a local file header");
         return false;
     }
+    */
     println!("fnl = {}", alfh.file_name_length);
 
     //let val = std::mem::size_of::<AlzLocalFileHeader>;
