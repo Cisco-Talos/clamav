@@ -238,14 +238,6 @@ impl AlzLocalFileHeader {
 
 /* Check for the ALZ file header. */
 fn is_alz(cursor: &mut std::io::Cursor<&Vec<u8>>) -> bool {
-
-    /*
-    if std::mem::size_of::<u32>() >= cursor.get_ref().len(){
-        return false;
-    }
-
-    return ALZ_FILE_HEADER == cursor.read_u32::<LittleEndian>().unwrap();
-    */
     let ret = cursor.read_u32::<LittleEndian>();
     if ret.is_ok() {
         return ALZ_FILE_HEADER == ret.unwrap();
@@ -295,7 +287,7 @@ fn process_file(bytes: &Vec<u8>, out_dir: &String) -> bool {
     }
     cursor.read_u32::<LittleEndian>().unwrap(); //ignore results, just doing this to skip 4 bytes.
 
-    while 0 < cursor.get_ref().len() {
+    loop {
 
         let ret = cursor.read_u32::<LittleEndian>();
         if ret.is_err(){
