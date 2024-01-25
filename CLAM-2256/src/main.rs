@@ -22,13 +22,14 @@ struct AlzLocalFileHeader {
 
 impl AlzLocalFileHeader {
     pub fn new( cursor: &mut std::io::Cursor<&Vec<u8>> ) -> Result<Self, ALZParseError> {
+        let mut is_encrypted : bool = false;
+        let mut is_data_descriptor : bool = false;
 
         if std::mem::size_of::<AlzLocalFileHeader>() >= cursor.get_ref().len(){
             return Err(ALZParseError{});
         }
 
-        Ok(
-            Self {
+        let ret = Self {
                 /*TODO: Is it safe to call unwrap here, since I already checked that there is
                  * enough space in the buffer?
                  */
@@ -37,8 +38,21 @@ impl AlzLocalFileHeader {
                 _file_time_date: cursor.read_u32::<LittleEndian>().unwrap(),
                 _file_descriptor : cursor.read_u8::<>().unwrap(),
                 _unknown : cursor.read_u8::<>().unwrap(),
-            }
-          )
+            };
+
+        if 0 != (ret._file_descriptor & 0x1 ) {
+            is_encrypted = true;
+        }
+
+        if 0 != (ret._file_descriptor  & 0x8) {
+            is_data_descriptor = true;
+        }
+
+        println!("TODO: MAY need to move these flags to the struct");
+        println!("is_encrypted = {}", is_encrypted);
+        println!("is_data_descriptor = {}", is_data_descriptor);
+
+        return Ok(ret);
     }
 }
 
