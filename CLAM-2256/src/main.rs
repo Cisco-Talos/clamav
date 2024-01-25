@@ -2,7 +2,7 @@ use std::fs;
 //use std::io;
 use std::io::Cursor;
 use byteorder::{LittleEndian, ReadBytesExt};
-use std::mem::size_of;
+//use std::mem::size_of;
 
 use std::io::Read;
 
@@ -120,10 +120,6 @@ impl AlzLocalFileHeader {
 
         let byte_len = self._head._file_descriptor / 0x10;
         if byte_len > 0 {
-
-            if (size_of::<u8>() + size_of::<u8>() + size_of::<u32>()) >= cursor.get_ref().len(){
-                return Err(ALZParseError{});
-            }
 
             tu8 = cursor.read_u8::<>();
             if tu8.is_err() {
