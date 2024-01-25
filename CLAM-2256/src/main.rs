@@ -10,6 +10,12 @@ use std::io::Read;
 struct ALZParseError {
 }
 
+const ALZ_FILE_HEADER: u32 = 0x015a4c41;
+const ALZ_LOCAL_FILE_HEADER: u32 = 0x015a4c42;
+const ALZ_CENTRAL_DIRECTORY_HEADER: u32 = 0x015a4c43;
+const ALZ_END_OF_CENTRAL_DIRECTORY_HEADER : u32 = 0x025a4c43;
+
+
 struct AlzLocalFileHeaderHead {
     _file_name_length: u16,
 
@@ -183,7 +189,11 @@ impl AlzLocalFileHeader {
         }
 
         ret._start_of_compressed_data = cursor.position();
+        println!("ret._start_of_compressed_data = {}", ret._start_of_compressed_data );
+        println!("ret._compressed_size = {}", ret._compressed_size );
+
         cursor.set_position(ret._start_of_compressed_data + ret._compressed_size);
+        println!("cursor.position() = {}", cursor.position() );
 
         println!("ret._head._file_name_length = {:x}", ret._head._file_name_length);
         println!("ret._head._file_attribute = {:02x}", ret._head._file_attribute);
@@ -214,8 +224,6 @@ impl AlzLocalFileHeader {
 
         println!("ret._start_of_compressed_data = {}", ret._start_of_compressed_data);
 
-
-
         if ret.is_encrypted() {
             assert!(false, "ENCRYPTION UNIMPLEMENTED");
         }
@@ -227,9 +235,6 @@ impl AlzLocalFileHeader {
         return Ok(ret);
     }
 }
-
-const ALZ_FILE_HEADER: u32 = 0x015a4c41;
-const ALZ_LOCAL_FILE_HEADER: u32 = 0x015a4c42;
 
 /* Check for the ALZ file header. */
 fn is_alz(cursor: &mut std::io::Cursor<&Vec<u8>>) -> bool {
@@ -264,37 +269,101 @@ fn parse_local_file_header(cursor: &mut std::io::Cursor<&Vec<u8>>) -> bool{
     }
 
     /*TODO: Is it safe to call unwrap here, since I already called 'is_err' */
-    let alfh = res.unwrap();
-    println!("fnl = {}", alfh._head._file_name_length);
+    let local_file_header = res.unwrap();
 
-    println!("HERE HERE HERE, continue parsing the headers");
+    println!("HERE HERE HERE, continue parsing the headers {}", local_file_header._start_of_compressed_data);
+    println!("cursor.position() = {}", cursor.position() );
 
     return true;
 }
 
-fn process_file(bytes: &Vec<u8>, out_dir: &String){
+
+fn is_central_directory_header(cursor: &mut std::io::Cursor<&Vec<u8>>) -> bool {
+    if std::mem::size_of::<u32>() >= cursor.get_ref().len(){
+        return false;
+    }
+
+    //return ALZ_CENTRAL_DIRECTORY_HEADER == cursor.read_u32::<LittleEndian>().unwrap();
+    
+    println!("cursor.position = {}", cursor.position());
+    let tmp = cursor.read_u32::<LittleEndian>().unwrap();
+    println!("tmp = {}", tmp);
+    return ALZ_CENTRAL_DIRECTORY_HEADER == tmp;
+}
+
+fn parse_central_directory_header(cursor: &mut std::io::Cursor<&Vec<u8>>) -> bool{
+        println!("cursor.position() = {}", cursor.position() );
+    if !is_central_directory_header(cursor) {
+        println!("Parse ERROR: Not a central directory header");
+        return false;
+    }
+
+    if 8 >= cursor.get_ref().len(){
+        return false;
+    }
+
+    /*
+     * This is ignored in unalz (UnAlz.cpp ReadCentralDirectoryStructure).
+     *
+     * It actually reads 12 bytes, and I think it happens to work because EOF is hit on the next
+     * read, which it does not consider an error.
+     */
+    cursor.read_u64::<LittleEndian>().unwrap();
+
+    return true;
+}
+
+fn is_end_of_central_directory_header(cursor: &mut std::io::Cursor<&Vec<u8>>) -> bool {
+    if std::mem::size_of::<u32>() >= cursor.get_ref().len(){
+        return false;
+    }
+
+    return ALZ_END_OF_CENTRAL_DIRECTORY_HEADER == cursor.read_u32::<LittleEndian>().unwrap();
+}
+
+fn parse_end_of_central_directory_record(cursor: &mut std::io::Cursor<&Vec<u8>>) -> bool{
+    if !is_end_of_central_directory_header(cursor) {
+        println!("Parse ERROR: Not an end of central directory header");
+        return false;
+    }
+
+    return true;
+}
+
+fn process_file(bytes: &Vec<u8>, out_dir: &String) -> bool {
 
     println!("Outdir = {}", out_dir);
 
     /*The first file header should start at 8,
      * assuming this is actualy an alz file.*/
-    let idx: usize = 8;
+//    let idx: usize = 8;
     let mut cursor = Cursor::new(bytes);
 
     if !is_alz(&mut cursor){
         println!("NOT ALZ, need to return an exit status here");
 
         /*Need an exit status for wrong file type.*/
-        return;
+        return false;
     }
     cursor.read_u32::<LittleEndian>().unwrap(); //ignore results, just doing this to skip 4 bytes.
 
-    while idx < bytes.len(){
-        if !parse_local_file_header(&mut cursor){
-            break;
+    while 0 < cursor.get_ref().len() {
+        if parse_local_file_header(&mut cursor){
+            println!("Found a local file header\n");
+            continue;
+        }
+        if parse_central_directory_header(&mut cursor){
+            println!("Found a central directory header\n");
+            continue;
+        }
+        if parse_end_of_central_directory_record(&mut cursor){
+            println!("Found an end of central directory header\n");
+            continue;
         }
 
-        break;
+        println!("NOT A VALID FILE");
+        assert!(false, "NOT A VALID FILE");
+        return false;
     }
 
 //    println!("bytes : {:02X} {:02x} {:02x}", sv[0], sv[1], sv[2]);
@@ -304,6 +373,7 @@ fn process_file(bytes: &Vec<u8>, out_dir: &String){
 
     /*After reading the initial header, appears to be skipping 4 bytes  (maybe they are ignored) */
 
+    return true;
 
 }
 
