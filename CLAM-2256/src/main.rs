@@ -84,10 +84,44 @@ impl AlzLocalFileHeader {
     pub fn parse( &mut self, cursor: &mut std::io::Cursor<&Vec<u8>> ) -> Result<(), ALZParseError> {
         //let mut is_data_descriptor : bool = false;
 
+        /*
         if size_of::<AlzLocalFileHeaderHead>() >= cursor.get_ref().len(){
             return Err(ALZParseError{});
         }
+        */
 
+        let mut tu16 = cursor.read_u16::<LittleEndian>();
+        if tu16.is_err(){
+            return Err(ALZParseError{});
+        }
+        self._head._file_name_length = tu16.unwrap();
+
+        let mut tu8 = cursor.read_u8::<>();
+        if tu8.is_err() {
+            return Err(ALZParseError{});
+        }
+        self._head._file_attribute = tu8.unwrap();
+
+        let mut tu32 = cursor.read_u32::<LittleEndian>();
+        if tu32.is_err() {
+            return Err(ALZParseError{});
+        }
+        self._head._file_time_date = tu32.unwrap();
+
+        tu8 = cursor.read_u8::<>();
+        if tu8.is_err() {
+            return Err(ALZParseError{});
+        }
+        self._head._file_descriptor = tu8.unwrap();
+
+        tu8 = cursor.read_u8::<>();
+        if tu8.is_err() {
+            return Err(ALZParseError{});
+        }
+        self._head._unknown = tu8.unwrap();
+
+
+                    /*
         let mut ret = Self {
                 /*TODO: Is it safe to call unwrap here, since I already checked that there is
                  * enough space in the buffer?
@@ -109,8 +143,9 @@ impl AlzLocalFileHeader {
                 _enc_chk: [0; ALZ_ENCR_HEADER_LEN as usize],
                 _start_of_compressed_data: 0,
             };
+                    */
 
-        if 0 == ret._head._file_name_length {
+        if 0 == self._head._file_name_length {
             println!("Filename length cannot be zero");
             return Err(ALZParseError{});
         }
@@ -124,7 +159,7 @@ impl AlzLocalFileHeader {
             //assert!(false, "IS DATA DESCRIPTOR UNIMPLEMENTED");
         //}
 
-        let byte_len = ret._head._file_descriptor / 0x10;
+        let byte_len = self._head._file_descriptor / 0x10;
         println!("byte_len = {}", byte_len);
         if byte_len > 0 {
 
@@ -132,38 +167,93 @@ impl AlzLocalFileHeader {
                 return Err(ALZParseError{});
             }
 
-            ret._compression_method = cursor.read_u8::<>().unwrap();
-            ret._unknown = cursor.read_u8::<>().unwrap();
-            ret._file_crc = cursor.read_u32::<LittleEndian>().unwrap();
+            self._compression_method = cursor.read_u8::<>().unwrap();
+            self._unknown = cursor.read_u8::<>().unwrap();
+            self._file_crc = cursor.read_u32::<LittleEndian>().unwrap();
 
             match byte_len {
                 1 => {
+                    /*
                     if (size_of::<u8>() * 2) >= cursor.get_ref().len() {
                         return Err(ALZParseError{});
                     }
                     ret._compressed_size = cursor.read_u8::<>().unwrap() as u64;
                     ret._uncompressed_size = cursor.read_u8::<>().unwrap() as u64;
+                    */
+
+                    tu8 = cursor.read_u8::<>();
+                    if tu8.is_err() {
+                        return Err(ALZParseError{});
+                    }
+                    self._compressed_size = tu8.unwrap() as u64;
+
+                    tu8 = cursor.read_u8::<>();
+                    if tu8.is_err() {
+                        return Err(ALZParseError{});
+                    }
+                    self._uncompressed_size = tu8.unwrap() as u64;
                 },
                 2 => {
+                    /*
                     if (size_of::<u16>() * 2) >= cursor.get_ref().len() {
                         return Err(ALZParseError{});
                     }
                     ret._compressed_size = cursor.read_u16::<LittleEndian>().unwrap() as u64;
                     ret._uncompressed_size = cursor.read_u16::<LittleEndian>().unwrap() as u64;
+                    */
+                    tu16 = cursor.read_u16::<LittleEndian>();
+                    if tu16.is_err() {
+                        return Err(ALZParseError{});
+                    }
+                    self._compressed_size = tu16.unwrap() as u64;
+
+                    tu16 = cursor.read_u16::<LittleEndian>();
+                    if tu16.is_err() {
+                        return Err(ALZParseError{});
+                    }
+                    self._uncompressed_size = tu16.unwrap() as u64;
+
                 },
                 4 => {
+                    /*
                     if (size_of::<u32>() * 2) >= cursor.get_ref().len() {
                         return Err(ALZParseError{});
                     }
                     ret._compressed_size = cursor.read_u32::<LittleEndian>().unwrap() as u64;
                     ret._uncompressed_size = cursor.read_u32::<LittleEndian>().unwrap() as u64;
+
+                    */
+                    tu32 = cursor.read_u32::<LittleEndian>();
+                    if tu32.is_err() {
+                        return Err(ALZParseError{});
+                    }
+                    self._compressed_size = tu32.unwrap() as u64;
+
+                    tu32 = cursor.read_u32::<LittleEndian>();
+                    if tu32.is_err() {
+                        return Err(ALZParseError{});
+                    }
+                    self._uncompressed_size = tu32.unwrap() as u64;
                 },
                 8 => {
+                    /*
                     if (size_of::<u64>() * 2) >= cursor.get_ref().len() {
                         return Err(ALZParseError{});
                     }
                     ret._compressed_size = cursor.read_u64::<LittleEndian>().unwrap() as u64;
                     ret._uncompressed_size = cursor.read_u64::<LittleEndian>().unwrap() as u64;
+                    */
+                    let mut tu64 = cursor.read_u64::<LittleEndian>();
+                    if tu64.is_err() {
+                        return Err(ALZParseError{});
+                    }
+                    self._compressed_size = tu64.unwrap() as u64;
+
+                    tu64 = cursor.read_u64::<LittleEndian>();
+                    if tu64.is_err() {
+                        return Err(ALZParseError{});
+                    }
+                    self._uncompressed_size = tu64.unwrap() as u64;
                 },
                 _ => return Err(ALZParseError{}),
             }
@@ -181,25 +271,25 @@ impl AlzLocalFileHeader {
              */
         }
 
-        if ret._head._file_name_length as usize >= cursor.get_ref().len() {
+        if self._head._file_name_length as usize >= cursor.get_ref().len() {
             return Err(ALZParseError{});
         }
 
         let mut filename = vec![0u8, 1];
         /*TODO: Figure out the correct way to allocate a vector of dynamic size and call
          * cursor.read_exact, instead of having a loop of reads.*/
-        for _i in 0..ret._head._file_name_length {
+        for _i in 0..self._head._file_name_length {
             filename.push( cursor.read_u8::<>().unwrap());
         }
         let res = String::from_utf8(filename);
         if res.is_ok(){
-            ret._file_name = res.unwrap();
+            self._file_name = res.unwrap();
         } else {
             /*TODO: Other formats*/
             assert!(false, "NOT sure if other filename formats are supported here");
         }
 
-        if ret.is_encrypted() {
+        if self.is_encrypted() {
             if ALZ_ENCR_HEADER_LEN as usize > cursor.get_ref().len() {
                 return Err(ALZParseError{});
             }
@@ -207,50 +297,50 @@ impl AlzLocalFileHeader {
             /*TODO: Is it safe to call unwrap here, since I already checked that there are enough
              * bytes?
              */
-            cursor.read_exact(&mut ret._enc_chk).unwrap();
+            cursor.read_exact(&mut self._enc_chk).unwrap();
         }
 
-        ret._start_of_compressed_data = cursor.position();
-        println!("ret._start_of_compressed_data = {}", ret._start_of_compressed_data );
-        println!("ret._compressed_size = {}", ret._compressed_size );
+        self._start_of_compressed_data = cursor.position();
+        println!("self._start_of_compressed_data = {}", self._start_of_compressed_data );
+        println!("self._compressed_size = {}", self._compressed_size );
 
-        cursor.set_position(ret._start_of_compressed_data + ret._compressed_size);
+        cursor.set_position(self._start_of_compressed_data + self._compressed_size);
         println!("cursor.position() = {}", cursor.position() );
 
-        println!("ret._head._file_name_length = {:x}", ret._head._file_name_length);
-        println!("ret._head._file_attribute = {:02x}", ret._head._file_attribute);
-        println!("ret._head._file_time_date = {:x}", ret._head._file_time_date);
-        println!("ret._head._file_descriptor = {:x}", ret._head._file_descriptor);
-        println!("ret._head._unknown = {:x}", ret._head._unknown);
+        println!("self._head._file_name_length = {:x}", self._head._file_name_length);
+        println!("self._head._file_attribute = {:02x}", self._head._file_attribute);
+        println!("self._head._file_time_date = {:x}", self._head._file_time_date);
+        println!("self._head._file_descriptor = {:x}", self._head._file_descriptor);
+        println!("self._head._unknown = {:x}", self._head._unknown);
 
-        println!("ret._compression_method = {:x}", ret._compression_method);
-        println!("ret._unknown = {:x}", ret._unknown);
-        println!("ret._file_crc = {:x}", ret._file_crc);
-        println!("ret._compressed_size = {:x}", ret._compressed_size);
-        println!("ret._uncompressed_size = {:x}", ret._uncompressed_size);
+        println!("self._compression_method = {:x}", self._compression_method);
+        println!("self._unknown = {:x}", self._unknown);
+        println!("self._file_crc = {:x}", self._file_crc);
+        println!("self._compressed_size = {:x}", self._compressed_size);
+        println!("self._uncompressed_size = {:x}", self._uncompressed_size);
 
-        println!("ret._file_name = {}", ret._file_name);
+        println!("self._file_name = {}", self._file_name);
 
-        print!("ret._enc_chk = ");
+        print!("self._enc_chk = ");
         for i in 0..ALZ_ENCR_HEADER_LEN {
             if 0 != i {
                 print!(" ");
             }
-            print!("{}", ret._enc_chk[i as usize]);
+            print!("{}", self._enc_chk[i as usize]);
         }
         println!("");
 
 
-        println!("is_encrypted = {}", ret.is_encrypted());
-        println!("is_data_descriptor = {}", ret.is_data_descriptor());
+        println!("is_encrypted = {}", self.is_encrypted());
+        println!("is_data_descriptor = {}", self.is_data_descriptor());
 
-        println!("ret._start_of_compressed_data = {}", ret._start_of_compressed_data);
+        println!("self._start_of_compressed_data = {}", self._start_of_compressed_data);
 
-        if ret.is_encrypted() {
+        if self.is_encrypted() {
             assert!(false, "ENCRYPTION UNIMPLEMENTED");
         }
 
-        if ret.is_data_descriptor() {
+        if self.is_data_descriptor() {
             assert!(false, "IS DATA DESCRIPTOR UNIMPLEMENTED");
         }
 
@@ -276,9 +366,6 @@ fn parse_local_file_header(cursor: &mut std::io::Cursor<&Vec<u8>>) -> bool{
         println!("Parse ERROR: Not a local file header (2)");
         return false;
     }
-
-    /*TODO: Is it safe to call unwrap here, since I already called 'is_err' */
-    //let local_file_header = res.unwrap();
 
     println!("HERE HERE HERE, continue parsing the headers {}", local_file_header._start_of_compressed_data);
 
