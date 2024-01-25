@@ -2,12 +2,13 @@ use std::fs;
 //use std::io;
 use std::io::Cursor;
 use byteorder::{LittleEndian, ReadBytesExt};
+use std::mem::size_of;
 
 #[derive(Debug)]
 struct ALZParseError {
 }
 
-struct AlzLocalFileHeader {
+struct AlzLocalFileHeaderHead {
     _file_name_length: u16,
 
     _file_attribute: u8,
@@ -17,6 +18,21 @@ struct AlzLocalFileHeader {
     _file_descriptor: u8,
 
     _unknown: u8,
+
+    }
+
+struct AlzLocalFileHeader {
+    _head: AlzLocalFileHeaderHead,
+
+    _compression_method: u8,
+    _unknown: u8,
+    _file_crc: u32,
+
+    /* Can be smaller sizes, depending on _file_descriptor/0x10 .*/
+    _compressed_size: u64,
+    _uncompressed_size: u64,
+
+
 }
 
 
@@ -25,27 +41,101 @@ impl AlzLocalFileHeader {
         let mut is_encrypted : bool = false;
         let mut is_data_descriptor : bool = false;
 
-        if std::mem::size_of::<AlzLocalFileHeader>() >= cursor.get_ref().len(){
+        if size_of::<AlzLocalFileHeaderHead>() >= cursor.get_ref().len(){
             return Err(ALZParseError{});
         }
 
-        let ret = Self {
+        let mut ret = Self {
                 /*TODO: Is it safe to call unwrap here, since I already checked that there is
                  * enough space in the buffer?
                  */
-                _file_name_length : cursor.read_u16::<LittleEndian>().unwrap(),
-                _file_attribute : cursor.read_u8::<>().unwrap(),
-                _file_time_date: cursor.read_u32::<LittleEndian>().unwrap(),
-                _file_descriptor : cursor.read_u8::<>().unwrap(),
-                _unknown : cursor.read_u8::<>().unwrap(),
+                _head : AlzLocalFileHeaderHead {
+                    _file_name_length : cursor.read_u16::<LittleEndian>().unwrap(),
+                    _file_attribute : cursor.read_u8::<>().unwrap(),
+                    _file_time_date: cursor.read_u32::<LittleEndian>().unwrap(),
+                    _file_descriptor : cursor.read_u8::<>().unwrap(),
+                    _unknown : cursor.read_u8::<>().unwrap(),
+                },
+
+                _compression_method : 0,
+                _unknown : 0,
+                _file_crc : 0,
+                _compressed_size : 0,
+                _uncompressed_size : 0,
+
             };
 
-        if 0 != (ret._file_descriptor & 0x1 ) {
+        if 0 != (ret._head._file_descriptor & 0x1 ) {
             is_encrypted = true;
         }
 
-        if 0 != (ret._file_descriptor  & 0x8) {
+        if 0 != (ret._head._file_descriptor  & 0x8) {
             is_data_descriptor = true;
+        }
+
+        if is_encrypted {
+            assert!(false, "ENCRYPTION UNIMPLEMENTED");
+        }
+
+        if is_data_descriptor {
+            assert!(false, "IS DATA DESCRIPTOR UNIMPLEMENTED");
+        }
+
+        let byte_len = ret._head._file_descriptor / 0x10;
+        println!("byte_len = {}", byte_len);
+        if byte_len > 0 {
+
+            if (size_of::<u8>() + size_of::<u8>() + size_of::<u32>()) >= cursor.get_ref().len(){
+                return Err(ALZParseError{});
+            }
+
+            ret._compression_method = cursor.read_u8::<>().unwrap();
+            ret._unknown = cursor.read_u8::<>().unwrap();
+            ret._file_crc = cursor.read_u32::<LittleEndian>().unwrap();
+
+            match byte_len {
+                1 => {
+                    if (size_of::<u8>() * 2) >= cursor.get_ref().len() {
+                        return Err(ALZParseError{});
+                    }
+                    ret._compressed_size = cursor.read_u8::<>().unwrap() as u64;
+                    ret._uncompressed_size = cursor.read_u8::<>().unwrap() as u64;
+                },
+                2 => {
+                    if (size_of::<u16>() * 2) >= cursor.get_ref().len() {
+                        return Err(ALZParseError{});
+                    }
+                    ret._compressed_size = cursor.read_u16::<LittleEndian>().unwrap() as u64;
+                    ret._uncompressed_size = cursor.read_u16::<LittleEndian>().unwrap() as u64;
+                },
+                4 => {
+                    if (size_of::<u32>() * 2) >= cursor.get_ref().len() {
+                        return Err(ALZParseError{});
+                    }
+                    ret._compressed_size = cursor.read_u32::<LittleEndian>().unwrap() as u64;
+                    ret._uncompressed_size = cursor.read_u32::<LittleEndian>().unwrap() as u64;
+                },
+                8 => {
+                    if (size_of::<u64>() * 2) >= cursor.get_ref().len() {
+                        return Err(ALZParseError{});
+                    }
+                    ret._compressed_size = cursor.read_u64::<LittleEndian>().unwrap() as u64;
+                    ret._uncompressed_size = cursor.read_u64::<LittleEndian>().unwrap() as u64;
+                },
+                _ => return Err(ALZParseError{}),
+            }
+        } else {
+            println!("DON'T THINK THIS IS EVER POSSIBLE, SEE IF IT COMES OUT IN TESTING!!!!!");
+            assert!(false, "EXITING HERE");
+            /*
+             * TODO: In 'unalz', (UnAlz.cpp, CUnAlz::ReadLocalFileheader), the condition where
+             * byte_len (byteLen) is zero is treated as a condition that can be ignored, and
+             * processing can continue.  I think it's probably a parse error when that
+             * happens and it never causes an issue because the file then fails crc and an error is
+             * reported, rather than just stopping parsing when that happens.  I would like to look
+             * for a file that has that condition and see if unalz (or other unpackers) are able to
+             * extract anything from the file.  If not, we can just return here.
+             */
         }
 
         println!("TODO: MAY need to move these flags to the struct");
@@ -93,7 +183,7 @@ fn parse_local_file_header(cursor: &mut std::io::Cursor<&Vec<u8>>) -> bool{
 
     /*TODO: Is it safe to call unwrap here, since I already called 'is_err' */
     let alfh = res.unwrap();
-    println!("fnl = {}", alfh._file_name_length);
+    println!("fnl = {}", alfh._head._file_name_length);
 
     println!("HERE HERE HERE, continue parsing the headers");
 
