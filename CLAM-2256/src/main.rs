@@ -39,14 +39,21 @@ struct AlzLocalFileHeader {
     _file_name: String,
 
     _enc_chk: [u8; ALZ_ENCR_HEADER_LEN as usize],
-    _is_encrypted: bool,
 
 }
 
 
 impl AlzLocalFileHeader {
+    fn is_encrypted(&mut self) -> bool {
+        return 0 != (self._head._file_descriptor & 0x1 );
+    }
+
+    fn is_data_descriptor(&mut self) -> bool {
+        return 0 != (self._head._file_descriptor & 0x8 );
+    }
+
     pub fn new( cursor: &mut std::io::Cursor<&Vec<u8>> ) -> Result<Self, ALZParseError> {
-        let mut is_data_descriptor : bool = false;
+        //let mut is_data_descriptor : bool = false;
 
         if size_of::<AlzLocalFileHeaderHead>() >= cursor.get_ref().len(){
             return Err(ALZParseError{});
@@ -71,8 +78,6 @@ impl AlzLocalFileHeader {
                 _uncompressed_size : 0,
                 _file_name : "".to_string(),
                 _enc_chk: [0; ALZ_ENCR_HEADER_LEN as usize],
-                _is_encrypted : false,
-
             };
 
         if 0 == ret._head._file_name_length {
@@ -80,16 +85,14 @@ impl AlzLocalFileHeader {
             return Err(ALZParseError{});
         }
 
-        ret._is_encrypted = 0 != (ret._head._file_descriptor & 0x1 );
-
-        if 0 != (ret._head._file_descriptor  & 0x8) {
-            is_data_descriptor = true;
-        }
+        //if 0 != (ret._head._file_descriptor  & 0x8) {
+            //is_data_descriptor = true;
+        //}
 
 
-        if is_data_descriptor {
-            assert!(false, "IS DATA DESCRIPTOR UNIMPLEMENTED");
-        }
+        //if is_data_descriptor {
+            //assert!(false, "IS DATA DESCRIPTOR UNIMPLEMENTED");
+        //}
 
         let byte_len = ret._head._file_descriptor / 0x10;
         println!("byte_len = {}", byte_len);
@@ -166,7 +169,7 @@ impl AlzLocalFileHeader {
             assert!(false, "NOT sure if other filename formats are supported here");
         }
 
-        if ret._is_encrypted{
+        if ret.is_encrypted() {
             if ALZ_ENCR_HEADER_LEN as usize > cursor.get_ref().len() {
                 return Err(ALZParseError{});
             }
@@ -175,7 +178,6 @@ impl AlzLocalFileHeader {
              * bytes?
              */
             cursor.read_exact(&mut ret._enc_chk).unwrap();
-            assert!(false, "ENCRYPTION UNIMPLEMENTED");
         }
 
 
@@ -210,8 +212,19 @@ impl AlzLocalFileHeader {
 
 
         println!("TODO: MAY need to move these flags to the struct");
-        println!("is_encrypted = {}", ret._is_encrypted);
-        println!("is_data_descriptor = {}", is_data_descriptor);
+        println!("is_encrypted = {}", ret.is_encrypted());
+        println!("is_data_descriptor = {}", ret.is_data_descriptor());
+
+
+        if ret.is_encrypted() {
+            assert!(false, "ENCRYPTION UNIMPLEMENTED");
+        }
+
+        if ret.is_data_descriptor() {
+            assert!(false, "IS DATA DESCRIPTOR UNIMPLEMENTED");
+        }
+
+
 
         return Ok(ret);
     }
