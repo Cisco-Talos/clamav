@@ -59,7 +59,29 @@ impl AlzLocalFileHeader {
         return 0 != (self._head._file_descriptor & 0x8 );
     }
 
-    pub fn new( cursor: &mut std::io::Cursor<&Vec<u8>> ) -> Result<Self, ALZParseError> {
+    pub fn new() -> Self {
+
+        Self {
+                _head : AlzLocalFileHeaderHead {
+                    _file_name_length : 0,
+                    _file_attribute : 0,
+                    _file_time_date: 0,
+                    _file_descriptor : 0,
+                    _unknown : 0,
+                },
+
+                _compression_method : 0,
+                _unknown : 0,
+                _file_crc : 0,
+                _compressed_size : 0,
+                _uncompressed_size : 0,
+                _file_name : "".to_string(),
+                _enc_chk: [0; ALZ_ENCR_HEADER_LEN as usize],
+                _start_of_compressed_data: 0,
+            }
+    }
+
+    pub fn parse( &mut self, cursor: &mut std::io::Cursor<&Vec<u8>> ) -> Result<(), ALZParseError> {
         //let mut is_data_descriptor : bool = false;
 
         if size_of::<AlzLocalFileHeaderHead>() >= cursor.get_ref().len(){
@@ -232,7 +254,7 @@ impl AlzLocalFileHeader {
             assert!(false, "IS DATA DESCRIPTOR UNIMPLEMENTED");
         }
 
-        return Ok(ret);
+        return Ok(());
     }
 }
 
@@ -247,14 +269,16 @@ fn is_alz(cursor: &mut std::io::Cursor<&Vec<u8>>) -> bool {
 
 fn parse_local_file_header(cursor: &mut std::io::Cursor<&Vec<u8>>) -> bool{
 
-    let res = AlzLocalFileHeader::new(cursor);
+    let mut local_file_header = AlzLocalFileHeader::new();
+
+    let res = local_file_header.parse(cursor);
     if res.is_err(){
         println!("Parse ERROR: Not a local file header (2)");
         return false;
     }
 
     /*TODO: Is it safe to call unwrap here, since I already called 'is_err' */
-    let local_file_header = res.unwrap();
+    //let local_file_header = res.unwrap();
 
     println!("HERE HERE HERE, continue parsing the headers {}", local_file_header._start_of_compressed_data);
 
