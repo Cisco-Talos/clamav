@@ -198,17 +198,13 @@ impl AlzLocalFileHeader {
         println!("ret._file_name = {}", ret._file_name);
 
         print!("ret._enc_chk = ");
-            for i in 0..ALZ_ENCR_HEADER_LEN {
-                if 0 != i {
-                    print!(" ");
-                }
-                print!("{}", ret._enc_chk[i as usize]);
+        for i in 0..ALZ_ENCR_HEADER_LEN {
+            if 0 != i {
+                print!(" ");
             }
-            println!("");
-
-
-
-
+            print!("{}", ret._enc_chk[i as usize]);
+        }
+        println!("");
 
 
         println!("TODO: MAY need to move these flags to the struct");
