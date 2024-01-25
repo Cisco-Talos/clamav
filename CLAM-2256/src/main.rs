@@ -4,6 +4,8 @@ use std::io::Cursor;
 use byteorder::{LittleEndian, ReadBytesExt};
 use std::mem::size_of;
 
+//use std::io::Read;
+
 #[derive(Debug)]
 struct ALZParseError {
 }
@@ -32,6 +34,7 @@ struct AlzLocalFileHeader {
     _compressed_size: u64,
     _uncompressed_size: u64,
 
+    _file_name: String,
 
 }
 
@@ -62,8 +65,14 @@ impl AlzLocalFileHeader {
                 _file_crc : 0,
                 _compressed_size : 0,
                 _uncompressed_size : 0,
+                _file_name : "".to_string(),
 
             };
+
+        if 0 == ret._head._file_name_length {
+            println!("Filename length cannot be zero");
+            return Err(ALZParseError{});
+        }
 
         if 0 != (ret._head._file_descriptor & 0x1 ) {
             is_encrypted = true;
@@ -137,6 +146,37 @@ impl AlzLocalFileHeader {
              * extract anything from the file.  If not, we can just return here.
              */
         }
+
+        if ret._head._file_name_length as usize >= cursor.get_ref().len() {
+            return Err(ALZParseError{});
+        }
+
+        let mut filename = vec![0u8, 1];
+        /*TODO: Figure out the correct way to allocate a vector of dynamic size and call
+         * cursor.read_exact, instead of having a loop of reads.*/
+        for _i in 0..ret._head._file_name_length {
+            filename.push( cursor.read_u8::<>().unwrap());
+        }
+        let res = String::from_utf8(filename);
+        if res.is_ok(){
+            ret._file_name = res.unwrap();
+        } else {
+            assert!(false, "NOT sure if other filename formats are supported here");
+        }
+
+        println!("ret._head._file_name_length = {:x}", ret._head._file_name_length);
+        println!("ret._head._file_attribute = {:02x}", ret._head._file_attribute);
+        println!("ret._head._file_time_date = {:x}", ret._head._file_time_date);
+        println!("ret._head._file_descriptor = {:x}", ret._head._file_descriptor);
+        println!("ret._head._unknown = {:x}", ret._head._unknown);
+
+        println!("ret._compression_method = {:x}", ret._compression_method);
+        println!("ret._unknown = {:x}", ret._unknown);
+        println!("ret._file_crc = {:x}", ret._file_crc);
+        println!("ret._compressed_size = {:x}", ret._compressed_size);
+        println!("ret._uncompressed_size = {:x}", ret._uncompressed_size);
+
+        println!("ret._file_name = {}", ret._file_name);
 
         println!("TODO: MAY need to move these flags to the struct");
         println!("is_encrypted = {}", is_encrypted);
