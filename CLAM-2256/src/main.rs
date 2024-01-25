@@ -82,13 +82,6 @@ impl AlzLocalFileHeader {
     }
 
     pub fn parse( &mut self, cursor: &mut std::io::Cursor<&Vec<u8>> ) -> Result<(), ALZParseError> {
-        //let mut is_data_descriptor : bool = false;
-
-        /*
-        if size_of::<AlzLocalFileHeaderHead>() >= cursor.get_ref().len(){
-            return Err(ALZParseError{});
-        }
-        */
 
         let mut tu16 = cursor.read_u16::<LittleEndian>();
         if tu16.is_err(){
@@ -120,67 +113,38 @@ impl AlzLocalFileHeader {
         }
         self._head._unknown = tu8.unwrap();
 
-
-                    /*
-        let mut ret = Self {
-                /*TODO: Is it safe to call unwrap here, since I already checked that there is
-                 * enough space in the buffer?
-                 */
-                _head : AlzLocalFileHeaderHead {
-                    _file_name_length : cursor.read_u16::<LittleEndian>().unwrap(),
-                    _file_attribute : cursor.read_u8::<>().unwrap(),
-                    _file_time_date: cursor.read_u32::<LittleEndian>().unwrap(),
-                    _file_descriptor : cursor.read_u8::<>().unwrap(),
-                    _unknown : cursor.read_u8::<>().unwrap(),
-                },
-
-                _compression_method : 0,
-                _unknown : 0,
-                _file_crc : 0,
-                _compressed_size : 0,
-                _uncompressed_size : 0,
-                _file_name : "".to_string(),
-                _enc_chk: [0; ALZ_ENCR_HEADER_LEN as usize],
-                _start_of_compressed_data: 0,
-            };
-                    */
-
         if 0 == self._head._file_name_length {
             println!("Filename length cannot be zero");
             return Err(ALZParseError{});
         }
 
-        //if 0 != (ret._head._file_descriptor  & 0x8) {
-            //is_data_descriptor = true;
-        //}
-
-
-        //if is_data_descriptor {
-            //assert!(false, "IS DATA DESCRIPTOR UNIMPLEMENTED");
-        //}
-
         let byte_len = self._head._file_descriptor / 0x10;
-        println!("byte_len = {}", byte_len);
         if byte_len > 0 {
 
             if (size_of::<u8>() + size_of::<u8>() + size_of::<u32>()) >= cursor.get_ref().len(){
                 return Err(ALZParseError{});
             }
 
-            self._compression_method = cursor.read_u8::<>().unwrap();
-            self._unknown = cursor.read_u8::<>().unwrap();
-            self._file_crc = cursor.read_u32::<LittleEndian>().unwrap();
+            tu8 = cursor.read_u8::<>();
+            if tu8.is_err() {
+                return Err(ALZParseError{});
+            }
+            self._compression_method = tu8.unwrap();
+
+            tu8 = cursor.read_u8::<>();
+            if tu8.is_err() {
+                return Err(ALZParseError{});
+            }
+            self._unknown = tu8.unwrap();
+
+            tu32 = cursor.read_u32::<LittleEndian>();
+            if tu32.is_err() {
+                return Err(ALZParseError{});
+            }
+            self._file_crc = tu32.unwrap();
 
             match byte_len {
                 1 => {
-                    /*
-                    if (size_of::<u8>() * 2) >= cursor.get_ref().len() {
-                        return Err(ALZParseError{});
-                    }
-                    ret._compressed_size = cursor.read_u8::<>().unwrap() as u64;
-                    ret._uncompressed_size = cursor.read_u8::<>().unwrap() as u64;
-                    */
-
                     tu8 = cursor.read_u8::<>();
                     if tu8.is_err() {
                         return Err(ALZParseError{});
@@ -194,13 +158,6 @@ impl AlzLocalFileHeader {
                     self._uncompressed_size = tu8.unwrap() as u64;
                 },
                 2 => {
-                    /*
-                    if (size_of::<u16>() * 2) >= cursor.get_ref().len() {
-                        return Err(ALZParseError{});
-                    }
-                    ret._compressed_size = cursor.read_u16::<LittleEndian>().unwrap() as u64;
-                    ret._uncompressed_size = cursor.read_u16::<LittleEndian>().unwrap() as u64;
-                    */
                     tu16 = cursor.read_u16::<LittleEndian>();
                     if tu16.is_err() {
                         return Err(ALZParseError{});
@@ -215,14 +172,6 @@ impl AlzLocalFileHeader {
 
                 },
                 4 => {
-                    /*
-                    if (size_of::<u32>() * 2) >= cursor.get_ref().len() {
-                        return Err(ALZParseError{});
-                    }
-                    ret._compressed_size = cursor.read_u32::<LittleEndian>().unwrap() as u64;
-                    ret._uncompressed_size = cursor.read_u32::<LittleEndian>().unwrap() as u64;
-
-                    */
                     tu32 = cursor.read_u32::<LittleEndian>();
                     if tu32.is_err() {
                         return Err(ALZParseError{});
@@ -236,13 +185,6 @@ impl AlzLocalFileHeader {
                     self._uncompressed_size = tu32.unwrap() as u64;
                 },
                 8 => {
-                    /*
-                    if (size_of::<u64>() * 2) >= cursor.get_ref().len() {
-                        return Err(ALZParseError{});
-                    }
-                    ret._compressed_size = cursor.read_u64::<LittleEndian>().unwrap() as u64;
-                    ret._uncompressed_size = cursor.read_u64::<LittleEndian>().unwrap() as u64;
-                    */
                     let mut tu64 = cursor.read_u64::<LittleEndian>();
                     if tu64.is_err() {
                         return Err(ALZParseError{});
