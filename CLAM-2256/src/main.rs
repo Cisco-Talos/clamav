@@ -12,13 +12,11 @@ struct AlzLocalFileHeader {
 
     _file_attribute: u8,
 
-    /*
-    file_time_date: u32,
+    _file_time_date: u32,
 
-    file_descriptor: u8,
+    _file_descriptor: u8,
 
-    unknown: u8,
-    */
+    _unknown: u8,
 }
 
 
@@ -36,6 +34,9 @@ impl AlzLocalFileHeader {
                  */
                 _file_name_length : cursor.read_u16::<LittleEndian>().unwrap(),
                 _file_attribute : cursor.read_u8::<>().unwrap(),
+                _file_time_date: cursor.read_u32::<LittleEndian>().unwrap(),
+                _file_descriptor : cursor.read_u8::<>().unwrap(),
+                _unknown : cursor.read_u8::<>().unwrap(),
             }
           )
     }
