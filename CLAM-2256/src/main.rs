@@ -315,6 +315,10 @@ impl AlzLocalFileHeader {
 
         let mut contents: Vec<u8> = Vec::new();
 
+        //TODO: Consider putting a header on and formatting this properly, so
+        //we don't have to implement deflate.
+        //https://en.wikipedia.org/wiki/Gzip
+
 
 contents.push(0x1f);
 contents.push(0x8b );
