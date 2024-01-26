@@ -382,6 +382,7 @@ contents.push(0x00);
         }
         println!("Extracted data = '{}'", s);
 
+        println!("TODO!!!!!  FIGURE OUT HOW TO DECOMPRESS WITHOUT THE HEADER AND FOOTER THAT I HARDCODED");
 
         return Ok(());
     }
