@@ -8,5 +8,7 @@ edition = "2021"
 [dependencies]
 byteorder = "1.5.0"
 cursor = "2.3.0"
+deflate = "1.0.0"
+flate2 = "1.0.28"
 
 [workspace]

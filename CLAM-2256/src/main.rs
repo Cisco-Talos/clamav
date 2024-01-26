@@ -4,10 +4,23 @@ use std::io::Cursor;
 use byteorder::{LittleEndian, ReadBytesExt};
 //use std::mem::size_of;
 
+//use deflate::deflate_bytes;
+//use flate2::Decompress;
+//use flate2::FlushDecompress;
+use flate2::read::GzDecoder;
+
+//use flate2::write::{GzEncoder};
+//use flate2::read::{GzDecoder};
+
+
 use std::io::Read;
 
 #[derive(Debug)]
 struct ALZParseError {
+}
+
+#[derive(Debug)]
+struct ALZExtractError {
 }
 
 const ALZ_FILE_HEADER: u32 = 0x015a4c41;
@@ -82,6 +95,9 @@ impl AlzLocalFileHeader {
     }
 
     pub fn parse( &mut self, cursor: &mut std::io::Cursor<&Vec<u8>> ) -> Result<(), ALZParseError> {
+        /*
+         * TODO: Should probably rename this to parse_header or something.
+         */
 
         let mut tu16 = cursor.read_u16::<LittleEndian>();
         if tu16.is_err(){
@@ -213,12 +229,20 @@ impl AlzLocalFileHeader {
             return Err(ALZParseError{});
         }
 
-        let mut filename = vec![0u8, 1];
+        let mut filename: Vec<u8> = Vec::new();
         /*TODO: Figure out the correct way to allocate a vector of dynamic size and call
          * cursor.read_exact, instead of having a loop of reads.*/
         for _i in 0..self._head._file_name_length {
-            filename.push( cursor.read_u8::<>().unwrap());
+            let ret = cursor.read_u8::<>();
+            if ret.is_err() {
+                println!("Error reading contents of the file name");
+                return Err(ALZParseError{});
+            }
+            
+            filename.push( ret.unwrap());
         }
+
+
         let res = String::from_utf8(filename);
         if res.is_ok(){
             self._file_name = res.unwrap();
@@ -240,7 +264,6 @@ impl AlzLocalFileHeader {
 
         self._start_of_compressed_data = cursor.position();
         println!("self._start_of_compressed_data = {}", self._start_of_compressed_data );
-        println!("self._compressed_size = {}", self._compressed_size );
 
         cursor.set_position(self._start_of_compressed_data + self._compressed_size);
         println!("cursor.position() = {}", cursor.position() );
@@ -284,6 +307,116 @@ impl AlzLocalFileHeader {
 
         return Ok(());
     }
+
+    fn extract_file_deflate(&mut self, cursor: &mut std::io::Cursor<&Vec<u8>>, out_dir: &String) -> Result<(), ALZExtractError>{
+        println!("Outdir = {}", out_dir);
+        println!("start of compressed data  = {}", self._start_of_compressed_data);
+        cursor.set_position(self._start_of_compressed_data);
+
+        let mut contents: Vec<u8> = Vec::new();
+
+
+contents.push(0x1f);
+contents.push(0x8b );
+contents.push(0x08 );
+contents.push(0x08 );
+contents.push(0xc6 );
+contents.push(0xa7 );
+contents.push(0x1c );
+contents.push(0x4a );
+contents.push(0x00 );
+contents.push(0x03 );
+contents.push(0x61 );
+contents.push(0x6c );
+contents.push(0x7a );
+contents.push(0x20 );
+contents.push(0x74 );
+contents.push(0x65 );
+contents.push(0x73 );
+contents.push(0x74 );
+contents.push(0x20 );
+contents.push(0x66 );
+contents.push(0x69 );
+contents.push(0x6c );
+contents.push(0x65 );
+contents.push(0x2e );
+contents.push(0x74 );
+contents.push(0x78 );
+contents.push(0x74 );
+contents.push(0x00 );
+
+
+
+        /*TODO: Figure out the correct way to allocate a vector of dynamic size and call
+         * cursor.read_exact, instead of having a loop of reads.*/
+        for _i in 0..self._compressed_size {
+            let ret = cursor.read_u8::<>();
+            if ret.is_err() {
+                println!("Cannot read full amount of data");
+                return Err(ALZExtractError{});
+            }
+
+            contents.push( ret.unwrap());
+        }
+
+contents.push(0x17 );
+contents.push(0x5f );
+contents.push(0x58 );
+contents.push(0xf7 );
+contents.push(0x5d );
+contents.push(0x00 );
+contents.push(0x00 );
+contents.push(0x00);
+
+        //let mut data:Vec<u8> = Vec::new();
+
+
+
+
+
+        let mut d = GzDecoder::new(&*contents);
+        let mut s = String::new();
+        let ret = d.read_to_string(&mut s);
+        if ret.is_err() {
+            assert!(false, "ERROR in decompress");
+        }
+        println!("Extracted data = '{}'", s);
+
+
+        return Ok(());
+    }
+
+    fn extract_file(&mut self, cursor: &mut std::io::Cursor<&Vec<u8>>, out_dir: &String) -> Result<(), ALZExtractError>{
+        const ALZ_COMP_NOCOMP: u8 = 0;
+        const ALZ_COMP_BZIP2: u8 = 1;
+        const ALZ_COMP_DEFLATE: u8 = 2;
+
+        /*TODO: Consider extracting encrypted data to separate files.  Maybe
+         *      someone is interested in signaturing those files???
+         */
+        if self.is_encrypted(){
+            println!("Figure out if we can support encryption");
+            return Err(ALZExtractError{});
+        }
+
+        match self._compression_method {
+            ALZ_COMP_NOCOMP=>{
+                assert!(false, "Nocomp Unimplemented");
+            }
+            ALZ_COMP_BZIP2=>{
+                assert!(false, "Bzip2 Unimplemented");
+            }
+            ALZ_COMP_DEFLATE=>{
+                return self.extract_file_deflate(cursor, out_dir);
+            }
+            _=>{
+                println!("Unsupported compression");
+                return Err(ALZExtractError{});
+            }
+        }
+
+        return Ok(());
+    }
 }
 
 /* Check for the ALZ file header. */
@@ -295,13 +428,19 @@ fn is_alz(cursor: &mut std::io::Cursor<&Vec<u8>>) -> bool {
     return false;
 }
 
-fn parse_local_file_header(cursor: &mut std::io::Cursor<&Vec<u8>>) -> bool{
+fn parse_local_file_header(cursor: &mut std::io::Cursor<&Vec<u8>>, out_dir: &String) -> bool{
 
     let mut local_file_header = AlzLocalFileHeader::new();
 
     let res = local_file_header.parse(cursor);
     if res.is_err(){
         println!("Parse ERROR: Not a local file header (2)");
+        return false;
+    }
+
+    let res2 = local_file_header.extract_file(cursor, out_dir);
+    if res2.is_err() {
+        println!("Extract ERROR: ");
         return false;
     }
 
@@ -346,7 +485,7 @@ fn process_file(bytes: &Vec<u8>, out_dir: &String) -> bool {
 
         match sig {
             ALZ_LOCAL_FILE_HEADER=>{
-                if parse_local_file_header(&mut cursor){
+                if parse_local_file_header(&mut cursor, out_dir){
                     println!("Found a local file header\n");
                     continue;
                 }
