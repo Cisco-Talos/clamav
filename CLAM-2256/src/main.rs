@@ -262,7 +262,6 @@ impl AlzLocalFileHeader {
         }
 
         let mut filename: Vec<u8> = Vec::new();
-print!("filename = '");
         /*TODO: Figure out the correct way to allocate a vector of dynamic size and call
          * cursor.read_exact, instead of having a loop of reads.*/
         for _i in 0..self._head._file_name_length {
@@ -272,13 +271,9 @@ print!("filename = '");
                 return Err(ALZParseError{});
             }
             
-            let tmp = ret.unwrap();
-            filename.push( tmp);
-
-print!("{:02x} ", tmp);
+            filename.push(ret.unwrap());
 
         }
-println!("'");
 
 /*
         //let res = String::from_utf8(&filename).into_owned();
