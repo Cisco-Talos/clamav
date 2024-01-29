@@ -319,64 +319,29 @@ impl AlzLocalFileHeader {
         //we don't have to implement deflate.
         //https://en.wikipedia.org/wiki/Gzip
         //https://www.rfc-editor.org/rfc/rfc1952.html
-
+        //https://www.ietf.org/rfc/rfc1952.txt
 
         //magic number
-contents.push(0x1f);
-contents.push(0x8b );
+        contents.push(0x1f);
+        contents.push(0x8b );
 
-//compression method (0x8 for deflate)
-contents.push(0x08 );
+        //compression method (0x8 for deflate)
+        contents.push(0x08 );
 
-//header flags (don't know what they mean yet)
-//0x8 sets the FNAME flag.  May be able to get away with setting this to 0, and not putting the
-//name in.  Going to try that.
-//contents.push(0x08 ); 
-contents.push(0); 
+        //header flags
+        contents.push(0); 
 
-//timestamp
-/*
-contents.push(0xc6 );
-contents.push(0xa7 );
-contents.push(0x1c );
-contents.push(0x4a );
-*/
-/*Don't need an actual timestamp either.*/
-contents.push(0); 
-contents.push(0); 
-contents.push(0); 
-contents.push(0); 
+        //timestamp, doesn't matter what it is.
+        contents.push(0); 
+        contents.push(0); 
+        contents.push(0); 
+        contents.push(0); 
 
+        //compression flags
+        contents.push(0x00 );
 
-//compression flags
-contents.push(0x00 );
-
-//operating system id
-contents.push(0x03 );
-
-//The following is the filename followed by a zero.
-/*
-contents.push(0x61 );
-contents.push(0x6c );
-contents.push(0x7a );
-contents.push(0x20 );
-contents.push(0x74 );
-contents.push(0x65 );
-contents.push(0x73 );
-contents.push(0x74 );
-contents.push(0x20 );
-contents.push(0x66 );
-contents.push(0x69 );
-contents.push(0x6c );
-contents.push(0x65 );
-contents.push(0x2e );
-contents.push(0x74 );
-contents.push(0x78 );
-contents.push(0x74 );
-contents.push(0x00 );
-*/
-
-
+        //operating system id
+        contents.push(0x03 );
 
         /*TODO: Figure out the correct way to allocate a vector of dynamic size and call
          * cursor.read_exact, instead of having a loop of reads.*/
@@ -402,8 +367,6 @@ contents.push(0x00 );
 contents.push(0x00 );
 contents.push(0x00);
 
-        //let mut data:Vec<u8> = Vec::new();
-
 
 
 
@@ -415,8 +378,6 @@ contents.push(0x00);
             assert!(false, "ERROR in decompress");
         }
         println!("Extracted data = '{}'", s);
-
-        println!("TODO!!!!!  FIGURE OUT HOW TO DECOMPRESS WITHOUT THE HEADER AND FOOTER THAT I HARDCODED");
 
         return Ok(());
     }
