@@ -449,8 +449,8 @@ println!("entering extract for  '{}'", self._file_name);
         let mut temp: String = out_dir.to_owned();
         temp.push('/');
         temp.push_str(&self._file_name.to_owned());
+        temp = temp.replace("\\", "/");
         let res = create_dir_all(temp);
-println!("Creating directory {}/{}", out_dir, self._file_name);
         if res.is_err() {
                 return Err(ALZExtractError{});
         }
