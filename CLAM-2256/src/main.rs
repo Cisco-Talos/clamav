@@ -318,18 +318,34 @@ impl AlzLocalFileHeader {
         //TODO: Consider putting a header on and formatting this properly, so
         //we don't have to implement deflate.
         //https://en.wikipedia.org/wiki/Gzip
+        //https://www.rfc-editor.org/rfc/rfc1952.html
 
 
+        //magic number
 contents.push(0x1f);
 contents.push(0x8b );
+
+//compression method (0x8 for deflate)
 contents.push(0x08 );
-contents.push(0x08 );
+
+//header flags (don't know what they mean yet)
+//0x8 sets the FNAME flag.  May be able to get away with setting this to 0, and not putting the
+//name in.  Going to try that.
+contents.push(0x08 ); 
+
+//timestamp
 contents.push(0xc6 );
 contents.push(0xa7 );
 contents.push(0x1c );
 contents.push(0x4a );
+
+//compression flags
 contents.push(0x00 );
+
+//operating system id
 contents.push(0x03 );
+
+//The following is the filename followed by a zero.
 contents.push(0x61 );
 contents.push(0x6c );
 contents.push(0x7a );
@@ -363,10 +379,13 @@ contents.push(0x00 );
             contents.push( ret.unwrap());
         }
 
+        //checksum of the original uncompressed data. (Get it from the FILE HEADER)
 contents.push(0x17 );
 contents.push(0x5f );
 contents.push(0x58 );
 contents.push(0xf7 );
+
+//length of the original uncompressed data.
 contents.push(0x5d );
 contents.push(0x00 );
 contents.push(0x00 );
