@@ -218,8 +218,8 @@ impl AlzLocalFileHeader {
                 _ => return Err(ALZParseError{}),
             }
         } else {
-            println!("DON'T THINK THIS IS EVER POSSIBLE, SEE IF IT COMES OUT IN TESTING!!!!!");
-            assert!(false, "EXITING HERE");
+//            println!("DON'T THINK THIS IS EVER POSSIBLE, SEE IF IT COMES OUT IN TESTING!!!!!");
+//            assert!(false, "EXITING HERE");
             /*
              * TODO: In 'unalz', (UnAlz.cpp, CUnAlz::ReadLocalFileheader), the condition where
              * byte_len (byteLen) is zero is treated as a condition that can be ignored, and
@@ -228,6 +228,9 @@ impl AlzLocalFileHeader {
              * reported, rather than just stopping parsing when that happens.  I would like to look
              * for a file that has that condition and see if unalz (or other unpackers) are able to
              * extract anything from the file.  If not, we can just return here.
+             *
+             *
+             * NOT THE CASE
              */
         }
 
