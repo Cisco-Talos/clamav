@@ -4,6 +4,7 @@ Documentation=man:freshclam(1) man:freshclam.conf(5) https://docs.clamav.net/
 ;ConditionPathExists=!/etc/cron.d/clamav-freshclam
 Wants=network-online.target
 After=network-online.target
+Conflicts=clamav-freshclam.service
 
 [Service]
 Type=oneshot
