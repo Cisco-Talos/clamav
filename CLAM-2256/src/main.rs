@@ -341,7 +341,7 @@ impl AlzLocalFileHeader {
         contents.push(0x00 );
 
         //operating system id
-        contents.push(0x03 );
+        contents.push(0);
 
         /*TODO: Figure out the correct way to allocate a vector of dynamic size and call
          * cursor.read_exact, instead of having a loop of reads.*/
