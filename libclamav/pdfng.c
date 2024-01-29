@@ -240,16 +240,23 @@ static char *pdf_decrypt_string(struct pdf_struct *pdf, struct pdf_obj *obj, con
     if (pdf->flags & (1 << DECRYPTABLE_PDF)) {
         int hex2str_ret;
         bool hex_encoded_binary = false;
+        const char *start       = NULL;
+        const char *end         = NULL;
 
         enc = get_enc_method(pdf, obj);
 
+        if (*length < 2) {
+            cli_dbgmsg("pdf_decrypt_string: length < 2\n");
+            return NULL;
+        }
+
         // Strip off the leading `<` and trailing `>`
-        const char *start = in;
+        start = in;
         if (start[0] == '<') {
             start++;
             hex_encoded_binary = true;
         }
-        const char *end = in + *length;
+        end = in + *length;
         if (end[-1] == '>') {
             end--;
         }
