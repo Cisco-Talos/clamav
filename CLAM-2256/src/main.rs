@@ -7,6 +7,7 @@ use byteorder::{LittleEndian, ReadBytesExt};
 use std::fs::File;
 use std::fs::create_dir_all;
 use std::io::Write;
+use std::path::Path;
 
 //use deflate::deflate_bytes;
 //use flate2::Decompress;
@@ -283,21 +284,15 @@ impl AlzLocalFileHeader {
 
         }
 
-/*
-        //let res = String::from_utf8(&filename).into_owned();
-        if res.is_ok(){
-            self._file_name = res.unwrap();
-        } else {
-
-
-            /*TODO: Other formats*/
-            assert!(false, "NOT sure if other filename formats are supported here");
+        /*
+        let ret = String::from_utf8(filename);
+        if ret.is_err(){
+            assert!(false, "not utf8");
         }
-*/
+        self._file_name = ret.unwrap();
+        */
+        println!("TODO: Figure out how to add other code pages");
         self._file_name = String::from_utf8_lossy(&filename).into_owned();
-
-        //self._file_name = String::from_utf8_unchecked(filename);
-        println!("file name = {}", self._file_name);
 
         if self.is_encrypted() {
             if ALZ_ENCR_HEADER_LEN as usize > cursor.get_ref().len() {
@@ -389,11 +384,19 @@ println!("entering extract for  '{}'", self._file_name);
             assert!(false, "ERROR in decompress");
         }
 
-        let mut temp: String = out_dir.to_owned();
+        let mut temp: String = String::from(out_dir);
         temp.push('/');
-        temp.push_str(&self._file_name.to_owned());
+        temp.push_str(&self._file_name);
+        temp = temp.replace("\\", "/");
+
+        let p = Path::new(&temp);
+        let ret = create_dir_all(p.parent().unwrap());
+        if ret.is_err() {
+            assert!(false, "Cannot create directory, try and just write the file in the base directory");
+        }
+
         let out_ret = File::create(&temp);
-println!("trying to create file '{}'", &temp);
+
         if out_ret.is_err() {
             assert!(false, "Error creating output file");
         }
@@ -447,6 +450,7 @@ println!("trying to create file '{}'", &temp);
         temp.push('/');
         temp.push_str(&self._file_name.to_owned());
         let res = create_dir_all(temp);
+println!("Creating directory {}/{}", out_dir, self._file_name);
         if res.is_err() {
                 return Err(ALZExtractError{});
         }
