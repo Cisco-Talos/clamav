@@ -451,6 +451,7 @@ println!("entering extract for  '{}'", self._file_name);
         temp.push_str(&self._file_name.to_owned());
         temp = temp.replace("\\", "/");
         let res = create_dir_all(temp);
+        println!("TODO: create one function for creating directories");
         if res.is_err() {
                 return Err(ALZExtractError{});
         }
