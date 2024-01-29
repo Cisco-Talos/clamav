@@ -232,7 +232,7 @@ impl AlzLocalFileHeader {
                 },
                 _ => return Err(ALZParseError{}),
             }
-            assert!(self.is_file(), "NOT A FILE");
+//            assert!(self.is_file(), "NOT A FILE");
         } else {
 //            println!("DON'T THINK THIS IS EVER POSSIBLE, SEE IF IT COMES OUT IN TESTING!!!!!");
 //            assert!(false, "EXITING HERE");
@@ -262,6 +262,7 @@ impl AlzLocalFileHeader {
         }
 
         let mut filename: Vec<u8> = Vec::new();
+print!("filename = '");
         /*TODO: Figure out the correct way to allocate a vector of dynamic size and call
          * cursor.read_exact, instead of having a loop of reads.*/
         for _i in 0..self._head._file_name_length {
@@ -271,16 +272,28 @@ impl AlzLocalFileHeader {
                 return Err(ALZParseError{});
             }
             
-            filename.push( ret.unwrap());
-        }
+            let tmp = ret.unwrap();
+            filename.push( tmp);
 
-        let res = String::from_utf8(filename);
+print!("{:02x} ", tmp);
+
+        }
+println!("'");
+
+/*
+        //let res = String::from_utf8(&filename).into_owned();
         if res.is_ok(){
             self._file_name = res.unwrap();
         } else {
+
+
             /*TODO: Other formats*/
             assert!(false, "NOT sure if other filename formats are supported here");
         }
+*/
+        self._file_name = String::from_utf8_lossy(&filename).into_owned();
+
+        //self._file_name = String::from_utf8_unchecked(filename);
         println!("file name = {}", self._file_name);
 
         if self.is_encrypted() {
