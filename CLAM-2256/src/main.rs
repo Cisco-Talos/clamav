@@ -5,11 +5,14 @@ use byteorder::{LittleEndian, ReadBytesExt};
 //use std::mem::size_of;
 
 use std::fs::File;
+use std::fs::create_dir_all;
 use std::io::Write;
 
 //use deflate::deflate_bytes;
 //use flate2::Decompress;
 //use flate2::FlushDecompress;
+/*There is also a MultiGzDecoder, but I think this is the one we want
+ * because of having to create the header manually.*/
 use flate2::read::GzDecoder;
 
 //use flate2::write::{GzEncoder};
@@ -266,39 +269,8 @@ impl AlzLocalFileHeader {
         }
 
         self._start_of_compressed_data = cursor.position();
-        println!("self._start_of_compressed_data = {}", self._start_of_compressed_data );
 
         cursor.set_position(self._start_of_compressed_data + self._compressed_size);
-        println!("cursor.position() = {}", cursor.position() );
-
-        println!("self._head._file_name_length = {:x}", self._head._file_name_length);
-        println!("self._head._file_attribute = {:02x}", self._head._file_attribute);
-        println!("self._head._file_time_date = {:x}", self._head._file_time_date);
-        println!("self._head._file_descriptor = {:x}", self._head._file_descriptor);
-        println!("self._head._unknown = {:x}", self._head._unknown);
-
-        println!("self._compression_method = {:x}", self._compression_method);
-        println!("self._unknown = {:x}", self._unknown);
-        println!("self._file_crc = {:x}", self._file_crc);
-        println!("self._compressed_size = {:x}", self._compressed_size);
-        println!("self._uncompressed_size = {:x}", self._uncompressed_size);
-
-        println!("self._file_name = {}", self._file_name);
-
-        print!("self._enc_chk = ");
-        for i in 0..ALZ_ENCR_HEADER_LEN {
-            if 0 != i {
-                print!(" ");
-            }
-            print!("{}", self._enc_chk[i as usize]);
-        }
-        println!("");
-
-
-        println!("is_encrypted = {}", self.is_encrypted());
-        println!("is_data_descriptor = {}", self.is_data_descriptor());
-
-        println!("self._start_of_compressed_data = {}", self._start_of_compressed_data);
 
         if self.is_encrypted() {
             assert!(false, "ENCRYPTION UNIMPLEMENTED");
@@ -313,13 +285,11 @@ impl AlzLocalFileHeader {
 
     fn extract_file_deflate(&mut self, cursor: &mut std::io::Cursor<&Vec<u8>>, out_dir: &String) -> Result<(), ALZExtractError>{
         println!("Outdir = {}", out_dir);
-        println!("start of compressed data  = {}", self._start_of_compressed_data);
         cursor.set_position(self._start_of_compressed_data);
 
         let mut contents: Vec<u8> = Vec::new();
 
-        //TODO: Consider putting a header on and formatting this properly, so
-        //we don't have to implement deflate.
+        //Gzip file header format.
         //https://en.wikipedia.org/wiki/Gzip
         //https://www.rfc-editor.org/rfc/rfc1952.html
         //https://www.ietf.org/rfc/rfc1952.txt
@@ -328,7 +298,7 @@ impl AlzLocalFileHeader {
         contents.push(0x1f);
         contents.push(0x8b );
 
-        //compression method (0x8 for deflate)
+        //compression method (0-7 reserved, 0x8 for deflate)
         contents.push(0x08 );
 
         //header flags
@@ -341,7 +311,7 @@ impl AlzLocalFileHeader {
         contents.push(0); 
 
         //compression flags
-        contents.push(0x00 );
+        contents.push(0x00);
 
         //operating system id
         contents.push(0);
@@ -359,7 +329,6 @@ impl AlzLocalFileHeader {
         }
 
         //checksum of the original uncompressed data. (Get it from the FILE HEADER)
-        //let mut bytes = self._file_crc.to_le().to_ne_bytes();
         let mut bytes = self._file_crc.to_le_bytes();
         for i in 0..4{
             contents.push(bytes[i]);
@@ -386,7 +355,11 @@ impl AlzLocalFileHeader {
         println!("Extracted data = '{}'", s);
         */
 
-        let out_ret = File::create("ftt");
+        //let out_ret = File::create("ftt");
+        let mut temp: String = out_dir.to_owned();
+        temp.push('/');
+        temp.push_str(&self._file_name.to_owned());
+        let out_ret = File::create(temp);
         if out_ret.is_err() {
             assert!(false, "Error creating output file");
         }
@@ -460,8 +433,6 @@ fn parse_local_file_header(cursor: &mut std::io::Cursor<&Vec<u8>>, out_dir: &Str
         return false;
     }
 
-    println!("HERE HERE HERE, continue parsing the headers {}", local_file_header._start_of_compressed_data);
-
     return true;
 }
 
@@ -478,8 +449,6 @@ fn parse_central_directory_header(cursor: &mut std::io::Cursor<&Vec<u8>>) -> boo
 }
 
 fn process_file(bytes: &Vec<u8>, out_dir: &String) -> bool {
-
-    println!("Outdir = {}", out_dir);
 
     let mut cursor = Cursor::new(bytes);
 
@@ -523,8 +492,6 @@ fn process_file(bytes: &Vec<u8>, out_dir: &String) -> bool {
         }
     }
 
-    println!("Is ALZ (so far), need to decompress/decrypt the file and check the crc.");
-
     return true;
 
 }
@@ -540,6 +507,10 @@ fn main() {
     let out_dir = &args[2];
 
     let bytes: Vec<u8> = fs::read(file_name).unwrap();
+    let res = create_dir_all(out_dir);
+    if res.is_err() {
+        assert!(false, "Cannot create output directory {}", out_dir);
+    }
     process_file(&bytes, out_dir);
 
 }
