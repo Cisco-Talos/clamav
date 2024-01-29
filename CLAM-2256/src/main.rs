@@ -422,6 +422,17 @@ impl AlzLocalFileHeader {
 
         return Ok(());
     }
+
+    fn create_directory(&mut self, out_dir: &String) -> Result<(), ALZExtractError>{
+        let mut temp: String = out_dir.to_owned();
+        temp.push('/');
+        temp.push_str(&self._file_name.to_owned());
+        let res = create_dir_all(temp);
+        if res.is_err() {
+                return Err(ALZExtractError{});
+        }
+        return Ok(());
+    }
 }
 
 /* Check for the ALZ file header. */
@@ -443,10 +454,20 @@ fn parse_local_file_header(cursor: &mut std::io::Cursor<&Vec<u8>>, out_dir: &Str
         return false;
     }
 
-    let res2 = local_file_header.extract_file(cursor, out_dir);
-    if res2.is_err() {
-        println!("Extract ERROR: ");
-        return false;
+    if local_file_header.is_file() {
+        let res2 = local_file_header.extract_file(cursor, out_dir);
+        if res2.is_err() {
+            println!("Extract ERROR: ");
+            return false;
+        }
+    } else if local_file_header.is_directory() {
+        let res2 = local_file_header.create_directory(out_dir);
+        if res2.is_err() {
+            println!("Directory creation ERROR: ");
+            return false;
+        }
+
+        println!("is directory");
     }
 
     return true;
@@ -487,15 +508,18 @@ fn process_file(bytes: &Vec<u8>, out_dir: &String) -> bool {
         match sig {
             ALZ_LOCAL_FILE_HEADER=>{
                 if parse_local_file_header(&mut cursor, out_dir){
+                    println!("Found a ALZ_LOCAL_FILE_HEADER");
                     continue;
                 }
             }
             ALZ_CENTRAL_DIRECTORY_HEADER=>{
                 if parse_central_directory_header(&mut cursor){
+                    println!("Found a ALZ_CENTRAL_DIRECTORY_HEADER");
                     continue;
                 }
             }
             ALZ_END_OF_CENTRAL_DIRECTORY_HEADER=>{
+                    println!("Found a ALZ_END_OF_CENTRAL_DIRECTORY_HEADER");
                 /*This is the end, nothing really to do here.*/
             }
             _ => {
