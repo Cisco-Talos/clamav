@@ -69,6 +69,13 @@ struct AlzLocalFileHeader {
 }
 
 
+enum AlzFileAttribute {
+    AlzFileAttributeReadonly = 0x1,
+    AlzFileAttributeHidden = 0x2,
+    AlzFileAttributeDirectory = 0x10,
+    AlzFileAttributeFile = 0x20,
+}
+
 impl AlzLocalFileHeader {
     fn is_encrypted(&mut self) -> bool {
         return 0 != (self._head._file_descriptor & 0x1 );
@@ -76,6 +83,10 @@ impl AlzLocalFileHeader {
 
     fn is_data_descriptor(&mut self) -> bool {
         return 0 != (self._head._file_descriptor & 0x8 );
+    }
+
+    fn is_directory(&mut self) -> bool {
+        return 0 != ((AlzFileAttribute::AlzFileAttributeDirectory as u8) & self._head._file_attribute);
     }
 
     pub fn new() -> Self {
@@ -232,6 +243,13 @@ impl AlzLocalFileHeader {
              *
              * NOT THE CASE
              */
+
+            println!("I DIDN'T THINK THIS WAS POSSIBLE, CHECKING FOR DIRECTORY");
+            if self.is_directory() {
+                println!("THIS IS A DIRECTORY");
+            } else {
+                println!("THIS IS NOT A DIRECTORY");
+            }
         }
 
         if self._head._file_name_length as usize >= cursor.get_ref().len() {
@@ -258,6 +276,7 @@ impl AlzLocalFileHeader {
             /*TODO: Other formats*/
             assert!(false, "NOT sure if other filename formats are supported here");
         }
+        println!("file name = {}", self._file_name);
 
         if self.is_encrypted() {
             if ALZ_ENCR_HEADER_LEN as usize > cursor.get_ref().len() {
