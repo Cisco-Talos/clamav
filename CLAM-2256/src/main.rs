@@ -77,19 +77,19 @@ enum AlzFileAttribute {
 }
 
 impl AlzLocalFileHeader {
-    fn is_encrypted(&mut self) -> bool {
+    fn is_encrypted(&self) -> bool {
         return 0 != (self._head._file_descriptor & 0x1 );
     }
 
-    fn is_data_descriptor(&mut self) -> bool {
+    fn is_data_descriptor(&self) -> bool {
         return 0 != (self._head._file_descriptor & 0x8 );
     }
 
-    fn is_directory(&mut self) -> bool {
+    fn is_directory(&self) -> bool {
         return 0 != ((AlzFileAttribute::_AlzFileAttributeDirectory as u8) & self._head._file_attribute);
     }
 
-    fn is_file(&mut self) -> bool {
+    fn is_file(&self) -> bool {
         return 0 != ((AlzFileAttribute::_AlzFileAttributeFile as u8) & self._head._file_attribute);
     }
 
@@ -319,6 +319,7 @@ impl AlzLocalFileHeader {
 
     fn extract_file_deflate(&mut self, cursor: &mut std::io::Cursor<&Vec<u8>>, out_dir: &String) -> Result<(), ALZExtractError>{
         cursor.set_position(self._start_of_compressed_data);
+println!("entering extract for  '{}'", self._file_name);
 
         let mut contents: Vec<u8> = Vec::new();
 
@@ -383,7 +384,8 @@ impl AlzLocalFileHeader {
         let mut temp: String = out_dir.to_owned();
         temp.push('/');
         temp.push_str(&self._file_name.to_owned());
-        let out_ret = File::create(temp);
+        let out_ret = File::create(&temp);
+println!("trying to create file '{}'", &temp);
         if out_ret.is_err() {
             assert!(false, "Error creating output file");
         }
@@ -423,6 +425,7 @@ impl AlzLocalFileHeader {
                 return self.extract_file_deflate(cursor, out_dir);
             }
             _=>{
+                assert!(false, "Unsupported compression Unimplemented");
                 println!("Unsupported compression");
                 return Err(ALZExtractError{});
             }
@@ -462,6 +465,8 @@ fn parse_local_file_header(cursor: &mut std::io::Cursor<&Vec<u8>>, out_dir: &Str
         return false;
     }
 
+    println!("in parse_local_file_header, name '{}, is_file = {}'", local_file_header._file_name, local_file_header.is_file());
+    /*
     if local_file_header.is_file() {
         let res2 = local_file_header.extract_file(cursor, out_dir);
         if res2.is_err() {
@@ -476,6 +481,24 @@ fn parse_local_file_header(cursor: &mut std::io::Cursor<&Vec<u8>>, out_dir: &Str
         }
 
         println!("is directory");
+    }
+    */
+    if local_file_header.is_directory() {
+        let res2 = local_file_header.create_directory(out_dir);
+        if res2.is_err() {
+            println!("Directory creation ERROR: ");
+            return false;
+        }
+
+        println!("is directory");
+    } else {
+        /*the is_file flag doesn't appear to always be set, so we'll just assume it's a file if
+         * it's not marked as a directory.*/
+        let res2 = local_file_header.extract_file(cursor, out_dir);
+        if res2.is_err() {
+            println!("Extract ERROR: ");
+            return false;
+        }
     }
 
     return true;
@@ -516,7 +539,7 @@ fn process_file(bytes: &Vec<u8>, out_dir: &String) -> bool {
         match sig {
             ALZ_LOCAL_FILE_HEADER=>{
                 if parse_local_file_header(&mut cursor, out_dir){
-                    println!("Found a ALZ_LOCAL_FILE_HEADER");
+                    //println!("Found a ALZ_LOCAL_FILE_HEADER");
                     continue;
                 }
             }
