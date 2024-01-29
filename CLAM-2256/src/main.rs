@@ -248,7 +248,6 @@ impl AlzLocalFileHeader {
             filename.push( ret.unwrap());
         }
 
-
         let res = String::from_utf8(filename);
         if res.is_ok(){
             self._file_name = res.unwrap();
@@ -284,7 +283,6 @@ impl AlzLocalFileHeader {
     }
 
     fn extract_file_deflate(&mut self, cursor: &mut std::io::Cursor<&Vec<u8>>, out_dir: &String) -> Result<(), ALZExtractError>{
-        println!("Outdir = {}", out_dir);
         cursor.set_position(self._start_of_compressed_data);
 
         let mut contents: Vec<u8> = Vec::new();
@@ -335,27 +333,18 @@ impl AlzLocalFileHeader {
         }
 
         //length of the original uncompressed data.
-        //bytes = self._uncompressed_size.to_le_bytes();
         bytes = (self._uncompressed_size as u32).to_le_bytes();
         for i in 0..4{
             contents.push(bytes[i]);
         }
 
         let mut d = GzDecoder::new(&*contents);
-        /*
-        let mut s = String::new();
-        let ret = d.read_to_string(&mut s);
-        */
         let mut buffer: Vec<u8> = Vec::new();
         let ret = d.read_to_end(&mut buffer);
         if ret.is_err() {
             assert!(false, "ERROR in decompress");
         }
-        /*
-        println!("Extracted data = '{}'", s);
-        */
 
-        //let out_ret = File::create("ftt");
         let mut temp: String = out_dir.to_owned();
         temp.push('/');
         temp.push_str(&self._file_name.to_owned());
@@ -471,19 +460,16 @@ fn process_file(bytes: &Vec<u8>, out_dir: &String) -> bool {
         match sig {
             ALZ_LOCAL_FILE_HEADER=>{
                 if parse_local_file_header(&mut cursor, out_dir){
-                    println!("Found a local file header\n");
                     continue;
                 }
             }
             ALZ_CENTRAL_DIRECTORY_HEADER=>{
                 if parse_central_directory_header(&mut cursor){
-                    println!("Found a central directory header\n");
                     continue;
                 }
             }
             ALZ_END_OF_CENTRAL_DIRECTORY_HEADER=>{
                 /*This is the end, nothing really to do here.*/
-                    println!("Found an end of central directory header\n");
             }
             _ => {
                 /*Parse error, maybe try and extract what is there???*/
