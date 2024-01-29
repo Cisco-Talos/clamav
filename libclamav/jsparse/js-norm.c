@@ -1,7 +1,7 @@
 /*
  *  Javascript normalizer.
  *
- *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2008-2013 Sourcefire, Inc.
  *
  *  Authors: Török Edvin
@@ -171,7 +171,7 @@ static struct scope *scope_done(struct scope *s)
  * InsideInitializer acts differently, make it only a flag
  * ....................
  *
- * Pushing, Poping is done when entering / exiting function scopes,
+ * Pushing, Popping is done when entering / exiting function scopes,
  * tracking { and function ( is done by the function scope tracker too.
  *
  * we only need to track brackets.
@@ -1766,7 +1766,7 @@ static int yylex(YYSTYPE *lvalp, yyscan_t scanner)
             cli_dbgmsg(MODULE "infloop detected, skipping character\n");
             scanner->pos++;
         }
-        /* its not necesarely an infloop if it changed
+        /* its not necessarily an infloop if it changed
          * state, and it shouldn't infloop between states */
     }
     scanner->lastpos    = scanner->pos;

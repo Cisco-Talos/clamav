@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2008-2013 Sourcefire, Inc.
  *
  *  Author: Tomasz Kojm <tkojm@clamav.net>
@@ -63,7 +63,7 @@
 #define MAXCMDOPTS 150
 
 #define MATCH_NUMBER "^[0-9]+$"
-#define MATCH_SIZE   "^[0-9]+[KM]?$"
+#define MATCH_SIZE   "^[0-9]+[KMG]?$"
 #define MATCH_BOOL   "^(yes|true|1|no|false|0)$"
 
 #define FLAG_MULTIPLE 1 /* option can be used multiple times */
@@ -248,6 +248,8 @@ const struct clam_option __clam_options[] = {
     /* config file/cmdline options */
     {"AlertExceedsMax", "alert-exceeds-max", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "", ""},
 
+    {"CacheSize", "cache-size", 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, CLI_DEFAULT_CACHE_SIZE, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Number of entries the cache can store.", "65536"},
+
     {"PreludeEnable", "prelude-enable", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD, "Enable prelude", ""},
 
     {"PreludeAnalyzerName", "prelude-analyzer-name", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMD, "Name of the analyzer as seen in prewikka", ""},
@@ -272,7 +274,7 @@ const struct clam_option __clam_options[] = {
 
     {"ExtendedDetectionInfo", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD, "Log additional information about the infected file, such as its\nsize and hash, together with the virus name.", "yes"},
 
-    {"PidFile", "pid", 'p', CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_MILTER, "Save the process ID to a file.", "/var/run/clam.pid"},
+    {"PidFile", "pid", 'p', CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_MILTER, "Save the process ID to a file.", "/run/clamav/clam.pid"},
 
     {"TemporaryDirectory", "tempdir", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMD | OPT_MILTER | OPT_CLAMSCAN | OPT_SIGTOOL, "This option allows you to change the default temporary directory.", "/tmp"},
 
@@ -284,7 +286,7 @@ const struct clam_option __clam_options[] = {
 
     {"YaraRules", "yara-rules", 0, CLOPT_TYPE_STRING, NULL, 0, NULL, 0, OPT_CLAMSCAN, "By default, yara rules will be loaded. This option allows you to exclude yara rules when scanning and also to scan only using yara rules. Valid options are yes|no|only", "yes"},
 
-    {"LocalSocket", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMD, "Path to a local socket file the daemon will listen on.", "/tmp/clamd.socket"},
+    {"LocalSocket", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMD, "Path to a local socket file the daemon will listen on.", "/run/clamav/clamd.sock"},
 
     {"LocalSocketGroup", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMD, "Sets the group ownership on the unix socket.", "virusgroup"},
 
@@ -432,13 +434,15 @@ const struct clam_option __clam_options[] = {
 
     {"ScanHWP3", "scan-hwp3", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option enables scanning HWP3 files.\nIf you turn off this option, the original files will still be scanned, but\nwithout additional processing.", "yes"},
 
+    {"ScanOneNote", "scan-onenote", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option enables scanning OneNote files.\nIf you turn off this option, the original files will still be scanned, but\nwithout additional processing.", "yes"},
+
     {"ScanArchive", "scan-archive", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Scan within archives and compressed files.\nIf you turn off this option, the original files will still be scanned, but\nwithout unpacking and additional processing.", "yes"},
 
     {"ForceToDisk", "force-to-disk", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option causes memory or nested map scans to dump the content to disk.\nIf you turn on this option, more data is written to disk and is available\nwhen the leave-temps option is enabled at the cost of more disk writes.", "no"},
 
     {"MaxScanTime", "max-scantime", 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option sets the maximum amount of time a scan may take to complete.\nThe value of 0 disables the limit.\nWARNING: disabling this limit or setting it too high may result allow scanning\nof certain files to lock up the scanning process/threads resulting in a Denial of Service.\nThe value is in milliseconds.", "120000"},
 
-    {"MaxScanSize", "max-scansize", 0, CLOPT_TYPE_SIZE, MATCH_SIZE, CLI_DEFAULT_MAXSCANSIZE, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option sets the maximum amount of data to be scanned for each input file.\nArchives and other containers are recursively extracted and scanned up to this\nvalue.\nThe value of 0 disables the limit.\nWARNING: disabling this limit or setting it too high may result in severe\ndamage.", "400M"},
+    {"MaxScanSize", "max-scansize", 0, CLOPT_TYPE_SIZE64, MATCH_SIZE, CLI_DEFAULT_MAXSCANSIZE, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option sets the maximum amount of data to be scanned for each input file.\nArchives and other containers are recursively extracted and scanned up to this\nvalue.\nThe value of 0 disables the limit.\nWARNING: disabling this limit or setting it too high may result in severe\ndamage.", "400M"},
 
     {"MaxFileSize", "max-filesize", 0, CLOPT_TYPE_SIZE, MATCH_SIZE, CLI_DEFAULT_MAXFILESIZE, NULL, 0, OPT_CLAMD | OPT_MILTER | OPT_CLAMSCAN, "Files/messages larger than this limit won't be scanned. Affects the input\nfile itself as well as files contained inside it (when the input file is\nan archive, a document or some other kind of container).\nThe value of 0 disables the limit.\nWARNING: disabling this limit or setting it too high may result in severe\ndamage to the system.", "100M"},
 
@@ -490,7 +494,7 @@ const struct clam_option __clam_options[] = {
 
     {"OnAccessExtraScanning", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD, "Enables extra scanning and notification after catching certain inotify events. Only works with the DDD system enabled.", "yes"},
 
-    {"OnAccessCurlTimeout", NULL, 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 5000l, NULL, 0, OPT_CLAMD, "Max amount of time (in milliseconds) that the OnAccess client should spend for every connect, send, and recieve attempt when communicating with clamd via curl (5s default)", "10000L"},
+    {"OnAccessCurlTimeout", NULL, 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 5000l, NULL, 0, OPT_CLAMD, "Max amount of time (in milliseconds) that the OnAccess client should spend for every connect, send, and receive attempt when communicating with clamd via curl (5s default)", "10000L"},
 
     {"OnAccessMaxThreads", NULL, 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 5, NULL, 0, OPT_CLAMD, "Max number of scanning threads to allocate to the OnAccess thread pool at startup--these threads are the ones responsible for creating a connection with the daemon and kicking off scanning after an event has been processed. To prevent clamonacc from consuming all clamd's resources keep this lower than clamd's max threads. Default is 5", "10"},
 
@@ -597,9 +601,9 @@ const struct clam_option __clam_options[] = {
 
     /* Milter specific options */
 
-    {"ClamdSocket", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_MILTER, "Define the clamd socket to connect to for scanning.\nThis option is mandatory! Syntax:\n  ClamdSocket unix:path\n  ClamdSocket tcp:host:port\nThe first syntax specifies a local unix socket (needs an absolute path) e.g.:\n  ClamdSocket unix:/var/run/clamd/clamd.socket\nThe second syntax specifies a tcp local or remote tcp socket: the\nhost can be a hostname or an ip address; the \":port\" field is only required\nfor IPv6 addresses, otherwise it defaults to 3310\n  ClamdSocket tcp:192.168.0.1\nThis option can be repeated several times with different sockets or even\nwith the same socket: clamd servers will be selected in a round-robin fashion.", "tcp:scanner.mydomain:7357"},
+    {"ClamdSocket", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_MILTER, "Define the clamd socket to connect to for scanning.\nThis option is mandatory! Syntax:\n  ClamdSocket unix:path\n  ClamdSocket tcp:host:port\nThe first syntax specifies a local unix socket (needs an absolute path) e.g.:\n  ClamdSocket unix:/run/clamav/clamd.sock\nThe second syntax specifies a tcp local or remote tcp socket: the\nhost can be a hostname or an ip address; the \":port\" field is only required\nfor IPv6 addresses, otherwise it defaults to 3310\n  ClamdSocket tcp:192.168.0.1\nThis option can be repeated several times with different sockets or even\nwith the same socket: clamd servers will be selected in a round-robin fashion.", "tcp:scanner.mydomain:7357"},
 
-    {"MilterSocket", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_MILTER, "Define the interface through which we communicate with sendmail.\nThis option is mandatory! Possible formats are:\n[[unix|local]:]/path/to/file - to specify a unix domain socket;\ninet:port@[hostname|ip-address] - to specify an ipv4 socket;\ninet6:port@[hostname|ip-address] - to specify an ipv6 socket.", "/tmp/clamav-milter.socket\ninet:7357"},
+    {"MilterSocket", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_MILTER, "Define the interface through which we communicate with sendmail.\nThis option is mandatory! Possible formats are:\n[[unix|local]:]/path/to/file - to specify a unix domain socket;\ninet:port@[hostname|ip-address] - to specify an ipv4 socket;\ninet6:port@[hostname|ip-address] - to specify an ipv6 socket.", "/tmp/clamav-milter.sock\ninet:7357"},
 
     {"MilterSocketGroup", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_MILTER, "Define the group ownership for the (unix) milter socket.", "virusgroup"},
 
@@ -644,7 +648,7 @@ const struct clam_option __clam_options[] = {
     {"LeaveTemporaryFiles", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, -1, NULL, 0, OPT_MILTER | OPT_DEPRECATED, "", ""},
     {"LocalSocket", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_MILTER | OPT_DEPRECATED, "", ""},
     {"MailFollowURLs", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, -1, NULL, 0, OPT_MILTER | OPT_DEPRECATED, "", ""},
-    {"MaxScanSize", NULL, 0, CLOPT_TYPE_SIZE, MATCH_SIZE, -1, NULL, 0, OPT_MILTER | OPT_DEPRECATED, "", ""},
+    {"MaxScanSize", NULL, 0, CLOPT_TYPE_SIZE64, MATCH_SIZE, -1, NULL, 0, OPT_MILTER | OPT_DEPRECATED, "", ""},
     {"MaxFiles", NULL, 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, -1, NULL, 0, OPT_MILTER | OPT_DEPRECATED, "", ""},
     {"MaxRecursion", NULL, 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, -1, NULL, 0, OPT_MILTER | OPT_DEPRECATED, "", ""},
     {"PhishingSignatures", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, -1, NULL, 0, OPT_MILTER | OPT_DEPRECATED, "", ""},
@@ -921,7 +925,7 @@ struct optstruct *optparse(const char *cfgfile, int argc, char **argv, int verbo
     struct option longopts[MAXCMDOPTS];
     char shortopts[MAXCMDOPTS];
     regex_t regex;
-    long long numarg, lnumarg;
+    long long numarg, lnumarg, lnumlimit;
     int regflags = REG_EXTENDED | REG_NOSUB;
 
 #ifdef _WIN32
@@ -1202,25 +1206,40 @@ struct optstruct *optparse(const char *cfgfile, int argc, char **argv, int verbo
                 break;
 
             case CLOPT_TYPE_SIZE:
+            case CLOPT_TYPE_SIZE64:
+                if (optentry->argtype == CLOPT_TYPE_SIZE64)
+                    /* guaranteed to be "long long" (64 bit but possibly signed) further down the line */
+                    lnumlimit = LLONG_MAX;
+                else
+                    /* probably mostly "unsigned long int" (32 or 64 bit unsigned depending on platform),
+                     * but may be expected to fit into a "long long" (64-bit signed) */
+                    lnumlimit = LLONG_MAX < ULONG_MAX ? LLONG_MAX : ULONG_MAX;
                 errno = 0;
                 if (arg)
-                    lnumarg = strtoul(arg, &buff, 0);
+                    lnumarg = strtoll(arg, &buff, 0);
                 else {
                     numarg = 0;
                     break;
                 }
                 if (errno != ERANGE) {
                     switch (*buff) {
+                        case 'G':
+                        case 'g':
+                            if (lnumarg <= lnumlimit / (1024 * 1024 * 1024))
+                                lnumarg *= 1024 * 1024 * 1024;
+                            else
+                                errno = ERANGE;
+                            break;
                         case 'M':
                         case 'm':
-                            if (lnumarg <= UINT_MAX / (1024 * 1024))
+                            if (lnumarg <= lnumlimit / (1024 * 1024))
                                 lnumarg *= 1024 * 1024;
                             else
                                 errno = ERANGE;
                             break;
                         case 'K':
                         case 'k':
-                            if (lnumarg <= UINT_MAX / 1024)
+                            if (lnumarg <= lnumlimit / 1024)
                                 lnumarg *= 1024;
                             else
                                 errno = ERANGE;
@@ -1244,17 +1263,17 @@ struct optstruct *optparse(const char *cfgfile, int argc, char **argv, int verbo
                 if (err) break;
                 if (errno == ERANGE) {
                     if (cfgfile) {
-                        fprintf(stderr, "WARNING: Numerical value for option %s too high, resetting to 4G\n", name);
+                        fprintf(stderr, "WARNING: Numerical value for option %s too high, resetting to %lld\n", name, lnumlimit);
                     } else {
                         if (optentry->shortopt)
-                            fprintf(stderr, "WARNING: Numerical value for option --%s (-%c) too high, resetting to 4G\n", optentry->longopt, optentry->shortopt);
+                            fprintf(stderr, "WARNING: Numerical value for option --%s (-%c) too high, resetting to %lld\n", optentry->longopt, optentry->shortopt, lnumlimit);
                         else
-                            fprintf(stderr, "WARNING: Numerical value for option %s too high, resetting to 4G\n", optentry->longopt);
+                            fprintf(stderr, "WARNING: Numerical value for option %s too high, resetting to %lld\n", optentry->longopt, lnumlimit);
                     }
-                    lnumarg = UINT_MAX;
+                    lnumarg = lnumlimit;
                 }
 
-                numarg = lnumarg ? lnumarg : UINT_MAX;
+                numarg = lnumarg ? lnumarg : lnumlimit;
                 break;
 
             case CLOPT_TYPE_BOOL:
@@ -1317,7 +1336,7 @@ struct optstruct *optadditem(const char *name, const char *arg, int verbose, int
     struct optstruct *opts = NULL, *opts_last = NULL, *opt;
     char *buff;
     regex_t regex;
-    long long numarg, lnumarg;
+    long long numarg, lnumarg, lnumlimit;
     int regflags                       = REG_EXTENDED | REG_NOSUB;
     const struct clam_option *optentry = NULL;
 
@@ -1415,25 +1434,40 @@ struct optstruct *optadditem(const char *name, const char *arg, int verbose, int
                 break;
 
             case CLOPT_TYPE_SIZE:
+            case CLOPT_TYPE_SIZE64:
+                if (optentry->argtype == CLOPT_TYPE_SIZE64)
+                    /* guaranteed to be "long long" (64 bit but possibly signed) further down the line */
+                    lnumlimit = LLONG_MAX;
+                else
+                    /* probably mostly "unsigned long int" (32 or 64 bit unsigned depending on platform),
+                     * but may be expected to fit into a "long long" (64-bit signed) */
+                    lnumlimit = LLONG_MAX < ULONG_MAX ? LLONG_MAX : ULONG_MAX;
                 errno = 0;
                 if (arg)
-                    lnumarg = strtoul(arg, &buff, 0);
+                    lnumarg = strtoll(arg, &buff, 0);
                 else {
                     numarg = 0;
                     break;
                 }
                 if (errno != ERANGE) {
                     switch (*buff) {
+                        case 'G':
+                        case 'g':
+                            if (lnumarg <= lnumlimit / (1024 * 1024 * 1024))
+                                lnumarg *= 1024 * 1024 * 1024;
+                            else
+                                errno = ERANGE;
+                            break;
                         case 'M':
                         case 'm':
-                            if (lnumarg <= UINT_MAX / (1024 * 1024))
+                            if (lnumarg <= lnumlimit / (1024 * 1024))
                                 lnumarg *= 1024 * 1024;
                             else
                                 errno = ERANGE;
                             break;
                         case 'K':
                         case 'k':
-                            if (lnumarg <= UINT_MAX / 1024)
+                            if (lnumarg <= lnumlimit / 1024)
                                 lnumarg *= 1024;
                             else
                                 errno = ERANGE;

@@ -83,7 +83,7 @@ Log additional information about the infected file, such as its size and hash, t
 Default: no
 .TP
 \fBPidFile STRING\fR
-Save the process identifier of a listening daemon (main thread) to a specified file.
+Write the daemon's pid to the specified file.
 .br
 Default: disabled
 .TP
@@ -479,6 +479,13 @@ If you turn off this option, the original files will still be scanned, but witho
 .br
 Default: yes
 .TP
+\fBScanOneNote BOOL\fR
+This option enables scanning OneNote files.
+.br
+If you turn off this option, the original files will still be scanned, but without additional processing.
+.br
+Default: yes
+.TP
 \fBScanArchive BOOL\fR
 Scan within archives and compressed files.
 .br
@@ -542,6 +549,11 @@ This option allows you to disable the caching feature of the engine.
 By default, the engine will store an MD5 in a cache of any files that are not flagged as virus or that hit limits checks. \fBWarning: Disabling the cache will have a negative performance impact on large scans.\fR
 .br
 Default: no
+.TP
+\fBCacheSize\fR
+This option allows you to set the number of entries the cache can store. The value should be a square number or will be rounded up to the nearest square number.
+.br
+Default: 65536
 .TP
 \fBForceToDisk\fR
 This option causes memory or nested map scans to dump the content to disk.
@@ -740,7 +752,7 @@ Max number of scanning threads to allocate to the OnAccess thread pool at startu
 Default: 5
 .TP
 \fBOnAccessCurlTimeout NUMBER\fR
-Max amount of time (in milliseconds) that the OnAccess client should spend for every connect, send, and recieve attempt when communicating with clamd via curl.
+Max amount of time (in milliseconds) that the OnAccess client should spend for every connect, send, and receive attempt when communicating with clamd via curl.
 .br
 Default: 5000 (5 seconds)
 .TP

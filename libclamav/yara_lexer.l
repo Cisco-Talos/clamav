@@ -1,7 +1,7 @@
 /*
  * YARA rule lexer for ClamAV
  *
- * Copyright (C) 2014-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ * Copyright (C) 2014-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *
  * Authors: Steven Morgan
  *
@@ -356,7 +356,7 @@ $({letter}|{digit}|_)*  {
 
   if (strlen(yytext) > 128)
   {
-    yyerror(yyscanner, compiler, "indentifier too long");
+    yyerror(yyscanner, compiler, "identifier too long");
   }
 
   yylval->c_string = yr_strdup(yytext);

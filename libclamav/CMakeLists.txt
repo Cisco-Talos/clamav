@@ -1,4 +1,4 @@
-# Copyright (C) 2020-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+# Copyright (C) 2020-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
 
 include_directories(
     ${LIBXML2_INCLUDE_DIR}
@@ -377,7 +377,7 @@ set(LIBCLAMAV_SOURCES
     egg.c               egg.h
     # Master Boot Record partition
     mbr.c               mbr.h
-    # GUID Parition Table partition
+    # GUID Partition Table partition
     gpt.c               gpt.h
     # Apple Partition Map partition
     apm.c               apm.h
@@ -395,6 +395,8 @@ set(LIBCLAMAV_SOURCES
     tiff.c              tiff.h
     # GIF image format checker
     gif.c               gif.h
+    # UDF partition
+    udf.c               udf.h
 )
 
 if(ENABLE_SHARED_LIB)

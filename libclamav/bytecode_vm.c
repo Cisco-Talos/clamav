@@ -1,7 +1,7 @@
 /*
  *  Execute ClamAV bytecode.
  *
- *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2009-2013 Sourcefire, Inc.
  *
  *  Authors: Török Edvin
@@ -141,7 +141,7 @@ struct stack {
 };
 
 /* type with largest alignment that we use (in general it is a long double, but
- * thats too big alignment for us) */
+ * that's too big alignment for us) */
 typedef uint64_t align_t;
 
 static always_inline void *cli_stack_alloc(struct stack *stack, unsigned bytes)

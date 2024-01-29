@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm, Török Edvin
@@ -414,7 +414,7 @@ cl_error_t scanfd(
         goto done;
     }
 
-    /* Try and get the real filename, for logging purposes */
+    /* Try to get the real filename, for logging purposes */
     if (!stream) {
         if (CL_SUCCESS != cli_get_filepath_from_filedesc(fd, &filepath)) {
             logg(LOGG_DEBUG, "%s: Unable to determine the filepath given the file descriptor.\n", fdstr);

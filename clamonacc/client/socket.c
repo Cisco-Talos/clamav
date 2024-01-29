@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2020-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2020-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *
  *  Author: Mickey Sola
  *
@@ -42,7 +42,7 @@ struct onas_sock_t onas_sock = {.written = 0};
  * One time socket setup for unix file descriptor passing
  *
  * @param ctx a point to the onas context struct
- * @return CL_SUCCESS if writing to socket struct was succesful, CL_EWRITE if the socket has already been written to
+ * @return CL_SUCCESS if writing to socket struct was successful, CL_EWRITE if the socket has already been written to
  */
 cl_error_t onas_set_sock_only_once(struct onas_context *ctx)
 {
@@ -71,7 +71,7 @@ cl_error_t onas_set_sock_only_once(struct onas_context *ctx)
 /**
  * Retrieves a working socket descriptor for unix fdpassing
  *
- * @return Returns socket desctriptor on success, -1 on failure
+ * @return Returns socket descriptor on success, -1 on failure
  */
 int onas_get_sockd()
 {

@@ -63,7 +63,6 @@ static struct mspack_file *mspack_fmap_open(struct mspack_system *self,
         return NULL;
     }
     mspack_handle = malloc(sizeof(*mspack_handle));
-    memset(mspack_handle, 0, (sizeof(*mspack_handle)));
     if (!mspack_handle) {
         cli_dbgmsg("%s() failed at %d\n", __func__, __LINE__);
         return NULL;

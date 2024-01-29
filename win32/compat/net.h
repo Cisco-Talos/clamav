@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2009-2013 Sourcefire, Inc.
  *
  *  Authors: aCaB <acab@clamav.net>
@@ -24,8 +24,14 @@
 
 /* Don't include clamav-config.h, because that brings in platform.h
    and platform.h will make these functions recursive ;-). */
-#ifndef ssize_t
+#ifndef SSIZE_T_DEFINED
+#if defined(_MSC_VER)
+#include <BaseTsd.h>
+typedef SSIZE_T ssize_t;
+#else
 typedef int ssize_t;
+#endif
+#define SSIZE_T_DEFINED
 #endif
 
 #define F_GETFL 1

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2019-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2019-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *
  *  EGG is an archive format created by ESTsoft used by their ALZip
  *  archiving software.
@@ -66,7 +66,7 @@ cl_error_t cli_egg_open(
     uint32_t* nComments);
 
 /**
- * @brief Peek at the next file in the archive, without incremented the the current file index.
+ * @brief Peek at the next file in the archive, without incremented the current file index.
  *
  * @param hArchive          An open EGG archive handle from cli_egg_open()
  * @param file_metadata     Metadata describing the next file to be extracted (or skipped).
@@ -80,7 +80,7 @@ cl_error_t cli_egg_peek_file_header(
  * @brief Extract the next file in the archive.
  *
  * Does not return all of the metadata provided by cli_egg_peek_file_header(), so both should be used to get file information.
- * The current file index will be incrememnted on both success and failure.
+ * The current file index will be incremented on both success and failure.
  *
  * @param hArchive                  An open EGG archive handle from cli_egg_open()
  * @param[out] filename             The filename of the extracted file, in UTF-8.

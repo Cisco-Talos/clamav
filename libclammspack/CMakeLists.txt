@@ -103,6 +103,12 @@ if(ENABLE_STATIC_LIB)
             ${CMAKE_CURRENT_BINARY_DIR}
         PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/mspack )
 
+    if(WIN32)
+        install(TARGETS clammspack_static DESTINATION . COMPONENT libraries)
+    else()
+        install(TARGETS clammspack_static DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT libraries)
+    endif()
+
     add_library( ClamAV::libmspack_static ALIAS clammspack_static )
     if(NOT ENABLE_SHARED_LIB)
         add_library( ClamAV::libmspack ALIAS clammspack_static )

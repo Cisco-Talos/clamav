@@ -34,16 +34,16 @@ typedef struct __attribute__((packed)) {
     uint32_t reserved1;
     uint32_t reserved2; /* MUST be 0 */
 
-    uint8_t cspName[1]; /* really the rest of the data in the block.  Starts with a
-                                  string of wide characters, followed by the encryption verifier.
-                                  It is 44 instead of 32 because this structure is only used inside
-                                  encryption_info_stream_standard_t (below).  It is in two different
-                                  structures because of the way the documentation is written.
-                                  */
+    // uint8_t cspName[variable]; /* really the rest of the data in the block.  Starts with a
+    //                               string of wide characters, followed by the encryption verifier.
+    //                               It is 44 instead of 32 because this structure is only used inside
+    //                               encryption_info_stream_standard_t (below).  It is in two different
+    //                               structures because of the way the documentation is written.
+    //                               */
 
 } encryption_info_t;
 
-/* 
+/*
  * https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-offcrypto/2895eba1-acb1-4624-9bde-2cdad3fea015
  */
 typedef struct __attribute__((packed)) {
@@ -54,16 +54,9 @@ typedef struct __attribute__((packed)) {
 
     uint32_t size;
 
-    union {
-        encryption_info_t encryptionInfo;
-        uint8_t padding[512 - 12]; /* Subtract the size of version_major, version_minor, flags and size.
-                                 This consumes a sector (512 bytes), so make sure enough space is always allocated.
-                               */
-    };
+    encryption_info_t encryptionInfo;
 
 } encryption_info_stream_standard_t;
-
-#define CSP_NAME_LENGTH(__ptr__) (sizeof(__ptr__->padding) - sizeof(__ptr__->encryptionInfo) + 1)
 
 /* https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-offcrypto/e5ad39b8-9bc1-4a19-bad3-44e6246d21e6 */
 typedef struct __attribute__((packed)) {

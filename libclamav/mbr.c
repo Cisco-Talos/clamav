@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2014-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2014-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *
  *  Authors: Kevin Lin <klin@sourcefire.com>
  *
@@ -140,7 +140,7 @@ cl_error_t cli_scanmbr(cli_ctx *ctx, size_t sectorsize)
     unsigned i = 0, prtncount = 0;
     size_t maplen, partsize;
 
-    mbr_parsemsg("The start of something magnificant: MBR parsing\n");
+    mbr_parsemsg("The start of something magnificent: MBR parsing\n");
 
     if (!ctx || !ctx->fmap) {
         cli_errmsg("cli_scanmbr: Invalid context\n");

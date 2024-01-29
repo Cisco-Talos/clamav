@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
@@ -106,6 +106,7 @@ static struct dconf_module modules[] = {
     {"ARCHIVE", "GPT", ARCH_CONF_GPT, 1},
     {"ARCHIVE", "APM", ARCH_CONF_APM, 1},
     {"ARCHIVE", "EGG", ARCH_CONF_EGG, 1},
+    {"ARCHIVE", "UDF", ARCH_CONF_UDF, 1},
 
     {"DOCUMENT", "HTML", DOC_CONF_HTML, 1},
     {"DOCUMENT", "RTF", DOC_CONF_RTF, 1},
@@ -117,6 +118,7 @@ static struct dconf_module modules[] = {
     {"DOCUMENT", "OOXML", DOC_CONF_OOXML, 1},
     {"DOCUMENT", "MSPML", DOC_CONF_MSXML, 1},
     {"DOCUMENT", "HWP", DOC_CONF_HWP, 1},
+    {"DOCUMENT", "ONENOTE", DOC_CONF_ONENOTE, 1},
 
     {"MAIL", "MBOX", MAIL_CONF_MBOX, 1},
     {"MAIL", "TNEF", MAIL_CONF_TNEF, 1},

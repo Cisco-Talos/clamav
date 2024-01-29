@@ -1,7 +1,7 @@
 # Find the Rust toolchain and add the `add_rust_library()` API to build Rust
 # libraries.
 #
-# Copyright (C) 2021-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+# Copyright (C) 2021-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
 #
 # Author: Micah Snyder
 # To see this in a sample project, visit: https://github.com/micahsnyder/cmake-rust-demo
@@ -184,29 +184,34 @@ function(cargo_vendor)
     set(oneValueArgs TARGET SOURCE_DIRECTORY BINARY_DIRECTORY)
     cmake_parse_arguments(ARGS "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
-    if(NOT EXISTS ${ARGS_SOURCE_DIRECTORY}/.cargo/config.toml)
-        # Vendor the dependencies and create .cargo/config.toml
-        # Vendored dependencies will be used during the build.
-        # This will allow us to package vendored dependencies in source tarballs
-        # for online builds when we run `cpack --config CPackSourceConfig.cmake`
-        message(STATUS "Running `cargo vendor` to collect dependencies for ${ARGS_TARGET}. This may take a while if the local crates.io index needs to be updated ...")
-        make_directory(${ARGS_SOURCE_DIRECTORY}/.cargo)
-        execute_process(
-            COMMAND ${CMAKE_COMMAND} -E env "CARGO_TARGET_DIR=${ARGS_BINARY_DIRECTORY}" ${cargo_EXECUTABLE} vendor ".cargo/vendor"
-            WORKING_DIRECTORY "${ARGS_SOURCE_DIRECTORY}"
-            OUTPUT_VARIABLE CARGO_VENDOR_OUTPUT
-            ERROR_VARIABLE CARGO_VENDOR_ERROR
-            RESULT_VARIABLE CARGO_VENDOR_RESULT
-        )
+    # Vendor the dependencies and create .cargo/config.toml
+    # Vendored dependencies will be used during the build.
+    # This will allow us to package vendored dependencies in source tarballs
+    # for online builds when we run `cpack --config CPackSourceConfig.cmake`
+    message(STATUS "Running `cargo vendor` to collect dependencies for ${ARGS_TARGET}. This may take a while if the local crates.io index needs to be updated ...")
+    make_directory(${CMAKE_SOURCE_DIR}/.cargo)
+    execute_process(
+        COMMAND ${CMAKE_COMMAND} -E env "CARGO_TARGET_DIR=${ARGS_BINARY_DIRECTORY}" ${cargo_EXECUTABLE} vendor "${CMAKE_SOURCE_DIR}/.cargo/vendor"
+        WORKING_DIRECTORY "${ARGS_SOURCE_DIRECTORY}"
+        OUTPUT_VARIABLE CARGO_VENDOR_OUTPUT
+        ERROR_VARIABLE CARGO_VENDOR_ERROR
+        RESULT_VARIABLE CARGO_VENDOR_RESULT
+    )
 
-        if(NOT ${CARGO_VENDOR_RESULT} EQUAL 0)
-            message(FATAL_ERROR "Failed!\n${CARGO_VENDOR_ERROR}")
-        else()
-            message("Success!")
-        endif()
+    if(NOT ${CARGO_VENDOR_RESULT} EQUAL 0)
+        message(FATAL_ERROR "Failed!\n${CARGO_VENDOR_ERROR}")
+    else()
+        message("Success!")
+    endif()
 
-        write_file(${ARGS_SOURCE_DIRECTORY}/.cargo/config.toml "
+    if(NOT EXISTS ${CMAKE_SOURCE_DIR}/.cargo/config.toml)
+        write_file(${CMAKE_SOURCE_DIR}/.cargo/config.toml "
 [source.crates-io]
+replace-with = \"vendored-sources\"
+
+[source.\"git+https://github.com/Cisco-Talos/onenote.rs.git?branch=CLAM-2329-new-from-slice\"]
+git = \"https://github.com/Cisco-Talos/onenote.rs.git\"
+branch = \"CLAM-2329-new-from-slice\"
 replace-with = \"vendored-sources\"
 
 [source.vendored-sources]
@@ -236,7 +241,7 @@ function(add_rust_executable)
     # Build the executable.
     add_custom_command(
         OUTPUT "${OUTPUT}"
-        COMMAND ${CMAKE_COMMAND} -E env "CARGO_TARGET_DIR=${ARGS_BINARY_DIRECTORY}" ${cargo_EXECUTABLE} ${MY_CARGO_ARGS}
+        COMMAND ${CMAKE_COMMAND} -E env "CARGO_TARGET_DIR=${ARGS_BINARY_DIRECTORY}" "CARGO_INCLUDE_DIRECTORIES=\"${ARGS_INCLUDE_DIRECTORIES}\"" ${cargo_EXECUTABLE} ${MY_CARGO_ARGS}
         WORKING_DIRECTORY "${ARGS_SOURCE_DIRECTORY}"
         DEPENDS ${EXE_SOURCES}
         COMMENT "Building ${ARGS_TARGET} in ${ARGS_BINARY_DIRECTORY} with:\n\t ${cargo_EXECUTABLE} ${MY_CARGO_ARGS_STRING}")
@@ -265,7 +270,7 @@ endfunction()
 
 function(add_rust_library)
     set(options)
-    set(oneValueArgs TARGET SOURCE_DIRECTORY BINARY_DIRECTORY PRECOMPILE_TESTS)
+    set(oneValueArgs TARGET SOURCE_DIRECTORY BINARY_DIRECTORY PRECOMPILE_TESTS INCLUDE_DIRECTORIES)
     cmake_parse_arguments(ARGS "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
     if(WIN32)
@@ -287,17 +292,32 @@ function(add_rust_library)
     if("${CMAKE_OSX_ARCHITECTURES}" MATCHES "^(arm64;x86_64|x86_64;arm64)$")
         add_custom_command(
             OUTPUT "${OUTPUT}"
-            COMMAND ${CMAKE_COMMAND} -E env "CARGO_CMD=build" "CARGO_TARGET_DIR=${ARGS_BINARY_DIRECTORY}" "MAINTAINER_MODE=${MAINTAINER_MODE}" "RUSTFLAGS=${RUSTFLAGS}" ${cargo_EXECUTABLE} ${MY_CARGO_ARGS} --target=x86_64-apple-darwin
-            COMMAND ${CMAKE_COMMAND} -E env "CARGO_CMD=build" "CARGO_TARGET_DIR=${ARGS_BINARY_DIRECTORY}" "MAINTAINER_MODE=${MAINTAINER_MODE}" "RUSTFLAGS=${RUSTFLAGS}" ${cargo_EXECUTABLE} ${MY_CARGO_ARGS} --target=aarch64-apple-darwin
+            COMMAND ${CMAKE_COMMAND} -E env "CARGO_CMD=build" "CARGO_TARGET_DIR=${ARGS_BINARY_DIRECTORY}" "MAINTAINER_MODE=${MAINTAINER_MODE}" "CARGO_INCLUDE_DIRECTORIES=\"${ARGS_INCLUDE_DIRECTORIES}\"" "RUSTFLAGS=${RUSTFLAGS}" ${cargo_EXECUTABLE} ${MY_CARGO_ARGS} --target=x86_64-apple-darwin
+            COMMAND ${CMAKE_COMMAND} -E env "CARGO_CMD=build" "CARGO_TARGET_DIR=${ARGS_BINARY_DIRECTORY}" "MAINTAINER_MODE=${MAINTAINER_MODE}" "CARGO_INCLUDE_DIRECTORIES=\"${ARGS_INCLUDE_DIRECTORIES}\"" "RUSTFLAGS=${RUSTFLAGS}" ${cargo_EXECUTABLE} ${MY_CARGO_ARGS} --target=aarch64-apple-darwin
             COMMAND ${CMAKE_COMMAND} -E make_directory "${ARGS_BINARY_DIRECTORY}/${RUST_COMPILER_TARGET}/${CARGO_BUILD_TYPE}"
             COMMAND lipo -create ${ARGS_BINARY_DIRECTORY}/x86_64-apple-darwin/${CARGO_BUILD_TYPE}/lib${ARGS_TARGET}.a ${ARGS_BINARY_DIRECTORY}/aarch64-apple-darwin/${CARGO_BUILD_TYPE}/lib${ARGS_TARGET}.a -output "${OUTPUT}"
+            WORKING_DIRECTORY "${ARGS_SOURCE_DIRECTORY}"
+            DEPENDS ${LIB_SOURCES}
+            COMMENT "Building ${ARGS_TARGET} in ${ARGS_BINARY_DIRECTORY} with:  ${cargo_EXECUTABLE} ${MY_CARGO_ARGS_STRING}")
+    elseif("${CMAKE_OSX_ARCHITECTURES}" MATCHES "^(arm64)$")
+        add_custom_command(
+            OUTPUT "${OUTPUT}"
+            COMMAND ${CMAKE_COMMAND} -E env "CARGO_CMD=build" "CARGO_TARGET_DIR=${ARGS_BINARY_DIRECTORY}" "MAINTAINER_MODE=${MAINTAINER_MODE}" "CARGO_INCLUDE_DIRECTORIES=\"${ARGS_INCLUDE_DIRECTORIES}\"" "RUSTFLAGS=${RUSTFLAGS}" ${cargo_EXECUTABLE} ${MY_CARGO_ARGS} --target=aarch64-apple-darwin
+            WORKING_DIRECTORY "${ARGS_SOURCE_DIRECTORY}"
+            DEPENDS ${LIB_SOURCES}
+            COMMENT "Building ${ARGS_TARGET} in ${ARGS_BINARY_DIRECTORY} with:  ${cargo_EXECUTABLE} ${MY_CARGO_ARGS_STRING}")
+    elseif("${CMAKE_OSX_ARCHITECTURES}" MATCHES "^(x86_64)$")
+        add_custom_command(
+            OUTPUT "${OUTPUT}"
+            COMMAND ${CMAKE_COMMAND} -E env "CARGO_CMD=build" "CARGO_TARGET_DIR=${ARGS_BINARY_DIRECTORY}" "MAINTAINER_MODE=${MAINTAINER_MODE}" "CARGO_INCLUDE_DIRECTORIES=\"${ARGS_INCLUDE_DIRECTORIES}\"" "RUSTFLAGS=${RUSTFLAGS}" ${cargo_EXECUTABLE} ${MY_CARGO_ARGS} --target=x86_64-apple-darwin
+            COMMAND ${CMAKE_COMMAND} -E make_directory "${ARGS_BINARY_DIRECTORY}/${RUST_COMPILER_TARGET}/${CARGO_BUILD_TYPE}"
             WORKING_DIRECTORY "${ARGS_SOURCE_DIRECTORY}"
             DEPENDS ${LIB_SOURCES}
             COMMENT "Building ${ARGS_TARGET} in ${ARGS_BINARY_DIRECTORY} with:  ${cargo_EXECUTABLE} ${MY_CARGO_ARGS_STRING}")
     else()
         add_custom_command(
             OUTPUT "${OUTPUT}"
-            COMMAND ${CMAKE_COMMAND} -E env "CARGO_CMD=build" "CARGO_TARGET_DIR=${ARGS_BINARY_DIRECTORY}" "MAINTAINER_MODE=${MAINTAINER_MODE}" "RUSTFLAGS=${RUSTFLAGS}" ${cargo_EXECUTABLE} ${MY_CARGO_ARGS}
+            COMMAND ${CMAKE_COMMAND} -E env "CARGO_CMD=build" "CARGO_TARGET_DIR=${ARGS_BINARY_DIRECTORY}" "MAINTAINER_MODE=${MAINTAINER_MODE}" "CARGO_INCLUDE_DIRECTORIES=\"${ARGS_INCLUDE_DIRECTORIES}\"" "RUSTFLAGS=${RUSTFLAGS}" ${cargo_EXECUTABLE} ${MY_CARGO_ARGS}
             WORKING_DIRECTORY "${ARGS_SOURCE_DIRECTORY}"
             DEPENDS ${LIB_SOURCES}
             COMMENT "Building ${ARGS_TARGET} in ${ARGS_BINARY_DIRECTORY} with:  ${cargo_EXECUTABLE} ${MY_CARGO_ARGS_STRING}")
@@ -363,7 +383,7 @@ function(add_rust_test)
 endfunction()
 
 #
-# Cargo is the primary tool for using the Rust Toolchain to to build static
+# Cargo is the primary tool for using the Rust Toolchain to build static
 # libs that can include other crate dependencies.
 #
 find_rust_program(cargo)
@@ -382,10 +402,17 @@ if(RUSTC_MINIMUM_REQUIRED AND rustc_VERSION VERSION_LESS RUSTC_MINIMUM_REQUIRED)
     ${rustc_VERSION} < ${RUSTC_MINIMUM_REQUIRED}")
 endif()
 
+if(WIN32)
+    file(TOUCH ${CMAKE_BINARY_DIR}/empty-file)
+    set(EMPTY_FILE "${CMAKE_BINARY_DIR}/empty-file")
+else()
+    set(EMPTY_FILE "/dev/null")
+endif()
+
 # Determine the native libs required to link w/ rust static libs
-# message(STATUS "Detecting native static libs for rust: ${rustc_EXECUTABLE} --crate-type staticlib --print=native-static-libs /dev/null")
+# message(STATUS "Detecting native static libs for rust: ${rustc_EXECUTABLE} --crate-type staticlib --print=native-static-libs ${EMPTY_FILE}")
 execute_process(
-    COMMAND ${CMAKE_COMMAND} -E env "CARGO_TARGET_DIR=${CMAKE_BINARY_DIR}" ${rustc_EXECUTABLE} --crate-type staticlib --print=native-static-libs /dev/null
+    COMMAND ${CMAKE_COMMAND} -E env "CARGO_TARGET_DIR=${CMAKE_BINARY_DIR}" ${rustc_EXECUTABLE} --crate-type staticlib --print=native-static-libs ${EMPTY_FILE}
     OUTPUT_VARIABLE RUST_NATIVE_STATIC_LIBS_OUTPUT
     ERROR_VARIABLE RUST_NATIVE_STATIC_LIBS_ERROR
     RESULT_VARIABLE RUST_NATIVE_STATIC_LIBS_RESULT
@@ -437,6 +464,10 @@ if(NOT RUST_COMPILER_TARGET)
 endif()
 
 set(CARGO_ARGS "build")
+
+if(EXISTS "${CMAKE_SOURCE_DIR}/.cargo/vendor")
+    list(APPEND CARGO_ARGS "--offline")
+endif()
 
 if(NOT "${RUST_COMPILER_TARGET}" MATCHES "^universal-apple-darwin$")
     # Don't specify the target for macOS universal builds, we'll do that manually for each build.

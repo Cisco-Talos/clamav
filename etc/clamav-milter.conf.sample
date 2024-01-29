@@ -17,7 +17,8 @@ Example
 # inet6:port@[hostname|ip-address] - to specify an ipv6 socket
 #
 # Default: no default
-#MilterSocket /tmp/clamav-milter.socket
+#MilterSocket /run/clamav/clamav-milter.sock
+#MilterSocket /tmp/clamav-milter.sock
 #MilterSocket inet:7357
 
 # Define the group ownership for the (unix) milter socket.
@@ -58,13 +59,13 @@ Example
 #Chroot /newroot
 
 # This option allows you to save a process identifier of the listening
-# daemon (main thread).
+# daemon.
 # This file will be owned by root, as long as clamav-milter was started by
 # root.  It is recommended that the directory where this file is stored is
 # also owned by root to keep other users from tampering with it.
 #
 # Default: disabled
-#PidFile /var/run/clamav-milter.pid
+#PidFile /run/clamav/clamav-milter.pid
 
 # Optional path to the global temporary directory.
 # Default: system specific (usually /tmp or /var/tmp).
@@ -80,7 +81,7 @@ Example
 # ClamdSocket unix:path
 # ClamdSocket tcp:host:port
 # The first syntax specifies a local unix socket (needs an absolute path) e.g.:
-#     ClamdSocket unix:/var/run/clamd/clamd.socket
+#     ClamdSocket unix:/run/clamav/clamd.sock
 # The second syntax specifies a tcp local or remote tcp socket: the
 # host can be a hostname or an ip address; the ":port" field is only required
 # for IPv6 addresses, otherwise it defaults to 3310, e.g.:
@@ -92,6 +93,7 @@ Example
 #
 # Default: no default
 #ClamdSocket tcp:scanner.mydomain:7357
+#ClamdSocket unix:/run/clamav/clamd.sock
 
 
 ##

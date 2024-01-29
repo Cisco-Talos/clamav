@@ -36,7 +36,7 @@ THREAD_PROC(RSDecodeThread)
 }
 #endif
 
-RecVolumes3::RecVolumes3(RAROptions *Cmd,bool TestOnly)
+RecVolumes3::RecVolumes3(CommandData *Cmd,bool TestOnly)
 {
   memset(SrcFile,0,sizeof(SrcFile));
   if (TestOnly)
@@ -99,7 +99,7 @@ static bool IsNewStyleRev(const wchar *Name)
 }
 
 
-bool RecVolumes3::Restore(RAROptions *Cmd,const wchar *Name,bool Silent)
+bool RecVolumes3::Restore(CommandData *Cmd,const wchar *Name,bool Silent)
 {
   wchar ArcName[NM];
   wcsncpyz(ArcName,Name,ASIZE(ArcName));
@@ -226,7 +226,7 @@ bool RecVolumes3::Restore(RAROptions *Cmd,const wchar *Name,bool Silent)
       if (WrongParam)
         continue;
     }
-    if (P[1]+P[2]>255)
+    if (P[0]<=0 || P[1]<=0 || P[2]<=0 || P[1]+P[2]>255 || P[0]+P[2]-1>255)
       continue;
     if (RecVolNumber!=0 && RecVolNumber!=P[1] || FileNumber!=0 && FileNumber!=P[2])
     {
@@ -238,7 +238,14 @@ bool RecVolumes3::Restore(RAROptions *Cmd,const wchar *Name,bool Silent)
     wcsncpyz(PrevName,CurName,ASIZE(PrevName));
     File *NewFile=new File;
     NewFile->TOpen(CurName);
-    SrcFile[FileNumber+P[0]-1]=NewFile;
+
+    // This check is redundant taking into account P[I]>255 and P[0]+P[2]-1>255
+    // checks above. Still we keep it here for better clarity and security.
+    int SrcPos=FileNumber+P[0]-1;
+    if (SrcPos<0 || SrcPos>=ASIZE(SrcFile))
+      continue;
+    SrcFile[SrcPos]=NewFile;
+
     FoundRecVolumes++;
 
     if (RecFileSize==0)
@@ -497,7 +504,7 @@ void RSEncode::DecodeBuf()
 }
 
 
-void RecVolumes3::Test(RAROptions *Cmd,const wchar *Name)
+void RecVolumes3::Test(CommandData *Cmd,const wchar *Name)
 {
   if (!IsNewStyleRev(Name)) // RAR 3.0 name#_#_#.rev do not include CRC32.
   {

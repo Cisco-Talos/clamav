@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Alberto Wu
@@ -226,7 +226,7 @@ static cl_error_t unz(
                         break;
                     }
                     if (cli_writen(out_file, obuf, sizeof(obuf) - (*avail_out)) != (size_t)(sizeof(obuf) - (*avail_out))) {
-                        cli_warnmsg("cli_unzip: falied to write %lu inflated bytes\n", (unsigned long int)sizeof(obuf) - (*avail_out));
+                        cli_warnmsg("cli_unzip: failed to write %lu inflated bytes\n", (unsigned long int)sizeof(obuf) - (*avail_out));
                         ret = CL_EWRITE;
                         res = 100;
                         break;
@@ -269,7 +269,7 @@ static cl_error_t unz(
                         break;
                     }
                     if (cli_writen(out_file, obuf, sizeof(obuf) - strm.avail_out) != (size_t)(sizeof(obuf) - strm.avail_out)) {
-                        cli_warnmsg("cli_unzip: falied to write %lu bunzipped bytes\n", (long unsigned int)sizeof(obuf) - strm.avail_out);
+                        cli_warnmsg("cli_unzip: failed to write %lu bunzipped bytes\n", (long unsigned int)sizeof(obuf) - strm.avail_out);
                         ret = CL_EWRITE;
                         res = 100;
                         break;
@@ -305,7 +305,7 @@ static cl_error_t unz(
                         break;
                     }
                     if (cli_writen(out_file, obuf, sizeof(obuf) - strm.avail_out) != (size_t)(sizeof(obuf) - strm.avail_out)) {
-                        cli_warnmsg("cli_unzip: falied to write %lu exploded bytes\n", (unsigned long int)sizeof(obuf) - strm.avail_out);
+                        cli_warnmsg("cli_unzip: failed to write %lu exploded bytes\n", (unsigned long int)sizeof(obuf) - strm.avail_out);
                         ret = CL_EWRITE;
                         res = 100;
                         break;
@@ -624,6 +624,9 @@ static unsigned int parse_local_file_header(
     uint32_t csize, usize;
     unsigned int size_of_fileheader_and_data = 0;
 
+    uint32_t nsize  = 0;
+    const char *src = NULL;
+
     if (!(local_header = fmap_need_off(map, loff, SIZEOF_LOCAL_HEADER))) {
         cli_dbgmsg("cli_unzip: local header - out of file\n");
         goto done;
@@ -647,18 +650,19 @@ static unsigned int parse_local_file_header(
         fmap_unneed_off(map, loff, SIZEOF_LOCAL_HEADER);
         goto done;
     }
-    if (ctx->engine->cdb || cli_debug_flag || ctx->engine->keeptmp || ctx->options->general & CL_SCAN_GENERAL_COLLECT_METADATA) {
-        uint32_t nsize = (LOCAL_HEADER_flen >= sizeof(name)) ? sizeof(name) - 1 : LOCAL_HEADER_flen;
-        const char *src;
-        if (nsize && (src = fmap_need_ptr_once(map, zip, nsize))) {
-            memcpy(name, zip, nsize);
-            name[nsize] = '\0';
-            if (CL_SUCCESS != cli_basename(name, nsize, &original_filename)) {
-                original_filename = NULL;
-            }
-        } else
-            name[0] = '\0';
+
+    nsize = (LOCAL_HEADER_flen >= sizeof(name)) ? sizeof(name) - 1 : LOCAL_HEADER_flen;
+    src   = fmap_need_ptr_once(map, zip, nsize);
+    if (nsize && (NULL != src)) {
+        memcpy(name, zip, nsize);
+        name[nsize] = '\0';
+        if (CL_SUCCESS != cli_basename(name, nsize, &original_filename)) {
+            original_filename = NULL;
+        }
+    } else {
+        name[0] = '\0';
     }
+
     zip += LOCAL_HEADER_flen;
     zsize -= LOCAL_HEADER_flen;
 
@@ -1008,7 +1012,7 @@ cl_error_t index_the_central_directory(
         coff = parse_central_directory_file_header(map,
                                                    coff,
                                                    fsize,
-                                                   NULL, // num_files_unziped not required
+                                                   NULL, // num_files_unzipped not required
                                                    index + 1,
                                                    &ret,
                                                    ctx,

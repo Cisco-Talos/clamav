@@ -1,5 +1,5 @@
 
-# Copyright (C) 2019-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+# Copyright (C) 2019-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
 
 if(WIN32)
     cmake_minimum_required( VERSION 3.16 ) # For file(GET_RUNTIME_DEPENDENCIES)
@@ -19,10 +19,10 @@ cmake_policy(SET CMP0087 NEW) # support generator expressions in install(CODE) a
 #  For release candidate:     set(VERSION_SUFFIX "-rc")
 #  For release:               set(VERSION_SUFFIX "")
 string(TIMESTAMP TODAY "%Y%m%d")
-set(VERSION_SUFFIX "-rc")
+set(VERSION_SUFFIX "-rc2")
 
 project( ClamAV
-         VERSION "1.1.0"
+         VERSION "1.3.0"
          DESCRIPTION "ClamAV open source email, web, and end-point anti-virus toolkit." )
 
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
@@ -37,7 +37,7 @@ HexVersion(PACKAGE_VERSION_NUM ${PROJECT_VERSION_MAJOR} ${PROJECT_VERSION_MINOR}
 
 # libtool library versioning rules: http://www.gnu.org/software/libtool/manual/html_node/Updating-version-info.html
 set(LIBCLAMAV_CURRENT  12)
-set(LIBCLAMAV_REVISION 0)
+set(LIBCLAMAV_REVISION 2)
 set(LIBCLAMAV_AGE      0)
 
 math(EXPR LIBCLAMAV_SOVERSION "${LIBCLAMAV_CURRENT} - ${LIBCLAMAV_AGE}")
@@ -45,7 +45,7 @@ set(LIBCLAMAV_VERSION "${LIBCLAMAV_SOVERSION}.${LIBCLAMAV_AGE}.${LIBCLAMAV_REVIS
 HexVersion(LIBCLAMAV_VERSION_NUM ${LIBCLAMAV_CURRENT} ${LIBCLAMAV_REVISION} ${LIBCLAMAV_AGE})
 
 set(LIBFRESHCLAM_CURRENT  3)
-set(LIBFRESHCLAM_REVISION 0)
+set(LIBFRESHCLAM_REVISION 1)
 set(LIBFRESHCLAM_AGE      0)
 
 math(EXPR LIBFRESHCLAM_SOVERSION "${LIBFRESHCLAM_CURRENT} - ${LIBFRESHCLAM_AGE}")
@@ -76,7 +76,7 @@ if(Git_FOUND)
     endif()
 endif()
 
-# Enable use of pkg-config to find depenencies.
+# Enable use of pkg-config to find dependencies.
 find_package(PkgConfig QUIET)
 
 #
@@ -271,7 +271,7 @@ if(ENABLE_TESTS)
                 # No unittest either!
                 # Some weird Python installations do exist that lack standard modules like unittest.
                 # Let's make sure these folks know the Python 3 install we found won't cut it.
-                message("Python 3 found: ${Python3_EXECUTABLE}, but it is missing the unittest module (wierd!).")
+                message("Python 3 found: ${Python3_EXECUTABLE}, but it is missing the unittest module (weird!).")
                 message(FATAL_ERROR "The tests won't work with this Python installation. You can disable the tests by reconfiguring with: -D ENABLE_TESTS=OFF")
             endif()
         endif()
@@ -610,8 +610,10 @@ foreach(_cxx1x_flag -std=c++14 -std=c++11)
     endif()
 endforeach()
 
-# Always use '-fPIC'/'-fPIE' option.
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+# Always use '-fPIC'/'-fPIE' option if OS is not Haiku.
+if(NOT HAIKU)
+    set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+endif()
 
 # Checks for header files.
 include(CheckIncludeFile)
@@ -682,13 +684,13 @@ check_type_size("ssize_t" SIZEOF_SSIZE_T)
 if(SIZEOF_SSIZE_T STREQUAL "")
     # ssize_t is a signed type in POSIX storing at least -1.
     # Set it to "int" to match the behavior of AC_TYPE_SSIZE_T (autotools).
-    set(ssize_t int)
+    set(SSIZE_T_DEF "typedef int ssize_t;")
 endif()
 check_type_size("off_t" SIZEOF_OFF_T)
 if(SIZEOF_OFF_T STREQUAL "")
     # off_t is a signed type in POSIX no narrower than int.
     # Set it to "long int" to match the behavior of AC_TYPE_OFF_T (autotools).
-    set(off_t long int)
+    set(OFF_T_DEF "typedef long int off_t;")
 endif()
 
 check_type_size("int" SIZEOF_INT)
@@ -990,7 +992,7 @@ if(WIN32)
     set(CLAMAV_RES "")
     configure_file(
         win32/res/common.rc.in
-        ${CMAKE_BINARY_DIR}/version.rc
+        ${CMAKE_SOURCE_DIR}/win32/res/common.rc
         @ONLY)
 else()
     #

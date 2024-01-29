@@ -1,4 +1,4 @@
-# Copyright (C) 2020-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+# Copyright (C) 2020-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
 
 """
 Run clamscan tests.
@@ -28,7 +28,7 @@ class TC(testcase.TestCase):
         # The heuristic alert must behave as intended, depending on whether we use --allmatch, --heuristic-scan-precedence, etc.
         TC.heuristics_testfile = TC.path_tmp / 'heuristics-test.zip'
         with ZipFile(str(TC.heuristics_testfile), 'w', ZIP_DEFLATED) as zf:
-            # Add truncted PNG file that will alert with  --alert-broken-media
+            # Add truncated PNG file that will alert with  --alert-broken-media
             with (TC.path_source / 'logo.png').open('br') as logo_png:
                 zf.writestr('logo.png.truncated', logo_png.read(6378))
 
@@ -114,7 +114,7 @@ class TC(testcase.TestCase):
         In this test the heuristic alert must alert first because --heuristic-scan-precedence is enabled.
         We won't see the other alert because it's not allmatch mode.
         '''
-        self.step_name('Test that a heuristic-precendence will cause the heuristic alert to happen first, with no other alerts because not allmatch.')
+        self.step_name('Test that a heuristic-precedence will cause the heuristic alert to happen first, with no other alerts because not allmatch.')
 
         testfile = TC.heuristics_testfile
 

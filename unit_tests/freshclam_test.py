@@ -1,4 +1,4 @@
-# Copyright (C) 2020-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+# Copyright (C) 2020-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
 
 """
 Run freshclam tests
@@ -501,7 +501,7 @@ class TC(testcase.TestCase):
 
         # using these CDIFFs
         shutil.copy(str(TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles' /'test-4.cdiff'), str(TC.path_www))
-        # shutil.copy(str(TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles' /'test-5.cdiff'), str(TC.path_www))  <--- dont' give them the second to last, either!
+        # shutil.copy(str(TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles' /'test-5.cdiff'), str(TC.path_www))  <--- don't give them the second to last, either!
         # shutil.copy(str(TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles' /'test-6.cdiff'), str(TC.path_www))  <--- don't give them the last CDIFF
 
         handler = partial(WebServerHandler_WWW, TC.path_www)
@@ -787,7 +787,7 @@ def mock_database_mirror(handler, port=8001):
 class WebServerHandler_02(BaseHTTPRequestHandler):
     '''
     Web server handler to send 403 (Forbidden) if a whole file is requested.
-    Will send a CVD header if a Range-requeset is received.
+    Will send a CVD header if a Range-request is received.
     '''
     def do_GET(self):
         if 'Range' in self.headers:
@@ -810,7 +810,7 @@ class WebServerHandler_02(BaseHTTPRequestHandler):
 class WebServerHandler_04(BaseHTTPRequestHandler):
     '''
     Web server handler to send 429 (Too-Many-Requests) if a whole file is requested.
-    Will send a CVD header if a Range-requeset is received.
+    Will send a CVD header if a Range-request is received.
     '''
     def do_GET(self):
         if 'Range' in self.headers:

@@ -46,7 +46,7 @@ Log report to FILE.
 Run in a daemon mode. Defaults to 12 checks per day unless otherwise specified by \-\-checks or freshclam.conf.
 .TP
 \fB\-p FILE, \-\-pid=FILE\fR
-Write daemon's pid to FILE.
+Write the daemon's pid to FILE.
 .TP
 \fB\-F, \-\-foreground\fR
 Don't fork into background (for use in daemon mode).
@@ -85,8 +85,19 @@ With this option you can limit updates to a subset of database files. The DBNAME
 .LP
 freshclam uses the following environment variables:
 .TP
-CURL_CA_BUNDLE - May be set to the path of a file (bundle) containing one or more CA certificates. This will override the default openssl certificate path.
+\fBCURL_CA_BUNDLE\fR
+(Linux/Unix only, excluding macOS) May be set to the path of a file (bundle) containing one or more CA certificates. This will override the default openssl certificate path.
+.TP
+\fBFRESHCLAM_CLIENT_CERT\fR
+May be set to the path of a file (PEM) containing the client certificate. This may be used for client authentication.
+.TP
+\fBFRESHCLAM_CLIENT_KEY\fR
+May be set to the path of a file (PEM) containing the client private key. This is required if FRESHCLAM_CLIENT_CERT is set.
+.TP
+\fBFRESHCLAM_CLIENT_KEY_PASSWD\fR
+May be set to a password for the client key PEM file. This is required if FRESHCLAM_CLIENT_KEY is set and the PEM file is password protected.
 
+.TP
 Note that the CURL_CA_BUNDLE environment variable is also used by the curl command line tool for the same purpose.
 
 .SH "EXAMPLES"

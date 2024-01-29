@@ -73,7 +73,7 @@ Chroot to the specified directory. Chrooting is performed just after reading the
 Default: unset (don\'t chroot)
 .TP
 \fBPidFile STRING\fR
-Save the process identifier of a clamav-milter (main thread) to a specified file.
+Write the daemon's pid to the specified file.
 .br
 Default: disabled
 .TP
@@ -92,7 +92,7 @@ ClamdSocket tcp:host:port
 .br
 The first syntax specifies a local unix socket (needs an absolute path) e.g.:
 .br
-ClamdSocket unix:/var/run/clamd/clamd.socket
+ClamdSocket unix:/run/clamav/clamd.sock
 .br
 The second syntax specifies a tcp local or remote tcp socket: the host can be a hostname or an ip address; the ":port" field is only required for IPv6 addresses, otherwise it defaults to 3310 e.g.:
 .br
@@ -121,7 +121,7 @@ Default: unset (no allowing based on SMTP auth)
 \fBMaxFileSize SIZE\fR
 Messages larger than this value won\'t be scanned. Make sure this value is lower or equal than StreamMaxLength in clamd.conf
 .br
-Default: 25M
+Default: 100M
 .SH "ACTIONS"
 The following group of options controls the delivery process under  different circumstances. The following actions are available:
 .br

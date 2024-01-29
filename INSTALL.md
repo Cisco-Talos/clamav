@@ -35,7 +35,7 @@ configuration options.
     - [Customizing the Install Directories](#customizing-the-install-directories)
     - [Running the Public Test Suite](#running-the-public-test-suite)
   - [Custom CMake Config Options](#custom-cmake-config-options)
-  - [External Library Depedency Configuration Options](#external-library-depedency-configuration-options)
+  - [External Library Dependency Configuration Options](#external-library-dependency-configuration-options)
     - [`libcheck`](#libcheck)
     - [`bzip2`](#bzip2)
     - [`zlib`](#zlib)
@@ -225,7 +225,7 @@ your build will depend on which type of generator you're using:
 
 > _Tip_: `RelWithDebInfo` is probably the best option for open source projects.
 > It will have the speed optimizations you need. And, if a crash occurs, the
-> crash backtrace you obtain with with a debugger will significantly help in
+> crash backtrace you obtain with a debugger will significantly help in
 > identifying the bug.
 
 For multi-config generators, you _will_ also need to specify the config when
@@ -292,22 +292,22 @@ sudo cmake --build . --target install
 ```
 
 ClamAV has a couple other important paths you can configure. At this time,
-these are only configureable through the `clamd.conf` application config file:
+these are only configurable through the `clamd.conf` application config file:
 
 - `LocalSocket`: You may configure ClamD to listen on a TCP socket or on a
   "local" socket (a Unix socket). A local socket is probably best, for safety.
   But that means you'll need to select a path for the local socket. The sample
-  configu sugegsts using the `/tmp` directory, but you may wish to select
+  config suggests using the `/tmp` directory, but you may wish to select
   a directory like `/var/run/clamav`.
 
 - `TemporaryDirectory`: ClamAV creates a lot of temp files when scanning.
   By default, ClamD and ClamScan will use the system's default temp directory,
   which is typically `/tmp` or `/var/tmp`. But it may be best to give ClamAV
-  it's own directory. Maybe `/var/lib/clamav-tmp`.
+  its own directory. Maybe `/var/lib/clamav-tmp`.
 
 ### Running the Public Test Suite
 
-The option to build so that you can run run the tests is enabled by default.
+The option to build so that you can run the tests is enabled by default.
 It requires that you provide `python3` and `libcheck`.
 
 If you're building with `ENABLE_LIBCLAMAV_ONLY=ON` or `ENABLE_APP=OFF`, then
@@ -397,7 +397,7 @@ The following is a complete list of CMake options unique to configuring ClamAV:
 
   _Default: `ON`_
 
-- `DO_NOT_SET_RPATH`: By default RPATH is set in executeables resulting using
+- `DO_NOT_SET_RPATH`: By default RPATH is set in executables resulting using
   paths set at build time instead of using system defaults. By setting this
   `ON` system defaults are used.
 
@@ -527,7 +527,7 @@ The following is a complete list of CMake options unique to configuring ClamAV:
 
   _Default: not set_
 
-## External Library Depedency Configuration Options
+## External Library Dependency Configuration Options
 
 The CMake tooling is good about finding installed dependencies on POSIX systems
 provided that you have pkg-config installed, and the dependencies are installed
@@ -583,6 +583,14 @@ But if you:
   -D OPENSSL_INCLUDE_DIR="_filepath of openssl header directory_"
   -D OPENSSL_CRYPTO_LIBRARY="_filepath of libcrypto library_"
   -D OPENSSL_SSL_LIBRARY="_filepath of libssl library_"
+```
+
+_Tip_: For Windows, you may need to do this instead:
+```sh
+  -D OPENSSL_ROOT_DIR="_path to openssl install root_"
+  -D OPENSSL_INCLUDE_DIR="_filepath of openssl header directory_"
+  -D LIB_EAY_RELEASE="_filepath of libcrypto library_"  # or LIB_EAY_DEBUG for Debug builds
+  -D SSL_EAY_RELEASE="_filepath of libssl library_"     # or SSL_EAY_DEBUG for Debug builds
 ```
 
 ### `libjson-c`
@@ -671,7 +679,7 @@ ClamAV has two bytecode runtimes:
    instructions one by one.
 
    With the interpreter, signature database (re)loads are faster, but execution
-   time for scans that make use of the bytecode sigantures is slower.
+   time for scans that make use of the bytecode signatures is slower.
 
 2. **LLVM**: LLVM can be used to Just-in-Time (JIT) compile bytecode signatures
    at database load time.

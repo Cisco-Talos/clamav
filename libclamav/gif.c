@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2011-2013 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm <tkojm@clamav.net>, Aldo Mazzeo, Micah Snyder
@@ -30,7 +30,7 @@
  *  3. Logical Screen Descriptor: 7 bytes (see `struct gif_screen_descriptor`)
  *     (Opt.) Global Color Table: n bytes (defined in the Logical Screen Descriptor flags)
  *
- *  4. All subsequent blocks are precededed by the following 1-byte labels...
+ *  4. All subsequent blocks are preceded by the following 1-byte labels...
  *
  *     0x21:  Extension Introducer
  *        0x01:  Opt. (0+) Plain Text Extension

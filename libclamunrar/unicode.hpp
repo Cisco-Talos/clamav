@@ -7,7 +7,7 @@
 
 bool WideToChar(const wchar *Src,char *Dest,size_t DestSize);
 bool CharToWide(const char *Src,wchar *Dest,size_t DestSize);
-byte* WideToRaw(const wchar *Src,byte *Dest,size_t SrcSize);
+byte* WideToRaw(const wchar *Src,size_t SrcSize,byte *Dest,size_t DestSize);
 wchar* RawToWide(const byte *Src,wchar *Dest,size_t DestSize);
 void WideToUtf(const wchar *Src,char *Dest,size_t DestSize);
 size_t WideToUtfSize(const wchar *Src);

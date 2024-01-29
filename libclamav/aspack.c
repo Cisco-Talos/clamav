@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Luciano Giuseppe 'Pnluck', Alberto Wu
@@ -286,7 +286,10 @@ static int decrypt(struct ASPK *stream, uint8_t *stuff, uint32_t size, uint8_t *
             if (!build_decrypt_dictionaries(stream)) return 0;
             continue;
         }
-        if ((backbytes = (gen - 256) >> 3) >= 58) return 0; /* checks init_array + stuff */
+        backbytes = (gen - 256) >> 3;
+        // backbytes is < 720. 719 - 256 = 463. 463 >> 3 = 57 (max).
+        // So backbytes cannot overrun the init_array.
+
         backsize = ((gen - 256) & 7) + 2;
         if ((backsize - 2) == 7) {
             uint8_t hlp;

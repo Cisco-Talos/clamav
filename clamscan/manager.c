@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
@@ -1050,7 +1050,7 @@ int scanmanager(const struct optstruct *opts)
     struct engine_free_progress engine_free_progress_ctx = {0};
 #endif
 
-    /* Initalize scan options struct */
+    /* Initialize scan options struct */
     memset(&options, 0, sizeof(struct cl_scan_options));
 
     dirlnk = optget(opts, "follow-dir-symlinks")->numarg;
@@ -1116,6 +1116,8 @@ int scanmanager(const struct optstruct *opts)
 #endif
     }
 
+    if ((opt = optget(opts, "cache-size"))->enabled)
+        cl_engine_set_num(engine, CL_ENGINE_CACHE_SIZE, opt->numarg);
     if (optget(opts, "disable-cache")->enabled)
         cl_engine_set_num(engine, CL_ENGINE_DISABLE_CACHE, 1);
 
@@ -1550,6 +1552,9 @@ int scanmanager(const struct optstruct *opts)
     if (optget(opts, "scan-hwp3")->enabled)
         options.parse |= CL_SCAN_PARSE_HWP3;
 
+    if (optget(opts, "scan-onenote")->enabled)
+        options.parse |= CL_SCAN_PARSE_ONENOTE;
+
     /* TODO: Remove deprecated option in a future feature release */
     if ((optget(opts, "algorithmic-detection")->enabled) && /* && used due to default-yes for both options */
         (optget(opts, "heuristic-alerts")->enabled)) {
@@ -1649,7 +1654,7 @@ int scanmanager(const struct optstruct *opts)
          * so just scan the current directory. */
         char cwd[1024];
 
-        /* Get the current workinng directory.
+        /* Get the current working directory.
          * we need full path for some reasons (eg. archive handling) */
         if (!getcwd(cwd, sizeof(cwd))) {
             logg(LOGG_ERROR, "Can't get absolute pathname of current working directory\n");

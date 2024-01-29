@@ -1,4 +1,4 @@
-# Copyright (C) 2019-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+# Copyright (C) 2019-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
 
 if(WIN32)
     add_definitions(-DWIN32_LEAN_AND_MEAN)
@@ -34,9 +34,11 @@ if(ENABLE_UNRAR)
     if(ENABLE_SHARED_LIB)
         # The clamunrar_iface SHARED library.
         add_library( clamunrar_iface SHARED )
-        set_target_properties(clamunrar_iface PROPERTIES
+        set_target_properties( clamunrar_iface PROPERTIES
             VERSION ${LIBCLAMAV_VERSION}
-            SOVERSION ${LIBCLAMAV_SOVERSION})
+            SOVERSION ${LIBCLAMAV_SOVERSION}
+            CXX_STANDARD 11
+        )
 
         target_sources( clamunrar_iface
             PRIVATE
@@ -86,6 +88,9 @@ if(ENABLE_UNRAR)
     if(ENABLE_STATIC_LIB)
         # The clamunrar_iface static library.
         add_library( clamunrar_iface_static STATIC)
+        set_target_properties( clamunrar_iface_static PROPERTIES
+            CXX_STANDARD 11
+        )
 
         target_sources( clamunrar_iface_static
             PRIVATE
@@ -103,6 +108,12 @@ if(ENABLE_UNRAR)
         target_link_libraries( clamunrar_iface_static
             PRIVATE
                 ClamAV::libunrar_static )
+
+        if(WIN32)
+            install(TARGETS clamunrar_iface_static DESTINATION . COMPONENT libraries)
+        else()
+            install(TARGETS clamunrar_iface_static DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT libraries)
+        endif()
 
         add_library( ClamAV::libunrar_iface_static ALIAS clamunrar_iface_static )
         if(NOT ENABLE_SHARED_LIB)

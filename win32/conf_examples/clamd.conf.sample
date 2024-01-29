@@ -60,7 +60,7 @@ Example
 #ExtendedDetectionInfo yes
 
 # This option allows you to save a process identifier of the listening
-# daemon (main thread).
+# daemon.
 # Default: disabled
 #PidFile "C:\Program Files\ClamAV\clamd.pid"
 
@@ -255,6 +255,11 @@ TCPAddr localhost
 # Default: no
 #DisableCache yes
 
+# This option allows you to set the number of entries the cache can store.
+# The value should be a square number or will be rounded up to the nearest
+# square number.
+#CacheSize 65536
+
 # In some cases (eg. complex malware, exploits in graphic files, and others),
 # ClamAV uses special algorithms to detect abnormal patterns and behaviors that
 # may be malicious.  This option enables alerting on such heuristically
@@ -392,6 +397,12 @@ TCPAddr localhost
 # without additional processing.
 # Default: yes
 #ScanHWP3 yes
+
+# This option enables scanning of OneNote files.
+# If you turn off this option, the original files will still be scanned, but
+# without additional processing.
+# Default: yes
+#ScanOneNote yes
 
 
 ##

@@ -1,7 +1,7 @@
 /*
  *  Functions and structures for recording, reporting evidence towards a scan verdict.
  *
- *  Copyright (C) 2022-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2022-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *
  *  Authors: Micah Snyder
  *
@@ -23,20 +23,19 @@
 use std::{collections::HashMap, ffi::CStr, mem::ManuallyDrop, os::raw::c_char};
 
 use log::{debug, error, warn};
-use thiserror::Error;
 
 use crate::{ffi_util::FFIError, rrf_call, sys, validate_str_param};
 
-/// CdiffError enumerates all possible errors returned by this library.
-#[derive(Error, Debug)]
-pub enum EvidenceError {
+/// Error enumerates all possible errors returned by this library.
+#[derive(thiserror::Error, Debug)]
+pub enum Error {
     #[error("Invalid format")]
     Format,
 
     #[error("Invalid parameter: {0}")]
     InvalidParameter(String),
 
-    #[error("{0} parmeter is NULL")]
+    #[error("{0} parameter is NULL")]
     NullParam(&'static str),
 }
 
@@ -240,21 +239,21 @@ impl Evidence {
         name: &str,
         static_virname: *const c_char,
         indicator_type: IndicatorType,
-    ) -> Result<(), EvidenceError> {
+    ) -> Result<(), Error> {
         let meta: IndicatorMeta = IndicatorMeta { static_virname };
 
         match indicator_type {
             IndicatorType::Strong => {
                 self.strong
                     .entry(name.to_string())
-                    .or_insert_with(Vec::new)
+                    .or_default()
                     .push(meta);
             }
 
             IndicatorType::PotentiallyUnwanted => {
                 self.pua
                     .entry(name.to_string())
-                    .or_insert_with(Vec::new)
+                    .or_default()
                     .push(meta);
             }
 
@@ -265,7 +264,7 @@ impl Evidence {
             IndicatorType::Weak => {
                 self.weak
                     .entry(name.to_string())
-                    .or_insert_with(Vec::new)
+                    .or_default()
                     .push(meta);
             }
         }

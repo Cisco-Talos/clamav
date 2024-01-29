@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
@@ -209,7 +209,7 @@ static int sort_list_fn(const void *a, const void *b)
     RETURN_RES_IF_NE(patt_a->partno, patt_b->partno);
 
     /* 4. Keep close patterns close
-     * (this is for performace) */
+     * (this is for performance) */
     RETURN_RES_IF_NE(patt_a, patt_b);
 
     return 0;
@@ -242,7 +242,7 @@ static int sort_heads_by_partno_fn(const void *a, const void *b)
     }
 
     /* 3. Keep close patterns close
-     * (this is for performace) */
+     * (this is for performance) */
     RETURN_RES_IF_NE(patt_a, patt_b);
 
     return 0;
@@ -2951,6 +2951,7 @@ cl_error_t cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
             cli_warnmsg("cli_ac_addsig: cannot use filter for trie\n");
             MPOOL_FREE(root->mempool, root->filter);
             root->filter = NULL;
+            return CL_EMALFDB;
         }
 
         /* TODO: should this affect maxpatlen? */
@@ -3045,7 +3046,7 @@ cl_error_t cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
             return CL_EMALFDB;
         }
 
-        // Store those intial bytes as the pattern "prefix" (the stuff before what goes in the AC Trie)
+        // Store those initial bytes as the pattern "prefix" (the stuff before what goes in the AC Trie)
         new->prefix = new->pattern;
         // The "prefix" length is the number of bytes before the starting position of the pattern that goes in the AC Trie.
         new->prefix_length[0] = ppos;

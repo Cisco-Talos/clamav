@@ -1,4 +1,4 @@
-# Copyright (C) 2020-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+# Copyright (C) 2020-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
 
 """
 Run clamd (and clamdscan) tests.
@@ -13,6 +13,7 @@ import shutil
 import sys
 import time
 import unittest
+from zipfile import ZIP_DEFLATED, ZipFile
 
 import testcase
 
@@ -140,13 +141,16 @@ class TC(testcase.TestCase):
 
         self.verify_valgrind_log()
 
-    def start_clamd(self, use_valgrind=True):
+    def start_clamd(self, use_valgrind=True, clamd_config=None):
         '''
         Start clamd
         '''
+        if clamd_config == None:
+            clamd_config = TC.clamd_config
+
         if use_valgrind:
             command = '{valgrind} {valgrind_args} {clamd} --config-file={clamd_config}'.format(
-                valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamd=TC.clamd, clamd_config=TC.clamd_config
+                valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamd=TC.clamd, clamd_config=clamd_config
             )
         else:
             command = '{clamd} --config-file={clamd_config}'.format(
@@ -287,9 +291,9 @@ class TC(testcase.TestCase):
     def test_clamd_02_clamdscan_version(self):
         '''
         Verify that clamdscan --version returns the expected version #
-        Explanation: clamdscan --version will query clamd for it's version
+        Explanation: clamdscan --version will query clamd for its version
           and print out clamd's version.  If it can't connect to clamd, it'll
-          throw and error saying as much and then report it's own version.
+          throw and error saying as much and then report its own version.
 
         In this test, we want to check clamd's version through clamdscan.
         '''
@@ -301,7 +305,7 @@ class TC(testcase.TestCase):
         assert poll == None  # subprocess is alive if poll() returns None
 
         # First we'll ping-pong to make sure clamd is up
-        # If clamd isn't up before the version test, clamdscan will return it's
+        # If clamd isn't up before the version test, clamdscan will return its
         # own version, which isn't really the point of the test.
         output = self.execute_command('{clamdscan} --ping 5 -c {clamd_config}'.format(
             clamdscan=TC.clamdscan, clamd_config=TC.clamd_config))
@@ -557,3 +561,242 @@ class TC(testcase.TestCase):
             clamdscan=TC.clamdscan, clamd_config=TC.clamd_config, test_exe=test_exe))
         assert output.ec == 1
         assert output.out.count('FOUND') == 1
+
+    def test_clamd_11_alertexceedsmax_maxfilesize(self):
+        '''
+        Verify that exceeding maxfilesize with AlertExceedsMax reports an alert and not an error.
+        We'll use some fine-tuned values to make sure we check both MaxFileSize (for a flat file) and MaxScanSize (for an archive).
+        '''
+        self.step_name('Testing clamd\'s AlertExceedsMax with MaxFileSize and MaxScanSize')
+
+        # Make a "big" file to test to test max filesize.
+        # We'll go with 501 bytes.
+        big_file = TC.path_tmp / 'big_file'
+        with big_file.open('wb') as test_file:
+            test_file.write(b'\x00' * 501)
+
+        # Make an even bigger archive to test max scansize,
+        # This ends up being 492 bytes.
+        big_zip = TC.path_tmp / 'big_zip'
+        with ZipFile(str(big_zip), 'w', ZIP_DEFLATED) as zf:
+            # Add a bunch of smaller files that won't exceed max filesize
+            for i in range(0, 5):
+                zf.writestr(f'file-{i}', b'\x00' * 50)
+
+        # We'll use a config that sets:
+        #   MaxFileSize 500
+        #   MaxScanSize 500
+        #   AlertExceedsMax yes
+        config = '''
+            Foreground yes
+            PidFile {pid}
+            DatabaseDirectory {dbdir}
+            LogFileMaxSize 0
+            LogTime yes
+            #Debug yes
+            LogClean yes
+            LogVerbose yes
+            ExitOnOOM yes
+            DetectPUA yes
+            ScanPDF yes
+            CommandReadTimeout 1
+            MaxQueue 800
+            MaxConnectionQueueLength 1024
+            MaxFileSize 500
+            MaxScanSize 500
+            AlertExceedsMax yes
+            '''.format(pid=TC.clamd_pid, dbdir=TC.path_db)
+        if operating_system == 'windows':
+            # Only have TCP socket option for Windows.
+            config += '''
+                TCPSocket {socket}
+                TCPAddr localhost
+                '''.format(socket=TC.clamd_port_num)
+        else:
+            # Use LocalSocket for Posix, because that's what check_clamd expects.
+            config += '''
+                LocalSocket {localsocket}
+                TCPSocket {tcpsocket}
+                TCPAddr localhost
+                '''.format(localsocket=TC.clamd_socket, tcpsocket=TC.clamd_port_num)
+
+        clamd_config = TC.path_tmp / 'clamd-test.conf'
+        clamd_config.write_text(config)
+
+        # Copy database to database path
+        shutil.copy(
+            str(TC.path_build / 'unit_tests' / 'input' / 'clamav.hdb'),
+            str(TC.path_db),
+        )
+
+        #
+        # Start ClamD with our custom config
+        #
+        self.start_clamd(clamd_config=clamd_config)
+
+        poll = self.proc.poll()
+        assert poll == None  # subprocess is alive if poll() returns None
+
+        # Check the big_file scan exceeds max filesize
+        output = self.execute_command('{clamdscan} -c {clamd_config} --wait --ping 10 {test_exe}'.format(
+            clamdscan=TC.clamdscan, clamd_config=clamd_config, test_exe=big_file))
+        expected_results = ['MaxFileSize FOUND']
+        unexpected_results = ['OK', 'MaxScanSize FOUND', 'Can\'t allocate memory ERROR']
+        self.verify_output(output.out, expected=expected_results, unexpected=unexpected_results)
+        assert output.ec == 1
+
+        # Check the big_zip scan exceeds max scansize
+        output = self.execute_command('{clamdscan} -c {clamd_config} {test_exe}'.format(
+            clamdscan=TC.clamdscan, clamd_config=clamd_config, test_exe=big_zip))
+        expected_results = ['MaxScanSize FOUND']
+        unexpected_results = ['OK', 'MaxFileSize FOUND', 'Can\'t allocate memory ERROR']
+        self.verify_output(output.out, expected=expected_results, unexpected=unexpected_results)
+        assert output.ec == 1
+
+    def test_clamd_12_onenote_disabled(self):
+        self.step_name('Test that clamd.conf `ScanOneNote no` disables onenote support.')
+
+        testpaths = [
+            TC.path_build / "unit_tests" / "input" / "clamav_hdb_scanfiles" / "clam.exe.2007.one",
+            TC.path_build / "unit_tests" / "input" / "clamav_hdb_scanfiles" / "clam.exe.2010.one",
+            TC.path_build / "unit_tests" / "input" / "clamav_hdb_scanfiles" / "clam.exe.webapp-export.one",
+        ]
+
+        testfiles = ' '.join([str(testpath) for testpath in testpaths])
+
+        # We'll use a config that sets `ScanOneNote yes`
+        config = '''
+            Foreground yes
+            PidFile {pid}
+            DatabaseDirectory {dbdir}
+            LogFileMaxSize 0
+            LogTime yes
+            #Debug yes
+            LogClean yes
+            LogVerbose yes
+            ExitOnOOM yes
+            DetectPUA yes
+            ScanPDF yes
+            CommandReadTimeout 1
+            MaxQueue 800
+            MaxConnectionQueueLength 1024
+            ScanOneNote yes
+            '''.format(pid=TC.clamd_pid, dbdir=TC.path_db)
+        if operating_system == 'windows':
+            # Only have TCP socket option for Windows.
+            config += '''
+                TCPSocket {socket}
+                TCPAddr localhost
+                '''.format(socket=TC.clamd_port_num)
+        else:
+            # Use LocalSocket for Posix, because that's what check_clamd expects.
+            config += '''
+                LocalSocket {localsocket}
+                TCPSocket {tcpsocket}
+                TCPAddr localhost
+                '''.format(localsocket=TC.clamd_socket, tcpsocket=TC.clamd_port_num)
+
+        clamd_config = TC.path_tmp / 'clamd-test.conf'
+        clamd_config.write_text(config)
+
+        # Copy database to database path
+        shutil.copy(
+            str(TC.path_build / 'unit_tests' / 'input' / 'clamav.hdb'),
+            str(TC.path_db),
+        )
+
+        #
+        # Start ClamD with our custom config
+        #
+        self.start_clamd(clamd_config=clamd_config)
+
+        poll = self.proc.poll()
+        assert poll == None  # subprocess is alive if poll() returns None
+
+        # Check the big_file scan exceeds max filesize
+        output = self.execute_command('{clamdscan} -c {clamd_config} --wait --ping 10 {testfiles}'.format(
+            clamdscan=TC.clamdscan, clamd_config=clamd_config, testfiles=testfiles))
+
+        assert output.ec == 1  # virus found
+
+        expected_results = ['{}: ClamAV-Test-File.UNOFFICIAL FOUND'.format(testpath.name) for testpath in testpaths]
+        expected_results.append('Infected files: {}'.format(len(testpaths)))
+        self.verify_output(output.out, expected=expected_results)
+
+
+        #
+        # Now retry with ScanOneNote disabled
+        #
+
+        # First kill clamd
+        if self.proc != None:
+            try:
+                self.proc.terminate()
+                self.proc.wait(timeout=120)
+                self.proc.stdin.close()
+            except OSError as exc:
+                self.log.warning('Unexpected exception {}'.format(exc))
+                pass  # ignore
+            self.proc = None
+        try:
+            TC.clamd_pid.unlink()
+        except Exception:
+            pass # missing_ok=True is too for common use.
+        try:
+            TC.clamd_socket.unlink()
+        except Exception:
+            pass # missing_ok=True is too for common use.
+
+        # Then update the config.
+        # This time, we'll use a config that sets `ScanOneNote no`
+        config = '''
+            Foreground yes
+            PidFile {pid}
+            DatabaseDirectory {dbdir}
+            LogFileMaxSize 0
+            LogTime yes
+            #Debug yes
+            LogClean yes
+            LogVerbose yes
+            ExitOnOOM yes
+            DetectPUA yes
+            ScanPDF yes
+            CommandReadTimeout 1
+            MaxQueue 800
+            MaxConnectionQueueLength 1024
+            ScanOneNote no
+            '''.format(pid=TC.clamd_pid, dbdir=TC.path_db)
+        if operating_system == 'windows':
+            # Only have TCP socket option for Windows.
+            config += '''
+                TCPSocket {socket}
+                TCPAddr localhost
+                '''.format(socket=TC.clamd_port_num)
+        else:
+            # Use LocalSocket for Posix, because that's what check_clamd expects.
+            config += '''
+                LocalSocket {localsocket}
+                TCPSocket {tcpsocket}
+                TCPAddr localhost
+                '''.format(localsocket=TC.clamd_socket, tcpsocket=TC.clamd_port_num)
+
+        clamd_config = TC.path_tmp / 'clamd-test.conf'
+        clamd_config.write_text(config)
+
+        #
+        # Start ClamD with our custom config
+        #
+        self.start_clamd(clamd_config=clamd_config)
+
+        poll = self.proc.poll()
+        assert poll == None  # subprocess is alive if poll() returns None
+
+        # Check the big_file scan exceeds max filesize
+        output = self.execute_command('{clamdscan} -c {clamd_config} --wait --ping 10 {testfiles}'.format(
+            clamdscan=TC.clamdscan, clamd_config=clamd_config, testfiles=testfiles))
+
+        assert output.ec == 0  # virus found
+
+        expected_results = ['{}: OK'.format(testpath.name) for testpath in testpaths]
+        expected_results.append('Infected files: 0')
+        self.verify_output(output.out, expected=expected_results)

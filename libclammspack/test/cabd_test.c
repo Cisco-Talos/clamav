@@ -391,7 +391,7 @@ void cabd_extract_test_02() {
 
     /* the first file in this cabinet belongs to a valid folder. The
      * second belongs to an invalid folder. Unpacking files 1, 2, 1
-     * caused cabd.c to try and free the invalid folder state left by
+     * caused cabd.c to try to free the invalid folder state left by
      * extracting from folder 2, which caused a jump to NULL / segfault
      */
     TEST(cabd = mspack_create_cab_decompressor(&read_files_write_md5));

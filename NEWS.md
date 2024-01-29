@@ -3,6 +3,331 @@
 Note: This file refers to the official packages. Things described here may
 differ slightly from third-party binary packages.
 
+## 1.3.0
+
+ClamAV 1.3.0 includes the following improvements and changes:
+
+### Major changes
+
+- Added support for extracting and scanning attachments found in Microsoft
+  OneNote section files.
+  OneNote parsing will be enabled by default, but may be optionally disabled
+  using one of the following options:
+  a. The `clamscan` command line option: `--scan-onenote=no`,
+  b. The `clamd.conf` config option: `ScanOneNote no`,
+  c. The libclamav scan option `options.parse &= ~CL_SCAN_PARSE_ONENOTE;`,
+  d. A signature change to the `daily.cfg` dynamic configuration (DCONF).
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1048)
+
+### Other improvements
+
+- Fixed issue when building ClamAV on the Haiku (BeOS-like) operating system.
+  Patch courtesy of Luca D'Amico
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1061)
+
+- ClamD: When starting, ClamD will now check if the directory specified by
+  `TemporaryDirectory` in `clamd.conf` exists. If it doesn't, ClamD
+  will print an error message and will exit with exit code 1.
+  Patch courtesy of Andrew Kiggins.
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1037)
+
+- CMake: If configured to build static libraries, CMake will now also
+  install the libclamav_rust, libclammspack, libclamunrar_iface, and
+  libclamunrar static libraries required by libclamav.
+
+  Note: These libraries are all linked into the clamscan, clamd, sigtool,
+  and freshclam programs, which is why they did not need to be installed
+  to function. However, these libraries would be required if you wish to
+  build some other program that uses the libclamav static library.
+
+  Patch courtesy of driverxdw.
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1100)
+
+- Added file type recognition for compiled Python (`.pyc`) files.
+  The file type appears as a string parameter for these callback functions:
+  - `clcb_pre_cache`
+  - `clcb_pre_scan`
+  - `clcb_file_inspection`
+  When scanning a `.pyc` file, the `type` parameter will now show
+  "CL_TYPE_PYTHON_COMPILED" instead of "CL_TYPE_BINARY_DATA".
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1111)
+
+- Improved support for decrypting PDF's with empty passwords.
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1141)
+
+- Assorted minor improvements and typo fixes.
+
+### Bug fixes
+
+- Fixed a warning when scanning some HTML files.
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1084)
+
+- Fixed an issue decrypting some PDF's with an empty password.
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1079)
+
+- ClamOnAcc: Fixed an infinite loop when a watched directory does not exist.
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1047)
+
+- ClamOnAcc: Fixed an infinite loop when a file has been deleted before a scan.
+  Patch courtesy of gsuehiro.
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1150)
+
+- Fixed a possible crash when processing VBA files on HP-UX/IA 64bit.
+  Patch courtesy of Albert Chin-A-Young.
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/526)
+
+- ClamConf: Fixed an issue printing `MaxScanSize` introduced with the change
+  to allow a MaxScanSize greater than 4 GiB.
+  Fix courtesy of teoberi.
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1121)
+
+- Fixed an issue building a ClamAV RPM in some configurations.
+  The issue was caused by faulty CMake logic that intended to create an
+  empty database directory during the install.
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1144)
+
+### Acknowledgments
+
+Special thanks to the following people for code contributions and bug reports:
+- Albert Chin-A-Young
+- Andrew Kiggins
+- driverxdw
+- gsuehiro
+- Luca D'Amico
+- RainRat
+- teoberi
+
+## 1.2.1
+
+ClamAV 1.2.1 is a patch release with the following fixes:
+
+- Eliminate security warning about unused "atty" dependency.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/1033
+
+- Upgrade the bundled UnRAR library (libclamunrar) to version 6.2.12.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/1056
+
+- Build system: Fix link error with Clang/LLVM/LLD version 17.
+  Patch courtesy of Yasuhiro Kimura.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/1060
+
+- Fixed the alert-exceeds-max feature for files greater than 2 GiB and less
+  than max file size.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/1039
+
+Special thanks to the following people for code contributions and bug reports:
+- Yasuhiro Kimura
+
+## 1.2.0
+
+ClamAV 1.2.0 includes the following improvements and changes:
+
+### Major changes
+
+- Added support for extracting Universal Disk Format (UDF) partitions.
+
+  Specifically, this version adds support for the Beginning Extended Area
+  Descriptor (BEA01) type of UDF files.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/941
+
+- Added an option to customize the size of ClamAV's clean file cache.
+
+  Increasing the size of the clean file cache may improve scan performance
+  but will require more RAM. The cache size value should be a square number
+  or will be rounded up to the nearest square number.
+
+  The cache size option for `clamd` and `clamscan` is `--cache-size`.
+  Alternatively, you can customize the cache size for ClamD by setting
+  `CacheSize` in `clamd.conf`.
+
+  Patch courtesy of Craig Andrews.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/882
+
+- Introduced a SystemD timer for running Freshclam updates, without sending
+  Freshclam into the background. This takes the "burden of timing the updates"
+  from Freshclam and puts it onto SystemD.
+  The timer can be activated, audited, and the logs inspected:
+  ```sh
+  sudo systemctl enable --now clamav-freshclam-once.timer
+  sudo systemctl list-timers
+  sudo systemctl status clamav-freshclam-once.timer
+  sudo systemctl status clamav-freshclam-once.service
+  journalctl -u clamav-freshclam-once.service
+  ```
+  If you want a different update interval you can edit the timer unit file:
+  ```sh
+  sudo systemctl edit clamav-freshclam-once.timer
+  ```
+  Patch courtesy of Nils Werner.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/962
+
+- Raised the MaxScanSize limit so the total amount of data scanned when
+  scanning a file or archive may exceed 4 gigabytes.
+
+  Introduced the ability to suffix the MaxScanSize and other config file size
+  options with a "G" or "g" for the number of gigabytes.
+  For example, for ClamD you may now specify `MaxScanSize 10G` in `clamd.conf`.
+  And for ClamScan, you may now specify `--max-scansize=10g`.
+
+  The `MaxFileSize` is still limited internally in ClamAV to 2 gigabytes.
+  Any file, or embedded file, larger than 2GB will be skipped.
+  You may use `clamscan --alert-exceeds-max`, or the `clamd.conf` option
+  `AlertExceedsMax yes` to tell if a scan is not completed because of
+  the scan limits.
+
+  Patch courtesy of matthias-fratz-bsz.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/945
+
+- Added ability for Freshclam to use a client certificate PEM file and a
+  private key PEM file for authentication to a private mirror by setting the
+  following environment variables:
+  - `FRESHCLAM_CLIENT_CERT`: May be set to the path of a file (PEM) containing
+    the client certificate.
+  - `FRESHCLAM_CLIENT_KEY`: May be set to the path of a file (PEM) containing
+    the client private key.
+  - `FRESHCLAM_CLIENT_KEY_PASSWD`: May be set to a password for the client key
+    PEM file, if it is password protected.
+
+  Patch courtesy of jedrzej.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/955
+
+## Other improvements
+
+- Fix an issue extracting files from ISO9660 partitions where the files are
+  listed in the plain ISO tree and there also exists an empty Joliet tree.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/938
+
+- CMake build system improvement to support compiling with OpenSSL 3.x on
+  macOS with the Xcode toolchain.
+
+  The official ClamAV installers and packages are now built with OpenSSL 3.1.1
+  or newer.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/970
+
+- The suggested path for the `clamd.pid` and `clamd.sock` file in the sample
+  configs have been updated to reflect the recommended locations for these files
+  in the Docker images. These are:
+  - `/run/clamav/clamd.pid`
+  - `/run/clamav/clamd.sock`
+
+  For consistency, it now specifies `clamd.sock` instead of `clamd.socket`.
+
+  Patch courtesy of computersalat.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/931
+
+### Bug fixes
+
+- Fixed an issue where ClamAV does not abort the signature load process after
+  partially loading an invalid signature. The bug would later cause a crash when
+  scanning certain files.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/934
+
+- Fixed a possible buffer over-read bug when unpacking PE files.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/927
+
+- Removed a warning message showing the HTTP response codes during the
+  Freshclam database update process.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/935
+
+- Added missing command line options to the ClamD and ClamAV-Milter `--help`
+  message and manpages.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/936
+
+- ClamOnAcc: Fixed error message when using `--wait` without `--ping` option.
+  Patch courtesy of Răzvan Cojocaru.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/984
+
+- Fixed an assortment of code quality issues identified by Coverity:
+  - GitHub pull requests:
+    - https://github.com/Cisco-Talos/clamav/pull/989
+    - https://github.com/Cisco-Talos/clamav/pull/998
+
+- Windows: Fixed a build issue with the CMake-Rust integration regarding
+  detecting native static libraries that caused builds to fail with Rust
+  version 1.70 and newer.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/992
+
+- Fixed a bounds check issue in the PDF parser that may result in a 1-byte
+  buffer over read but does not cause a crash.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/988
+
+- Upgraded the bundled UnRAR library (libclamunrar) to version 6.2.10.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/1008
+
+- Fixed a compatibility issue with libjson-c version 0.17.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/1002
+
+### Acknowledgments
+
+Special thanks to the following people for code contributions and bug reports:
+- computersalat
+- Craig Andrews
+- jedrzej
+- matthias-fratz-bsz
+- Nils Werner
+- Răzvan Cojocaru
+
+## 1.1.3
+
+ClamAV 1.1.3 is a patch release with the following fixes:
+
+- Eliminate security warning about unused "atty" dependency.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/1034
+
+- Upgrade the bundled UnRAR library (libclamunrar) to version 6.2.12.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/1055
+
+- Windows: libjson-c 0.17 compatibility fix. with ssize_t type definition.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/1063
+
+- Build system: Fix link error with Clang/LLVM/LLD version 17.
+  Patch courtesy of Yasuhiro Kimura.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/1059
+
+- Fix alert-exceeds-max feature for files > 2GB and < max-filesize.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/1040
+
+Special thanks to the following people for code contributions and bug reports:
+- Yasuhiro Kimura
+
+## 1.1.2
+
+ClamAV 1.1.2 is a critical patch release with the following fixes:
+
+- Upgrade the bundled UnRAR library (libclamunrar) to version 6.2.10.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/1011
+
+## 1.1.1
+
+ClamAV 1.1.1 is a critical patch release with the following fixes:
+
+- [CVE-2023-20197](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2023-20197)
+  Fixed a possible denial of service vulnerability in the HFS+ file parser.
+  This issue affects versions 1.1.0, 1.0.1 through 1.0.0, 0.105.2 through 0.105.0,
+  0.104.4 through 0.104.0, and 0.103.8 through 0.103.0.
+  Thank you to Steve Smith for reporting this issue.
+
+- Fixed a build issue when using the Rust nightly toolchain, which was
+  affecting the oss-fuzz build environment used for regression tests.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/997
+
+- Fixed a build issue on Windows when using Rust version 1.70 or newer.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/994
+
+- CMake build system improvement to support compiling with OpenSSL 3.x on
+  macOS with the Xcode toolchain.
+
+  The official ClamAV installers and packages are now built with OpenSSL 3.1.1
+  or newer.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/972
+
+- Removed a warning message showing the HTTP response codes during the
+  Freshclam database update process.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/939
+
+Special thanks to the following people for code contributions and bug reports:
+- Steve Smith
+
 ## 1.1.0
 
 ClamAV 1.1.0 includes the following improvements and changes:
@@ -32,7 +357,7 @@ ClamAV 1.1.0 includes the following improvements and changes:
   - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/867
 
 - Added a new function `cl_engine_set_clcb_vba()` to the libclamav API.
-  Use this function to set a `cb_vba` callback function. 
+  Use this function to set a `cb_vba` callback function.
   The cb_vba callback function will be run whenever VBA is extracted from
   office documents. The provided data will be a normalized copy of the
   extracted VBA.
@@ -135,9 +460,36 @@ ClamAV 1.1.0 includes the following improvements and changes:
   This issue is not a vulnerability.
   - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/812
 
+- Fixed a possible heap overflow read in javascript normalizer module.
+  This issue is not a vulnerability.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/868
+
+- Fixed two bugs that would cause Freshclam to fail update when applying a
+  CDIFF database patch if that patch adds a file to the database archive
+  or removes a file from the database archive.
+  This bug also caused Sigtool to fail to create such a patch.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/893
+
+- Fixed an assortment of complaints identified by Coverity static analysis.
+  - GitHub pull requests:
+    - https://github.com/Cisco-Talos/clamav/pull/891
+    - https://github.com/Cisco-Talos/clamav/pull/899
+
+- Fixed one of the Freshclam tests that was failing on some Fedora systems
+  due to a bug printing debug-level log messages to stdout.
+  Fix courtesy of Arjen de Korte.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/881
+
+- Correctly remove temporary files generated by the VBA and XLM extraction
+  modules so that the files are not leaked in patched versions of ClamAV
+  where temporary files are written directly to the temp-directory instead
+  of writing to a unique subdirectory.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/894
+
 ### Acknowledgments
 
 Special thanks to the following people for code contributions and bug reports:
+- Arjen de Korte
 - Craig Andrews
 - Ged Haywood
 - Matt Jolly
@@ -148,6 +500,98 @@ Special thanks to the following people for code contributions and bug reports:
 - Shawn Iverson
 - Sebastian Andrzej Siewior
 - The OSS-Fuzz project
+
+## 1.0.4
+
+ClamAV 1.0.4 is a patch release with the following fixes:
+
+- Eliminate security warning about unused "atty" dependency.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/1035
+
+- Upgrade the bundled UnRAR library (libclamunrar) to version 6.2.12.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/1054
+
+- Windows: libjson-c 0.17 compatibility fix. with ssize_t type definition.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/1064
+
+- Freshclam: Removed a verbose warning printed for each Freshclam HTTP request.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/1042
+
+- Build system: Fix link error with Clang/LLVM/LLD version 17.
+  Patch courtesy of Yasuhiro Kimura.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/1058
+
+- Fix alert-exceeds-max feature for files > 2GB and < max-filesize.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/1041
+
+Special thanks to the following people for code contributions and bug reports:
+- Yasuhiro Kimura
+
+## 1.0.3
+
+ClamAV 1.0.3 is a critical patch release with the following fixes:
+
+- Upgrade the bundled UnRAR library (libclamunrar) to version 6.2.10.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/1010
+
+## 1.0.2
+
+ClamAV 1.0.2 is a critical patch release with the following fixes:
+
+- [CVE-2023-20197](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2023-20197)
+  Fixed a possible denial of service vulnerability in the HFS+ file parser.
+  This issue affects versions 1.1.0, 1.0.1 through 1.0.0, 0.105.2 through 0.105.0,
+  0.104.4 through 0.104.0, and 0.103.8 through 0.103.0.
+  Thank you to Steve Smith for reporting this issue.
+
+- [CVE-2023-20212](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2023-20212)
+  Fixed a possible denial of service vulnerability in the AutoIt file parser.
+  This issue affects versions 1.0.1 and 1.0.0.
+  This issue does not affect version 1.1.0.
+
+- Fixed a build issue when using the Rust nightly toolchain, which was
+  affecting the oss-fuzz build environment used for regression tests.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/996
+
+- Fixed a build issue on Windows when using Rust version 1.70 or newer.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/993
+
+- CMake build system improvement to support compiling with OpenSSL 3.x on
+  macOS with the Xcode toolchain.
+
+  The official ClamAV installers and packages are now built with OpenSSL 3.1.1
+  or newer.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/973
+
+- Fixed an issue where ClamAV does not abort the signature load process after
+  partially loading an invalid signature.
+  The bug would later cause a crash when scanning certain files.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/952
+
+- Fixed an issue so that ClamAV correctly removes temporary files generated
+  by the VBA and XLM extraction modules so that the files are not leaked in
+  patched versions of ClamAV where temporary files are written directly to the
+  temp-directory instead of writing to a unique subdirectory.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/900
+
+- Set Git attributes to prevent Git from altering line endings for bundled Rust
+  libraries. Third-party Rust libraries are bundled in the ClamAV release
+  tarball. We do not commit them to our own Git repository, but community
+  package maintainers may now store the tarball contents in Git.
+  The Rust build system verifies the library manifest, and this change
+  ensures that the hashes are correct.
+  Improvement courtesy of Nicolas R.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/856
+
+- Fixed two bugs that would cause Freshclam to fail update when applying a
+  CDIFF database patch if that patch adds a file to the database archive
+  or removes a file from the database archive.
+  This bug also caused Sigtool to fail to create such a patch.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/901
+
+Special thanks to the following people for code contributions and bug reports:
+- Nicolas R.
+- Steve Smith
 
 ## 1.0.1
 
@@ -556,7 +1000,7 @@ ClamAV 0.105.0 includes the following improvements and changes.
   Using LLVM JIT for the bytecode runtime may improve scan performance over the
   built-in bytecode interpreter runtime, which is the default.
   If you wish to build using LLVM, you must obtain a complete build of
-  the LLVM libraries including the devopment headers and static libraries.
+  the LLVM libraries including the development headers and static libraries.
 
   There are some known issues both compiling and running the test suite with
   some LLVM installations. We are working to further stabilize LLVM bytecode
@@ -1095,6 +1539,44 @@ The ClamAV team thanks the following individuals for their code submissions:
 - Vasile Papp
 - Yasuhiro Kimura
 
+## 0.103.11
+
+ClamAV 0.103.11 is a patch release with the following fixes:
+
+- Upgrade the bundled UnRAR library (libclamunrar) to version 6.2.12.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/1053
+
+- Windows: libjson-c 0.17 compatibility fix. with ssize_t type definition.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/1065
+
+- Windows: Update build system to use OpenSSL 3 and PThreads-Win32 v3.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/1057
+
+## 0.103.10
+
+ClamAV 0.103.10 is a critical patch release with the following fixes:
+
+- Upgrade the bundled UnRAR library (libclamunrar) to version 6.2.10.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/1009
+
+## 0.103.9
+
+ClamAV 0.103.9 is a critical patch release with the following fixes:
+
+- [CVE-2023-20197](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2023-20197)
+  Fixed a possible denial of service vulnerability in the HFS+ file parser.
+  This issue affects versions 1.1.0, 1.0.1 through 1.0.0, 0.105.2 through 0.105.0,
+  0.104.4 through 0.104.0, and 0.103.8 through 0.103.0.
+  Thank you to Steve Smith for reporting this issue.
+
+- Fixed compiler warnings that may turn into errors in Clang 16.
+  Patch courtesy of Michael Orlitzky.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/747
+
+Special thanks to the following people for code contributions and bug reports:
+- Michael Orlitzky
+- Steve Smith
+
 ## 0.103.8
 
 ClamAV 0.103.8 is a critical patch release with the following fixes:
@@ -1290,7 +1772,7 @@ Other fixes backported from 0.104.0:
   callback for the "virus found" event.
   Patch courtesy of Markus Strehle.
 
-- Added checks to the the SIS archive parser to prevent an SIS file entry from
+- Added checks to the SIS archive parser to prevent an SIS file entry from
   pointing to the archive, which would result in a loop. This was not an actual
   infinite loop, as ClamAV's scan recursion limit limits the depth of nested
   archive extraction.
@@ -1401,7 +1883,7 @@ ClamAV 0.103.2 is a security patch release with the following fixes:
   For more details, see:
   https://blog.clamav.net/2020/06/the-future-of-clamav-safebrowsing.html
 
-  > _Tip_: If creating and hosting your own `safebrowing.gdb` database, you can
+  > _Tip_: If creating and hosting your own `safebrowsing.gdb` database, you can
   > use the `DatabaseCustomURL` option in `freshclam.conf` to download it.
 
 - FreshClam: Improved HTTP 304, 403, & 429 handling.
@@ -1525,7 +2007,7 @@ ClamAV 0.103.0 includes the following improvements and changes.
   a community effort.
 
   Non-blocking database reloads are now the default behavior. Some systems that
-  are more contrained on RAM may need to disable non-blocking reloads as it will
+  are more constrained on RAM may need to disable non-blocking reloads as it will
   temporarily consume 2x as much memory. For this purpose we have added a new
   clamd config option `ConcurrentDatabaseReload` which may be set to `no`.
 
@@ -1544,7 +2026,7 @@ ClamAV 0.103.0 includes the following improvements and changes.
 
 - The DLP module has been enhanced with additional credit card ranges and a new
   engine option which allows ClamAV to alert only on credit cards (and not, for
-  instance, gift cards) when scannning with the DLP module. This feature
+  instance, gift cards) when scanning with the DLP module. This feature
   enhancement was made by John Schember, with input from Alexander Sulfrian.
 
 - Support for Adobe Reader X PDF encryption, an overhaul of PNG scanning to
@@ -1605,8 +2087,8 @@ ClamAV 0.103.0 includes the following improvements and changes.
   `sigtool` is separate from the one used for scanning and will still need to be
   updated or replaced in the future.
 
-- Improvements to the layout and legitibility of temp files created during a
-  scan. Improvements to legitibility and content of the metadata JSON generated
+- Improvements to the layout and legibility of temp files created during a
+  scan. Improvements to legibility and content of the metadata JSON generated
   during a scan.
 
   To review the scan temp files and metadata JSON, run:
@@ -1806,7 +2288,7 @@ ClamAV 0.102.2 is a bug patch release to address the following issues.
 
 - Re-applied a fix to alleviate file access issues when scanning RAR files in
   downstream projects that use libclamav where the scanning engine is operating
-  in a low-privelege process. This bug was originally fixed in 0.101.2 and the
+  in a low-privilege process. This bug was originally fixed in 0.101.2 and the
   fix was mistakenly omitted from 0.102.0.
 
 - Fixed an issue wherein freshclam failed to update if the database version
@@ -1819,7 +2301,7 @@ ClamAV 0.102.2 is a bug patch release to address the following issues.
   slower internet connections.
 
 - Correctly display number of kilobytes (KiB) in progress bar and reduced the
-  size of the progress bar to accomodate 80-char width terminals.
+  size of the progress bar to accommodate 80-char width terminals.
 
 - Fixed an issue where running freshclam manually causes a daemonized freshclam
   process to fail when it updates because the manual instance deletes the
@@ -2388,7 +2870,7 @@ infrastructure that's so easy to take for granted.
     CI server.
 
     Similar to the feature testing framework, our build acceptance framework
-    tests accross 64bit and 32bit (where available):
+    tests across 64bit and 32bit (where available):
     - macOS 10 (.10, .11, .13)
     - Windows (7, 10)
     - Debian (8, 9), Ubuntu (16.04, 18.04), CentOS (6, 7)
@@ -3343,7 +3825,7 @@ version:
   (clamd: ExcludePUA, IncludePUA; clamscan: --exclude-pua, --include-pua)
 
 - Data Loss Prevention (DLP): This version includes a new module that, when
-  enabled, scans data for the inclusion of US formated Social Security
+  enabled, scans data for the inclusion of US formatted Social Security
   Numbers and credit card numbers (clamd: StructuredDataDetection,
   clamscan: --detect-structured; additional fine-tuning options are available)
 
@@ -3957,7 +4439,7 @@ Important note to clamdwatch users: please upgrade to the latest version
     - a lot of minor improvements, including support for new platforms
 
 - clamd:
-  - new directive ExitOnOOM (stop the deamon when libclamav reports an out of
+  - new directive ExitOnOOM (stop the daemon when libclamav reports an out of
     memory condition)
   - new directives StreamMinPort and StreamMaxPort (port range specification
     for a stream mode)
@@ -3974,7 +4456,7 @@ Important note to clamdwatch users: please upgrade to the latest version
 - freshclam:
   - the DNS mode is now enabled by default (no need for DNSDatabaseInfo in
     freshclam.conf)
-  - --no-dns uses a If-Modified-Since method instead of a range GET
+  - --no-dns uses an If-Modified-Since method instead of a range GET
   - added support for AllowSupplementaryGroups
 
 - sigtool:
@@ -4729,7 +5211,7 @@ configure:
    Tru64 support (thanks to Christophe Varoqui <ext.devoteam.varoqui@sncf.fr>)
 
 - documentation:
-  - included how-to in Portugese by Alexandre de Jesus Marcolino
+  - included how-to in Portuguese by Alexandre de Jesus Marcolino
   - clamdoc.pdf and system manual updates
 
 Many thanks to Luca 'NERvOus' Gibelli from ElektraPro for his support,
@@ -4788,7 +5270,7 @@ This release has removed the limit for a file name length in clamscan. Some
 viruses (eg. W32/Yaha.E) are using very long file names, and they were
 ignored in mbox mode. Users of AMaViS-ng and other wrappers were not
 vulnerable to this problem, because that programs don't use original
-attachement file names.
+attachment file names.
 
 - clamscan:
   - removed limit for a file name length (thanks to Odhiambo Washington
@@ -4939,9 +5421,9 @@ Documentation:
 update viruses.db2 and supports OpenAntiVirus.org site only (the last
 update of the OAV database was 1 July !). Nicholas Chua <nicholas@ncmbox.net>
 has generated over 200 new signatures, ClamAV's database is also frequently
-updated (expecially when new wild virus/worm appears, eg. W32/BugBear.A).
+updated (especially when new wild virus/worm appears, eg. W32/BugBear.A).
 
-    This software is still in developement (new software == new bugs), however
+    This software is still in development (new software == new bugs), however
 clamscan should be very stable. You shouldn't use clamd/clamuko (well, clamd is
 stable, clamuko isn't) on production systems, yet. Please wait for 0.51 at
 least ;). ClamAV 0.50 was tested on Linux and Solaris and should work fine.
@@ -4993,7 +5475,7 @@ compression/archive support. Snapshot will be available for a few days.
 - fixed compile problem on FreeBSD (thanks to Wieslaw Glod <wkg@x2.pl> and
   Ken McKittrick <klmac@usadatanet.com>)
 - clamscan reads all .db files from data directory, so you can put your
-  own databases there and they won't be overwrited by the updaters. viruses.db
+  own databases there and they won't be overwritten by the updaters. viruses.db
   is still the main database file (if --database isn't used).
 - --deb (debian binary packages scanning) by Magnus Ekdahl <magnus@debian.org>
 - --remove option, but be careful with it !
@@ -5011,7 +5493,7 @@ There are binary packages for AIX available. Please check the documentation.
 ## 0.22
 
 This release fixes bug with scanning archives in unaccessible directories with
-*superuser* priviledges (after dropping priviledges scanner wasn't able to
+*superuser* privileges (after dropping privileges scanner wasn't able to
 access the archive, although the same archive was accessible), thanks
 for Sergei Pronin <sp@finndesign.fi> for the problem description. Now all
 archives unaccessible directly by the clamav user are copied (with a respect to

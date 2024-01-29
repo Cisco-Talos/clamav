@@ -1,7 +1,7 @@
 /*
  *  Extract embedded objects from RTF files.
  *
- *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Török Edvin
@@ -167,9 +167,11 @@ static int push_state(struct stack* stack, struct rtf_state* state)
         /* grow stack */
         struct rtf_state* states;
         stack->stack_size += 128;
-        states = cli_realloc2(stack->states, stack->stack_size * sizeof(*stack->states));
-        if (!states)
+        states = cli_realloc(stack->states, stack->stack_size * sizeof(*stack->states));
+        if (!states) {
+            // Realloc failed. Note that stack->states has not been freed and must still be cleaned up by the caller.
             return CL_EMEM;
+        }
         stack->states = states;
     }
     stack->states[stack->stack_cnt++] = *state;

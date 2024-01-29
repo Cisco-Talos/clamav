@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Alberto Wu
@@ -533,7 +533,7 @@ static unsigned int u2a(uint8_t *dest, unsigned int len)
 }
 
 /*********************
-   MT realted stuff
+   MT related stuff
 *********************/
 
 struct MT {
@@ -761,6 +761,10 @@ static cl_error_t ea05(cli_ctx *ctx, const uint8_t *base, char *tmpd)
             cli_dbgmsg("autoit: file is compressed\n");
             if (cli_readint32(UNP.inputbuf) != 0x35304145) {
                 cli_dbgmsg("autoit: bad magic or unsupported version\n");
+                // Free this inputbuf and set back to NULL.
+                free(UNP.inputbuf);
+                UNP.inputbuf = NULL;
+
                 continue;
             }
 
@@ -769,6 +773,10 @@ static cl_error_t ea05(cli_ctx *ctx, const uint8_t *base, char *tmpd)
             }
 
             if (cli_checklimits("autoit", ctx, UNP.usize, 0, 0) != CL_CLEAN) {
+                // Free this inputbuf and set back to NULL.
+                free(UNP.inputbuf);
+                UNP.inputbuf = NULL;
+
                 continue;
             }
 
@@ -848,12 +856,16 @@ static cl_error_t ea05(cli_ctx *ctx, const uint8_t *base, char *tmpd)
              */
             cli_dbgmsg("autoit: file is not compressed\n");
             UNP.outputbuf = UNP.inputbuf;
-            UNP.usize     = UNP.csize;
+            UNP.inputbuf  = NULL;
+
+            UNP.usize = UNP.csize;
         }
 
         if (UNP.usize < 4) {
             cli_dbgmsg("autoit: file is too short\n");
             free(UNP.outputbuf);
+            UNP.outputbuf = NULL;
+
             continue;
         }
 
@@ -923,7 +935,7 @@ done:
 }
 
 /*********************
-  LAME realted stuff
+  LAME related stuff
 *********************/
 
 #define ROFL(a, b) ((a << (b % (sizeof(a) << 3))) | (a >> ((sizeof(a) << 3) - (b % (sizeof(a) << 3)))))

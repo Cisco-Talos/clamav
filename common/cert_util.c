@@ -1,7 +1,7 @@
 /*
  *  OpenSSL certificate caching.
  *
- *  Copyright (C) 2016-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2016-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *
  *  Authors: Russ Kubik
  *
@@ -695,5 +695,70 @@ CURLcode sslctx_function(CURL *curl, void *ssl_ctx, void *userptr)
 
 done:
 
+    return status;
+}
+
+cl_error_t set_tls_client_certificate(CURL *curl)
+{
+    cl_error_t status = CL_ERROR;
+    char *client_certificate;
+    char *client_key;
+    char *client_key_passwd;
+    CURLcode curlcode = CURLE_OK;
+
+    client_certificate = getenv("FRESHCLAM_CLIENT_CERT");
+    if (client_certificate == NULL) {
+        // No client certificate specified, so no need to set it.
+        status = CL_SUCCESS;
+        goto done;
+    }
+
+    client_key = getenv("FRESHCLAM_CLIENT_KEY");
+    if (client_key == NULL) {
+        // A client certificate was specified, but no client key was specified.
+        logg(LOGG_WARNING, "The FRESHCLAM_CLIENT_CERT environment variable was set, but FRESHCLAM_CLIENT_KEY was not set. A client private key is also required if specifying a client certificate.\n");
+        goto done;
+    }
+
+    client_key_passwd = getenv("FRESHCLAM_CLIENT_KEY_PASSWD");
+
+    /* set the cert for client authentication */
+    curlcode = curl_easy_setopt(curl, CURLOPT_SSLCERTTYPE, "PEM");
+    if (CURLE_OK != curlcode) {
+        logg(LOGG_WARNING, "Failed to set client certificate type for client authentication: %s\n", curl_easy_strerror(curlcode));
+        goto done;
+    }
+
+    curlcode = curl_easy_setopt(curl, CURLOPT_SSLCERT, client_certificate);
+    if (CURLE_OK != curlcode) {
+        logg(LOGG_WARNING, "Failed to set client certificate to '%s' for client authentication: %s\n", client_certificate, curl_easy_strerror(curlcode));
+        goto done;
+    }
+
+    /* set the private key type and path */
+    curlcode = curl_easy_setopt(curl, CURLOPT_SSLKEYTYPE, "PEM");
+    if (CURLE_OK != curlcode) {
+        logg(LOGG_WARNING, "Failed to set private key type for client authentication: %s\n", curl_easy_strerror(curlcode));
+        goto done;
+    }
+
+    curlcode = curl_easy_setopt(curl, CURLOPT_SSLKEY, client_key);
+    if (CURLE_OK != curlcode) {
+        logg(LOGG_WARNING, "Failed to set private key to '%s' for client authentication: %s\n", client_key, curl_easy_strerror(curlcode));
+        goto done;
+    }
+
+    /* the private key may require a password */
+    if (client_key_passwd != NULL) {
+        curlcode = curl_easy_setopt(curl, CURLOPT_KEYPASSWD, client_key_passwd);
+        if (CURLE_OK != curlcode) {
+            logg(LOGG_WARNING, "Failed to set the password for private key '%s': %s\n", client_key, curl_easy_strerror(curlcode));
+            goto done;
+        }
+    }
+
+    status = CL_SUCCESS;
+
+done:
     return status;
 }

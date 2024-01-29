@@ -1,7 +1,7 @@
 /*
  * Interface to libclamunrar
  *
- * Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ * Copyright (C) 2013-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  * Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  * Authors: Trog, Torok Edvin, Tomasz Kojm, Micah Snyder
@@ -212,6 +212,7 @@ cl_unrar_error_t unrar_open(const char* filename, void** hArchive, char** commen
     if (archiveData == NULL) {
         unrar_dbgmsg("unrar_open: Not enough memory to allocate main archive header data structure.\n");
         status = UNRAR_EMEM;
+        goto done;
     }
     archiveData->ArcName  = (char*)filename;
     archiveData->OpenMode = RAR_OM_EXTRACT;
@@ -220,6 +221,7 @@ cl_unrar_error_t unrar_open(const char* filename, void** hArchive, char** commen
     if (archiveData->CmtBuf == NULL) {
         unrar_dbgmsg("unrar_open: Not enough memory to allocate main archive header comment buffer.\n");
         status = UNRAR_EMEM;
+        goto done;
     }
     archiveData->CmtBufSize = CMTBUFSIZE;
 
@@ -231,23 +233,24 @@ cl_unrar_error_t unrar_open(const char* filename, void** hArchive, char** commen
     }
 
     switch (archiveData->CmtState) {
-        case 0: {
+        case ERAR_SUCCESS: {
             unrar_dbgmsg("unrar_open: Comments are not present in this archive.\n");
             break;
         }
         case ERAR_BAD_DATA: {
             unrar_dbgmsg("unrar_open: Archive Comments may be broken.\n");
+            break;
         }
         case ERAR_SMALL_BUF: {
-            unrar_dbgmsg("unrar_open: Archive Comments are not present in this file.\n");
+            unrar_dbgmsg("unrar_open: Comment buffer was too small, comments are not read completely.\n");
+            break;
         }
         case 1: {
-            unrar_dbgmsg("unrar_open: Archive Comments:\n\t %s\n", archiveData->CmtBuf);
+            unrar_dbgmsg("unrar_open: Archive Comments read completely.\n");
             break;
         }
         case ERAR_NO_MEMORY: {
-            unrar_dbgmsg("unrar_open: Memory error when reading archive comments!\n");
-            status = UNRAR_EMEM;
+            unrar_dbgmsg("unrar_open: Not enough memory to extract comments!\n");
             break;
         }
         default: {
@@ -261,7 +264,6 @@ cl_unrar_error_t unrar_open(const char* filename, void** hArchive, char** commen
         if (NULL == *comment) {
             unrar_dbgmsg("unrar_open: Error duplicating comment buffer.\n");
             *comment_size = 0;
-            status        = UNRAR_EMEM;
         }
     }
 
@@ -306,7 +308,7 @@ cl_unrar_error_t unrar_peek_file_header(void* hArchive, unrar_metadata_t* file_m
     struct RARHeaderDataEx headerData;
     int read_header_ret = 0;
 
-    wchar_t RedirName[1024];
+    wchar_t RedirName[2048];
 
     memset(&headerData, 0, sizeof(struct RARHeaderDataEx));
 
@@ -324,9 +326,9 @@ cl_unrar_error_t unrar_peek_file_header(void* hArchive, unrar_metadata_t* file_m
     headerData.CmtBuf     = NULL;
     headerData.CmtBufSize = 0;
 
-    headerData.RedirNameSize = 1024 * sizeof(wchar_t);
+    headerData.RedirNameSize = 2048;
     headerData.RedirName     = (wchar_t*)&RedirName;
-    memset(headerData.RedirName, 0, headerData.RedirNameSize);
+    memset(headerData.RedirName, 0, headerData.RedirNameSize * sizeof(wchar_t));
 
     read_header_ret = RARReadHeaderEx(hArchive, &headerData);
     if (ERAR_SUCCESS != read_header_ret) {
@@ -336,11 +338,11 @@ cl_unrar_error_t unrar_peek_file_header(void* hArchive, unrar_metadata_t* file_m
 
     file_metadata->unpack_size = headerData.UnpSize + ((int64_t)headerData.UnpSizeHigh << 32);
     file_metadata->pack_size   = headerData.PackSize + ((int64_t)headerData.PackSizeHigh << 32);
-    file_metadata->filename    = unrar_strndup(headerData.FileName, 1024);
-    file_metadata->crc         = headerData.FileCRC;
-    file_metadata->encrypted   = (headerData.Flags & RHDF_ENCRYPTED) ? 1 : 0;
-    file_metadata->is_dir      = (headerData.Flags & RHDF_DIRECTORY) ? 1 : 0;
-    file_metadata->method      = headerData.Method;
+    strncpy(file_metadata->filename, headerData.FileName, 1024);
+    file_metadata->crc       = headerData.FileCRC;
+    file_metadata->encrypted = (headerData.Flags & RHDF_ENCRYPTED) ? 1 : 0;
+    file_metadata->is_dir    = (headerData.Flags & RHDF_DIRECTORY) ? 1 : 0;
+    file_metadata->method    = headerData.Method;
 
     unrar_dbgmsg("unrar_peek_file_header:   Name:          %s\n", headerData.FileName);
     unrar_dbgmsg("unrar_peek_file_header:   Directory?:    %u\n", file_metadata->is_dir);

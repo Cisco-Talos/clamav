@@ -1,4 +1,4 @@
-# Copyright (C) 2020-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+# Copyright (C) 2020-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
 
 if(WIN32)
     add_definitions(-DWIN32_LEAN_AND_MEAN)
@@ -48,6 +48,10 @@ if(ENABLE_SHARED_LIB)
                 resolv
                 ${APPLE_CORE_FOUNDATION}
                 ${APPLE_SECURITY} )
+    elseif(HAIKU)
+        target_link_libraries( freshclam
+            PUBLIC
+                network )
     elseif(UNIX)
         if(HAVE_RESOLV_H AND NOT C_BSD) # BSD appears to have libresolv inside libc
             target_link_libraries( freshclam
@@ -128,6 +132,10 @@ if(ENABLE_STATIC_LIB)
                 resolv
                 ${APPLE_CORE_FOUNDATION}
                 ${APPLE_SECURITY} )
+    elseif(HAIKU)
+        target_link_libraries( freshclam_static
+            PUBLIC
+                network )
     elseif(UNIX)
         if(HAVE_RESOLV_H AND NOT C_BSD) # BSD appears to have libresolv inside libc
             target_link_libraries( freshclam_static

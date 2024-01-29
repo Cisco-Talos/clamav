@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *  Copyright (C) 2002-2007 Tomasz Kojm <tkojm@clamav.net>
  *
@@ -124,9 +124,9 @@ void fc_cleanup(void);
  * Will not touch files other than CLD and CVD files.
  *
  * @param databaseList  List of official databases to keep.
- * @param nDatabases    Number of databses in list.
+ * @param nDatabases    Number of databases in list.
  * @return fc_error_t   FC_SUCCESS if success.
- * @return fc_error_t   FC_EDBDIRACCESS if database access issue occured.
+ * @return fc_error_t   FC_EDBDIRACCESS if database access issue occurred.
  * @return fc_error_t   FC_EARG if invalid arguments.
  */
 fc_error_t fc_prune_database_directory(

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *  Copyright (C) 2002-2007 Tomasz Kojm <tkojm@clamav.net>
  *
@@ -85,11 +85,11 @@ const char *fc_strerror(fc_error_t fcerror)
         case FC_UPTODATE:
             return "Up-to-date";
         case FC_EINIT:
-            return "Failed to initalize";
+            return "Failed to initialize";
         case FC_EDIRECTORY:
-            return "Invalid, nonexistant, or inaccessible directory";
+            return "Invalid, nonexistent, or inaccessible directory";
         case FC_EFILE:
-            return "Invalid, nonexistant, or inaccessible file";
+            return "Invalid, nonexistent, or inaccessible file";
         case FC_ECONNECTION:
             return "Connection failed";
         case FC_EEMPTYFILE:
@@ -139,7 +139,7 @@ fc_error_t fc_initialize(fc_config *fcConfig)
                     Please submit an issue to https://github.com/Cisco-Talos/clamav");
     }
 
-    /* Initilize libcurl */
+    /* Initialize libcurl */
     curl_global_init(CURL_GLOBAL_ALL);
 
     /* Initialize mprintf options */
@@ -431,6 +431,10 @@ fc_error_t fc_test_database(const char *dbFilename, int bBytecodeEnabled)
         status = FC_ETESTFAIL;
         goto done;
     }
+
+    // Disable cache as testing the database doesn't need caching,
+    // having cache will only waste time and memory.
+    engine->engine_options |= ENGINE_OPTIONS_DISABLE_CACHE;
 
     cl_engine_set_clcb_stats_submit(engine, NULL);
 

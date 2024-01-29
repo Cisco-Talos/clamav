@@ -1,9 +1,10 @@
-# Copyright (C) 2020-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+# Copyright (C) 2020-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
 
 """
 Run clamscan tests.
 """
 
+import shutil
 import unittest
 import sys
 from zipfile import ZIP_DEFLATED, ZipFile
@@ -212,3 +213,72 @@ class TC(testcase.TestCase):
         unexpected_results = ['OK']
 
         self.verify_output(output.out, expected=expected_results, unexpected=unexpected_results)
+
+    def test_iso_missing_joliet(self):
+        self.step_name('Test that we correctly extract files from an ISO even if the joliet file path is empty.')
+
+        test_path = TC.path_source / 'unit_tests' / 'input' / 'other_scanfiles'
+        sig_path = TC.path_source / 'unit_tests' / 'input' / 'other_sigs' / 'logo.hsb'
+
+        command = '{valgrind} {valgrind_args} {clamscan} \
+             -d {sig_path} \
+             --allmatch {testfile1} {testfile2}'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan,
+            sig_path=sig_path,
+            testfile1=test_path / 'iso_normal.logo.iso',
+            testfile2=test_path / 'iso_no_joliet.logo.iso',
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 1
+
+        expected_results = [
+            'iso_normal.logo.iso: logo.png.UNOFFICIAL FOUND',
+            'iso_no_joliet.logo.iso: logo.png.UNOFFICIAL FOUND',
+        ]
+        unexpected_results = ['OK']
+
+        self.verify_output(output.out, expected=expected_results, unexpected=unexpected_results)
+
+    def test_onenote_disabled(self):
+        self.step_name('Test that clamscan --scan-onenote=no disables onenote support')
+
+        testpaths = [
+            TC.path_build / "unit_tests" / "input" / "clamav_hdb_scanfiles" / "clam.exe.2007.one",
+            TC.path_build / "unit_tests" / "input" / "clamav_hdb_scanfiles" / "clam.exe.2010.one",
+            TC.path_build / "unit_tests" / "input" / "clamav_hdb_scanfiles" / "clam.exe.webapp-export.one",
+        ]
+
+        testfiles = ' '.join([str(testpath) for testpath in testpaths])
+
+        command = '{valgrind} {valgrind_args} {clamscan} -d {path_db} {testfiles}'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args,
+            clamscan=TC.clamscan,
+            path_db=TC.path_build / 'unit_tests' / 'input' / 'clamav.hdb',
+            testfiles=testfiles,
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 1  # virus found
+
+        expected_results = ['{}: ClamAV-Test-File.UNOFFICIAL FOUND'.format(testpath.name) for testpath in testpaths]
+        expected_results.append('Scanned files: {}'.format(len(testpaths)))
+        expected_results.append('Infected files: {}'.format(len(testpaths)))
+        self.verify_output(output.out, expected=expected_results)
+
+        # Try again with onenote support disabled.
+
+        command = '{valgrind} {valgrind_args} {clamscan} -d {path_db} --scan-onenote=no {testfiles}'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args,
+            clamscan=TC.clamscan,
+            path_db=TC.path_build / 'unit_tests' / 'input' / 'clamav.hdb',
+            testfiles=testfiles,
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 0  # virus found
+
+        expected_results = ['{}: OK'.format(testpath.name) for testpath in testpaths]
+        expected_results.append('Scanned files: 3')
+        expected_results.append('Infected files: 0')
+        self.verify_output(output.out, expected=expected_results)

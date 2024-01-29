@@ -539,7 +539,7 @@ int cli_scannulsft(cli_ctx *ctx, off_t offset)
             continue;
         }
         if (ret == CL_SUCCESS) {
-            cli_dbgmsg("NSIS: Successully extracted file #%u\n", nsist.fno);
+            cli_dbgmsg("NSIS: Successfully extracted file #%u\n", nsist.fno);
             if (lseek(nsist.ofd, 0, SEEK_SET) == -1) {
                 cli_dbgmsg("NSIS: call to lseek() failed\n");
                 free(nsist.dir);

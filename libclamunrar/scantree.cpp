@@ -215,10 +215,21 @@ bool ScanTree::GetNextMask()
   UnixSlashToDos(CurMask,CurMask,ASIZE(CurMask));
 #endif
 
-  // We wish to scan entire disk if mask like c:\ is specified
-  // regardless of recursion mode. Use c:\*.* mask when need to scan only 
-  // the root directory.
-  ScanEntireDisk=IsDriveLetter(CurMask) && IsPathDiv(CurMask[2]) && CurMask[3]==0;
+  // We prefer to scan entire disk if mask like \\server\share\ or c:\
+  // is specified regardless of recursion mode. Use \\server\share\*.*
+  // or c:\*.* mask to scan only the root directory.
+  if (CurMask[0]=='\\' && CurMask[1]=='\\')
+  {
+    const wchar *Slash=wcschr(CurMask+2,'\\');
+    if (Slash!=NULL)
+    {
+      Slash=wcschr(Slash+1,'\\');
+      ScanEntireDisk=Slash!=NULL && *(Slash+1)==0;
+    }
+  }
+  else
+    ScanEntireDisk=IsDriveLetter(CurMask) && IsPathDiv(CurMask[2]) && CurMask[3]==0;
+
 
   wchar *Name=PointToName(CurMask);
   if (*Name==0)
@@ -259,7 +270,7 @@ SCAN_CODE ScanTree::FindProc(FindData *FD)
     // SearchAll means that we'll use "*" mask for search, so we'll find
     // subdirectories and will be able to recurse into them.
     // We do not use "*" for directories at any level or for files
-    // at top level in recursion mode. We always comrpess the entire directory
+    // at top level in recursion mode. We always compress the entire directory
     // if folder wildcard is specified.
     bool SearchAll=!IsDir && (Depth>0 || Recurse==RECURSE_ALWAYS ||
                    FolderWildcards && Recurse!=RECURSE_DISABLE || 

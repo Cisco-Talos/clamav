@@ -1,4 +1,4 @@
-# Copyright (C) 2020-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+# Copyright (C) 2020-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
 
 if(WIN32)
     add_definitions(-DWIN32_LEAN_AND_MEAN)
@@ -34,6 +34,8 @@ target_link_libraries( clamsubmit
     PRIVATE
         ClamAV::libclamav
         ClamAV::common
+        OpenSSL::SSL
+        OpenSSL::Crypto
         JSONC::jsonc
         CURL::libcurl )
 if(APPLE)

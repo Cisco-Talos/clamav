@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2009-2013 Sourcefire, Inc.
  *
  *  Author: aCaB, Micah Snyder
@@ -113,9 +113,9 @@ typedef void (*PRIUS)(
     PCWSTR SourceString);
 
 /**
- * @brief A openat equivalent for Win32 with a check to NOFOLLOW soft-links.
+ * @brief An openat equivalent for Win32 with a check to NOFOLLOW soft-links.
  *
- * The caller is resposible for closing the HANDLE.
+ * The caller is responsible for closing the HANDLE.
  *
  * For the desiredAccess, fileAttributes, createOptions, and shareAccess parameters
  * see https://docs.microsoft.com/en-us/windows/win32/api/winternl/nf-winternl-ntcreatefile
@@ -408,7 +408,7 @@ done:
  * @brief Rename (move) a file from Source to Destination without following symlinks.
  *
  * This approach mitigates the possibility that one of the directories
- * in the path has been replaces with a malicious symlink.
+ * in the path has been replaced with a malicious symlink.
  *
  * @param source        Source pathname.
  * @param destination   Destination pathname (including file name)
@@ -530,7 +530,7 @@ done:
  * @brief Unlink (delete) a target file without following symlinks.
  *
  * This approach mitigates the possibility that one of the directories
- * in the path has been replaces with a malicious symlink.
+ * in the path has been replaced with a malicious symlink.
  *
  * @param target    A file to be deleted.
  * @return 0        Unlink succeeded.

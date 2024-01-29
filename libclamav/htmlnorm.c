@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Trog
@@ -188,7 +188,7 @@ static unsigned char *cli_readchunk(FILE *stream, m_area_t *m_area, unsigned int
         return NULL;
     }
 
-    /* Try and use the memory buffer first */
+    /* Try to use the memory buffer first */
     if (m_area) {
         /* maximum we can copy into the buffer,
          * we could have less than max_len bytes available */
@@ -1191,7 +1191,12 @@ static bool cli_html_normalise(cli_ctx *ctx, int fd, m_area_t *m_area, const cha
                         } else if ((strcmp(tag, "/style") == 0) && (in_tag == TAG_STYLE)) {
                             size_t chunk_size;
 
-                            style_end = ptr - strlen("</style>") - 1;
+                            style_end = ptr - strlen("</style>");
+
+                            if (style_end < style_begin) {
+                                cli_errmsg("cli_html_normalise: style chunk size underflow\n");
+                                goto done;
+                            }
 
                             chunk_size = style_end - style_begin;
 

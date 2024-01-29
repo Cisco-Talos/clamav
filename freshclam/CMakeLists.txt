@@ -1,4 +1,4 @@
-# Copyright (C) 2020-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+# Copyright (C) 2020-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
 
 if(WIN32)
     add_definitions(-DWIN32_LEAN_AND_MEAN)
@@ -46,9 +46,6 @@ else()
     install(TARGETS freshclam-bin DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT programs)
 endif()
 
-# Install an empty database directory
-INSTALL(CODE "FILE(MAKE_DIRECTORY \${ENV}\${CMAKE_INSTALL_PREFIX}/\${DATABASE_DIRECTORY})" COMPONENT programs)
-
 # Now we rename freshclam-bin executable to freshclam using target properties
 set_target_properties( freshclam-bin
         PROPERTIES OUTPUT_NAME freshclam )
@@ -59,6 +56,20 @@ if(SYSTEMD_FOUND)
         ${CMAKE_CURRENT_BINARY_DIR}/clamav-freshclam.service @ONLY)
     install(
         FILES ${CMAKE_CURRENT_BINARY_DIR}/clamav-freshclam.service
+        DESTINATION ${SYSTEMD_UNIT_DIR}
+        COMPONENT programs)
+    configure_file(
+        ${CMAKE_CURRENT_SOURCE_DIR}/clamav-freshclam-once.service.in
+        ${CMAKE_CURRENT_BINARY_DIR}/clamav-freshclam-once.service @ONLY)
+    install(
+        FILES ${CMAKE_CURRENT_BINARY_DIR}/clamav-freshclam-once.service
+        DESTINATION ${SYSTEMD_UNIT_DIR}
+        COMPONENT programs)
+    configure_file(
+        ${CMAKE_CURRENT_SOURCE_DIR}/clamav-freshclam-once.timer.in
+        ${CMAKE_CURRENT_BINARY_DIR}/clamav-freshclam-once.timer @ONLY)
+    install(
+        FILES ${CMAKE_CURRENT_BINARY_DIR}/clamav-freshclam-once.timer
         DESTINATION ${SYSTEMD_UNIT_DIR}
         COMPONENT programs)
 endif()

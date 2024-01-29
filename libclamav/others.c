@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm, Trog
@@ -473,6 +473,7 @@ struct cl_engine *cl_engine_new(void)
     new->maxhtmlnotags      = CLI_DEFAULT_MAXHTMLNOTAGS;
     new->maxscriptnormalize = CLI_DEFAULT_MAXSCRIPTNORMALIZE;
     new->maxziptypercg      = CLI_DEFAULT_MAXZIPTYPERCG;
+    new->cache_size         = CLI_DEFAULT_CACHE_SIZE;
 
     new->bytecode_security = CL_BYTECODE_TRUST_SIGNED;
     /* 5 seconds timeout */
@@ -622,7 +623,20 @@ cl_error_t cl_engine_set_num(struct cl_engine *engine, enum cl_engine_field fiel
             engine->maxscansize = num;
             break;
         case CL_ENGINE_MAX_FILESIZE:
-            engine->maxfilesize = num;
+            /* We have a limit of around 2GB (INT_MAX - 2). Enforce it here.
+             *
+             * TODO: Large file support is large-ly untested. Remove this restriction and test with a large set of large files of various types.
+             * libclamav's integer type safety has come a long way since 2014, so it's possible we could lift this restriction, but at least one
+             * of the parsers is bound to behave badly with large files. */
+            if ((uint64_t)num > INT_MAX - 2) {
+                if ((uint64_t)num > (uint64_t)2 * 1024 * 1024 * 1024 && num != LLONG_MAX) {
+                    // If greater than 2GB, warn. If exactly at 2GB, don't hassle the user.
+                    cli_warnmsg("Max file-size was set to %lld bytes. Unfortunately, scanning files greater than 2147483647 bytes (2 GiB - 1) is not supported.\n", num);
+                }
+                engine->maxfilesize = INT_MAX - 2;
+            } else {
+                engine->maxfilesize = num;
+            }
             break;
         case CL_ENGINE_MAX_RECURSION:
             if (!num) {
@@ -728,6 +742,11 @@ cl_error_t cl_engine_set_num(struct cl_engine *engine, enum cl_engine_field fiel
                 engine->engine_options &= ~(ENGINE_OPTIONS_DISABLE_CACHE);
                 if (!(engine->cache))
                     clean_cache_init(engine);
+            }
+            break;
+        case CL_ENGINE_CACHE_SIZE:
+            if (num) {
+                engine->cache_size = (uint32_t)num;
             }
             break;
         case CL_ENGINE_DISABLE_PE_STATS:
@@ -846,6 +865,8 @@ long long cl_engine_get_num(const struct cl_engine *engine, enum cl_engine_field
             return engine->bytecode_mode;
         case CL_ENGINE_DISABLE_CACHE:
             return engine->engine_options & ENGINE_OPTIONS_DISABLE_CACHE;
+        case CL_ENGINE_CACHE_SIZE:
+            return engine->cache_size;
         case CL_ENGINE_STATS_TIMEOUT:
             return ((cli_intel_t *)(engine->stats_data))->timeout;
         case CL_ENGINE_MAX_PARTITIONS:
@@ -976,6 +997,7 @@ struct cl_settings *cl_engine_settings_copy(const struct cl_engine *engine)
     settings->cb_meta                        = engine->cb_meta;
     settings->cb_file_props                  = engine->cb_file_props;
     settings->engine_options                 = engine->engine_options;
+    settings->cache_size                     = engine->cache_size;
 
     settings->cb_stats_add_sample      = engine->cb_stats_add_sample;
     settings->cb_stats_remove_sample   = engine->cb_stats_remove_sample;
@@ -1020,6 +1042,7 @@ cl_error_t cl_engine_settings_apply(struct cl_engine *engine, const struct cl_se
     engine->bytecode_timeout    = settings->bytecode_timeout;
     engine->bytecode_mode       = settings->bytecode_mode;
     engine->engine_options      = settings->engine_options;
+    engine->cache_size          = settings->cache_size;
 
     if (engine->tmpdir)
         MPOOL_FREE(engine->mempool, engine->tmpdir);

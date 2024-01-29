@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2009-2013 Sourcefire, Inc.
  *
  *  Authors: aCaB <acab@clamav.net>
@@ -51,19 +51,19 @@ struct cl_fmap {
     const void *data;
 
     /* internal */
-    time_t mtime;
+    uint64_t mtime;
     uint64_t pages;
     uint64_t pgsz;
     uint64_t paged;
-    uint16_t aging;
-    bool dont_cache_flag;  /** indicates if we should not cache scan results for this fmap. Used if limits exceeded */
-    uint16_t handle_is_fd; /** non-zero if map->handle is an fd. */
-    size_t offset;         /** file offset representing start of original fmap, if the fmap created reading from a file starting at offset other than 0 */
-    size_t nested_offset;  /** offset from start of original fmap (data) for nested scan. 0 for orig fmap. */
-    size_t real_len;       /** len from start of original fmap (data) to end of current (possibly nested) map. */
-                           /* real_len == nested_offset + len.
-                              real_len is needed for nested maps because we only reference the original mapping data.
-                              We convert caller's fmap offsets & lengths to real data offsets using nested_offset & real_len. */
+    bool aging;           /** indicates if we should age off memory mapped pages */
+    bool dont_cache_flag; /** indicates if we should not cache scan results for this fmap. Used if limits exceeded */
+    bool handle_is_fd;    /** non-zero if map->handle is an fd. */
+    size_t offset;        /** file offset representing start of original fmap, if the fmap created reading from a file starting at offset other than 0 */
+    size_t nested_offset; /** offset from start of original fmap (data) for nested scan. 0 for orig fmap. */
+    size_t real_len;      /** len from start of original fmap (data) to end of current (possibly nested) map. */
+                          /* real_len == nested_offset + len.
+                             real_len is needed for nested maps because we only reference the original mapping data.
+                             We convert caller's fmap offsets & lengths to real data offsets using nested_offset & real_len. */
 
     /* external */
     size_t len; /** length of data from nested_offset, accessible via current fmap */
@@ -82,10 +82,8 @@ struct cl_fmap {
     const void *(*need_offstr)(fmap_t *, size_t at, size_t len_hint);
     const void *(*gets)(fmap_t *, char *dst, size_t *at, size_t max_len);
     void (*unneed_off)(fmap_t *, size_t at, size_t len);
-#ifdef _WIN32
-    HANDLE fh;
-    HANDLE mh;
-#endif
+    void *windows_file_handle;
+    void *windows_map_handle;
     bool have_md5;
     unsigned char md5[CLI_HASHLEN_MD5];
     bool have_sha1;
@@ -421,10 +419,10 @@ cl_error_t fmap_dump_to_file(fmap_t *map, const char *filepath, const char *tmpd
 
 /* deprecated */
 /**
- * @brief   Return the open file desciptor for the fmap (if available).
+ * @brief   Return the open file descriptor for the fmap (if available).
  *
  * This function will only provide the file descriptor if the fmap handle is set,
- * and if the handle is in fact a file descriptor (handle_is_fd != 0).
+ * and if the handle is in fact a file descriptor (handle_is_fd == true).
  *
  * @param m     The fmap.
  * @return int  The file descriptor, or -1 if not available.

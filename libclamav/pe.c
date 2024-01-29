@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Alberto Wu, Tomasz Kojm, Andrew Williams
@@ -2331,9 +2331,12 @@ static inline int hash_impfns(cli_ctx *ctx, void **hashctx, uint32_t *impsz, str
 
         while ((num_fns < PE_MAXIMPORTS) && (fmap_readn(map, &thunk32, thuoff, sizeof(struct pe_image_thunk32)) == sizeof(struct pe_image_thunk32)) && (thunk32.u.Ordinal != 0)) {
             char *funcname = NULL;
+            uint32_t temp;
+
             thuoff += sizeof(struct pe_image_thunk32);
 
-            thunk32.u.Ordinal = EC32(thunk32.u.Ordinal);
+            temp = EC32(thunk32.u.Ordinal);
+            thunk32.u.Ordinal = temp;
 
             if (!(thunk32.u.Ordinal & PE_IMAGEDIR_ORDINAL_FLAG32)) {
                 offset = cli_rawaddr(thunk32.u.Function, peinfo->sections, peinfo->nsections, &err, fsize, peinfo->hdr_size);
@@ -2367,9 +2370,14 @@ static inline int hash_impfns(cli_ctx *ctx, void **hashctx, uint32_t *impsz, str
 
         while ((num_fns < PE_MAXIMPORTS) && (fmap_readn(map, &thunk64, thuoff, sizeof(struct pe_image_thunk64)) == sizeof(struct pe_image_thunk64)) && (thunk64.u.Ordinal != 0)) {
             char *funcname = NULL;
+
+            // Temporary variable so we don't have overlapping writes with the EC32 reads.
+            uint64_t temp;
+
             thuoff += sizeof(struct pe_image_thunk64);
 
-            thunk64.u.Ordinal = EC64(thunk64.u.Ordinal);
+            temp              = EC64(thunk64.u.Ordinal);
+            thunk64.u.Ordinal = temp;
 
             if (!(thunk64.u.Ordinal & PE_IMAGEDIR_ORDINAL_FLAG64)) {
                 offset = cli_rawaddr(thunk64.u.Function, peinfo->sections, peinfo->nsections, &err, fsize, peinfo->hdr_size);
@@ -2474,6 +2482,9 @@ static cl_error_t hash_imptbl(cli_ctx *ctx, unsigned char **digest, uint32_t *im
     while (left > sizeof(struct pe_image_import_descriptor) && nimps < PE_MAXIMPORTS) {
         char *dllname = NULL;
 
+        // Temporary variable so we don't have overlapping writes with the EC32 reads.
+        uint32_t temp;
+
         /* Get copy of image import descriptor to work with */
         memcpy(&image, impdes, sizeof(struct pe_image_import_descriptor));
 
@@ -2489,11 +2500,16 @@ static cl_error_t hash_imptbl(cli_ctx *ctx, unsigned char **digest, uint32_t *im
         impdes++;
 
         /* Endian Conversion */
-        image.u.OriginalFirstThunk = EC32(image.u.OriginalFirstThunk);
-        image.TimeDateStamp        = EC32(image.TimeDateStamp);
-        image.ForwarderChain       = EC32(image.ForwarderChain);
-        image.Name                 = EC32(image.Name);
-        image.FirstThunk           = EC32(image.FirstThunk);
+        temp                       = EC32(image.u.OriginalFirstThunk);
+        image.u.OriginalFirstThunk = temp;
+        temp                       = EC32(image.TimeDateStamp);
+        image.TimeDateStamp        = temp;
+        temp                       = EC32(image.ForwarderChain);
+        image.ForwarderChain       = temp;
+        temp                       = EC32(image.Name);
+        image.Name                 = temp;
+        temp                       = EC32(image.FirstThunk);
+        image.FirstThunk           = temp;
 
         /* DLL name acquisition */
         offset = cli_rawaddr(image.Name, peinfo->sections, peinfo->nsections, &err, fsize, peinfo->hdr_size);
@@ -2866,7 +2882,7 @@ int cli_scanpe(cli_ctx *ctx)
             // TODO Regarding the commented out check below:
             // This used to check that the section name was NULL, but now that
             // header parsing is done in cli_peheader (and since we don't yet
-            // make the section name availabe via peinfo->sections[]) it would
+            // make the section name available via peinfo->sections[]) it would
             // be a pain to fetch the name here.  Since this is the only place
             // in cli_scanpe that needs the section name, and since I verified
             // that detection still occurs for Polipos without this check,
@@ -4156,7 +4172,7 @@ int cli_scanpe(cli_ctx *ctx)
             // If the number of alerts has increased, then bail.
             //
             // This preserves the intention of https://github.com/Cisco-Talos/clamav/commit/771c23099893f02f1316960fbe84f62b115a3556
-            // although that commit had it bailing if a match occured even in allmatch-mode, which we do not want to do.
+            // although that commit had it bailing if a match occurred even in allmatch-mode, which we do not want to do.
             if (!SCAN_ALLMATCHES && num_alerts != evidence_num_alerts(ctx->evidence)) {
                 cli_exe_info_destroy(peinfo);
                 return CL_VIRUS;
@@ -4508,7 +4524,7 @@ cl_error_t cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts,
     uint32_t stored_opt_hdr_size;
     struct pe_image_file_hdr *file_hdr;
     struct pe_image_optional_hdr32 *opt32;
-    struct pe_image_optional_hdr64 *opt64 = NULL;
+    struct pe_image_optional_hdr64 *opt64     = NULL;
     struct pe_image_section_hdr *section_hdrs = NULL;
     size_t i, j, section_pe_idx;
     unsigned int err;
@@ -4519,6 +4535,7 @@ cl_error_t cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts,
     uint32_t is_exe = 0;
     int native      = 0;
     size_t read;
+    uint32_t temp;
 
 #if HAVE_JSON
     int toval                   = 0;
@@ -4557,7 +4574,8 @@ cl_error_t cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts,
         goto done;
     }
 
-    peinfo->e_lfanew = EC32(peinfo->e_lfanew);
+    temp             = EC32(peinfo->e_lfanew);
+    peinfo->e_lfanew = temp;
     if (opts & CLI_PEHEADER_OPT_DBG_PRINT_INFO) {
         cli_dbgmsg("e_lfanew == %d\n", peinfo->e_lfanew);
     }
@@ -4771,7 +4789,7 @@ cl_error_t cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts,
 #endif
 
     // Ensure there are enough bytes to cover the full optional header,
-    // not including the data directory entries (which aren't all gauranteed
+    // not including the data directory entries (which aren't all guaranteed
     // to be there)
     if (opt_hdr_size < sizeof(struct pe_image_optional_hdr32)) {
         cli_dbgmsg("cli_peheader: SizeOfOptionalHeader too small\n");
@@ -5136,7 +5154,7 @@ cl_error_t cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts,
         section->ursz = EC32(section_hdr->SizeOfRawData);
 
         /* First, if a section exists totally outside of a file, remove the
-         * section from the list or zero out it's size. */
+         * section from the list or zero out its size. */
         if (section->rsz) { /* Don't bother with virtual only sections */
             if (section->raw >= fsize || section->uraw >= fsize) {
                 cli_dbgmsg("cli_peheader: Broken PE file - Section %zu starts or exists beyond the end of file (Offset@ %lu, Total filesize %lu)\n", section_pe_idx, (unsigned long)section->raw, (unsigned long)fsize);
@@ -5165,7 +5183,7 @@ cl_error_t cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts,
                 }
             } else {
 
-                /* If a section is truncated, adjust it's size value */
+                /* If a section is truncated, adjust its size value */
                 if (!CLI_ISCONTAINED_0_TO(fsize, section->raw, section->rsz)) {
                     cli_dbgmsg("cli_peheader: PE Section %zu raw+rsz extends past the end of the file by %lu bytes\n", section_pe_idx, (section->raw + section->rsz) - fsize);
                     section->rsz = fsize - section->raw;
@@ -5494,7 +5512,7 @@ cl_error_t cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts,
         break;
     } /* while(dirs[2].Size) */
 
-    // Do final preperations for peinfo to be passed back
+    // Do final preparations for peinfo to be passed back
     peinfo->is_dll = is_dll;
 
     ret = CL_SUCCESS;

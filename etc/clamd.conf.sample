@@ -69,12 +69,12 @@ Example
 #ExtendedDetectionInfo yes
 
 # This option allows you to save a process identifier of the listening
-# daemon (main thread).
+# daemon.
 # This file will be owned by root, as long as clamd was started by root.
 # It is recommended that the directory where this file is stored is
 # also owned by root to keep other users from tampering with it.
 # Default: disabled
-#PidFile /var/run/clamd.pid
+#PidFile /run/clamav/clamd.pid
 
 # Optional path to the global temporary directory.
 # Default: system specific (usually /tmp or /var/tmp).
@@ -98,7 +98,8 @@ Example
 
 # Path to a local socket file the daemon will listen on.
 # Default: disabled (must be specified by a user)
-#LocalSocket /tmp/clamd.socket
+#LocalSocket /run/clamav/clamd.sock
+#LocalSocket /tmp/clamd.sock
 
 # Sets the group ownership on the unix socket.
 # Default: disabled (the primary group of the user running clamd)
@@ -285,6 +286,11 @@ Example
 # Default: no
 #DisableCache yes
 
+# This option allows you to set the number of entries the cache can store.
+# The value should be a square number or will be rounded up to the nearest
+# square number.
+#CacheSize 65536
+
 # In some cases (eg. complex malware, exploits in graphic files, and others),
 # ClamAV uses special algorithms to detect abnormal patterns and behaviors that
 # may be malicious.  This option enables alerting on such heuristically
@@ -422,6 +428,12 @@ Example
 # without additional processing.
 # Default: yes
 #ScanHWP3 yes
+
+# This option enables scanning of OneNote files.
+# If you turn off this option, the original files will still be scanned, but
+# without additional processing.
+# Default: yes
+#ScanOneNote yes
 
 
 ##
@@ -679,7 +691,7 @@ Example
 #OnAccessMaxThreads 10
 
 # Max amount of time (in milliseconds) that the OnAccess client should spend
-# for every connect, send, and recieve attempt when communicating with clamd
+# for every connect, send, and receive attempt when communicating with clamd
 # via curl.
 # Default: 5000 (5 seconds)
 # OnAccessCurlTimeout 10000

@@ -12,6 +12,7 @@ on:
     branches:
       - rel/*
       - dev/*
+      - feature/*
       - main
 
 env:
@@ -24,6 +25,10 @@ jobs:
     runs-on: windows-2019
 
     steps:
+      - name: Die, link!!!!!
+        run: rm /usr/bin/link.exe
+        shell: bash
+
       - uses: actions/checkout@v1
 
       - name: Install Build Tools

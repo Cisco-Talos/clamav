@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Alberto Wu
@@ -177,10 +177,10 @@ int cli_rebuildpe_align(char *buffer, struct cli_exe_section *sections, int sect
         int snprintf_ret;
         snprintf_ret = snprintf(curpe, 8, ".clam%.2d", i + 1);
         if (snprintf_ret < 0) {
-            // More sections than expect -- the section number in the name was trunctated. Whatever. Don't really care.
+            // More sections than expect -- the section number in the name was truncated. Whatever. Don't really care.
             // The act of checking for an error stops GCC from warning about possible truncation at compile time.
             // See: https://stackoverflow.com/questions/51534284/how-to-circumvent-format-truncation-warning-in-gcc
-            cli_dbgmsg("More sections than expect (%d). The section number in the rebuilt pe section name was trunctated.\n", i);
+            cli_dbgmsg("More sections than expect (%d). The section number in the rebuilt pe section name was truncated.\n", i);
         }
         if (!align) {
             cli_writeint32(curpe + 8, sections[i].vsz);

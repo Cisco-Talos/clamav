@@ -1,7 +1,7 @@
 /*
  * Interface to libclamunrar
  *
- * Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ * Copyright (C) 2013-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  * Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  * Authors: Trog, Torok Edvin, Tomasz Kojm, Micah Snyder
@@ -57,7 +57,7 @@ typedef enum cl_unrar_error_tag {
 typedef struct unrar_metadata_tag {
     uint64_t pack_size;
     uint64_t unpack_size;
-    char *filename;
+    char filename[1024];
     uint32_t crc;
     unsigned int encrypted;
     uint8_t method;

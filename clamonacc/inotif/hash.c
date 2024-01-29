@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2015-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2015-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *
  *  Authors: Mickey Sola
  *
@@ -72,22 +72,22 @@ static struct onas_hnode *onas_hashnode_init(void);
 /**
  * The data structure described and implemented below is a hash table with elements that also act as relational nodes
  * in a tree. This allows for average case constant time retrieval of nodes, and recursive operation on a node and all
- * it's children and parents. The memory cost for this speed of relational retrieval is necessarily high, as every node
- * must also keep track of it's children in a key-accessible way. To cut down on memory costs, children of nodes are not
+ * its children and parents. The memory cost for this speed of relational retrieval is necessarily high, as every node
+ * must also keep track of its children in a key-accessible way. To cut down on memory costs, children of nodes are not
  * themselves key accessible, but must be combined with their parent in a constant-time operation to be retrieved from
  * the table.
  *
  * Further optimization to retrieval and space management may include storing direct address to given children nodes, but
- * such a design will create further complexitiy and time cost at insertion--which must also be as fast as possible in
- * order to accomadate the real-time nature of security event processing.
+ * such a design will create further complexity and time cost at insertion--which must also be as fast as possible in
+ * order to accommodate the real-time nature of security event processing.
  *
  * To date, the hashing function itself has not been well studied, and as such buckets were implemented from the start to
- * help account for any potential collission issues in its design, as a measure to help offset any major time sinks during
+ * help account for any potential collision issues in its design, as a measure to help offset any major time sinks during
  * insertion.
  *
  * One last important note about this hash table is that to avoid massive slowdowns, it does not grow, but instead relies on
  * buckets and a generous default size to distribute that load. Slight hit to retrieval time is a fair cost to pay to avoid
- * total loss of service in a real-time system. Future work here might include automatically confiuguring initial hashtable
+ * total loss of service in a real-time system. Future work here might include automatically configuring initial hashtable
  * size to align with the system being monitored, or max inotify watch points since that's our hard limit anyways.
  */
 

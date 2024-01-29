@@ -1,7 +1,7 @@
 /*
  * YARA rule parser for ClamAV
  *
- * Copyright (C) 2014-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ * Copyright (C) 2014-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *
  * Authors: Steven Morgan
  *
@@ -278,7 +278,7 @@ meta
 #if REAL_YARA //Meta not supported
         // Each rule have a list of meta-data info, consisting in a
         // sequence of YR_META structures. The last YR_META structure does
-        // not represent a real meta-data, it's just a end-of-list marker
+        // not represent a real meta-data, it's just an end-of-list marker
         // identified by a specific type (META_TYPE_NULL). Here we
         // write the end-of-list marker.
 
@@ -311,7 +311,7 @@ strings
       {
         // Each rule have a list of strings, consisting in a sequence
         // of YR_STRING structures. The last YR_STRING structure does not
-        // represent a real string, it's just a end-of-list marker
+        // represent a real string, it's just an end-of-list marker
         // identified by a specific flag (STRING_FLAGS_NULL). Here we
         // write the end-of-list marker.
 

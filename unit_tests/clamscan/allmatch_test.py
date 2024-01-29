@@ -1,4 +1,4 @@
-# Copyright (C) 2020-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+# Copyright (C) 2020-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
 
 """
 Run clamscan tests.
@@ -101,7 +101,7 @@ class TC(testcase.TestCase):
 
         assert output.ec == 1  # virus
 
-        assert output.out.count('FOUND') == 1 # only finds one of these (order not guaranteeds afaik, so don't care which)
+        assert output.out.count('FOUND') == 1 # only finds one of these (order not guaranteed afaik, so don't care which)
 
     def test_regression_imphash_nosize(self):
         self.step_name('Test an import hash with wildcard size when all-match mode is disabled.')
@@ -217,7 +217,7 @@ class TC(testcase.TestCase):
             "98c88d882f01a3f6ac1e5f7dfd761624:39:Test.Import.Hash\n"
         )
 
-        # Build a file that is the clam.exe program with a zip concatinated on that contains the not_eicar test string file.
+        # Build a file that is the clam.exe program with a zip concatenated on that contains the not_eicar test string file.
         clam_exe = TC.path_build / 'unit_tests' / 'input' / 'clamav_hdb_scanfiles' / 'clam.exe'
 
         not_eicar_zip = TC.path_tmp / 'not-eicar.zip'
@@ -247,7 +247,7 @@ class TC(testcase.TestCase):
         self.step_name('Test that clam will detect a string in text file, plus identify, extract, and alert on concatenated clam.zip containing clam.exe with a pattern-match sig.')
         # This tests a regression where clam will fail to extract the embedded zip file if the pattern-match sig matches before the embedded file type sig.
 
-        # Build a file that is the clam.exe program with a zip concatinated on that contains the not_eicar test string file.
+        # Build a file that is the clam.exe program with a zip concatenated on that contains the not_eicar test string file.
         clam_exe = TC.path_build / 'unit_tests' / 'input' / 'clamav_hdb_scanfiles' / 'clam.exe'
 
         not_eicar_zip = TC.path_tmp / 'not-eicar.zip'

@@ -1,7 +1,7 @@
 /*
  *  OpenSSL certificate verification for Linux.
  *
- *  Copyright (C) 2016-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2016-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *
  *  Authors: Russ Kubik
  *
@@ -38,8 +38,9 @@ void set_tls_ca_bundle(CURL *curl)
     char *ca_bundle;
 
     ca_bundle = getenv("CURL_CA_BUNDLE");
-    if (ca_bundle == NULL)
+    if (ca_bundle == NULL) {
         return;
+    }
 
     if (curl_easy_setopt(curl, CURLOPT_CAINFO, ca_bundle) != CURLE_OK) {
         fprintf(stderr, "Failed to set CURLOPT_CAINFO!\n");

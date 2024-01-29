@@ -5,7 +5,7 @@ class RSCoder16
 {
   private:
     static const uint gfSize=65535;   // Galois field size.
-    void gfInit();                    // Galois field inititalization.
+    void gfInit();                    // Galois field initialization.
     inline uint gfAdd(uint a,uint b); // Addition in Galois field. 
     inline uint gfMul(uint a,uint b); // Multiplication in Galois field. 
     inline uint gfInv(uint a);        // Inverse element in Galois field.

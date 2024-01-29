@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm, Török Edvin
@@ -591,8 +591,9 @@ int execute_or_dispatch_command(client_conn_t *conn, enum commands cmd, const ch
         }
         case COMMAND_INSTREAM: {
             int rc = cli_gentempfd(optget(conn->opts, "TemporaryDirectory")->strarg, &conn->filename, &conn->scanfd);
-            if (rc != CL_SUCCESS)
-                return rc;
+            if (rc != CL_SUCCESS) {
+                return 1;
+            }
             conn->quota = optget(conn->opts, "StreamMaxLength")->numarg;
             conn->mode  = MODE_STREAM;
             return 0;

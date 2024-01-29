@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2020-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2020-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -210,10 +210,9 @@ int main(int argc, char **argv)
 
     /* scan file descriptor */
     memset(&options, 0, sizeof(struct cl_scan_options));
-    options.parse |= ~0;                                 /* enable all parsers */
-    options.general |= CL_SCAN_GENERAL_HEURISTICS;       /* enable heuristic alert options */
-    options.general |= CL_SCAN_GENERAL_ALLMATCHES;       /* run in all-match mode, so it keeps looking for alerts after the first one */
-    options.general |= CL_SCAN_GENERAL_COLLECT_METADATA; /* collect metadata may enable collecting additional filenames (like in zip) */
+    options.parse |= ~0;                           /* enable all parsers */
+    options.general |= CL_SCAN_GENERAL_HEURISTICS; /* enable heuristic alert options */
+    options.general |= CL_SCAN_GENERAL_ALLMATCHES; /* run in all-match mode, so it keeps looking for alerts after the first one */
 
     options.heuristic |= CL_SCAN_HEURISTIC_ENCRYPTED_ARCHIVE;
     options.heuristic |= CL_SCAN_HEURISTIC_ENCRYPTED_DOC;

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
@@ -292,7 +292,7 @@ static const struct cli_mtarget cli_mtargets[CLI_MTARGETS] = {
  * @param offset            Offset into the buffer from which to start matching.
  * @param ctx               The scanning context.
  * @param ftype             If specified, may limit signature matching trie by target type corresponding with the specified CL_TYPE
- * @param[in,out] acdata    (optional) A list of pattern maching data structs to contain match results, one for generic signatures and one for target-specific signatures.
+ * @param[in,out] acdata    (optional) A list of pattern matching data structs to contain match results, one for generic signatures and one for target-specific signatures.
  *                          If not provided, the matcher results are lost, outside of this function's return value.
  *                          Required if you want to evaluate logical expressions afterwards.
  * @return cl_error_t
@@ -366,7 +366,7 @@ cl_error_t cli_exp_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_ac_da
 cl_error_t cli_caloff(const char *offstr, const struct cli_target_info *info, unsigned int target, uint32_t *offdata, uint32_t *offset_min, uint32_t *offset_max);
 
 /**
- * @brief Determine if an alert is a known false positive, using each fmap in the the ctx->container stack to check MD5, SHA1, and SHA256 hashes.
+ * @brief Determine if an alert is a known false positive, using each fmap in the ctx->container stack to check MD5, SHA1, and SHA256 hashes.
  *
  * @param ctx           The scanning context.
  * @param vname         (Optional) The name of the signature alert.

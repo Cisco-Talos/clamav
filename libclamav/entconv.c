@@ -1,7 +1,7 @@
 /*
  *  HTML Entity & Encoding normalization.
  *
- *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Török Edvin
@@ -1004,7 +1004,7 @@ cl_error_t cli_codepage_to_utf8(char* in, size_t in_size, uint16_t codepage, cha
 
                 conv = iconv_open("UTF-8//TRANSLIT", encoding);
                 if (conv == (iconv_t)-1) {
-                    // Try again w/out the //TRANSLIT, required because musl doesn't supprot it.
+                    // Try again w/out the //TRANSLIT, required because musl doesn't support it.
                     // See: https://github.com/akrennmair/newsbeuter/issues/364#issuecomment-250208235
                     conv = iconv_open("UTF-8", encoding);
                     if (conv == (iconv_t)-1) {

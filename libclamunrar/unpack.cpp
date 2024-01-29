@@ -91,7 +91,7 @@ void Unpack::Init(size_t WinSize,bool Solid)
   if ((WinSize>>16)>0x10000) // Window size must not exceed 4 GB.
     return;
 
-  // Unrar does not support window size greather than 1GB at this time.
+  // Unrar does not support window size greater than 1GB at this time.
   // Any request for a window larger than 1GB should be ignored.
   const size_t MaxAllocSize=0x40000000;
   if (WinSize>MaxAllocSize)
@@ -315,7 +315,7 @@ void Unpack::MakeDecodeTables(byte *LengthTable,DecodeTable *Dec,uint Size)
       Dec->QuickBits=MAX_QUICK_DECODE_BITS;
       break;
     default:
-      Dec->QuickBits=MAX_QUICK_DECODE_BITS-3;
+      Dec->QuickBits=MAX_QUICK_DECODE_BITS>3 ? MAX_QUICK_DECODE_BITS-3 : 0;
       break;
   }
 

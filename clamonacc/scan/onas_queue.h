@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2019-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2019-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *
  *  Authors: Mickey Sola
  *
@@ -21,7 +21,7 @@
 #ifndef __ONAS_SCQUE_H
 #define __ONAS_SCQUE_H
 
-/* extremely simple event queue implmentation w/ obj number tracking in case we want to place limits later */
+/* extremely simple event queue implementation w/ obj number tracking in case we want to place limits later */
 struct onas_event_queue {
     struct onas_event_queue_node *head;
     struct onas_event_queue_node *tail;

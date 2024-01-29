@@ -1,7 +1,7 @@
 /*
  *  ClamdTOP
  *
- *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2008-2013 Sourcefire, Inc.
  *
  *  Authors: Török Edvin
@@ -205,12 +205,21 @@ static char *clamd_header       = NULL;
 static void resize(void)
 {
     char *p;
-    unsigned new_maxy, new_maxx;
+    int new_maxy, new_maxx;
+
     getmaxyx(stdscr, new_maxy, new_maxx);
-    if (new_maxy == maxy && new_maxx == maxx)
+    if (new_maxy == -1 || new_maxx == -1) {
+        fprintf(stderr, "Failed to get terminal size\n");
         return;
-    maxx = new_maxx;
-    maxy = new_maxy;
+    }
+
+    if ((unsigned int)new_maxy == maxy && (unsigned int)new_maxx == maxx) {
+        // no change
+        return;
+    }
+
+    maxx = (unsigned int)new_maxx;
+    maxy = (unsigned int)new_maxy;
     free(queue_header);
     free(clamd_header);
     queue_header = malloc(maxx + 1);
@@ -307,7 +316,7 @@ static void init_ncurses(int num_clamd, int use_default)
     keypad(stdscr, TRUE);            /* enable keyboard mapping */
     nonl();                          /* tell curses not to do NL->CR/NL on output */
     halfdelay(UPDATE_INTERVAL * 10); /* timeout of 2s when waiting for input*/
-    noecho();                        /* dont echo input */
+    noecho();                        /* don't echo input */
     curs_set(0);                     /* turn off cursor */
     if (use_default)
         use_default_colors();
@@ -1339,16 +1348,16 @@ static void help(void)
     printf("\n");
     printf("                       Clam AntiVirus: Monitoring Tool %s\n", get_version());
     printf("           By The ClamAV Team: https://www.clamav.net/about.html#credits\n");
-    printf("           (C) 2023 Cisco Systems, Inc.\n");
+    printf("           (C) 2024 Cisco Systems, Inc.\n");
     printf("\n");
-    printf("    clamdtop [-hVc] [host[:port] /path/to/clamd.socket ...]\n");
+    printf("    clamdtop [-hVc] [host[:port] /path/to/clamd.sock ...]\n");
     printf("\n");
     printf("    --help                 -h         Show this help\n");
     printf("    --version              -V         Show version\n");
     printf("    --config-file=FILE     -c FILE    Read clamd's configuration files from FILE\n");
     printf("    --defaultcolors        -d         Use default terminal colors\n");
     printf("    host[:port]                       Connect to clamd on host at port (default 3310)\n");
-    printf("    /path/to/clamd.socket             Connect to clamd over a local socket\n");
+    printf("    /path/to/clamd.sock               Connect to clamd over a local socket\n");
     printf("\n");
     return;
 }

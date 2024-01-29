@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *  Copyright (C) 2002-2007 Tomasz Kojm <tkojm@clamav.net>
  *
@@ -162,7 +162,7 @@ static void help(void)
     printf("\n");
     printf("                      Clam AntiVirus: Database Updater %s\n", get_version());
     printf("           By The ClamAV Team: https://www.clamav.net/about.html#credits\n");
-    printf("           (C) 2023 Cisco Systems, Inc.\n");
+    printf("           (C) 2024 Cisco Systems, Inc.\n");
     printf("\n");
     printf("    freshclam [options]\n");
     printf("\n");
@@ -172,7 +172,8 @@ static void help(void)
     printf("    --debug                              Enable debug messages\n");
     printf("    --quiet                              Only output error messages\n");
     printf("    --no-warnings                        Don't print and log warnings\n");
-    printf("    --stdout                             Write to stdout instead of stderr. Does not affect 'debug' messages.\n");
+    printf("    --stdout                             Write to stdout instead of stderr.\n");
+    printf("                                         Does not affect 'debug' messages.\n");
     printf("    --show-progress                      Show download progress percentage\n");
     printf("\n");
     printf("    --config-file=FILE                   Read configuration from FILE.\n");
@@ -182,7 +183,7 @@ static void help(void)
     printf("    --uninstall-service                  Uninstall Windows Service\n");
 #endif
     printf("    --daemon             -d              Run in daemon mode\n");
-    printf("    --pid=FILE           -p FILE         Save daemon's pid in FILE\n");
+    printf("    --pid=FILE           -p FILE         Write the daemon's pid to FILE\n");
 #ifndef _WIN32
     printf("    --foreground         -F              Don't fork into background (for use in daemon mode).\n");
     printf("    --user=USER          -u USER         Run as USER\n");
@@ -197,6 +198,26 @@ static void help(void)
     printf("    --on-error-execute=COMMAND           Execute COMMAND if errors occurred\n");
     printf("    --on-outdated-execute=COMMAND        Execute COMMAND when software is outdated\n");
     printf("    --update-db=DBNAME                   Only update database DBNAME\n");
+    printf("\n");
+    printf("Environment Variables:\n");
+    printf("\n");
+#if !defined(C_DARWIN) && !defined(_WIN32)
+    printf("  CURL_CA_BUNDLE                         May be set to the path of a file (bundle)\n");
+    printf("                                         containing one or more CA certificates.\n");
+    printf("                                         This will override the default openssl\n");
+    printf("                                         certificate path.\n");
+    printf("\n");
+#endif
+    printf("  FRESHCLAM_CLIENT_CERT                  May be set to the path of a file (PEM)\n");
+    printf("                                         containing the client certificate.\n");
+    printf("                                         This may be used for client authentication\n");
+    printf("                                         to a private mirror.\n");
+    printf("  FRESHCLAM_CLIENT_KEY                   May be set to the path of a file (PEM)\n");
+    printf("                                         containing the client private key.\n");
+    printf("                                         This is required if FRESHCLAM_CLIENT_CERT is set.\n");
+    printf("  FRESHCLAM_CLIENT_KEY_PASSWD            May be set to a password for the client key PEM file.\n");
+    printf("                                         This is required if FRESHCLAM_CLIENT_KEY is\n");
+    printf("                                         set and the PEM file is password protected.\n");
     printf("\n");
 }
 
@@ -434,7 +455,7 @@ done:
  * @return fc_error_t       FC_SUCCESS if success.
  * @return fc_error_t       FC_EARG if invalid args.
  * @return fc_error_t       FC_EMEM if malloc failed.
- * @return fc_error_t       FC_ECONFIG if a parsing issue occured.
+ * @return fc_error_t       FC_ECONFIG if a parsing issue occurred.
  */
 static fc_error_t get_server_node(
     const char *server,
@@ -790,7 +811,7 @@ static fc_error_t initialize(struct optstruct *opts)
 
 #ifdef HAVE_PWD_H
     /* Drop database privileges here if we are not planning on daemonizing.  If
-     * we are, we should wait until after we craete the PidFile to drop
+     * we are, we should wait until after we create the PidFile to drop
      * privileges.  That way, it is owned by root (or whoever started freshclam),
      * and no one can change it.  */
     if (!optget(opts, "daemon")->enabled) {
@@ -809,7 +830,7 @@ static fc_error_t initialize(struct optstruct *opts)
 #endif /* HAVE_PWD_H */
 
     /*
-     * Initilize libclamav.
+     * Initialize libclamav.
      */
     if (CL_SUCCESS != (cl_init_retcode = cl_init(CL_INIT_DEFAULT))) {
         mprintf(LOGG_ERROR, "initialize: Can't initialize libclamav: %s\n", cl_strerror(cl_init_retcode));
@@ -961,7 +982,7 @@ static fc_error_t initialize(struct optstruct *opts)
     fcConfig.bCompressLocalDatabase = optget(opts, "CompressLocalDatabase")->enabled;
 
     /*
-     * Initilize libfreshclam.
+     * Initialize libfreshclam.
      */
     if (FC_SUCCESS != (ret = fc_initialize(&fcConfig))) {
         mprintf(LOGG_ERROR, "initialize: libfreshclam init failed.\n");
@@ -1061,7 +1082,7 @@ done:
  *
  * Select:
  *   all standard databases excluding those in the opt-out list,
- *   any optional databases includedd in the opt-in list.
+ *   any optional databases included in the opt-in list.
  *
  * databaseList should be free'd with free_string_list().
  *
@@ -1399,13 +1420,13 @@ done:
  * @param nServers              Number of servers in list.
  * @param dnsUpdateInfoServer   (optional) DNS update info server.  May be NULl to disable use of DNS.
  * @param bScriptedUpdates      Nonzero to enable incremental/scripted (efficient) updates.
- * @param bPrune                Prune official databases that are no longer desired or avaialable.
- * @param onUpdateExecute       (optional) Command to to run after 1+ databases have been updated.
+ * @param bPrune                Prune official databases that are no longer desired or available.
+ * @param onUpdateExecute       (optional) Command to run after 1+ databases have been updated.
  * @param onOutdatedExecute     (optional) Command to run if new version of ClamAV is available.
  * @param bDaemonized           Non-zero if process has daemonized.
  * @param notifyClamd           (optional) Path to clamd.conf to notify clamd.
  * @param fc_context            (optional) Context information for callback functions.
- * @return fc_error_t           FC_SUCCESS if all databases upddated successfully.
+ * @return fc_error_t           FC_SUCCESS if all databases updated successfully.
  */
 fc_error_t perform_database_update(
     char **databaseList,

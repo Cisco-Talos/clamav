@@ -63,7 +63,7 @@ void QuickOpen::Load(uint64 BlockPos)
 {
   if (!Loaded)
   {
-    // If loading for the first time, perform additional intialization.
+    // If loading for the first time, perform additional initialization.
     SeekPos=Arc->Tell();
     UnsyncSeekPos=false;
 
@@ -97,7 +97,7 @@ void QuickOpen::Load(uint64 BlockPos)
 
   if (Arc->SubHead.Encrypted)
   {
-    RAROptions *Cmd=Arc->GetRAROptions();
+    CommandData *Cmd=Arc->GetCommandData();
 #ifndef RAR_NOCRYPT
     if (Cmd->Password.IsSet())
       Crypt.SetCryptKeys(false,CRYPT_RAR50,&Cmd->Password,Arc->SubHead.Salt,

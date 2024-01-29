@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2015-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2015-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *
  *  Authors: Mickey Sola
  *
@@ -57,7 +57,7 @@ static cl_error_t onas_scan_thread_handle_file(struct onas_scan_event *event_dat
 /**
  * @brief Safe-scan wrapper, originally used by inotify and fanotify threads, now exists for error checking/convenience.
  *
- * Owned by scanthread to try and force multithreaded client archtiecture which better avoids kernel level deadlocks from
+ * Owned by scanthread to try to force multithreaded client architecture which better avoids kernel level deadlocks from
  * fanotify blocking/prevention.
  */
 static int onas_scan(struct onas_scan_event *event_data, const char *fname, STATBUF sb, int *infected, int *err, cl_error_t *ret_code)
@@ -88,7 +88,7 @@ static int onas_scan(struct onas_scan_event *event_data, const char *fname, STAT
         }
         if (retry_on_error) {
             logg(LOGG_DEBUG, "ClamMisc: reattempting scan ... \n");
-            while (err) {
+            while (*err) {
                 ret = onas_scan_safe(event_data, fname, sb, infected, err, ret_code);
 
                 i++;
@@ -103,7 +103,7 @@ static int onas_scan(struct onas_scan_event *event_data, const char *fname, STAT
 }
 
 /**
- * @brief Thread-safe scan wrapper to ensure there's no processs contention over use of the socket.
+ * @brief Thread-safe scan wrapper to ensure there's no process contention over use of the socket.
  *
  * This is noticeably slower, and I had no issues running smaller scale tests with it off, but better than sorry until more testing can be done.
  *

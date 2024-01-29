@@ -145,7 +145,7 @@ static struct mschmd_header *chmd_fast_open(struct mschm_decompressor *base,
  ***************************************
  * the real implementation of chmd_open() and chmd_fast_open(). It simply
  * passes the "entire" parameter to chmd_read_headers(), which will then
- * either read all headers, or a bare mininum.
+ * either read all headers, or a bare minimum.
  */
 static struct mschmd_header *chmd_real_open(struct mschm_decompressor *base,
                                             const char *filename, int entire)
@@ -678,7 +678,7 @@ static unsigned char *read_chunk(struct mschm_decompressor_p *self,
         return NULL;
     }
 
-    /* check the signature. Is is PMGL or PMGI? */
+    /* check the signature. Is it PMGL or PMGI? */
     if (!((buf[0] == 0x50) && (buf[1] == 0x4D) && (buf[2] == 0x47) &&
           ((buf[3] == 0x4C) || (buf[3] == 0x49))))
     {
@@ -1027,7 +1027,7 @@ static int chmd_extract(struct mschm_decompressor *base,
      * file between now and the next section 1 file extracted */
     self->d->inoffset = sys->tell(self->d->infh);
 
-    /* if an LZX error occured, the LZX decompressor is now useless */
+    /* if an LZX error occurred, the LZX decompressor is now useless */
     if (self->error) {
       if (self->d->state) lzxd_free(self->d->state);
       self->d->state = NULL;

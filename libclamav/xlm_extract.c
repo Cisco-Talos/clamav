@@ -1,7 +1,7 @@
 /*
  *  Extract XLM (Excel 4.0) macro source code for component MS Office Documents
  *
- *  Copyright (C) 2020-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2020-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *
  *  Authors: Jonas Zaddach
  *
@@ -3785,7 +3785,7 @@ typedef enum {
  * @param data                      data buffer starting with the record header
  * @param data_len                  length of the buffer
  * @param[in,out] unpacked_header   fill this
- * @return cl_error_t               CL_SUCCESS if successfull, else some error code.
+ * @return cl_error_t               CL_SUCCESS if successful, else some error code.
  */
 static cl_error_t
 read_office_art_record_header(const unsigned char *data, size_t data_len, struct OfficeArtRecordHeader_Unpacked *unpacked_header)
@@ -4636,7 +4636,7 @@ cl_error_t cli_extract_xlm_macros_and_images(const char *dir, cli_ctx *ctx, char
 
     if (in_fd == -1) {
         cli_dbgmsg("[cli_extract_xlm_macros_and_images] Failed to open input file\n");
-        /* Don't return an error. If the file is missing, an error probably occured
+        /* Don't return an error. If the file is missing, an error probably occurred
          * earlier, such as a UTF8 conversion error in parse_formula() and so the file was never written.
          * There are no macros to scan, so report SUCCESS / CLEAN. */
         goto done;
@@ -4957,7 +4957,7 @@ cl_error_t cli_extract_xlm_macros_and_images(const char *dir, cli_ctx *ctx, char
 
     /* If a read failed, return with an error. */
     if (size_read == (size_t)-1) {
-        cli_dbgmsg("cli_extract_xlm_macros_and_images: Read error occured when trying to read BIFF header. Truncated or malformed XLM macro file?\n");
+        cli_dbgmsg("cli_extract_xlm_macros_and_images: Read error occurred when trying to read BIFF header. Truncated or malformed XLM macro file?\n");
         status = CL_EREAD;
         goto done;
     }

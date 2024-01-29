@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2015-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2015-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *
  *  Authors: Kevin Lin <kevlin2@cisco.com>
  *
@@ -183,7 +183,7 @@ cl_error_t cli_parsetiff(cli_ctx *ctx)
 
         /* acquire next IFD location, gets 0 if last IFD */
         if (fmap_readn(map, &offset, offset, sizeof(offset)) != sizeof(offset)) {
-            cli_dbgmsg("cli_parsetiff: Failed to aquire next IFD location, file appears to be truncated.\n");
+            cli_dbgmsg("cli_parsetiff: Failed to acquire next IFD location, file appears to be truncated.\n");
             status = cli_append_potentially_unwanted(ctx, "Heuristics.Broken.Media.TIFF.EOFReadingChunkCRC");
             goto done;
         }

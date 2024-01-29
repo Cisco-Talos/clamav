@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
@@ -784,7 +784,6 @@ cl_error_t cli_scan_desc(int desc, cli_ctx *ctx, cli_file_t ftype, bool filetype
     cl_error_t status = CL_CLEAN;
     int empty;
     fmap_t *new_map = NULL;
-    fmap_t *map     = ctx->fmap; /* Store off the parent fmap for easy reference */
 
     new_map = fmap_check_empty(desc, 0, 0, &empty, name);
     if (NULL == new_map) {
@@ -802,10 +801,6 @@ cl_error_t cli_scan_desc(int desc, cli_ctx *ctx, cli_file_t ftype, bool filetype
     }
 
     status = cli_scan_fmap(ctx, ftype, filetype_only, ftoffset, acmode, acres, NULL);
-
-    map->dont_cache_flag = ctx->fmap->dont_cache_flag; /* Set the parent layer's "don't cache" flag to match the child.
-                                                          TODO: This may not be needed since `emax_reached()` should've
-                                                          already done that for us. */
 
     (void)cli_recursion_stack_pop(ctx); /* Restore the parent fmap */
 
@@ -904,7 +899,7 @@ static cl_error_t lsig_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_a
              * Create an fmap window into our current fmap using the original offset & length, and rescan as the new type
              *
              * TODO: Unsure if creating an fmap is the right move, or if we should rescan with the current fmap as-is,
-             * since it's not really a container so much as it is type reassignment. This new fmap layer protect agains
+             * since it's not really a container so much as it is type reassignment. This new fmap layer protect against
              * a possible infinite loop by applying the scan recursion limit, but maybe there's a better way?
              * Testing with both HandlerType type reassignment sigs + Container/Intermediates sigs should indicate if
              * a change is needed.
@@ -1411,14 +1406,14 @@ cl_error_t cli_scan_fmap(cli_ctx *ctx, cli_file_t ftype, bool filetype_only, str
     /*
      * Evaluate the logical expressions for clamav logical signatures and YARA rules.
      */
-    // Evalute for the target-specific signature AC matches.
+    // Evaluate for the target-specific signature AC matches.
     if (NULL != target_ac_root) {
         if (ret != CL_VIRUS) {
             ret = cli_exp_eval(ctx, target_ac_root, &target_ac_data, &info, (const char *)refhash);
         }
     }
 
-    // Evalute for the generic signature AC matches.
+    // Evaluate for the generic signature AC matches.
     if (NULL != generic_ac_root) {
         if (ret != CL_VIRUS) {
             ret = cli_exp_eval(ctx, generic_ac_root, &generic_ac_data, &info, (const char *)refhash);

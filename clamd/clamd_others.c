@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm, Trog, Török Edvin
@@ -347,7 +347,7 @@ read_fd_data(struct fd_buf *buf)
                         close(buf->recvfd);
                     }
                     buf->recvfd = *(int *)CMSG_DATA(cmsg);
-                    logg(LOGG_DEBUG_NV, "Receveived a file descriptor: %d\n", buf->recvfd);
+                    logg(LOGG_DEBUG_NV, "Received a file descriptor: %d\n", buf->recvfd);
                 }
             }
         }

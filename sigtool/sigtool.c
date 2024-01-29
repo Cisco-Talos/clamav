@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *  Copyright (C) 2002-2007 Tomasz Kojm <tkojm@clamav.net>
  *
@@ -1073,7 +1073,7 @@ static int build(const struct optstruct *opts)
     strcat(header, builder);
 
     /* add current time */
-    sprintf(header + strlen(header), ":%u", (unsigned int)timet);
+    sprintf(header + strlen(header), ":" STDu64, (uint64_t)timet);
 
     if (writeinfo(dbname, builder, header, opts, dblist2, dblist2cnt) == -1) {
         mprintf(LOGG_ERROR, "build: Can't generate info file\n");
@@ -1177,7 +1177,7 @@ static int build(const struct optstruct *opts)
     strcat(header, builder);
 
     /* add current time */
-    sprintf(header + strlen(header), ":%u", (unsigned int)timet);
+    sprintf(header + strlen(header), ":" STDu64, (uint64_t)timet);
 
     /* fill up with spaces */
     while (strlen(header) < sizeof(header) - 1)
@@ -1815,7 +1815,7 @@ static int vbadump(const struct optstruct *opts)
 
     const char *filename = NULL;
 
-    /* Initalize scan options struct */
+    /* Initialize scan options struct */
     memset(&options, 0, sizeof(struct cl_scan_options));
 
     if ((ret = cl_init(CL_INIT_DEFAULT))) {
@@ -3639,7 +3639,7 @@ static void help(void)
     mprintf(LOGG_INFO, "\n");
     mprintf(LOGG_INFO, "                      Clam AntiVirus: Signature Tool %s\n", get_version());
     mprintf(LOGG_INFO, "           By The ClamAV Team: https://www.clamav.net/about.html#credits\n");
-    mprintf(LOGG_INFO, "           (C) 2023 Cisco Systems, Inc.\n");
+    mprintf(LOGG_INFO, "           (C) 2024 Cisco Systems, Inc.\n");
     mprintf(LOGG_INFO, "\n");
     mprintf(LOGG_INFO, "    sigtool [options]\n");
     mprintf(LOGG_INFO, "\n");

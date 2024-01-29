@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
@@ -92,6 +92,8 @@ typedef enum cli_file {
     CL_TYPE_OOXML_HWP,
     CL_TYPE_PS,
     CL_TYPE_EGG,
+    CL_TYPE_ONENOTE,
+    CL_TYPE_PYTHON_COMPILED,
 
     /* Section for partition types */
     CL_TYPE_PART_ANY, /* unknown partition type */
@@ -122,7 +124,7 @@ typedef enum cli_file {
     CL_TYPE_HWPOLE2,
     CL_TYPE_MHTML,
     CL_TYPE_LNK,
-
+    CL_TYPE_UDF,
     CL_TYPE_OTHER,  /* on-the-fly, used for target 14 (OTHER) */
     CL_TYPE_IGNORED /* please don't add anything below */
 } cli_file_t;

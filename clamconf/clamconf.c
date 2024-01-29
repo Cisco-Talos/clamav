@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2009-2013 Sourcefire, Inc.
  *
  *  Author: Tomasz Kojm <tkojm@clamav.net>
@@ -101,6 +101,7 @@ static void printopts(struct optstruct *opts, int nondef)
 
                 case CLOPT_TYPE_NUMBER:
                 case CLOPT_TYPE_SIZE:
+                case CLOPT_TYPE_SIZE64:
                     printf("%s = \"%lld\"", opts->name, opts->numarg);
                     opt = opts;
                     while ((opt = opt->nextarg))
@@ -169,7 +170,8 @@ static int printconf(const char *name)
                     break;
 
                 case CLOPT_TYPE_SIZE:
-                    printf("# You may use 'M' or 'm' for megabytes (1M = 1m = 1048576 bytes)\n# and 'K' or 'k' for kilobytes (1K = 1k = 1024 bytes). To specify the size\n# in bytes just don't use modifiers.\n");
+                case CLOPT_TYPE_SIZE64:
+                    printf("# You may use 'G' or 'g' for gigabytes (1G = 1g = 1,073,741,824 bytes)\n# 'M' or 'm' for megabytes (1M = 1m = 1048576 bytes)\n# and 'K' or 'k' for kilobytes (1K = 1k = 1024 bytes). To specify the size\n# in bytes just don't use modifiers.\n");
                     if (cpt->numarg != -1)
                         printf("# Default: %lld\n", cpt->numarg);
                     else
@@ -207,7 +209,7 @@ static void help(void)
     printf("\n");
     printf("                       Clam AntiVirus: Configuration Tool %s\n", get_version());
     printf("           By The ClamAV Team: https://www.clamav.net/about.html#credits\n");
-    printf("           (C) 2023 Cisco Systems, Inc.\n");
+    printf("           (C) 2024 Cisco Systems, Inc.\n");
     printf("\n");
     printf("    --help                 -h         Show this help\n");
     printf("    --version              -V         Show version\n");

@@ -162,7 +162,7 @@
 	returning NULL in a custom mspack_system.alloc() implementation.
 
 	However, it would be good to validate chunk size further. With no
-	offical specification, only empirical data is available. All files
+	official specification, only empirical data is available. All files
 	created by hhc.exe have a chunk size of 4096 bytes, and this is
 	matched by all the files I've found in the wild, except for one
 	which has a chunk size of 8192 bytes, which was created by someone
@@ -203,7 +203,7 @@
 
 	* Makefile.am, src: move the "useful" programs in src/ to examples/
 	and don't auto-install them. Even though they're useful, they are
-	intended as examples and aren't productised (no commmand-line
+	intended as examples and aren't productised (no command-line
 	options, no man pages, etc.) -- if you disagree, feel free to
 	send in a patch
 
@@ -571,7 +571,7 @@
 
 	* Makefile.am: changed CFLAGS from "-Wsign-compare -Wconversion
 	-pedantic" to "-W -Wno-unused". This enables more warnings, and
-	disables these specific warnings which are now a hinderance.
+	disables these specific warnings which are now a hindrance.
 
 2011-04-27:  Stuart Caie <kyzer@4u.net>
 

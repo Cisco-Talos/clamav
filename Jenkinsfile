@@ -10,31 +10,31 @@ properties(
         parameters(
             [
                 string(name: 'VERSION',
-                       defaultValue: '1.1.0',
+                       defaultValue: '1.3.0',
                        description: 'ClamAV version string'),
                 string(name: 'FRAMEWORK_BRANCH',
-                       defaultValue: '1.1',
+                       defaultValue: '1.3',
                        description: 'test-framework branch'),
                 string(name: 'TESTS_BRANCH',
-                       defaultValue: '1.1',
+                       defaultValue: '1.3',
                        description: 'tests branch'),
                 string(name: 'TESTS_CUSTOM_BRANCH',
-                       defaultValue: '1.1',
+                       defaultValue: '1.3',
                        description: 'tests-custom branch'),
                 string(name: 'TESTS_FUZZ_BRANCH',
-                       defaultValue: '1.1',
+                       defaultValue: '1.3',
                        description: 'tests-fuzz-regression branch'),
                 string(name: 'BUILD_PIPELINE',
-                       defaultValue: 'build-1.1',
+                       defaultValue: 'build-1.3',
                        description: 'test-pipelines branch for build acceptance'),
                 string(name: 'REGULAR_PIPELINE',
-                       defaultValue: 'regular-1.1',
+                       defaultValue: 'regular-1.3',
                        description: 'test-pipelines branch for regular tests.'),
                 string(name: 'CUSTOM_PIPELINE',
-                       defaultValue: 'custom-1.1',
+                       defaultValue: 'custom-1.3',
                        description: 'test-pipelines branch for custom tests'),
                 string(name: 'FUZZ_PIPELINE',
-                       defaultValue: 'fuzz-regression-1.1',
+                       defaultValue: 'fuzz-regression-1.3',
                        description: 'test-pipelines branch for fuzz regression tests'),
                 string(name: 'FUZZ_CORPUS_BRANCH',
                        defaultValue: 'master',
@@ -47,7 +47,7 @@ properties(
     ]
 )
 
-node('master') {
+node('ubuntu-18-x64') {
     stage('Generate Tarball') {
         cleanWs()
 
@@ -68,7 +68,6 @@ node('master') {
 
         dir(path: 'build') {
             sh """# CPack
-                cargo update
                 cmake .. -D VENDOR_DEPENDENCIES=ON
                 cpack --config CPackSourceConfig.cmake """
             archiveArtifacts(artifacts: "clamav-${params.VERSION}*.tar.gz", onlyIfSuccessful: true)

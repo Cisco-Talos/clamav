@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
@@ -100,6 +100,7 @@
 #include "gif.h"
 #include "png.h"
 #include "iso9660.h"
+#include "udf.h"
 #include "dmg.h"
 #include "xar.h"
 #include "hfsplus.h"
@@ -472,10 +473,6 @@ static cl_error_t cli_scanrar_file(const char *filepath, int desc, cli_ctx *ctx)
         /*
          * Free up any malloced metadata...
          */
-        if (metadata.filename != NULL) {
-            free(metadata.filename);
-            metadata.filename = NULL;
-        }
         if (NULL != filename_base) {
             free(filename_base);
             filename_base = NULL;
@@ -509,11 +506,6 @@ done:
     if (NULL != filename_base) {
         free(filename_base);
         filename_base = NULL;
-    }
-
-    if (metadata.filename != NULL) {
-        free(metadata.filename);
-        metadata.filename = NULL;
     }
 
     if (NULL != extract_fullpath) {
@@ -1271,9 +1263,9 @@ static cl_error_t cli_scanbzip(cli_ctx *ctx)
     char buf[FILEBUFF];
 
     memset(&strm, 0, sizeof(strm));
-    strm.next_out = buf;
+    strm.next_out  = buf;
     strm.avail_out = sizeof(buf);
-    rc = BZ2_bzDecompressInit(&strm, 0, 0);
+    rc             = BZ2_bzDecompressInit(&strm, 0, 0);
     if (BZ_OK != rc) {
         cli_dbgmsg("Bzip: DecompressInit failed: %d\n", rc);
         return CL_EOPEN;
@@ -1287,7 +1279,7 @@ static cl_error_t cli_scanbzip(cli_ctx *ctx)
 
     do {
         if (!strm.avail_in) {
-            strm.next_in = (void *)fmap_need_off_once_len(ctx->fmap, off, FILEBUFF, &avail);
+            strm.next_in  = (void *)fmap_need_off_once_len(ctx->fmap, off, FILEBUFF, &avail);
             strm.avail_in = avail;
             off += avail;
             if (!strm.avail_in) {
@@ -1323,7 +1315,7 @@ static cl_error_t cli_scanbzip(cli_ctx *ctx)
             if (cli_checklimits("Bzip", ctx, size, 0, 0) != CL_CLEAN)
                 break;
 
-            strm.next_out = buf;
+            strm.next_out  = buf;
             strm.avail_out = sizeof(buf);
         }
     } while (BZ_STREAM_END != rc);
@@ -1655,6 +1647,15 @@ static cl_error_t cli_ole2_tempdir_scan_vba_new(const char *dir, cli_ctx *ctx, s
                 //        OLE2 archive, we don't know if we have the right file. The only thing we can do is
                 //        iterate all of them until one succeeds.
                 cli_dbgmsg("cli_ole2_tempdir_scan_vba_new: Failed to read dir from %s, trying others (error: %s (%d))\n", path, cl_strerror(ret), (int)ret);
+
+                if (tempfile) {
+                    if (!ctx->engine->keeptmp) {
+                        remove(tempfile);
+                    }
+                    free(tempfile);
+                    tempfile = NULL;
+                }
+
                 ret = CL_SUCCESS;
                 hashcnt--;
                 continue;
@@ -2091,7 +2092,7 @@ static cl_error_t cli_ole2_tempdir_scan_for_xlm_and_images(const char *dir, cli_
                 case CL_EMEM:
                     goto done;
                 default:
-                    cli_dbgmsg("cli_ole2_tempdir_scan_for_xlm_and_images: An error occured when parsing XLM BIFF temp file, skipping to next file.\n");
+                    cli_dbgmsg("cli_ole2_tempdir_scan_for_xlm_and_images: An error occurred when parsing XLM BIFF temp file, skipping to next file.\n");
             }
         }
     }
@@ -3310,7 +3311,7 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
         (type != CL_TYPE_OLD_TAR) &&   /* Omit OLD TAR files because it's a raw archive format that we can extract and scan manually. */
         (type != CL_TYPE_POSIX_TAR)) { /* Omit POSIX TAR files because it's a raw archive format that we can extract and scan manually. */
         /*
-         * Enable file type recognition scan mode if requested, except for some some problematic types (above).
+         * Enable file type recognition scan mode if requested, except for some problematic types (above).
          */
         acmode |= AC_SCAN_FT;
     }
@@ -3319,7 +3320,7 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
     ret = cli_scan_fmap(ctx, type == CL_TYPE_TEXT_ASCII ? CL_TYPE_ANY : type, false, &ftoffset, acmode, NULL, refhash);
     perf_stop(ctx, PERFT_RAW);
 
-    // In allmatch-mode, ret will never be CL_VIRUS, so ret may be used exlusively for file type detection and for terminal errors.
+    // In allmatch-mode, ret will never be CL_VIRUS, so ret may be used exclusively for file type detection and for terminal errors.
     // When not in allmatch-mode, it's more important to return right away if ret is CL_VIRUS, so we don't care if file type matches were found.
     if (ret >= CL_TYPENO) {
         // Matched 1+ file type signatures. Handle them.
@@ -3481,8 +3482,20 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
                                 // Reassign type of current layer based on what we discovered
                                 cli_recursion_stack_change_type(ctx, fpt->type);
 
-                                cli_dbgmsg("DMG signature found at %u\n", (unsigned int)fpt->offset);
+                                cli_dbgmsg("ISO signature found at %u\n", (unsigned int)fpt->offset);
                                 nret = cli_scaniso(ctx, fpt->offset);
+                            }
+                        }
+                        break;
+
+                    case CL_TYPE_UDF:
+                        if (SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_UDF)) {
+                            {
+                                // Reassign type of current layer based on what we discovered
+                                cli_recursion_stack_change_type(ctx, fpt->type);
+
+                                cli_dbgmsg("UDF signature found at %u\n", (unsigned int)fpt->offset);
+                                nret = cli_scanudf(ctx, fpt->offset);
                             }
                         }
                         break;
@@ -4181,7 +4194,7 @@ static inline bool result_should_goto_done(cli_ctx *ctx, cl_error_t result_in, c
          * Reasons to halt the scan but report a successful scan.
          */
 
-        // Exceeding the time limit should definitly halt the scan.
+        // Exceeding the time limit should definitely halt the scan.
         // But unless the user enabled alert-exceeds-max, we don't want to complain about it.
         case CL_ETIMEOUT:
 
@@ -4259,7 +4272,7 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
     }
 
     if (ctx->fmap->len <= 5) {
-        cli_dbgmsg("cli_magic_scan: File is too too small (%zu bytes), ignoring.\n", ctx->fmap->len);
+        cli_dbgmsg("cli_magic_scan: File is too small (%zu bytes), ignoring.\n", ctx->fmap->len);
         ret = CL_CLEAN;
         goto early_ret;
     }
@@ -4569,6 +4582,11 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
                 ret = cli_scanegg(ctx);
             break;
 
+        case CL_TYPE_ONENOTE:
+            if (SCAN_PARSE_ONENOTE && (DCONF_ARCH & DOC_CONF_ONENOTE))
+                ret = scan_onenote(ctx);
+            break;
+
         case CL_TYPE_OOXML_WORD:
         case CL_TYPE_OOXML_PPT:
         case CL_TYPE_OOXML_XL:
@@ -4774,7 +4792,7 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
             }
 
             if (CL_SUCCESS != ret) {
-                // do not calculate the fuzzy image hash if parsing failed, or a heuristic alert occured.
+                // do not calculate the fuzzy image hash if parsing failed, or a heuristic alert occurred.
                 break;
             }
 
@@ -4790,7 +4808,7 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
             }
 
             if (CL_SUCCESS != ret) {
-                // do not calculate the fuzzy image hash if parsing failed, or a heuristic alert occured.
+                // do not calculate the fuzzy image hash if parsing failed, or a heuristic alert occurred.
                 break;
             }
 
@@ -4806,7 +4824,7 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
             }
 
             if (CL_SUCCESS != ret) {
-                // do not calculate the fuzzy image hash if parsing failed, or a heuristic alert occured.
+                // do not calculate the fuzzy image hash if parsing failed, or a heuristic alert occurred.
                 break;
             }
 
@@ -4822,7 +4840,7 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
             }
 
             if (CL_SUCCESS != ret) {
-                // do not calculate the fuzzy image hash if parsing failed, or a heuristic alert occured.
+                // do not calculate the fuzzy image hash if parsing failed, or a heuristic alert occurred.
                 break;
             }
 
@@ -4968,6 +4986,7 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
             perf_nested_stop(ctx, PERFT_MACHO, PERFT_SCAN);
             break;
 
+        case CL_TYPE_PYTHON_COMPILED:
         case CL_TYPE_BINARY_DATA:
             ret = cli_scan_fmap(ctx, CL_TYPE_OTHER, false, NULL, AC_SCAN_VIR, NULL, NULL);
             break;
@@ -5331,7 +5350,7 @@ cl_error_t cli_magic_scan_buff(const void *buffer, size_t length, cli_ctx *ctx, 
  * @param engine            The scanning engine.
  * @param scanoptions       Scanning options.
  * @param[in,out] context   An opaque context structure allowing the caller to record details about the sample being scanned.
- * @return int              CL_CLEAN, CL_VIRUS, or an error code if an error occured during the scan.
+ * @return int              CL_CLEAN, CL_VIRUS, or an error code if an error occurred during the scan.
  */
 static cl_error_t scan_common(cl_fmap_t *map, const char *filepath, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, struct cl_scan_options *scanoptions, void *context)
 {
@@ -5341,7 +5360,7 @@ static cl_error_t scan_common(cl_fmap_t *map, const char *filepath, const char *
 
     cli_ctx ctx = {0};
 
-    bool logg_initalized = false;
+    bool logg_initialized = false;
 
     char *target_basename = NULL;
     char *new_temp_prefix = NULL;
@@ -5473,22 +5492,7 @@ static cl_error_t scan_common(cl_fmap_t *map, const char *filepath, const char *
     }
 
     cli_logg_setup(&ctx);
-    logg_initalized = true;
-
-    /* We have a limit of around 2GB (INT_MAX - 2). Enforce it here. */
-    /* TODO: Large file support is large-ly untested. Remove this restriction
-     * and test with a large set of large files of various types. libclamav's
-     * integer type safety has come a long way since 2014, so it's possible
-     * we could lift this restriction, but at least one of the parsers is
-     * bound to behave badly with large files. */
-    if (map->len > INT_MAX - 2) {
-        if (scanoptions->heuristic & CL_SCAN_HEURISTIC_EXCEEDS_MAX) {
-            status = cli_append_potentially_unwanted(&ctx, "Heuristics.Limits.Exceeded.MaxFileSize");
-        } else {
-            status = CL_CLEAN;
-        }
-        goto done;
-    }
+    logg_initialized = true;
 
     status = cli_magic_scan(&ctx, CL_TYPE_ANY);
 
@@ -5649,7 +5653,7 @@ done:
     // And to convert CL_VERIFIED -> CL_CLEAN
     (void)result_should_goto_done(&ctx, status, &status);
 
-    if (logg_initalized) {
+    if (logg_initialized) {
         cli_logg_unsetup();
     }
 
@@ -5715,8 +5719,12 @@ cl_error_t cl_scandesc_callback(int desc, const char *filename, const char **vir
     if ((engine->maxfilesize > 0) && ((uint64_t)sb.st_size > engine->maxfilesize)) {
         cli_dbgmsg("cl_scandesc_callback: File too large (" STDu64 " bytes), ignoring\n", (uint64_t)sb.st_size);
         if (scanoptions->heuristic & CL_SCAN_HEURISTIC_EXCEEDS_MAX) {
-            if (engine->cb_virus_found)
+            if (engine->cb_virus_found) {
                 engine->cb_virus_found(desc, "Heuristics.Limits.Exceeded.MaxFileSize", context);
+                if (virname) {
+                    *virname = "Heuristics.Limits.Exceeded.MaxFileSize";
+                }
+            }
             status = CL_VIRUS;
         } else {
             status = CL_CLEAN;
@@ -5752,8 +5760,12 @@ cl_error_t cl_scanmap_callback(cl_fmap_t *map, const char *filename, const char 
     if ((engine->maxfilesize > 0) && (map->len > engine->maxfilesize)) {
         cli_dbgmsg("cl_scandesc_callback: File too large (%zu bytes), ignoring\n", map->len);
         if (scanoptions->heuristic & CL_SCAN_HEURISTIC_EXCEEDS_MAX) {
-            if (engine->cb_virus_found)
+            if (engine->cb_virus_found) {
                 engine->cb_virus_found(fmap_fd(map), "Heuristics.Limits.Exceeded.MaxFileSize", context);
+                if (virname) {
+                    *virname = "Heuristics.Limits.Exceeded.MaxFileSize";
+                }
+            }
             return CL_VIRUS;
         }
         return CL_CLEAN;

@@ -1,7 +1,7 @@
 /*
  *  Rust logging module
  *
- *  Copyright (C) 2021-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2021-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *
  *  Authors: Mickey Sola
  *
@@ -86,7 +86,7 @@ mod tests {
 }
 
 /// API exported for C code to log to standard error using Rust.
-/// This would be be an alternative to fputs, and reliably prints
+/// This would be an alternative to fputs, and reliably prints
 /// non-ASCII UTF8 characters on Windows, where fputs does not.
 ///
 /// # Safety

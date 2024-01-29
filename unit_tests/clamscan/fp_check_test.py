@@ -1,4 +1,4 @@
-# Copyright (C) 2020-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+# Copyright (C) 2020-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
 
 """
 Run {valgrind} {valgrind_args} {clamscan} tests.
@@ -49,7 +49,7 @@ rename()
 
         TC.test_file_zipped = TC.path_tmp / 'test_file.zip'
         with ZipFile(str(TC.test_file_zipped), 'w', ZIP_DEFLATED) as zf:
-            # Add truncted PNG file that will alert with  --alert-broken-media
+            # Add truncated PNG file that will alert with  --alert-broken-media
             with (TC.path_source / 'logo.png').open('br') as logo_png:
                 zf.writestr('test_file', b"""<?php
 IGNORE_user_abort(asdf) scandir(asdfasdfasf]);

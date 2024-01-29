@@ -393,7 +393,7 @@ static int cabd_read_headers(struct mspack_system *sys,
     cab->block_resv       = 0;
   }
 
-  /* read name and info of preceeding cabinet in set, if present */
+  /* read name and info of preceding cabinet in set, if present */
   if (cab->base.flags & cfheadPREV_CABINET) {
     cab->base.prevname = cabd_read_string(sys, fh, 0, &err);
     if (err) return err;
@@ -689,7 +689,7 @@ static int cabd_find(struct mscab_decompressor_p *self, unsigned char *buf,
         /* we spend most of our time in this while loop, looking for
          * a leading 'M' of the 'MSCF' signature */
         while (p < pend && *p != 0x4D) p++;
-        /* if we found tht 'M', advance state */
+        /* if we found the 'M', advance state */
         if (p++ < pend) state = 1;
         break;
 
@@ -713,7 +713,7 @@ static int cabd_find(struct mscab_decompressor_p *self, unsigned char *buf,
       case 17: foffset_u32 |= *p++ << 8;  state++; break;
       case 18: foffset_u32 |= *p++ << 16; state++; break;
       case 19: foffset_u32 |= *p++ << 24;
-        /* now we have recieved 20 bytes of potential cab header. work out
+        /* now we have received 20 bytes of potential cab header. work out
          * the offset in the file of this potential cabinet */
         caboff = offset + (p - &buf[0]) - 20;
 

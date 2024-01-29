@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Trog
@@ -84,7 +84,7 @@ typedef struct ole2_header_tag {
     unsigned char clsid[16];
     uint16_t minor_version __attribute__((packed));
     uint16_t dll_version __attribute__((packed));
-    int16_t byte_order __attribute__((packed)); /* -2=intel */
+    int16_t byte_order __attribute__((packed));             /* -2=intel */
 
     uint16_t log2_big_block_size __attribute__((packed));   /* usually 9 (2^9 = 512) */
     uint32_t log2_small_block_size __attribute__((packed)); /* usually 6 (2^6 = 64) */
@@ -108,7 +108,7 @@ typedef struct ole2_header_tag {
      * The following is not part of the ole2 header, but stuff we need in
      * order to decode.
      *
-     * IMPORANT: These must take account of the size of variables below here
+     * IMPORTANT: These must take account of the size of variables below here
      * when calculating hdr_size to read the header.
      *
      * See the top of cli_ole2_extract().
@@ -134,7 +134,7 @@ typedef struct ole2_header_tag {
  * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-cfb/60fe8611-66c3-496b-b70d-a504c94c9ace
  */
 typedef struct property_tag {
-    char name[64]; /* in unicode */
+    char name[64];       /* in unicode */
     uint16_t name_size __attribute__((packed));
     unsigned char type;  /* 1=dir 2=file 5=root */
     unsigned char color; /* black or red */
@@ -1127,7 +1127,7 @@ static cl_error_t scan_biff_for_xlm_macros_and_images(
  * @brief Scan for XLM (Excel 4.0) macro sheets and images in an OLE2 Workbook stream.
  *
  * The stream should be encoded with <= BIFF8.
- * The found_macro and found_image out-params should be checked even if an error occured.
+ * The found_macro and found_image out-params should be checked even if an error occurred.
  *
  * @param hdr
  * @param prop
@@ -2089,7 +2089,7 @@ static cl_error_t generate_key_aes(const char *const password, encryption_key_t 
 
     tmp = verifier->salt_size;
     if (verifier->salt_size > sizeof(verifier->salt)) {
-        cli_warnmsg("ole2: Invalid salt length '0x%x'\n", verifier->salt_size);
+        cli_dbgmsg("ole2: Invalid salt length '0x%x'\n", verifier->salt_size);
         tmp = sizeof(verifier->salt);
     }
     memcpy(buffer, verifier->salt, tmp);
@@ -2193,7 +2193,7 @@ static bool verify_key_aes(const encryption_key_t *const key, encryption_verifie
     // If it claims to be LARGER than 32 bytes, we have a problem - because the buffer isn't that big.
     actual_hash_size = verifier->verifier_hash_size;
     if (actual_hash_size > sizeof(verifier->encrypted_verifier_hash)) {
-        cli_warnmsg("ole2: Invalid encrypted verifier hash length 0x%x\n", verifier->verifier_hash_size);
+        cli_dbgmsg("ole2: Invalid encrypted verifier hash length 0x%x\n", verifier->verifier_hash_size);
         actual_hash_size = sizeof(verifier->encrypted_verifier_hash);
     }
 
@@ -2250,7 +2250,7 @@ done:
 /**
  * @brief               Initialize encryption key, if the encryption validation passes.
  *
- * @param headerPtr     Pointer to the encryption header.
+ * @param encryptionInfo     Pointer to the encryption header.
  * @param encryptionKey [out] Pointer to encryption_key_t structure to be initialized by this function.
  * @return              Success or failure depending on whether or not the
  *                      encryption verifier was successful with the
@@ -2261,70 +2261,78 @@ done:
  * https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-offcrypto/2895eba1-acb1-4624-9bde-2cdad3fea015
  *
  */
-static bool initialize_encryption_key(const encryption_info_stream_standard_t *headerPtr,
-                                      encryption_key_t *encryptionKey)
+static bool initialize_encryption_key(
+    const uint8_t *encryptionInfoStreamPtr,
+    size_t remainingBytes,
+    encryption_key_t *encryptionKey)
 {
-
     bool bRet  = false;
     size_t idx = 0;
     encryption_key_t key;
-    encryption_verifier_t ev;
     bool bAES = false;
+
+    encryption_info_stream_standard_t encryptionInfo = {0};
+    uint16_t *encryptionInfo_CSPName                 = NULL;
+    const uint8_t *encryptionVerifierPtr             = NULL;
+    encryption_verifier_t encryptionVerifier         = {0};
+
+    // Populate the encryption_info_stream_standard_t structure
+    copy_encryption_info_stream_standard(&encryptionInfo, encryptionInfoStreamPtr);
 
     memset(encryptionKey, 0, sizeof(encryption_key_t));
     memset(&key, 0, sizeof(encryption_key_t));
 
-    cli_dbgmsg("Major Version   = 0x%x\n", headerPtr->version_major);
-    cli_dbgmsg("Minor Version   = 0x%x\n", headerPtr->version_minor);
-    cli_dbgmsg("Flags           = 0x%x\n", headerPtr->flags);
+    cli_dbgmsg("Major Version   = 0x%x\n", encryptionInfo.version_major);
+    cli_dbgmsg("Minor Version   = 0x%x\n", encryptionInfo.version_minor);
+    cli_dbgmsg("Flags           = 0x%x\n", encryptionInfo.flags);
 
     /*Bit 0 and 1 must be 0*/
-    if (1 & headerPtr->flags) {
+    if (1 & encryptionInfo.flags) {
         cli_dbgmsg("ole2: Invalid first bit, must be 0\n");
         goto done;
     }
 
-    if ((1 << 1) & headerPtr->flags) {
+    if ((1 << 1) & encryptionInfo.flags) {
         cli_dbgmsg("ole2: Invalid second bit, must be 0\n");
         goto done;
     }
 
     // https://docs.microsoft.com/en-us/openspecs/office_file_formats/ms-offcrypto/200a3d61-1ab4-4402-ae11-0290b28ab9cb
-    if ((SE_HEADER_FDOCPROPS & headerPtr->flags)) {
+    if ((SE_HEADER_FDOCPROPS & encryptionInfo.flags)) {
         cli_dbgmsg("ole2: Unsupported document properties encrypted\n");
         goto done;
     }
 
-    if ((SE_HEADER_FEXTERNAL & headerPtr->flags) &&
-        (SE_HEADER_FEXTERNAL != headerPtr->flags)) {
+    if ((SE_HEADER_FEXTERNAL & encryptionInfo.flags) &&
+        (SE_HEADER_FEXTERNAL != encryptionInfo.flags)) {
         cli_dbgmsg("ole2: Invalid fExternal flags.  If fExternal bit is set, nothing else can be\n");
         goto done;
     }
 
-    if (SE_HEADER_FAES & headerPtr->flags) {
-        if (!(SE_HEADER_FCRYPTOAPI & headerPtr->flags)) {
+    if (SE_HEADER_FAES & encryptionInfo.flags) {
+        if (!(SE_HEADER_FCRYPTOAPI & encryptionInfo.flags)) {
             cli_dbgmsg("ole2: Invalid combo of fAES and fCryptoApi flags\n");
             goto done;
         }
 
-        cli_dbgmsg("Flags: AES\n");
+        cli_dbgmsg("Flags           = AES\n");
     }
 
-    cli_dbgmsg("Size            = 0x%x\n", headerPtr->size);
+    cli_dbgmsg("Size            = 0x%x\n", encryptionInfo.size);
 
-    if (headerPtr->flags != headerPtr->encryptionInfo.flags) {
+    if (encryptionInfo.flags != encryptionInfo.encryptionInfo.flags) {
         cli_dbgmsg("ole2: Flags must match\n");
         goto done;
     }
 
-    if (0 != headerPtr->encryptionInfo.sizeExtra) {
+    if (0 != encryptionInfo.encryptionInfo.sizeExtra) {
         cli_dbgmsg("ole2: Size Extra must be 0\n");
         goto done;
     }
 
-    switch (headerPtr->encryptionInfo.algorithmID) {
+    switch (encryptionInfo.encryptionInfo.algorithmID) {
         case SE_HEADER_EI_AES128:
-            if (SE_HEADER_EI_AES128_KEYSIZE != headerPtr->encryptionInfo.keySize) {
+            if (SE_HEADER_EI_AES128_KEYSIZE != encryptionInfo.encryptionInfo.keySize) {
                 cli_dbgmsg("ole2: Key length does not match algorithm id\n");
                 goto done;
             }
@@ -2332,7 +2340,7 @@ static bool initialize_encryption_key(const encryption_info_stream_standard_t *h
             break;
         case SE_HEADER_EI_AES192:
             // not implemented
-            if (SE_HEADER_EI_AES192_KEYSIZE != headerPtr->encryptionInfo.keySize) {
+            if (SE_HEADER_EI_AES192_KEYSIZE != encryptionInfo.encryptionInfo.keySize) {
                 cli_dbgmsg("ole2: Key length does not match algorithm id\n");
                 goto done;
             }
@@ -2340,7 +2348,7 @@ static bool initialize_encryption_key(const encryption_info_stream_standard_t *h
             goto done;
         case SE_HEADER_EI_AES256:
             // not implemented
-            if (SE_HEADER_EI_AES256_KEYSIZE != headerPtr->encryptionInfo.keySize) {
+            if (SE_HEADER_EI_AES256_KEYSIZE != encryptionInfo.encryptionInfo.keySize) {
                 cli_dbgmsg("ole2: Key length does not match algorithm id\n");
                 goto done;
             }
@@ -2350,68 +2358,77 @@ static bool initialize_encryption_key(const encryption_info_stream_standard_t *h
             // not implemented
             goto done;
         default:
-            cli_dbgmsg("ole2: Invalid Algorithm ID: 0x%x\n", headerPtr->encryptionInfo.algorithmID);
+            cli_dbgmsg("ole2: Invalid Algorithm ID: 0x%x\n", encryptionInfo.encryptionInfo.algorithmID);
             goto done;
     }
 
-    if (SE_HEADER_EI_SHA1 != headerPtr->encryptionInfo.algorithmIDHash) {
-        cli_dbgmsg("ole2: Invalid Algorithm ID Hash: 0x%x\n", headerPtr->encryptionInfo.algorithmIDHash);
+    if (SE_HEADER_EI_SHA1 != encryptionInfo.encryptionInfo.algorithmIDHash) {
+        cli_dbgmsg("ole2: Invalid Algorithm ID Hash: 0x%x\n", encryptionInfo.encryptionInfo.algorithmIDHash);
         goto done;
     }
 
-    if (!key_length_valid_aes_bits(headerPtr->encryptionInfo.keySize)) {
-        cli_dbgmsg("ole2: Invalid key size: 0x%x\n", headerPtr->encryptionInfo.keySize);
+    if (!key_length_valid_aes_bits(encryptionInfo.encryptionInfo.keySize)) {
+        cli_dbgmsg("ole2: Invalid key size: 0x%x\n", encryptionInfo.encryptionInfo.keySize);
         goto done;
     }
 
-    cli_dbgmsg("KeySize = 0x%x\n", headerPtr->encryptionInfo.keySize);
+    cli_dbgmsg("KeySize         = 0x%x\n", encryptionInfo.encryptionInfo.keySize);
 
-    if (SE_HEADER_EI_AES_PROVIDERTYPE != headerPtr->encryptionInfo.providerType) {
+    if (SE_HEADER_EI_AES_PROVIDERTYPE != encryptionInfo.encryptionInfo.providerType) {
         cli_dbgmsg("ole2: WARNING: Provider Type should be '0x%x', is '0x%x'\n",
-                   SE_HEADER_EI_AES_PROVIDERTYPE, headerPtr->encryptionInfo.providerType);
+                   SE_HEADER_EI_AES_PROVIDERTYPE, encryptionInfo.encryptionInfo.providerType);
         goto done;
     }
 
-    cli_dbgmsg("Reserved1:  0x%x\n", headerPtr->encryptionInfo.reserved1);
+    cli_dbgmsg("Reserved1       = 0x%x\n", encryptionInfo.encryptionInfo.reserved1);
 
-    if (0 != headerPtr->encryptionInfo.reserved2) {
-        cli_dbgmsg("ole2: Reserved 2 must be zero, is 0x%x\n", headerPtr->encryptionInfo.reserved2);
+    if (0 != encryptionInfo.encryptionInfo.reserved2) {
+        cli_dbgmsg("ole2: Reserved 2 must be zero, is 0x%x\n", encryptionInfo.encryptionInfo.reserved2);
         goto done;
     }
 
-    /*The encryption info is at the end of the CPSName string.
+    /* The encryption info is at the end of the CPSName string.
      * Find the end, and we'll have the index of the EncryptionVerifier.
      * The CPSName string *should* always be either
      * 'Microsoft Enhanced RSA and AES Cryptographic Provider'
      * or
      * 'Microsoft Enhanced RSA and AES Cryptographic Provider (Prototype)'
-     *
      */
-    for (idx = 0; idx < CSP_NAME_LENGTH(headerPtr) - 1; idx += 2) {
-        if (((uint16_t *)&(headerPtr->encryptionInfo.cspName[idx]))[0] == 0) {
+    encryptionInfo_CSPName = (uint16_t *)(encryptionInfoStreamPtr + sizeof(encryption_info_stream_standard_t));
+    remainingBytes -= sizeof(encryption_info_stream_standard_t);
+
+    if (0 == remainingBytes) {
+        cli_dbgmsg("ole2: No CSPName or encryption_verifier_t\n");
+        goto done;
+    }
+
+    for (idx = 0; idx * sizeof(uint16_t) < remainingBytes; idx++) {
+        if (encryptionInfo_CSPName[idx] == 0) {
             break;
         }
     }
 
-    idx += 2;
-    if ((sizeof(headerPtr->encryptionInfo.cspName) - idx) <= sizeof(encryption_verifier_t)) {
+    encryptionVerifierPtr = (uint8_t*)encryptionInfo_CSPName + (idx + 1) * sizeof(uint16_t);
+    remainingBytes -= (idx * sizeof(uint16_t));
+
+    if (remainingBytes < sizeof(encryption_verifier_t)) {
         cli_dbgmsg("ole2: No encryption_verifier_t\n");
         goto done;
     }
-    copy_encryption_verifier(&ev, &(headerPtr->encryptionInfo.cspName[idx]));
+    copy_encryption_verifier(&encryptionVerifier, encryptionVerifierPtr);
 
-    key.key_length_bits = headerPtr->encryptionInfo.keySize;
+    key.key_length_bits = encryptionInfo.encryptionInfo.keySize;
     if (!bAES) {
         cli_dbgmsg("ole2: Unsupported encryption algorithm\n");
         goto done;
     }
 
-    if (CL_SUCCESS != generate_key_aes("VelvetSweatshop", &key, &ev)) {
+    if (CL_SUCCESS != generate_key_aes("VelvetSweatshop", &key, &encryptionVerifier)) {
         /*Error message printed by generate_key_aes*/
         goto done;
     }
 
-    if (!verify_key_aes(&key, &ev)) {
+    if (!verify_key_aes(&key, &encryptionVerifier)) {
         cli_dbgmsg("ole2: Key verification for '%s' failed, unable to decrypt.\n", "VelvetSweatshop");
         goto done;
     }
@@ -2542,11 +2559,14 @@ cl_error_t cli_ole2_extract(const char *dirname, cli_ctx *ctx, struct uniq **fil
     /* determine if encrypted with VelvetSweatshop password */
     encryption_offset = 4 * (1 << hdr.log2_big_block_size);
     if ((encryption_offset + sizeof(encryption_info_stream_standard_t)) <= hdr.m_length) {
-        encryption_info_stream_standard_t encryption_info_stream_standard;
-        copy_encryption_info_stream_standard(&encryption_info_stream_standard, &(((const uint8_t *)phdr)[encryption_offset]));
-        bEncrypted = initialize_encryption_key(&encryption_info_stream_standard, &key);
 
-        cli_dbgmsg("Encrypted with VelvetSweatshop\n");
+        bEncrypted = initialize_encryption_key(
+            &(((const uint8_t *)phdr)[encryption_offset]),
+            hdr.m_length - encryption_offset,
+            &key);
+
+        cli_dbgmsg("Encrypted with VelvetSweatshop: %d\n", bEncrypted);
+
 #if HAVE_JSON
         if (ctx->wrkproperty == ctx->properties) {
             cli_jsonint(ctx->wrkproperty, "EncryptedWithVelvetSweatshop", bEncrypted);

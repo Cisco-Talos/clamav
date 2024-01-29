@@ -1,7 +1,7 @@
 /*
  *  Parse a regular expression, and extract a static suffix.
  *
- *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Török Edvin
@@ -511,7 +511,7 @@ cl_error_t cli_regex2suffix(const char *pattern, regex_t *preg, suffix_callback 
         goto done;
     }
     memset(&buf, 0, sizeof(buf));
-    memset(&root_node, 0, sizeof(buf));
+    memset(&root_node, 0, sizeof(root_node));
     n->parent = &root_node;
 
     rc = build_suffixtree_descend(n, &buf, cb, cbdata, &regex);

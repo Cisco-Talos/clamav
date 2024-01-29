@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
@@ -73,7 +73,7 @@
  * in re-enabling affected modules.
  */
 
-#define CL_FLEVEL 180
+#define CL_FLEVEL 200
 #define CL_FLEVEL_DCONF CL_FLEVEL
 #define CL_FLEVEL_SIGTOOL CL_FLEVEL
 
@@ -191,6 +191,7 @@ typedef struct recursion_level_tag {
 } recursion_level_t;
 
 typedef void *evidence_t;
+typedef void *onedump_t;
 
 /* internal clamav context */
 typedef struct cli_ctx_tag {
@@ -327,6 +328,7 @@ struct cl_engine {
     char *tmpdir;
     uint32_t keeptmp;
     uint64_t engine_options;
+    uint32_t cache_size;
 
     /* Limits */
     uint32_t maxscantime;         /* Time limit (in milliseconds) */
@@ -492,6 +494,7 @@ struct cl_settings {
     enum bytecode_mode bytecode_mode;
     char *pua_cats;
     uint64_t engine_options;
+    uint32_t cache_size;
 
     /* callbacks */
     clcb_pre_cache cb_pre_cache;
@@ -566,6 +569,7 @@ extern LIBCLAMAV_EXPORT int have_rar;
 #define SCAN_PARSE_OLE2 (ctx->options->parse & CL_SCAN_PARSE_OLE2)
 #define SCAN_PARSE_HTML (ctx->options->parse & CL_SCAN_PARSE_HTML)
 #define SCAN_PARSE_PE (ctx->options->parse & CL_SCAN_PARSE_PE)
+#define SCAN_PARSE_ONENOTE (ctx->options->parse & CL_SCAN_PARSE_ONENOTE)
 
 #define SCAN_HEURISTIC_BROKEN (ctx->options->heuristic & CL_SCAN_HEURISTIC_BROKEN)
 #define SCAN_HEURISTIC_BROKEN_MEDIA (ctx->options->heuristic & CL_SCAN_HEURISTIC_BROKEN_MEDIA)
@@ -985,7 +989,7 @@ const char *cli_gettmpdir(void);
  * @brief Sanitize a relative path, so it cannot have a negative depth.
  *
  * Caller is responsible for freeing the sanitized filepath.
- * The optioal sanitized_filebase output param is a pointer into the filepath,
+ * The optional sanitized_filebase output param is a pointer into the filepath,
  * if set, and does not need to be freed.
  *
  * @param filepath                  The filepath to sanitize

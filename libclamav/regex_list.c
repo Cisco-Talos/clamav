@@ -1,7 +1,7 @@
 /*
  *  Match a string against a list of patterns/regexes.
  *
- *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Török Edvin
@@ -788,7 +788,7 @@ static cl_error_t add_pattern_suffix(void *cbdata, const char *suffix, size_t su
     regex->preg = iregex->preg;
     regex->nxt  = NULL;
     el          = cli_hashtab_find(&matcher->suffix_hash, suffix, suffix_len);
-    /* TODO: what if suffixes are prefixes of eachother and only one will
+    /* TODO: what if suffixes are prefixes of each other and only one will
      * match? */
     if (el) {
         /* existing suffix */

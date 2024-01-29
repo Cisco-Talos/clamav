@@ -1,7 +1,7 @@
 /*
  *  Support for matcher using PCRE
  *
- *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Kevin Lin
@@ -210,7 +210,7 @@ cl_error_t cli_pcre_addpatt(struct cli_matcher *root, const char *virname, const
     }
 
     /* TODO: trigger and regex checking (backreference limitations?) (control pattern limitations?) */
-    /* cli_ac_chklsig will fail a empty trigger; empty patterns can cause an infinite loop */
+    /* cli_ac_chklsig will fail an empty trigger; empty patterns can cause an infinite loop */
     if (*trigger == '\0' || *pattern == '\0') {
         cli_errmsg("cli_pcre_addpatt: trigger or pattern cannot be an empty string\n");
         return CL_EMALFDB;

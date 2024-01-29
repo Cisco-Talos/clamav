@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Nigel Horne
@@ -265,7 +265,7 @@ static bool haveTooManyMIMEArguments(size_t argCnt, cli_ctx *ctx, bool *heuristi
                          * protocol="application/pgp-encrypted"   \
                          */
 #define X_BFILE RELATED /*                                             \
-                         * BeOS, expert two parts: the file and it's   \
+                         * BeOS, expert two parts: the file and its   \
                          * attributes. The attributes part comes as    \
                          *    Content-Type: application/x-be_attribute \
                          *        name="foo"                           \
@@ -2047,7 +2047,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                             inMimeHead = false;
 
                             if (strlen(line) > RFC2821LENGTH) {
-                                cli_dbgmsg("parseEmailBody: line length exceds RFC2821 maximum length (1000)\n");
+                                cli_dbgmsg("parseEmailBody: line length exceeds RFC2821 maximum length (1000)\n");
                                 // We must skip this line because functions like rfc822comments() may accept output buffers
                                 // that [RFC2821LENGTH + 1] in and don't have any length checks to prevent exceeding that max.
                                 // E.g. See `boundaryStart()`.
@@ -2408,7 +2408,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                         }
                         break;
                     default:
-                        cli_dbgmsg("Unepxected mime sub type\n");
+                        cli_dbgmsg("Unexpected mime sub type\n");
                         rc = CL_EFORMAT;
                         break;
                 }
@@ -2568,7 +2568,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
         /* Look for a bounce in the text (non mime encoded) portion */
         const text *t;
         /* isBounceStart() is expensive, reduce the number of calls */
-        bool lookahead_definately_is_bounce = false;
+        bool lookahead_definitely_is_bounce = false;
 
         for (t = aText; t && (rc != VIRUS); t = t->t_next) {
             const line_t *l = t->t_line;
@@ -2580,15 +2580,15 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                 continue;
             }
 
-            if (lookahead_definately_is_bounce)
-                lookahead_definately_is_bounce = false;
+            if (lookahead_definitely_is_bounce)
+                lookahead_definitely_is_bounce = false;
             else if (!isBounceStart(mctx, lineGetData(l)))
                 continue;
 
             lookahead = t->t_next;
             if (lookahead) {
                 if (isBounceStart(mctx, lineGetData(lookahead->t_line))) {
-                    lookahead_definately_is_bounce = true;
+                    lookahead_definitely_is_bounce = true;
                     /* don't save worthless header lines */
                     continue;
                 }
@@ -2693,7 +2693,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                     s = lineGetData(l);
                     if (isBounceStart(mctx, s)) {
                         cli_dbgmsg("Found the start of another bounce candidate (%s)\n", s);
-                        lookahead_definately_is_bounce = true;
+                        lookahead_definitely_is_bounce = true;
                         break;
                     }
                 }
@@ -2760,7 +2760,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
             } else
                 /*
                  * Save the entire text portion,
-                 * since it it may be an HTML file with
+                 * since it may be an HTML file with
                  * a JavaScript virus or a phish
                  */
                 saveIt = true;
@@ -2866,7 +2866,7 @@ boundaryStart(const char *line, const char *boundary)
     /*
      * Gibe.B3 is broken, it has:
      *    boundary="---- =_NextPart_000_01C31177.9DC7C000"
-     * but it's boundaries look like
+     * but its boundaries look like
      *    ------ =_NextPart_000_01C31177.9DC7C000
      * notice the one too few '-'.
      * Presumably this is a deliberate exploitation of a bug in some mail
@@ -2927,7 +2927,7 @@ boundaryStart(const char *line, const char *boundary)
 /*
  * Is the current line the end?
  *
- * The message ends with with --boundary--
+ * The message ends with --boundary--
  */
 static int
 boundaryEnd(const char *line, const char *boundary)
@@ -3083,12 +3083,12 @@ getTextPart(message *const messages[], size_t size)
  * strip -
  *    Remove the trailing spaces from a buffer. Don't call this directly,
  * always call strstrip() which is a wrapper to this routine to be used with
- * NUL terminated strings. This code looks a bit strange because of it's
+ * NUL terminated strings. This code looks a bit strange because of its
  * heritage from code that worked on strings that weren't necessarily NUL
  * terminated.
  * TODO: rewrite for clamAV
  *
- * Returns it's new length (a la strlen)
+ * Returns its new length (a la strlen)
  *
  * len must be int not size_t because of the >= 0 test, it is sizeof(buf)
  *    not strlen(buf)
@@ -3291,7 +3291,7 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
                 }
 
                 /*
-                 * Add in all rest of the the arguments.
+                 * Add in all rest of the arguments.
                  * e.g. if the header is this:
                  * Content-Type:', arg='multipart/mixed; boundary=foo
                  * we find the boundary argument set it

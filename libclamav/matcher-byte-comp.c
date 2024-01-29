@@ -1,7 +1,7 @@
 /*
  *  Byte comparison matcher support functions
  *
- *  Copyright (C) 2018-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2018-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *
  *  Authors: Mickey Sola
  *
@@ -316,7 +316,7 @@ cl_error_t cli_bcomp_addpatt(struct cli_matcher *root, const char *virname, cons
 
     bcomp->byte_len = byte_length;
 
-    /* we can have up to two comparison eval statements, each sperated by a comma, let's parse them in a separate string */
+    /* we can have up to two comparison eval statements, each separated by a comma, let's parse them in a separate string */
     comp_buf = cli_strdup(tokens[2]);
     if (!comp_buf) {
         cli_errmsg("cli_bcomp_addpatt: Unable to allocate memory for comparison buffer\n");
@@ -328,7 +328,7 @@ cl_error_t cli_bcomp_addpatt(struct cli_matcher *root, const char *virname, cons
     comp_start = strchr(comp_buf, ',');
     comp_end   = strrchr(comp_buf, ',');
 
-    /* check to see if we have exactly one comma, then set our count and tokenize our string apropriately */
+    /* check to see if we have exactly one comma, then set our count and tokenize our string appropriately */
     if (comp_start && comp_end) {
         if (comp_end == comp_start) {
             comp_start[0]     = '\0';
@@ -825,7 +825,7 @@ done:
  * @param len the length of the buffer, must be larger than 3 bytes
  * @param check_only specifies whether to return true/false or the modified opt value
  *
- * @return if check only is set, it will return true or false, otherwise it returns a modifiied byte compare bitfield
+ * @return if check only is set, it will return true or false, otherwise it returns a modified byte compare bitfield
  */
 uint16_t cli_bcomp_chk_hex(const unsigned char *buffer, uint16_t opt, uint32_t len, uint32_t check_only)
 {
@@ -855,7 +855,7 @@ uint16_t cli_bcomp_chk_hex(const unsigned char *buffer, uint16_t opt, uint32_t l
 }
 
 /**
- * @brief multipurpose buffer normalization support function for bytcompare
+ * @brief multipurpose buffer normalization support function for bytecompare
  *
  * Currently can be used to normalize a little endian hex buffer to big endian.
  * Can also be used to trim whitespace from the front of the buffer.

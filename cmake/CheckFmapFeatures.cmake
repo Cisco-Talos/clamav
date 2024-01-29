@@ -16,7 +16,7 @@ endif()
 # Check for mmap() support, required for HAVE_MPOOL.
 #
 # checks for private fixed mappings, we don't need fixed mappings,
-# so check only wether private mappings work.
+# so check only whether private mappings work.
 check_include_file(sys/mman.h HAVE_SYS_MMAN_H)
 if(MMAP_FOR_CROSSCOMPILING)
     set(HAVE_MMAP 1)

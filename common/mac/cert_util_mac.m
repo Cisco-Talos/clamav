@@ -1,7 +1,7 @@
 /*
  *  OpenSSL certificate verification for macOS.
  *
- *  Copyright (C) 2016-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2016-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *
  *  Authors: Russ Kubik
  *
@@ -87,10 +87,10 @@ static keychain_info_t _get_keychain_info(keychain_type_t keychain_type)
 }
 
 /*!
- * @brief       Get a reference to an allocated array of certifcates contained
+ * @brief       Get a reference to an allocated array of certificates contained
  *              in the specified keychain.
  * @param[in]   keychain_type   Keychain type
- * @return      If successful, reference to allocated array of certifcates. The
+ * @return      If successful, reference to allocated array of certificates. The
  *              caller is responsible for calling CFRelease on the returned
  *              reference after use.
  * @return      NULL otherwise
@@ -244,7 +244,7 @@ cl_error_t cert_store_load(X509 **trusted_certs, size_t trusted_cert_count)
     }
 
     /* Load certificates from keychains before entering the critical section.
-     * On a default 10.12 installation loading the the system roots keychain
+     * On a default 10.12 installation loading the system roots keychain
      * could take up to 300 ms to complete. */
 
     for (kc_index = 0; kc_index < ARRAY_SIZE(keychains); kc_index++) {

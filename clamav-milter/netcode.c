@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2008-2013 Sourcefire, Inc.
  *
  *  Author: aCaB <acab@clamav.net>
@@ -352,7 +352,7 @@ static int resolve(char *name, uint32_t *family, uint32_t *host)
     struct addrinfo hints, *res;
 
     if (!name) {
-        /* 	l->basehost[0] = l->basehost[1] = l->basehost[2] = l->basehost[3] = 0; DONT BOTHER*/
+        /* 	l->basehost[0] = l->basehost[1] = l->basehost[2] = l->basehost[3] = 0; DON'T BOTHER*/
         *family = NON_SMTP;
         return 0;
     }
@@ -370,7 +370,7 @@ static int resolve(char *name, uint32_t *family, uint32_t *host)
 
         *family = INET_HOST;
         host[0] = htonl(sa->sin_addr.s_addr);
-        /* 	host[1] = host[2] = host[3] = 0; DONT BOTHER*/
+        /* 	host[1] = host[2] = host[3] = 0; DON'T BOTHER*/
     } else if (res->ai_addrlen == sizeof(struct sockaddr_in6) && res->ai_addr->sa_family == AF_INET6) {
         struct sockaddr_in6 *sa = (struct sockaddr_in6 *)res->ai_addr;
         unsigned int i, j;
@@ -466,7 +466,8 @@ int islocalnet_name(char *name)
 
 int islocalnet_sock(struct sockaddr *sa)
 {
-    uint32_t host[4], family;
+    uint32_t host[4] = {0};
+    uint32_t family;
 
     if (!lnet) return 0;
 

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Török Edvin
@@ -259,7 +259,7 @@ cl_error_t cli_htu32_insert(struct cli_htu32 *s, const struct cli_htu32_element 
 void cli_htu32_free(struct cli_htu32 *s, mpool_t *mempool);
 
 /**
- * @brief Find a sepcific element by key in the u32 hashtable.
+ * @brief Find a specific element by key in the u32 hashtable.
  *
  * @param s
  * @param key
@@ -331,7 +331,7 @@ struct cli_map {
  * @param valuesize
  * @param capacity
  * @return cl_error_t CL_SUCCESS on success
- * @return cl_error_t CL_E* if some error occured
+ * @return cl_error_t CL_E* if some error occurred
  */
 cl_error_t cli_map_init(struct cli_map *m, int32_t keysize, int32_t valuesize,
                         int32_t capacity);
@@ -344,7 +344,7 @@ cl_error_t cli_map_init(struct cli_map *m, int32_t keysize, int32_t valuesize,
  * @param keysize
  * @return cl_error_t CL_SUCCESS if added.
  * @return cl_error_t CL_ECREAT if already present.
- * @return cl_error_t CL_E* if some error occured.
+ * @return cl_error_t CL_E* if some error occurred.
  */
 cl_error_t cli_map_addkey(struct cli_map *m, const void *key, int32_t keysize);
 
@@ -356,7 +356,7 @@ cl_error_t cli_map_addkey(struct cli_map *m, const void *key, int32_t keysize);
  * @param keysize
  * @return cl_error_t CL_SUCCESS if removed.
  * @return cl_error_t CL_EUNLINK if not present, so didn't need to be removed.
- * @return cl_error_t CL_E* if some error occured.
+ * @return cl_error_t CL_E* if some error occurred.
  */
 cl_error_t cli_map_removekey(struct cli_map *m, const void *key, int32_t keysize);
 
@@ -367,7 +367,7 @@ cl_error_t cli_map_removekey(struct cli_map *m, const void *key, int32_t keysize
  * @param value
  * @param valuesize
  * @return cl_error_t CL_SUCCESS on success
- * @return cl_error_t CL_E* if some error occured
+ * @return cl_error_t CL_E* if some error occurred
  */
 cl_error_t cli_map_setvalue(struct cli_map *m, const void *value, int32_t valuesize);
 
@@ -379,7 +379,7 @@ cl_error_t cli_map_setvalue(struct cli_map *m, const void *value, int32_t values
  * @param keysize
  * @return cl_error_t CL_SUCCESS if found
  * @return cl_error_t CL_EACCES if NOT found
- * @return cl_error_t CL_E* if some error occured.
+ * @return cl_error_t CL_E* if some error occurred.
  */
 cl_error_t cli_map_find(struct cli_map *m, const void *key, int32_t keysize);
 

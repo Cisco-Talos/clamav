@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2009-2013 Sourcefire, Inc.
  *
  *  Authors: aCaB <acab@clamav.net>
@@ -132,7 +132,7 @@ fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty, const cha
     m = cl_fmap_open_handle((void *)(ssize_t)fd, offset, len, pread_cb, 1);
     if (!m)
         return NULL;
-    m->mtime = st.st_mtime;
+    m->mtime = (uint64_t)st.st_mtime;
 
     if (NULL != name) {
         m->name = cli_strdup(name);
@@ -152,8 +152,8 @@ static void unmap_win32(fmap_t *m)
         if (NULL != m->data) {
             UnmapViewOfFile(m->data);
         }
-        if (NULL != m->mh) {
-            CloseHandle(m->mh);
+        if (NULL != m->windows_map_handle) {
+            CloseHandle(m->windows_map_handle);
         }
         if (NULL != m->name) {
             free(m->name);
@@ -169,8 +169,8 @@ fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty, const cha
     STATBUF st;
     fmap_t *m = NULL;
     const void *data;
-    HANDLE fh;
-    HANDLE mh;
+    HANDLE windows_file_handle;
+    HANDLE windows_map_handle;
 
     *empty = 0;
     if (FSTAT(fd, &st)) {
@@ -194,30 +194,30 @@ fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty, const cha
 
     pages = fmap_align_items(len, pgsz);
 
-    if ((fh = (HANDLE)_get_osfhandle(fd)) == INVALID_HANDLE_VALUE) {
+    if ((windows_file_handle = (HANDLE)_get_osfhandle(fd)) == INVALID_HANDLE_VALUE) {
         cli_errmsg("fmap: cannot get a valid handle for descriptor %d\n", fd);
         return NULL;
     }
-    if (!(mh = CreateFileMapping(fh, NULL, PAGE_READONLY, (DWORD)((len >> 31) >> 1), (DWORD)len, NULL))) {
+    if (!(windows_map_handle = CreateFileMapping(windows_file_handle, NULL, PAGE_READONLY, (DWORD)((len >> 31) >> 1), (DWORD)len, NULL))) {
         cli_errmsg("fmap: cannot create a map of descriptor %d\n", fd);
         return NULL;
     }
-    if (!(data = MapViewOfFile(mh, FILE_MAP_READ, (DWORD)((offset >> 31) >> 1), (DWORD)(offset), len))) {
+    if (!(data = MapViewOfFile(windows_map_handle, FILE_MAP_READ, (DWORD)((offset >> 31) >> 1), (DWORD)(offset), len))) {
         cli_errmsg("fmap: cannot map file descriptor %d\n", fd);
-        CloseHandle(mh);
+        CloseHandle(windows_map_handle);
         return NULL;
     }
     if (!(m = cl_fmap_open_memory(data, len))) {
         cli_errmsg("fmap: cannot allocate fmap_t\n", fd);
         UnmapViewOfFile(data);
-        CloseHandle(mh);
+        CloseHandle(windows_map_handle);
         return NULL;
     }
-    m->handle       = (void *)(size_t)fd;
-    m->handle_is_fd = 1; /* This is probably(?) needed so `fmap_fd()` can return the file descriptor. */
-    m->fh           = fh;
-    m->mh           = mh;
-    m->unmap        = unmap_win32;
+    m->handle              = (void *)(size_t)fd;
+    m->handle_is_fd        = true; /* This is probably(?) needed so `fmap_fd()` can return the file descriptor. */
+    m->windows_file_handle = (void *)windows_file_handle;
+    m->windows_map_handle  = (void *)windows_map_handle;
+    m->unmap               = unmap_win32;
 
     if (NULL != name) {
         m->name = cli_strdup(name);
@@ -416,7 +416,7 @@ extern cl_fmap_t *cl_fmap_open_handle(void *handle, size_t offset, size_t len,
     }
     m->handle          = handle;
     m->pread_cb        = pread_cb;
-    m->aging           = use_aging;
+    m->aging           = use_aging != 0 ? true : false;
     m->offset          = offset;
     m->nested_offset   = 0;
     m->len             = len; /* m->nested_offset + m->len = m->real_len */
@@ -430,7 +430,7 @@ extern cl_fmap_t *cl_fmap_open_handle(void *handle, size_t offset, size_t len,
     m->need_offstr     = handle_need_offstr;
     m->gets            = handle_gets;
     m->unneed_off      = handle_unneed_off;
-    m->handle_is_fd    = 1;
+    m->handle_is_fd    = true;
     m->have_md5        = false;
     m->have_sha1       = false;
     m->have_sha256     = false;
@@ -587,7 +587,7 @@ static int fmap_readpage(fmap_t *m, uint64_t first_page, uint64_t count, uint64_
                             cli_warnmsg("fmap_readpage: fstat failed: %s\n", errtxt);
                             return 1;
                         }
-                        if (m->mtime != st.st_mtime) {
+                        if (m->mtime != (uint64_t)st.st_mtime) {
                             cli_warnmsg("fmap_readpage: file changed as we read it\n");
                             return 1;
                         }
@@ -998,7 +998,7 @@ cl_error_t fmap_dump_to_file(fmap_t *map, const char *filepath, const char *tmpd
         if (CL_SUCCESS != cli_basename(filepath, strlen(filepath), &filebase)) {
             cli_dbgmsg("fmap_dump_to_file: Unable to determine basename from filepath.\n");
         } else if ((start_offset != 0) && (end_offset != map->real_len)) {
-            /* If we're only dumping a portion of the file, inlcude the offsets in the prefix,...
+            /* If we're only dumping a portion of the file, include the offsets in the prefix,...
              * e.g. tmp filename will become something like:  filebase.500-1200.<randhex> */
             size_t prefix_len = strlen(filebase) + 1 + SIZE_T_CHARLEN + 1 + SIZE_T_CHARLEN + 1;
             prefix            = malloc(prefix_len);

@@ -58,7 +58,7 @@ ThreadPool::~ThreadPool()
   ReleaseSemaphore(QueuedTasksCnt,ASIZE(TaskQueue),NULL);
 #elif defined(_UNIX)
   // Threads still can access QueuedTasksCnt for a short time after WaitDone(),
-  // so lock is required. We would occassionally hang without it.
+  // so lock is required. We would occasionally hang without it.
   pthread_mutex_lock(&QueuedTasksCntMutex);
   QueuedTasksCnt+=ASIZE(TaskQueue);
   pthread_mutex_unlock(&QueuedTasksCntMutex);

@@ -50,7 +50,7 @@ void RSCoder::pnInit()
     p1[0]=gfExp[I];
     p1[1]=1; // Set p1 polynomial to x+a^i.
 
-    // Multiply the already calucated part of g(x) to next (x+a^i).
+    // Multiply the already calculated part of g(x) to next (x+a^i).
     pnMult(p1,p2,GXPol);
 
     // p2=g(x).

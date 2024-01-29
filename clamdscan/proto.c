@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2009-2013 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm, aCaB
@@ -383,7 +383,7 @@ static cl_error_t parallel_callback(STATBUF *sb, char *filename, const char *pat
     cid->next = c->ids;
     c->ids    = cid;
 
-    /* Give up ownership of the filename to the client parralel scan ID list */
+    /* Give up ownership of the filename to the client parallel scan ID list */
     filename = NULL;
 
     status = CL_SUCCESS;

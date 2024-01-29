@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Alberto Wu
@@ -231,19 +231,29 @@ cl_error_t wwunpack(uint8_t *exe, uint32_t exesz, uint8_t *wwsect, struct cli_ex
     }
 
     if (CL_SUCCESS == error) {
-        if (pe + 6 > exesz || pe + 7 > exesz || pe + 0x28 > exesz ||
-            pe + 0x50 > exesz || pe + 0x14 > exesz)
+
+        // Verify minimum size of exe before dereferencing.
+        if (!CLI_ISCONTAINED(exe, exesz, exe + pe + 0x50, 4)) {
+            cli_dbgmsg("WWPack: unpack memory address out of bounds.\n");
             return CL_EFORMAT;
+        }
+
+        // Verify minimum size of wwsect before dereferencing.
+        if (!CLI_ISCONTAINED(wwsect, sects[scount].rsz, wwsect + 0x295, 4)) {
+            cli_dbgmsg("WWPack: unpack memory address out of bounds.\n");
+            return CL_EFORMAT;
+        }
 
         exe[pe + 6] = (uint8_t)scount;
         exe[pe + 7] = (uint8_t)(scount >> 8);
-        if (!CLI_ISCONTAINED(wwsect, sects[scount].rsz, wwsect + 0x295, 4))
-            cli_dbgmsg("WWPack: unpack memory address out of bounds.\n");
-        else
-            cli_writeint32(&exe[pe + 0x28], cli_readint32(wwsect + 0x295) + sects[scount].rva + 0x299);
+
+        cli_writeint32(&exe[pe + 0x28], cli_readint32(wwsect + 0x295) + sects[scount].rva + 0x299);
+
         cli_writeint32(&exe[pe + 0x50], cli_readint32(&exe[pe + 0x50]) - sects[scount].vsz);
 
+        // Bounds check not required here, because we know exesz > pe + 0x50 + 4
         structs = &exe[(0xffff & cli_readint32(&exe[pe + 0x14])) + pe + 0x18];
+
         for (i = 0; i < scount; i++) {
             if (!CLI_ISCONTAINED(exe, exesz, structs, 0x28)) {
                 cli_dbgmsg("WWPack: structs pointer out of bounds\n");
