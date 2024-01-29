@@ -9,30 +9,62 @@ After=clamav-daemon.service syslog.target network.target
 
 [Service]
 Type=simple
+# WARNING: Must match clamd.conf directive
 User=root
-ExecStartPre=/usr/bin/install --owner=root --group=root --directory /var/local/quarantine
+Group=root
+;DynamicUser=yes
+ExecStartPre=/usr/bin/install --owner=root --group=root --mode=640 --directory /var/local/quarantine
 ExecStart=@prefix@/sbin/clamonacc --foreground --log=/var/log/clamav/clamonacc.log --move=/var/local/quarantine --ping 120 --wait
 ExecReload=/bin/kill -SIGHUP $MAINPID
 ExecStop=/bin/kill -SIGTERM $MAINPID
 LogsDirectory=clamav
 ConfigurationDirectory=clamav
 
-##
-## Security Hardening Options
-##
-ProtectClock=yes
-ProtectKernelTunables=yes
-ProtectKernelModules=yes
-ProtectKernelLogs=yes
-ProtectControlGroups=yes
-NoExecPaths=/
-ExecPaths=@prefix@/sbin/clamonacc @CMAKE_INSTALL_FULL_LIBDIR@ /bin/kill /usr/bin/install
+#============================#
+# Security Hardening Options #
+#============================#
+NoNewPrivileges=yes
+;PrivateUsers=no
 
 # Remove `ProtectSystem`, `ProtectHome`, and `ReadWritePaths` if you
 # want ClamAV to be able to quarantine or remove infected files.
 ProtectSystem=strict
 ProtectHome=read-only
+PrivateTmp=yes
+PrivateDevices=yes
 ReadWritePaths=/var/log/clamav /var/local/quarantine
+
+NoExecPaths=/
+# WARNING: To execute targets of `VirusEvent` and `VirusAction` directives
+# in the cofiguration, whitelist them in ExecPaths.
+ExecPaths=@prefix@/sbin/clamonacc @CMAKE_INSTALL_FULL_LIBDIR@ /bin/kill /usr/bin/install
+
+ProtectClock=yes
+ProtectHostname=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+SystemCallArchitectures=native
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+RestrictRealtime=yes
+
+PrivateNetwork=yes
+IPAddressDeny=any
+RestrictAddressFamilies=none
+
+# ProtectProc is only effective if:
+# (1) Service is a system service and not a user service.
+# (2) CAP_SYS_PTRACE is restricted and
+# (3) Service user is non-root.
+ProtectProc=invisible
+ProcSubset=pid
+
+CapabilityBoundingset=CAP_CHOWN CAP_SETGID CAP_SETUID CAP_DAC_OVERRIDE CAP_MKNOD
+RestrictNamespaces=yes
+SystemCallFilter=~@clock @cpu-emulation @debug @module @mount @obsolete @raw-io @reboot @resources @swap
 
 [Install]
 WantedBy=multi-user.target
