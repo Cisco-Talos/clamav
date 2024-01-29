@@ -70,10 +70,10 @@ struct AlzLocalFileHeader {
 
 
 enum AlzFileAttribute {
-    AlzFileAttributeReadonly = 0x1,
-    AlzFileAttributeHidden = 0x2,
-    AlzFileAttributeDirectory = 0x10,
-    AlzFileAttributeFile = 0x20,
+    _AlzFileAttributeReadonly = 0x1,
+    _AlzFileAttributeHidden = 0x2,
+    _AlzFileAttributeDirectory = 0x10,
+    _AlzFileAttributeFile = 0x20,
 }
 
 impl AlzLocalFileHeader {
@@ -86,7 +86,11 @@ impl AlzLocalFileHeader {
     }
 
     fn is_directory(&mut self) -> bool {
-        return 0 != ((AlzFileAttribute::AlzFileAttributeDirectory as u8) & self._head._file_attribute);
+        return 0 != ((AlzFileAttribute::_AlzFileAttributeDirectory as u8) & self._head._file_attribute);
+    }
+
+    fn is_file(&mut self) -> bool {
+        return 0 != ((AlzFileAttribute::_AlzFileAttributeFile as u8) & self._head._file_attribute);
     }
 
     pub fn new() -> Self {
@@ -228,6 +232,7 @@ impl AlzLocalFileHeader {
                 },
                 _ => return Err(ALZParseError{}),
             }
+            assert!(self.is_file(), "NOT A FILE");
         } else {
 //            println!("DON'T THINK THIS IS EVER POSSIBLE, SEE IF IT COMES OUT IN TESTING!!!!!");
 //            assert!(false, "EXITING HERE");
