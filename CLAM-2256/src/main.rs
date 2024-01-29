@@ -89,8 +89,16 @@ impl AlzLocalFileHeader {
         return 0 != ((AlzFileAttribute::_AlzFileAttributeDirectory as u8) & self._head._file_attribute);
     }
 
-    fn is_file(&self) -> bool {
+    fn _is_file(&self) -> bool {
         return 0 != ((AlzFileAttribute::_AlzFileAttributeFile as u8) & self._head._file_attribute);
+    }
+
+    fn _is_readonly(&self) -> bool {
+        return 0 != ((AlzFileAttribute::_AlzFileAttributeReadonly as u8) & self._head._file_attribute);
+    }
+
+    fn _is_hidden(&self) -> bool {
+        return 0 != ((AlzFileAttribute::_AlzFileAttributeHidden as u8) & self._head._file_attribute);
     }
 
     pub fn new() -> Self {
@@ -465,32 +473,12 @@ fn parse_local_file_header(cursor: &mut std::io::Cursor<&Vec<u8>>, out_dir: &Str
         return false;
     }
 
-    println!("in parse_local_file_header, name '{}, is_file = {}'", local_file_header._file_name, local_file_header.is_file());
-    /*
-    if local_file_header.is_file() {
-        let res2 = local_file_header.extract_file(cursor, out_dir);
-        if res2.is_err() {
-            println!("Extract ERROR: ");
-            return false;
-        }
-    } else if local_file_header.is_directory() {
-        let res2 = local_file_header.create_directory(out_dir);
-        if res2.is_err() {
-            println!("Directory creation ERROR: ");
-            return false;
-        }
-
-        println!("is directory");
-    }
-    */
     if local_file_header.is_directory() {
         let res2 = local_file_header.create_directory(out_dir);
         if res2.is_err() {
             println!("Directory creation ERROR: ");
             return false;
         }
-
-        println!("is directory");
     } else {
         /*the is_file flag doesn't appear to always be set, so we'll just assume it's a file if
          * it's not marked as a directory.*/
