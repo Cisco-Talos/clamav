@@ -356,20 +356,18 @@ impl AlzLocalFileHeader {
         }
 
         //checksum of the original uncompressed data. (Get it from the FILE HEADER)
-contents.push(0x17 );
-contents.push(0x5f );
-contents.push(0x58 );
-contents.push(0xf7 );
+        //let mut bytes = self._file_crc.to_le().to_ne_bytes();
+        let mut bytes = self._file_crc.to_le_bytes();
+        for i in 0..4{
+            contents.push(bytes[i]);
+        }
 
-//length of the original uncompressed data.
-contents.push(0x5d );
-contents.push(0x00 );
-contents.push(0x00 );
-contents.push(0x00);
-
-
-
-
+        //length of the original uncompressed data.
+        //bytes = self._uncompressed_size.to_le_bytes();
+        bytes = (self._uncompressed_size as u32).to_le_bytes();
+        for i in 0..4{
+            contents.push(bytes[i]);
+        }
 
         let mut d = GzDecoder::new(&*contents);
         let mut s = String::new();
