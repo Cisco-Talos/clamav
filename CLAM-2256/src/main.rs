@@ -4,6 +4,9 @@ use std::io::Cursor;
 use byteorder::{LittleEndian, ReadBytesExt};
 //use std::mem::size_of;
 
+use std::fs::File;
+use std::io::Write;
+
 //use deflate::deflate_bytes;
 //use flate2::Decompress;
 //use flate2::FlushDecompress;
@@ -370,12 +373,31 @@ impl AlzLocalFileHeader {
         }
 
         let mut d = GzDecoder::new(&*contents);
+        /*
         let mut s = String::new();
         let ret = d.read_to_string(&mut s);
+        */
+        let mut buffer: Vec<u8> = Vec::new();
+        let ret = d.read_to_end(&mut buffer);
         if ret.is_err() {
             assert!(false, "ERROR in decompress");
         }
+        /*
         println!("Extracted data = '{}'", s);
+        */
+
+        let out_ret = File::create("ftt");
+        if out_ret.is_err() {
+            assert!(false, "Error creating output file");
+        }
+
+        let mut out = out_ret.unwrap();
+
+        let write_ret = out.write_all(&buffer);
+        if write_ret.is_err() {
+            assert!(false, "Error writing to file");
+        }
+
 
         return Ok(());
     }
