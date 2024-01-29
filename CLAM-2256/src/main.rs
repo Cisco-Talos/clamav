@@ -331,13 +331,22 @@ contents.push(0x08 );
 //header flags (don't know what they mean yet)
 //0x8 sets the FNAME flag.  May be able to get away with setting this to 0, and not putting the
 //name in.  Going to try that.
-contents.push(0x08 ); 
+//contents.push(0x08 ); 
+contents.push(0); 
 
 //timestamp
+/*
 contents.push(0xc6 );
 contents.push(0xa7 );
 contents.push(0x1c );
 contents.push(0x4a );
+*/
+/*Don't need an actual timestamp either.*/
+contents.push(0); 
+contents.push(0); 
+contents.push(0); 
+contents.push(0); 
+
 
 //compression flags
 contents.push(0x00 );
@@ -346,6 +355,7 @@ contents.push(0x00 );
 contents.push(0x03 );
 
 //The following is the filename followed by a zero.
+/*
 contents.push(0x61 );
 contents.push(0x6c );
 contents.push(0x7a );
@@ -364,6 +374,7 @@ contents.push(0x74 );
 contents.push(0x78 );
 contents.push(0x74 );
 contents.push(0x00 );
+*/
 
 
 
