@@ -202,10 +202,17 @@ CLAMAV_PRIVATE {
     cli_writen;
     cli_url_canon;
     cli_strerror;
+    cli_ftname;
+    cli_ftcode;
     decodeLine;
     messageCreate;
     messageDestroy;
     base64Flush;
+    cli_unrar_open;
+    cli_unrar_peek_file_header;
+    cli_unrar_extract_file;
+    cli_unrar_skip_file;
+    cli_unrar_close;
     have_rar;
     have_clamjit;
     cli_bytecode_load;
