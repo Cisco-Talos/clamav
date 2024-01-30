@@ -132,7 +132,7 @@ impl AlzLocalFileHeader {
         println!("is_encrypted = {}", self.is_encrypted());
         println!("is_data_descriptor = {}", self.is_data_descriptor());
 
-        println!("self._start_of_compressed_data = {}", self._start_of_compressed_data);
+        println!("");
 
     }
 
@@ -296,13 +296,14 @@ impl AlzLocalFileHeader {
             if self.is_directory() {
                 println!("THIS IS A DIRECTORY");
             } else {
+//                self._dump();
                 println!("THIS IS NOT A DIRECTORY");
             }
         }
 
-        if self._head._file_name_length as usize >= cursor.get_ref().len() {
-            return Err(ALZParseError{});
-        }
+//        if self._head._file_name_length as usize >= cursor.get_ref().len() {
+//            return Err(ALZParseError{});
+//        }
 
         let mut filename: Vec<u8> = Vec::new();
         /*TODO: Figure out the correct way to allocate a vector of dynamic size and call
@@ -351,8 +352,11 @@ impl AlzLocalFileHeader {
             assert!(false, "IS DATA DESCRIPTOR UNIMPLEMENTED");
         }
 
+                self._dump();
+
         return Ok(());
     }
+    //31456954
 
     fn extract_file_deflate(&mut self, cursor: &mut std::io::Cursor<&Vec<u8>>, out_dir: &String) -> Result<(), ALZExtractError>{
         cursor.set_position(self._start_of_compressed_data);
