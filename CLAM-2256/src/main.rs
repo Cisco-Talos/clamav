@@ -102,6 +102,40 @@ impl AlzLocalFileHeader {
         return 0 != ((AlzFileAttribute::_AlzFileAttributeHidden as u8) & self._head._file_attribute);
     }
 
+    fn _dump(&self) {
+        println!("self._start_of_compressed_data = {}", self._start_of_compressed_data );
+
+        println!("self._head._file_name_length = {:x}", self._head._file_name_length);
+        println!("self._head._file_attribute = {:02x}", self._head._file_attribute);
+        println!("self._head._file_time_date = {:x}", self._head._file_time_date);
+        println!("self._head._file_descriptor = {:x}", self._head._file_descriptor);
+        println!("self._head._unknown = {:x}", self._head._unknown);
+
+        println!("self._compression_method = {:x}", self._compression_method);
+        println!("self._unknown = {:x}", self._unknown);
+        println!("self._file_crc = {:x}", self._file_crc);
+        println!("self._compressed_size = {:x}", self._compressed_size);
+        println!("self._uncompressed_size = {:x}", self._uncompressed_size);
+
+        println!("self._file_name = {}", self._file_name);
+
+        print!("self._enc_chk = ");
+        for i in 0..ALZ_ENCR_HEADER_LEN {
+            if 0 != i {
+                print!(" ");
+            }
+            print!("{}", self._enc_chk[i as usize]);
+        }
+        println!("");
+
+
+        println!("is_encrypted = {}", self.is_encrypted());
+        println!("is_data_descriptor = {}", self.is_data_descriptor());
+
+        println!("self._start_of_compressed_data = {}", self._start_of_compressed_data);
+
+    }
+
     pub fn new() -> Self {
 
         Self {
@@ -322,7 +356,6 @@ impl AlzLocalFileHeader {
 
     fn extract_file_deflate(&mut self, cursor: &mut std::io::Cursor<&Vec<u8>>, out_dir: &String) -> Result<(), ALZExtractError>{
         cursor.set_position(self._start_of_compressed_data);
-println!("entering extract for  '{}'", self._file_name);
 
         let mut contents: Vec<u8> = Vec::new();
 
@@ -358,7 +391,23 @@ println!("entering extract for  '{}'", self._file_name);
         for _i in 0..self._compressed_size {
             let ret = cursor.read_u8::<>();
             if ret.is_err() {
-                println!("Cannot read full amount of data");
+                /*
+                println!("Cannot read full amount of data (deflate)");
+                println!("_i = {}", _i);
+                println!("self._file_name = {}", self._file_name);
+                println!("self._compressed_size = {}", self._compressed_size);
+                println!("self._uncompressed_size = {}", self._uncompressed_size);
+                println!("cursor.position() = {}", cursor.position());
+
+                for j in 0..contents.len() {
+                    print!("{:02x} ", contents[j]);
+                }
+                println!("");
+                */
+
+                let _ = self.write_file(out_dir, &mut contents);
+                println!("TODO: put a note in the metadata.json file that this file is incomplete/not decrypted");
+
                 return Err(ALZExtractError{});
             }
 
@@ -384,6 +433,10 @@ println!("entering extract for  '{}'", self._file_name);
             assert!(false, "ERROR in decompress");
         }
 
+
+
+
+        /*
         let mut temp: String = String::from(out_dir);
         temp.push('/');
         temp.push_str(&self._file_name);
@@ -407,8 +460,71 @@ println!("entering extract for  '{}'", self._file_name);
         if write_ret.is_err() {
             assert!(false, "Error writing to file");
         }
+        return Ok(());
+        */
+        return self.write_file(out_dir, &mut buffer);
+    }
+
+
+    fn write_file(&mut self, out_dir: &String, buffer: &mut Vec<u8>) -> Result<(), ALZExtractError>{
+        let mut temp: String = String::from(out_dir);
+        temp.push('/');
+        temp.push_str(&self._file_name);
+        temp = temp.replace("\\", "/");
+
+        let p = Path::new(&temp);
+        let ret = create_dir_all(p.parent().unwrap());
+        if ret.is_err() {
+            assert!(false, "Cannot create directory, try and just write the file in the base directory");
+            return Err(ALZExtractError{});
+        }
+
+        let out_ret = File::create(&temp);
+
+        if out_ret.is_err() {
+            assert!(false, "Error creating output file");
+            return Err(ALZExtractError{});
+        }
+
+        let mut out = out_ret.unwrap();
+
+        let write_ret = out.write_all(&buffer);
+        if write_ret.is_err() {
+            assert!(false, "Error writing to file");
+            return Err(ALZExtractError{});
+        }
 
         return Ok(());
+    }
+
+    fn extract_file_nocomp(&mut self, cursor: &mut std::io::Cursor<&Vec<u8>>, out_dir: &String) -> Result<(), ALZExtractError>{
+        let mut contents: Vec<u8> = Vec::new();
+        cursor.set_position(self._start_of_compressed_data);
+
+        if self._compressed_size != self._uncompressed_size {
+            assert!(false, "Consider ignoring this and just writing the minimum number of bytes");
+            return Err(ALZExtractError{});
+        }
+
+        /*TODO: Figure out the correct way to allocate a vector of dynamic size and call
+         * cursor.read_exact, instead of having a loop of reads.*/
+        for _i in 0..self._compressed_size {
+            let ret = cursor.read_u8::<>();
+            if ret.is_err() {
+                println!("Cannot read full amount of data (nocomp)");
+                println!("_i = {}", _i);
+                return Err(ALZExtractError{});
+            }
+
+            contents.push( ret.unwrap());
+        }
+
+        return self.write_file(out_dir, &mut contents);
+        /*
+        assert!(false, "finish implementing");
+
+        return Ok(());
+        */
     }
 
     fn extract_file(&mut self, cursor: &mut std::io::Cursor<&Vec<u8>>, out_dir: &String) -> Result<(), ALZExtractError>{
@@ -426,7 +542,7 @@ println!("entering extract for  '{}'", self._file_name);
 
         match self._compression_method {
             ALZ_COMP_NOCOMP=>{
-                assert!(false, "Nocomp Unimplemented");
+                return self.extract_file_nocomp(cursor, out_dir);
             }
             ALZ_COMP_BZIP2=>{
                 assert!(false, "Bzip2 Unimplemented");
@@ -488,7 +604,7 @@ fn parse_local_file_header(cursor: &mut std::io::Cursor<&Vec<u8>>, out_dir: &Str
          * it's not marked as a directory.*/
         let res2 = local_file_header.extract_file(cursor, out_dir);
         if res2.is_err() {
-            println!("Extract ERROR: ");
+            println!("Extract ERROR: (probably should consider changing this to a warning, and parse what we have");
             return false;
         }
     }
@@ -546,6 +662,7 @@ fn process_file(bytes: &Vec<u8>, out_dir: &String) -> bool {
                 /*This is the end, nothing really to do here.*/
             }
             _ => {
+                println!("sig = {:x}", sig);
                 /*Parse error, maybe try and extract what is there???*/
                 assert!(false, "NOT A VALID FILE IN MATCH");
             }
