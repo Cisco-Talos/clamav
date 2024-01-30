@@ -408,7 +408,6 @@ println!("entering extract for  '{}'", self._file_name);
             assert!(false, "Error writing to file");
         }
 
-
         return Ok(());
     }
 
