@@ -167,10 +167,19 @@ enum FunctionalityLevels {
 
     FUNC_LEVEL_1_0   = 160, /**< LibClamAV release 1.0.0 */
     FUNC_LEVEL_1_0_1 = 161, /**< LibClamAV release 1.0.1 */
+    FUNC_LEVEL_1_0_2 = 162, /**< LibClamAV release 1.0.2 */
+    FUNC_LEVEL_1_0_3 = 163, /**< LibClamAV release 1.0.3 */
+    FUNC_LEVEL_1_0_4 = 164, /**< LibClamAV release 1.0.4 */
+    FUNC_LEVEL_1_0_5 = 165, /**< LibClamAV release 1.0.5 */
 
     FUNC_LEVEL_1_1 = 180, /**< LibClamAV release 1.1.0 */
+    FUNC_LEVEL_1_1_1 = 181, /**< LibClamAV release 1.1.1 */
+    FUNC_LEVEL_1_1_2 = 182, /**< LibClamAV release 1.1.2 */
+    FUNC_LEVEL_1_1_3 = 183, /**< LibClamAV release 1.1.3 */
 
     FUNC_LEVEL_1_2 = 190, /**< LibClamAV release 1.2.0 */
+    FUNC_LEVEL_1_2_1 = 191, /**< LibClamAV release 1.2.1 */
+    FUNC_LEVEL_1_2_2 = 192, /**< LibClamAV release 1.2.2 */
 
     FUNC_LEVEL_1_3 = 200, /**< LibClamAV release 1.3.0 */
 };
