@@ -74,8 +74,6 @@ def addFile(fileName, outFile, bzip2):
     if len(data) > 0xffffffff:
         numBytes = 8
     
-    print (numBytes)
-
     outFile.write(struct.pack("<B", numBytes * 0x10))
 
     #unknown
@@ -94,8 +92,6 @@ def addFile(fileName, outFile, bzip2):
     outFile.write(struct.pack('<I', crc))
 
     if 1 == numBytes:
-        print (compressedSize)
-        print (uncompressedSize)
         outFile.write(struct.pack('<B', compressedSize))
         outFile.write(struct.pack('<B', uncompressedSize))
     elif 2 == numBytes:
@@ -136,13 +132,10 @@ createInFiles()
 outFile = open(options.outFile, "wb")
 writeFileHeader(outFile)
 
-#print ("FIXMEREALBAD: PUT THIS BACK")
-#addFile("test.c", outFile, options.bz2)
 for parent, dirs, files in os.walk(WORKING_DIRECTORY):
     for f in files:
         fname = os.path.join(parent, f)
         addFile(fname, outFile, options.bz2)
-
 
 #end of file
 outFile.write(b'\x43\x4c\x5a\x01\x00\x00\x00\x00\x00\x00\x00\x00\x43\x4c\x5a\x02')
