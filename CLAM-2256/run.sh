@@ -37,12 +37,14 @@ rm -rf outDir
 
 FILE=unit_tests/deflate.alz
 FILE=unit_tests/uncompressed.alz
+FILE=unit_tests/bzip2.alz
 
 rm -rf outDir unalz
 
+unalz -d unalz $FILE
+
 cargo run $FILE outDir
 
-unalz -d unalz $FILE
 
 
 
