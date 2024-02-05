@@ -129,6 +129,7 @@ for parent, dirs, files in os.walk(WORKING_DIRECTORY):
     for f in files:
         fname = os.path.join(parent, f)
         addFile(fname, outFile, options.bz2)
+        break
 
 
 #end of file

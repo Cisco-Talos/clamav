@@ -4,6 +4,7 @@ PAYLOAD_FILE = 'test.c'
 
 
 import os
+os.system("rm -rf test.c.bz2")
 os.system("bzip2 -k test.c")
 
 """
