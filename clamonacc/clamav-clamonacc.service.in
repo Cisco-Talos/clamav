@@ -17,8 +17,9 @@ ExecStartPre=/usr/bin/install --owner=root --group=root --mode=640 --directory /
 ExecStart=@prefix@/sbin/clamonacc --foreground --log=/var/log/clamav/clamonacc.log --move=/var/local/quarantine --ping 120 --wait
 ExecReload=/bin/kill -SIGHUP $MAINPID
 ExecStop=/bin/kill -SIGTERM $MAINPID
-LogsDirectory=clamav
+;LogsDirectory=clamav
 ConfigurationDirectory=clamav
+;RuntimeDirectory=clamav
 
 #============================#
 # Security Hardening Options #
@@ -32,7 +33,7 @@ ProtectSystem=strict
 ProtectHome=read-only
 PrivateTmp=yes
 PrivateDevices=yes
-ReadWritePaths=/var/local/quarantine
+ReadWritePaths=/var/local/quarantine /var/log/clamav
 
 NoExecPaths=/
 # WARNING: To execute targets of `VirusEvent` and `VirusAction` directives

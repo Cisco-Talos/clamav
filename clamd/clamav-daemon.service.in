@@ -19,6 +19,7 @@ ExecReload=/bin/kill -USR2 $MAINPID
 TimeoutStartSec=420
 LogsDirectory=clamav
 ConfigurationDirectory=clamav
+RuntimeDirectory=clamav
 
 #============================#
 # Security Hardening Options #
@@ -32,7 +33,7 @@ ProtectSystem=strict
 ProtectHome=read-only
 PrivateTmp=yes
 PrivateDevices=yes
-ReadWritePaths=/run/clamav /var/run/clamav /var/local/quarantine
+ReadWritePaths=/var/local/quarantine
 
 NoExecPaths=/
 # WARNING: To execute targets of `VirusEvent` and `VirusAction` directives

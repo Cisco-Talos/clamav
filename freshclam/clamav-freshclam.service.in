@@ -15,6 +15,7 @@ Group=clamav
 ExecStart=@prefix@/bin/freshclam -d --foreground=true
 LogsDirectory=clamav
 ConfigurationDirectory=clamav
+RuntimeDirectory=clamav
 
 #============================#
 # Security Hardening Options #

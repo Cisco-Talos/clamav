@@ -14,7 +14,8 @@ Group=clamav
 ;DynamicUser=yes
 ExecStart=@prefix@/bin/freshclam
 LogsDirectory=clamav
-;ConfigurationDirectory=clamav
+ConfigurationDirectory=clamav
+RuntimeDirectory=clamav
 
 #============================#
 # Security Hardening Options #
