@@ -1,7 +1,8 @@
 #!/usr/bin/python3
 
-import sys, os
+import sys, os, bz2
 import shutil
+import binascii
 import struct
 from optparse import OptionParser
 
@@ -31,13 +32,77 @@ def createInFiles():
 
 def writeFileHeader(f):
     #write alz file header
-    f.write(struct.pack('<i', 0x015a4c41))
+    f.write(struct.pack('<I', 0x015a4c41))
 
     #write 'ignored' bytes
-    f.write(struct.pack('<i', 0x0a))
+    f.write(struct.pack('<I', 0x0a))
 
-def addFile(fileName, outFile):
-    here;
+def addFile(fileName, outFile, bzip2):
+    #local file header
+    outFile.write(struct.pack('<I', 0x015a4c42))
+
+    #length of file name
+    outFile.write(struct.pack('<H', len(fileName)))
+
+    #file attribute
+    outFile.write(b'\x20')
+
+    #time date
+    outFile.write(b'\x00\x00\x00\x00')
+
+    #read in contents of the file
+    data = open(fileName, "rb").read()
+    crc = binascii.crc32(data)
+    uncompressedSize = len(data)
+    if bzip2:
+        #bzip2 the file
+        data = bz2.compress(data)
+
+    compressedSize = len(data)
+
+    #file descriptor
+    numBytes = 1
+    if len(data) > 0xff:
+        numBytes = 2
+    if len(data) > 0xffff:
+        numBytes = 4
+    if len(data) > 0xffffffff:
+        numBytes = 8
+
+    outFile.write(struct.pack("<B", numBytes * 0x10))
+
+    #unknown
+    outFile.write(b'\x00')
+
+    if bzip2:
+        outFile.write(b'\x01')
+    else:
+        print ("unsupported")
+        import pdb ; pdb.set_trace()
+
+    #unknown
+    outFile.write(b'\x00')
+
+    #write the crc
+    outFile.write(struct.pack('<I', crc))
+
+    if 1 == numBytes:
+        outFile.write(struct.pack('<B', compressedSize))
+        outFile.write(struct.pack('<B', uncompressedSize))
+    elif 2 == numBytes:
+        outFile.write(struct.pack('<H', compressedSize))
+        outFile.write(struct.pack('<H', uncompressedSize))
+    elif 4 == numBytes:
+        outFile.write(struct.pack('<I', compressedSize))
+        outFile.write(struct.pack('<I', uncompressedSize))
+    elif 8 == numBytes:
+        outFile.write(struct.pack('<Q', compressedSize))
+        outFile.write(struct.pack('<Q', uncompressedSize))
+    else:
+        print ("Unsupported numBytes")
+        import pdb ; pdb.set_trace()
+
+    outFile.write(data)
 
 
 
@@ -63,8 +128,11 @@ writeFileHeader(outFile)
 for parent, dirs, files in os.walk(WORKING_DIRECTORY):
     for f in files:
         fname = os.path.join(parent, f)
-        addFile(fname, outFile)
+        addFile(fname, outFile, options.bz2)
 
+
+#end of file
+outFile.write(b'\x43\x4c\x5a\x01\x00\x00\x00\x00\x00\x00\x00\x00\x43\x4c\x5a\x02')
 
 
 

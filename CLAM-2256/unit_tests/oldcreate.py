@@ -3,6 +3,8 @@
 PAYLOAD_FILE = 'test.c'
 
 
+import os
+os.system("bzip2 -k test.c")
 
 """
 TODO: Figure out how to add other code pages
@@ -75,7 +77,7 @@ f2.close()
 #f.write(data[4:])
 f.write(data)
 
-#end of file shit
+#end of file
 f.write(b'\x43\x4c\x5a\x01\x00\x00\x00\x00\x00\x00\x00\x00\x43\x4c\x5a\x02')
 
 
