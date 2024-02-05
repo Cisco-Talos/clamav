@@ -32,7 +32,7 @@ ProtectSystem=strict
 ProtectHome=read-only
 PrivateTmp=yes
 PrivateDevices=yes
-ReadWritePaths=/var/log/clamav /run/clamav /var/run/clamav /var/local/quarantine
+ReadWritePaths=/run/clamav /var/run/clamav /var/local/quarantine
 
 NoExecPaths=/
 # WARNING: To execute targets of `VirusEvent` and `VirusAction` directives

@@ -13,7 +13,7 @@ User=clamav
 Group=clamav
 ;DynamicUser=yes
 ExecStart=@prefix@/bin/freshclam
-;LogsDirectory=clamav
+LogsDirectory=clamav
 ;ConfigurationDirectory=clamav
 
 #============================#
@@ -26,7 +26,7 @@ ProtectSystem=full
 ProtectHome=tmpfs
 PrivateTmp=yes
 PrivateDevices=yes
-ReadWritePaths=@DATADIR@ /var/log/clamav
+ReadWritePaths=@DATADIR@
 
 NoExecPaths=/
 # WARNING: To execute targets of `OnUpdateExecute`, `OnErrorExecute` and `OnOutdatedExecute`
