@@ -9,6 +9,9 @@ use std::fs::create_dir_all;
 use std::io::Write;
 use std::path::Path;
 
+use bzip2::Compression;
+use bzip2::read::{BzEncoder, BzDecoder};
+
 //use deflate::deflate_bytes;
 //use flate2::Decompress;
 //use flate2::FlushDecompress;
@@ -532,6 +535,37 @@ println!("TODO: Figure out how to not write the beginning of 'contents' without 
         */
     }
 
+    fn extract_file_bzip2(&mut self, cursor: &mut std::io::Cursor<&Vec<u8>>, out_dir: &String) -> Result<(), ALZExtractError>{
+
+        let mut contents: Vec<u8> = Vec::new();
+        cursor.set_position(self._start_of_compressed_data);
+
+        /*TODO: Figure out the correct way to allocate a vector of dynamic size and call
+         * cursor.read_exact, instead of having a loop of reads.*/
+        for _i in 0..self._compressed_size {
+            let ret = cursor.read_u8::<>();
+            if ret.is_err() {
+                println!("Cannot read full amount of data (nocomp)");
+                println!("_i = {}", _i);
+                return Err(ALZExtractError{});
+            }
+
+            contents.push( ret.unwrap());
+        }
+
+
+
+
+        assert!(false, "bzip2 unimplemented");
+
+
+
+        //let compressor = BzEncoder::new(contents, Compression::best());
+//        let mut decompressor = BzDecoder::new(compressor);
+
+        return self.write_file(out_dir, &mut contents);
+    }
+
     fn extract_file(&mut self, cursor: &mut std::io::Cursor<&Vec<u8>>, out_dir: &String) -> Result<(), ALZExtractError>{
         const ALZ_COMP_NOCOMP: u8 = 0;
         const ALZ_COMP_BZIP2: u8 = 1;
@@ -550,7 +584,7 @@ println!("TODO: Figure out how to not write the beginning of 'contents' without 
                 return self.extract_file_nocomp(cursor, out_dir);
             }
             ALZ_COMP_BZIP2=>{
-                assert!(false, "Bzip2 Unimplemented");
+                return self.extract_file_bzip2(cursor, out_dir);
             }
             ALZ_COMP_DEFLATE=>{
                 return self.extract_file_deflate(cursor, out_dir);
