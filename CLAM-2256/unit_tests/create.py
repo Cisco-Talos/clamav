@@ -38,6 +38,13 @@ def writeFileHeader(f):
     f.write(struct.pack('<I', 0x0a))
 
 def addFile(fileName, outFile, bzip2):
+
+    #read in contents of the file
+    data = open(fileName, "rb").read()
+
+    #update the fileName so we don't have our working directory path in every file.
+    fileName = fileName[1 + len(WORKING_DIRECTORY):]
+
     #local file header
     outFile.write(struct.pack('<I', 0x015a4c42))
 
@@ -50,8 +57,6 @@ def addFile(fileName, outFile, bzip2):
     #time date
     outFile.write(struct.pack('<I', 0))
 
-    #read in contents of the file
-    data = open(fileName, "rb").read()
     crc = binascii.crc32(data)
     uncompressedSize = len(data)
     if bzip2:
@@ -133,13 +138,10 @@ writeFileHeader(outFile)
 
 #print ("FIXMEREALBAD: PUT THIS BACK")
 #addFile("test.c", outFile, options.bz2)
-#"""
 for parent, dirs, files in os.walk(WORKING_DIRECTORY):
     for f in files:
         fname = os.path.join(parent, f)
         addFile(fname, outFile, options.bz2)
-        break
-#"""
 
 
 #end of file
