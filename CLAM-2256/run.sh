@@ -33,11 +33,18 @@ rm -rf outDir
 #FILE=86b5e5c78a8de95510cd2fbc4dddf66e824a82412bdfb1d67ca504a51d8f1eac corrupted
 #FILE=7fc7b135ed44a3f201cfac31945bf7c3007464634b5b8b464c13d87ca6f7bbea corrupted
 
+#cargo run samples/$FILE outDir
+
+FILE=unit_tests/deflate.alz
+FILE=unit_tests/uncompressed.alz
+
+rm -rf outDir unalz
+
+cargo run $FILE outDir
+
+unalz -d unalz $FILE
 
 
-
-
-cargo run samples/$FILE outDir
 
 
 
