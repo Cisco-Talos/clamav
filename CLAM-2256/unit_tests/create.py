@@ -82,8 +82,7 @@ def addFile(fileName, outFile, bzip2):
     if bzip2:
         outFile.write(b'\x01')
     else:
-        print ("unsupported")
-        import pdb ; pdb.set_trace()
+        outFile.write(b'\x00')
 
     #unknown
     outFile.write(b'\x00')
