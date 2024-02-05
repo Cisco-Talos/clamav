@@ -48,7 +48,7 @@ def addFile(fileName, outFile, bzip2):
     outFile.write(b'\x20')
 
     #time date
-    outFile.write(b'\x00\x00\x00\x00')
+    outFile.write(struct.pack('<I', 0))
 
     #read in contents of the file
     data = open(fileName, "rb").read()
@@ -68,6 +68,8 @@ def addFile(fileName, outFile, bzip2):
         numBytes = 4
     if len(data) > 0xffffffff:
         numBytes = 8
+    
+    print (numBytes)
 
     outFile.write(struct.pack("<B", numBytes * 0x10))
 
@@ -87,6 +89,8 @@ def addFile(fileName, outFile, bzip2):
     outFile.write(struct.pack('<I', crc))
 
     if 1 == numBytes:
+        print (compressedSize)
+        print (uncompressedSize)
         outFile.write(struct.pack('<B', compressedSize))
         outFile.write(struct.pack('<B', uncompressedSize))
     elif 2 == numBytes:
@@ -101,6 +105,8 @@ def addFile(fileName, outFile, bzip2):
     else:
         print ("Unsupported numBytes")
         import pdb ; pdb.set_trace()
+
+    outFile.write(fileName.encode('utf-8'))
 
     outFile.write(data)
 
@@ -125,11 +131,15 @@ createInFiles()
 outFile = open(options.outFile, "wb")
 writeFileHeader(outFile)
 
+#print ("FIXMEREALBAD: PUT THIS BACK")
+#addFile("test.c", outFile, options.bz2)
+#"""
 for parent, dirs, files in os.walk(WORKING_DIRECTORY):
     for f in files:
         fname = os.path.join(parent, f)
         addFile(fname, outFile, options.bz2)
         break
+#"""
 
 
 #end of file
