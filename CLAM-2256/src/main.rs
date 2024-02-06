@@ -521,7 +521,6 @@ println!("TODO: Figure out how to not write the beginning of 'contents' without 
             let ret = cursor.read_u8::<>();
             if ret.is_err() {
                 println!("Cannot read full amount of data (nocomp)");
-                println!("_i = {}", _i);
                 return Err(ALZExtractError{});
             }
 
@@ -541,8 +540,7 @@ println!("TODO: Figure out how to not write the beginning of 'contents' without 
         for _i in 0..self._compressed_size {
             let ret = cursor.read_u8::<>();
             if ret.is_err() {
-                println!("Cannot read full amount of data (nocomp)");
-                println!("_i = {}", _i);
+                println!("Cannot read full amount of data (bzip2)");
                 return Err(ALZExtractError{});
             }
 
