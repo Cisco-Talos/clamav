@@ -11,6 +11,7 @@ use std::path::Path;
 
 use bzip2::Compression;
 use bzip2::read::{BzEncoder, BzDecoder};
+//use bzip2::read::{BzDecoder};
 
 //use deflate::deflate_bytes;
 //use flate2::Decompress;
@@ -540,6 +541,7 @@ println!("TODO: Figure out how to not write the beginning of 'contents' without 
         let mut contents: Vec<u8> = Vec::new();
         cursor.set_position(self._start_of_compressed_data);
 
+        /*
         /*TODO: Figure out the correct way to allocate a vector of dynamic size and call
          * cursor.read_exact, instead of having a loop of reads.*/
         for _i in 0..self._compressed_size {
@@ -553,17 +555,55 @@ println!("TODO: Figure out how to not write the beginning of 'contents' without 
             contents.push( ret.unwrap());
         }
 
+        */
+
+        let mut out: Vec<u8> = Vec::new();
+        for _i in 0..self._uncompressed_size {
+            out.push(0);
+        }
+
+        /*
 
 
 
-        assert!(false, "bzip2 unimplemented");
+// Round trip some bytes from a byte source, into a compressor, into a
+// decompressor, and finally into a vector.
+let data = "Hello, World!".as_bytes();
+let compressor = BzEncoder::new(data, Compression::best());
+let mut decompressor = BzDecoder::new(compressor);
+
+let mut contents = String::new();
+decompressor.read_to_string(&mut contents).unwrap();
+assert_eq!(contents, "Hello, World!");
 
 
+println!("MADE IT!!!");
+
+        for _i in 0..self._compressed_size {
+            print!("{:02x} ", contents[_i as usize]);
+        }
+        println!("");
+
+*/
+
+
+
+        let mut decompressor = BzDecoder::new(cursor);
+       // let mut outString = String::new();
+        //let res = decompressor.read_to_string(&mut outString);
+
+        let res = decompressor.read_exact(&mut out);
+        if res.is_err(){
+            assert!(false, "Error decompressing bz2 file");
+        }
+
+
+//        assert!(false, "Made it!!!");
 
         //let compressor = BzEncoder::new(contents, Compression::best());
 //        let mut decompressor = BzDecoder::new(compressor);
 
-        return self.write_file(out_dir, &mut contents);
+        return self.write_file(out_dir, &mut out);
     }
 
     fn extract_file(&mut self, cursor: &mut std::io::Cursor<&Vec<u8>>, out_dir: &String) -> Result<(), ALZExtractError>{
@@ -596,7 +636,7 @@ println!("TODO: Figure out how to not write the beginning of 'contents' without 
             }
         }
 
-        return Ok(());
+        //return Ok(());
     }
 
     fn create_directory(&mut self, out_dir: &String) -> Result<(), ALZExtractError>{
