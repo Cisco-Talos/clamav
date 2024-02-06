@@ -529,11 +529,6 @@ println!("TODO: Figure out how to not write the beginning of 'contents' without 
         }
 
         return self.write_file(out_dir, &mut contents);
-        /*
-        assert!(false, "finish implementing");
-
-        return Ok(());
-        */
     }
 
     fn extract_file_bzip2(&mut self, cursor: &mut std::io::Cursor<&Vec<u8>>, out_dir: &String) -> Result<(), ALZExtractError>{
