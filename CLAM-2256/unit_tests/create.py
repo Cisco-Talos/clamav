@@ -137,15 +137,12 @@ if '/' == inDir or '\\' == inDir:
     parser.print_help()
     sys.exit(1)
 
-print (f"before {inDir}")
 while 1 < len(inDir):
 
     if '/' == inDir[len(inDir)-1] or '\\' == inDir[len(inDir)-1]:
         inDir = inDir[:-1]
     else:
         break
-
-print (f"after {inDir}")
 
 outFile = open(options.outFile, "wb")
 writeFileHeader(outFile)

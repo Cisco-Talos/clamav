@@ -39,6 +39,7 @@ FILE=unit_tests/deflate.alz
 FILE=unit_tests/uncompressed.alz
 FILE=unit_tests/bzip2.alz
 FILE=unit_tests/bzip2.bin.alz
+FILE=unit_tests/uncompressed.bin.alz
 
 rm -rf outDir unalz
 
