@@ -356,8 +356,6 @@ impl AlzLocalFileHeader {
             assert!(false, "IS DATA DESCRIPTOR UNIMPLEMENTED");
         }
 
-                self._dump();
-
         return Ok(());
     }
     //31456954
