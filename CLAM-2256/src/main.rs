@@ -413,7 +413,7 @@ impl AlzLocalFileHeader {
                 println!("");
                 */
 
-println!("TODO: Figure out how to not write the beginning of 'contents' without doing a copy");
+//println!("TODO: Figure out how to not write the beginning of 'contents' without doing a copy");
                 let _ = self.write_file(out_dir, &mut contents);
                 println!("TODO: put a note in the metadata.json file that this file is incomplete/not decrypted");
 
