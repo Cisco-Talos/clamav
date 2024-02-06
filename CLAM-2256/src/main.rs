@@ -554,55 +554,19 @@ println!("TODO: Figure out how to not write the beginning of 'contents' without 
             contents.push( ret.unwrap());
         }
 
+        /*TODO: Figure out why I have to do this, and can't just call
+         * Vec::with_capacity(self._uncompressed_size)
+         */
         let mut out: Vec<u8> = Vec::new();
         for _i in 0..self._uncompressed_size {
             out.push(0);
         }
 
-        /*
-
-
-
-// Round trip some bytes from a byte source, into a compressor, into a
-// decompressor, and finally into a vector.
-let data = "Hello, World!".as_bytes();
-let compressor = BzEncoder::new(data, Compression::best());
-let mut decompressor = BzDecoder::new(compressor);
-
-let mut contents = String::new();
-decompressor.read_to_string(&mut contents).unwrap();
-assert_eq!(contents, "Hello, World!");
-
-
-println!("MADE IT!!!");
-
-        for _i in 0..self._compressed_size {
-            print!("{:02x} ", contents[_i as usize]);
-        }
-        println!("");
-
-*/
-
-
-
-        //let mut decompressor = BzDecoder::new(cursor);
         let mut decompressor = BzDecoder::new(&*contents);
-
-
-
-       // let mut outString = String::new();
-        //let res = decompressor.read_to_string(&mut outString);
-
         let res = decompressor.read_exact(&mut out);
         if res.is_err(){
             assert!(false, "Error decompressing bz2 file");
         }
-
-
-//        assert!(false, "Made it!!!");
-
-        //let compressor = BzEncoder::new(contents, Compression::best());
-//        let mut decompressor = BzDecoder::new(compressor);
 
         return self.write_file(out_dir, &mut out);
     }
