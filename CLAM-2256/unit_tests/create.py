@@ -37,13 +37,13 @@ def writeFileHeader(f):
     #write 'ignored' bytes
     f.write(struct.pack('<I', 0x0a))
 
-def addFile(fileName, outFile, bzip2):
+def addFile(fileName, outFile, bzip2, inDir):
 
     #read in contents of the file
     data = open(fileName, "rb").read()
 
     #update the fileName so we don't have our working directory path in every file.
-    fileName = fileName[1 + len(WORKING_DIRECTORY):]
+    fileName = fileName[1 + len(inDir):]
 
     #local file header
     outFile.write(struct.pack('<I', 0x015a4c42))
@@ -116,6 +116,7 @@ parser = OptionParser()
 parser.add_option("-o", "--out-file", help="Output file name", dest="outFile")
 parser.add_option("-b", "--bzip2", action="store_true", help="Cannot be combined with uncompressed", dest="bz2")
 parser.add_option("-u", "--uncompressed", action="store_true", help="Cannot be combined with bz2", dest="uncompressed")
+parser.add_option("-i", "--input", help="Cannot be combined with bz2", dest="input")
 
 (options, args) = parser.parse_args()
 
@@ -125,16 +126,34 @@ if ((options.bz2 and options.uncompressed)
     parser.print_help()
     sys.exit(1)
 
-createWD()
-createInFiles()
+if None == options.input:
+    createWD()
+    createInFiles()
+    inDir = WORKING_DIRECTORY
+else:
+    inDir = options.input
+
+if '/' == inDir or '\\' == inDir:
+    parser.print_help()
+    sys.exit(1)
+
+print (f"before {inDir}")
+while 1 < len(inDir):
+
+    if '/' == inDir[len(inDir)-1] or '\\' == inDir[len(inDir)-1]:
+        inDir = inDir[:-1]
+    else:
+        break
+
+print (f"after {inDir}")
 
 outFile = open(options.outFile, "wb")
 writeFileHeader(outFile)
 
-for parent, dirs, files in os.walk(WORKING_DIRECTORY):
+for parent, dirs, files in os.walk(inDir):
     for f in files:
         fname = os.path.join(parent, f)
-        addFile(fname, outFile, options.bz2)
+        addFile(fname, outFile, options.bz2, inDir)
 
 #end of file
 outFile.write(b'\x43\x4c\x5a\x01\x00\x00\x00\x00\x00\x00\x00\x00\x43\x4c\x5a\x02')
