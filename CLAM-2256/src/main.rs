@@ -9,9 +9,9 @@ use std::fs::create_dir_all;
 use std::io::Write;
 use std::path::Path;
 
-use bzip2::Compression;
-use bzip2::read::{BzEncoder, BzDecoder};
-//use bzip2::read::{BzDecoder};
+//use bzip2::Compression;
+//use bzip2::read::{BzEncoder, BzDecoder};
+use bzip2::read::{BzDecoder};
 
 //use deflate::deflate_bytes;
 //use flate2::Decompress;
@@ -541,7 +541,6 @@ println!("TODO: Figure out how to not write the beginning of 'contents' without 
         let mut contents: Vec<u8> = Vec::new();
         cursor.set_position(self._start_of_compressed_data);
 
-        /*
         /*TODO: Figure out the correct way to allocate a vector of dynamic size and call
          * cursor.read_exact, instead of having a loop of reads.*/
         for _i in 0..self._compressed_size {
@@ -554,8 +553,6 @@ println!("TODO: Figure out how to not write the beginning of 'contents' without 
 
             contents.push( ret.unwrap());
         }
-
-        */
 
         let mut out: Vec<u8> = Vec::new();
         for _i in 0..self._uncompressed_size {
@@ -588,7 +585,11 @@ println!("MADE IT!!!");
 
 
 
-        let mut decompressor = BzDecoder::new(cursor);
+        //let mut decompressor = BzDecoder::new(cursor);
+        let mut decompressor = BzDecoder::new(&*contents);
+
+
+
        // let mut outString = String::new();
         //let res = decompressor.read_to_string(&mut outString);
 
