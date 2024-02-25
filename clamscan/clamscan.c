@@ -306,6 +306,8 @@ void help(void)
     mprintf(LOGG_INFO, "    --scan-hwp3[=yes(*)/no]              Scan HWP3 files\n");
     mprintf(LOGG_INFO, "    --scan-onenote[=yes(*)/no]           Scan OneNote files\n");
     mprintf(LOGG_INFO, "    --scan-archive[=yes(*)/no]           Scan archive files (supported by libclamav)\n");
+    mprintf(LOGG_INFO, "    --scan-image[=yes(*)/no]             Scan image (graphics) files\n");
+    mprintf(LOGG_INFO, "    --scan-image-fuzzy-hash[=yes(*)/no]  Detect files by calculating image (graphics) fuzzy hashes\n");
     mprintf(LOGG_INFO, "    --alert-broken[=yes/no(*)]           Alert on broken executable files (PE & ELF)\n");
     mprintf(LOGG_INFO, "    --alert-broken-media[=yes/no(*)]     Alert on broken graphics files (JPEG, TIFF, PNG, GIF)\n");
     mprintf(LOGG_INFO, "    --alert-encrypted[=yes/no(*)]        Alert on encrypted archives and documents\n");

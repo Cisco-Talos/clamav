@@ -4773,80 +4773,106 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
             break;
 
         case CL_TYPE_GRAPHICS: {
-            /*
-             * This case is for unhandled graphics types such as BMP, JPEG 2000, etc.
-             *
-             * Note: JPEG 2000 is a very different format from JPEG, JPEG/JFIF, JPEG/Exif, JPEG/SPIFF (1994, 1997)
-             * JPEG 2000 is not handled by cli_scanjpeg or cli_parsejpeg.
-             */
+            if (SCAN_PARSE_IMAGE) {
+                /*
+                 * This case is for unhandled graphics types such as BMP, JPEG 2000, etc.
+                 *
+                 * Note: JPEG 2000 is a very different format from JPEG, JPEG/JFIF, JPEG/Exif, JPEG/SPIFF (1994, 1997)
+                 * JPEG 2000 is not handled by cli_parsejpeg.
+                 */
 
-            // It's okay if it fails to calculate the fuzzy hash.
-            (void)calculate_fuzzy_image_hash(ctx, type);
-
+                if (SCAN_PARSE_IMAGE_FUZZY_HASH && (DCONF_OTHER & OTHER_CONF_IMAGE_FUZZY_HASH)) {
+                    // It's okay if it fails to calculate the fuzzy hash.
+                    (void)calculate_fuzzy_image_hash(ctx, type);
+                }
+            }
             break;
         }
 
         case CL_TYPE_GIF: {
-            if (SCAN_HEURISTICS && SCAN_HEURISTIC_BROKEN_MEDIA && (DCONF_OTHER & OTHER_CONF_GIF)) {
-                ret = cli_parsegif(ctx);
+            if (SCAN_PARSE_IMAGE && (DCONF_OTHER & OTHER_CONF_GIF)) {
+                if (SCAN_HEURISTICS && SCAN_HEURISTIC_BROKEN_MEDIA) {
+                    /*
+                     * Parse GIF files, checking for exploits and other file format issues.
+                     */
+                    ret = cli_parsegif(ctx);
+                    if (CL_SUCCESS != ret) {
+                        // do not calculate the fuzzy image hash if parsing failed, or a heuristic alert occurred.
+                        break;
+                    }
+                }
+
+                if (SCAN_PARSE_IMAGE_FUZZY_HASH && (DCONF_OTHER & OTHER_CONF_IMAGE_FUZZY_HASH)) {
+                    // It's okay if it fails to calculate the fuzzy hash.
+                    (void)calculate_fuzzy_image_hash(ctx, type);
+                }
             }
-
-            if (CL_SUCCESS != ret) {
-                // do not calculate the fuzzy image hash if parsing failed, or a heuristic alert occurred.
-                break;
-            }
-
-            // It's okay if it fails to calculate the fuzzy hash.
-            (void)calculate_fuzzy_image_hash(ctx, type);
-
             break;
         }
 
         case CL_TYPE_PNG: {
-            if (SCAN_HEURISTICS && (DCONF_OTHER & OTHER_CONF_PNG)) {
-                ret = cli_parsepng(ctx); /* PNG parser detects a couple CVE's as well as Broken.Media */
+            if (SCAN_PARSE_IMAGE && (DCONF_OTHER & OTHER_CONF_PNG)) {
+                if (SCAN_HEURISTICS && SCAN_HEURISTIC_BROKEN_MEDIA) {
+                    /*
+                     * Parse PNG files, checking for exploits and other file format issues.
+                     */
+                    ret = cli_parsepng(ctx); /* PNG parser detects a couple CVE's as well as Broken.Media */
+                    if (CL_SUCCESS != ret) {
+                        // do not calculate the fuzzy image hash if parsing failed, or a heuristic alert occurred.
+                        break;
+                    }
+                }
+
+                if (SCAN_PARSE_IMAGE_FUZZY_HASH && (DCONF_OTHER & OTHER_CONF_IMAGE_FUZZY_HASH)) {
+                    // It's okay if it fails to calculate the fuzzy hash.
+                    (void)calculate_fuzzy_image_hash(ctx, type);
+                }
             }
-
-            if (CL_SUCCESS != ret) {
-                // do not calculate the fuzzy image hash if parsing failed, or a heuristic alert occurred.
-                break;
-            }
-
-            // It's okay if it fails to calculate the fuzzy hash.
-            (void)calculate_fuzzy_image_hash(ctx, type);
-
             break;
         }
 
         case CL_TYPE_JPEG: {
-            if (SCAN_HEURISTICS && (DCONF_OTHER & OTHER_CONF_JPEG)) {
-                ret = cli_parsejpeg(ctx); /* JPG parser detects MS04-028 exploits as well as Broken.Media */
+            if (SCAN_PARSE_IMAGE && (DCONF_OTHER & OTHER_CONF_JPEG)) {
+                if (SCAN_HEURISTICS && SCAN_HEURISTIC_BROKEN_MEDIA) {
+                    /*
+                     * Parse JPEG files, checking for exploits and other file format issues.
+                     *
+                     * Note: JPEG 2000 is a very different format from JPEG, JPEG/JFIF, JPEG/Exif, JPEG/SPIFF (1994, 1997)
+                     * JPEG 2000 is not checked by cli_parsejpeg.
+                     */
+                    ret = cli_parsejpeg(ctx); /* JPG parser detects MS04-028 exploits as well as Broken.Media */
+                    if (CL_SUCCESS != ret) {
+                        // do not calculate the fuzzy image hash if parsing failed, or a heuristic alert occurred.
+                        break;
+                    }
+                }
+
+                if (SCAN_PARSE_IMAGE_FUZZY_HASH && (DCONF_OTHER & OTHER_CONF_IMAGE_FUZZY_HASH)) {
+                    // It's okay if it fails to calculate the fuzzy hash.
+                    (void)calculate_fuzzy_image_hash(ctx, type);
+                }
             }
-
-            if (CL_SUCCESS != ret) {
-                // do not calculate the fuzzy image hash if parsing failed, or a heuristic alert occurred.
-                break;
-            }
-
-            // It's okay if it fails to calculate the fuzzy hash.
-            (void)calculate_fuzzy_image_hash(ctx, type);
-
             break;
         }
 
         case CL_TYPE_TIFF: {
-            if (SCAN_HEURISTICS && SCAN_HEURISTIC_BROKEN_MEDIA && (DCONF_OTHER & OTHER_CONF_TIFF) && ret != CL_VIRUS) {
-                ret = cli_parsetiff(ctx);
+            if (SCAN_PARSE_IMAGE && (DCONF_OTHER & OTHER_CONF_TIFF)) {
+                if (SCAN_HEURISTICS && SCAN_HEURISTIC_BROKEN_MEDIA) {
+                    /*
+                     * Parse TIFF files, checking for exploits and other file format issues.
+                     */
+                    ret = cli_parsetiff(ctx);
+                    if (CL_SUCCESS != ret) {
+                        // do not calculate the fuzzy image hash if parsing failed, or a heuristic alert occurred.
+                        break;
+                    }
+                }
+
+                if (SCAN_PARSE_IMAGE_FUZZY_HASH && (DCONF_OTHER & OTHER_CONF_IMAGE_FUZZY_HASH)) {
+                    // It's okay if it fails to calculate the fuzzy hash.
+                    (void)calculate_fuzzy_image_hash(ctx, type);
+                }
             }
-
-            if (CL_SUCCESS != ret) {
-                // do not calculate the fuzzy image hash if parsing failed, or a heuristic alert occurred.
-                break;
-            }
-
-            // It's okay if it fails to calculate the fuzzy hash.
-            (void)calculate_fuzzy_image_hash(ctx, type);
-
             break;
         }
 
