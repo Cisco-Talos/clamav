@@ -60,6 +60,26 @@ class TC(testcase.TestCase):
         ]
         self.verify_output(output.out, expected=expected_stdout)
 
+        # Try again with image fuzzy hashing disabled to verify the flag will disable this feature (at least for PNG files)
+        command = '{valgrind} {valgrind_args} {clamscan} -d {path_db} {testfiles} --allmatch --scan-image-fuzzy-hash=no'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan,
+            path_db=TC.path_tmp / 'good.ldb',
+            testfiles=TC.testfiles,
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 0  # virus
+
+        # Try again with image scanning disabled to verify that the flag disables this feature (at least for PNG files)
+        command = '{valgrind} {valgrind_args} {clamscan} -d {path_db} {testfiles} --allmatch --scan-image=no'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan,
+            path_db=TC.path_tmp / 'good.ldb',
+            testfiles=TC.testfiles,
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 0  # virus
+
     #
     # Next check with the bad signatures
     #
