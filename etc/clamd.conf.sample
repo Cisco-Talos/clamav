@@ -111,7 +111,7 @@ Example
 
 # Remove stale socket after unclean shutdown.
 # Default: yes
-#FixStaleSocket yes
+#FixStaleSocket no
 
 # TCP port address.
 # Default: no
@@ -199,7 +199,7 @@ Example
 
 # Scan files and directories on other filesystems.
 # Default: yes
-#CrossFilesystems yes
+#CrossFilesystems no
 
 # Perform a database check.
 # Default: 600 (10 min)
@@ -299,7 +299,7 @@ Example
 # may be malicious.  This option enables alerting on such heuristically
 # detected potential threats.
 # Default: yes
-#HeuristicAlerts yes
+#HeuristicAlerts no
 
 # Allow heuristic alerts to take precedence.
 # When enabled, if a heuristic scan (such as phishingScan) detects
@@ -377,7 +377,7 @@ Example
 # and Petite. If you turn off this option, the original files will still be
 # scanned, but without additional processing.
 # Default: yes
-#ScanPE yes
+#ScanPE no
 
 # Certain PE files contain an authenticode signature. By default, we check
 # the signature chain in the PE file against a database of trusted and
@@ -394,7 +394,7 @@ Example
 # If you turn off this option, the original files will still be scanned, but
 # without additional processing.
 # Default: yes
-#ScanELF yes
+#ScanELF no
 
 
 ##
@@ -406,37 +406,37 @@ Example
 # If you turn off this option, the original files will still be scanned, but
 # without additional processing.
 # Default: yes
-#ScanOLE2 yes
+#ScanOLE2 no
 
 # This option enables scanning within PDF files.
 # If you turn off this option, the original files will still be scanned, but
 # without decoding and additional processing.
 # Default: yes
-#ScanPDF yes
+#ScanPDF no
 
 # This option enables scanning within SWF files.
 # If you turn off this option, the original files will still be scanned, but
 # without decoding and additional processing.
 # Default: yes
-#ScanSWF yes
+#ScanSWF no
 
 # This option enables scanning xml-based document files supported by libclamav.
 # If you turn off this option, the original files will still be scanned, but
 # without additional processing.
 # Default: yes
-#ScanXMLDOCS yes
+#ScanXMLDOCS no
 
 # This option enables scanning of HWP3 files.
 # If you turn off this option, the original files will still be scanned, but
 # without additional processing.
 # Default: yes
-#ScanHWP3 yes
+#ScanHWP3 no
 
 # This option enables scanning of OneNote files.
 # If you turn off this option, the original files will still be scanned, but
 # without additional processing.
 # Default: yes
-#ScanOneNote yes
+#ScanOneNote no
 
 
 ##
@@ -447,7 +447,7 @@ Example
 # If you turn off this option, the original files will still be scanned, but
 # without additional processing.
 # Default: yes
-#ScanImage yes
+#ScanImage no
 
 # This option enables detection by calculating a fuzzy hash of image (graphics)
 # files.
@@ -455,7 +455,7 @@ Example
 # identifying images embedded or attached to those files.
 # If you turn off this option, then some files may no longer be detected.
 # Default: yes
-#ScanImageFuzzyHash yes
+#ScanImageFuzzyHash no
 
 
 ##
@@ -466,7 +466,7 @@ Example
 # If you turn off this option, the original files will still be scanned, but
 # without parsing individual messages/attachments.
 # Default: yes
-#ScanMail yes
+#ScanMail no
 
 # Scan RFC1341 messages split over many emails.
 # You will need to periodically clean up $TemporaryDirectory/clamav-partial
@@ -513,7 +513,7 @@ Example
 # With this option enabled the DLP module will search for valid
 # SSNs formatted as xxx-yy-zzzz
 # Default: yes
-#StructuredSSNFormatNormal yes
+#StructuredSSNFormatNormal no
 
 # With this option enabled the DLP module will search for valid
 # SSNs formatted as xxxyyzzzz
@@ -529,7 +529,7 @@ Example
 # Default: yes
 # If you turn off this option, the original files will still be scanned, but
 # without additional processing.
-#ScanHTML yes
+#ScanHTML no
 
 
 ##
@@ -540,7 +540,7 @@ Example
 # If you turn off this option, the original files will still be scanned, but
 # without unpacking and additional processing.
 # Default: yes
-#ScanArchive yes
+#ScanArchive no
 
 
 ##
@@ -812,7 +812,7 @@ Example
 # It is highly recommended you keep this option on, otherwise you'll miss
 # detections for many new viruses.
 # Default: yes
-#Bytecode yes
+#Bytecode no
 
 # Set bytecode security level.
 # Possible values:
