@@ -250,6 +250,7 @@ void help(void)
     mprintf(LOGG_INFO, "\n");
     mprintf(LOGG_INFO, "    --tempdir=DIRECTORY                  Create temporary files in DIRECTORY\n");
     mprintf(LOGG_INFO, "    --leave-temps[=yes/no(*)]            Do not remove temporary files\n");
+    mprintf(LOGG_INFO, "    --force-to-disk[=yes/no(*)]          Create temporary files for nested file scans that would otherwise be in-memory only\n");
     mprintf(LOGG_INFO, "    --gen-json[=yes/no(*)]               Generate JSON metadata for the scanned file(s). For testing & development use ONLY.\n");
     mprintf(LOGG_INFO, "                                         JSON will be printed if --debug is enabled.\n");
     mprintf(LOGG_INFO, "                                         A JSON file will dropped to the temp directory if --leave-temps is enabled.\n");
