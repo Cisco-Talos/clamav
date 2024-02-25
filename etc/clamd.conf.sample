@@ -440,6 +440,25 @@ Example
 
 
 ##
+## Other file types
+##
+
+# This option enables scanning of image (graphics).
+# If you turn off this option, the original files will still be scanned, but
+# without additional processing.
+# Default: yes
+#ScanImage yes
+
+# This option enables detection by calculating a fuzzy hash of image (graphics)
+# files.
+# Signatures using image fuzzy hashes typically match files and documents by
+# identifying images embedded or attached to those files.
+# If you turn off this option, then some files may no longer be detected.
+# Default: yes
+#ScanImageFuzzyHash yes
+
+
+##
 ## Mail files
 ##
 

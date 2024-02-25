@@ -1118,6 +1118,20 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
         logg(LOGG_INFO, "Archive support disabled.\n");
     }
 
+    if (optget(opts, "ScanImage")->enabled) {
+        logg(LOGG_INFO, "Image (graphics) scanning support enabled.\n");
+        options.parse |= CL_SCAN_PARSE_IMAGE;
+    } else {
+        logg(LOGG_INFO, "Image (graphics) scanning support disabled.\n");
+    }
+
+    if (optget(opts, "ScanImageFuzzyHash")->enabled) {
+        logg(LOGG_INFO, "Detection using image fuzzy hash enabled.\n");
+        options.parse |= CL_SCAN_PARSE_IMAGE_FUZZY_HASH;
+    } else {
+        logg(LOGG_INFO, "Detection using image fuzzy hash disabled.\n");
+    }
+
     /* TODO: Remove deprecated option in a future feature release. */
     if (optget(opts, "ArchiveBlockEncrypted")->enabled) {
         if (options.parse & CL_SCAN_PARSE_ARCHIVE) {

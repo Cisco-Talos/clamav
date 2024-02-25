@@ -1555,6 +1555,12 @@ int scanmanager(const struct optstruct *opts)
     if (optget(opts, "scan-onenote")->enabled)
         options.parse |= CL_SCAN_PARSE_ONENOTE;
 
+    if (optget(opts, "scan-image")->enabled)
+        options.parse |= CL_SCAN_PARSE_IMAGE;
+
+    if (optget(opts, "scan-image-fuzzy-hash")->enabled)
+        options.parse |= CL_SCAN_PARSE_IMAGE_FUZZY_HASH;
+
     /* TODO: Remove deprecated option in a future feature release */
     if ((optget(opts, "algorithmic-detection")->enabled) && /* && used due to default-yes for both options */
         (optget(opts, "heuristic-alerts")->enabled)) {

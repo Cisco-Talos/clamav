@@ -137,6 +137,7 @@ static struct dconf_module modules[] = {
     {"OTHER", "GIF", OTHER_CONF_GIF, 1},
     {"OTHER", "PNG", OTHER_CONF_PNG, 1},
     {"OTHER", "TIFF", OTHER_CONF_TIFF, 1},
+    {"OTHER", "IMAGE FUZZY HASH", OTHER_CONF_IMAGE_FUZZY_HASH, 1},
 
     {"PHISHING", "ENGINE", PHISHING_CONF_ENGINE, 1},
     {"PHISHING", "ENTCONV", PHISHING_CONF_ENTCONV, 1},
