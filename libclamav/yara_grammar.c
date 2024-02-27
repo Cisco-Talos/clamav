@@ -3649,6 +3649,8 @@ yyerrlab:
       }
 # undef YYSYNTAX_ERROR
 #endif
+      /*Exit out, no reason to continue parsing, since we have already found errors.*/
+      goto yyreturn;
     }
 
 
