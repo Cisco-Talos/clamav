@@ -50,6 +50,8 @@ clang-format-16 -i -verbose unit_tests/*.h
 clang-format-16 -i -verbose win32/compat/*.c
 clang-format-16 -i -verbose win32/compat/*.h
 
+rustfmt `find . -name "*.rs"`
+
 # Undo changes to specific files that we don't really want to reformat
 git checkout libclamav/iana_cctld.h
 git checkout libclamav/bytecode_api_decl.c
