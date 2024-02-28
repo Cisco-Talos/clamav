@@ -693,9 +693,17 @@ fc_error_t fc_update_database(
                     logg(LOGG_INFO, "    In order to rectify this please check that you are:\n");
                     logg(LOGG_INFO, "   a. Running an up-to-date version of FreshClam\n");
                     logg(LOGG_INFO, "   b. Running FreshClam no more than once an hour\n");
-                    logg(LOGG_INFO, "   c. If you have checked (a) and (b), please open a ticket at\n");
+                    logg(LOGG_INFO, "   c. Connecting from an IP in a blocked region\n");
+                    logg(LOGG_INFO, "      Please see https://www.cisco.com/c/m/en_us/crisissupport.html\n");
+                    logg(LOGG_INFO, "   d. If you have checked (a), (b) and (c), please open a ticket at\n");
                     logg(LOGG_INFO, "      https://github.com/Cisco-Talos/clamav/issues\n");
                     logg(LOGG_INFO, "      and we will investigate why your network is blocked.\n");
+                    if (0 != g_lastRay[0]) {
+                        logg(LOGG_INFO, "      Please provide the following cf-ray id with your ticket.\n");
+                        logg(LOGG_INFO, "\n      CF-RAY=========================================================================\n");
+                        logg(LOGG_INFO, "      cf-ray: %s\n", g_lastRay);
+                        logg(LOGG_INFO, "\n");
+                    }
                     logg(LOGG_WARNING, "You are on cool-down until after: %s\n", retry_after_string);
                     status = ret;
                     goto done;
@@ -795,7 +803,16 @@ fc_error_t fc_update_databases(
             logg(LOGG_INFO, "    CDN and your own network.\n");
             logg(LOGG_INFO, " 4. Please do not open a ticket asking for an exemption from the rate limit,\n");
             logg(LOGG_INFO, "    it will not be granted.\n");
+            if (0 != g_lastRay[0]) {
+                logg(LOGG_INFO, " 5. If you have verified that you are not blocked due to your region, and have\n");
+                logg(LOGG_INFO, "    not exceeded the rate limit, please provide the following cf-ray id when\n");
+                logg(LOGG_INFO, "    submitting a ticket.\n");
+                logg(LOGG_INFO, "\n    CF-RAY=========================================================================\n");
+                logg(LOGG_INFO, "    cf-ray: %s\n", g_lastRay);
+                logg(LOGG_INFO, "\n");
+            }
             logg(LOGG_WARNING, "You are still on cool-down until after: %s\n", retry_after_string);
+
             status = FC_SUCCESS;
             goto done;
         } else {
@@ -804,6 +821,11 @@ fc_error_t fc_update_databases(
             save_freshclam_dat();
         }
     }
+
+    /*Clear the old cf-ray ids.  This is really only so that
+     * we don't have stale ones when we are running in daemon mode.*/
+    //memset(&g_rayLst, 0, sizeof(g_rayLst));
+    memset(&g_lastRay, 0, sizeof(g_lastRay));
 
     for (i = 0; i < nDatabases; i++) {
         if (FC_SUCCESS != (ret = fc_update_database(
@@ -914,7 +936,15 @@ fc_error_t fc_download_url_database(
                 logg(LOGG_INFO, "   c. If you have checked (a) and (b), please open a ticket at\n");
                 logg(LOGG_INFO, "      https://github.com/Cisco-Talos/clamav/issues\n");
                 logg(LOGG_INFO, "      and we will investigate why your network is blocked.\n");
+                if (0 != g_lastRay[0]) {
+                    size_t i;
+                    logg(LOGG_INFO, "      Please provide the following cf-ray id with your ticket.\n");
+                    logg(LOGG_INFO, "\n      CF-RAY=========================================================================\n");
+                    logg(LOGG_INFO, "      cf-ray: %s\n", g_lastRay);
+                    logg(LOGG_INFO, "\n");
+                }
                 logg(LOGG_WARNING, "You are on cool-down until after: %s\n", retry_after_string);
+
                 status = ret;
                 goto done;
                 break;
