@@ -20,13 +20,16 @@
  *  MA 02110-1301, USA.
  */
 
-use std::{ffi::CStr, mem::ManuallyDrop, os::raw::c_char};
+use std::{ffi::CStr, os::raw::c_char};
 
 use base64::{engine::general_purpose as base64_engine_standard, Engine as _};
 use log::{debug, error, warn};
 use unicode_segmentation::UnicodeSegmentation;
 
-use crate::sys;
+use crate::{
+    scanners::magic_scan,
+    sys::{cl_error_t, cl_error_t_CL_ERROR, cl_error_t_CL_SUCCESS, cli_ctx},
+};
 
 /// Error enumerates all possible errors returned by this library.
 #[derive(thiserror::Error, Debug)]
@@ -272,80 +275,48 @@ impl<'a> Iterator for CssImageExtractor<'a> {
     }
 }
 
-/// C interface for CssImageExtractor::new().
-/// Handles all the unsafe ffi stuff.
+/// C interface to handle HTML style blocks.
+///
+/// This function looks through the style block for images found in HTML style blocks.
+/// It will extract each image and scan it.
 ///
 /// # Safety
 ///
-/// `file_bytes` and `hash_out` must not be NULL
-#[export_name = "new_css_image_extractor"]
-pub unsafe extern "C" fn new_css_image_extractor(
+/// `file_bytes` must not be NULL
+#[export_name = "html_style_block_handler"]
+pub unsafe extern "C" fn html_style_block_handler(
+    ctx: *mut cli_ctx,
     file_bytes: *const c_char,
-) -> sys::css_image_extractor_t {
+) -> cl_error_t {
     let css_input = if file_bytes.is_null() {
-        warn!("{} is NULL", stringify!(file_bytes));
-        return 0 as sys::css_image_extractor_t;
+        warn!("html css 'file_bytes' buffer is NULL");
+        return cl_error_t_CL_ERROR;
     } else {
         #[allow(unused_unsafe)]
         unsafe { CStr::from_ptr(file_bytes) }.to_string_lossy()
     };
 
-    if let Ok(extractor) = CssImageExtractor::new(&css_input) {
-        Box::into_raw(Box::new(extractor)) as sys::css_image_extractor_t
+    let extractor = if let Ok(extractor) = CssImageExtractor::new(&css_input) {
+        extractor
     } else {
-        0 as sys::css_image_extractor_t
-    }
-}
+        return cl_error_t_CL_ERROR;
+    };
 
-/// Free the css image extractor
-#[no_mangle]
-pub extern "C" fn free_css_image_extractor(extractor: sys::css_image_extractor_t) {
-    if extractor.is_null() {
-        warn!("Attempted to free an image extractor pointer. Please report this at: https://github.com/Cisco-Talos/clamav/issues");
-    } else {
-        let _ = unsafe { Box::from_raw(extractor as *mut CssImageExtractor) };
-    }
-}
+    let mut scan_result = cl_error_t_CL_SUCCESS;
 
-/// C interface for CssImageExtractor::next().
-/// Handles all the unsafe ffi stuff.
-///
-/// # Safety
-///
-/// `file_bytes` and `hash_out` must not be NULL
-#[export_name = "css_image_extract_next"]
-pub unsafe extern "C" fn css_image_extract_next(
-    extractor: sys::css_image_extractor_t,
-    image_out: *mut *const u8,
-    image_out_len: *mut usize,
-    image_out_handle: *mut sys::css_image_handle_t,
-) -> bool {
-    let mut extractor = ManuallyDrop::new(Box::from_raw(extractor as *mut CssImageExtractor));
+    extractor.into_iter().all(|image| {
+        debug!("Extracted {}-byte image", image.len());
 
-    let image_result = extractor.next();
-    match image_result {
-        Some(image) => {
-            *image_out = image.as_ptr();
-            *image_out_len = image.len();
-            *image_out_handle = Box::into_raw(Box::new(image)) as sys::css_image_handle_t;
-            true
+        let ret = magic_scan(ctx, &image, None);
+        if ret != cl_error_t_CL_SUCCESS {
+            scan_result = ret;
+            return false;
         }
-        None => false,
-    }
-}
 
-/// Free an extracted image
-///
-/// # Safety
-///
-/// Only call this once you're done using the image_out bytes.
-#[no_mangle]
-pub extern "C" fn free_extracted_image(image: sys::css_image_handle_t) {
-    if image.is_null() {
-        warn!("Attempted to free an image pointer. Please report this at: https://github.com/Cisco-Talos/clamav/issues");
-    } else {
-        let _ = unsafe { Box::from_raw(image as *mut Vec<u8>) };
-    }
+        true
+    });
+
+    scan_result
 }
 
 #[cfg(test)]

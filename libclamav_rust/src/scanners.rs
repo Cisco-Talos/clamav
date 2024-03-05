@@ -45,7 +45,7 @@ use crate::{
 
 /// Rust wrapper of libclamav's cli_magic_scan_buff() function.
 /// Use magic sigs to identify the file type and then scan it.
-fn magic_scan(ctx: *mut cli_ctx, buf: &[u8], name: Option<String>) -> cl_error_t {
+pub fn magic_scan(ctx: *mut cli_ctx, buf: &[u8], name: Option<String>) -> cl_error_t {
     let ptr = buf.as_ptr();
     let len = buf.len();
 
