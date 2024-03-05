@@ -1882,33 +1882,12 @@ static bool cli_html_normalise(cli_ctx *ctx, int fd, m_area_t *m_area, const cha
     }
 
     if (style_buff != NULL) {
-        // Found contents of <style> ... </style> block
-
-        // Create image extractor for style block
-        css_image_extractor_t extractor = new_css_image_extractor((const char *)style_buff);
-        if (NULL != extractor) {
-            uint8_t *image                  = NULL;
-            size_t image_len                = 0;
-            css_image_handle_t image_handle = NULL;
-
-            // Extract until there are no more images remaining.
-            while (false != css_image_extract_next(extractor,
-                                                   (const uint8_t **)&image,
-                                                   &image_len,
-                                                   &image_handle)) {
-                // Scan each extracted image. The magic scan will figure out the file type.
-                cl_error_t ret = cli_magic_scan_buff(image, image_len, ctx, NULL, LAYER_ATTRIBUTES_NONE);
-                if (CL_SUCCESS != ret) {
-                    cli_dbgmsg("Scan of image extracted from html <style> block returned: %s\n", cl_strerror(ret));
-                    free_extracted_image(image_handle);
-                    free_css_image_extractor(extractor);
-                    goto done;
-                }
-                free_extracted_image(image_handle);
-                image_handle = NULL;
-            }
-
-            free_css_image_extractor(extractor);
+        // Found contents of <style> ... </style> block. 
+        // Search it for images embedded in the CSS.
+        cl_error_t ret = html_style_block_handler(ctx, (const char *)style_buff);
+        if (CL_SUCCESS != ret) {
+            cli_dbgmsg("Scan of image extracted from html <style> block returned: %s\n", cl_strerror(ret));
+            goto done;
         }
 
         free(style_buff);
