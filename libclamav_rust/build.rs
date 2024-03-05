@@ -60,8 +60,6 @@ const BINDGEN_TYPES: &[&str] = &[
     "cli_matcher",
     "cli_ac_data",
     "cli_ac_result",
-    "css_image_extractor_t",
-    "css_image_handle_t",
     "onedump_t",
 ];
 
