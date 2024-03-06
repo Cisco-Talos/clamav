@@ -191,6 +191,8 @@ static void help(void)
     printf("    --no-dns                             Force old non-DNS verification method\n");
     printf("    --checks=#n          -c #n           Number of checks per day, 1 <= n <= 50\n");
     printf("    --datadir=DIRECTORY                  Download new databases into DIRECTORY\n");
+    printf("                                         NOTE: DIRECTORY must already exist, be an absolute path, and");
+    printf("                                         be writeable by freshclam and readable by clamd/clamscan.");
     printf("    --daemon-notify[=/path/clamd.conf]   Send RELOAD command to clamd\n");
     printf("    --local-address=IP   -a IP           Bind to IP for HTTP downloads\n");
     printf("    --on-update-execute=COMMAND          Execute COMMAND after successful update.\n");

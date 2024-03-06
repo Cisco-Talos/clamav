@@ -9,6 +9,8 @@ Example
 
 # Path to the database directory.
 # WARNING: It must match clamd.conf's directive!
+# WARNING: It must already exist, be an absolute path, be writeable by
+# freshclam, and be readable by clamd/clamscan.
 # Default: hardcoded (depends on installation options)
 #DatabaseDirectory "C:\Program Files\ClamAV\database"
 

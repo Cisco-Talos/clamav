@@ -61,7 +61,7 @@ This option forces old non\-DNS verification method (without a TTL delay).
 Check #n times per day for a new database. #n must be between 1 and 50.
 .TP
 \fB\-\-datadir=DIRECTORY\fR
-Install new database in DIRECTORY. The directory must be writable for the '@CLAMAV_USER@' user or unprivileged user running freshclam.
+Install new database in DIRECTORY. The directory must be writable for the '@CLAMAV_USER@' user or unprivileged user running freshclam, already exist, and be an absolute path.
 .TP
 \fB\-\-daemon\-notify=/path/to/clamd.conf\fR
 Notify the daemon about the new database. By default it reads a hardcoded config file but you can use a different one. Both local and TCP sockets are supported.
