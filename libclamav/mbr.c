@@ -179,14 +179,12 @@ cl_error_t cli_scanmbr(cli_ctx *ctx, size_t sectorsize)
     /* MBR checks */
     status = mbr_check_mbr(&mbr, maplen, sectorsize);
     if (status != CL_SUCCESS) {
-        status = status;
         goto done;
     }
 
     /* MBR is valid, examine bootstrap code */
     status = cli_magic_scan_nested_fmap_type(ctx->fmap, 0, sectorsize, ctx, CL_TYPE_ANY, NULL, LAYER_ATTRIBUTES_NONE);
     if (status != CL_SUCCESS) {
-        status = status;
         goto done;
     }
 
@@ -194,7 +192,6 @@ cl_error_t cli_scanmbr(cli_ctx *ctx, size_t sectorsize)
     if (SCAN_HEURISTIC_PARTITION_INTXN && (ctx->dconf->other & OTHER_CONF_PRTNINTXN)) {
         status = mbr_primary_partition_intersection(ctx, mbr, sectorsize);
         if (status != CL_SUCCESS) {
-            status = status;
             goto done;
         }
     }
@@ -225,7 +222,6 @@ cl_error_t cli_scanmbr(cli_ctx *ctx, size_t sectorsize)
             status = mbr_scanextprtn(ctx, &prtncount, mbr.entries[i].firstLBA,
                                      mbr.entries[i].numLBA, sectorsize);
             if (status != CL_SUCCESS) {
-                status = status;
                 goto done;
             }
         } else {
@@ -236,7 +232,6 @@ cl_error_t cli_scanmbr(cli_ctx *ctx, size_t sectorsize)
             mbr_parsemsg("cli_magic_scan_nested_fmap_type: [%u, +%u)\n", partoff, partsize);
             status = cli_magic_scan_nested_fmap_type(ctx->fmap, partoff, partsize, ctx, CL_TYPE_PART_ANY, NULL, LAYER_ATTRIBUTES_NONE);
             if (status != CL_SUCCESS) {
-                status = status;
                 goto done;
             }
         }
