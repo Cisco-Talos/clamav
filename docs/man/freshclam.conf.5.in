@@ -62,7 +62,7 @@ Write the daemon's pid to the specified file.
 Default: disabled
 .TP
 \fBDatabaseDirectory STRING\fR
-Path to a directory containing database files.
+Path to a directory containing database files.  This directory must already exist, be an absolute path, be writeable by freshclam and readable by clamd/clamscan.
 .br
 Default: @DATADIR@
 .TP
