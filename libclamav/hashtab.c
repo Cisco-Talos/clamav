@@ -192,6 +192,10 @@ cl_error_t cli_hashtab_init(struct cli_hashtable *s, size_t capacity)
 
 cl_error_t cli_htu32_init(struct cli_htu32 *s, size_t capacity, mpool_t *mempool)
 {
+#ifndef USE_MPOOL
+    UNUSEDPARAM(mempool);
+#endif
+
     if (!s)
         return CL_ENULLARG;
 
@@ -491,6 +495,10 @@ cl_error_t cli_htu32_insert(struct cli_htu32 *s, const struct cli_htu32_element 
     size_t tries                              = 1;
     size_t idx;
 
+#ifndef USE_MPOOL
+    UNUSEDPARAM(mempool);
+#endif
+
     if (!s)
         return CL_ENULLARG;
     if (s->used > s->maxfill) {
@@ -582,6 +590,10 @@ void cli_hashtab_free(struct cli_hashtable *s)
 
 void cli_htu32_free(struct cli_htu32 *s, mpool_t *mempool)
 {
+#ifndef USE_MPOOL
+    UNUSEDPARAM(mempool);
+#endif
+
     MPOOL_FREE(mempool, s->htable);
     s->htable   = NULL;
     s->capacity = 0;
@@ -707,9 +719,9 @@ void cli_hashset_destroy(struct cli_hashset *hs)
     hs->capacity          = 0;
 }
 
-#define BITMAP_CONTAINS(bmap, val) ((bmap)[(val) >> 5] & ((uint64_t)1 << ((val)&0x1f)))
-#define BITMAP_INSERT(bmap, val) ((bmap)[(val) >> 5] |= ((uint64_t)1 << ((val)&0x1f)))
-#define BITMAP_REMOVE(bmap, val) ((bmap)[(val) >> 5] &= ~((uint64_t)1 << ((val)&0x1f)))
+#define BITMAP_CONTAINS(bmap, val) ((bmap)[(val) >> 5] & ((uint64_t)1 << ((val) & 0x1f)))
+#define BITMAP_INSERT(bmap, val) ((bmap)[(val) >> 5] |= ((uint64_t)1 << ((val) & 0x1f)))
+#define BITMAP_REMOVE(bmap, val) ((bmap)[(val) >> 5] &= ~((uint64_t)1 << ((val) & 0x1f)))
 
 /*
  * searches the hashset for the @key.
