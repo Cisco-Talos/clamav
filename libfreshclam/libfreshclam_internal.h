@@ -64,6 +64,7 @@ extern uint32_t g_requestTimeout;
 extern uint32_t g_bCompressLocalDatabase;
 
 extern freshclam_dat_v1_t *g_freshclamDat;
+extern uint8_t g_lastRay[CFRAY_LEN + 1];
 
 fc_error_t load_freshclam_dat(void);
 fc_error_t save_freshclam_dat(void);

@@ -118,6 +118,8 @@ uint32_t g_bCompressLocalDatabase = 0;
 
 freshclam_dat_v1_t *g_freshclamDat = NULL;
 
+uint8_t g_lastRay[CFRAY_LEN + 1] = {0};
+
 /** @brief Generate a Version 4 UUID according to RFC-4122
  *
  * Uses the openssl RAND_bytes function to generate a Version 4 UUID.
@@ -217,8 +219,9 @@ fc_error_t load_freshclam_dat(void)
             /* Verify that file size is as expected. */
             off_t file_size = lseek(handle, 0L, SEEK_END);
 
-            if (strlen(MIRRORS_DAT_MAGIC) + sizeof(freshclam_dat_v1_t) != (size_t)file_size) {
-                logg(LOGG_DEBUG, "freshclam.dat is bigger than expected: %zu != %ld\n", sizeof(freshclam_dat_v1_t), file_size);
+            size_t minSize = strlen(MIRRORS_DAT_MAGIC) + sizeof(freshclam_dat_v1_t);
+            if (minSize > (size_t)file_size) {
+                logg(LOGG_DEBUG, "freshclam.dat is smaller than expected: %zu != %ld\n", sizeof(freshclam_dat_v1_t), file_size);
                 goto done;
             }
 
@@ -242,6 +245,13 @@ fc_error_t load_freshclam_dat(void)
                 cli_strerror(errno, error_message, 260);
                 logg(LOGG_ERROR, "Can't read from freshclam.dat. Bytes read: %zi, error: %s\n", bread, error_message);
                 goto done;
+            }
+
+            if (sizeof(g_lastRay) != (bread = read(handle, &g_lastRay, sizeof(g_lastRay)))) {
+                char error_message[260];
+                cli_strerror(errno, error_message, 260);
+                logg(LOGG_WARNING, "Last cf-ray not present in freshclam.dat.\n");
+                memset(g_lastRay, 0, sizeof(g_lastRay));
             }
 
             /* Got it. */
@@ -324,6 +334,10 @@ fc_error_t save_freshclam_dat(void)
         logg(LOGG_ERROR, "Can't write to freshclam.dat\n");
     }
     if (-1 == write(handle, g_freshclamDat, sizeof(freshclam_dat_v1_t))) {
+        logg(LOGG_ERROR, "Can't write to freshclam.dat\n");
+    }
+
+    if (-1 == write(handle, &g_lastRay, sizeof(g_lastRay))) {
         logg(LOGG_ERROR, "Can't write to freshclam.dat\n");
     }
 
@@ -799,6 +813,24 @@ static size_t WriteFileCallback(void *contents, size_t size, size_t nmemb, void 
     receivedFile->size += bytes_written;
 
     return bytes_written;
+}
+
+size_t HeaderCallback(char *buffer,
+                      size_t size,
+                      size_t nitems,
+                      void *userdata)
+{
+    const char *const needle = "cf-ray: ";
+    size_t totBytes          = size * nitems;
+    if (totBytes >= strlen(needle) + CFRAY_LEN) {
+        if (0 == strncmp(needle, buffer, strlen(needle))) {
+            uint8_t **last = (uint8_t **)userdata;
+            memcpy(last, &(buffer[strlen(needle)]), CFRAY_LEN);
+            last[CFRAY_LEN] = 0;
+        }
+    }
+
+    return size * nitems;
 }
 
 /**
@@ -1281,6 +1313,14 @@ static fc_error_t downloadFile(
 
     if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&receivedFile)) {
         logg(LOGG_ERROR, "downloadFile: Failed to set write-data file handle for curl session.\n");
+    }
+
+    if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_HEADERDATA, &g_lastRay)) {
+        logg(LOGG_ERROR, "downloadFile: Failed to set header-data for header callback for curl session.\n");
+    }
+
+    if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, HeaderCallback)) {
+        logg(LOGG_ERROR, "downloadFile: Failed to set header-data callback function for curl session.\n");
     }
 
     logg(LOGG_DEBUG, "downloadFile: Download source:      %s\n", url);
