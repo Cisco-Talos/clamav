@@ -1312,13 +1312,6 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
         logg(LOGG_INFO, "OneNote support disabled.\n");
     }
 
-    if (optget(opts, "ScanAlz")->enabled) {
-        logg(LOGG_INFO, "Alz support enabled.\n");
-        options.parse |= CL_SCAN_PARSE_ALZ;
-    } else {
-        logg(LOGG_INFO, "Alz support disabled.\n");
-    }
-
     if (optget(opts, "PhishingScanURLs")->enabled) {
         /* TODO: Remove deprecated option in a future feature release */
         if ((optget(opts, "PhishingAlwaysBlockCloak")->enabled) ||
