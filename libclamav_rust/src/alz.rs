@@ -173,44 +173,81 @@ impl AlzLocalFileHeader {
         }
     }
 
-    pub fn parse_internal(
-        &mut self,
-        cursor: &mut std::io::Cursor<&Vec<u8>>,
-    ) -> Result<(), Box<dyn std::error::Error>> {
-        self.head.file_name_length = cursor.read_u16::<LittleEndian>()?;
-        self.head.file_attribute = cursor.read_u8()?;
-        self.head.file_time_date = cursor.read_u32::<LittleEndian>()?;
-        self.head.file_descriptor = cursor.read_u8()?;
-        self.head.unknown = cursor.read_u8()?;
+    pub fn parse(&mut self, cursor: &mut std::io::Cursor<&Vec<u8>>) -> Result<(), Error> {
+        self.head.file_name_length = cursor
+            .read_u16::<LittleEndian>()
+            .map_err(|_| Error::Read("file_name_length"))?;
+        self.head.file_attribute = cursor
+            .read_u8()
+            .map_err(|_| Error::Read("file_attribute"))?;
+        self.head.file_time_date = cursor
+            .read_u32::<LittleEndian>()
+            .map_err(|_| Error::Read("file_time_date"))?;
+        self.head.file_descriptor = cursor
+            .read_u8()
+            .map_err(|_| Error::Read("file_descriptor"))?;
+        self.head.unknown = cursor.read_u8().map_err(|_| Error::Read("unknown u8"))?;
 
         if 0 == self.head.file_name_length {
-            return Err(Box::new(ALZParseError::new("File Name Length is zero")));
+            return Err(Error::Parse("File Name Length is zero"));
         }
 
         let byte_len = self.head.file_descriptor / 0x10;
         if byte_len > 0 {
-            self.compression_method = cursor.read_u8()?;
-            self.unknown = cursor.read_u8()?;
-            self.file_crc = cursor.read_u32::<LittleEndian>()?;
+            self.compression_method = cursor
+                .read_u8()
+                .map_err(|_| Error::Read("compression_method"))?;
+            self.unknown = cursor.read_u8().map_err(|_| Error::Read("unknown u8"))?;
+            self.file_crc = cursor
+                .read_u32::<LittleEndian>()
+                .map_err(|_| Error::Read("file_crc"))?;
 
             match byte_len {
                 1 => {
-                    self.compressed_size = u64::from(cursor.read_u8()?);
-                    self.uncompressed_size = u64::from(cursor.read_u8()?);
+                    self.compressed_size = u64::from(
+                        cursor
+                            .read_u8()
+                            .map_err(|_| Error::Read("compressed_size"))?,
+                    );
+                    self.uncompressed_size = u64::from(
+                        cursor
+                            .read_u8()
+                            .map_err(|_| Error::Read("uncompressed_size"))?,
+                    );
                 }
                 2 => {
-                    self.compressed_size = u64::from(cursor.read_u16::<LittleEndian>()?);
-                    self.uncompressed_size = u64::from(cursor.read_u16::<LittleEndian>()?);
+                    self.compressed_size = u64::from(
+                        cursor
+                            .read_u16::<LittleEndian>()
+                            .map_err(|_| Error::Read("compressed_size"))?,
+                    );
+                    self.uncompressed_size = u64::from(
+                        cursor
+                            .read_u16::<LittleEndian>()
+                            .map_err(|_| Error::Read("uncompressed_size"))?,
+                    );
                 }
                 4 => {
-                    self.compressed_size = u64::from(cursor.read_u32::<LittleEndian>()?);
-                    self.uncompressed_size = u64::from(cursor.read_u32::<LittleEndian>()?);
+                    self.compressed_size = u64::from(
+                        cursor
+                            .read_u32::<LittleEndian>()
+                            .map_err(|_| Error::Read("compressed_size"))?,
+                    );
+                    self.uncompressed_size = u64::from(
+                        cursor
+                            .read_u32::<LittleEndian>()
+                            .map_err(|_| Error::Read("uncompressed_size"))?,
+                    );
                 }
                 8 => {
-                    self.compressed_size = cursor.read_u64::<LittleEndian>()?;
-                    self.uncompressed_size = cursor.read_u64::<LittleEndian>()?;
+                    self.compressed_size = cursor
+                        .read_u64::<LittleEndian>()
+                        .map_err(|_| Error::Read("compressed_size"))?;
+                    self.uncompressed_size = cursor
+                        .read_u64::<LittleEndian>()
+                        .map_err(|_| Error::Read("uncompressed_size"))?;
                 }
-                _ => return Err(Box::new(ALZParseError::new("Unsupported File Descriptor"))),
+                _ => return Err(Error::Parse("Unsupported File Descriptor")),
             }
         }
 
@@ -219,7 +256,7 @@ impl AlzLocalFileHeader {
         let idx1: usize = idx0 + self.head.file_name_length as usize;
 
         if idx1 > cursor.get_ref().len() {
-            return Err(Box::new(ALZParseError::new("Invalid file name length")));
+            return Err(Error::Parse("Invalid file name length"));
         }
 
         let filename = &cursor.get_ref().as_slice()[idx0..idx1];
@@ -228,30 +265,16 @@ impl AlzLocalFileHeader {
         self.file_name = String::from_utf8_lossy(filename).into_owned();
 
         if self.is_encrypted() {
-            cursor.read_exact(&mut self.enc_chk)?;
+            cursor
+                .read_exact(&mut self.enc_chk)
+                .map_err(|_| Error::Read("encrypted buffer"))?;
         }
 
         self.start_of_compressed_data = cursor.position();
         cursor.set_position(self.start_of_compressed_data + self.compressed_size);
 
         if self.start_of_compressed_data + self.compressed_size > cursor.get_ref().len() as u64 {
-            return Err(Box::new(ALZParseError::new(
-                "Invalid compressed data length",
-            )));
-        }
-
-        Ok(())
-    }
-
-    pub fn parse(&mut self, cursor: &mut std::io::Cursor<&Vec<u8>>) -> Result<(), ALZParseError> {
-        let result = self.parse_internal(cursor);
-        if result.is_err() {
-            let e = result.err().unwrap();
-            if e.is::<ALZParseError>() {
-                let ape: ALZParseError = *e.downcast::<ALZParseError>().unwrap();
-                return Err(ape);
-            }
-            return Err(ALZParseError::new("Not ALZ"));
+            return Err(Error::Parse("Invalid compressed data length"));
         }
 
         Ok(())
