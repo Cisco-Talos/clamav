@@ -824,7 +824,6 @@ fc_error_t fc_update_databases(
 
     /*Clear the old cf-ray ids.  This is really only so that
      * we don't have stale ones when we are running in daemon mode.*/
-    //memset(&g_rayLst, 0, sizeof(g_rayLst));
     memset(&g_lastRay, 0, sizeof(g_lastRay));
 
     for (i = 0; i < nDatabases; i++) {
