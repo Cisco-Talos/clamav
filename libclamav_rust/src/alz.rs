@@ -8,14 +8,12 @@
 )]
 */
 
+use std::io::{Cursor, Read};
+
 use byteorder::{LittleEndian, ReadBytesExt};
 use bzip2::read::BzDecoder;
 use inflate::InflateStream;
-use log::info;
-use std::error;
-use std::fmt;
-use std::io::Cursor;
-use std::io::Read;
+use log::debug;
 
 /// File header
 const ALZ_FILE_HEADER: u32 = 0x015a_4c41;
