@@ -20,8 +20,6 @@
  *  MA 02110-1301, USA.
  */
 
-//Rust error handling This error.
-
 use std::{
     ffi::{c_char, CString},
     path::Path,
