@@ -136,7 +136,6 @@ pub unsafe extern "C" fn scan_onenote(ctx: *mut cli_ctx) -> cl_error_t {
 /// Must be a valid ctx pointer.
 #[no_mangle]
 pub unsafe extern "C" fn cli_scanalz(ctx: *mut cli_ctx) -> cl_error_t {
-    println!("TODO: Fix flevel in filetypes_int.h");
     let fmap = match ctx::current_fmap(ctx) {
         Ok(fmap) => fmap,
         Err(e) => {

@@ -183,7 +183,6 @@ struct cl_scan_options {
 #define CL_SCAN_PARSE_ONENOTE                       0x400
 #define CL_SCAN_PARSE_IMAGE                         0x800  /* option to enable/disable parsing images (graphics) */
 #define CL_SCAN_PARSE_IMAGE_FUZZY_HASH              0x1000 /* option to enable/disable image fuzzy hash calculation. */
-//#define CL_SCAN_PARSE_ALZ                           0x800
 
 /* heuristic alerting options */
 #define CL_SCAN_HEURISTIC_BROKEN                    0x2    /* alert on broken PE and broken ELF files */

@@ -35,7 +35,7 @@ use std::io::{Cursor, Read};
 use byteorder::{LittleEndian, ReadBytesExt};
 use bzip2::read::BzDecoder;
 use inflate::InflateStream;
-use log::debug;
+use log::{debug, info};
 
 /// File header
 const ALZ_FILE_HEADER: u32 = 0x015a_4c41;
@@ -304,15 +304,11 @@ impl AlzLocalFileHeader {
 
     pub fn is_supported(&self) -> Result<(), Error> {
         if self.is_encrypted() {
-            return Err(ALZUnsupportedError::new(
-                "Encryption Unsupported".to_string(),
-            ));
+            return Err(Error::UnsupportedFeature( "Encryption Unsupported"));
         }
 
         if self.is_data_descriptor() {
-            return Err(ALZUnsupportedError::new(
-                "Data Descriptors are Unsupported".to_string(),
-            ));
+            return Err(Error::UnsupportedFeature( "Data Descriptors are Unsupported"));
         }
 
         Ok(())
@@ -331,7 +327,7 @@ impl AlzLocalFileHeader {
         #[allow(clippy::cast_possible_truncation)]
         let end: usize = start + self.compressed_size as usize;
         if end >= cursor.get_ref().len() {
-            return Err(ALZExtractError {});
+            return Err(Error::Extract);
         }
         let data: &[u8] = &cursor.get_ref().as_slice()[start..end];
 
@@ -345,7 +341,7 @@ impl AlzLocalFileHeader {
                 n += num_bytes_read;
                 out.extend(result.iter().copied());
             } else {
-                return Err(ALZExtractError {});
+                return Err(Error::Extract);
             }
         }
 
@@ -367,7 +363,7 @@ impl AlzLocalFileHeader {
         &mut self,
         cursor: &mut std::io::Cursor<&Vec<u8>>,
         files: &mut Vec<ExtractedFile>,
-    ) -> Result<(), ALZExtractError> {
+    ) -> Result<(), Error> {
         #[allow(clippy::cast_possible_truncation)]
         let idx0: usize = self.start_of_compressed_data as usize;
 
@@ -383,7 +379,7 @@ impl AlzLocalFileHeader {
         let idx1: usize = idx0 + len as usize;
         if idx1 > cursor.get_ref().len() {
             info!("Invalid data length");
-            return Err(ALZExtractError {});
+            return Err(Error::Extract);
         }
 
         let contents = &cursor.get_ref().as_slice()[idx0..idx1];
@@ -397,7 +393,7 @@ impl AlzLocalFileHeader {
         &mut self,
         cursor: &std::io::Cursor<&Vec<u8>>,
         files: &mut Vec<ExtractedFile>,
-    ) -> Result<(), ALZExtractError> {
+    ) -> Result<(), Error> {
         #[allow(clippy::cast_possible_truncation)]
         let idx0: usize = self.start_of_compressed_data as usize;
         #[allow(clippy::cast_possible_truncation)]
@@ -417,7 +413,7 @@ impl AlzLocalFileHeader {
         let ret = decompressor.read_exact(&mut out);
         if ret.is_err() {
             info!("Unable to decompress bz2 data");
-            return Err(ALZExtractError {});
+            return Err(Error::Extract);
         }
 
         self.write_file(&out, files);
@@ -428,7 +424,7 @@ impl AlzLocalFileHeader {
         &mut self,
         cursor: &mut std::io::Cursor<&Vec<u8>>,
         files: &mut Vec<ExtractedFile>,
-    ) -> Result<(), ALZExtractError> {
+    ) -> Result<(), Error> {
         const ALZ_COMP_NOCOMP: u8 = 0;
         const ALZ_COMP_BZIP2: u8 = 1;
         const ALZ_COMP_DEFLATE: u8 = 2;
@@ -437,7 +433,7 @@ impl AlzLocalFileHeader {
             ALZ_COMP_NOCOMP => self.extract_file_nocomp(cursor, files),
             ALZ_COMP_BZIP2 => self.extract_file_bzip2(cursor, files),
             ALZ_COMP_DEFLATE => self.extract_file_deflate(cursor, files),
-            _ => Err(ALZExtractError {}),
+            _ => Err(Error::Extract),
         }
     }
 }
@@ -507,21 +503,21 @@ impl<'aa> Alz {
     }
 
     /// # Errors
-    /// Will return `ALZParseError` if file headers are not correct or are inconsistent.
-    pub fn from_bytes(bytes: &'aa [u8]) -> Result<Self, ALZParseError> {
+    /// Will return `Error::Parse` if file headers are not correct or are inconsistent.
+    pub fn from_bytes(bytes: &'aa [u8]) -> Result<Self, Error> {
         let binding = bytes.to_vec();
         let mut cursor = Cursor::new(&binding);
 
         let mut alz: Self = Self::new();
 
         if !alz.is_alz(&mut cursor) {
-            return Err(ALZParseError::new("No ALZ file header"));
+            return Err(Error::Parse("No ALZ file header"));
         }
 
         //What these bytes are supposed to be in unspecified, but they need to be there.
         let ret = cursor.read_u32::<LittleEndian>();
         if ret.is_err() {
-            return Err(ALZParseError::new("Error reading uint32 from file"));
+            return Err(Error::Parse("Error reading uint32 from file"));
         }
 
         loop {
