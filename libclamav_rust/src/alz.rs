@@ -280,7 +280,7 @@ impl AlzLocalFileHeader {
         Ok(())
     }
 
-    pub fn is_supported(&self) -> Result<(), ALZUnsupportedError> {
+    pub fn is_supported(&self) -> Result<(), Error> {
         if self.is_encrypted() {
             return Err(ALZUnsupportedError::new(
                 "Encryption Unsupported".to_string(),
