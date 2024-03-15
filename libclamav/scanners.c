@@ -4588,7 +4588,7 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
             break;
         case CL_TYPE_ALZ:
             if (SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_ALZ)) {
-                ret = extract_alz(ctx);
+                ret = cli_scanalz(ctx);
             }
             break;
 
