@@ -303,7 +303,7 @@ impl AlzLocalFileHeader {
         &mut self,
         cursor: &std::io::Cursor<&Vec<u8>>,
         files: &mut Vec<ExtractedFile>,
-    ) -> Result<(), ALZExtractError> {
+    ) -> Result<(), Error> {
         #[allow(clippy::cast_possible_truncation)]
         let start: usize = self.start_of_compressed_data as usize;
         #[allow(clippy::cast_possible_truncation)]
