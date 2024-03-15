@@ -4587,7 +4587,7 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
                 ret = scan_onenote(ctx);
             break;
         case CL_TYPE_ALZ:
-            if (SCAN_PARSE_ALZ && (DCONF_ARCH & ARCH_CONF_ALZ)) {
+            if (SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_ALZ)) {
                 ret = extract_alz(ctx);
             }
             break;
