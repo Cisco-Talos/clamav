@@ -24,56 +24,24 @@ const ALZ_CENTRAL_DIRECTORY_HEADER: u32 = 0x015a_4c43;
 ///End of Central directory header
 const ALZ_END_OF_CENTRAL_DIRECTORY_HEADER: u32 = 0x025a_4c43;
 
-/* ERRORS */
-#[derive(Debug, Clone)]
-pub struct ALZParseError {
-    desc: String,
+/// Error enumerates all possible errors returned by this library.
+#[derive(thiserror::Error, Debug)]
+pub enum Error {
+    #[error("Error parsing ALZ archive: {0}")]
+    Parse(&'static str),
+
+    #[error("Unrecognized sig: '{0}'")]
+    UnrecognizedSig(String),
+
+    #[error("Unsupported ALZ feature: {0}")]
+    UnsupportedFeature(&'static str),
+
+    #[error("Failed to extract file")]
+    Extract,
+
+    #[error("Failed to read field: {0}")]
+    Read(&'static str),
 }
-
-impl fmt::Display for ALZParseError {
-    #[inline]
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.desc)
-    }
-}
-
-impl error::Error for ALZParseError {}
-
-impl ALZParseError {
-    pub fn new(description: impl Into<String>) -> Self {
-        Self {
-            desc: description.into(),
-        }
-    }
-
-    #[must_use]
-    pub fn get_description(&self) -> String {
-        self.desc.to_string()
-    }
-}
-
-#[derive(Debug, Clone)]
-struct ALZUnsupportedError {
-    desc: String,
-}
-
-impl fmt::Display for ALZUnsupportedError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.desc)
-    }
-}
-
-impl error::Error for ALZUnsupportedError {}
-
-impl ALZUnsupportedError {
-    const fn new(description: String) -> Self {
-        Self { desc: description }
-    }
-}
-
-#[derive(Debug)]
-struct ALZExtractError;
-/* END ERRORS */
 
 struct AlzLocalFileHeaderHead {
     file_name_length: u16,
