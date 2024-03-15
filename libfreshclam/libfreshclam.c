@@ -806,9 +806,7 @@ fc_error_t fc_update_databases(
             if (0 != g_lastRay[0]) {
                 logg(LOGG_INFO, " 5. If you have verified that you are not blocked due to your region, and have\n");
                 logg(LOGG_INFO, "    not exceeded the rate limit, please provide the following cf-ray id when\n");
-                logg(LOGG_INFO, "    submitting a ticket.\n");
-                logg(LOGG_INFO, "\n    CF-RAY=========================================================================\n");
-                logg(LOGG_INFO, "    cf-ray: %s\n", g_lastRay);
+                logg(LOGG_INFO, "    submitting a ticket: %s\n", g_lastRay);
                 logg(LOGG_INFO, "\n");
             }
             logg(LOGG_WARNING, "You are still on cool-down until after: %s\n", retry_after_string);
