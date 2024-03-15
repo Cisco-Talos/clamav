@@ -90,7 +90,7 @@ pub unsafe fn check_scan_limits(
         }
     };
 
-    unsafe { sys::cli_checklimits(module_name.into_raw(), ctx, need1, need2, need3) }
+    unsafe { sys::cli_checklimits(module_name.as_ptr(), ctx, need1, need2, need3) }
 }
 
 /// Scan archive metadata.
@@ -119,7 +119,7 @@ pub unsafe fn scan_archive_metadata(
     unsafe {
         sys::cli_matchmeta(
             ctx,
-            module_name.into_raw(),
+            module_name.as_ptr(),
             filesize_compressed,
             filesize_original,
             i32::from(is_encrypted),
