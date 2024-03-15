@@ -820,7 +820,6 @@ size_t HeaderCallback(char *buffer,
                       size_t nitems,
                       void *userdata)
 {
-
     const char *const needle = "cf-ray: ";
     size_t totBytes          = size * nitems;
     if (totBytes >= strlen(needle) + CFRAY_LEN) {
