@@ -39,11 +39,11 @@ use log::debug;
 
 /// File header
 const ALZ_FILE_HEADER: u32 = 0x015a_4c41;
-///Local file header
+/// Local file header
 const ALZ_LOCAL_FILE_HEADER: u32 = 0x015a_4c42;
-///Central directory header
+/// Central directory header
 const ALZ_CENTRAL_DIRECTORY_HEADER: u32 = 0x015a_4c43;
-///End of Central directory header
+/// End of Central directory header
 const ALZ_END_OF_CENTRAL_DIRECTORY_HEADER: u32 = 0x025a_4c43;
 
 /// Error enumerates all possible errors returned by this library.
