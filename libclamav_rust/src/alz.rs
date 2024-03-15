@@ -443,11 +443,8 @@ impl<'aa> Alz {
     fn parse_local_fileheader(&mut self, cursor: &mut std::io::Cursor<&Vec<u8>>) -> bool {
         let mut local_fileheader = AlzLocalFileHeader::new();
 
-        let parse_result = local_fileheader.parse(cursor);
-        if parse_result.is_err() {
-            /*This is safe, since I called is_err*/
-            let e: ALZParseError = parse_result.err().unwrap();
-            info!("{}", e.get_description());
+        if let Err(err) = local_fileheader.parse(cursor) {
+            debug!("{err}");
             return false;
         }
 
