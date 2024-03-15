@@ -524,10 +524,7 @@ impl<'aa> Alz {
                 }
                 _ => {
                     #[allow(clippy::uninlined_format_args)]
-                    return Err(ALZParseError::new(format!(
-                        "Parse Error, unrecognized sig = '{:x}'",
-                        sig
-                    )));
+                    return Err(Error::UnrecognizedSig(format!("{:x}", sig)));
                 }
             }
         }
