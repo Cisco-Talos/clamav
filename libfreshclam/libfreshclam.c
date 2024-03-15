@@ -937,9 +937,7 @@ fc_error_t fc_download_url_database(
                 logg(LOGG_INFO, "      and we will investigate why your network is blocked.\n");
                 if (0 != g_lastRay[0]) {
                     size_t i;
-                    logg(LOGG_INFO, "      Please provide the following cf-ray id with your ticket.\n");
-                    logg(LOGG_INFO, "\n      CF-RAY=========================================================================\n");
-                    logg(LOGG_INFO, "      cf-ray: %s\n", g_lastRay);
+                    logg(LOGG_INFO, "      Please provide the following cf-ray id with your ticket: %s\n", g_lastRay);
                     logg(LOGG_INFO, "\n");
                 }
                 logg(LOGG_WARNING, "You are on cool-down until after: %s\n", retry_after_string);
