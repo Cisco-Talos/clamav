@@ -2027,11 +2027,14 @@ static void check_version_compatible()
 }
 #endif
 
-int main(void)
+int main(int argc, char **argv)
 {
     int nf;
     Suite *s;
     SRunner *sr;
+
+    UNUSEDPARAM(argc);
+    UNUSEDPARAM(argv);
 
     cl_initialize_crypto();
 

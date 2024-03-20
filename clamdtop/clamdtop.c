@@ -183,7 +183,7 @@ static WINDOW *stats_window      = NULL;
 static WINDOW *status_bar_window = NULL;
 static WINDOW *mem_window        = NULL;
 
-static const char *status_bar_keys[10];
+static char *status_bar_keys[10];
 static unsigned maxy = 0, maxx = 0;
 static char *queue_header       = NULL;
 static char *multi_queue_header = NULL;
