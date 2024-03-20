@@ -1556,8 +1556,6 @@ done:
     return ret;
 }
 
-#define min(x, y) ((x) < (y) ? (x) : (y))
-
 /**
  * Find a file in a directory tree.
  * \param filename Name of the file to find
@@ -1596,7 +1594,7 @@ cl_error_t find_file(const char *filename, const char *dir, char *result, size_t
                             }
                         } else if (S_ISREG(statbuf.st_mode)) {
                             if (strcmp(dent->d_name, filename) == 0) {
-                                len = min(strlen(dir) + 1, result_size);
+                                len = MIN(strlen(dir) + 1, result_size);
                                 memcpy(result, dir, len);
                                 result[len - 1] = '\0';
                                 closedir(dd);

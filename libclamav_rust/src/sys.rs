@@ -811,9 +811,9 @@ extern "C" {
     pub fn cli_checklimits(
         who: *const ::std::os::raw::c_char,
         ctx: *mut cli_ctx,
-        need1: ::std::os::raw::c_ulong,
-        need2: ::std::os::raw::c_ulong,
-        need3: ::std::os::raw::c_ulong,
+        need1: u64,
+        need2: u64,
+        need3: u64,
     ) -> cl_error_t;
 }
 extern "C" {

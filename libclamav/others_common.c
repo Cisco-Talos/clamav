@@ -980,7 +980,7 @@ static cl_error_t cli_ftw_dir(const char *dirname, int flags, int maxdepth, cli_
  * used */
 const char *cli_strerror(int errnum, char *buf, size_t len)
 {
-    char *err;
+    const char *err;
 #ifdef CL_THREAD_SAFE
     pthread_mutex_lock(&cli_strerror_mutex);
 #endif

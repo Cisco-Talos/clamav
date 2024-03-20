@@ -1726,7 +1726,7 @@ static cl_error_t handler_otf_encrypted(ole2_header_t *hdr, property_t *prop, co
     int nrounds           = 0;
     uint8_t *decryptDst   = NULL;
     encryption_key_t *key = (encryption_key_t *)handler_ctx;
-    uint64_t *rk          = NULL;
+    uint32_t *rk          = NULL;
     uint32_t bytesRead    = 0;
     uint64_t actualFileLength;
     uint64_t bytesWritten = 0;
@@ -1746,7 +1746,7 @@ static cl_error_t handler_otf_encrypted(ole2_header_t *hdr, property_t *prop, co
         goto done;
     }
 
-    CLI_MAX_MALLOC_OR_GOTO_DONE(rk, RKLENGTH(key->key_length_bits) * sizeof(uint64_t), ret = CL_EMEM);
+    CLI_MAX_MALLOC_OR_GOTO_DONE(rk, RKLENGTH(key->key_length_bits) * sizeof(uint32_t), ret = CL_EMEM);
 
     print_ole2_property(prop);
 
@@ -2143,7 +2143,7 @@ done:
 
 static bool aes_128ecb_decrypt(const unsigned char *in, size_t length, unsigned char *out, const encryption_key_t *const key)
 {
-    uint64_t rk[RKLENGTH(128)];
+    uint32_t rk[RKLENGTH(128)];
     int nrounds;
     size_t i;
     bool bRet = false;

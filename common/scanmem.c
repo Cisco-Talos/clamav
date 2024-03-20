@@ -227,47 +227,47 @@ int walkmodules_th(proc_callback callback, void *data, struct mem_info *info)
         }
 
         /* Check and transform non ANSI filenames to ANSI using altnames */
-        if (GetModuleFileNameEx) {
-            HANDLE hFile = CreateFile(
-                me32.szExePath, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING,
-                FILE_ATTRIBUTE_NORMAL | FILE_FLAG_BACKUP_SEMANTICS, NULL);
+        HANDLE hFile = CreateFileA(
+            me32.szExePath, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING,
+            FILE_ATTRIBUTE_NORMAL | FILE_FLAG_BACKUP_SEMANTICS, NULL);
 
-            if (hFile == INVALID_HANDLE_VALUE) {
-                DWORD err = GetLastError();
-                wchar_t name[MAX_PATH + 1];
-                char *converted = NULL;
-                HANDLE p;
+        if (hFile == INVALID_HANDLE_VALUE) {
+            DWORD err = GetLastError();
+            wchar_t nameW[MAX_PATH + 1];
+            char *converted = NULL;
+            HANDLE p;
 
-                if (err == ERROR_BAD_NETPATH) {
-                    logg(LOGG_WARNING, "Warning scanning files on non-ansi network paths is not "
-                                       "supported\n");
-                    logg(LOGG_WARNING, "File: %s\n", me32.szExePath);
-                    continue;
-                }
+            if (err == ERROR_BAD_NETPATH) {
+                logg(LOGG_WARNING, "Warning scanning files on non-ansi network paths is not "
+                                   "supported\n");
+                logg(LOGG_WARNING, "File: %s\n", me32.szExePath);
+                continue;
+            }
 
-                if ((err != ERROR_INVALID_NAME) && (err != ERROR_PATH_NOT_FOUND)) {
-                    logg(LOGG_WARNING, "Expected ERROR_INVALID_NAME/ERROR_PATH_NOT_FOUND but got %d\n",
-                         err);
-                    continue;
-                }
+            if ((err != ERROR_INVALID_NAME) && (err != ERROR_PATH_NOT_FOUND)) {
+                logg(LOGG_WARNING, "Expected ERROR_INVALID_NAME/ERROR_PATH_NOT_FOUND but got %d\n",
+                     err);
+                continue;
+            }
 
-                p = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE,
-                                ps.th32ProcessID);
-                if (!GetModuleFileNameEx(p, NULL, name, MAX_PATH)) {
-                    logg(LOGG_WARNING, "GetModuleFileNameExW() failed %d\n", GetLastError());
-                    CloseHandle(p);
-                    continue;
-                }
+            p = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE,
+                            ps.th32ProcessID);
+
+            if (!GetModuleFileNameExW(p, NULL, nameW, MAX_PATH)) {
+                logg(LOGG_WARNING, "GetModuleFileNameExW() failed %d\n", GetLastError());
                 CloseHandle(p);
+                continue;
+            }
+            CloseHandle(p);
 
-                if (!(converted = getaltpath(name))) {
-                    logg(LOGG_WARNING, "Cannot map filename to ANSI codepage\n");
-                    continue;
-                }
-                strcpy(me32.szExePath, converted);
-                free(converted);
-            } else
-                CloseHandle(hFile);
+            if (!(converted = getaltpath(nameW))) {
+                logg(LOGG_WARNING, "Cannot map filename to ANSI codepage\n");
+                continue;
+            }
+            strcpy(me32.szExePath, converted);
+            free(converted);
+        } else {
+            CloseHandle(hFile);
         }
 
         do
@@ -319,8 +319,8 @@ int walkmodules_psapi(proc_callback callback, void *data, struct mem_info *info)
             continue;
         }
 
-        if (!GetModuleBaseName(hProc, mods[0], ps.szExeFile,
-                               MAX_PATH - 1)) {
+        if (!GetModuleBaseNameA(hProc, mods[0], ps.szExeFile,
+                                MAX_PATH - 1)) {
             CloseHandle(hProc);
             continue;
         }
@@ -515,8 +515,8 @@ int dump_pe(const char *filename, PROCESSENTRY32 ProcStruct,
     /* PE Realignment */
     align_pe(buffer, me32.modBaseSize);
 
-    hFile = CreateFile(filename, GENERIC_READ | GENERIC_WRITE, 0, NULL,
-                       CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+    hFile = CreateFileA(filename, GENERIC_READ | GENERIC_WRITE, 0, NULL,
+                        CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
     if (hFile == INVALID_HANDLE_VALUE) {
         logg(LOGG_INFO, "Error creating %s\n", filename);
         free(buffer);
@@ -598,7 +598,7 @@ int scanmem_cb(PROCESSENTRY32 ProcStruct, MODULEENTRY32 me32, void *data, struct
         snprintf(expandmodule, MAX_PATH - 1, "%%SystemRoot%%\\%s",
                  &me32.szExePath[12]);
         expandmodule[MAX_PATH - 1] = 0;
-        ExpandEnvironmentStrings(expandmodule, modulename, MAX_PATH - 1);
+        ExpandEnvironmentStringsA(expandmodule, modulename, MAX_PATH - 1);
         modulename[MAX_PATH - 1] = 0;
     }
 
@@ -630,7 +630,7 @@ int scanmem_cb(PROCESSENTRY32 ProcStruct, MODULEENTRY32 me32, void *data, struct
             if ((fd = dump_pe(dumped, ProcStruct, me32)) > 0) {
                 close(fd);
                 scan_data->res = scanfile(dumped, scan_data, info);
-                DeleteFile(dumped);
+                DeleteFileA(dumped);
             }
             free(dumped);
         }
@@ -667,8 +667,8 @@ int scanmem(struct mem_info *info)
     data.processes  = 0;
     data.modules    = 0;
 
-    HMODULE psapi_ok = LoadLibrary("psapi.dll");
-    HMODULE k32_ok   = LoadLibrary("kernel32.dll");
+    HMODULE psapi_ok = LoadLibraryA("psapi.dll");
+    HMODULE k32_ok   = LoadLibraryA("kernel32.dll");
 
     if (!(psapi_ok || k32_ok)) {
         logg(LOGG_INFO, " *** Memory Scanning is not supported on this OS ***\n\n");

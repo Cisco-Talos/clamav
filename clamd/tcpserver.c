@@ -56,7 +56,8 @@ int tcpserver(int **lsockets, unsigned int *nlsockets, char *ipaddr, const struc
     int *sockets;
     int sockfd = 0, backlog;
     int *t;
-    char *estr, port[10];
+    const char *estr = NULL;
+    char port[10];
     int yes = 1;
     int res;
     unsigned int i = 0;

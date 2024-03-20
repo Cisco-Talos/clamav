@@ -355,7 +355,7 @@ int w32_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, s
     return ret;
 }
 
-int w32_accept(SOCKET sockfd, const struct sockaddr *addr, socklen_t *addrlen)
+int w32_accept(SOCKET sockfd, struct sockaddr *addr, socklen_t *addrlen)
 {
     if ((sockfd = accept(sockfd, addr, addrlen)) == INVALID_SOCKET) {
         wsock2errno();

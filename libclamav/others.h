@@ -593,16 +593,16 @@ extern LIBCLAMAV_EXPORT int have_rar;
 
 /* based on macros from A. Melnikoff */
 #define cbswap16(v) (((v & 0xff) << 8) | (((v) >> 8) & 0xff))
-#define cbswap32(v) ((((v)&0x000000ff) << 24) | (((v)&0x0000ff00) << 8) | \
-                     (((v)&0x00ff0000) >> 8) | (((v)&0xff000000) >> 24))
-#define cbswap64(v) ((((v)&0x00000000000000ffULL) << 56) | \
-                     (((v)&0x000000000000ff00ULL) << 40) | \
-                     (((v)&0x0000000000ff0000ULL) << 24) | \
-                     (((v)&0x00000000ff000000ULL) << 8) |  \
-                     (((v)&0x000000ff00000000ULL) >> 8) |  \
-                     (((v)&0x0000ff0000000000ULL) >> 24) | \
-                     (((v)&0x00ff000000000000ULL) >> 40) | \
-                     (((v)&0xff00000000000000ULL) >> 56))
+#define cbswap32(v) ((((v) & 0x000000ff) << 24) | (((v) & 0x0000ff00) << 8) | \
+                     (((v) & 0x00ff0000) >> 8) | (((v) & 0xff000000) >> 24))
+#define cbswap64(v) ((((v) & 0x00000000000000ffULL) << 56) | \
+                     (((v) & 0x000000000000ff00ULL) << 40) | \
+                     (((v) & 0x0000000000ff0000ULL) << 24) | \
+                     (((v) & 0x00000000ff000000ULL) << 8) |  \
+                     (((v) & 0x000000ff00000000ULL) >> 8) |  \
+                     (((v) & 0x0000ff0000000000ULL) >> 24) | \
+                     (((v) & 0x00ff000000000000ULL) >> 40) | \
+                     (((v) & 0xff00000000000000ULL) >> 56))
 
 #ifndef HAVE_ATTRIB_PACKED
 #define __attribute__(x)
@@ -828,8 +828,8 @@ size_t cli_recursion_stack_get_size(cli_ctx *ctx, int index);
 /* used by: spin, yc (C) aCaB */
 #define __SHIFTBITS(a) (sizeof(a) << 3)
 #define __SHIFTMASK(a) (__SHIFTBITS(a) - 1)
-#define CLI_ROL(a, b) a = (a << ((b)&__SHIFTMASK(a))) | (a >> ((__SHIFTBITS(a) - (b)) & __SHIFTMASK(a)))
-#define CLI_ROR(a, b) a = (a >> ((b)&__SHIFTMASK(a))) | (a << ((__SHIFTBITS(a) - (b)) & __SHIFTMASK(a)))
+#define CLI_ROL(a, b) a = (a << ((b) & __SHIFTMASK(a))) | (a >> ((__SHIFTBITS(a) - (b)) & __SHIFTMASK(a)))
+#define CLI_ROR(a, b) a = (a >> ((b) & __SHIFTMASK(a))) | (a << ((__SHIFTBITS(a) - (b)) & __SHIFTMASK(a)))
 
 /* Implementation independent sign-extended signed right shift */
 #ifdef HAVE_SAR
@@ -1143,7 +1143,7 @@ int cli_bitset_set(bitset_t *bs, unsigned long bit_offset);
 int cli_bitset_test(bitset_t *bs, unsigned long bit_offset);
 const char *cli_ctime(const time_t *timep, char *buf, const size_t bufsize);
 
-cl_error_t cli_checklimits(const char *who, cli_ctx *ctx, unsigned long need1, unsigned long need2, unsigned long need3);
+cl_error_t cli_checklimits(const char *who, cli_ctx *ctx, uint64_t need1, uint64_t need2, uint64_t need3);
 
 /**
  * @brief Call before scanning a file to determine if we should scan it, skip it, or abort the entire scanning process.
@@ -1157,7 +1157,6 @@ cl_error_t cli_checklimits(const char *who, cli_ctx *ctx, unsigned long need1, u
  */
 cl_error_t cli_updatelimits(cli_ctx *ctx, size_t needed);
 
-unsigned long cli_getsizelimit(cli_ctx *, unsigned long);
 int cli_matchregex(const char *str, const char *regex);
 void cli_qsort(void *a, size_t n, size_t es, int (*cmp)(const void *, const void *));
 void cli_qsort_r(void *a, size_t n, size_t es, int (*cmp)(const void *, const void *, const void *), void *arg);
@@ -1333,7 +1332,7 @@ uint8_t cli_set_debug_flag(uint8_t debug_flag);
 #define CLI_FREE_AND_SET_NULL(var) \
     do {                           \
         if (NULL != var) {         \
-            free(var);             \
+            free((void *)var);     \
             var = NULL;            \
         }                          \
     } while (0)
@@ -1461,16 +1460,16 @@ uint8_t cli_set_debug_flag(uint8_t debug_flag);
  * @param ...   The error handling code to execute if the allocation fails.
  */
 #ifndef CLI_MAX_REALLOC_OR_GOTO_DONE
-#define CLI_MAX_REALLOC_OR_GOTO_DONE(ptr, size, ...) \
-    do {                                             \
-        void *vTmp = cli_max_realloc(ptr, size);     \
-        if (NULL == vTmp) {                          \
-            do {                                     \
-                __VA_ARGS__;                         \
-            } while (0);                             \
-            goto done;                               \
-        }                                            \
-        ptr = vTmp;                                  \
+#define CLI_MAX_REALLOC_OR_GOTO_DONE(ptr, size, ...)     \
+    do {                                                 \
+        void *vTmp = cli_max_realloc((void *)ptr, size); \
+        if (NULL == vTmp) {                              \
+            do {                                         \
+                __VA_ARGS__;                             \
+            } while (0);                                 \
+            goto done;                                   \
+        }                                                \
+        ptr = vTmp;                                      \
     } while (0)
 #endif
 
@@ -1486,16 +1485,16 @@ uint8_t cli_set_debug_flag(uint8_t debug_flag);
  * @param ...   The error handling code to execute if the allocation fails.
  */
 #ifndef CLI_SAFER_REALLOC_OR_GOTO_DONE
-#define CLI_SAFER_REALLOC_OR_GOTO_DONE(ptr, size, ...) \
-    do {                                               \
-        void *vTmp = cli_safer_realloc(ptr, size);     \
-        if (NULL == vTmp) {                            \
-            do {                                       \
-                __VA_ARGS__;                           \
-            } while (0);                               \
-            goto done;                                 \
-        }                                              \
-        ptr = vTmp;                                    \
+#define CLI_SAFER_REALLOC_OR_GOTO_DONE(ptr, size, ...)     \
+    do {                                                   \
+        void *vTmp = cli_safer_realloc((void *)ptr, size); \
+        if (NULL == vTmp) {                                \
+            do {                                           \
+                __VA_ARGS__;                               \
+            } while (0);                                   \
+            goto done;                                     \
+        }                                                  \
+        ptr = vTmp;                                        \
     } while (0)
 #endif
 
