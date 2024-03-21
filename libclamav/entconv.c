@@ -57,7 +57,7 @@
 typedef struct {
     enum encodings encoding;
     size_t size;
-} * iconv_t;
+}* iconv_t;
 #endif
 
 static unsigned char tohex[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
@@ -157,7 +157,7 @@ static iconv_t iconv_open(const char* tocode, const char* fromcode)
 {
     UNUSEDPARAM(tocode);
 
-    iconv_t iconv = cli_malloc(sizeof(*iconv));
+    iconv_t iconv = malloc(sizeof(*iconv));
     if (!iconv)
         return NULL;
 
@@ -495,7 +495,7 @@ static char* normalize_encoding(const unsigned char* enc)
         if (!encname_chars[enc[i]])
             return NULL;
     }
-    norm = cli_malloc(len + 1);
+    norm = cli_max_malloc(len + 1);
     if (!norm)
         return NULL;
     for (i = 0; i < len; i++)
@@ -584,7 +584,7 @@ static inline struct iconv_cache* cache_get_tls_instance(void)
 {
     struct iconv_cache* cache = pthread_getspecific(iconv_pool_tls_key);
     if (!cache) {
-        cache = cli_calloc(1, sizeof(*cache));
+        cache = calloc(1, sizeof(*cache));
         if (!cache) {
             cli_dbgmsg(MODULE_NAME "!Out of memory allocating TLS iconv instance\n");
             return NULL;
@@ -608,7 +608,7 @@ static void iconv_cache_cleanup_main(void)
 static inline void init_iconv_pool_ifneeded()
 {
     if (!iconv_global_inited) {
-        global_iconv_cache = cli_calloc(1, sizeof(*global_iconv_cache));
+        global_iconv_cache = calloc(1, sizeof(*global_iconv_cache));
         if (global_iconv_cache) {
             iconv_cache_init(global_iconv_cache);
             atexit(iconv_cache_cleanup_main);
@@ -656,7 +656,7 @@ static iconv_t iconv_open_cached(const char* fromcode)
         idx = cache->last++;
         if (idx >= cache->len) {
             cache->len += 16;
-            cache->tab = cli_realloc2(cache->tab, cache->len * sizeof(cache->tab[0]));
+            cache->tab = cli_max_realloc_or_free(cache->tab, cache->len * sizeof(cache->tab[0]));
             if (!cache->tab) {
                 cli_dbgmsg(MODULE_NAME "!Out of mem in iconv-pool\n");
                 errno = ENOMEM;
@@ -803,7 +803,7 @@ cl_error_t cli_codepage_to_utf8(char* in, size_t in_size, uint16_t codepage, cha
             int byte_count, sigbit_count;
 
             out_utf8_size = in_size;
-            out_utf8      = cli_calloc(1, out_utf8_size + 1);
+            out_utf8      = cli_max_calloc(1, out_utf8_size + 1);
             if (NULL == out_utf8) {
                 cli_errmsg("cli_codepage_to_utf8: Failure allocating buffer for utf8 filename.\n");
                 status = CL_EMEM;
@@ -863,7 +863,7 @@ cl_error_t cli_codepage_to_utf8(char* in, size_t in_size, uint16_t codepage, cha
                     uint16_t* pCodeUnits = (uint16_t*)in;
                     cchWideChar          = (int)in_size / 2;
 
-                    lpWideCharStr = cli_malloc((cchWideChar) * sizeof(WCHAR)); /* No need for a null terminator here, we'll deal with the exact size */
+                    lpWideCharStr = cli_max_malloc((cchWideChar) * sizeof(WCHAR)); /* No need for a null terminator here, we'll deal with the exact size */
                     if (NULL == lpWideCharStr) {
                         cli_dbgmsg("cli_codepage_to_utf8: failed to allocate memory for wide char string.\n");
                         status = CL_EMEM;
@@ -892,7 +892,7 @@ cl_error_t cli_codepage_to_utf8(char* in, size_t in_size, uint16_t codepage, cha
                         goto done;
                     }
 
-                    lpWideCharStr = cli_malloc((cchWideChar) * sizeof(WCHAR)); /* No need for a null terminator here, we'll deal with the exact size */
+                    lpWideCharStr = cli_max_malloc((cchWideChar) * sizeof(WCHAR)); /* No need for a null terminator here, we'll deal with the exact size */
                     if (NULL == lpWideCharStr) {
                         cli_dbgmsg("cli_codepage_to_utf8: failed to allocate memory for wide char string.\n");
                         status = CL_EMEM;
@@ -935,7 +935,7 @@ cl_error_t cli_codepage_to_utf8(char* in, size_t in_size, uint16_t codepage, cha
                 goto done;
             }
 
-            out_utf8 = cli_malloc(out_utf8_size + 1); /* Add a null terminator to this string */
+            out_utf8 = cli_max_malloc(out_utf8_size + 1); /* Add a null terminator to this string */
             if (NULL == out_utf8) {
                 cli_dbgmsg("cli_codepage_to_utf8: failed to allocate memory for wide char to utf-8 string.\n");
                 status = CL_EMEM;
@@ -994,7 +994,7 @@ cl_error_t cli_codepage_to_utf8(char* in, size_t in_size, uint16_t codepage, cha
 
                 outbytesleft = out_utf8_size;
 
-                out_utf8 = cli_calloc(1, out_utf8_size + 1);
+                out_utf8 = cli_max_calloc(1, out_utf8_size + 1);
                 if (NULL == out_utf8) {
                     cli_errmsg("cli_codepage_to_utf8: Failure allocating buffer for utf8 data.\n");
                     status = CL_EMEM;
@@ -1037,9 +1037,9 @@ cl_error_t cli_codepage_to_utf8(char* in, size_t in_size, uint16_t codepage, cha
                 }
 
                 /* iconv succeeded, but probably didn't use the whole buffer. Free up the extra memory. */
-                out_utf8_tmp = cli_realloc(out_utf8, out_utf8_size - outbytesleft + 1);
+                out_utf8_tmp = cli_max_realloc(out_utf8, out_utf8_size - outbytesleft + 1);
                 if (NULL == out_utf8_tmp) {
-                    cli_errmsg("cli_codepage_to_utf8: failure cli_realloc'ing converted filename.\n");
+                    cli_errmsg("cli_codepage_to_utf8: failure cli_max_realloc'ing converted filename.\n");
                     status = CL_EMEM;
                     goto done;
                 }
@@ -1100,7 +1100,7 @@ char* cli_utf16toascii(const char* str, unsigned int length)
     if (length % 2)
         length--;
 
-    if (!(decoded = cli_calloc(length / 2 + 1, sizeof(char))))
+    if (!(decoded = cli_max_calloc(length / 2 + 1, sizeof(char))))
         return NULL;
 
     for (i = 0, j = 0; i < length; i += 2, j++) {
@@ -1121,13 +1121,13 @@ char* cli_utf16_to_utf8(const char* utf16, size_t length, encoding_t type)
     char* s2;
 
     if (length < 2)
-        return cli_strdup("");
+        return cli_safer_strdup("");
     if (length % 2) {
         cli_warnmsg("utf16 length is not multiple of two: %lu\n", (long)length);
         length--;
     }
 
-    s2 = cli_malloc(needed);
+    s2 = cli_max_malloc(needed);
     if (!s2)
         return NULL;
 

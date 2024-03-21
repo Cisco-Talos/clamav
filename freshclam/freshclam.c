@@ -191,6 +191,8 @@ static void help(void)
     printf("    --no-dns                             Force old non-DNS verification method\n");
     printf("    --checks=#n          -c #n           Number of checks per day, 1 <= n <= 50\n");
     printf("    --datadir=DIRECTORY                  Download new databases into DIRECTORY\n");
+    printf("                                         NOTE: DIRECTORY must already exist, be an absolute path, and");
+    printf("                                         be writeable by freshclam and readable by clamd/clamscan.");
     printf("    --daemon-notify[=/path/clamd.conf]   Send RELOAD command to clamd\n");
     printf("    --local-address=IP   -a IP           Bind to IP for HTTP downloads\n");
     printf("    --on-update-execute=COMMAND          Execute COMMAND after successful update.\n");
@@ -478,7 +480,7 @@ static fc_error_t get_server_node(
      * Ensure that URL contains protocol.
      */
     if (!strncmp(server, "db.", 3) && strstr(server, ".clamav.net")) {
-        url = cli_strdup("https://database.clamav.net");
+        url = cli_safer_strdup("https://database.clamav.net");
         if (NULL == url) {
             logg(LOGG_ERROR, "get_server_node: Failed to duplicate string for database.clamav.net url.\n");
             status = FC_EMEM;
@@ -495,7 +497,7 @@ static fc_error_t get_server_node(
         snprintf(url, urlLen + 1, "%s://%s", defaultProtocol, server);
     } else {
         urlLen = strlen(server);
-        url    = cli_strdup(server);
+        url    = cli_safer_strdup(server);
         if (NULL == url) {
             logg(LOGG_ERROR, "get_server_node: Failed to duplicate string for server url.\n");
             status = FC_EMEM;
@@ -533,7 +535,7 @@ static fc_error_t string_list_add(const char *item, char ***stringList, uint32_t
     }
 
     nItems  = *nListItems + 1;
-    newList = (char **)cli_realloc(*stringList, nItems * sizeof(char *));
+    newList = (char **)cli_safer_realloc(*stringList, nItems * sizeof(char *));
     if (newList == NULL) {
         mprintf(LOGG_ERROR, "string_list_add: Failed to allocate memory for optional database list entry.\n");
         status = FC_EMEM;
@@ -542,7 +544,7 @@ static fc_error_t string_list_add(const char *item, char ***stringList, uint32_t
 
     *stringList = newList;
 
-    newList[nItems - 1] = cli_strdup(item);
+    newList[nItems - 1] = cli_safer_strdup(item);
     if (newList[nItems - 1] == NULL) {
         mprintf(LOGG_ERROR, "string_list_add: Failed to allocate memory for optional database list item.\n");
         status = FC_EMEM;
@@ -1140,7 +1142,7 @@ fc_error_t select_from_official_databases(
         goto done;
     }
 
-    selectedDatabases = cli_calloc(nStandardDatabases + nOptionalDatabases, sizeof(char *));
+    selectedDatabases = calloc(nStandardDatabases + nOptionalDatabases, sizeof(char *));
 
     /*
      * Select desired standard databases.
@@ -1259,7 +1261,7 @@ fc_error_t select_specific_databases(
     *databaseList = NULL;
     *nDatabases   = 0;
 
-    selectedDatabases = cli_calloc(nSpecificDatabases, sizeof(char *));
+    selectedDatabases = calloc(nSpecificDatabases, sizeof(char *));
 
     /*
      * Get lists of available databases.
@@ -1661,7 +1663,7 @@ int main(int argc, char **argv)
     /*
      * Parse the config file.
      */
-    cfgfile = cli_strdup(optget(opts, "config-file")->strarg);
+    cfgfile = cli_safer_strdup(optget(opts, "config-file")->strarg);
     if ((opts = optparse(cfgfile, 0, NULL, 1, OPT_FRESHCLAM, 0, opts)) == NULL) {
         fprintf(stderr, "ERROR: Can't open/parse the config file %s\n", cfgfile);
         status = FC_EINIT;

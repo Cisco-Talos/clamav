@@ -135,7 +135,7 @@ fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty, const cha
     m->mtime = (uint64_t)st.st_mtime;
 
     if (NULL != name) {
-        m->name = cli_strdup(name);
+        m->name = cli_safer_strdup(name);
         if (NULL == m->name) {
             funmap(m);
             return NULL;
@@ -220,7 +220,7 @@ fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty, const cha
     m->unmap               = unmap_win32;
 
     if (NULL != name) {
-        m->name = cli_strdup(name);
+        m->name = cli_safer_strdup(name);
         if (NULL == m->name) {
             funmap(m);
             return NULL;
@@ -243,7 +243,7 @@ fmap_t *fmap_duplicate(cl_fmap_t *map, size_t offset, size_t length, const char 
         goto done;
     }
 
-    duplicate_map = cli_malloc(sizeof(cl_fmap_t));
+    duplicate_map = malloc(sizeof(cl_fmap_t));
     if (!duplicate_map) {
         cli_warnmsg("fmap_duplicate: map allocation failed\n");
         goto done;
@@ -293,7 +293,7 @@ fmap_t *fmap_duplicate(cl_fmap_t *map, size_t offset, size_t length, const char 
     }
 
     if (NULL != name) {
-        duplicate_map->name = cli_strdup(name);
+        duplicate_map->name = cli_safer_strdup(name);
         if (NULL == duplicate_map->name) {
             status = CL_EMEM;
             goto done;
@@ -375,13 +375,13 @@ extern cl_fmap_t *cl_fmap_open_handle(void *handle, size_t offset, size_t len,
     bitmap_size = pages * sizeof(uint64_t);
     mapsz       = pages * pgsz;
 
-    m = cli_calloc(1, sizeof(fmap_t));
+    m = calloc(1, sizeof(fmap_t));
     if (!m) {
         cli_warnmsg("fmap: map header allocation failed\n");
         goto done;
     }
 
-    m->bitmap = cli_calloc(1, bitmap_size);
+    m->bitmap = cli_max_calloc(1, bitmap_size);
     if (!m->bitmap) {
         cli_warnmsg("fmap: map header allocation failed\n");
         goto done;
@@ -408,7 +408,7 @@ extern cl_fmap_t *cl_fmap_open_handle(void *handle, size_t offset, size_t len,
     }
 #endif /* ANONYMOUS_MAP */
     if (!use_aging) {
-        m->data = (fmap_t *)cli_malloc(mapsz);
+        m->data = (fmap_t *)cli_max_malloc(mapsz);
     }
     if (!m->data) {
         cli_warnmsg("fmap: map allocation failed\n");
@@ -844,7 +844,7 @@ fmap_t *fmap_open_memory(const void *start, size_t len, const char *name)
     cl_error_t status = CL_ERROR;
 
     int pgsz     = cli_getpagesize();
-    cl_fmap_t *m = cli_calloc(1, sizeof(*m));
+    cl_fmap_t *m = calloc(1, sizeof(*m));
     if (!m) {
         cli_warnmsg("fmap: map allocation failed\n");
         goto done;
@@ -862,7 +862,7 @@ fmap_t *fmap_open_memory(const void *start, size_t len, const char *name)
 
     if (NULL != name) {
         /* Copy the name, if one is given */
-        m->name = cli_strdup(name);
+        m->name = cli_safer_strdup(name);
         if (NULL == m->name) {
             cli_warnmsg("fmap: failed to duplicate map name\n");
             goto done;

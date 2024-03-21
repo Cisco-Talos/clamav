@@ -51,7 +51,7 @@ int domain_list_match(const struct cl_engine* engine, char* real_url, const char
 int init_domain_list(struct cl_engine* engine)
 {
     if (engine) {
-        engine->domain_list_matcher = (struct regex_matcher*)cli_malloc(sizeof(struct regex_matcher));
+        engine->domain_list_matcher = (struct regex_matcher*)malloc(sizeof(struct regex_matcher));
         if (!engine->domain_list_matcher) {
             cli_errmsg("Phishcheck: Unable to allocate memory for init_domain_list\n");
             return CL_EMEM;

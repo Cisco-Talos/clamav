@@ -107,7 +107,6 @@ CLAMAV_PRIVATE {
     cli_chomp;
     cli_rndnum;
 
-    cli_calloc;
     cli_ole2_extract;
     cli_errmsg;
     cli_debug_flag;
@@ -127,10 +126,12 @@ CLAMAV_PRIVATE {
     html_normalise_map;
     cli_utf16toascii;
 
-    cli_malloc;
     cli_memstr;
-    cli_strdup;
-    cli_realloc;
+    cli_safer_strdup;
+    cli_max_calloc;
+    cli_max_malloc;
+    cli_max_realloc;
+    cli_safer_realloc;
     cli_ctime;
     tableCreate;
     tableDestroy;
@@ -202,10 +203,17 @@ CLAMAV_PRIVATE {
     cli_writen;
     cli_url_canon;
     cli_strerror;
+    cli_ftname;
+    cli_ftcode;
     decodeLine;
     messageCreate;
     messageDestroy;
     base64Flush;
+    cli_unrar_open;
+    cli_unrar_peek_file_header;
+    cli_unrar_extract_file;
+    cli_unrar_skip_file;
+    cli_unrar_close;
     have_rar;
     have_clamjit;
     cli_bytecode_load;

@@ -65,13 +65,13 @@ blob *
 blobCreate(void)
 {
 #ifdef CL_DEBUG
-    blob *b = (blob *)cli_calloc(1, sizeof(blob));
+    blob *b = (blob *)calloc(1, sizeof(blob));
     if (b)
         b->magic = BLOBCLASS;
     cli_dbgmsg("blobCreate\n");
     return b;
 #else
-    return (blob *)cli_calloc(1, sizeof(blob));
+    return (blob *)calloc(1, sizeof(blob));
 #endif
 }
 
@@ -154,7 +154,7 @@ void blobSetFilename(blob *b, const char *dir, const char *filename)
     if (b->name)
         free(b->name);
 
-    b->name = cli_strdup(filename);
+    b->name = cli_safer_strdup(filename);
 
     if (b->name)
         sanitiseName(b->name);
@@ -225,13 +225,13 @@ int blobAddData(blob *b, const unsigned char *data, size_t len)
         assert(b->size == 0);
 
         b->size = growth;
-        b->data = cli_malloc(growth);
+        b->data = cli_max_malloc(growth);
         if (NULL == b->data) {
             b->size = 0;
             return -1;
         }
     } else if (b->size < b->len + (off_t)len) {
-        unsigned char *p = cli_realloc(b->data, b->size + growth);
+        unsigned char *p = cli_max_realloc(b->data, b->size + growth);
 
         if (p == NULL)
             return -1;
@@ -245,13 +245,13 @@ int blobAddData(blob *b, const unsigned char *data, size_t len)
         assert(b->size == 0);
 
         b->size = (off_t)len * 4;
-        b->data = cli_malloc(b->size);
+        b->data = cli_max_malloc(b->size);
         if (NULL == b->data) {
             b->size = 0;
             return -1;
         }
     } else if (b->size < b->len + (off_t)len) {
-        unsigned char *p = cli_realloc(b->data, b->size + (len * 4));
+        unsigned char *p = cli_max_realloc(b->data, b->size + (len * 4));
 
         if (p == NULL)
             return -1;
@@ -319,7 +319,7 @@ void blobClose(blob *b)
                        (unsigned long)b->size);
             b->size = 0;
         } else {
-            unsigned char *ptr = cli_realloc(b->data, b->len);
+            unsigned char *ptr = cli_max_realloc(b->data, b->len);
 
             if (ptr == NULL) {
                 return;
@@ -385,11 +385,11 @@ int blobGrow(blob *b, size_t len)
         assert(b->len == 0);
         assert(b->size == 0);
 
-        b->data = cli_malloc(len);
+        b->data = cli_max_malloc(len);
         if (b->data)
             b->size = (off_t)len;
     } else {
-        unsigned char *ptr = cli_realloc(b->data, b->size + len);
+        unsigned char *ptr = cli_max_realloc(b->data, b->size + len);
 
         if (ptr) {
             b->size += (off_t)len;
@@ -404,13 +404,13 @@ fileblob *
 fileblobCreate(void)
 {
 #ifdef CL_DEBUG
-    fileblob *fb = (fileblob *)cli_calloc(1, sizeof(fileblob));
+    fileblob *fb = (fileblob *)calloc(1, sizeof(fileblob));
     if (fb)
         fb->b.magic = BLOBCLASS;
     cli_dbgmsg("blobCreate\n");
     return fb;
 #else
-    return (fileblob *)cli_calloc(1, sizeof(fileblob));
+    return (fileblob *)calloc(1, sizeof(fileblob));
 #endif
 }
 
@@ -526,7 +526,7 @@ void fileblobPartialSet(fileblob *fb, const char *fullname, const char *arg)
             fb->b.len = fb->b.size = 0;
             fb->isNotEmpty         = 1;
         }
-    fb->fullname = cli_strdup(fullname);
+    fb->fullname = cli_safer_strdup(fullname);
 }
 
 void fileblobSetFilename(fileblob *fb, const char *dir, const char *filename)

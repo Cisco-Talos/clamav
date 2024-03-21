@@ -160,7 +160,7 @@ int lzwInit(lzw_streamp strm)
     struct lzw_internal_state *state;
     hcode_t code;
 
-    state = cli_malloc(sizeof(struct lzw_internal_state));
+    state = malloc(sizeof(struct lzw_internal_state));
     if (state == NULL) {
         strm->msg = "failed to allocate state";
         return LZW_MEM_ERROR;
@@ -172,7 +172,7 @@ int lzwInit(lzw_streamp strm)
     state->nextbits = 0;
 
     /* dictionary setup */
-    state->dec_codetab = cli_calloc(CSIZE, sizeof(code_t));
+    state->dec_codetab = cli_max_calloc(CSIZE, sizeof(code_t));
     if (state->dec_codetab == NULL) {
         free(state);
         strm->msg = "failed to allocate code table";
@@ -431,7 +431,7 @@ static void code_print(code_t *code)
     uint8_t *string;
     int i = 0;
 
-    string = cli_calloc(code->length + 1, sizeof(uint8_t));
+    string = cli_max_calloc(code->length + 1, sizeof(uint8_t));
     if (!string)
         return;
 

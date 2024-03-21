@@ -42,7 +42,7 @@
 void *cli_pcre_malloc(size_t size, void *ext)
 {
     UNUSEDPARAM(ext);
-    return cli_malloc(size);
+    return cli_max_malloc(size);
 }
 
 void cli_pcre_free(void *ptr, void *ext)
@@ -56,9 +56,9 @@ void cli_pcre_free(void *ptr, void *ext)
 cl_error_t cli_pcre_init_internal()
 {
 #if !USING_PCRE2
-    pcre_malloc       = cli_malloc;
+    pcre_malloc       = cli_max_malloc;
     pcre_free         = free;
-    pcre_stack_malloc = cli_malloc;
+    pcre_stack_malloc = cli_max_malloc;
     pcre_stack_free   = free;
 #endif
 
@@ -216,7 +216,7 @@ cl_error_t cli_pcre_compile(struct cli_pcre_data *pd, long long unsigned match_l
     /* now study it... (section totally not from snort) */
     pd->ex = pcre_study(pd->re, 0, &error);
     if (!(pd->ex)) {
-        pd->ex = (pcre_extra *)cli_calloc(1, sizeof(*(pd->ex)));
+        pd->ex = (pcre_extra *)calloc(1, sizeof(*(pd->ex)));
         if (!(pd->ex)) {
             cli_errmsg("cli_pcre_compile: Unable to allocate memory for extra data\n");
             return CL_EMEM;

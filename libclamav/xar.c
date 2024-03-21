@@ -473,9 +473,9 @@ int cli_scanxar(cli_ctx *ctx)
         return CL_EREAD;
     }
     strm.avail_in = hdr.toc_length_compressed;
-    toc           = cli_malloc(hdr.toc_length_decompressed + 1);
+    toc           = cli_max_malloc(hdr.toc_length_decompressed + 1);
     if (toc == NULL) {
-        cli_dbgmsg("cli_scanxar: cli_malloc fails on TOC decompress buffer.\n");
+        cli_dbgmsg("cli_scanxar: cli_max_malloc fails on TOC decompress buffer.\n");
         return CL_EMEM;
     }
     toc[hdr.toc_length_decompressed] = '\0';

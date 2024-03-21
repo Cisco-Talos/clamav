@@ -572,9 +572,9 @@ static cl_error_t scan_pe_mdb(cli_ctx *ctx, struct cli_exe_section *exe_section)
         foundsize[type] = cli_hm_have_size(mdb_sect, type, exe_section->rsz);
         foundwild[type] = cli_hm_have_wild(mdb_sect, type);
         if (foundsize[type] || foundwild[type]) {
-            hashset[type] = cli_malloc(hashlen[type]);
+            hashset[type] = malloc(hashlen[type]);
             if (!hashset[type]) {
-                cli_errmsg("scan_pe_mdb: cli_malloc failed!\n");
+                cli_errmsg("scan_pe_mdb: malloc failed!\n");
                 for (; type > 0;)
                     free(hashset[--type]);
                 return CL_EMEM;
@@ -602,9 +602,9 @@ static cl_error_t scan_pe_mdb(cli_ctx *ctx, struct cli_exe_section *exe_section)
                 goto end;
             }
 
-            md5 = cli_malloc(16);
+            md5 = malloc(16);
             if (!(md5)) {
-                cli_errmsg("scan_pe_mdb: cli_malloc failed!\n");
+                cli_errmsg("scan_pe_mdb: malloc failed!\n");
                 ret = CL_EMEM;
                 goto end;
             }
@@ -2211,7 +2211,7 @@ static char *pe_ordinal(const char *dll, uint16_t ord)
     if (name[0] == '\0')
         sprintf(name, "ord%u", ord);
 
-    return cli_strdup(name);
+    return cli_safer_strdup(name);
 }
 
 static int validate_impname(const char *name, uint32_t length, int dll)
@@ -2297,7 +2297,7 @@ static inline int hash_impfns(cli_ctx *ctx, void **hashctx, uint32_t *impsz, str
                 break;                                                              \
             }                                                                       \
                                                                                     \
-            fname = cli_calloc(funclen + dlllen + 3, sizeof(char));                 \
+            fname = cli_max_calloc(funclen + dlllen + 3, sizeof(char));             \
             if (fname == NULL) {                                                    \
                 cli_dbgmsg("scan_pe: cannot allocate memory for imphash string\n"); \
                 ret = CL_EMEM;                                                      \
@@ -2335,7 +2335,7 @@ static inline int hash_impfns(cli_ctx *ctx, void **hashctx, uint32_t *impsz, str
 
             thuoff += sizeof(struct pe_image_thunk32);
 
-            temp = EC32(thunk32.u.Ordinal);
+            temp              = EC32(thunk32.u.Ordinal);
             thunk32.u.Ordinal = temp;
 
             if (!(thunk32.u.Ordinal & PE_IMAGEDIR_ORDINAL_FLAG32)) {
@@ -2588,9 +2588,9 @@ static cl_error_t scan_pe_imp(cli_ctx *ctx, struct cli_exe_info *peinfo)
     for (type = CLI_HASH_MD5; type < CLI_HASH_AVAIL_TYPES; type++) {
         genhash[type] = cli_hm_have_any(imp, type);
         if (genhash[type]) {
-            hashset[type] = cli_malloc(hashlen[type]);
+            hashset[type] = malloc(hashlen[type]);
             if (!hashset[type]) {
-                cli_errmsg("scan_pe: cli_malloc failed!\n");
+                cli_errmsg("scan_pe: malloc failed!\n");
                 for (; type > 0;)
                     free(hashset[--type]);
                 return CL_EMEM;
@@ -2607,9 +2607,9 @@ static cl_error_t scan_pe_imp(cli_ctx *ctx, struct cli_exe_info *peinfo)
     if (cli_debug_flag && !genhash[CLI_HASH_MD5]) {
 #endif
         genhash[CLI_HASH_MD5] = 1;
-        hashset[CLI_HASH_MD5] = cli_calloc(hashlen[CLI_HASH_MD5], sizeof(char));
+        hashset[CLI_HASH_MD5] = calloc(hashlen[CLI_HASH_MD5], sizeof(char));
         if (!hashset[CLI_HASH_MD5]) {
-            cli_errmsg("scan_pe: cli_malloc failed!\n");
+            cli_errmsg("scan_pe: calloc failed!\n");
             for (type = CLI_HASH_MD5; type < CLI_HASH_AVAIL_TYPES; type++)
                 free(hashset[type]);
             return CL_EMEM;
@@ -3218,7 +3218,7 @@ int cli_scanpe(cli_ctx *ctx)
                 if (xsjs == 1280)
                     break;
 
-                if (!(jumps = (uint32_t *)cli_realloc2(jumps, (xsjs + 128) * sizeof(uint32_t)))) {
+                if (!(jumps = (uint32_t *)cli_max_realloc_or_free(jumps, (xsjs + 128) * sizeof(uint32_t)))) {
                     cli_exe_info_destroy(peinfo);
                     return CL_EMEM;
                 }
@@ -3267,7 +3267,7 @@ int cli_scanpe(cli_ctx *ctx)
     /* Trojan.Swizzor.Gen */
     if (SCAN_HEURISTICS && (DCONF & PE_CONF_SWIZZOR) && peinfo->nsections > 1 && fsize > 64 * 1024 && fsize < 4 * 1024 * 1024) {
         if (peinfo->dirs[2].Size) {
-            struct swizz_stats *stats = cli_calloc(1, sizeof(*stats));
+            struct swizz_stats *stats = calloc(1, sizeof(*stats));
             unsigned int m            = 1000;
             ret                       = CL_CLEAN;
 
@@ -3373,7 +3373,7 @@ int cli_scanpe(cli_ctx *ctx)
             }
 
             /* allocate needed buffer */
-            if (!(src = cli_calloc(ssize + dsize, sizeof(char)))) {
+            if (!(src = cli_max_calloc(ssize + dsize, sizeof(char)))) {
                 cli_exe_info_destroy(peinfo);
                 return CL_EMEM;
             }
@@ -3489,7 +3489,7 @@ int cli_scanpe(cli_ctx *ctx)
                 break;
             }
 
-            if ((dest = (char *)cli_calloc(dsize, sizeof(char))) == NULL) {
+            if ((dest = (char *)cli_max_calloc(dsize, sizeof(char))) == NULL) {
                 cli_exe_info_destroy(peinfo);
                 return CL_EMEM;
             }
@@ -3591,7 +3591,7 @@ int cli_scanpe(cli_ctx *ctx)
         newedx = cli_readint32(newebx + 12 - peinfo->sections[i + 1].rva + src) - EC32(peinfo->pe_opt.opt32.ImageBase);
         cli_dbgmsg("cli_scanpe: FSG: found old EP @%x\n", newedx);
 
-        if ((dest = (char *)cli_calloc(dsize, sizeof(char))) == NULL) {
+        if ((dest = (char *)cli_max_calloc(dsize, sizeof(char))) == NULL) {
             cli_exe_info_destroy(peinfo);
             return CL_EMEM;
         }
@@ -3677,7 +3677,7 @@ int cli_scanpe(cli_ctx *ctx)
             break;
         }
 
-        if ((sections = (struct cli_exe_section *)cli_malloc((sectcnt + 1) * sizeof(struct cli_exe_section))) == NULL) {
+        if ((sections = (struct cli_exe_section *)cli_max_malloc((sectcnt + 1) * sizeof(struct cli_exe_section))) == NULL) {
             cli_errmsg("cli_scanpe: FSG: Unable to allocate memory for sections %llu\n", (long long unsigned)((sectcnt + 1) * sizeof(struct cli_exe_section)));
             cli_exe_info_destroy(peinfo);
             return CL_EMEM;
@@ -3694,7 +3694,7 @@ int cli_scanpe(cli_ctx *ctx)
             return CL_EREAD;
         }
 
-        if ((dest = (char *)cli_calloc(dsize, sizeof(char))) == NULL) {
+        if ((dest = (char *)cli_max_calloc(dsize, sizeof(char))) == NULL) {
             cli_exe_info_destroy(peinfo);
             free(sections);
             return CL_EMEM;
@@ -3779,7 +3779,7 @@ int cli_scanpe(cli_ctx *ctx)
         if (t >= gp - 10 || cli_readint32(support + t + 6) != 2)
             break;
 
-        if ((sections = (struct cli_exe_section *)cli_malloc((sectcnt + 1) * sizeof(struct cli_exe_section))) == NULL) {
+        if ((sections = (struct cli_exe_section *)cli_max_malloc((sectcnt + 1) * sizeof(struct cli_exe_section))) == NULL) {
             cli_errmsg("cli_scanpe: FSG: Unable to allocate memory for sections %llu\n", (long long unsigned)((sectcnt + 1) * sizeof(struct cli_exe_section)));
             cli_exe_info_destroy(peinfo);
             return CL_EMEM;
@@ -3796,7 +3796,7 @@ int cli_scanpe(cli_ctx *ctx)
             return CL_EREAD;
         }
 
-        if ((dest = (char *)cli_calloc(dsize, sizeof(char))) == NULL) {
+        if ((dest = (char *)cli_max_calloc(dsize, sizeof(char))) == NULL) {
             cli_exe_info_destroy(peinfo);
             free(sections);
             return CL_EMEM;
@@ -3842,7 +3842,7 @@ int cli_scanpe(cli_ctx *ctx)
             return CL_EREAD;
         }
 
-        if ((dest = (char *)cli_calloc(dsize + 8192, sizeof(char))) == NULL) {
+        if ((dest = (char *)cli_max_calloc(dsize + 8192, sizeof(char))) == NULL) {
             cli_exe_info_destroy(peinfo);
             return CL_EMEM;
         }
@@ -4021,7 +4021,7 @@ int cli_scanpe(cli_ctx *ctx)
 
             CLI_UNPSIZELIMITS("cli_scanpe: Petite", dsize);
 
-            if ((dest = (char *)cli_calloc(dsize, sizeof(char))) == NULL) {
+            if ((dest = (char *)cli_max_calloc(dsize, sizeof(char))) == NULL) {
                 cli_dbgmsg("cli_scanpe: Petite: Can't allocate %d bytes\n", dsize);
                 cli_exe_info_destroy(peinfo);
                 return CL_EMEM;
@@ -4073,7 +4073,7 @@ int cli_scanpe(cli_ctx *ctx)
 
         CLI_UNPSIZELIMITS("cli_scanpe: PEspin", fsize);
 
-        if ((spinned = (char *)cli_malloc(fsize)) == NULL) {
+        if ((spinned = (char *)cli_max_malloc(fsize)) == NULL) {
             cli_errmsg("cli_scanpe: PESping: Unable to allocate memory for spinned %lu\n", (unsigned long)fsize);
             cli_exe_info_destroy(peinfo);
             return CL_EMEM;
@@ -4142,7 +4142,7 @@ int cli_scanpe(cli_ctx *ctx)
             size_t num_alerts;
             char *spinned;
 
-            if ((spinned = (char *)cli_malloc(fsize)) == NULL) {
+            if ((spinned = (char *)cli_max_malloc(fsize)) == NULL) {
                 cli_errmsg("cli_scanpe: yC: Unable to allocate memory for spinned %lu\n", (unsigned long)fsize);
                 cli_exe_info_destroy(peinfo);
                 return CL_EMEM;
@@ -4207,7 +4207,7 @@ int cli_scanpe(cli_ctx *ctx)
 
         CLI_UNPSIZELIMITS("cli_scanpe: WWPack", ssize);
 
-        if (!(src = (char *)cli_calloc(ssize, sizeof(char)))) {
+        if (!(src = (char *)cli_max_calloc(ssize, sizeof(char)))) {
             cli_exe_info_destroy(peinfo);
             return CL_EMEM;
         }
@@ -4236,7 +4236,7 @@ int cli_scanpe(cli_ctx *ctx)
             break;
         }
 
-        if ((packer = (uint8_t *)cli_calloc(peinfo->sections[peinfo->nsections - 1].rsz, sizeof(char))) == NULL) {
+        if ((packer = (uint8_t *)cli_max_calloc(peinfo->sections[peinfo->nsections - 1].rsz, sizeof(char))) == NULL) {
             free(src);
             cli_exe_info_destroy(peinfo);
             return CL_EMEM;
@@ -4291,7 +4291,7 @@ int cli_scanpe(cli_ctx *ctx)
 
         CLI_UNPSIZELIMITS("cli_scanpe: Aspack", ssize);
 
-        if (!(src = (char *)cli_calloc(ssize, sizeof(char)))) {
+        if (!(src = (char *)cli_max_calloc(ssize, sizeof(char)))) {
             cli_exe_info_destroy(peinfo);
             return CL_EMEM;
         }
@@ -4369,7 +4369,7 @@ int cli_scanpe(cli_ctx *ctx)
         if (!ssize || !dsize || dsize != peinfo->sections[0].vsz)
             break;
 
-        if (!(dest = cli_malloc(dsize))) {
+        if (!(dest = cli_max_malloc(dsize))) {
             cli_errmsg("cli_scanpe: NsPack: Unable to allocate memory for dest %u\n", dsize);
             break;
         }
@@ -5098,14 +5098,14 @@ cl_error_t cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts,
     // TODO in cli_checkpe_fp this aligned to falign, elsewhere it aligned to salign
     peinfo->hdr_size = PESALIGN(peinfo->hdr_size, salign);
 
-    peinfo->sections = (struct cli_exe_section *)cli_calloc(peinfo->nsections, sizeof(struct cli_exe_section));
+    peinfo->sections = (struct cli_exe_section *)cli_max_calloc(peinfo->nsections, sizeof(struct cli_exe_section));
 
     if (!peinfo->sections) {
         cli_dbgmsg("cli_peheader: Can't allocate memory for section headers\n");
         goto done;
     }
 
-    section_hdrs = (struct pe_image_section_hdr *)cli_calloc(peinfo->nsections, sizeof(struct pe_image_section_hdr));
+    section_hdrs = (struct pe_image_section_hdr *)cli_max_calloc(peinfo->nsections, sizeof(struct pe_image_section_hdr));
 
     if (!section_hdrs) {
         cli_dbgmsg("cli_peheader: Can't allocate memory for section headers\n");
@@ -5606,7 +5606,7 @@ cl_error_t cli_check_auth_header(cli_ctx *ctx, struct cli_exe_info *peinfo)
     // We'll build a list of the regions that need to be hashed and pass it to
     // asn1_check_mscat to do hash verification there (the hash algorithm is
     // specified in the PKCS7 structure).  We need to hash up to 4 regions
-    regions = (struct cli_mapped_region *)cli_calloc(4, sizeof(struct cli_mapped_region));
+    regions = (struct cli_mapped_region *)calloc(4, sizeof(struct cli_mapped_region));
     if (!regions) {
         ret = CL_EMEM;
         goto finish;
@@ -5849,29 +5849,29 @@ cl_error_t cli_genhash_pe(cli_ctx *ctx, unsigned int class, int type, stats_sect
         case 1:
             genhash[CLI_HASH_MD5] = 1;
             hlen                  = hashlen[CLI_HASH_MD5];
-            hash = hashset[CLI_HASH_MD5] = cli_calloc(hlen, sizeof(char));
+            hash = hashset[CLI_HASH_MD5] = calloc(hlen, sizeof(char));
             break;
         case 2:
             genhash[CLI_HASH_SHA1] = 1;
             hlen                   = hashlen[CLI_HASH_SHA1];
-            hash = hashset[CLI_HASH_SHA1] = cli_calloc(hlen, sizeof(char));
+            hash = hashset[CLI_HASH_SHA1] = calloc(hlen, sizeof(char));
             break;
         default:
             genhash[CLI_HASH_SHA256] = 1;
             hlen                     = hashlen[CLI_HASH_SHA256];
-            hash = hashset[CLI_HASH_SHA256] = cli_calloc(hlen, sizeof(char));
+            hash = hashset[CLI_HASH_SHA256] = calloc(hlen, sizeof(char));
             break;
     }
 
     if (!hash) {
-        cli_errmsg("cli_genhash_pe: cli_malloc failed!\n");
+        cli_errmsg("cli_genhash_pe: calloc failed!\n");
         cli_exe_info_destroy(peinfo);
         return CL_EMEM;
     }
 
     if (hashes) {
         hashes->nsections = peinfo->nsections;
-        hashes->sections  = cli_calloc(peinfo->nsections, sizeof(struct cli_section_hash));
+        hashes->sections  = cli_max_calloc(peinfo->nsections, sizeof(struct cli_section_hash));
 
         if (!(hashes->sections)) {
             cli_exe_info_destroy(peinfo);

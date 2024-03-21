@@ -168,12 +168,12 @@ cl_error_t cli_bm_initoff(const struct cli_matcher *root, struct cli_bm_off *dat
     }
 
     data->cnt = data->pos = 0;
-    data->offtab          = (uint32_t *)cli_malloc(root->bm_patterns * sizeof(uint32_t));
+    data->offtab          = (uint32_t *)malloc(root->bm_patterns * sizeof(uint32_t));
     if (!data->offtab) {
         cli_errmsg("cli_bm_initoff: Can't allocate memory for data->offtab\n");
         return CL_EMEM;
     }
-    data->offset = (uint32_t *)cli_malloc(root->bm_patterns * sizeof(uint32_t));
+    data->offset = (uint32_t *)malloc(root->bm_patterns * sizeof(uint32_t));
     if (!data->offset) {
         cli_errmsg("cli_bm_initoff: Can't allocate memory for data->offset\n");
         free(data->offtab);

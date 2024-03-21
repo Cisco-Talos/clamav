@@ -279,7 +279,7 @@ int cli_scandmg(cli_ctx *ctx)
                     continue;
                 }
                 /* Have encoded mish block */
-                mish_set = cli_malloc(sizeof(struct dmg_mish_with_stripes));
+                mish_set = malloc(sizeof(struct dmg_mish_with_stripes));
                 if (mish_set == NULL) {
                     ret = CL_EMEM;
                     xmlFree(textValue);
@@ -485,7 +485,7 @@ static int dmg_decode_mish(cli_ctx *ctx, unsigned int *mishblocknum, xmlChar *mi
     /* speed vs memory, could walk the encoded data and skip whitespace in calculation */
     buff_size = 3 * base64_len / 4 + 4;
     dmg_parsemsg("dmg_decode_mish: buffer for mish block %u is %lu\n", *mishblocknum, (unsigned long)buff_size);
-    decoded = cli_malloc(buff_size);
+    decoded = cli_max_malloc(buff_size);
     if (!decoded)
         return CL_EMEM;
 
@@ -1108,7 +1108,7 @@ static int dmg_extract_xml(cli_ctx *ctx, char *dir, struct dmg_koly_block *hdr)
     }
 
     namelen = strlen(dir) + 1 + 7 + 1;
-    if (!(xmlfile = cli_malloc(namelen))) {
+    if (!(xmlfile = cli_max_malloc(namelen))) {
         return CL_EMEM;
     }
     snprintf(xmlfile, namelen, "%s" PATHSEP "toc.xml", dir);

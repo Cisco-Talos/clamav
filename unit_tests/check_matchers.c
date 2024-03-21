@@ -178,8 +178,8 @@ static void setup(void)
     ctx.dconf = ctx.engine->dconf;
 
     ctx.recursion_stack_size = ctx.engine->max_recursion_level;
-    ctx.recursion_stack      = cli_calloc(sizeof(recursion_level_t), ctx.recursion_stack_size);
-    ck_assert_msg(!!ctx.recursion_stack, "cli_calloc() for recursion_stack failed");
+    ctx.recursion_stack      = calloc(sizeof(recursion_level_t), ctx.recursion_stack_size);
+    ck_assert_msg(!!ctx.recursion_stack, "calloc() for recursion_stack failed");
 
     // ctx was memset, so recursion_level starts at 0.
     ctx.recursion_stack[ctx.recursion_level].fmap = &thefmap;
@@ -478,7 +478,7 @@ START_TEST(test_pcre_scanbuff)
     for (i = 0; pcre_testdata[i].data; i++) {
         hexlen = strlen(PCRE_BYPASS) + strlen(pcre_testdata[i].hexsig) + 1;
 
-        hexsig = cli_calloc(hexlen, sizeof(char));
+        hexsig = calloc(hexlen, sizeof(char));
         ck_assert_msg(hexsig != NULL, "[pcre] failed to prepend bypass (out-of-memory)");
 
         strncat(hexsig, PCRE_BYPASS, hexlen);
@@ -532,7 +532,7 @@ START_TEST(test_pcre_scanbuff_allscan)
     for (i = 0; pcre_testdata[i].data; i++) {
         hexlen = strlen(PCRE_BYPASS) + strlen(pcre_testdata[i].hexsig) + 1;
 
-        hexsig = cli_calloc(hexlen, sizeof(char));
+        hexsig = calloc(hexlen, sizeof(char));
         ck_assert_msg(hexsig != NULL, "[pcre] failed to prepend bypass (out-of-memory)");
 
         strncat(hexsig, PCRE_BYPASS, hexlen);

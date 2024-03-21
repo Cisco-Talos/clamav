@@ -144,7 +144,7 @@ int cli_7unz(cli_ctx *ctx, size_t offset)
                 if (newnamelen > namelen) {
                     if (namelen > UTFBUFSZ)
                         free(utf16name);
-                    utf16name = cli_malloc(newnamelen * 2);
+                    utf16name = cli_max_malloc(newnamelen * 2);
                     if (!utf16name) {
                         found = CL_EMEM;
                         break;

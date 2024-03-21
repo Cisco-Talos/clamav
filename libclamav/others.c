@@ -269,7 +269,7 @@ static void *get_module_function(HMODULE handle, const char *name)
 static void *get_module_function(void *handle, const char *name)
 {
     void *procAddress = NULL;
-    procAddress = dlsym(handle, name);
+    procAddress       = dlsym(handle, name);
     if (NULL == procAddress) {
         const char *err = dlerror();
         if (NULL == err) {
@@ -453,7 +453,7 @@ struct cl_engine *cl_engine_new(void)
     struct cl_engine *new;
     cli_intel_t *intel;
 
-    new = (struct cl_engine *)cli_calloc(1, sizeof(struct cl_engine));
+    new = (struct cl_engine *)calloc(1, sizeof(struct cl_engine));
     if (!new) {
         cli_errmsg("cl_engine_new: Can't allocate memory for cl_engine\n");
         return NULL;
@@ -539,7 +539,7 @@ struct cl_engine *cl_engine_new(void)
     }
 
     /* Set up default stats/intel gathering callbacks */
-    intel = cli_calloc(1, sizeof(cli_intel_t));
+    intel = calloc(1, sizeof(cli_intel_t));
     if ((intel)) {
 #ifdef CL_THREAD_SAFE
         if (pthread_mutex_init(&(intel->mutex), NULL)) {
@@ -1279,7 +1279,7 @@ char *cli_hashstream(FILE *fs, unsigned char *digcpy, int type)
 
     cl_finish_hash(ctx, digest);
 
-    if (!(hashstr = (char *)cli_calloc(size * 2 + 1, sizeof(char))))
+    if (!(hashstr = (char *)calloc(size * 2 + 1, sizeof(char))))
         return NULL;
 
     pt = hashstr;
@@ -1665,7 +1665,7 @@ size_t cli_recursion_stack_get_size(cli_ctx *ctx, int index)
 /*
  * Windows doesn't allow you to delete a directory while it is still open
  */
-int cli_rmdirs(const char *name)
+int cli_rmdirs(const char *dirname)
 {
     int rc;
     STATBUF statb;
@@ -1673,17 +1673,17 @@ int cli_rmdirs(const char *name)
     struct dirent *dent;
     char err[128];
 
-    if (CLAMSTAT(name, &statb) < 0) {
-        cli_warnmsg("cli_rmdirs: Can't locate %s: %s\n", name, cli_strerror(errno, err, sizeof(err)));
+    if (CLAMSTAT(dirname, &statb) < 0) {
+        cli_warnmsg("cli_rmdirs: Can't locate %s: %s\n", dirname, cli_strerror(errno, err, sizeof(err)));
         return -1;
     }
 
     if (!S_ISDIR(statb.st_mode)) {
-        if (cli_unlink(name)) return -1;
+        if (cli_unlink(dirname)) return -1;
         return 0;
     }
 
-    if ((dd = opendir(name)) == NULL)
+    if ((dd = opendir(dirname)) == NULL)
         return -1;
 
     rc = 0;
@@ -1696,15 +1696,14 @@ int cli_rmdirs(const char *name)
         if (strcmp(dent->d_name, "..") == 0)
             continue;
 
-        path = cli_malloc(strlen(name) + strlen(dent->d_name) + 2);
-
+        path = malloc(strlen(dirname) + strlen(dent->d_name) + 2);
         if (path == NULL) {
-            cli_errmsg("cli_rmdirs: Unable to allocate memory for path %u\n", strlen(name) + strlen(dent->d_name) + 2);
+            cli_errmsg("cli_rmdirs: Unable to allocate memory for path %u\n", strlen(dirname) + strlen(dent->d_name) + 2);
             closedir(dd);
             return -1;
         }
 
-        sprintf(path, "%s\\%s", name, dent->d_name);
+        sprintf(path, "%s\\%s", dirname, dent->d_name);
         rc = cli_rmdirs(path);
         free(path);
         if (rc != 0)
@@ -1713,8 +1712,8 @@ int cli_rmdirs(const char *name)
 
     closedir(dd);
 
-    if (rmdir(name) < 0) {
-        cli_errmsg("cli_rmdirs: Can't remove temporary directory %s: %s\n", name, cli_strerror(errno, err, sizeof(err)));
+    if (rmdir(dirname) < 0) {
+        cli_errmsg("cli_rmdirs: Can't remove temporary directory %s: %s\n", dirname, cli_strerror(errno, err, sizeof(err)));
         return -1;
     }
 
@@ -1742,7 +1741,7 @@ int cli_rmdirs(const char *dirname)
             while ((dent = readdir(dd))) {
                 if (dent->d_ino) {
                     if (strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..")) {
-                        path = cli_malloc(strlen(dirname) + strlen(dent->d_name) + 2);
+                        path = malloc(strlen(dirname) + strlen(dent->d_name) + 2);
                         if (!path) {
                             cli_errmsg("cli_rmdirs: Unable to allocate memory for path %llu\n", (long long unsigned)(strlen(dirname) + strlen(dent->d_name) + 2));
                             closedir(dd);
@@ -1814,13 +1813,13 @@ bitset_t *cli_bitset_init(void)
 {
     bitset_t *bs;
 
-    bs = cli_malloc(sizeof(bitset_t));
+    bs = malloc(sizeof(bitset_t));
     if (!bs) {
         cli_errmsg("cli_bitset_init: Unable to allocate memory for bs %llu\n", (long long unsigned)sizeof(bitset_t));
         return NULL;
     }
     bs->length = BITSET_DEFAULT_SIZE;
-    bs->bitset = cli_calloc(BITSET_DEFAULT_SIZE, 1);
+    bs->bitset = calloc(BITSET_DEFAULT_SIZE, 1);
     if (!bs->bitset) {
         cli_errmsg("cli_bitset_init: Unable to allocate memory for bs->bitset %u\n", BITSET_DEFAULT_SIZE);
         free(bs);
@@ -1846,7 +1845,7 @@ static bitset_t *bitset_realloc(bitset_t *bs, unsigned long min_size)
     unsigned char *new_bitset;
 
     new_length = nearest_power(min_size);
-    new_bitset = (unsigned char *)cli_realloc(bs->bitset, new_length);
+    new_bitset = (unsigned char *)cli_max_realloc(bs->bitset, new_length);
     if (!new_bitset) {
         return NULL;
     }

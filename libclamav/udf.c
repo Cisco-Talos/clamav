@@ -100,7 +100,7 @@ done:
         }
     }
 
-    FREE(tmpf);
+    CLI_FREE_AND_SET_NULL(tmpf);
 
     return status;
 }
@@ -623,7 +623,7 @@ typedef struct {
 
 static void freePointerList(PointerList *pl)
 {
-    FREE(pl->idxs);
+    CLI_FREE_AND_SET_NULL(pl->idxs);
     memset(pl, 0, sizeof(PointerList));
 }
 
@@ -633,9 +633,9 @@ static cl_error_t initPointerList(PointerList *pl)
     uint32_t capacity = POINTER_LIST_INCREMENT;
 
     freePointerList(pl);
-    CLI_CALLOC(pl->idxs, capacity, sizeof(uint8_t *),
-               cli_errmsg("initPointerList: Can't allocate memory\n");
-               ret = CL_EMEM);
+    CLI_CALLOC_OR_GOTO_DONE(pl->idxs, capacity, sizeof(uint8_t *),
+                            cli_errmsg("initPointerList: Can't allocate memory\n");
+                            ret = CL_EMEM);
 
     pl->capacity = capacity;
 done:
@@ -648,9 +648,9 @@ static cl_error_t insertPointer(PointerList *pl, const uint8_t *pointer)
 
     if (pl->cnt == (pl->capacity - 1)) {
         uint32_t newCapacity = pl->capacity + POINTER_LIST_INCREMENT;
-        CLI_REALLOC(pl->idxs, newCapacity * sizeof(uint8_t *),
-                    cli_errmsg("insertPointer: Can't allocate memory\n");
-                    ret = CL_EMEM);
+        CLI_SAFER_REALLOC_OR_GOTO_DONE(pl->idxs, newCapacity * sizeof(uint8_t *),
+                                       cli_errmsg("insertPointer: Can't allocate memory\n");
+                                       ret = CL_EMEM);
 
         pl->capacity = newCapacity;
     }

@@ -72,7 +72,7 @@ ole2_convert_utf(summary_ctx_t *sctx, char *begin, size_t sz, const char *encodi
 
     if (sz == 0) {
         cli_dbgmsg("ole2_convert_utf: converting empty string\n");
-        return cli_calloc(1, 1); // Just send back an empty NULL-terminated string.
+        return calloc(1, 1); // Just send back an empty NULL-terminated string.
     }
 
     /* applies in the both case */
@@ -80,7 +80,7 @@ ole2_convert_utf(summary_ctx_t *sctx, char *begin, size_t sz, const char *encodi
         char *track;
         size_t bcnt, scnt;
 
-        outbuf = cli_calloc(1, sz + 1);
+        outbuf = cli_max_calloc(1, sz + 1);
         if (!(outbuf))
             return NULL;
         memcpy(outbuf, begin, sz);
@@ -110,7 +110,7 @@ ole2_convert_utf(summary_ctx_t *sctx, char *begin, size_t sz, const char *encodi
     }
 
 #if HAVE_ICONV
-    p1 = buf = cli_calloc(1, sz);
+    p1 = buf = cli_max_calloc(1, sz);
     if (!(buf))
         return NULL;
 
@@ -147,8 +147,8 @@ ole2_convert_utf(summary_ctx_t *sctx, char *begin, size_t sz, const char *encodi
         for (attempt = 1; attempt <= 3; ++attempt) {
             /* charset to UTF-8 should never exceed sz*6 */
             sz2 = (attempt * 2) * sz;
-            /* use cli_realloc, reuse the buffer that has already been translated */
-            outbuf = (char *)cli_realloc(outbuf, sz2 + 1);
+            /* use cli_max_realloc, reuse the buffer that has already been translated */
+            outbuf = (char *)cli_max_realloc(outbuf, sz2 + 1);
             if (!outbuf) {
                 free(buf);
                 iconv_close(cd);
@@ -428,7 +428,7 @@ ole2_process_property(summary_ctx_t *sctx, unsigned char *databuf, uint32_t offs
                     strsize = PROPSTRLIMIT;
                 }
 
-                outstr = cli_calloc(strsize + 1, 1); /* last char must be NULL */
+                outstr = cli_max_calloc(strsize + 1, 1); /* last char must be NULL */
                 if (!outstr) {
                     return CL_EMEM;
                 }
@@ -487,7 +487,7 @@ ole2_process_property(summary_ctx_t *sctx, unsigned char *databuf, uint32_t offs
                 sctx->flags |= OLE2_SUMMARY_ERROR_OOB;
                 return CL_EFORMAT;
             }
-            outstr = cli_calloc(strsize + 2, 1); /* last two chars must be NULL */
+            outstr = cli_max_calloc(strsize + 2, 1); /* last two chars must be NULL */
             if (!outstr) {
                 return CL_EMEM;
             }

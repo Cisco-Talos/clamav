@@ -146,7 +146,7 @@ int cli_rebuildpe_align(char *buffer, struct cli_exe_section *sections, int sect
     if (datasize > CLI_MAX_ALLOCATION)
         return 0;
 
-    pefile = (char *)cli_calloc(rawbase + datasize, 1);
+    pefile = (char *)cli_max_calloc(rawbase + datasize, 1);
     if (!pefile)
         return 0;
 

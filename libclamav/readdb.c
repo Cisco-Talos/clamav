@@ -114,9 +114,9 @@ char *cli_virname(const char *virname, unsigned int official)
     }
 
     if (official)
-        return cli_strdup(virname);
+        return cli_safer_strdup(virname);
 
-    newname = (char *)cli_malloc(strlen(virname) + 11 + 1);
+    newname = (char *)malloc(strlen(virname) + 11 + 1);
     if (!newname) {
         cli_errmsg("cli_virname: Can't allocate memory for newname\n");
         return NULL;
@@ -142,7 +142,7 @@ cl_error_t cli_sigopts_handler(struct cli_matcher *root, const char *virname, co
         return CL_EPARSE;
     }
 
-    hexcpy = cli_strdup(hexsig);
+    hexcpy = cli_safer_strdup(hexsig);
     if (!hexcpy)
         return CL_EMEM;
 
@@ -156,7 +156,7 @@ cl_error_t cli_sigopts_handler(struct cli_matcher *root, const char *virname, co
         /* FULLWORD regex sigopt handling */
         if (sigopts & ACPATT_OPTION_FULLWORD) {
             size_t ovrlen = strlen(hexcpy) + 21;
-            char *hexovr  = cli_calloc(ovrlen, sizeof(char));
+            char *hexovr  = calloc(ovrlen, sizeof(char));
             if (!hexovr) {
                 free(hexcpy);
                 return CL_EMEM;
@@ -173,7 +173,7 @@ cl_error_t cli_sigopts_handler(struct cli_matcher *root, const char *virname, co
         /* NOCASE sigopt is passed onto the regex-opt handler */
         if (sigopts & ACPATT_OPTION_NOCASE) {
             size_t ovrlen = strlen(hexcpy) + 2;
-            char *hexovr  = cli_calloc(ovrlen, sizeof(char));
+            char *hexovr  = calloc(ovrlen, sizeof(char));
             if (!hexovr) {
                 free(hexcpy);
                 return CL_EMEM;
@@ -213,7 +213,7 @@ cl_error_t cli_sigopts_handler(struct cli_matcher *root, const char *virname, co
     if (sigopts & ACPATT_OPTION_FULLWORD) {
         char *rechar;
         size_t ovrlen = strlen(hexcpy) + 7;
-        char *hexovr  = cli_calloc(ovrlen, sizeof(char));
+        char *hexovr  = calloc(ovrlen, sizeof(char));
         if (!hexovr) {
             free(hexcpy);
             return CL_EMEM;
@@ -245,7 +245,7 @@ cl_error_t cli_sigopts_handler(struct cli_matcher *root, const char *virname, co
     if (sigopts & ACPATT_OPTION_WIDE) {
         size_t hexcpylen = strlen(hexcpy);
         size_t ovrlen    = 2 * hexcpylen + 1;
-        char *hexovr     = cli_calloc(ovrlen, sizeof(char));
+        char *hexovr     = calloc(ovrlen, sizeof(char));
         if (!hexovr) {
             free(hexcpy);
             return CL_EMEM;
@@ -373,7 +373,7 @@ static cl_error_t readdb_load_regex_subsignature(struct cli_matcher *root, const
     }
 
     /* get copied */
-    hexcpy = cli_strdup(sig);
+    hexcpy = cli_safer_strdup(sig);
     if (!hexcpy) {
         status = CL_EMEM;
         goto done;
@@ -420,7 +420,7 @@ static cl_error_t readdb_load_regex_subsignature(struct cli_matcher *root, const
 
 done:
 
-    FREE(hexcpy);
+    CLI_FREE_AND_SET_NULL(hexcpy);
 
     return status;
 }
@@ -634,7 +634,7 @@ done:
         ffierror_free(fuzzy_hash_load_error);
     }
 
-    FREE(hexcpy);
+    CLI_FREE_AND_SET_NULL(hexcpy);
 
     return status;
 }
@@ -729,7 +729,7 @@ cl_error_t cli_add_content_match_pattern(struct cli_matcher *root, const char *v
              * Parse "{n}" wildcard - Not a "{n-m}" range-style one.
              * Replaces it with:  "??" * n  and then re-parses the modified hexsig with recursion.
              */
-            hexcpy = cli_calloc(hexlen + 2 * range, sizeof(char));
+            hexcpy = calloc(hexlen + 2 * range, sizeof(char));
             if (!hexcpy)
                 return CL_EMEM;
 
@@ -795,7 +795,7 @@ cl_error_t cli_add_content_match_pattern(struct cli_matcher *root, const char *v
 
         // Make a copy of the whole pattern so that we can NULL-terminate the hexsig
         // and pass it to cli_ac_addsig() without having to pass the part-length.
-        if (!(hexcpy = cli_strdup(hexsig)))
+        if (!(hexcpy = cli_safer_strdup(hexsig)))
             return CL_EMEM;
 
         start = pt = hexcpy;
@@ -1144,7 +1144,7 @@ static char *cli_signorm(const char *signame)
         nsz = 3;
     }
 
-    new_signame = cli_calloc((nsz + 1), sizeof(char));
+    new_signame = calloc((nsz + 1), sizeof(char));
     if (!new_signame)
         return NULL;
 
@@ -1256,7 +1256,7 @@ static cl_error_t cli_loaddb(FILE *fs, struct cl_engine *engine, unsigned int *s
     root = engine->root[0];
 
     if (engine->ignored)
-        if (!(buffer_cpy = cli_malloc(FILEBUFF))) {
+        if (!(buffer_cpy = malloc(FILEBUFF))) {
             cli_errmsg("cli_loaddb: Can't allocate memory for buffer_cpy\n");
             return CL_EMEM;
         }
@@ -1331,7 +1331,7 @@ static cl_error_t cli_loadidb(FILE *fs, struct cl_engine *engine, unsigned int *
         return CL_EMEM;
 
     if (engine->ignored)
-        if (!(buffer_cpy = cli_malloc(FILEBUFF))) {
+        if (!(buffer_cpy = malloc(FILEBUFF))) {
             cli_errmsg("cli_loadidb: Can't allocate memory for buffer_cpy\n");
             MPOOL_FREE(engine->mempool, matcher);
             return CL_EMEM;
@@ -1607,7 +1607,7 @@ static int cli_loadndb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
         return ret;
 
     if (engine->ignored)
-        if (!(buffer_cpy = cli_malloc(FILEBUFF))) {
+        if (!(buffer_cpy = malloc(FILEBUFF))) {
             cli_errmsg("cli_loadndb: Can't allocate memory for buffer_cpy\n");
             return CL_EMEM;
         }
@@ -1731,7 +1731,7 @@ struct lsig_attrib {
 /* TODO: rework this */
 static int lsigattribs(char *attribs, struct cli_lsig_tdb *tdb)
 {
-// clang-format off
+    // clang-format off
 #define ATTRIB_TOKENS   10
 #define EXPR_TOKEN_MAX  16
     struct lsig_attrib attrtab[] = {
@@ -2254,7 +2254,7 @@ static int cli_loadldb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
         return ret;
 
     if (engine->ignored) {
-        if (!(buffer_cpy = cli_malloc(sizeof(buffer)))) {
+        if (!(buffer_cpy = malloc(sizeof(buffer)))) {
             cli_errmsg("cli_loadldb: Can't allocate memory for buffer_cpy\n");
             return CL_EMEM;
         }
@@ -2330,7 +2330,7 @@ static int cli_loadcbc(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
         return CL_SUCCESS;
     }
 
-    bcs->all_bcs = cli_realloc2(bcs->all_bcs, sizeof(*bcs->all_bcs) * (bcs->count + 1));
+    bcs->all_bcs = cli_safer_realloc_or_free(bcs->all_bcs, sizeof(*bcs->all_bcs) * (bcs->count + 1));
     if (!bcs->all_bcs) {
         cli_errmsg("cli_loadcbc: Can't allocate memory for bytecode entry\n");
         return CL_EMEM;
@@ -2401,8 +2401,8 @@ static int cli_loadcbc(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
         if (bc->kind >= _BC_START_HOOKS && bc->kind < _BC_LAST_HOOK) {
             unsigned hook       = bc->kind - _BC_START_HOOKS;
             unsigned cnt        = ++engine->hooks_cnt[hook];
-            engine->hooks[hook] = cli_realloc2(engine->hooks[hook],
-                                               sizeof(*engine->hooks[0]) * cnt);
+            engine->hooks[hook] = cli_safer_realloc_or_free(engine->hooks[hook],
+                                                            sizeof(*engine->hooks[0]) * cnt);
             if (!engine->hooks[hook]) {
                 cli_errmsg("Out of memory allocating memory for hook %u", hook);
                 return CL_EMEM;
@@ -2837,7 +2837,7 @@ static int cli_loadhash(FILE *fs, struct cl_engine *engine, unsigned int *signo,
     }
 
     if (engine->ignored)
-        if (!(buffer_cpy = cli_malloc(FILEBUFF))) {
+        if (!(buffer_cpy = malloc(FILEBUFF))) {
             cli_errmsg("cli_loadhash: Can't allocate memory for buffer_cpy\n");
             return CL_EMEM;
         }
@@ -2965,7 +2965,7 @@ static int cli_loadmd(FILE *fs, struct cl_engine *engine, unsigned int *signo, i
     UNUSEDPARAM(dbname);
 
     if (engine->ignored)
-        if (!(buffer_cpy = cli_malloc(FILEBUFF))) {
+        if (!(buffer_cpy = malloc(FILEBUFF))) {
             cli_errmsg("cli_loadmd: Can't allocate memory for buffer_cpy\n");
             return CL_EMEM;
         }
@@ -3119,7 +3119,7 @@ static int cli_loadcdb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
     struct cli_cdb *new;
 
     if (engine->ignored)
-        if (!(buffer_cpy = cli_malloc(FILEBUFF))) {
+        if (!(buffer_cpy = malloc(FILEBUFF))) {
             cli_errmsg("cli_loadcdb: Can't allocate memory for buffer_cpy\n");
             return CL_EMEM;
         }
@@ -3581,7 +3581,7 @@ static char *parse_yara_hex_string(YR_STRING *string, int *ret)
     }
 
     reslen++;
-    res = cli_calloc(reslen, 1);
+    res = calloc(reslen, 1);
     if (!(res)) {
         if (ret) *ret = CL_EMEM;
         return NULL;
@@ -3720,7 +3720,7 @@ static cl_error_t ytable_add_attrib(struct cli_ytable *ytable, const char *hexsi
         if (ytable->table[lookup]->offset)
             free(ytable->table[lookup]->offset);
 
-        ytable->table[lookup]->offset = cli_strdup(value);
+        ytable->table[lookup]->offset = cli_safer_strdup(value);
 
         if (!ytable->table[lookup]->offset) {
             cli_yaramsg("ytable_add_attrib: ran out of memory for offset\n");
@@ -3741,13 +3741,13 @@ static int ytable_add_string(struct cli_ytable *ytable, const char *hexsig)
     if (!ytable || !hexsig)
         return CL_ENULLARG;
 
-    new = cli_calloc(1, sizeof(struct cli_ytable_entry));
+    new = calloc(1, sizeof(struct cli_ytable_entry));
     if (!new) {
         cli_yaramsg("ytable_add_string: out of memory for new ytable entry\n");
         return CL_EMEM;
     }
 
-    new->hexstr = cli_strdup(hexsig);
+    new->hexstr = cli_safer_strdup(hexsig);
     if (!new->hexstr) {
         cli_yaramsg("ytable_add_string: out of memory for hexsig copy\n");
         free(new);
@@ -3755,7 +3755,7 @@ static int ytable_add_string(struct cli_ytable *ytable, const char *hexsig)
     }
 
     ytable->tbl_cnt++;
-    newtable = cli_realloc(ytable->table, ytable->tbl_cnt * sizeof(struct cli_ytable_entry *));
+    newtable = cli_safer_realloc(ytable->table, ytable->tbl_cnt * sizeof(struct cli_ytable_entry *));
     if (!newtable) {
         cli_yaramsg("ytable_add_string: failed to reallocate new ytable table\n");
         free(new->hexstr);
@@ -3861,7 +3861,7 @@ static int load_oneyara(YR_RULE *rule, int chkpua, struct cl_engine *engine, uns
         return CL_SUCCESS;
     }
 
-    newident = cli_malloc(strlen(rule->identifier) + 5 + 1);
+    newident = malloc(strlen(rule->identifier) + 5 + 1);
     if (!newident) {
         cli_errmsg("cli_loadyara(): newident == NULL\n");
         return CL_EMEM;
@@ -4030,7 +4030,7 @@ static int load_oneyara(YR_RULE *rule, int chkpua, struct cl_engine *engine, uns
 #if HAVE_PCRE
             size_t length = strlen(PCRE_BYPASS) + string->length + 3;
 
-            substr = cli_calloc(length, sizeof(char));
+            substr = calloc(length, sizeof(char));
             if (!substr) {
                 cli_errmsg("load_oneyara: cannot allocate memory for converted regex string\n");
                 str_error++;
@@ -4063,7 +4063,7 @@ static int load_oneyara(YR_RULE *rule, int chkpua, struct cl_engine *engine, uns
                 continue;
             }
 
-            substr = cli_calloc(totsize, sizeof(char));
+            substr = calloc(totsize, sizeof(char));
             if (!substr) {
                 cli_errmsg("load_oneyara: cannot allocate memory for converted generic string\n");
                 str_error++;
@@ -4195,7 +4195,7 @@ static int load_oneyara(YR_RULE *rule, int chkpua, struct cl_engine *engine, uns
 #if 0
     if (rule->cl_flags & RULE_ALL ||  rule->cl_flags & RULE_ANY) {
         lsize = 3*ytable.tbl_cnt;
-        logic = cli_calloc(lsize, sizeof(char));
+        logic = calloc(lsize, sizeof(char));
         if (!logic) {
             cli_errmsg("load_oneyara: cannot allocate memory for logic statement\n");
             ytable_delete(&ytable);
@@ -4221,10 +4221,10 @@ static int load_oneyara(YR_RULE *rule, int chkpua, struct cl_engine *engine, uns
 
     /* TDB */
     if (rule->cl_flags & RULE_EP && ytable.tbl_cnt == 1)
-        target_str = cli_strdup(YARATARGET1);
+        target_str = cli_safer_strdup(YARATARGET1);
     else
 #endif
-    target_str = cli_strdup(YARATARGET0);
+    target_str = cli_safer_strdup(YARATARGET0);
 
     memset(&tdb, 0, sizeof(tdb));
     if (CL_SUCCESS != (ret = init_tdb(&tdb, engine, target_str, newident))) {
@@ -4354,7 +4354,7 @@ struct _yara_global {
 cl_error_t cli_yara_init(struct cl_engine *engine)
 {
     /* Initialize YARA */
-    engine->yara_global = cli_calloc(1, sizeof(struct _yara_global));
+    engine->yara_global = calloc(1, sizeof(struct _yara_global));
     if (NULL == engine->yara_global) {
         cli_errmsg("cli_yara_init: failed to create YARA global\n");
         return CL_EMEM;
@@ -4592,7 +4592,7 @@ static int cli_loadpwdb(FILE *fs, struct cl_engine *engine, unsigned int options
 
         /* append target type 0 to tdb string if needed */
         if ((tokens[1][0] == '\0') || (strstr(tokens[1], "Target:") != NULL)) {
-            attribs = cli_strdup(tokens[1]);
+            attribs = cli_safer_strdup(tokens[1]);
             if (!attribs) {
                 cli_errmsg("cli_loadpwdb: Can't allocate memory for attributes\n");
                 ret = CL_EMEM;
@@ -4600,7 +4600,7 @@ static int cli_loadpwdb(FILE *fs, struct cl_engine *engine, unsigned int options
             }
         } else {
             size_t attlen = strlen(tokens[1]) + 10;
-            attribs       = cli_calloc(attlen, sizeof(char));
+            attribs       = calloc(attlen, sizeof(char));
             if (!attribs) {
                 cli_errmsg("cli_loadpwdb: Can't allocate memory for attributes\n");
                 ret = CL_EMEM;
@@ -5081,7 +5081,7 @@ static cl_error_t cli_loaddbdir(const char *dirname, struct cl_engine *engine, u
             continue;
         }
 
-        dbfile = (char *)cli_malloc(strlen(dent->d_name) + dirname_len + 2);
+        dbfile = (char *)malloc(strlen(dent->d_name) + dirname_len + 2);
         if (!dbfile) {
             cli_errmsg("cli_loaddbdir: dbfile == NULL\n");
             ret = CL_EMEM;
@@ -5397,7 +5397,7 @@ cl_error_t cl_statinidir(const char *dirname, struct cl_stat *dbstat)
         dbstat->entries   = 0;
         dbstat->stattab   = NULL;
         dbstat->statdname = NULL;
-        dbstat->dir       = cli_strdup(dirname);
+        dbstat->dir       = cli_safer_strdup(dirname);
     } else {
         cli_errmsg("cl_statdbdir(): Null argument passed.\n");
         return CL_ENULLARG;
@@ -5415,7 +5415,7 @@ cl_error_t cl_statinidir(const char *dirname, struct cl_stat *dbstat)
         if (dent->d_ino) {
             if (strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..") && CLI_DBEXT(dent->d_name)) {
                 dbstat->entries++;
-                dbstat->stattab = (STATBUF *)cli_realloc2(dbstat->stattab, dbstat->entries * sizeof(STATBUF));
+                dbstat->stattab = (STATBUF *)cli_safer_realloc_or_free(dbstat->stattab, dbstat->entries * sizeof(STATBUF));
                 if (!dbstat->stattab) {
                     cl_statfree(dbstat);
                     closedir(dd);
@@ -5423,7 +5423,7 @@ cl_error_t cl_statinidir(const char *dirname, struct cl_stat *dbstat)
                 }
 
 #ifdef _WIN32
-                dbstat->statdname = (char **)cli_realloc2(dbstat->statdname, dbstat->entries * sizeof(char *));
+                dbstat->statdname = (char **)cli_safer_realloc_or_free(dbstat->statdname, dbstat->entries * sizeof(char *));
                 if (!dbstat->statdname) {
                     cli_errmsg("cl_statinidir: Can't allocate memory for dbstat->statdname\n");
                     cl_statfree(dbstat);
@@ -5432,7 +5432,7 @@ cl_error_t cl_statinidir(const char *dirname, struct cl_stat *dbstat)
                 }
 #endif
 
-                fname = cli_malloc(strlen(dirname) + strlen(dent->d_name) + 32);
+                fname = malloc(strlen(dirname) + strlen(dent->d_name) + 32);
                 if (!fname) {
                     cli_errmsg("cl_statinidir: Cant' allocate memory for fname\n");
                     cl_statfree(dbstat);
@@ -5441,7 +5441,7 @@ cl_error_t cl_statinidir(const char *dirname, struct cl_stat *dbstat)
                 }
                 sprintf(fname, "%s" PATHSEP "%s", dirname, dent->d_name);
 #ifdef _WIN32
-                dbstat->statdname[dbstat->entries - 1] = (char *)cli_malloc(strlen(dent->d_name) + 1);
+                dbstat->statdname[dbstat->entries - 1] = (char *)malloc(strlen(dent->d_name) + 1);
                 if (!dbstat->statdname[dbstat->entries - 1]) {
                     cli_errmsg("cli_statinidir: Can't allocate memory for dbstat->statdname\n");
                     cl_statfree(dbstat);
@@ -5484,7 +5484,7 @@ int cl_statchkdir(const struct cl_stat *dbstat)
     while ((dent = readdir(dd))) {
         if (dent->d_ino) {
             if (strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..") && CLI_DBEXT(dent->d_name)) {
-                fname = cli_malloc(strlen(dbstat->dir) + strlen(dent->d_name) + 32);
+                fname = malloc(strlen(dbstat->dir) + strlen(dent->d_name) + 32);
                 if (!fname) {
                     cli_errmsg("cl_statchkdir: can't allocate memory for fname\n");
                     closedir(dd);

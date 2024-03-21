@@ -452,9 +452,9 @@ struct RE {
 /*
  * YARA to ClamAV function mappings
  */
-#define yr_strdup cli_strdup
-#define yr_malloc cli_malloc
-#define yr_realloc cli_realloc
+#define yr_strdup cli_safer_strdup
+#define yr_malloc cli_max_malloc
+#define yr_realloc cli_max_realloc
 #define yr_free free
 #define xtoi cli_xtoi
 

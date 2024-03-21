@@ -551,7 +551,7 @@ static cl_error_t decode(arj_metadata_t *metadata)
     int16_t chr, i, j;
 
     memset(&decode_data, 0, sizeof(decode_data));
-    decode_data.text = (unsigned char *)cli_calloc(DDICSIZ, 1);
+    decode_data.text = (unsigned char *)cli_max_calloc(DDICSIZ, 1);
     if (!decode_data.text) {
         return CL_EMEM;
     }
@@ -706,7 +706,7 @@ static cl_error_t decode_f(arj_metadata_t *metadata)
 
     dd = &decode_data;
     memset(&decode_data, 0, sizeof(decode_data));
-    decode_data.text = (unsigned char *)cli_calloc(DDICSIZ, 1);
+    decode_data.text = (unsigned char *)cli_max_calloc(DDICSIZ, 1);
     if (!decode_data.text) {
         return CL_EMEM;
     }
@@ -899,7 +899,7 @@ static int arj_read_main_header(arj_metadata_t *metadata)
         goto done;
     }
     if (filename_max_len > 0) {
-        fnnorm   = cli_calloc(sizeof(unsigned char), filename_max_len + 1);
+        fnnorm   = cli_max_calloc(sizeof(unsigned char), filename_max_len + 1);
         filename = fmap_need_offstr(metadata->map, metadata->offset, filename_max_len + 1);
         if (!filename || !fnnorm) {
             cli_dbgmsg("UNARJ: Unable to allocate memory for filename\n");
@@ -917,7 +917,7 @@ static int arj_read_main_header(arj_metadata_t *metadata)
         goto done;
     }
     if (comment_max_len > 0) {
-        comnorm = cli_calloc(sizeof(unsigned char), comment_max_len + 1);
+        comnorm = cli_max_calloc(sizeof(unsigned char), comment_max_len + 1);
         comment = fmap_need_offstr(metadata->map, metadata->offset, comment_max_len + 1);
         if (!comment || !comnorm) {
             cli_dbgmsg("UNARJ: Unable to allocate memory for comment\n");
@@ -1044,7 +1044,7 @@ static cl_error_t arj_read_file_header(arj_metadata_t *metadata)
         goto done;
     }
     if (filename_max_len > 0) {
-        fnnorm = cli_calloc(sizeof(unsigned char), filename_max_len + 1);
+        fnnorm = cli_max_calloc(sizeof(unsigned char), filename_max_len + 1);
         if (!fnnorm) {
             cli_dbgmsg("UNARJ: Unable to allocate memory for filename\n");
             ret = CL_EMEM;
@@ -1067,7 +1067,7 @@ static cl_error_t arj_read_file_header(arj_metadata_t *metadata)
         goto done;
     }
     if (comment_max_len > 0) {
-        comnorm = cli_calloc(sizeof(unsigned char), comment_max_len + 1);
+        comnorm = cli_max_calloc(sizeof(unsigned char), comment_max_len + 1);
         if (!comnorm) {
             cli_dbgmsg("UNARJ: Unable to allocate memory for comment\n");
             ret = CL_EMEM;

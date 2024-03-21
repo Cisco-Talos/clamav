@@ -399,7 +399,7 @@ int unaspack(uint8_t *image, unsigned int size, struct cli_exe_section *sections
 
     blocks = image + ep + blocks_offset;
 
-    if (!(wrkbuf = cli_calloc(0x1800, sizeof(uint8_t)))) {
+    if (!(wrkbuf = calloc(0x1800, sizeof(uint8_t)))) {
         cli_dbgmsg("Aspack: Unable to allocate dictionary\n");
         return 0;
     }
@@ -426,7 +426,7 @@ int unaspack(uint8_t *image, unsigned int size, struct cli_exe_section *sections
     while (CLI_ISCONTAINED(image, size, blocks, 8) && (block_rva = cli_readint32(blocks)) && (block_size = cli_readint32(blocks + 4)) && CLI_ISCONTAINED(image, size, image + block_rva, block_size)) {
 
         cli_dbgmsg("Aspack: unpacking block rva:%x - sz:%x\n", block_rva, block_size);
-        wrkbuf = (uint8_t *)cli_calloc(block_size + 0x10e, sizeof(uint8_t));
+        wrkbuf = (uint8_t *)cli_max_calloc(block_size + 0x10e, sizeof(uint8_t));
 
         if (!wrkbuf) {
             cli_dbgmsg("Aspack: Null work buff\n");
@@ -484,7 +484,7 @@ int unaspack(uint8_t *image, unsigned int size, struct cli_exe_section *sections
     if (sectcount > 2 && ep == sections[sectcount - 2].rva && !sections[sectcount - 1].rsz) {
         sectcount -= 2;
     }
-    if (!(outsects = cli_malloc(sizeof(struct cli_exe_section) * sectcount))) {
+    if (!(outsects = cli_max_malloc(sizeof(struct cli_exe_section) * sectcount))) {
         cli_dbgmsg("Aspack: OOM - rebuild failed\n");
         cli_writen(f, image, size);
         return 1; /* No whatsoheader - won't infloop in pe.c */

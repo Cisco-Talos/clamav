@@ -260,7 +260,7 @@ static void string_init_c(struct string* dest, char* data)
 static int string_assign_concatenated(struct string* dest, const char* prefix, const char* begin, const char* end)
 {
     const size_t prefix_len = strlen(prefix);
-    char* ret               = cli_malloc(prefix_len + end - begin + 1);
+    char* ret               = cli_max_malloc(prefix_len + end - begin + 1);
     if (!ret) {
         cli_errmsg("Phishcheck: Unable to allocate memory for string_assign_concatenated\n");
         return CL_EMEM;
@@ -276,7 +276,7 @@ static int string_assign_concatenated(struct string* dest, const char* prefix, c
 /* make a copy of the string between start -> end*/
 static int string_assign_dup(struct string* dest, const char* start, const char* end)
 {
-    char* ret = cli_malloc(end - start + 1);
+    char* ret = cli_max_malloc(end - start + 1);
     if (!ret) {
         cli_errmsg("Phishcheck: Unable to allocate memory for string_assign_dup\n");
         return CL_EMEM;
@@ -324,7 +324,7 @@ static int build_regex(regex_t* preg, const char* regex, int nosub)
     if (rc) {
 
         size_t buflen = cli_regerror(rc, preg, NULL, 0);
-        char* errbuf  = cli_malloc(buflen);
+        char* errbuf  = malloc(buflen);
 
         if (errbuf) {
             cli_regerror(rc, preg, errbuf, buflen);
@@ -1537,13 +1537,13 @@ static enum phish_status phishingCheck(cli_ctx* ctx, struct url_check* urls)
      */
     /* Provide copies of the original URL's, because domain_list_match() may modify the buffer,
        and we don't want that to happen in this case. */
-    realData = cli_strdup(urls->realLink.data);
+    realData = cli_safer_strdup(urls->realLink.data);
     if (!realData) {
         cli_errmsg("Phishcheck: Failed to allocate memory for temporary real link string.\n");
         phishing_verdict = CL_PHISH_CLEAN;
         goto done;
     }
-    displayData = cli_strdup(urls->displayLink.data);
+    displayData = cli_safer_strdup(urls->displayLink.data);
     if (!displayData) {
         cli_errmsg("Phishcheck: Failed to allocate memory for temporary display link string.\n");
         phishing_verdict = CL_PHISH_CLEAN;

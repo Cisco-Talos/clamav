@@ -67,7 +67,7 @@ typedef struct scanner {
     size_t lastpos;
     enum tokenizer_state state;
     enum tokenizer_state last_state;
-} * yyscan_t;
+} *yyscan_t;
 
 static int yylex(YYSTYPE *lvalp, yyscan_t);
 static void yy_scan_bytes(const char *, size_t, yyscan_t scanner);
@@ -117,7 +117,7 @@ struct parser_state {
 static struct scope *scope_new(struct parser_state *state)
 {
     struct scope *parent = state->current;
-    struct scope *s      = cli_calloc(1, sizeof(*s));
+    struct scope *s      = calloc(1, sizeof(*s));
     if (!s)
         return NULL;
     if (cli_hashtab_init(&s->id_map, 10) < 0) {
@@ -287,7 +287,7 @@ static cl_error_t tokens_ensure_capacity(struct tokens *tokens, size_t cap)
         yystype *data;
         cap += 1024;
         /* Keep old data if OOM */
-        data = cli_realloc(tokens->data, cap * sizeof(*tokens->data));
+        data = cli_max_realloc(tokens->data, cap * sizeof(*tokens->data));
         if (!data)
             return CL_EMEM;
         tokens->data     = data;
@@ -516,7 +516,7 @@ static const char *de_packer_2[] = {"p", "a", "c", "k", "e", "d"};
 
 static inline char *textbuffer_done(yyscan_t scanner)
 {
-    char *str = cli_realloc(scanner->buf.data, scanner->buf.pos);
+    char *str = cli_max_realloc(scanner->buf.data, scanner->buf.pos);
     if (!str) {
         str = scanner->buf.data;
     }
@@ -881,7 +881,7 @@ static void run_decoders(struct parser_state *state)
                 cli_js_process_buffer(state, res.txtbuf.data, res.txtbuf.pos);
                 --state->rec;
             }
-            FREE(res.txtbuf.data);
+            CLI_FREE_AND_SET_NULL(res.txtbuf.data);
             /* state->tokens still refers to the embedded/nested context here */
             if (!res.append) {
                 if (CL_EARG == replace_token_range(&parent_tokens, res.pos_begin, res.pos_end, &state->tokens)) {
@@ -1044,7 +1044,7 @@ void cli_js_process_buffer(struct parser_state *state, const char *buf, size_t n
                 if (current->last_token == TOK_DOT) {
                     /* this is a member name, don't normalize
                      */
-                    TOKEN_SET(&val, string, cli_strdup(text));
+                    TOKEN_SET(&val, string, cli_safer_strdup(text));
                     val.type = TOK_UNNORM_IDENTIFIER;
                 } else {
                     switch (current->fsm_state) {
@@ -1181,7 +1181,7 @@ void cli_js_process_buffer(struct parser_state *state, const char *buf, size_t n
                         /* delete TOK_PLUS */
                         free_token(&state->tokens.data[--state->tokens.cnt]);
 
-                        str = cli_realloc(str, str_len + leng + 1);
+                        str = cli_max_realloc(str, str_len + leng + 1);
                         if (!str)
                             break;
                         strncpy(str + str_len, text, leng);
@@ -1197,7 +1197,7 @@ void cli_js_process_buffer(struct parser_state *state, const char *buf, size_t n
         }
         if (val.vtype == vtype_undefined) {
             text = yyget_text(state->scanner);
-            TOKEN_SET(&val, string, cli_strdup(text));
+            TOKEN_SET(&val, string, cli_safer_strdup(text));
             abort();
         }
         add_token(state, &val);
@@ -1209,7 +1209,7 @@ void cli_js_process_buffer(struct parser_state *state, const char *buf, size_t n
 
 struct parser_state *cli_js_init(void)
 {
-    struct parser_state *state = cli_calloc(1, sizeof(*state));
+    struct parser_state *state = calloc(1, sizeof(*state));
     if (!state)
         return NULL;
     if (!scope_new(state)) {
@@ -1553,7 +1553,7 @@ static const enum char_class id_ctype[256] = {
 static void textbuf_clean(struct text_buffer *buf)
 {
     if (buf->capacity > BUF_KEEP_SIZE) {
-        char *data = cli_realloc(buf->data, BUF_KEEP_SIZE);
+        char *data = cli_max_realloc(buf->data, BUF_KEEP_SIZE);
         if (data)
             buf->data = data;
         buf->capacity = BUF_KEEP_SIZE;
@@ -1720,7 +1720,7 @@ static int parseOperator(YYSTYPE *lvalp, yyscan_t scanner)
 
 static int yylex_init(yyscan_t *scanner)
 {
-    *scanner = cli_calloc(1, sizeof(**scanner));
+    *scanner = calloc(1, sizeof(**scanner));
     return *scanner ? 0 : -1;
 }
 

@@ -188,7 +188,7 @@ int16_t ping_clamd(const struct optstruct *opts)
     /* ping command takes the form --ping [attempts[:interval]] */
     if (NULL != (opt = optget(opts, "ping"))) {
         if (NULL != opt->strarg) {
-            if (NULL == (attempt_str = cli_strdup(opt->strarg))) {
+            if (NULL == (attempt_str = cli_safer_strdup(opt->strarg))) {
                 logg(LOGG_ERROR, "could not allocate memory for string\n");
                 ret = -1;
                 goto done;

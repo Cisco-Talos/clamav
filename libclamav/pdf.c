@@ -480,9 +480,9 @@ int pdf_findobj_in_objstm(struct pdf_struct *pdf, struct objstm_struct *objstm, 
 
     /* Success! Add the object to the list of all objects found. */
     pdf->nobjs++;
-    CLI_REALLOC(pdf->objs, sizeof(struct pdf_obj *) * pdf->nobjs,
-                cli_warnmsg("pdf_findobj_in_objstm: out of memory finding objects in stream\n"),
-                status = CL_EMEM);
+    CLI_MAX_REALLOC_OR_GOTO_DONE(pdf->objs, sizeof(struct pdf_obj *) * pdf->nobjs,
+                                 cli_warnmsg("pdf_findobj_in_objstm: out of memory finding objects in stream\n"),
+                                 status = CL_EMEM);
     pdf->objs[pdf->nobjs - 1] = obj;
 
     *obj_found = obj;
@@ -545,7 +545,7 @@ cl_error_t pdf_findobj(struct pdf_struct *pdf)
         goto done;
     }
     pdf->nobjs++;
-    CLI_REALLOC(pdf->objs, sizeof(struct pdf_obj *) * pdf->nobjs, status = CL_EMEM);
+    CLI_MAX_REALLOC_OR_GOTO_DONE(pdf->objs, sizeof(struct pdf_obj *) * pdf->nobjs, status = CL_EMEM);
 
     obj = malloc(sizeof(struct pdf_obj));
     if (!obj) {
@@ -1238,7 +1238,7 @@ char *decrypt_any(struct pdf_struct *pdf, uint32_t id, const char *in, size_t *l
     if (enc_method == ENC_AESV2)
         n += 4;
 
-    key = cli_malloc(n);
+    key = cli_max_malloc(n);
     if (!key) {
         noisy_warnmsg("decrypt_any: malloc failed\n");
         return NULL;
@@ -1261,7 +1261,7 @@ char *decrypt_any(struct pdf_struct *pdf, uint32_t id, const char *in, size_t *l
     if (n > 16)
         n = 16;
 
-    q = cli_calloc(*length, sizeof(char));
+    q = cli_max_calloc(*length, sizeof(char));
     if (!q) {
         noisy_warnmsg("decrypt_any: malloc failed\n");
         return NULL;
@@ -1627,7 +1627,7 @@ cl_error_t pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t
             } else {
                 /* Add objstm to pdf struct, so it can be freed eventually */
                 pdf->nobjstms++;
-                pdf->objstms = cli_realloc2(pdf->objstms, sizeof(struct objstm_struct *) * pdf->nobjstms);
+                pdf->objstms = cli_max_realloc_or_free(pdf->objstms, sizeof(struct objstm_struct *) * pdf->nobjstms);
                 if (!pdf->objstms) {
                     cli_warnmsg("pdf_extract_obj: out of memory parsing object stream (%u)\n", pdf->nobjstms);
                     pdf_free_dict(dparams);
@@ -1692,7 +1692,7 @@ cl_error_t pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t
                             free(pdf->objstms);
                             pdf->objstms = NULL;
                         } else {
-                            pdf->objstms = cli_realloc2(pdf->objstms, sizeof(struct objstm_struct *) * pdf->nobjstms);
+                            pdf->objstms = cli_max_realloc_or_free(pdf->objstms, sizeof(struct objstm_struct *) * pdf->nobjstms);
 
                             if (!pdf->objstms) {
                                 cli_warnmsg("pdf_extract_obj: out of memory when shrinking down objstm array\n");
@@ -2620,7 +2620,7 @@ static char *pdf_readstring(const char *q0, int len, const char *key, unsigned *
 
         q--;
         len = q - start;
-        s0 = s = cli_malloc(len + 1);
+        s0 = s = cli_max_malloc(len + 1);
         if (!s) {
             cli_errmsg("pdf_readstring: Unable to allocate buffer\n");
             return NULL;
@@ -2713,7 +2713,7 @@ static char *pdf_readstring(const char *q0, int len, const char *key, unsigned *
         if (qend)
             *qend = q;
 
-        s = cli_malloc((q - start) / 2 + 1);
+        s = cli_max_malloc((q - start) / 2 + 1);
         if (s == NULL) { /* oops, couldn't allocate memory */
             cli_dbgmsg("pdf_readstring: unable to allocate memory...\n");
             return NULL;
@@ -2769,7 +2769,7 @@ static char *pdf_readval(const char *q, int len, const char *key)
         len++;
     }
 
-    s = cli_malloc(end - q + 1);
+    s = cli_max_malloc(end - q + 1);
     if (!s)
         return NULL;
 
@@ -2976,7 +2976,7 @@ static void check_owner_password(struct pdf_struct *pdf, int R,
                 noisy_warnmsg("check_owner_password: OE length is not 32: %zu\n", OE_len);
             } else {
                 pdf->keylen = 32;
-                pdf->key    = cli_malloc(pdf->keylen);
+                pdf->key    = cli_max_malloc(pdf->keylen);
                 if (!pdf->key) {
                     cli_errmsg("check_owner_password: Cannot allocate memory for pdf->key\n");
                     goto done;
@@ -3032,7 +3032,8 @@ static void check_user_password(struct pdf_struct *pdf, int R, const char *O,
         case 3:
         case 4: {
             unsigned char *d;
-            size_t sz = 68 + pdf->fileIDlen + (R >= 4 && !EM ? 4 : 0);            d         = calloc(1, sz);
+            size_t sz = 68 + pdf->fileIDlen + (R >= 4 && !EM ? 4 : 0);
+            d         = calloc(1, sz);
 
             if (!(d))
                 goto done;
@@ -3063,7 +3064,7 @@ static void check_user_password(struct pdf_struct *pdf, int R, const char *O,
                 length = 40;
 
             pdf->keylen = length / 8;
-            pdf->key    = cli_malloc(pdf->keylen);
+            pdf->key    = cli_max_malloc(pdf->keylen);
             if (!pdf->key)
                 goto done;
 
@@ -3141,7 +3142,7 @@ static void check_user_password(struct pdf_struct *pdf, int R, const char *O,
                     noisy_warnmsg("check_user_password: UE length is not 32: %zu\n", UE_len);
                 } else {
                     pdf->keylen = 32;
-                    pdf->key    = cli_malloc(pdf->keylen);
+                    pdf->key    = cli_max_malloc(pdf->keylen);
                     if (!pdf->key) {
                         cli_errmsg("check_user_password: Cannot allocate memory for pdf->key\n");
                         goto done;
@@ -3203,7 +3204,7 @@ static void check_user_password(struct pdf_struct *pdf, int R, const char *O,
                 noisy_warnmsg("check_user_password: UE length is not 32: %zu\n", UE_len);
             } else {
                 pdf->keylen = 32;
-                pdf->key    = cli_malloc(pdf->keylen);
+                pdf->key    = cli_max_malloc(pdf->keylen);
                 if (!pdf->key) {
                     cli_errmsg("check_user_password: Cannot allocate memory for pdf->key\n");
                     goto done;
@@ -3760,7 +3761,7 @@ cl_error_t cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
             begin = (char *)(pdfver + 5);
             end   = begin + 2;
             strtoul(end, &end, 10);
-            p1 = cli_calloc((end - begin) + 2, 1);
+            p1 = cli_max_calloc((end - begin) + 2, 1);
             if (p1) {
                 strncpy(p1, begin, end - begin);
                 p1[end - begin] = '\0';
@@ -4351,7 +4352,7 @@ static void Author_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfnam
         const char *objstart = (obj->objstm) ? (const char *)(obj->start + obj->objstm->streambuf)
                                              : (const char *)(obj->start + pdf->map);
 
-        pdf->stats.author = cli_calloc(1, sizeof(struct pdf_stats_entry));
+        pdf->stats.author = calloc(1, sizeof(struct pdf_stats_entry));
         if (!(pdf->stats.author))
             return;
 
@@ -4381,7 +4382,7 @@ static void Creator_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfna
         const char *objstart = (obj->objstm) ? (const char *)(obj->start + obj->objstm->streambuf)
                                              : (const char *)(obj->start + pdf->map);
 
-        pdf->stats.creator = cli_calloc(1, sizeof(struct pdf_stats_entry));
+        pdf->stats.creator = calloc(1, sizeof(struct pdf_stats_entry));
         if (!(pdf->stats.creator))
             return;
 
@@ -4411,7 +4412,7 @@ static void ModificationDate_cb(struct pdf_struct *pdf, struct pdf_obj *obj, str
         const char *objstart = (obj->objstm) ? (const char *)(obj->start + obj->objstm->streambuf)
                                              : (const char *)(obj->start + pdf->map);
 
-        pdf->stats.modificationdate = cli_calloc(1, sizeof(struct pdf_stats_entry));
+        pdf->stats.modificationdate = calloc(1, sizeof(struct pdf_stats_entry));
         if (!(pdf->stats.modificationdate))
             return;
 
@@ -4441,7 +4442,7 @@ static void CreationDate_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct 
         const char *objstart = (obj->objstm) ? (const char *)(obj->start + obj->objstm->streambuf)
                                              : (const char *)(obj->start + pdf->map);
 
-        pdf->stats.creationdate = cli_calloc(1, sizeof(struct pdf_stats_entry));
+        pdf->stats.creationdate = calloc(1, sizeof(struct pdf_stats_entry));
         if (!(pdf->stats.creationdate))
             return;
 
@@ -4471,7 +4472,7 @@ static void Producer_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfn
         const char *objstart = (obj->objstm) ? (const char *)(obj->start + obj->objstm->streambuf)
                                              : (const char *)(obj->start + pdf->map);
 
-        pdf->stats.producer = cli_calloc(1, sizeof(struct pdf_stats_entry));
+        pdf->stats.producer = calloc(1, sizeof(struct pdf_stats_entry));
         if (!(pdf->stats.producer))
             return;
 
@@ -4501,7 +4502,7 @@ static void Title_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname
         const char *objstart = (obj->objstm) ? (const char *)(obj->start + obj->objstm->streambuf)
                                              : (const char *)(obj->start + pdf->map);
 
-        pdf->stats.title = cli_calloc(1, sizeof(struct pdf_stats_entry));
+        pdf->stats.title = calloc(1, sizeof(struct pdf_stats_entry));
         if (!(pdf->stats.title))
             return;
 
@@ -4531,7 +4532,7 @@ static void Keywords_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfn
         const char *objstart = (obj->objstm) ? (const char *)(obj->start + obj->objstm->streambuf)
                                              : (const char *)(obj->start + pdf->map);
 
-        pdf->stats.keywords = cli_calloc(1, sizeof(struct pdf_stats_entry));
+        pdf->stats.keywords = calloc(1, sizeof(struct pdf_stats_entry));
         if (!(pdf->stats.keywords))
             return;
 
@@ -4561,7 +4562,7 @@ static void Subject_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfna
         const char *objstart = (obj->objstm) ? (const char *)(obj->start + obj->objstm->streambuf)
                                              : (const char *)(obj->start + pdf->map);
 
-        pdf->stats.subject = cli_calloc(1, sizeof(struct pdf_stats_entry));
+        pdf->stats.subject = calloc(1, sizeof(struct pdf_stats_entry));
         if (!(pdf->stats.subject))
             return;
 

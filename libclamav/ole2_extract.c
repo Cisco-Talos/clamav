@@ -84,7 +84,7 @@ typedef struct ole2_header_tag {
     unsigned char clsid[16];
     uint16_t minor_version __attribute__((packed));
     uint16_t dll_version __attribute__((packed));
-    int16_t byte_order __attribute__((packed));             /* -2=intel */
+    int16_t byte_order __attribute__((packed)); /* -2=intel */
 
     uint16_t log2_big_block_size __attribute__((packed));   /* usually 9 (2^9 = 512) */
     uint32_t log2_small_block_size __attribute__((packed)); /* usually 6 (2^6 = 64) */
@@ -134,7 +134,7 @@ typedef struct ole2_header_tag {
  * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-cfb/60fe8611-66c3-496b-b70d-a504c94c9ace
  */
 typedef struct property_tag {
-    char name[64];       /* in unicode */
+    char name[64]; /* in unicode */
     uint16_t name_size __attribute__((packed));
     unsigned char type;  /* 1=dir 2=file 5=root */
     unsigned char color; /* black or red */
@@ -196,8 +196,8 @@ int ole2_list_push(ole2_list_t *list, uint32_t val)
     ole2_list_node_t *new_node = NULL;
     int status                 = CL_EMEM;
 
-    CLI_MALLOC(new_node, sizeof(ole2_list_node_t),
-               cli_dbgmsg("OLE2: could not allocate new node for worklist!\n"));
+    CLI_MALLOC_OR_GOTO_DONE(new_node, sizeof(ole2_list_node_t),
+                            cli_dbgmsg("OLE2: could not allocate new node for worklist!\n"));
 
     new_node->Val  = val;
     new_node->Next = list->Head;
@@ -256,8 +256,8 @@ cli_ole2_get_property_name2(const char *name, int size)
     if ((name[0] == 0 && name[1] == 0) || size <= 0 || size > 128) {
         return NULL;
     }
-    CLI_MALLOC(newname, size * 7,
-               cli_errmsg("OLE2 [cli_ole2_get_property_name2]: Unable to allocate memory for newname: %u\n", size * 7));
+    CLI_MAX_MALLOC_OR_GOTO_DONE(newname, size * 7,
+                                cli_errmsg("OLE2 [cli_ole2_get_property_name2]: Unable to allocate memory for newname: %u\n", size * 7));
 
     j = 0;
     /* size-2 to ignore trailing NULL */
@@ -304,8 +304,8 @@ get_property_name(char *name, int size)
         return NULL;
     }
 
-    CLI_MALLOC(newname, size,
-               cli_errmsg("OLE2 [get_property_name]: Unable to allocate memory for newname %u\n", size));
+    CLI_MAX_MALLOC_OR_GOTO_DONE(newname, size,
+                                cli_errmsg("OLE2 [get_property_name]: Unable to allocate memory for newname %u\n", size));
     cname = newname;
 
     while (--csize) {
@@ -313,7 +313,7 @@ get_property_name(char *name, int size)
 
         oname += 2;
         if (u > 0x1040) {
-            FREE(newname);
+            CLI_FREE_AND_SET_NULL(newname);
             return cli_ole2_get_property_name2(name, size);
         }
         lo = u % 64;
@@ -778,7 +778,7 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
                         }
                     }
 #endif
-                    dirname = (char *)cli_malloc(strlen(dir) + 8);
+                    dirname = (char *)cli_max_malloc(strlen(dir) + 8);
                     if (!dirname) {
                         ole2_listmsg("OLE2: malloc failed for dirname\n");
                         ole2_list_delete(&node_list);
@@ -888,9 +888,9 @@ static cl_error_t handler_writefile(ole2_header_t *hdr, property_t *prop, const 
     current_block = prop->start_block;
     len           = prop->size;
 
-    CLI_MALLOC(buff, 1 << hdr->log2_big_block_size,
-               cli_errmsg("OLE2 [handler_writefile]: Unable to allocate memory for buff: %u\n", 1 << hdr->log2_big_block_size);
-               ret = CL_EMEM);
+    CLI_MAX_MALLOC_OR_GOTO_DONE(buff, 1 << hdr->log2_big_block_size,
+                                cli_errmsg("OLE2 [handler_writefile]: Unable to allocate memory for buff: %u\n", 1 << hdr->log2_big_block_size);
+                                ret = CL_EMEM);
 
     blk_bitset = cli_bitset_init();
     if (!blk_bitset) {
@@ -956,11 +956,11 @@ static cl_error_t handler_writefile(ole2_header_t *hdr, property_t *prop, const 
     ret = CL_SUCCESS;
 
 done:
-    FREE(name);
+    CLI_FREE_AND_SET_NULL(name);
     if (-1 != ofd) {
         close(ofd);
     }
-    FREE(buff);
+    CLI_FREE_AND_SET_NULL(buff);
     if (NULL != blk_bitset) {
         cli_bitset_free(blk_bitset);
     }
@@ -1157,9 +1157,9 @@ static cl_error_t scan_for_xlm_macros_and_images(ole2_header_t *hdr, property_t 
     current_block = prop->start_block;
     len           = prop->size;
 
-    CLI_MALLOC(buff, 1 << hdr->log2_big_block_size,
-               cli_errmsg("OLE2 [scan_for_xlm_macros_and_images]: Unable to allocate memory for buff: %u\n", 1 << hdr->log2_big_block_size);
-               status = CL_EMEM);
+    CLI_MAX_MALLOC_OR_GOTO_DONE(buff, 1 << hdr->log2_big_block_size,
+                                cli_errmsg("OLE2 [scan_for_xlm_macros_and_images]: Unable to allocate memory for buff: %u\n", 1 << hdr->log2_big_block_size);
+                                status = CL_EMEM);
 
     blk_bitset = cli_bitset_init();
     if (!blk_bitset) {
@@ -1207,7 +1207,7 @@ static cl_error_t scan_for_xlm_macros_and_images(ole2_header_t *hdr, property_t 
     status = CL_SUCCESS;
 
 done:
-    FREE(buff);
+    CLI_FREE_AND_SET_NULL(buff);
 
     if (blk_bitset) {
         cli_bitset_free(blk_bitset);
@@ -1282,7 +1282,7 @@ static cl_error_t handler_enum(ole2_header_t *hdr, property_t *prop, const char 
         }
         if (name) {
             if (!strcmp(name, "fileheader")) {
-                CLI_CALLOC(hwp_check, 1, 1 << hdr->log2_big_block_size, status = CL_EMEM);
+                CLI_MAX_CALLOC_OR_GOTO_DONE(hwp_check, 1, 1 << hdr->log2_big_block_size, status = CL_EMEM);
 
                 /* reading safety checks; do-while used for breaks */
                 do {
@@ -1316,7 +1316,7 @@ static cl_error_t handler_enum(ole2_header_t *hdr, property_t *prop, const char 
 #if HAVE_JSON
                         cli_jsonstr(ctx->wrkproperty, "FileType", "CL_TYPE_HWP5");
 #endif
-                        CLI_CALLOC(hwp_new, 1, sizeof(hwp5_header_t), status = CL_EMEM);
+                        CLI_CALLOC_OR_GOTO_DONE(hwp_new, 1, sizeof(hwp5_header_t), status = CL_EMEM);
 
                         /*
                          * Copy the header information into our header struct.
@@ -1349,8 +1349,8 @@ static cl_error_t handler_enum(ole2_header_t *hdr, property_t *prop, const char 
     status = CL_SUCCESS;
 
 done:
-    FREE(name);
-    FREE(hwp_check);
+    CLI_FREE_AND_SET_NULL(name);
+    CLI_FREE_AND_SET_NULL(hwp_check);
 
     return status;
 }
@@ -1567,7 +1567,7 @@ static cl_error_t handler_otf(ole2_header_t *hdr, property_t *prop, const char *
         cli_dbgmsg("OLE2 [handler_otf]: Dumping '%s' to '%s'\n", name, tempfile);
     }
 
-    CLI_MALLOC(buff, 1 << hdr->log2_big_block_size, ret = CL_EMEM);
+    CLI_MAX_MALLOC_OR_GOTO_DONE(buff, 1 << hdr->log2_big_block_size, ret = CL_EMEM);
 
     blk_bitset = cli_bitset_init();
     if (!blk_bitset) {
@@ -1677,11 +1677,11 @@ static cl_error_t handler_otf(ole2_header_t *hdr, property_t *prop, const char *
     ret = ret == CL_VIRUS ? CL_VIRUS : CL_SUCCESS;
 
 done:
-    FREE(name);
+    CLI_FREE_AND_SET_NULL(name);
     if (-1 != ofd) {
         close(ofd);
     }
-    FREE(buff);
+    CLI_FREE_AND_SET_NULL(buff);
     if (NULL != blk_bitset) {
         cli_bitset_free(blk_bitset);
     }
@@ -1746,7 +1746,7 @@ static cl_error_t handler_otf_encrypted(ole2_header_t *hdr, property_t *prop, co
         goto done;
     }
 
-    CLI_MALLOC(rk, RKLENGTH(key->key_length_bits) * sizeof(uint64_t), ret = CL_EMEM);
+    CLI_MAX_MALLOC_OR_GOTO_DONE(rk, RKLENGTH(key->key_length_bits) * sizeof(uint64_t), ret = CL_EMEM);
 
     print_ole2_property(prop);
 
@@ -1774,8 +1774,8 @@ static cl_error_t handler_otf_encrypted(ole2_header_t *hdr, property_t *prop, co
     }
 
     uint32_t blockSize = 1 << hdr->log2_big_block_size;
-    CLI_MALLOC(buff, blockSize + sizeof(uint64_t), ret = CL_EMEM);
-    CLI_MALLOC(decryptDst, blockSize, ret = CL_EMEM);
+    CLI_MAX_MALLOC_OR_GOTO_DONE(buff, blockSize + sizeof(uint64_t), ret = CL_EMEM);
+    CLI_MAX_MALLOC_OR_GOTO_DONE(decryptDst, blockSize, ret = CL_EMEM);
 
     blk_bitset = cli_bitset_init();
     if (!blk_bitset) {
@@ -1921,11 +1921,11 @@ static cl_error_t handler_otf_encrypted(ole2_header_t *hdr, property_t *prop, co
     ret = ret == CL_VIRUS ? CL_VIRUS : CL_SUCCESS;
 
 done:
-    FREE(name);
+    CLI_FREE_AND_SET_NULL(name);
     if (-1 != ofd) {
         close(ofd);
     }
-    FREE(buff);
+    CLI_FREE_AND_SET_NULL(buff);
     if (NULL != blk_bitset) {
         cli_bitset_free(blk_bitset);
     }
@@ -1938,8 +1938,8 @@ done:
         free(tempfile);
         tempfile = NULL;
     }
-    FREE(decryptDst);
-    FREE(rk);
+    CLI_FREE_AND_SET_NULL(decryptDst);
+    CLI_FREE_AND_SET_NULL(rk);
 
     return ret;
 }
@@ -2136,7 +2136,7 @@ static cl_error_t generate_key_aes(const char *const password, encryption_key_t 
     memcpy(key->key, doubleSha, tmp);
     ret = CL_SUCCESS;
 done:
-    FREE(buffer);
+    CLI_FREE_AND_SET_NULL(buffer);
 
     return ret;
 }
@@ -2273,6 +2273,7 @@ static bool initialize_encryption_key(
 
     encryption_info_stream_standard_t encryptionInfo = {0};
     uint16_t *encryptionInfo_CSPName                 = NULL;
+    size_t CSPName_length                            = 0;
     const uint8_t *encryptionVerifierPtr             = NULL;
     encryption_verifier_t encryptionVerifier         = {0};
 
@@ -2402,14 +2403,24 @@ static bool initialize_encryption_key(
         goto done;
     }
 
-    for (idx = 0; idx * sizeof(uint16_t) < remainingBytes; idx++) {
+    while (true) {
+        // Check if we've gone past the end of the buffer without finding the end of the CSPName string.
+        if ((idx + 1) * sizeof(uint16_t) > remainingBytes) {
+            cli_dbgmsg("ole2: CSPName is missing null terminator before end of buffer.\n");
+            goto done;
+        }
+        // Check if we've found the end of the CSPName string.
         if (encryptionInfo_CSPName[idx] == 0) {
             break;
         }
+        // Found another character in the CSPName string, keep going.
+        idx++;
     }
 
-    encryptionVerifierPtr = (uint8_t*)encryptionInfo_CSPName + (idx + 1) * sizeof(uint16_t);
-    remainingBytes -= (idx * sizeof(uint16_t));
+    CSPName_length = (idx + 1) * sizeof(uint16_t);
+
+    encryptionVerifierPtr = (uint8_t *)encryptionInfo_CSPName + CSPName_length;
+    remainingBytes -= CSPName_length;
 
     if (remainingBytes < sizeof(encryption_verifier_t)) {
         cli_dbgmsg("ole2: No encryption_verifier_t\n");

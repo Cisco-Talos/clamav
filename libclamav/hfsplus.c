@@ -149,7 +149,7 @@ static cl_error_t hfsplus_volumeheader(cli_ctx *ctx, hfsPlusVolumeHeader **heade
         return CL_EMAP;
     }
 
-    volHeader = cli_malloc(sizeof(hfsPlusVolumeHeader));
+    volHeader = malloc(sizeof(hfsPlusVolumeHeader));
     if (!volHeader) {
         cli_errmsg("hfsplus_volumeheader: header malloc failed\n");
         return CL_EMEM;
@@ -523,7 +523,7 @@ static cl_error_t hfsplus_check_attribute(cli_ctx *ctx, hfsPlusVolumeHeader *vol
     nodeSize  = attrHeader->nodeSize;
 
     /* Need to buffer current node, map will keep moving */
-    nodeBuf = cli_malloc(nodeSize);
+    nodeBuf = cli_max_malloc(nodeSize);
     if (!nodeBuf) {
         cli_dbgmsg("hfsplus_check_attribute: failed to acquire node buffer, "
                    "size " STDu32 "\n",
@@ -894,7 +894,7 @@ static cl_error_t hfsplus_read_block_table(int fd, uint32_t *numBlocks, hfsPlusR
     }
 
     *numBlocks = le32_to_host(*numBlocks); // Let's do a little little endian just for fun, shall we?
-    *table     = cli_malloc(sizeof(hfsPlusResourceBlockTable) * *numBlocks);
+    *table     = cli_max_malloc(sizeof(hfsPlusResourceBlockTable) * *numBlocks);
     if (!*table) {
         cli_dbgmsg("hfsplus_read_block_table: Failed to allocate memory for block table\n");
         status = CL_EMEM;
@@ -948,7 +948,7 @@ static cl_error_t hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHea
     nodeSize  = catHeader->nodeSize;
 
     /* Need to buffer current node, map will keep moving */
-    nodeBuf = cli_malloc(nodeSize);
+    nodeBuf = cli_max_malloc(nodeSize);
     if (!nodeBuf) {
         cli_dbgmsg("hfsplus_walk_catalog: failed to acquire node buffer, "
                    "size " STDu32 "\n",

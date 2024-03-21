@@ -162,7 +162,7 @@ typedef enum {
  * Slows things down a lot and only catches unencoded copies
  * of EICAR within bounces, which don't matter
  */
-//#define    SCAN_UNENCODED_BOUNCES
+// #define    SCAN_UNENCODED_BOUNCES
 
 typedef struct mbox_ctx {
     const char *dir;
@@ -265,7 +265,7 @@ static bool haveTooManyMIMEArguments(size_t argCnt, cli_ctx *ctx, bool *heuristi
                          * protocol="application/pgp-encrypted"   \
                          */
 #define X_BFILE RELATED /*                                             \
-                         * BeOS, expert two parts: the file and its   \
+                         * BeOS, expert two parts: the file and its    \
                          * attributes. The attributes part comes as    \
                          *    Content-Type: application/x-be_attribute \
                          *        name="foo"                           \
@@ -624,7 +624,7 @@ appendReadStruct(ReadStruct *rs, const char *const buffer)
         strncpy(&(rs->buffer[rs->bufferLen]), buffer, part);
         rs->bufferLen += part;
 
-        CLI_CALLOC(next, 1, sizeof(ReadStruct));
+        CLI_CALLOC_OR_GOTO_DONE(next, 1, sizeof(ReadStruct));
 
         rs->next = next;
         strcpy(next->buffer, &(buffer[part]));
@@ -654,7 +654,7 @@ getMallocedBufferFromList(const ReadStruct *head)
         rs = rs->next;
     }
 
-    MALLOC(working, bufferLen);
+    CLI_MAX_MALLOC_OR_GOTO_DONE(working, bufferLen);
 
     rs        = head;
     bufferLen = 0;
@@ -668,7 +668,7 @@ getMallocedBufferFromList(const ReadStruct *head)
     ret = working;
 done:
     if (NULL == ret) {
-        FREE(working);
+        CLI_FREE_AND_SET_NULL(working);
     }
 
     return ret;
@@ -679,7 +679,7 @@ freeList(ReadStruct *head)
 {
     while (head) {
         ReadStruct *rs = head->next;
-        FREE(head);
+        CLI_FREE_AND_SET_NULL(head);
         head = rs;
     }
 }
@@ -844,7 +844,7 @@ parseEmailFile(fmap_t *map, size_t *at, const table_t *rfc821, const char *first
     if (ret == NULL)
         return NULL;
 
-    CLI_CALLOC(head, 1, sizeof(ReadStruct));
+    CLI_CALLOC_OR_GOTO_DONE(head, 1, sizeof(ReadStruct));
     curr = head;
 
     strncpy(buffer, firstLine, sizeof(buffer) - 1);
@@ -906,20 +906,20 @@ parseEmailFile(fmap_t *map, size_t *at, const table_t *rfc821, const char *first
                     if (head->bufferLen) {
                         char *header     = getMallocedBufferFromList(head);
                         int needContinue = 0;
-                        VERIFY_POINTER(header);
+                        CLI_VERIFY_POINTER_OR_GOTO_DONE(header);
 
                         totalHeaderCnt++;
                         if (haveTooManyEmailHeaders(totalHeaderCnt, ctx, heuristicFound)) {
-                            FREE(header);
+                            CLI_FREE_AND_SET_NULL(header);
                             break;
                         }
                         needContinue = (parseEmailHeader(ret, header, rfc821, ctx, heuristicFound) < 0);
                         if (*heuristicFound) {
-                            FREE(header);
+                            CLI_FREE_AND_SET_NULL(header);
                             break;
                         }
 
-                        FREE(header);
+                        CLI_FREE_AND_SET_NULL(header);
                         FREELIST_REALLOC(head, curr);
 
                         if (needContinue) {
@@ -1023,7 +1023,7 @@ parseEmailFile(fmap_t *map, size_t *at, const table_t *rfc821, const char *first
                 {
                     char *header     = getMallocedBufferFromList(head); /*This is the issue */
                     int needContinue = 0;
-                    VERIFY_POINTER(header);
+                    CLI_VERIFY_POINTER_OR_GOTO_DONE(header);
 
                     needContinue = (header[strlen(header) - 1] == ';');
                     if (0 == needContinue) {
@@ -1033,18 +1033,18 @@ parseEmailFile(fmap_t *map, size_t *at, const table_t *rfc821, const char *first
                     if (0 == needContinue) {
                         totalHeaderCnt++;
                         if (haveTooManyEmailHeaders(totalHeaderCnt, ctx, heuristicFound)) {
-                            FREE(header);
+                            CLI_FREE_AND_SET_NULL(header);
                             break;
                         }
                         needContinue = (parseEmailHeader(ret, header, rfc821, ctx, heuristicFound) < 0);
                         if (*heuristicFound) {
-                            FREE(header);
+                            CLI_FREE_AND_SET_NULL(header);
                             break;
                         }
                         /*Check total headers here;*/
                     }
 
-                    FREE(header);
+                    CLI_FREE_AND_SET_NULL(header);
                     if (needContinue) {
                         continue;
                     }
@@ -1100,7 +1100,7 @@ done:
         ret->isTruncated = true;
     }
 
-    FREE(boundary);
+    CLI_FREE_AND_SET_NULL(boundary);
 
     freeList(head);
 
@@ -1226,11 +1226,11 @@ parseEmailHeaders(message *m, const table_t *rfc821, bool *heuristicFound)
                                 anyHeadersFound = usefulHeader(commandNumber, cmd);
                             continue;
                     }
-                    fullline       = cli_strdup(line);
+                    fullline       = cli_safer_strdup(line);
                     fulllinelength = strlen(line) + 1;
                 } else if (line) {
                     fulllinelength += strlen(line) + 1;
-                    ptr = cli_realloc(fullline, fulllinelength);
+                    ptr = cli_max_realloc(fullline, fulllinelength);
                     if (ptr == NULL)
                         continue;
                     fullline = ptr;
@@ -1363,7 +1363,7 @@ parseEmailHeader(message *m, const char *line, const table_t *rfc821, cli_ctx *c
     copy = rfc2047(line);
     if (copy == NULL) {
         /* an RFC checker would return -1 here */
-        copy = cli_strdup(line);
+        copy = cli_safer_strdup(line);
         if (NULL == copy) {
             goto done;
         }
@@ -1397,7 +1397,7 @@ parseEmailHeader(message *m, const char *line, const table_t *rfc821, cli_ctx *c
         }
     }
 done:
-    FREE(copy);
+    CLI_FREE_AND_SET_NULL(copy);
 
     return ret;
 }
@@ -1875,7 +1875,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                     message **m;
                     mbox_status old_rc;
 
-                    m = cli_realloc(messages, ((multiparts + 1) * sizeof(message *)));
+                    m = cli_max_realloc(messages, ((multiparts + 1) * sizeof(message *)));
                     if (m == NULL)
                         break;
                     messages = m;
@@ -2058,7 +2058,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 
                             fullline = rfc822comments(line, NULL);
                             if (fullline == NULL)
-                                fullline = cli_strdup(line);
+                                fullline = cli_safer_strdup(line);
 
                             /*quotes = count_quotes(fullline);*/
 
@@ -2091,7 +2091,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                                 }
 
                                 datasz = strlen(fullline) + strlen(data) + 1;
-                                ptr    = cli_realloc(fullline, datasz);
+                                ptr    = cli_max_realloc(fullline, datasz);
 
                                 if (ptr == NULL)
                                     break;
@@ -3199,7 +3199,7 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
             else {
                 int i;
 
-                buf = cli_malloc(strlen(ptr) + 1);
+                buf = cli_max_malloc(strlen(ptr) + 1);
                 if (buf == NULL) {
                     cli_errmsg("parseMimeHeader: Unable to allocate memory for buf %llu\n", (long long unsigned)(strlen(ptr) + 1));
                     if (copy)
@@ -3241,7 +3241,7 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
                          * Content-Type: multipart/mixed foo/bar
                          */
                         if (s && *s) {
-                            char *buf2 = cli_strdup(buf);
+                            char *buf2 = cli_safer_strdup(buf);
 
                             if (buf2 == NULL) {
                                 if (copy)
@@ -3312,7 +3312,7 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
             messageSetEncoding(m, ptr);
             break;
         case CONTENT_DISPOSITION:
-            buf = cli_malloc(strlen(ptr) + 1);
+            buf = cli_max_malloc(strlen(ptr) + 1);
             if (buf == NULL) {
                 cli_errmsg("parseMimeHeader: Unable to allocate memory for buf %llu\n", (long long unsigned)(strlen(ptr) + 1));
                 if (copy)
@@ -3392,7 +3392,7 @@ rfc822comments(const char *in, char *out)
     }
 
     if (out == NULL) {
-        out = cli_malloc(strlen(in) + 1);
+        out = cli_max_malloc(strlen(in) + 1);
         if (out == NULL) {
             cli_errmsg("rfc822comments: Unable to allocate memory for out %llu\n", (long long unsigned)(strlen(in) + 1));
             return NULL;
@@ -3457,10 +3457,10 @@ rfc2047(const char *in)
     size_t len;
 
     if ((strstr(in, "=?") == NULL) || (strstr(in, "?=") == NULL))
-        return cli_strdup(in);
+        return cli_safer_strdup(in);
 
     cli_dbgmsg("rfc2047 '%s'\n", in);
-    out = cli_malloc(strlen(in) + 1);
+    out = cli_max_malloc(strlen(in) + 1);
 
     if (out == NULL) {
         cli_errmsg("rfc2047: Unable to allocate memory for out %llu\n", (long long unsigned)(strlen(in) + 1));
@@ -3503,7 +3503,7 @@ rfc2047(const char *in)
         if (*++in == '\0')
             break;
 
-        enctext = cli_strdup(in);
+        enctext = cli_safer_strdup(in);
         if (enctext == NULL) {
             free(out);
             out = NULL;
@@ -3631,7 +3631,7 @@ rfc1341(mbox_ctx *mctx, message *m)
 
     oldfilename = messageGetFilename(m);
 
-    arg = cli_malloc(10 + strlen(id) + strlen(number));
+    arg = cli_max_malloc(10 + strlen(id) + strlen(number));
     if (arg) {
         sprintf(arg, "filename=%s%s", id, number);
         messageAddArgument(m, arg);

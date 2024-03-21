@@ -51,6 +51,9 @@ Create temporary files in DIRECTORY. Directory must be writable for the '@CLAMAV
 \fB\-\-leave\-temps\fR
 Do not remove temporary files.
 .TP
+\fB\-\-force\-to\-disk\fR
+This option causes memory or nested map scans to dump the content to disk. If you turn on this option, more data is written to disk and is available when the LeaveTemporaryFiles option is enabled.
+.TP
 \fB\-\-gen\-json\fR
 Generate JSON description of scanned file(s). JSON will be printed and also dropped to the temp directory if --leave-temps is enabled.
 .TP
@@ -176,6 +179,12 @@ Scan HWP3 files. If you turn off this option, the original files will still be s
 .TP
 \fB\-\-scan\-archive[=yes(*)/no]\fR
 Scan archives supported by libclamav. If you turn off this option, the original files will still be scanned, but without unpacking and additional processing.
+.TP
+\fB\-\-scan\-image[=yes(*)/no]\fR
+This option enables scanning of image (graphics). If you turn off this option, the original files will still be scanned, but without additional processing.
+.TP
+\fB\-\-scan\-image\-fuzzy\-hash[=yes(*)/no]\fR
+This option enables detection by calculating a fuzzy hash of image (graphics) files. Signatures using image fuzzy hashes typically match files and documents by identifying images embedded or attached to those files. If you turn off this option, then some files may no longer be detected.
 .TP
 \fB\-\-alert\-broken[=yes/no(*)]\fR
 Alert on broken executable files (PE & ELF).

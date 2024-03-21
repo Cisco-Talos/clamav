@@ -118,6 +118,8 @@ uint32_t g_bCompressLocalDatabase = 0;
 
 freshclam_dat_v1_t *g_freshclamDat = NULL;
 
+uint8_t g_lastRay[CFRAY_LEN + 1] = {0};
+
 /** @brief Generate a Version 4 UUID according to RFC-4122
  *
  * Uses the openssl RAND_bytes function to generate a Version 4 UUID.
@@ -217,8 +219,9 @@ fc_error_t load_freshclam_dat(void)
             /* Verify that file size is as expected. */
             off_t file_size = lseek(handle, 0L, SEEK_END);
 
-            if (strlen(MIRRORS_DAT_MAGIC) + sizeof(freshclam_dat_v1_t) != (size_t)file_size) {
-                logg(LOGG_DEBUG, "freshclam.dat is bigger than expected: %zu != %ld\n", sizeof(freshclam_dat_v1_t), file_size);
+            size_t minSize = strlen(MIRRORS_DAT_MAGIC) + sizeof(freshclam_dat_v1_t);
+            if (minSize > (size_t)file_size) {
+                logg(LOGG_DEBUG, "freshclam.dat is smaller than expected: %zu != %ld\n", sizeof(freshclam_dat_v1_t), file_size);
                 goto done;
             }
 
@@ -242,6 +245,13 @@ fc_error_t load_freshclam_dat(void)
                 cli_strerror(errno, error_message, 260);
                 logg(LOGG_ERROR, "Can't read from freshclam.dat. Bytes read: %zi, error: %s\n", bread, error_message);
                 goto done;
+            }
+
+            if (sizeof(g_lastRay) != (bread = read(handle, &g_lastRay, sizeof(g_lastRay)))) {
+                char error_message[260];
+                cli_strerror(errno, error_message, 260);
+                logg(LOGG_WARNING, "Last cf-ray not present in freshclam.dat.\n");
+                memset(g_lastRay, 0, sizeof(g_lastRay));
             }
 
             /* Got it. */
@@ -324,6 +334,10 @@ fc_error_t save_freshclam_dat(void)
         logg(LOGG_ERROR, "Can't write to freshclam.dat\n");
     }
     if (-1 == write(handle, g_freshclamDat, sizeof(freshclam_dat_v1_t))) {
+        logg(LOGG_ERROR, "Can't write to freshclam.dat\n");
+    }
+
+    if (-1 == write(handle, &g_lastRay, sizeof(g_lastRay))) {
         logg(LOGG_ERROR, "Can't write to freshclam.dat\n");
     }
 
@@ -801,6 +815,24 @@ static size_t WriteFileCallback(void *contents, size_t size, size_t nmemb, void 
     return bytes_written;
 }
 
+size_t HeaderCallback(char *buffer,
+                      size_t size,
+                      size_t nitems,
+                      void *userdata)
+{
+    const char *const needle = "cf-ray: ";
+    size_t totBytes          = size * nitems;
+    if (totBytes >= strlen(needle) + CFRAY_LEN) {
+        if (0 == strncmp(needle, buffer, strlen(needle))) {
+            uint8_t **last = (uint8_t **)userdata;
+            memcpy(last, &(buffer[strlen(needle)]), CFRAY_LEN);
+            last[CFRAY_LEN] = 0;
+        }
+    }
+
+    return size * nitems;
+}
+
 /**
  * @brief Get the cvd header info struct for the newest available database.
  *
@@ -969,8 +1001,8 @@ static fc_error_t remote_cvdhead(
         logg(LOGG_ERROR, "remote_cvdhead: Failed to set CURLOPT_RANGE CVD_HEADER_SIZE for curl session.\n");
     }
 
-    receivedData.buffer = cli_malloc(1); /* will be grown as needed by the realloc above */
-    receivedData.size   = 0;             /* no data at this point */
+    receivedData.buffer = malloc(1); /* will be grown as needed by the realloc above */
+    receivedData.size   = 0;         /* no data at this point */
 
     /* Send all data to this function  */
     if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback)) {
@@ -1281,6 +1313,14 @@ static fc_error_t downloadFile(
 
     if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&receivedFile)) {
         logg(LOGG_ERROR, "downloadFile: Failed to set write-data file handle for curl session.\n");
+    }
+
+    if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_HEADERDATA, &g_lastRay)) {
+        logg(LOGG_ERROR, "downloadFile: Failed to set header-data for header callback for curl session.\n");
+    }
+
+    if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, HeaderCallback)) {
+        logg(LOGG_ERROR, "downloadFile: Failed to set header-data callback function for curl session.\n");
     }
 
     logg(LOGG_DEBUG, "downloadFile: Download source:      %s\n", url);
@@ -1722,7 +1762,7 @@ static struct cl_cvd *currentdb(const char *database, char **localname)
     }
 
     if (localname) {
-        *localname = cli_strdup(filename);
+        *localname = cli_safer_strdup(filename);
     }
 
 done:
@@ -2045,9 +2085,9 @@ static fc_error_t query_remote_database_version(
     }
 
     if (remote_is_cld) {
-        *remoteFilename = cli_strdup(cldfile);
+        *remoteFilename = cli_safer_strdup(cldfile);
     } else {
-        *remoteFilename = cli_strdup(cvdfile);
+        *remoteFilename = cli_safer_strdup(cvdfile);
     }
     *remoteVersion = newVersion;
 
@@ -2174,7 +2214,7 @@ static fc_error_t check_for_new_database_version(
 
     *remoteVersion = remotever;
     if (NULL != remotename) {
-        *remoteFilename = cli_strdup(remotename);
+        *remoteFilename = cli_safer_strdup(remotename);
         if (NULL == *remoteFilename) {
             logg(LOGG_ERROR, "check_for_new_database_version: Failed to allocate memory for remote filename.\n");
             status = FC_EMEM;
@@ -2183,7 +2223,7 @@ static fc_error_t check_for_new_database_version(
     }
     if (NULL != localname) {
         *localVersion  = localver;
-        *localFilename = cli_strdup(localname);
+        *localFilename = cli_safer_strdup(localname);
         if (NULL == *localFilename) {
             logg(LOGG_ERROR, "check_for_new_database_version: Failed to allocate memory for local filename.\n");
             status = FC_EMEM;
@@ -2268,7 +2308,7 @@ fc_error_t updatedb(
     }
 
     if ((localVersion >= remoteVersion) && (NULL != localFilename)) {
-        *dbFilename = cli_strdup(localFilename);
+        *dbFilename = cli_safer_strdup(localFilename);
         goto up_to_date;
     }
 
@@ -2288,7 +2328,7 @@ fc_error_t updatedb(
             logg(LOGG_WARNING, "Expected newer version of %s database but the server's copy is not newer than our local file (version %d).\n", database, localVersion);
             if (NULL != localFilename) {
                 /* Received a 304 (not modified), must be up-to-date after all */
-                *dbFilename = cli_strdup(localFilename);
+                *dbFilename = cli_safer_strdup(localFilename);
             }
             goto up_to_date;
         } else if (FC_EMIRRORNOTSYNC == ret) {
@@ -2302,7 +2342,7 @@ fc_error_t updatedb(
             goto done;
         }
 
-        newLocalFilename = cli_strdup(remoteFilename);
+        newLocalFilename = cli_safer_strdup(remoteFilename);
     } else {
         /*
          * Attempt scripted/CDIFF incremental update.
@@ -2387,10 +2427,10 @@ fc_error_t updatedb(
                 }
             }
 
-            newLocalFilename = cli_strdup(remoteFilename);
+            newLocalFilename = cli_safer_strdup(remoteFilename);
         } else if (0 == numPatchesReceived) {
             logg(LOGG_INFO, "The database server doesn't have the latest patch for the %s database (version %u). The server will likely have updated if you check again in a few hours.\n", database, remoteVersion);
-            *dbFilename = cli_strdup(localFilename);
+            *dbFilename = cli_safer_strdup(localFilename);
             goto up_to_date;
         } else {
             /*
@@ -2488,7 +2528,7 @@ fc_error_t updatedb(
 
     *signo      = cvd->sigs;
     *bUpdated   = 1;
-    *dbFilename = cli_strdup(newLocalFilename);
+    *dbFilename = cli_safer_strdup(newLocalFilename);
     if (NULL == *dbFilename) {
         logg(LOGG_ERROR, "updatedb: Failed to allocate memory for database filename.\n");
         status = FC_EMEM;
@@ -2709,7 +2749,7 @@ fc_error_t updatecustomdb(
 
 up_to_date:
 
-    *dbFilename = cli_strdup(databaseName);
+    *dbFilename = cli_safer_strdup(databaseName);
     if (NULL == *dbFilename) {
         logg(LOGG_ERROR, "Failed to allocate memory for database filename.\n");
         status = FC_EMEM;

@@ -36,7 +36,7 @@
 #include "str.h"
 
 /* DEBUGGING */
-//#define MATCHER_BCOMP_DEBUG
+// #define MATCHER_BCOMP_DEBUG
 #ifdef MATCHER_BCOMP_DEBUG
 #define bcm_dbgmsg(...) cli_dbgmsg(__VA_ARGS__)
 #else
@@ -317,7 +317,7 @@ cl_error_t cli_bcomp_addpatt(struct cli_matcher *root, const char *virname, cons
     bcomp->byte_len = byte_length;
 
     /* we can have up to two comparison eval statements, each separated by a comma, let's parse them in a separate string */
-    comp_buf = cli_strdup(tokens[2]);
+    comp_buf = cli_safer_strdup(tokens[2]);
     if (!comp_buf) {
         cli_errmsg("cli_bcomp_addpatt: Unable to allocate memory for comparison buffer\n");
         cli_bcomp_freemeta(root, bcomp);
@@ -496,7 +496,7 @@ cl_error_t cli_bcomp_scanbuf(const unsigned char *buffer, size_t buffer_length, 
         } else {
             /* mdata isn't populated in sigtool so run the raw matcher stuffs */
             if (res) {
-                newres = (struct cli_ac_result *)cli_calloc(1, sizeof(struct cli_ac_result));
+                newres = (struct cli_ac_result *)calloc(1, sizeof(struct cli_ac_result));
                 if (!newres) {
                     cli_errmsg("cli_bcomp_scanbuf: can't allocate memory for new result\n");
                     ret = CL_EMEM;
@@ -855,7 +855,7 @@ uint16_t cli_bcomp_chk_hex(const unsigned char *buffer, uint16_t opt, uint32_t l
 }
 
 /**
- * @brief multipurpose buffer normalization support function for bytecompare
+ * @brief multipurpose buffer normalization support function for byte-compare
  *
  * Currently can be used to normalize a little endian hex buffer to big endian.
  * Can also be used to trim whitespace from the front of the buffer.
@@ -894,7 +894,7 @@ unsigned char *cli_bcomp_normalize_buffer(const unsigned char *buffer, uint32_t 
         }
         /* keep in mind byte_len is a stack variable so this won't change byte_len in our calling functioning */
         byte_len   = byte_len - pad;
-        tmp_buffer = cli_calloc(byte_len + 1, sizeof(char));
+        tmp_buffer = cli_max_calloc(byte_len + 1, sizeof(char));
         if (NULL == tmp_buffer) {
             cli_errmsg("cli_bcomp_compare_check: unable to allocate memory for whitespace normalized temp buffer\n");
             return NULL;
@@ -912,13 +912,13 @@ unsigned char *cli_bcomp_normalize_buffer(const unsigned char *buffer, uint32_t 
     if (opt_val & CLI_BCOMP_HEX || opt_val & CLI_BCOMP_AUTO) {
         unsigned char *hex_buffer;
         norm_len   = (byte_len % 2) == 0 ? byte_len : byte_len + 1;
-        tmp_buffer = cli_calloc(norm_len + 1, sizeof(char));
+        tmp_buffer = cli_max_calloc(norm_len + 1, sizeof(char));
         if (NULL == tmp_buffer) {
             cli_errmsg("cli_bcomp_compare_check: unable to allocate memory for normalized temp buffer\n");
             return NULL;
         }
 
-        hex_buffer = cli_calloc(norm_len + 1, sizeof(char));
+        hex_buffer = cli_max_calloc(norm_len + 1, sizeof(char));
         if (NULL == hex_buffer) {
             free(tmp_buffer);
             cli_errmsg("cli_bcomp_compare_check: unable to reallocate memory for hex buffer\n");

@@ -34,14 +34,12 @@
 void *__lzma_wrap_alloc(void *unused, size_t size)
 {
     UNUSEDPARAM(unused);
-    if (!size || size > CLI_MAX_ALLOCATION)
-        return NULL;
+
     if (!size || size > CLI_MAX_ALLOCATION) {
-        cli_dbgmsg("lzma_wrap_alloc(): Attempt to allocate %lu bytes.\n", (unsigned long int)size);
         return NULL;
     }
 
-    return cli_calloc(1, size);
+    return cli_max_calloc(1, size);
 }
 void __lzma_wrap_free(void *unused, void *freeme)
 {

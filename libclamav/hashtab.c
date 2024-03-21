@@ -180,7 +180,7 @@ cl_error_t cli_hashtab_init(struct cli_hashtable *s, size_t capacity)
     PROFILE_INIT(s);
 
     capacity  = nearest_power(capacity);
-    s->htable = cli_calloc(capacity, sizeof(*s->htable));
+    s->htable = cli_max_calloc(capacity, sizeof(*s->htable));
     if (!s->htable) {
         return CL_EMEM;
     }
@@ -332,7 +332,7 @@ static cl_error_t cli_hashtab_grow(struct cli_hashtable *s)
         cli_errmsg("hashtab.c: capacity problem growing from: %zu\n", s->capacity);
         return CL_EMEM;
     }
-    htable = cli_calloc(new_capacity, sizeof(*s->htable));
+    htable = cli_max_calloc(new_capacity, sizeof(*s->htable));
     if (!htable) {
         return CL_EMEM;
     }
@@ -451,7 +451,7 @@ const struct cli_element *cli_hashtab_insert(struct cli_hashtable *s, const char
                 } else {
                     PROFILE_INSERT(s, tries);
                 }
-                thekey = cli_malloc(len + 1);
+                thekey = cli_max_malloc(len + 1);
                 if (!thekey) {
                     cli_errmsg("hashtab.c: Unable to allocate memory for thekey\n");
                     return NULL;
@@ -652,13 +652,13 @@ cl_error_t cli_hashset_init(struct cli_hashset *hs, size_t initial_capacity, uin
     hs->capacity     = initial_capacity;
     hs->mask         = initial_capacity - 1;
     hs->count        = 0;
-    hs->keys         = cli_malloc(initial_capacity * sizeof(*hs->keys));
+    hs->keys         = cli_max_malloc(initial_capacity * sizeof(*hs->keys));
     hs->mempool      = NULL;
     if (!hs->keys) {
         cli_errmsg("hashtab.c: Unable to allocate memory for hs->keys\n");
         return CL_EMEM;
     }
-    hs->bitmap = cli_calloc(initial_capacity >> 5, sizeof(*hs->bitmap));
+    hs->bitmap = cli_max_calloc(initial_capacity >> 5, sizeof(*hs->bitmap));
     if (!hs->bitmap) {
         free(hs->keys);
         cli_errmsg("hashtab.c: Unable to allocate memory for hs->bitmap\n");
@@ -818,7 +818,7 @@ ssize_t cli_hashset_toarray(const struct cli_hashset *hs, uint32_t **array)
         return -1;
     }
 
-    *array = arr = cli_malloc(hs->count * sizeof(*arr));
+    *array = arr = cli_max_malloc(hs->count * sizeof(*arr));
     if (!arr) {
         cli_errmsg("hashtab.c: Unable to allocate memory for array\n");
         return -1;
@@ -889,7 +889,7 @@ cl_error_t cli_map_addkey(struct cli_map *m, const void *key, int32_t keysize)
     if (m->valuesize) {
         void *v;
 
-        v = cli_realloc(m->u.sized_values, n * m->valuesize);
+        v = cli_max_realloc(m->u.sized_values, (size_t)n * (size_t)m->valuesize);
         if (!v) {
             return CL_EMEM;
         }
@@ -899,7 +899,7 @@ cl_error_t cli_map_addkey(struct cli_map *m, const void *key, int32_t keysize)
     } else {
         struct cli_map_value *v;
 
-        v = cli_realloc(m->u.unsized_values, n * sizeof(*m->u.unsized_values));
+        v = cli_max_realloc(m->u.unsized_values, n * sizeof(*m->u.unsized_values));
         if (!v) {
             return CL_EMEM;
         }
@@ -965,7 +965,7 @@ cl_error_t cli_map_setvalue(struct cli_map *m, const void *value, int32_t values
             free(v->value);
         }
 
-        v->value = cli_malloc(valuesize);
+        v->value = cli_max_malloc(valuesize);
         if (!v->value) {
             cli_errmsg("hashtab.c: Unable to allocate  memory for v->value\n");
             return CL_EMEM;

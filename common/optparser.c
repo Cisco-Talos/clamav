@@ -337,7 +337,7 @@ const struct clam_option __clam_options[] = {
 
     {"DisableCache", "disable-cache", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option allows you to disable clamd's caching feature.", "no"},
 
-    {"VirusEvent", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMD, "Execute a command when a virus is found. In the command string %v will be\nreplaced with the virus name and %f will be replaced with the file name.\nAdditionally, two environment variables will be defined: $CLAM_VIRUSEVENT_FILENAME\nand $CLAM_VIRUSEVENT_VIRUSNAME.", "/usr/bin/mailx -s \"ClamAV VIRUS ALERT: %v\" alert < /dev/null"},
+    {"VirusEvent", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMD, "Execute a command when virus is found.\nUse the following environment variables to identify the file and virus names:\n- $CLAM_VIRUSEVENT_FILENAME\n- $CLAM_VIRUSEVENT_VIRUSNAME\nIn the command string, '%v' will also be replaced with the virus name.\nNote: The '%f' filename format character has been disabled and will no longer\nbe replaced with the file name, due to command injection security concerns.\nUse the 'CLAM_VIRUSEVENT_FILENAME' environment variable instead.\nFor the same reason, you should NOT use the environment variables in the\ncommand directly, but should use it carefully from your executed script.", "/opt/send_virus_alert_sms.sh"},
 
     {"ExitOnOOM", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD, "Stop the daemon when libclamav reports an out of memory condition.", "yes"},
 
@@ -437,6 +437,10 @@ const struct clam_option __clam_options[] = {
     {"ScanOneNote", "scan-onenote", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option enables scanning OneNote files.\nIf you turn off this option, the original files will still be scanned, but\nwithout additional processing.", "yes"},
 
     {"ScanArchive", "scan-archive", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Scan within archives and compressed files.\nIf you turn off this option, the original files will still be scanned, but\nwithout unpacking and additional processing.", "yes"},
+
+    {"ScanImage", "scan-image", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option enables scanning of image (graphics).\nIf you turn off this option, the original files will still be scanned, but without additional processing.", "yes"},
+
+    {"ScanImageFuzzyHash", "scan-image-fuzzy-hash", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option enables detection by calculating a fuzzy hash of image (graphics)\nfiles\nSignatures using image fuzzy hashes typically match files and documents by\nidentifying images embedded or attached to those files.\nIf you turn off this option, then some files may no longer be detected.", "yes"},
 
     {"ForceToDisk", "force-to-disk", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option causes memory or nested map scans to dump the content to disk.\nIf you turn on this option, more data is written to disk and is available\nwhen the leave-temps option is enabled at the cost of more disk writes.", "no"},
 

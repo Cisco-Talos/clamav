@@ -229,7 +229,7 @@ bool crtmgr_add(crtmgr *m, cli_crt *x509)
         }
     }
 
-    i = cli_malloc(sizeof(*i));
+    i = malloc(sizeof(*i));
     if (i == NULL) {
         goto done;
     }
@@ -398,7 +398,7 @@ static cl_error_t crtmgr_get_recov_data(BIGNUM *sig, cli_crt *x509,
     int pad_size;
     int keylen;
     uint8_t *d = NULL;
-    BIGNUM *x = NULL;
+    BIGNUM *x  = NULL;
     cl_error_t ret;
 
     *buffer      = NULL;
@@ -415,7 +415,7 @@ static cl_error_t crtmgr_get_recov_data(BIGNUM *sig, cli_crt *x509,
     if (!x)
         goto done;
 
-    MALLOC(d, keylen);
+    CLI_MALLOC_OR_GOTO_DONE(d, keylen);
 
     if (!BN_mod_exp(x, sig, x509->e, x509->n, bnctx)) {
         cli_warnmsg("crtmgr_rsa_verify: verification failed: BN_mod_exp failed.\n");

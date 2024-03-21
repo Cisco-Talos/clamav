@@ -998,7 +998,7 @@ cl_error_t index_the_central_directory(
     *catalogue   = NULL;
     *num_records = 0;
 
-    zip_catalogue = (struct zip_record *)cli_malloc(sizeof(struct zip_record) * ZIP_RECORDS_CHECK_BLOCKSIZE);
+    zip_catalogue = (struct zip_record *)malloc(sizeof(struct zip_record) * ZIP_RECORDS_CHECK_BLOCKSIZE);
     if (NULL == zip_catalogue) {
         status = CL_EMEM;
         goto done;
@@ -1065,7 +1065,7 @@ cl_error_t index_the_central_directory(
                 goto done;
             }
 
-            zip_catalogue_new = cli_realloc(zip_catalogue, sizeof(struct zip_record) * ZIP_RECORDS_CHECK_BLOCKSIZE * (num_record_blocks + 1));
+            zip_catalogue_new = cli_max_realloc(zip_catalogue, sizeof(struct zip_record) * ZIP_RECORDS_CHECK_BLOCKSIZE * (num_record_blocks + 1));
             if (NULL == zip_catalogue_new) {
                 status = CL_EMEM;
                 goto done;

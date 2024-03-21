@@ -219,7 +219,7 @@ static int hashpe(const char *filename, unsigned int class, int type)
     ctx.dconf          = (struct cli_dconf *)engine->dconf;
 
     ctx.recursion_stack_size = ctx.engine->max_recursion_level;
-    ctx.recursion_stack      = cli_calloc(sizeof(recursion_level_t), ctx.recursion_stack_size);
+    ctx.recursion_stack      = calloc(sizeof(recursion_level_t), ctx.recursion_stack_size);
     if (!ctx.recursion_stack) {
         goto done;
     }
@@ -473,7 +473,7 @@ static cli_ctx *convenience_ctx(int fd)
     }
 
     /* prepare context */
-    ctx = cli_calloc(1, sizeof(cli_ctx));
+    ctx = calloc(1, sizeof(cli_ctx));
     if (!ctx) {
         printf("convenience_ctx: ctx allocation failed\n");
         goto done;
@@ -486,7 +486,7 @@ static cli_ctx *convenience_ctx(int fd)
     ctx->dconf = (struct cli_dconf *)engine->dconf;
 
     ctx->recursion_stack_size = ctx->engine->max_recursion_level;
-    ctx->recursion_stack      = cli_calloc(sizeof(recursion_level_t), ctx->recursion_stack_size);
+    ctx->recursion_stack      = calloc(sizeof(recursion_level_t), ctx->recursion_stack_size);
     if (!ctx->recursion_stack) {
         status = CL_EMEM;
         goto done;
@@ -499,7 +499,7 @@ static cli_ctx *convenience_ctx(int fd)
 
     ctx->fmap = ctx->recursion_stack[ctx->recursion_level].fmap;
 
-    ctx->options = cli_calloc(1, sizeof(struct cl_scan_options));
+    ctx->options = calloc(1, sizeof(struct cl_scan_options));
     if (!ctx->options) {
         printf("convenience_ctx: scan options allocation failed\n");
         goto done;
@@ -2367,7 +2367,7 @@ static void matchsig(char *sig, const char *offset, int fd)
     ctx.dconf          = (struct cli_dconf *)engine->dconf;
 
     ctx.recursion_stack_size = ctx.engine->max_recursion_level;
-    ctx.recursion_stack      = cli_calloc(sizeof(recursion_level_t), ctx.recursion_stack_size);
+    ctx.recursion_stack      = calloc(sizeof(recursion_level_t), ctx.recursion_stack_size);
     if (!ctx.recursion_stack) {
         goto done;
     }
@@ -2753,7 +2753,7 @@ static int decodehex(const char *hexsig)
         clen = hexlen - tlen - rlen - 2; /* 2 from regex boundaries '/' */
 
         /* get the trigger statement */
-        trigger = cli_calloc(tlen + 1, sizeof(char));
+        trigger = calloc(tlen + 1, sizeof(char));
         if (!trigger) {
             mprintf(LOGG_ERROR, "cannot allocate memory for trigger string\n");
             return -1;
@@ -2762,7 +2762,7 @@ static int decodehex(const char *hexsig)
         trigger[tlen] = '\0';
 
         /* get the regex expression */
-        regex = cli_calloc(rlen + 1, sizeof(char));
+        regex = calloc(rlen + 1, sizeof(char));
         if (!regex) {
             mprintf(LOGG_ERROR, "cannot allocate memory for regex expression\n");
             free(trigger);
@@ -2773,7 +2773,7 @@ static int decodehex(const char *hexsig)
 
         /* get the compile flags */
         if (clen) {
-            cflags = cli_calloc(clen + 1, sizeof(char));
+            cflags = calloc(clen + 1, sizeof(char));
             if (!cflags) {
                 mprintf(LOGG_ERROR, "cannot allocate memory for compile flags\n");
                 free(trigger);
@@ -3578,7 +3578,7 @@ static int dumpcerts(const struct optstruct *opts)
     ctx.dconf          = (struct cli_dconf *)engine->dconf;
 
     ctx.recursion_stack_size = ctx.engine->max_recursion_level;
-    ctx.recursion_stack      = cli_calloc(sizeof(recursion_level_t), ctx.recursion_stack_size);
+    ctx.recursion_stack      = calloc(sizeof(recursion_level_t), ctx.recursion_stack_size);
     if (!ctx.recursion_stack) {
         goto done;
     }

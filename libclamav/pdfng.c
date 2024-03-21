@@ -86,7 +86,7 @@ char *pdf_convert_utf(char *begin, size_t sz)
     iconv_t cd;
 #endif
 
-    buf = cli_calloc(1, sz + 1);
+    buf = cli_max_calloc(1, sz + 1);
     if (!(buf))
         return NULL;
     memcpy(buf, begin, sz);
@@ -94,7 +94,7 @@ char *pdf_convert_utf(char *begin, size_t sz)
 #if HAVE_ICONV
     p1 = buf;
 
-    p2 = outbuf = cli_calloc(1, sz + 1);
+    p2 = outbuf = cli_max_calloc(1, sz + 1);
     if (!(outbuf)) {
         free(buf);
         return NULL;
@@ -240,16 +240,23 @@ static char *pdf_decrypt_string(struct pdf_struct *pdf, struct pdf_obj *obj, con
     if (pdf->flags & (1 << DECRYPTABLE_PDF)) {
         int hex2str_ret;
         bool hex_encoded_binary = false;
+        const char *start       = NULL;
+        const char *end         = NULL;
 
         enc = get_enc_method(pdf, obj);
 
+        if (*length < 2) {
+            cli_dbgmsg("pdf_decrypt_string: length < 2\n");
+            return NULL;
+        }
+
         // Strip off the leading `<` and trailing `>`
-        const char *start = in;
+        start = in;
         if (start[0] == '<') {
             start++;
             hex_encoded_binary = true;
         }
-        const char *end = in + *length;
+        end = in + *length;
         if (end[-1] == '>') {
             end--;
         }
@@ -261,10 +268,7 @@ static char *pdf_decrypt_string(struct pdf_struct *pdf, struct pdf_obj *obj, con
             bin_length = *length / 2;
 
             // Convert the hex string to binary
-            decoded_bin = cli_calloc(1, bin_length);
-            if (!decoded_bin) {
-                return NULL;
-            }
+            CLI_MAX_CALLOC_OR_GOTO_DONE(decoded_bin, 1, bin_length);
 
             hex2str_ret = cli_hex2str_to(hex, decoded_bin, *length);
             if (hex2str_ret != 0) {
@@ -307,7 +311,7 @@ char *pdf_finalize_string(struct pdf_struct *pdf, struct pdf_obj *obj, const cha
         return NULL;
 
     /* get a working copy */
-    wrkstr = cli_calloc(len + 1, sizeof(char));
+    wrkstr = cli_max_calloc(len + 1, sizeof(char));
     if (!wrkstr)
         return NULL;
     memcpy(wrkstr, in, len);
@@ -317,7 +321,7 @@ char *pdf_finalize_string(struct pdf_struct *pdf, struct pdf_obj *obj, const cha
     /* convert PDF specific escape sequences, like octal sequences */
     /* TODO: replace the escape sequences directly in the wrkstr   */
     if (strchr(wrkstr, '\\')) {
-        output = cli_calloc(wrklen + 1, sizeof(char));
+        output = cli_max_calloc(wrklen + 1, sizeof(char));
         if (!output) {
             free(wrkstr);
             return NULL;
@@ -379,7 +383,7 @@ char *pdf_finalize_string(struct pdf_struct *pdf, struct pdf_obj *obj, const cha
         }
 
         free(wrkstr);
-        wrkstr = cli_calloc(outlen + 1, sizeof(char));
+        wrkstr = cli_max_calloc(outlen + 1, sizeof(char));
         if (!wrkstr) {
             free(output);
             return NULL;
@@ -398,7 +402,7 @@ char *pdf_finalize_string(struct pdf_struct *pdf, struct pdf_obj *obj, const cha
         outlen       = tmpsz;
         free(wrkstr);
         if (output) {
-            wrkstr = cli_calloc(outlen + 1, sizeof(char));
+            wrkstr = cli_max_calloc(outlen + 1, sizeof(char));
             if (!wrkstr) {
                 free(output);
                 return NULL;
@@ -592,7 +596,7 @@ char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *
                 default:
                     res = pdf_finalize_string(pdf, obj, begin, objsize2);
                     if (!res) {
-                        res = cli_calloc(1, objsize2 + 1);
+                        res = cli_max_calloc(1, objsize2 + 1);
                         if (!(res)) {
                             close(fd);
                             cli_unlink(newobj->path);
@@ -642,7 +646,7 @@ char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *
 
         res = pdf_finalize_string(pdf, obj, p1, (p2 - p1) + 1);
         if (!res) {
-            res = cli_calloc(1, (p2 - p1) + 2);
+            res = cli_max_calloc(1, (p2 - p1) + 2);
             if (!(res))
                 return NULL;
             memcpy(res, p1, (p2 - p1) + 1);
@@ -699,7 +703,7 @@ char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *
 
     res = pdf_finalize_string(pdf, obj, p1, len);
     if (!res) {
-        res = cli_calloc(1, len + 1);
+        res = cli_max_calloc(1, len + 1);
         if (!(res))
             return NULL;
         memcpy(res, p1, len);
@@ -795,7 +799,7 @@ struct pdf_dict *pdf_parse_dict(struct pdf_struct *pdf, struct pdf_obj *obj, siz
     if (end[0] != '>' || end[1] != '>')
         return NULL;
 
-    res = cli_calloc(1, sizeof(struct pdf_dict));
+    res = calloc(1, sizeof(struct pdf_dict));
     if (!(res))
         return NULL;
 
@@ -852,7 +856,7 @@ struct pdf_dict *pdf_parse_dict(struct pdf_struct *pdf, struct pdf_obj *obj, siz
         if (p1 == end)
             break;
 
-        key = cli_calloc((p1 - begin) + 2, 1);
+        key = cli_max_calloc((p1 - begin) + 2, 1);
         if (!(key))
             break;
 
@@ -931,7 +935,7 @@ struct pdf_dict *pdf_parse_dict(struct pdf_struct *pdf, struct pdf_obj *obj, siz
 
                 is_object_reference(begin, &p1, NULL);
 
-                val = cli_calloc((p1 - begin) + 2, 1);
+                val = cli_max_calloc((p1 - begin) + 2, 1);
                 if (!(val))
                     break;
 
@@ -952,7 +956,7 @@ struct pdf_dict *pdf_parse_dict(struct pdf_struct *pdf, struct pdf_obj *obj, siz
         }
 
         if (!(res->nodes)) {
-            res->nodes = res->tail = node = cli_calloc(1, sizeof(struct pdf_dict_node));
+            res->nodes = res->tail = node = calloc(1, sizeof(struct pdf_dict_node));
             if (!(node)) {
                 free(key);
                 if (dict)
@@ -1071,7 +1075,7 @@ struct pdf_array *pdf_parse_array(struct pdf_struct *pdf, struct pdf_obj *obj, s
     if (*end != ']')
         return NULL;
 
-    res = cli_calloc(1, sizeof(struct pdf_array));
+    res = calloc(1, sizeof(struct pdf_array));
     if (!(res))
         return NULL;
 
@@ -1119,7 +1123,7 @@ struct pdf_array *pdf_parse_array(struct pdf_struct *pdf, struct pdf_obj *obj, s
                         p1++;
                 }
 
-                val = cli_calloc((p1 - begin) + 2, 1);
+                val = cli_max_calloc((p1 - begin) + 2, 1);
                 if (!(val))
                     break;
 

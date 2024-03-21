@@ -68,7 +68,7 @@ cl_error_t partition_intersection_list_check(partition_intersection_list_t* list
     }
 
     /* allocate new node for partition bounds */
-    new_node = (partition_intersection_node_t*)cli_malloc(sizeof(partition_intersection_node_t));
+    new_node = (partition_intersection_node_t*)malloc(sizeof(partition_intersection_node_t));
     if (!new_node) {
         cli_dbgmsg("PRTN_INTXN: could not allocate new node for checklist!\n");
         partition_intersection_list_free(list);

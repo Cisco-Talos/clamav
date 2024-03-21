@@ -209,7 +209,7 @@ matcher(struct re_guts *g, const char *string, size_t nmatch,
 
 		/* oh my, he wants the subexpressions... */
 		if (m->pmatch == NULL)
-			m->pmatch = (regmatch_t *)cli_malloc((m->g->nsub + 1) *
+			m->pmatch = (regmatch_t *)cli_max_malloc((m->g->nsub + 1) *
 							sizeof(regmatch_t));
 		if (m->pmatch == NULL) {
 			free(m->lastpos);
@@ -223,7 +223,7 @@ matcher(struct re_guts *g, const char *string, size_t nmatch,
 			dp = dissect(m, m->coldp, endp, gf, gl);
 		} else {
 			if (g->nplus > 0 && m->lastpos == NULL)
-				m->lastpos = (char **)cli_malloc((g->nplus+1) *
+				m->lastpos = (char **)cli_max_malloc((g->nplus+1) *
 							sizeof(char *));
 			if (g->nplus > 0 && m->lastpos == NULL) {
 				free(m->pmatch);
@@ -983,7 +983,7 @@ print(struct match *m, const char *caption, states st, int ch, FILE *d)
 	(void)fprintf(d, "\n");
 }
 
-/* 
+/*
  - at - print current situation
  */
 static void

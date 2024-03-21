@@ -46,7 +46,7 @@
 #endif
 
 /* DEBUGGING */
-//#define MATCHER_PCRE_DEBUG
+// #define MATCHER_PCRE_DEBUG
 #ifdef MATCHER_PCRE_DEBUG
 #define pm_dbgmsg(...) cli_dbgmsg(__VA_ARGS__)
 #else
@@ -90,7 +90,7 @@ static void pcre_perf_events_init(struct cli_pcre_meta *pm, const char *virname)
     }
 
     /* set the name */
-    pm->statname = (char *)cli_calloc(1, namelen);
+    pm->statname = (char *)calloc(1, namelen);
     if (!pm->statname) {
         return;
     }
@@ -471,12 +471,12 @@ cl_error_t cli_pcre_recaloff(struct cli_matcher *root, struct cli_pcre_off *data
     }
 
     /* allocate data structures */
-    data->shift = (uint32_t *)cli_calloc(root->pcre_metas, sizeof(uint32_t));
+    data->shift = (uint32_t *)calloc(root->pcre_metas, sizeof(uint32_t));
     if (!data->shift) {
         cli_errmsg("cli_pcre_initoff: cannot allocate memory for data->shift\n");
         return CL_EMEM;
     }
-    data->offset = (uint32_t *)cli_calloc(root->pcre_metas, sizeof(uint32_t));
+    data->offset = (uint32_t *)calloc(root->pcre_metas, sizeof(uint32_t));
     if (!data->offset) {
         cli_errmsg("cli_pcre_initoff: cannot allocate memory for data->offset\n");
         free(data->shift);
@@ -719,7 +719,7 @@ cl_error_t cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const 
                 } else {
                     /* for raw match data - sigtool only */
                     if (res) {
-                        newres = (struct cli_ac_result *)cli_calloc(1, sizeof(struct cli_ac_result));
+                        newres = (struct cli_ac_result *)calloc(1, sizeof(struct cli_ac_result));
                         if (!newres) {
                             cli_errmsg("cli_pcre_scanbuff: Can't allocate memory for new result\n");
                             ret = CL_EMEM;

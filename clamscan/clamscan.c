@@ -250,6 +250,7 @@ void help(void)
     mprintf(LOGG_INFO, "\n");
     mprintf(LOGG_INFO, "    --tempdir=DIRECTORY                  Create temporary files in DIRECTORY\n");
     mprintf(LOGG_INFO, "    --leave-temps[=yes/no(*)]            Do not remove temporary files\n");
+    mprintf(LOGG_INFO, "    --force-to-disk[=yes/no(*)]          Create temporary files for nested file scans that would otherwise be in-memory only\n");
     mprintf(LOGG_INFO, "    --gen-json[=yes/no(*)]               Generate JSON metadata for the scanned file(s). For testing & development use ONLY.\n");
     mprintf(LOGG_INFO, "                                         JSON will be printed if --debug is enabled.\n");
     mprintf(LOGG_INFO, "                                         A JSON file will dropped to the temp directory if --leave-temps is enabled.\n");
@@ -306,6 +307,8 @@ void help(void)
     mprintf(LOGG_INFO, "    --scan-hwp3[=yes(*)/no]              Scan HWP3 files\n");
     mprintf(LOGG_INFO, "    --scan-onenote[=yes(*)/no]           Scan OneNote files\n");
     mprintf(LOGG_INFO, "    --scan-archive[=yes(*)/no]           Scan archive files (supported by libclamav)\n");
+    mprintf(LOGG_INFO, "    --scan-image[=yes(*)/no]             Scan image (graphics) files\n");
+    mprintf(LOGG_INFO, "    --scan-image-fuzzy-hash[=yes(*)/no]  Detect files by calculating image (graphics) fuzzy hashes\n");
     mprintf(LOGG_INFO, "    --alert-broken[=yes/no(*)]           Alert on broken executable files (PE & ELF)\n");
     mprintf(LOGG_INFO, "    --alert-broken-media[=yes/no(*)]     Alert on broken graphics files (JPEG, TIFF, PNG, GIF)\n");
     mprintf(LOGG_INFO, "    --alert-encrypted[=yes/no(*)]        Alert on encrypted archives and documents\n");

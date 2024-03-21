@@ -188,7 +188,7 @@ int cli_groupiconscan(struct ICON_ENV *icon_env, uint32_t rva)
                 uint16_t depth;
                 uint32_t sz;
                 uint16_t id;
-            } * dir;
+            } *dir;
 
             raddr = cli_rawaddr(cli_readint32(grp), peinfo->sections, peinfo->nsections, (unsigned int *)(&err), map->len, peinfo->hdr_size);
             cli_dbgmsg("cli_scanicon: icon group @%x\n", raddr);
@@ -901,7 +901,7 @@ static int getmetrics(unsigned int side, unsigned int *imagedata, struct icomtr 
     unsigned int edge_avg[6], edge_x[6] = {0, 0, 0, 0, 0, 0}, edge_y[6] = {0, 0, 0, 0, 0, 0}, noedge_avg[6], noedge_x[6] = {0, 0, 0, 0, 0, 0}, noedge_y[6] = {0, 0, 0, 0, 0, 0};
     double *sobel;
 
-    if (!(tmp = cli_malloc(side * side * 4 * 2))) {
+    if (!(tmp = cli_max_malloc((size_t)side * (size_t)side * 4 * 2))) {
         cli_errmsg("getmetrics: Unable to allocate memory for tmp %u\n", (side * side * 4 * 2));
         return CL_EMEM;
     }
@@ -1067,7 +1067,7 @@ static int getmetrics(unsigned int side, unsigned int *imagedata, struct icomtr 
     /* Sobel 1 - gradients */
     i = 0;
 #ifdef USE_FLOATS
-    sobel = cli_malloc(side * side * sizeof(double));
+    sobel = cli_max_malloc((size_t)side * (size_t)side * sizeof(double));
     if (!sobel) {
         cli_errmsg("getmetrics: Unable to allocate memory for edge detection %llu\n", (long long unsigned)(side * side * sizeof(double)));
         free(tmp);
@@ -1457,7 +1457,7 @@ static int parseicon(struct ICON_ENV *icon_env, uint32_t rva)
             fmap_unneed_ptr(map, palette, (1 << depth) * sizeof(int));
         return CL_SUCCESS;
     }
-    if (!(imagedata = cli_malloc(width * height * sizeof(*imagedata)))) {
+    if (!(imagedata = cli_max_malloc((size_t)width * (size_t)height * sizeof(*imagedata)))) {
         if (palette)
             fmap_unneed_ptr(map, palette, (1 << depth) * sizeof(int));
         return CL_SUCCESS;
@@ -1601,7 +1601,7 @@ static int parseicon(struct ICON_ENV *icon_env, uint32_t rva)
                     newsize = 16;
                 scalex = (double)width / newsize;
                 scaley = (double)height / newsize;
-                if (!(newdata = cli_malloc(newsize * newsize * sizeof(*newdata)))) {
+                if (!(newdata = cli_max_malloc(newsize * newsize * sizeof(*newdata)))) {
                     cli_errmsg("parseicon: Unable to allocate memory for scaling image\n");
                     return CL_EMEM;
                 }

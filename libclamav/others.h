@@ -73,7 +73,7 @@
  * in re-enabling affected modules.
  */
 
-#define CL_FLEVEL 200
+#define CL_FLEVEL 210
 #define CL_FLEVEL_DCONF CL_FLEVEL
 #define CL_FLEVEL_SIGTOOL CL_FLEVEL
 
@@ -570,6 +570,8 @@ extern LIBCLAMAV_EXPORT int have_rar;
 #define SCAN_PARSE_HTML (ctx->options->parse & CL_SCAN_PARSE_HTML)
 #define SCAN_PARSE_PE (ctx->options->parse & CL_SCAN_PARSE_PE)
 #define SCAN_PARSE_ONENOTE (ctx->options->parse & CL_SCAN_PARSE_ONENOTE)
+#define SCAN_PARSE_IMAGE (ctx->options->parse & CL_SCAN_PARSE_IMAGE)
+#define SCAN_PARSE_IMAGE_FUZZY_HASH (ctx->options->parse & CL_SCAN_PARSE_IMAGE_FUZZY_HASH)
 
 #define SCAN_HEURISTIC_BROKEN (ctx->options->heuristic & CL_SCAN_HEURISTIC_BROKEN)
 #define SCAN_HEURISTIC_BROKEN_MEDIA (ctx->options->heuristic & CL_SCAN_HEURISTIC_BROKEN_MEDIA)
@@ -936,13 +938,34 @@ static inline int cli_getpagesize(void)
 #endif /* HAVE_SYSCONF_SC_PAGESIZE */
 #endif /* _WIN32 */
 
-void *cli_malloc(size_t nmemb);
-void *cli_calloc(size_t nmemb, size_t size);
+/**
+ * @brief Wrapper around malloc that limits how much may be allocated to CLI_MAX_ALLOCATION.
+ *
+ * Please use CLI_MAX_MALLOC_OR_GOTO_DONE() with `goto done;` error handling instead.
+ *
+ * @param ptr
+ * @param size
+ * @return void*
+ */
+void *cli_max_malloc(size_t nmemb);
+
+/**
+ * @brief Wrapper around calloc that limits how much may be allocated to CLI_MAX_ALLOCATION.
+ *
+ * Please use CLI_MAX_CALLOC_OR_GOTO_DONE() with `goto done;` error handling instead.
+ *
+ * @param ptr
+ * @param size
+ * @return void*
+ */
+void *cli_max_calloc(size_t nmemb, size_t size);
 
 /**
  * @brief Wrapper around realloc that limits how much may be allocated to CLI_MAX_ALLOCATION.
  *
- * Please use CLI_REALLOC() with `goto done;` error handling instead.
+ * Please use CLI_MAX_REALLOC_OR_GOTO_DONE() with `goto done;` error handling instead.
+ *
+ * NOTE: cli_max_realloc() will NOT free ptr if size==0. It is safe to free ptr after `done:`.
  *
  * IMPORTANT: This differs from realloc() in that if size==0, it will NOT free the ptr.
  *
@@ -950,25 +973,63 @@ void *cli_calloc(size_t nmemb, size_t size);
  * @param size
  * @return void*
  */
-void *cli_realloc(void *ptr, size_t size);
+void *cli_max_realloc(void *ptr, size_t size);
 
 /**
  * @brief Wrapper around realloc that limits how much may be allocated to CLI_MAX_ALLOCATION.
  *
- * Please use CLI_REALLOC() with `goto done;` error handling instead.
+ * Please use CLI_MAX_REALLOC_OR_GOTO_DONE() with `goto done;` error handling instead.
  *
  * IMPORTANT: This differs from realloc() in that if size==0, it will NOT free the ptr.
  *
- * WARNING: This differs from cli_realloc() in that it will free the ptr if the allocation fails.
+ * WARNING: This differs from cli_max_realloc() in that it will free the ptr if the allocation fails.
  * If you're using `goto done;` error handling, this may result in a double-free!!
  *
  * @param ptr
  * @param size
  * @return void*
  */
-void *cli_realloc2(void *ptr, size_t size);
+void *cli_max_realloc_or_free(void *ptr, size_t size);
 
-char *cli_strdup(const char *s);
+/**
+ * @brief Wrapper around realloc that, unlike some variants of realloc, will not free the ptr if size==0.
+ *
+ * Please use CLI_MAX_REALLOC_OR_GOTO_DONE() with `goto done;` error handling instead.
+ *
+ * IMPORTANT: This differs from realloc() in that if size==0, it will NOT free the ptr.
+ *
+ * @param ptr
+ * @param size
+ * @return void*
+ */
+void *cli_safer_realloc(void *ptr, size_t size);
+
+/**
+ * @brief Wrapper around realloc that, unlike some variants of realloc, will not free the ptr if size==0.
+ *
+ * Please use CLI_SAFER_REALLOC_OR_GOTO_DONE() with `goto done;` error handling instead.
+ *
+ * IMPORTANT: This differs from realloc() in that if size==0, it will NOT free the ptr.
+ *
+ * WARNING: This differs from cli_safer_realloc() in that it will free the ptr if the allocation fails.
+ * If you're using `goto done;` error handling, this may result in a double-free!!
+ *
+ * @param ptr
+ * @param size
+ * @return void*
+ */
+void *cli_safer_realloc_or_free(void *ptr, size_t size);
+
+/**
+ * @brief Wrapper around strdup that does a NULL check.
+ *
+ * Please use CLI_STRDUP_OR_GOTO_DONE() with `goto done;` error handling instead.
+ *
+ * @param s
+ * @return char* Returns the allocated string or NULL if allocation failed. This includes if allocation fails because s==NULL.
+ */
+char *cli_safer_strdup(const char *s);
+
 int cli_rmdirs(const char *dirname);
 char *cli_hashstream(FILE *fs, unsigned char *digcpy, int type);
 char *cli_hashfile(const char *filename, int type);
@@ -1241,103 +1302,150 @@ uint8_t cli_get_debug_flag(void);
  */
 uint8_t cli_set_debug_flag(uint8_t debug_flag);
 
-#ifndef STRDUP
-#define STRDUP(buf, var, ...) \
-    do {                      \
-        var = strdup(buf);    \
-        if (NULL == var) {    \
-            do {              \
-                __VA_ARGS__;  \
-            } while (0);      \
-            goto done;        \
-        }                     \
+#ifndef CLI_SAFER_STRDUP_OR_GOTO_DONE
+/**
+ * @brief Wrapper around strdup that does a NULL check.
+ *
+ * This macro requires `goto done;` error handling.
+ *
+ * @param buf   The string to duplicate.
+ * @param var   The variable to assign the allocated string to.
+ * @param ...   The error handling code to execute if the allocation fails.
+ */
+#define CLI_SAFER_STRDUP_OR_GOTO_DONE(buf, var, ...) \
+    do {                                             \
+        var = cli_safer_strdup(buf);                 \
+        if (NULL == var) {                           \
+            do {                                     \
+                __VA_ARGS__;                         \
+            } while (0);                             \
+            goto done;                               \
+        }                                            \
     } while (0)
 #endif
 
-#ifndef CLI_STRDUP
-#define CLI_STRDUP(buf, var, ...) \
-    do {                          \
-        var = cli_strdup(buf);    \
-        if (NULL == var) {        \
-            do {                  \
-                __VA_ARGS__;      \
-            } while (0);          \
-            goto done;            \
-        }                         \
-    } while (0)
-#endif
-
-#ifndef FREE
-#define FREE(var)          \
-    do {                   \
-        if (NULL != var) { \
-            free(var);     \
-            var = NULL;    \
-        }                  \
-    } while (0)
-#endif
-
-#ifndef MALLOC
-#define MALLOC(var, size, ...) \
-    do {                       \
-        var = malloc(size);    \
-        if (NULL == var) {     \
-            do {               \
-                __VA_ARGS__;   \
-            } while (0);       \
-            goto done;         \
-        }                      \
-    } while (0)
-#endif
-
-#ifndef CLI_MALLOC
-#define CLI_MALLOC(var, size, ...) \
+#ifndef CLI_FREE_AND_SET_NULL
+/**
+ * @brief Wrapper around `free()` to ensure you reset the variable to NULL so as to prevent a double-free.
+ *
+ * @param var The variable to free and set to NULL.
+ */
+#define CLI_FREE_AND_SET_NULL(var) \
     do {                           \
-        var = cli_malloc(size);    \
-        if (NULL == var) {         \
-            do {                   \
-                __VA_ARGS__;       \
-            } while (0);           \
-            goto done;             \
+        if (NULL != var) {         \
+            free(var);             \
+            var = NULL;            \
         }                          \
     } while (0)
 #endif
 
-#ifndef CALLOC
-#define CALLOC(var, nmemb, size, ...) \
-    do {                              \
-        (var) = calloc(nmemb, size);  \
-        if (NULL == var) {            \
-            do {                      \
-                __VA_ARGS__;          \
-            } while (0);              \
-            goto done;                \
-        }                             \
+#ifndef CLI_MALLOC_OR_GOTO_DONE
+/**
+ * @brief Wrapper around malloc that will `goto done;` if the allocation fails.
+ *
+ * This macro requires `goto done;` error handling.
+ *
+ * @param ptr   The variable to assign the allocated memory to.
+ * @param size  The size of the memory to allocate.
+ * @param ...   The error handling code to execute if the allocation fails.
+ */
+#define CLI_MALLOC_OR_GOTO_DONE(var, size, ...) \
+    do {                                        \
+        var = malloc(size);                     \
+        if (NULL == var) {                      \
+            do {                                \
+                __VA_ARGS__;                    \
+            } while (0);                        \
+            goto done;                          \
+        }                                       \
     } while (0)
 #endif
 
-#ifndef CLI_CALLOC
-#define CLI_CALLOC(var, nmemb, size, ...) \
-    do {                                  \
-        (var) = cli_calloc(nmemb, size);  \
-        if (NULL == var) {                \
-            do {                          \
-                __VA_ARGS__;              \
-            } while (0);                  \
-            goto done;                    \
-        }                                 \
+#ifndef CLI_MAX_MALLOC_OR_GOTO_DONE
+/**
+ * @brief Wrapper around malloc that limits how much may be allocated to CLI_MAX_ALLOCATION.
+ *
+ * This macro requires `goto done;` error handling.
+ *
+ * @param var   The variable to assign the allocated memory to.
+ * @param size  The size of the memory to allocate.
+ * @param ...   The error handling code to execute if the allocation fails.
+ */
+#define CLI_MAX_MALLOC_OR_GOTO_DONE(var, size, ...) \
+    do {                                            \
+        var = cli_max_malloc(size);                 \
+        if (NULL == var) {                          \
+            do {                                    \
+                __VA_ARGS__;                        \
+            } while (0);                            \
+            goto done;                              \
+        }                                           \
     } while (0)
 #endif
 
-#ifndef VERIFY_POINTER
-#define VERIFY_POINTER(ptr, ...) \
-    do {                         \
-        if (NULL == ptr) {       \
-            do {                 \
-                __VA_ARGS__;     \
-            } while (0);         \
-            goto done;           \
-        }                        \
+#ifndef CLI_CALLOC_OR_GOTO_DONE
+/**
+ * @brief Wrapper around calloc that will `goto done;` if the allocation fails.
+ *
+ * This macro requires `goto done;` error handling.
+ *
+ * @param var   The variable to assign the allocated memory to.
+ * @param nmemb The number of elements to allocate.
+ * @param size  The size of each element.
+ * @param ...   The error handling code to execute if the allocation fails.
+ */
+#define CLI_CALLOC_OR_GOTO_DONE(var, nmemb, size, ...) \
+    do {                                               \
+        (var) = calloc(nmemb, size);                   \
+        if (NULL == var) {                             \
+            do {                                       \
+                __VA_ARGS__;                           \
+            } while (0);                               \
+            goto done;                                 \
+        }                                              \
+    } while (0)
+#endif
+
+#ifndef CLI_MAX_CALLOC_OR_GOTO_DONE
+/**
+ * @brief Wrapper around calloc that limits how much may be allocated to CLI_MAX_ALLOCATION.
+ *
+ * This macro requires `goto done;` error handling.
+ *
+ * @param var   The variable to assign the allocated memory to.
+ * @param nmemb The number of elements to allocate.
+ * @param size  The size of each element.
+ * @param ...   The error handling code to execute if the allocation fails.
+ */
+#define CLI_MAX_CALLOC_OR_GOTO_DONE(var, nmemb, size, ...) \
+    do {                                                   \
+        (var) = cli_max_calloc(nmemb, size);               \
+        if (NULL == var) {                                 \
+            do {                                           \
+                __VA_ARGS__;                               \
+            } while (0);                                   \
+            goto done;                                     \
+        }                                                  \
+    } while (0)
+#endif
+
+#ifndef CLI_VERIFY_POINTER_OR_GOTO_DONE
+/**
+ * @brief Wrapper around a NULL-check that will `goto done;` if the pointer is NULL.
+ *
+ * This macro requires `goto done;` error handling.
+ *
+ * @param ptr   The pointer to verify.
+ * @param ...   The error handling code to execute if the pointer is NULL.
+ */
+#define CLI_VERIFY_POINTER_OR_GOTO_DONE(ptr, ...) \
+    do {                                          \
+        if (NULL == ptr) {                        \
+            do {                                  \
+                __VA_ARGS__;                      \
+            } while (0);                          \
+            goto done;                            \
+        }                                         \
     } while (0)
 #endif
 
@@ -1346,37 +1454,48 @@ uint8_t cli_set_debug_flag(uint8_t debug_flag);
  *
  * IMPORTANT: This differs from realloc() in that if size==0, it will NOT free the ptr.
  *
- * NOTE: cli_realloc() will NOT free ptr if size==0. It is safe to free ptr after `done:`.
+ * NOTE: cli_max_realloc() will NOT free ptr if size==0. It is safe to free ptr after `done:`.
  *
- * @param ptr
- * @param size
- * @return void*
+ * @param ptr   The pointer to realloc.
+ * @param size  The size of the memory to allocate.
+ * @param ...   The error handling code to execute if the allocation fails.
  */
-#ifndef CLI_REALLOC
-#define CLI_REALLOC(ptr, size, ...)          \
-    do {                                     \
-        void *vTmp = cli_realloc(ptr, size); \
-        if (NULL == vTmp) {                  \
-            do {                             \
-                __VA_ARGS__;                 \
-            } while (0);                     \
-            goto done;                       \
-        }                                    \
-        ptr = vTmp;                          \
+#ifndef CLI_MAX_REALLOC_OR_GOTO_DONE
+#define CLI_MAX_REALLOC_OR_GOTO_DONE(ptr, size, ...) \
+    do {                                             \
+        void *vTmp = cli_max_realloc(ptr, size);     \
+        if (NULL == vTmp) {                          \
+            do {                                     \
+                __VA_ARGS__;                         \
+            } while (0);                             \
+            goto done;                               \
+        }                                            \
+        ptr = vTmp;                                  \
     } while (0)
 #endif
 
-/*This is a duplicate from other PR's.*/
-#ifndef CLI_STRDUP
-#define CLI_STRDUP(buf, var, ...) \
-    do {                          \
-        var = cli_strdup(buf);    \
-        if (NULL == var) {        \
-            do {                  \
-                __VA_ARGS__;      \
-            } while (0);          \
-            goto done;            \
-        }                         \
+/**
+ * @brief Wrapper around realloc that, unlike some variants of realloc, will not free the ptr if size==0.
+ *
+ * IMPORTANT: This differs from realloc() in that if size==0, it will NOT free the ptr.
+ *
+ * NOTE: cli_safer_realloc() will NOT free ptr if size==0. It is safe to free ptr after `done:`.
+ *
+ * @param ptr   The pointer to realloc.
+ * @param size  The size of the memory to allocate.
+ * @param ...   The error handling code to execute if the allocation fails.
+ */
+#ifndef CLI_SAFER_REALLOC_OR_GOTO_DONE
+#define CLI_SAFER_REALLOC_OR_GOTO_DONE(ptr, size, ...) \
+    do {                                               \
+        void *vTmp = cli_safer_realloc(ptr, size);     \
+        if (NULL == vTmp) {                            \
+            do {                                       \
+                __VA_ARGS__;                           \
+            } while (0);                               \
+            goto done;                                 \
+        }                                              \
+        ptr = vTmp;                                    \
     } while (0)
 #endif
 

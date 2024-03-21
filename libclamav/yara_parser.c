@@ -874,7 +874,7 @@ YR_STRING* yr_parser_reduce_string_declaration(
 
         return meta;
 #if 0 // meta w.i.p.
-  meta = cli_calloc(1, sizeof(YR_META));
+  meta = calloc(1, sizeof(YR_META));
   if (meta == NULL) {
       cli_errmsg("yara_parser: no mem for YR_META.\n");
       compiler->last_result = CL_EMEM;
@@ -882,7 +882,7 @@ YR_STRING* yr_parser_reduce_string_declaration(
   }
 
   if (identifier != NULL) {
-      meta->identifier = cli_strdup(identifier);
+      meta->identifier = cli_safer_strdup(identifier);
       if (meta->identifier == NULL) {
           cli_errmsg("yara_parser: no mem for meta->identifier.\n");
           compiler->last_result = CL_EMEM;
@@ -890,7 +890,7 @@ YR_STRING* yr_parser_reduce_string_declaration(
       }
   }
   if (string != NULL) {
-      meta->string = cli_strdup(string);
+      meta->string = cli_safer_strdup(string);
       if (meta->string == NULL) {
           cli_errmsg("yara_parser: no mem for meta->string.\n");
           compiler->last_result = CL_EMEM;

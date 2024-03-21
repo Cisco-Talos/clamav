@@ -313,7 +313,7 @@ cl_error_t cli_parsejpeg(cli_ctx *ctx)
 {
     cl_error_t status = CL_SUCCESS;
 
-    fmap_t *map = NULL;
+    fmap_t *map          = NULL;
     jpeg_marker_t marker = JPEG_MARKER_NOT_A_MARKER_0x00, prev_marker, prev_segment = JPEG_MARKER_NOT_A_MARKER_0x00;
     uint8_t buff[50]; /* 50 should be sufficient for now */
     uint16_t len_u16;

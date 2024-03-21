@@ -66,14 +66,14 @@ int mpool_getstats(const struct cl_engine *engine, size_t *used, size_t *total);
 
 typedef void mpool_t;
 
-#define MPOOL_MALLOC(a, b) cli_malloc(b)
+#define MPOOL_MALLOC(a, b) malloc(b)
 #define MPOOL_FREE(a, b) free(b)
-#define MPOOL_CALLOC(a, b, c) cli_calloc(b, c)
-#define MPOOL_REALLOC(a, b, c) cli_realloc(b, c)
-#define MPOOL_REALLOC2(a, b, c) cli_realloc2(b, c)
+#define MPOOL_CALLOC(a, b, c) calloc(b, c)
+#define MPOOL_REALLOC(a, b, c) cli_safer_realloc(b, c)
+#define MPOOL_REALLOC2(a, b, c) cli_safer_realloc_or_free(b, c)
 #define CLI_MPOOL_HEX2STR(mpool, src) cli_hex2str(src)
-#define CLI_MPOOL_STRDUP(mpool, s) cli_strdup(s)
-#define CLI_MPOOL_STRNDUP(mpool, s, n) cli_strdup(s, n)
+#define CLI_MPOOL_STRDUP(mpool, s) cli_safer_strdup(s)
+#define CLI_MPOOL_STRNDUP(mpool, s, n) cli_safer_strdup(s, n)
 #define CLI_MPOOL_VIRNAME(mpool, a, b) cli_virname(a, b)
 #define CLI_MPOOL_HEX2UI(mpool, hex) cli_hex2ui(hex)
 #define MPOOL_FLUSH(val)

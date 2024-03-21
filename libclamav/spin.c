@@ -171,7 +171,7 @@ int unspin(char *src, int ssize, struct cli_exe_section *sections, int sectcnt, 
 
     cli_dbgmsg("in unspin\n");
 
-    if ((spinned = (char *)cli_malloc(sections[sectcnt].rsz)) == NULL) {
+    if ((spinned = (char *)cli_max_malloc(sections[sectcnt].rsz)) == NULL) {
         cli_dbgmsg("spin: Unable to allocate memory for spinned\n");
         return 1;
     }
@@ -394,7 +394,7 @@ int unspin(char *src, int ssize, struct cli_exe_section *sections, int sectcnt, 
     }
 
     cli_dbgmsg("spin: Compression bitmap is %x\n", bitmap);
-    if ((sects = (char **)cli_malloc(sectcnt * sizeof(char *))) == NULL) {
+    if ((sects = (char **)cli_max_malloc(sectcnt * sizeof(char *))) == NULL) {
         cli_dbgmsg("spin: malloc(%zu) failed\n", (size_t)sectcnt * sizeof(char *));
         return 1;
     }
@@ -402,7 +402,7 @@ int unspin(char *src, int ssize, struct cli_exe_section *sections, int sectcnt, 
     len = 0;
     for (j = 0; j < sectcnt; j++) {
         if (bitmap & 1) {
-            if ((sects[j] = (char *)cli_malloc(sections[j].vsz)) == NULL) {
+            if ((sects[j] = (char *)cli_max_malloc(sections[j].vsz)) == NULL) {
                 cli_dbgmsg("spin: malloc(%u) failed\n", sections[j].vsz);
                 len = 1;
                 break;
@@ -447,7 +447,7 @@ int unspin(char *src, int ssize, struct cli_exe_section *sections, int sectcnt, 
         if (j != sectcnt && ((bitman & (1 << j)) == 0)) { /* FIXME: not really sure either the res sect is lamed or just compressed, but this'll save some major headaches */
             cli_dbgmsg("spin: Resources (sect%d) appear to be compressed\n\tuncompressed offset %x, len %x\n\tcompressed offset %x, len %x\n", j, sections[j].rva, key32 - sections[j].rva, key32, sections[j].vsz - (key32 - sections[j].rva));
 
-            if ((curr = (char *)cli_malloc(sections[j].vsz)) != NULL) {
+            if ((curr = (char *)cli_max_malloc(sections[j].vsz)) != NULL) {
                 memcpy(curr, src + sections[j].raw, key32 - sections[j].rva);                           /* Uncompressed part */
                 memset(curr + key32 - sections[j].rva, 0, sections[j].vsz - (key32 - sections[j].rva)); /* bzero */
                 if (cli_unfsg(src + sections[j].raw + key32 - sections[j].rva, curr + key32 - sections[j].rva, sections[j].rsz - (key32 - sections[j].rva), sections[j].vsz - (key32 - sections[j].rva), NULL, NULL)) {
@@ -473,9 +473,9 @@ int unspin(char *src, int ssize, struct cli_exe_section *sections, int sectcnt, 
 
     bitmap = bitman; /* save as a free() bitmap */
 
-    if ((ep = (char *)cli_malloc(blobsz)) != NULL) {
+    if ((ep = (char *)cli_max_malloc(blobsz)) != NULL) {
         struct cli_exe_section *rebhlp;
-        if ((rebhlp = (struct cli_exe_section *)cli_malloc(sizeof(struct cli_exe_section) * (sectcnt))) != NULL) {
+        if ((rebhlp = (struct cli_exe_section *)cli_max_malloc(sizeof(struct cli_exe_section) * (sectcnt))) != NULL) {
             char *to   = ep;
             int retval = 0;
 
