@@ -247,8 +247,14 @@ int ole2_list_delete(ole2_list_t *list)
 
 static unsigned char magic_id[] = {0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1};
 
-char *
-cli_ole2_get_property_name2(const char *name, int size)
+/**
+ * @brief Get the property name, converting to lower case and replacing non-printable characters.
+ *
+ * @param name   The property name
+ * @param size   The size of the property name
+ * @return char* The new property name
+ */
+char *cli_ole2_get_property_name2(const char *name, int size)
 {
     int i, j;
     char *newname = NULL;
@@ -256,27 +262,35 @@ cli_ole2_get_property_name2(const char *name, int size)
     if ((name[0] == 0 && name[1] == 0) || size <= 0 || size > 128) {
         return NULL;
     }
-    CLI_MAX_MALLOC_OR_GOTO_DONE(newname, size * 7,
-                                cli_errmsg("OLE2 [cli_ole2_get_property_name2]: Unable to allocate memory for newname: %u\n", size * 7));
+
+    // We may need to replace every character with '_XY_' or '_XYZ_' to form a printable name.
+    // This is because the name may contain non-printable characters.
+    // Allocate 5 times the size of the name to be safe, plus 1 for the NULL terminator.
+    CLI_MAX_MALLOC_OR_GOTO_DONE(newname, size * 5 + 1,
+                                cli_errmsg("OLE2 [cli_ole2_get_property_name2]: Unable to allocate memory for newname: %u\n", size * 5));
 
     j = 0;
     /* size-2 to ignore trailing NULL */
     for (i = 0; i < size - 2; i += 2) {
-        if ((!(name[i] & 0x80)) && isprint(name[i]) && name[i + 1] == 0) {
+        if ((!(name[i] & 0x80)) &&
+            (isprint(name[i])) &&
+            (name[i + 1] == 0)) {
+            // Printable ASCII
             newname[j++] = tolower(name[i]);
         } else {
+            // Non-printable. Expand to something unique and printable.
             if (name[i] < 10 && name[i] >= 0 && name[i + 1] == 0) {
+                // Single digit (next byte is NULL)
                 newname[j++] = '_';
                 newname[j++] = name[i] + '0';
             } else {
+                // Two digits (next byte is not NULL)
                 const uint16_t x = (((uint16_t)name[i]) << 8) | name[i + 1];
 
                 newname[j++] = '_';
                 newname[j++] = 'a' + ((x & 0xF));
                 newname[j++] = 'a' + ((x >> 4) & 0xF);
                 newname[j++] = 'a' + ((x >> 8) & 0xF);
-                newname[j++] = 'a' + ((x >> 16) & 0xF);
-                newname[j++] = 'a' + ((x >> 24) & 0xF);
             }
             newname[j++] = '_';
         }
