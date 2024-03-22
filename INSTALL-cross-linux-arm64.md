@@ -72,6 +72,24 @@ A CMake toolchain file specifies some toolchain specific variables.
 
 Note: The `CMAKE_SYSROOT` variable may **not** be set using the `cmake -D CMAKE_SYROOT=PATH` method and must be in this file. Meanwhile, some other variables (namely `CMAKE_INSTALL_PREFIX`) *cannot* be set in the toolchain file, and should be passed as a command parameter.
 
+## Help Cargo find GCC (possibly needed)
+
+On some systems, `cargo` does not find the right GCC executable and emits this error:
+```
+ = note: cc: error: unrecognized command-line option '-m64'
+```
+
+**If** this error occurs during the build, set the following environment variables and then try again:
+```sh
+export HOST_CC=gcc
+export CC_x86_64_unknown_linux_gnu=/usr/bin/x86_64-linux-gnu-gcc
+export CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=/usr/bin/x86_64-linux-gnu-gcc
+```
+
+> _Note_: Your specific path to and executable name for GCC may vary depending on your platform.
+
+> _Credit_: [Kornel on Stack Overflow](https://stackoverflow.com/a/72546887/3430496)
+
 ### If using a sysroot
 
 `CMAKE_TOOLCHAIN_ARM64.cmake`:
