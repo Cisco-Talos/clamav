@@ -461,10 +461,6 @@ if(OPENSSL_FOUND)
 endif()
 
 find_package(ZLIB REQUIRED)
-if(ZLIB_FOUND)
-    set(HAVE_ZLIB_H 1)
-    set(HAVE_LIBZ 1)
-endif()
 
 find_package(BZip2 REQUIRED)
 

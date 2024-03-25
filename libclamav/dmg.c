@@ -34,9 +34,7 @@
 #include <sys/param.h> /* for NAME_MAX */
 #endif
 
-#if HAVE_LIBZ
 #include <zlib.h>
-#endif
 #include <bzlib.h>
 #ifdef NOBZ2PREFIX
 #define BZ2_bzDecompress bzDecompress
@@ -541,13 +539,8 @@ static int dmg_track_sectors(uint64_t *total, uint8_t *data_to_write,
             usable         = 1;
             break;
         case DMG_STRIPE_DEFLATE:
-#if HAVE_LIBZ
             *data_to_write = 1;
             usable         = 1;
-#else
-            cli_warnmsg("dmg_track_sectors: Need zlib decompression to properly scan this file.\n");
-            return CL_EFORMAT;
-#endif
             break;
         case DMG_STRIPE_BZ:
             *data_to_write = 1;
