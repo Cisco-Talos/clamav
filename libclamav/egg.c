@@ -64,10 +64,7 @@
 #include <wchar.h>
 #include <locale.h>
 #include <zlib.h>
-
-#if HAVE_BZLIB_H
 #include <bzlib.h>
-#endif
 
 #include "lzma_iface.h"
 
@@ -2040,7 +2037,6 @@ done:
     return status;
 }
 
-#ifdef HAVE_BZLIB_H
 cl_error_t cli_egg_bzip2_decompress(char* compressed, size_t compressed_size, char** decompressed, size_t* decompressed_size)
 {
     cl_error_t status = CL_EPARSE;
@@ -2153,7 +2149,6 @@ done:
 
     return status;
 }
-#endif
 
 cl_error_t cli_egg_lzma_decompress(char* compressed, size_t compressed_size, char** decompressed, size_t* decompressed_size)
 {
@@ -2402,7 +2397,6 @@ cl_error_t cli_egg_extract_file(void* hArchive, const char** filename, const cha
                     break;
                 }
                 case BLOCK_HEADER_COMPRESS_ALGORITHM_BZIP2: {
-#if HAVE_BZLIB_H
                     char* decompressed_block       = NULL;
                     size_t decompressed_block_size = 0;
 
@@ -2429,10 +2423,6 @@ cl_error_t cli_egg_extract_file(void* hArchive, const char** filename, const cha
 
                     retval = CL_SUCCESS;
                     break;
-#else
-                    cli_warnmsg("cli_egg_extract_file: BZIP2 decompression support not available.\n");
-                    goto done;
-#endif
                 }
                 case BLOCK_HEADER_COMPRESS_ALGORITHM_AZO: {
                     cli_warnmsg("cli_egg_extract_file: AZO decompression not yet supported.\n");

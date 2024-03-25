@@ -38,9 +38,7 @@
 #if HAVE_JSON
 #include <json.h>
 #endif
-#if HAVE_BZLIB_H
 #include <bzlib.h>
-#endif
 
 #include "clamav.h"
 #include "clambc.h"
@@ -72,13 +70,11 @@ struct bc_lzma {
     int32_t to;
 };
 
-#if HAVE_BZLIB_H
 struct bc_bzip2 {
     bz_stream stream;
     int32_t from;
     int32_t to;
 };
-#endif
 
 uint32_t cli_bcapi_test1(struct cli_bc_ctx *ctx, uint32_t a, uint32_t b)
 {
@@ -1048,7 +1044,6 @@ int32_t cli_bcapi_lzma_done(struct cli_bc_ctx *ctx, int32_t id)
 
 int32_t cli_bcapi_bzip2_init(struct cli_bc_ctx *ctx, int32_t from, int32_t to)
 {
-#if HAVE_BZLIB_H
     int ret;
     struct bc_bzip2 *b;
     unsigned n = ctx->nbzip2s + 1;
@@ -1086,23 +1081,17 @@ int32_t cli_bcapi_bzip2_init(struct cli_bc_ctx *ctx, int32_t from, int32_t to)
     }
 
     return n - 1;
-#else
-    return -1;
-#endif
 }
 
-#if HAVE_BZLIB_H
 static struct bc_bzip2 *get_bzip2(struct cli_bc_ctx *ctx, int32_t id)
 {
     if (id < 0 || (unsigned int)id >= ctx->nbzip2s || !ctx->bzip2s)
         return NULL;
     return &ctx->bzip2s[id];
 }
-#endif
 
 int32_t cli_bcapi_bzip2_process(struct cli_bc_ctx *ctx, int32_t id)
 {
-#if HAVE_BZLIB_H
     int ret;
     unsigned avail_in_orig, avail_out_orig;
     struct bc_bzip2 *b = get_bzip2(ctx, id);
@@ -1135,23 +1124,16 @@ int32_t cli_bcapi_bzip2_process(struct cli_bc_ctx *ctx, int32_t id)
     }
 
     return ret;
-#else
-    return -1;
-#endif
 }
 
 int32_t cli_bcapi_bzip2_done(struct cli_bc_ctx *ctx, int32_t id)
 {
-#if HAVE_BZLIB_H
     struct bc_bzip2 *b = get_bzip2(ctx, id);
     if (!b || b->from == -1 || b->to == -1)
         return -1;
     BZ2_bzDecompressEnd(&b->stream);
     b->from = b->to = -1;
     return 0;
-#else
-    return -1;
-#endif
 }
 
 int32_t cli_bcapi_bytecode_rt_error(struct cli_bc_ctx *ctx, int32_t id)

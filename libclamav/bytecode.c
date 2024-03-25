@@ -195,13 +195,11 @@ static void bytecode_context_reset(struct cli_bc_ctx *ctx)
     ctx->lzmas  = NULL;
     ctx->nlzmas = 0;
 
-#if HAVE_BZLIB_H
     for (i = 0; i < ctx->nbzip2s; i++)
         cli_bcapi_bzip2_done(ctx, i);
     free(ctx->bzip2s);
     ctx->bzip2s  = NULL;
     ctx->nbzip2s = 0;
-#endif
 
     for (i = 0; i < ctx->nbuffers; i++)
         cli_bcapi_buffer_pipe_done(ctx, i);

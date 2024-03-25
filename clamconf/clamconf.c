@@ -462,9 +462,6 @@ int main(int argc, char **argv)
     if (get_fpu_endian() != FPU_ENDIAN_UNKNOWN)
 #endif
         printf("AUTOIT_EA06 ");
-#ifdef HAVE_BZLIB_H
-    printf("BZIP2 ");
-#endif
 
 #ifdef HAVE_ICONV
     printf("ICONV ");
