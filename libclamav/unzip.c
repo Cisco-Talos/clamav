@@ -39,9 +39,8 @@
 
 #include <zlib.h>
 #include "inflate64.h"
-#if HAVE_BZLIB_H
+
 #include <bzlib.h>
-#endif
 
 #include "explode.h"
 #include "others.h"
@@ -242,7 +241,6 @@ static cl_error_t unz(
             break;
         }
 
-#if HAVE_BZLIB_H
 #ifdef NOBZ2PREFIX
 #define BZ2_bzDecompress bzDecompress
 #define BZ2_bzDecompressEnd bzDecompressEnd
@@ -284,7 +282,6 @@ static cl_error_t unz(
             if (res == BZ_STREAM_END) res = 0;
             break;
         }
-#endif /* HAVE_BZLIB_H */
 
         case ALG_IMPLODE: {
             struct xplstate strm;
@@ -322,9 +319,6 @@ static cl_error_t unz(
         case ALG_LZMA:
             /* easy but there's not a single sample in the zoo */
 
-#if !HAVE_BZLIB_H
-        case ALG_BZIP2:
-#endif
         case ALG_SHRUNK:
         case ALG_REDUCE1:
         case ALG_REDUCE2:

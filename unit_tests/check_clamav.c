@@ -543,12 +543,6 @@ static unsigned skip_files(void)
         skipped += 2;
     }
 
-    /* skip .bz2 files if bzip is disabled */
-#if HAVE_BZLIB_H
-#else
-    skipped += 2;
-#endif
-
 #if HAVE_UNRAR
 #else
     skipped += 2;
