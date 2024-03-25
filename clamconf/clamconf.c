@@ -446,12 +446,6 @@ int main(int argc, char **argv)
 #ifdef USE_MPOOL
     printf("MEMPOOL ");
 #endif
-#ifdef SUPPORT_IPv6
-    printf("IPv6 ");
-#endif
-#ifdef CLAMUKO
-    printf("CLAMUKO ");
-#endif
 #ifdef C_BIGSTACK
     printf("BIGSTACK ");
 #endif
