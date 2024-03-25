@@ -193,9 +193,6 @@
 /* Define to 1 if you have the `ssl' library (-lssl). */
 #cmakedefine HAVE_LIBSSL 1
 
-/* Define to 1 if you have the `z' library (-lz). */
-#cmakedefine HAVE_LIBZ 1
-
 /* Define to 1 if you have the <limits.h> header file. */
 #cmakedefine HAVE_LIMITS_H 1
 
@@ -376,9 +373,6 @@
 
 /* yara sources are compiled in */
 #define HAVE_YARA 1
-
-/* Define to 1 if you have the <zlib.h> header file. */
-#cmakedefine HAVE_ZLIB_H 1
 
 /* For internal use only - DO NOT DEFINE */
 #cmakedefine HAVE__INTERNAL__SHA_COLLECT 1
