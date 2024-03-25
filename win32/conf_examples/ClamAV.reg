@@ -1,0 +1,20 @@
+Windows Registry Editor Version 5.00
+
+[HKEY_CLASSES_ROOT\Directory\Background\shell\clamscan]
+"Icon"="C:\\Program Files\\ClamAV\\clamscan.exe"
+@="Scan folder with ClamAV"
+
+[HKEY_CLASSES_ROOT\Directory\Background\shell\clamscan\command]
+@="\"C:\\Program Files\\ClamAV\\clamscan.exe\" \"-r\" \"--stdout\" \"%v\" \"&& pause > null\""
+[HKEY_CLASSES_ROOT\Directory\shell\clamscan]
+"Icon"="C:\\Program Files\\ClamAV\\clamscan.exe"
+@="Scan folder with ClamAV"
+
+[HKEY_CLASSES_ROOT\Directory\shell\clamscan\command]
+@="\"C:\\Program Files\\ClamAV\\clamscan.exe\" \"-r\" \"--stdout\" \"%v\" \"&& pause > null\"
+[HKEY_CLASSES_ROOT\*\shell\clamscan]
+"Icon"="C:\\Program Files\\ClamAV\\clamscan.exe"
+@="Scan file with ClamAV"
+
+[HKEY_CLASSES_ROOT\*\shell\clamscan\command]
+@="\"C:\\Program Files\\ClamAV\\clamscan.exe\" \"-r\" \"--stdout\" \"%v\" \"&& pause > null\"
