@@ -201,7 +201,6 @@ static inline cl_error_t matcher_run(const struct cli_matcher *root,
             break;
     }
 
-#if HAVE_PCRE
     /* due to logical triggered, pcres cannot be evaluated until after full subsig matching */
     /* cannot save pcre execution state without possible evasion; must scan entire buffer */
     /* however, scanning the whole buffer may require the whole buffer being loaded into memory */
@@ -245,7 +244,7 @@ static inline cl_error_t matcher_run(const struct cli_matcher *root,
             ret = cli_pcre_scanbuf(buffer, length, virname, acres, root, mdata, poffdata, ctx);
         }
     }
-#endif /* HAVE_PCRE */
+
     /* end experimental fragment */
 
     if (ctx && ret == CL_VIRUS) {

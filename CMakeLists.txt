@@ -480,14 +480,11 @@ find_package(LibXml2 REQUIRED)
 if(LibXml2_FOUND)
     set(HAVE_LIBXML2 1)
 endif()
+
 # Restore the requested CMAKE_FIND_PACKAGE_PREFER_CONFIG setting
 set(CMAKE_FIND_PACKAGE_PREFER_CONFIG ${PACKAGE_PREFER_CONFIG_BAK})
 
 find_package(PCRE2 REQUIRED)
-if(PCRE2_FOUND)
-    set(HAVE_PCRE 1)
-    set(USING_PCRE2 1)
-endif()
 
 # libclamav feature dependencies
 if(NOT WIN32)

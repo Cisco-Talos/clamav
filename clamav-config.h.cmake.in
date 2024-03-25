@@ -221,12 +221,6 @@
    MAP_PRIVATE. */
 #cmakedefine HAVE_MMAP 1
 
-/* Define to 1 if you have a pcre library (-lpcre). */
-#cmakedefine HAVE_PCRE 1
-
-/* Define to 1 if you using the pcre2 library. */
-#cmakedefine USING_PCRE2 1
-
 /* Define to 1 if you have the `poll' function. */
 #cmakedefine HAVE_POLL 1
 

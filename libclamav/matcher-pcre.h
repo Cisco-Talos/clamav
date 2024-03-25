@@ -44,7 +44,6 @@ struct cli_pcre_off {
     uint32_t *offset, *shift;
 };
 
-#if HAVE_PCRE
 #define PCRE_BYPASS "7374756c747a676574737265676578"
 #define CLI_PCRE_GLOBAL 0x00000001    /* g */
 #define CLI_PCRE_ENCOMPASS 0x00000002 /* e */
@@ -70,14 +69,6 @@ cl_error_t cli_pcre_addpatt(struct cli_matcher *root, const char *virname, const
 void cli_pcre_freemeta(struct cli_matcher *root, struct cli_pcre_meta *pm);
 void cli_pcre_freetable(struct cli_matcher *root);
 
-#else
-#define PCRE_BYPASS ""
-#endif /* HAVE_PCRE */
-
-/*
- * The following are defined to simple stub functions in matcher-pcre.c if HAVE_PCRE is not defined.
- */
-cl_error_t cli_pcre_init(void);
 cl_error_t cli_pcre_build(struct cli_matcher *root, long long unsigned match_limit, long long unsigned recmatch_limit, const struct cli_dconf *dconf);
 cl_error_t cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const char **virname, struct cli_ac_result **res, const struct cli_matcher *root, struct cli_ac_data *mdata, const struct cli_pcre_off *data, cli_ctx *ctx);
 cl_error_t cli_pcre_recaloff(struct cli_matcher *root, struct cli_pcre_off *data, struct cli_target_info *info, cli_ctx *ctx);

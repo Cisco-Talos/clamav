@@ -2795,12 +2795,8 @@ static int decodehex(const char *hexsig)
         free(regex);
         if (cflags)
             free(cflags);
-#if HAVE_PCRE
+
         return 0;
-#else
-        mprintf(LOGG_ERROR, "PCRE subsig cannot be loaded without PCRE support\n");
-        return -1;
-#endif
     } else if (strchr(hexsig, '{') || strchr(hexsig, '[')) {
         if (!(hexcpy = strdup(hexsig)))
             return -1;

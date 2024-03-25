@@ -2121,18 +2121,6 @@ static cl_error_t load_oneldb(char *buffer, int chkpua, struct cl_engine *engine
         goto done;
     }
 
-#if !HAVE_PCRE
-    /* Regex Usage and Support Check */
-    for (i = 0; i < subsigs; ++i) {
-        char *slash = strchr(tokens[i + 3], '/');
-        if (slash && strchr(slash + 1, '/')) {
-            cli_warnmsg("cli_loadldb: logical signature for %s uses PCREs but support is disabled, skipping\n", virname);
-            status = CL_BREAK;
-            goto done;
-        }
-    }
-#endif
-
     /* enforce MAX_LDB_SUBSIGS subsig cap */
     if (subsigs > MAX_LDB_SUBSIGS) {
         cli_errmsg("cli_loadldb: Broken logical expression or too many subsignatures\n");
@@ -4027,7 +4015,6 @@ static int load_oneyara(YR_RULE *rule, int chkpua, struct cl_engine *engine, uns
             free(substr);
         } else if (STRING_IS_REGEXP(string)) {
             /* TODO - rewrite to NOT use PCRE_BYPASS */
-#if HAVE_PCRE
             size_t length = strlen(PCRE_BYPASS) + string->length + 3;
 
             substr = calloc(length, sizeof(char));
@@ -4044,12 +4031,6 @@ static int load_oneyara(YR_RULE *rule, int chkpua, struct cl_engine *engine, uns
 
             ytable_add_string(&ytable, substr);
             free(substr);
-#else
-            cli_warnmsg("cli_loadyara: %s uses PCREs but support is disabled\n", newident);
-            str_error++;
-            ret = CL_SUCCESS;
-            break;
-#endif
         } else {
             /* TODO - extract the string length to handle NULL hex-escaped characters
              * For now, we'll just use the strlen we get which crudely finds the length
@@ -5634,9 +5615,9 @@ cl_error_t cl_engine_free(struct cl_engine *engine)
                     tasks_to_do += root->ac_lsigs / 1000; // every 1000 logical sigs
                     tasks_to_do += 1;                     // ac lsig table
                 }
-#if HAVE_PCRE
+
                 tasks_to_do += 1; // pcre table
-#endif
+
                 tasks_to_do += 1; // root mempool
             }
         }
@@ -5665,9 +5646,9 @@ cl_error_t cl_engine_free(struct cl_engine *engine)
             tasks_to_do += root->ac_lsigs / 1000; // every 1000 logical sigs
             tasks_to_do += 1;                     // ac lsig table
         }
-#if HAVE_PCRE
+
         tasks_to_do += 1; // pcre table
-#endif
+
         tasks_to_do += 1; // fuzzy hashmap
 
         tasks_to_do += 1; // engine root mempool
@@ -5718,10 +5699,10 @@ cl_error_t cl_engine_free(struct cl_engine *engine)
                     MPOOL_FREE(engine->mempool, root->ac_lsigtable);
                     TASK_COMPLETE();
                 }
-#if HAVE_PCRE
+
                 cli_pcre_freetable(root);
                 TASK_COMPLETE();
-#endif /* HAVE_PCRE */
+
                 fuzzy_hash_free_hashmap(root->fuzzy_hashmap);
                 TASK_COMPLETE();
 
@@ -5889,10 +5870,9 @@ cl_error_t cl_engine_free(struct cl_engine *engine)
             MPOOL_FREE(engine->mempool, root->ac_lsigtable);
             TASK_COMPLETE();
         }
-#if HAVE_PCRE
         cli_pcre_freetable(root);
         TASK_COMPLETE();
-#endif /* HAVE_PCRE */
+
         MPOOL_FREE(engine->mempool, root);
         TASK_COMPLETE();
     }
@@ -5938,9 +5918,7 @@ cl_error_t cl_engine_compile(struct cl_engine *engine)
     for (i = 0; i < CLI_MTARGETS; i++) {
         if ((root = engine->root[i])) {
             tasks_to_do += 1; // build ac trie
-#if HAVE_PCRE
             tasks_to_do += 1; // compile pcre regex
-#endif
         }
     }
     tasks_to_do += 1; // flush hdb
@@ -6000,15 +5978,12 @@ cl_error_t cl_engine_compile(struct cl_engine *engine)
             if ((ret = cli_ac_buildtrie(root)))
                 return ret;
             TASK_COMPLETE();
-#if HAVE_PCRE
+
             if ((ret = cli_pcre_build(root, engine->pcre_match_limit, engine->pcre_recmatch_limit, engine->dconf)))
                 return ret;
             TASK_COMPLETE();
 
             cli_dbgmsg("Matcher[%u]: %s: AC sigs: %u (reloff: %u, absoff: %u) BM sigs: %u (reloff: %u, absoff: %u) PCREs: %u (reloff: %u, absoff: %u) maxpatlen %u %s\n", i, cli_mtargets[i].name, root->ac_patterns, root->ac_reloff_num, root->ac_absoff_num, root->bm_patterns, root->bm_reloff_num, root->bm_absoff_num, root->pcre_metas, root->pcre_reloff_num, root->pcre_absoff_num, root->maxpatlen, root->ac_only ? "(ac_only mode)" : "");
-#else
-            cli_dbgmsg("Matcher[%u]: %s: AC sigs: %u (reloff: %u, absoff: %u) BM sigs: %u (reloff: %u, absoff: %u) maxpatlen %u PCREs: 0 (disabled) %s\n", i, cli_mtargets[i].name, root->ac_patterns, root->ac_reloff_num, root->ac_absoff_num, root->bm_patterns, root->bm_reloff_num, root->bm_absoff_num, root->maxpatlen, root->ac_only ? "(ac_only mode)" : "");
-#endif
         }
     }
 
@@ -6061,9 +6036,9 @@ cl_error_t cl_engine_compile(struct cl_engine *engine)
             }
             MPOOL_FREE(engine->mempool, root->ac_lsigtable);
         }
-#if HAVE_PCRE
+
         cli_pcre_freetable(root);
-#endif /* HAVE_PCRE */
+
         MPOOL_FREE(engine->mempool, root);
         engine->test_root = NULL;
         TASK_COMPLETE();

@@ -158,11 +158,9 @@ struct cli_matcher {
     uint8_t ac_only;
 
     /* Perl-Compiled Regular Expressions */
-#if HAVE_PCRE
     uint32_t pcre_metas;
     struct cli_pcre_meta **pcre_metatable;
     uint32_t pcre_reloff_num, pcre_absoff_num;
-#endif
 
     /* Byte Compare */
     uint32_t bcomp_metas;

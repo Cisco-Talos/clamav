@@ -1676,13 +1676,11 @@ int scanmanager(const struct optstruct *opts)
             if (!strcasecmp(opt->strarg, "bytecode")) {
                 cli_sigperf_print();
                 cli_sigperf_events_destroy();
-            }
-#if HAVE_PCRE
-            else if (!strcasecmp(opt->strarg, "pcre")) {
+            } else if (!strcasecmp(opt->strarg, "pcre")) {
                 cli_pcre_perf_print();
                 cli_pcre_perf_events_destroy();
             }
-#endif
+
             opt = opt->nextarg;
         }
     }
