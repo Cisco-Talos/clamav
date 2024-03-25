@@ -37,13 +37,8 @@
 #include "regex_pcre.h"
 #include "str.h"
 
-#if HAVE_PCRE
-#if USING_PCRE2
 #define PCRE2_CODE_UNIT_WIDTH 8
 #include <pcre2.h>
-#else
-#include <pcre.h>
-#endif
 
 /* DEBUGGING */
 // #define MATCHER_PCRE_DEBUG
@@ -192,10 +187,6 @@ void cli_pcre_perf_events_destroy()
 }
 
 /* PCRE MATCHER FUNCTIONS */
-cl_error_t cli_pcre_init()
-{
-    return cli_pcre_init_internal();
-}
 
 cl_error_t cli_pcre_addpatt(struct cli_matcher *root, const char *virname, const char *trigger, const char *pattern, const char *cflags, const char *offset, const uint32_t *lsigid, unsigned int options)
 {
@@ -338,7 +329,6 @@ cl_error_t cli_pcre_addpatt(struct cli_matcher *root, const char *virname, const
         }
 
         if (pm->pdata.options) {
-#if USING_PCRE2
             pm_dbgmsg("Compiler: %s%s%s%s%s%s%s\n",
                       pm->pdata.options & PCRE2_CASELESS ? "PCRE2_CASELESS " : "",
                       pm->pdata.options & PCRE2_DOTALL ? "PCRE2_DOTALL " : "",
@@ -348,17 +338,6 @@ cl_error_t cli_pcre_addpatt(struct cli_matcher *root, const char *virname, const
                       pm->pdata.options & PCRE2_ANCHORED ? "PCRE2_ANCHORED " : "",
                       pm->pdata.options & PCRE2_DOLLAR_ENDONLY ? "PCRE2_DOLLAR_ENDONLY " : "",
                       pm->pdata.options & PCRE2_UNGREEDY ? "PCRE2_UNGREEDY " : "");
-#else
-            pm_dbgmsg("Compiler: %s%s%s%s%s%s%s\n",
-                      pm->pdata.options & PCRE_CASELESS ? "PCRE_CASELESS " : "",
-                      pm->pdata.options & PCRE_DOTALL ? "PCRE_DOTALL " : "",
-                      pm->pdata.options & PCRE_MULTILINE ? "PCRE_MULTILINE " : "",
-                      pm->pdata.options & PCRE_EXTENDED ? "PCRE_EXTENDED " : "",
-
-                      pm->pdata.options & PCRE_ANCHORED ? "PCRE_ANCHORED " : "",
-                      pm->pdata.options & PCRE_DOLLAR_ENDONLY ? "PCRE_DOLLAR_ENDONLY " : "",
-                      pm->pdata.options & PCRE_UNGREEDY ? "PCRE_UNGREEDY " : "");
-#endif
         } else {
             pm_dbgmsg("Compiler: NONE\n");
         }
@@ -422,15 +401,9 @@ cl_error_t cli_pcre_build(struct cli_matcher *root, long long unsigned match_lim
         }
 
         /* options override through metadata manipulation */
-#if USING_PCRE2
         // pm->pdata.options |= PCRE2_NEVER_UTF; /* disables (?UTF*) potential security vuln */
         // pm->pdata.options |= PCRE2_UCP;
         // pm->pdata.options |= PCRE2_AUTO_CALLOUT; /* used with CALLOUT(-BACK) function */
-#else
-        // pm->pdata.options |= PCRE_NEVER_UTF; /* implemented in 8.33, disables (?UTF*) potential security vuln */
-        // pm->pdata.options |= PCRE_UCP;/* implemented in 8.20 */
-        // pm->pdata.options |= PCRE_AUTO_CALLOUT; /* used with CALLOUT(-BACK) function */
-#endif
 
         if (dconf && (dconf->pcre & PCRE_CONF_OPTIONS)) {
             /* compile the regex, no options override *wink* */
@@ -638,11 +611,7 @@ cl_error_t cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const 
 
         /* check for need to anchoring */
         if (!rolling && !adjshift && (adjbuffer != CLI_OFF_ANY))
-#if USING_PCRE2
             options |= PCRE2_ANCHORED;
-#else
-            options |= PCRE_ANCHORED;
-#endif
         else
             options = 0;
 
@@ -810,69 +779,3 @@ void cli_pcre_freetable(struct cli_matcher *root)
     root->pcre_metatable = NULL;
     root->pcre_metas     = 0;
 }
-
-#else
-/* NO-PCRE FUNCTIONS */
-void cli_pcre_perf_print()
-{
-    cli_errmsg("cli_pcre_perf_print: Cannot print PCRE performance results without PCRE support\n");
-    return;
-}
-
-void cli_pcre_perf_events_destroy()
-{
-    cli_errmsg("cli_pcre_perf_events_destroy: Cannot destroy PCRE performance results without PCRE support\n");
-    return;
-}
-
-cl_error_t cli_pcre_init()
-{
-    cli_errmsg("cli_pcre_init: Cannot initialize PCRE without PCRE support\n");
-    return CL_SUCCESS;
-}
-
-cl_error_t cli_pcre_build(struct cli_matcher *root, long long unsigned match_limit, long long unsigned recmatch_limit, const struct cli_dconf *dconf)
-{
-    UNUSEDPARAM(root);
-    UNUSEDPARAM(match_limit);
-    UNUSEDPARAM(recmatch_limit);
-    UNUSEDPARAM(dconf);
-
-    cli_errmsg("cli_pcre_build: Cannot build PCRE expression without PCRE support\n");
-    return CL_SUCCESS;
-}
-
-cl_error_t cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const char **virname, struct cli_ac_result **res, const struct cli_matcher *root, struct cli_ac_data *mdata, const struct cli_pcre_off *data, cli_ctx *ctx)
-{
-    UNUSEDPARAM(buffer);
-    UNUSEDPARAM(length);
-    UNUSEDPARAM(virname);
-    UNUSEDPARAM(res);
-    UNUSEDPARAM(root);
-    UNUSEDPARAM(mdata);
-    UNUSEDPARAM(data);
-    UNUSEDPARAM(ctx);
-
-    cli_errmsg("cli_pcre_scanbuf: Cannot scan buffer with PCRE expression without PCRE support\n");
-    return CL_SUCCESS;
-}
-
-cl_error_t cli_pcre_recaloff(struct cli_matcher *root, struct cli_pcre_off *data, struct cli_target_info *info, cli_ctx *ctx)
-{
-    UNUSEDPARAM(root);
-    UNUSEDPARAM(info);
-    UNUSEDPARAM(ctx);
-    if (data) {
-        data->offset = NULL;
-        data->shift  = NULL;
-    }
-    return CL_SUCCESS;
-}
-
-void cli_pcre_freeoff(struct cli_pcre_off *data)
-{
-    UNUSEDPARAM(data);
-    return;
-}
-
-#endif /* HAVE_PCRE */
