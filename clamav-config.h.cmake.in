@@ -465,9 +465,6 @@
 /* Define to if you have the ANSI C header files. */
 #cmakedefine STDC_HEADERS 1
 
-/* Support for IPv6 */
-#cmakedefine SUPPORT_IPv6 1
-
 /* enable memory pools */
 #cmakedefine USE_MPOOL 1
 
