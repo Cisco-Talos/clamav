@@ -369,7 +369,7 @@ impl AlzLocalFileHeader {
 
         let mut len = self.compressed_size;
         if self.compressed_size != self.uncompressed_size {
-            info!("Uncompressed file has different lengths for compressed vs uncompressed, using the shorter");
+            debug!("Uncompressed file has different lengths for compressed vs uncompressed, using the shorter");
             if self.compressed_size > self.uncompressed_size {
                 len = self.uncompressed_size;
             }
