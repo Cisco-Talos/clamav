@@ -932,7 +932,6 @@ fc_error_t fc_download_url_database(
                 logg(LOGG_INFO, "      https://github.com/Cisco-Talos/clamav/issues\n");
                 logg(LOGG_INFO, "      and we will investigate why your network is blocked.\n");
                 if (0 != g_lastRay[0]) {
-                    size_t i;
                     logg(LOGG_INFO, "      Please provide the following cf-ray id with your ticket: %s\n", g_lastRay);
                     logg(LOGG_INFO, "\n");
                 }

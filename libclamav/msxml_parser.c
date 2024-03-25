@@ -35,7 +35,6 @@
 #include "json_api.h"
 #include "msxml_parser.h"
 
-#if HAVE_LIBXML2
 #include <libxml/xmlreader.h>
 
 #define MSXML_VERBIOSE 0
@@ -664,5 +663,3 @@ cl_error_t cli_msxml_parse_document(cli_ctx *ctx, xmlTextReaderPtr reader, const
 
     return ret;
 }
-
-#endif /* HAVE_LIBXML2 */

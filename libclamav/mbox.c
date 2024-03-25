@@ -77,12 +77,10 @@
 #include "json_api.h"
 #include "msxml_parser.h"
 
-#if HAVE_LIBXML2
 #include <libxml/xmlversion.h>
 #include <libxml/HTMLtree.h>
 #include <libxml/HTMLparser.h>
 #include <libxml/xmlreader.h>
-#endif
 
 #define DCONF_PHISHING mctx->ctx->dconf->phishing
 
@@ -1402,7 +1400,6 @@ done:
     return ret;
 }
 
-#if HAVE_LIBXML2
 static const struct key_entry mhtml_keys[] = {
     /* root html tags for microsoft office document */
     {"html", "RootHTML", MSXML_JSON_ROOT | MSXML_JSON_ATTRIB},
@@ -1435,7 +1432,6 @@ static const struct key_entry mhtml_comment_keys[] = {
     {"w:worddocument", "WordDocument", MSXML_IGNORE_ELEM},
     {"w:latentstyles", "LatentStyles", MSXML_IGNORE_ELEM}};
 static size_t num_mhtml_comment_keys = sizeof(mhtml_comment_keys) / sizeof(struct key_entry);
-#endif
 
 /*
  * The related multipart root HTML file comment parsing wrapper.
@@ -1447,7 +1443,6 @@ static cl_error_t parseMHTMLComment(const char *comment, cli_ctx *ctx, void *wrk
 {
     cl_error_t ret = CL_SUCCESS;
 
-#if HAVE_LIBXML2
     const char *xmlsrt, *xmlend;
     xmlTextReaderPtr reader;
 
@@ -1483,15 +1478,6 @@ static cl_error_t parseMHTMLComment(const char *comment, cli_ctx *ctx, void *wrk
         if (ret != CL_SUCCESS)
             return ret;
     }
-#else
-    UNUSEDPARAM(comment);
-    UNUSEDPARAM(ctx);
-    UNUSEDPARAM(wrkjobj);
-    UNUSEDPARAM(cbdata);
-
-    cli_dbgmsg("in parseMHTMLComment\n");
-    cli_dbgmsg("parseMHTMLComment: parsing html xml-comments requires libxml2!\n");
-#endif
     return ret;
 }
 
@@ -1505,7 +1491,6 @@ static mbox_status
 parseRootMHTML(mbox_ctx *mctx, message *m, text *t)
 {
     cli_ctx *ctx = mctx->ctx;
-#if HAVE_LIBXML2
 #ifdef LIBXML_HTML_ENABLED
     struct msxml_ctx mxctx;
     blob *input = NULL;
@@ -1608,14 +1593,6 @@ parseRootMHTML(mbox_ctx *mctx, message *m, text *t)
     cli_dbgmsg("in parseRootMHTML\n");
     cli_dbgmsg("parseRootMHTML: parsing html documents disabled in libxml2!\n");
 #endif /* LIBXML_HTML_ENABLED */
-#else  /* HAVE_LIBXML2 */
-    UNUSEDPARAM(m);
-    UNUSEDPARAM(t);
-    cli_dbgmsg("in parseRootMHTML\n");
-    cli_dbgmsg("parseRootMHTML: parsing html documents requires libxml2!\n");
-
-    return OK;
-#endif /* HAVE_LIBXML2 */
 }
 
 /*
