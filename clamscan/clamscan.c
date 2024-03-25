@@ -336,11 +336,9 @@ void help(void)
     mprintf(LOGG_INFO, "    --max-partitions=#n                  Maximum number of partitions in disk image to be scanned\n");
     mprintf(LOGG_INFO, "    --max-iconspe=#n                     Maximum number of icons in PE file to be scanned\n");
     mprintf(LOGG_INFO, "    --max-rechwp3=#n                     Maximum recursive calls to HWP3 parsing function\n");
-#if HAVE_PCRE
     mprintf(LOGG_INFO, "    --pcre-match-limit=#n                Maximum calls to the PCRE match function.\n");
     mprintf(LOGG_INFO, "    --pcre-recmatch-limit=#n             Maximum recursive calls to the PCRE match function.\n");
     mprintf(LOGG_INFO, "    --pcre-max-filesize=#n               Maximum size file to perform PCRE subsig matching.\n");
-#endif /* HAVE_PCRE */
     mprintf(LOGG_INFO, "    --disable-cache                      Disable caching and cache checks for hash sums of scanned files.\n");
     mprintf(LOGG_INFO, "\n");
     mprintf(LOGG_INFO, "Pass in - as the filename for stdin.\n");
