@@ -15,9 +15,7 @@
 #include <sys/mman.h>
 #endif
 
-#if HAVE_LIBXML2
 #include <libxml/parser.h>
-#endif
 
 #include "platform.h"
 
@@ -549,12 +547,6 @@ static unsigned skip_files(void)
 #if HAVE_BZLIB_H
 #else
     skipped += 2;
-#endif
-
-    /* skip [placeholder] files if xml is disabled */
-#if HAVE_LIBXML2
-#else
-    skipped += 0;
 #endif
 
 #if HAVE_UNRAR
@@ -2070,9 +2062,7 @@ int main(int argc, char **argv)
         printf("NOTICE: Use the 'T' environment variable to adjust testcase timeout\n");
     srunner_free(sr);
 
-#if HAVE_LIBXML2
     xmlCleanupParser();
-#endif
 
     return (nf == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
 }

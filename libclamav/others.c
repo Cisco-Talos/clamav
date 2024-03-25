@@ -58,9 +58,7 @@
 #include <pthread.h>
 #endif
 
-#ifdef HAVE_LIBXML2
 #include <libxml/parser.h>
-#endif
 
 #ifndef _WIN32
 #include <dlfcn.h>
@@ -442,9 +440,9 @@ cl_error_t cl_init(unsigned int initoptions)
     rc = bytecode_init();
     if (rc)
         return rc;
-#ifdef HAVE_LIBXML2
+
     xmlInitParser();
-#endif
+
     return CL_SUCCESS;
 }
 

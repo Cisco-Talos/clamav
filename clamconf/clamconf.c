@@ -466,9 +466,6 @@ int main(int argc, char **argv)
     printf("BZIP2 ");
 #endif
 
-#ifdef HAVE_LIBXML2
-    printf("LIBXML2 ");
-#endif
 #ifdef HAVE_ICONV
     printf("ICONV ");
 #endif
