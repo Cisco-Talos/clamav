@@ -572,7 +572,6 @@ extern LIBCLAMAV_EXPORT int have_rar;
 #define SCAN_PARSE_ONENOTE (ctx->options->parse & CL_SCAN_PARSE_ONENOTE)
 #define SCAN_PARSE_IMAGE (ctx->options->parse & CL_SCAN_PARSE_IMAGE)
 #define SCAN_PARSE_IMAGE_FUZZY_HASH (ctx->options->parse & CL_SCAN_PARSE_IMAGE_FUZZY_HASH)
-#define SCAN_PARSE_ALZ (ctx->options->parse & CL_SCAN_PARSE_ALZ)
 
 #define SCAN_HEURISTIC_BROKEN (ctx->options->heuristic & CL_SCAN_HEURISTIC_BROKEN)
 #define SCAN_HEURISTIC_BROKEN_MEDIA (ctx->options->heuristic & CL_SCAN_HEURISTIC_BROKEN_MEDIA)
