@@ -35,7 +35,7 @@ use std::io::{Cursor, Read};
 use byteorder::{LittleEndian, ReadBytesExt};
 use bzip2::read::BzDecoder;
 use inflate::InflateStream;
-use log::{debug, info};
+use log::debug;
 
 /// File header
 const ALZ_FILE_HEADER: u32 = 0x015a_4c41;
