@@ -49,9 +49,7 @@
 #include "json_api.h"
 #include "entconv.h"
 
-#if HAVE_JSON
-static char *
-ole2_convert_utf(summary_ctx_t *sctx, char *begin, size_t sz, const char *encoding)
+static char *ole2_convert_utf(summary_ctx_t *sctx, char *begin, size_t sz, const char *encoding)
 {
     char *outbuf = NULL;
 #if HAVE_ICONV
@@ -998,4 +996,3 @@ int cli_ole2_summary_json(cli_ctx *ctx, int fd, int mode)
 
     return cli_ole2_summary_json_cleanup(&sctx, CL_SUCCESS);
 }
-#endif /* HAVE_JSON */

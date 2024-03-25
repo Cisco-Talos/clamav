@@ -1236,18 +1236,8 @@ int scanmanager(const struct optstruct *opts)
         }
     }
 
-    /* JSON check to prevent engine loading if specified without libjson-c  */
-#if HAVE_JSON
     if (optget(opts, "gen-json")->enabled)
         options.general |= CL_SCAN_GENERAL_COLLECT_METADATA;
-#else
-    if (optget(opts, "gen-json")->enabled) {
-        logg(LOGG_ERROR, "Can't generate json (gen-json). libjson-c dev library was missing or misconfigured when ClamAV was built.\n");
-
-        ret = 2;
-        goto done;
-    }
-#endif
 
     if ((opt = optget(opts, "tempdir"))->enabled) {
         if ((ret = cl_engine_set_str(engine, CL_ENGINE_TMPDIR, opt->strarg))) {

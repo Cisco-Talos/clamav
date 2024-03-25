@@ -83,7 +83,6 @@ static const char *pdf_nextobject(const char *ptr, size_t len);
 /* PDF statistics callbacks and related */
 struct pdfname_action;
 
-#if HAVE_JSON
 static void pdf_export_json(struct pdf_struct *);
 
 static void ASCIIHexDecode_cb(struct pdf_struct *, struct pdf_obj *, struct pdfname_action *);
@@ -117,7 +116,7 @@ static void Colors_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfnam
 static void RichMedia_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname_action *act);
 static void AcroForm_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname_action *act);
 static void XFA_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname_action *act);
-#endif
+
 /* End PDF statistics callbacks and related */
 
 static int pdf_readint(const char *q0, int len, const char *key);
@@ -1757,7 +1756,6 @@ cl_error_t pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t
                     }
                 }
 
-#if HAVE_JSON
                 if ((pdf->ctx->options->general & CL_SCAN_GENERAL_COLLECT_METADATA) && pdf->ctx->wrkproperty != NULL) {
                     struct json_object *pdfobj, *jbig2arr;
 
@@ -1769,7 +1767,7 @@ cl_error_t pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t
                         cli_jsonint_array(jbig2arr, obj->id >> 8);
                     }
                 }
-#endif
+
                 pdf->stats.njs++;
 
                 if (filter_writen(pdf, obj, fout, out, js_len, (size_t *)&sum) != js_len) {
@@ -1889,12 +1887,9 @@ struct pdfname_action {
     enum objstate from_state;      /* STATE_NONE is noop */
     enum objstate to_state;
     uint32_t nameflags;
-#if HAVE_JSON
     void (*pdf_stats_cb)(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname_action *act);
-#endif
 };
 
-#if HAVE_JSON
 static struct pdfname_action pdfname_actions[] = {
     {"ASCIIHexDecode", OBJ_FILTER_AH, STATE_FILTER, STATE_FILTER, NAMEFLAG_HEURISTIC, ASCIIHexDecode_cb},
     {"ASCII85Decode", OBJ_FILTER_A85, STATE_FILTER, STATE_FILTER, NAMEFLAG_HEURISTIC, ASCII85Decode_cb},
@@ -1942,42 +1937,6 @@ static struct pdfname_action pdfname_actions[] = {
     {"RichMedia", OBJ_DICT, STATE_NONE, STATE_NONE, NAMEFLAG_NONE, RichMedia_cb},
     {"AcroForm", OBJ_DICT, STATE_NONE, STATE_NONE, NAMEFLAG_NONE, AcroForm_cb},
     {"XFA", OBJ_DICT, STATE_NONE, STATE_NONE, NAMEFLAG_NONE, XFA_cb}};
-#else
-static struct pdfname_action pdfname_actions[] = {
-    {"ASCIIHexDecode", OBJ_FILTER_AH, STATE_FILTER, STATE_FILTER, NAMEFLAG_HEURISTIC},
-    {"ASCII85Decode", OBJ_FILTER_A85, STATE_FILTER, STATE_FILTER, NAMEFLAG_HEURISTIC},
-    {"A85", OBJ_FILTER_A85, STATE_FILTER, STATE_FILTER, NAMEFLAG_HEURISTIC},
-    {"AHx", OBJ_FILTER_AH, STATE_FILTER, STATE_FILTER, NAMEFLAG_HEURISTIC},
-    {"EmbeddedFile", OBJ_EMBEDDED_FILE, STATE_NONE, STATE_NONE, NAMEFLAG_HEURISTIC},
-    {"FlateDecode", OBJ_FILTER_FLATE, STATE_FILTER, STATE_FILTER, NAMEFLAG_HEURISTIC},
-    {"Fl", OBJ_FILTER_FLATE, STATE_FILTER, STATE_FILTER, NAMEFLAG_HEURISTIC},
-    {"Image", OBJ_IMAGE, STATE_NONE, STATE_NONE, NAMEFLAG_HEURISTIC},
-    {"LZWDecode", OBJ_FILTER_LZW, STATE_FILTER, STATE_FILTER, NAMEFLAG_HEURISTIC},
-    {"LZW", OBJ_FILTER_LZW, STATE_FILTER, STATE_FILTER, NAMEFLAG_HEURISTIC},
-    {"RunLengthDecode", OBJ_FILTER_RL, STATE_FILTER, STATE_FILTER, NAMEFLAG_HEURISTIC},
-    {"RL", OBJ_FILTER_RL, STATE_FILTER, STATE_FILTER, NAMEFLAG_HEURISTIC},
-    {"CCITTFaxDecode", OBJ_FILTER_FAX, STATE_FILTER, STATE_FILTER, NAMEFLAG_HEURISTIC},
-    {"CCF", OBJ_FILTER_FAX, STATE_FILTER, STATE_FILTER, NAMEFLAG_HEURISTIC},
-    {"JBIG2Decode", OBJ_FILTER_DCT, STATE_FILTER, STATE_FILTER, NAMEFLAG_HEURISTIC},
-    {"DCTDecode", OBJ_FILTER_DCT, STATE_FILTER, STATE_FILTER, NAMEFLAG_HEURISTIC},
-    {"DCT", OBJ_FILTER_DCT, STATE_FILTER, STATE_FILTER, NAMEFLAG_HEURISTIC},
-    {"JPXDecode", OBJ_FILTER_JPX, STATE_FILTER, STATE_FILTER, NAMEFLAG_HEURISTIC},
-    {"Crypt", OBJ_FILTER_CRYPT, STATE_FILTER, STATE_NONE, NAMEFLAG_HEURISTIC},
-    {"Standard", OBJ_FILTER_STANDARD, STATE_FILTER, STATE_FILTER, NAMEFLAG_HEURISTIC},
-    {"Sig", OBJ_SIGNED, STATE_ANY, STATE_NONE, NAMEFLAG_HEURISTIC},
-    {"V", OBJ_SIGNED, STATE_ANY, STATE_NONE, NAMEFLAG_HEURISTIC},
-    {"R", OBJ_SIGNED, STATE_ANY, STATE_NONE, NAMEFLAG_HEURISTIC},
-    {"Linearized", OBJ_DICT, STATE_NONE, STATE_LINEARIZED, NAMEFLAG_HEURISTIC},
-    {"Filter", OBJ_HASFILTERS, STATE_ANY, STATE_FILTER, NAMEFLAG_HEURISTIC},
-    {"JavaScript", OBJ_JAVASCRIPT, STATE_S, STATE_JAVASCRIPT, NAMEFLAG_HEURISTIC},
-    {"Length", OBJ_DICT, STATE_FILTER, STATE_NONE, NAMEFLAG_HEURISTIC},
-    {"S", OBJ_DICT, STATE_NONE, STATE_S, NAMEFLAG_HEURISTIC},
-    {"Type", OBJ_DICT, STATE_NONE, STATE_NONE, NAMEFLAG_HEURISTIC},
-    {"OpenAction", OBJ_OPENACTION, STATE_ANY, STATE_OPENACTION, NAMEFLAG_HEURISTIC},
-    {"Launch", OBJ_LAUNCHACTION, STATE_ANY, STATE_LAUNCHACTION, NAMEFLAG_HEURISTIC},
-    {"Page", OBJ_PAGE, STATE_NONE, STATE_NONE, NAMEFLAG_HEURISTIC},
-    {"Contents", OBJ_CONTENTS, STATE_NONE, STATE_CONTENTS, NAMEFLAG_HEURISTIC}};
-#endif
 
 #define KNOWN_FILTERS ((1 << OBJ_FILTER_AH) | (1 << OBJ_FILTER_RL) | (1 << OBJ_FILTER_A85) | (1 << OBJ_FILTER_FLATE) | (1 << OBJ_FILTER_LZW) | (1 << OBJ_FILTER_FAX) | (1 << OBJ_FILTER_DCT) | (1 << OBJ_FILTER_JPX) | (1 << OBJ_FILTER_CRYPT))
 
@@ -2017,10 +1976,8 @@ static void handle_pdfname(struct pdf_struct *pdf, struct pdf_obj *obj, const ch
         pdfobj_flag(pdf, obj, ESCAPED_COMMON_PDFNAME);
     }
 
-#if HAVE_JSON
     if ((act->pdf_stats_cb))
         act->pdf_stats_cb(pdf, obj, act);
-#endif
 
     if (act->from_state == *state || act->from_state == STATE_ANY) {
         *state = act->to_state;
@@ -2135,9 +2092,8 @@ void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
     size_t i         = 0;
     unsigned filters = 0, blockopens = 0;
     enum objstate objstate = STATE_NONE;
-#if HAVE_JSON
+
     json_object *pdfobj = NULL, *jsonobj = NULL;
-#endif
 
     if (NULL == pdf || NULL == obj) {
         cli_warnmsg("pdf_parseobj: invalid arguments\n");
@@ -2204,7 +2160,7 @@ void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
 
         if (!nextobj || bytesleft < 0) {
             cli_dbgmsg("pdf_parseobj: %u %u obj: no dictionary\n", obj->id >> 8, obj->id & 0xff);
-#if HAVE_JSON
+
             if (!(pdfobj) && pdf->ctx->wrkproperty != NULL) {
                 pdfobj = cli_jsonobj(pdf->ctx->wrkproperty, "PDFStats");
                 if (!(pdfobj))
@@ -2217,7 +2173,7 @@ void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
                 if (jsonobj)
                     cli_jsonint_array(jsonobj, obj->id >> 8);
             }
-#endif
+
             return;
         }
 
@@ -2251,7 +2207,7 @@ void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
     /* find end of dictionary block */
     if (bytesleft < 0) {
         cli_dbgmsg("pdf_parseobj: %u %u obj: broken dictionary\n", obj->id >> 8, obj->id & 0xff);
-#if HAVE_JSON
+
         if (!(pdfobj) && pdf->ctx->wrkproperty != NULL) {
             pdfobj = cli_jsonobj(pdf->ctx->wrkproperty, "PDFStats");
             if (!(pdfobj))
@@ -2264,7 +2220,7 @@ void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
             if (jsonobj)
                 cli_jsonint_array(jsonobj, obj->id >> 8);
         }
-#endif
+
         return;
     }
 
@@ -2300,7 +2256,7 @@ void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
     if (blockopens) {
         /* probably truncated */
         cli_dbgmsg("pdf_parseobj: %u %u obj broken dictionary\n", obj->id >> 8, obj->id & 0xff);
-#if HAVE_JSON
+
         if (!(pdfobj) && pdf->ctx->wrkproperty != NULL) {
             pdfobj = cli_jsonobj(pdf->ctx->wrkproperty, "PDFStats");
             if (!(pdfobj))
@@ -2313,7 +2269,7 @@ void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
             if (jsonobj)
                 cli_jsonint_array(jsonobj, obj->id >> 8);
         }
-#endif
+
         return;
     }
 
@@ -3703,10 +3659,9 @@ cl_error_t cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
     const char *pdfver, *tmp, *start, *eofmap, *q, *eof;
     unsigned i;
     unsigned int objs_found = 0;
-#if HAVE_JSON
+
     json_object *pdfobj = NULL;
     char *begin, *end, *p1;
-#endif
 
     cli_dbgmsg("in cli_pdf(%s)\n", dir);
     memset(&pdf, 0, sizeof(pdf));
@@ -3723,10 +3678,8 @@ cl_error_t cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
         goto done;
     }
 
-#if HAVE_JSON
     if (ctx->wrkproperty)
         pdfobj = cli_jsonobj(ctx->wrkproperty, "PDFStats");
-#endif
 
     /* offset is 0 when coming from filetype2 */
     tmp = cli_memstr(pdfver, versize, "%PDF-", 5);
@@ -3751,12 +3704,10 @@ cl_error_t cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
         pdfver[7] < '1' || pdfver[7] > '9') {
         pdf.flags |= 1 << BAD_PDF_VERSION;
         cli_dbgmsg("cli_pdf: bad pdf version: %.8s\n", pdfver);
-#if HAVE_JSON
+
         if (pdfobj)
             cli_jsonbool(pdfobj, "BadVersion", 1);
-#endif
     } else {
-#if HAVE_JSON
         if (pdfobj) {
             begin = (char *)(pdfver + 5);
             end   = begin + 2;
@@ -3769,16 +3720,14 @@ cl_error_t cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
                 free(p1);
             }
         }
-#endif
     }
 
     if (pdfver != start || offset) {
         pdf.flags |= 1 << BAD_PDF_HEADERPOS;
         cli_dbgmsg("cli_pdf: PDF header is not at position 0: %lld\n", (long long)(pdfver - start + offset));
-#if HAVE_JSON
+
         if (pdfobj)
             cli_jsonbool(pdfobj, "BadVersionLocation", 1);
-#endif
     }
 
     offset += pdfver - start;
@@ -3807,10 +3756,9 @@ cl_error_t cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
     if (q <= eofmap) {
         pdf.flags |= 1 << BAD_PDF_TRAILER;
         cli_dbgmsg("cli_pdf: %%%%EOF not found\n");
-#if HAVE_JSON
+
         if (pdfobj)
             cli_jsonbool(pdfobj, "NoEOF", 1);
-#endif
     } else {
         const char *t;
 
@@ -3824,10 +3772,9 @@ cl_error_t cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
         if (q <= eofmap) {
             pdf.flags |= 1 << BAD_PDF_TRAILER;
             cli_dbgmsg("cli_pdf: startxref not found\n");
-#if HAVE_JSON
+
             if (pdfobj)
                 cli_jsonbool(pdfobj, "NoXREF", 1);
-#endif
         } else {
             for (t = q; t > eofmap; t--) {
                 if (memcmp(t, "trailer", 7) == 0)
@@ -3933,9 +3880,7 @@ done:
 
 err:
 
-#if HAVE_JSON
     pdf_export_json(&pdf);
-#endif
 
     if (pdf.objstms) {
         for (i = 0; i < pdf.nobjstms; i++) {
@@ -4075,7 +4020,6 @@ pdf_nextobject(const char *ptr, size_t len)
 }
 
 /* PDF statistics */
-#if HAVE_JSON
 static void ASCIIHexDecode_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname_action *act)
 {
     UNUSEDPARAM(obj);
@@ -4086,9 +4030,7 @@ static void ASCIIHexDecode_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struc
 
     pdf->stats.nasciihexdecode++;
 }
-#endif
 
-#if HAVE_JSON
 static void ASCII85Decode_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname_action *act)
 {
     UNUSEDPARAM(obj);
@@ -4099,9 +4041,7 @@ static void ASCII85Decode_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct
 
     pdf->stats.nascii85decode++;
 }
-#endif
 
-#if HAVE_JSON
 static void EmbeddedFile_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname_action *act)
 {
     UNUSEDPARAM(obj);
@@ -4112,9 +4052,7 @@ static void EmbeddedFile_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct 
 
     pdf->stats.nembeddedfile++;
 }
-#endif
 
-#if HAVE_JSON
 static void FlateDecode_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname_action *act)
 {
     UNUSEDPARAM(obj);
@@ -4125,9 +4063,7 @@ static void FlateDecode_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct p
 
     pdf->stats.nflate++;
 }
-#endif
 
-#if HAVE_JSON
 static void Image_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname_action *act)
 {
     UNUSEDPARAM(obj);
@@ -4138,9 +4074,7 @@ static void Image_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname
 
     pdf->stats.nimage++;
 }
-#endif
 
-#if HAVE_JSON
 static void LZWDecode_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname_action *act)
 {
     UNUSEDPARAM(obj);
@@ -4151,9 +4085,7 @@ static void LZWDecode_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf
 
     pdf->stats.nlzw++;
 }
-#endif
 
-#if HAVE_JSON
 static void RunLengthDecode_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname_action *act)
 {
     UNUSEDPARAM(obj);
@@ -4164,9 +4096,7 @@ static void RunLengthDecode_cb(struct pdf_struct *pdf, struct pdf_obj *obj, stru
 
     pdf->stats.nrunlengthdecode++;
 }
-#endif
 
-#if HAVE_JSON
 static void CCITTFaxDecode_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname_action *act)
 {
     UNUSEDPARAM(obj);
@@ -4177,9 +4107,7 @@ static void CCITTFaxDecode_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struc
 
     pdf->stats.nfaxdecode++;
 }
-#endif
 
-#if HAVE_JSON
 static void JBIG2Decode_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname_action *act)
 {
     cli_ctx *ctx = NULL;
@@ -4211,9 +4139,7 @@ static void JBIG2Decode_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct p
 
     pdf->stats.njbig2decode++;
 }
-#endif
 
-#if HAVE_JSON
 static void DCTDecode_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname_action *act)
 {
     UNUSEDPARAM(obj);
@@ -4224,9 +4150,7 @@ static void DCTDecode_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf
 
     pdf->stats.ndctdecode++;
 }
-#endif
 
-#if HAVE_JSON
 static void JPXDecode_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname_action *act)
 {
     UNUSEDPARAM(obj);
@@ -4237,9 +4161,7 @@ static void JPXDecode_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf
 
     pdf->stats.njpxdecode++;
 }
-#endif
 
-#if HAVE_JSON
 static void Crypt_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname_action *act)
 {
     UNUSEDPARAM(obj);
@@ -4250,9 +4172,7 @@ static void Crypt_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname
 
     pdf->stats.ncrypt++;
 }
-#endif
 
-#if HAVE_JSON
 static void Standard_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname_action *act)
 {
     UNUSEDPARAM(obj);
@@ -4263,9 +4183,7 @@ static void Standard_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfn
 
     pdf->stats.nstandard++;
 }
-#endif
 
-#if HAVE_JSON
 static void Sig_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname_action *act)
 {
     UNUSEDPARAM(obj);
@@ -4276,9 +4194,7 @@ static void Sig_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname_a
 
     pdf->stats.nsigned++;
 }
-#endif
 
-#if HAVE_JSON
 static void JavaScript_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname_action *act)
 {
     UNUSEDPARAM(pdf);
@@ -4292,9 +4208,7 @@ static void JavaScript_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pd
      * actually have any content.
      */
 }
-#endif
 
-#if HAVE_JSON
 static void OpenAction_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname_action *act)
 {
     UNUSEDPARAM(obj);
@@ -4305,9 +4219,7 @@ static void OpenAction_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pd
 
     pdf->stats.nopenaction++;
 }
-#endif
 
-#if HAVE_JSON
 static void Launch_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname_action *act)
 {
     UNUSEDPARAM(obj);
@@ -4318,9 +4230,7 @@ static void Launch_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfnam
 
     pdf->stats.nlaunch++;
 }
-#endif
 
-#if HAVE_JSON
 static void Page_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname_action *act)
 {
     UNUSEDPARAM(obj);
@@ -4331,9 +4241,7 @@ static void Page_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname_
 
     pdf->stats.npage++;
 }
-#endif
 
-#if HAVE_JSON
 static void Author_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname_action *act)
 {
     cli_ctx *ctx = NULL;
@@ -4361,9 +4269,7 @@ static void Author_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfnam
         pdf->parse_recursion_depth--;
     }
 }
-#endif
 
-#if HAVE_JSON
 static void Creator_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname_action *act)
 {
     cli_ctx *ctx = NULL;
@@ -4391,9 +4297,7 @@ static void Creator_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfna
         pdf->parse_recursion_depth--;
     }
 }
-#endif
 
-#if HAVE_JSON
 static void ModificationDate_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname_action *act)
 {
     cli_ctx *ctx = NULL;
@@ -4421,9 +4325,7 @@ static void ModificationDate_cb(struct pdf_struct *pdf, struct pdf_obj *obj, str
         pdf->parse_recursion_depth--;
     }
 }
-#endif
 
-#if HAVE_JSON
 static void CreationDate_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname_action *act)
 {
     cli_ctx *ctx = NULL;
@@ -4451,9 +4353,7 @@ static void CreationDate_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct 
         pdf->parse_recursion_depth--;
     }
 }
-#endif
 
-#if HAVE_JSON
 static void Producer_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname_action *act)
 {
     cli_ctx *ctx = NULL;
@@ -4481,9 +4381,7 @@ static void Producer_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfn
         pdf->parse_recursion_depth--;
     }
 }
-#endif
 
-#if HAVE_JSON
 static void Title_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname_action *act)
 {
     cli_ctx *ctx = NULL;
@@ -4511,9 +4409,7 @@ static void Title_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname
         pdf->parse_recursion_depth--;
     }
 }
-#endif
 
-#if HAVE_JSON
 static void Keywords_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname_action *act)
 {
     cli_ctx *ctx = NULL;
@@ -4541,9 +4437,7 @@ static void Keywords_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfn
         pdf->parse_recursion_depth--;
     }
 }
-#endif
 
-#if HAVE_JSON
 static void Subject_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname_action *act)
 {
     cli_ctx *ctx = NULL;
@@ -4571,9 +4465,7 @@ static void Subject_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfna
         pdf->parse_recursion_depth--;
     }
 }
-#endif
 
-#if HAVE_JSON
 static void RichMedia_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname_action *act)
 {
     UNUSEDPARAM(obj);
@@ -4584,9 +4476,7 @@ static void RichMedia_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf
 
     pdf->stats.nrichmedia++;
 }
-#endif
 
-#if HAVE_JSON
 static void AcroForm_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname_action *act)
 {
     UNUSEDPARAM(obj);
@@ -4597,9 +4487,7 @@ static void AcroForm_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfn
 
     pdf->stats.nacroform++;
 }
-#endif
 
-#if HAVE_JSON
 static void XFA_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname_action *act)
 {
     UNUSEDPARAM(obj);
@@ -4610,9 +4498,7 @@ static void XFA_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname_a
 
     pdf->stats.nxfa++;
 }
-#endif
 
-#if HAVE_JSON
 static void Pages_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname_action *act)
 {
     cli_ctx *ctx = NULL;
@@ -4691,9 +4577,7 @@ static void Pages_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname
 cleanup:
     pdf_free_array(array);
 }
-#endif
 
-#if HAVE_JSON
 static void Colors_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname_action *act)
 {
     cli_ctx *ctx = NULL;
@@ -4751,9 +4635,7 @@ static void Colors_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfnam
 
     cli_jsonint_array(colorsobj, obj->id >> 8);
 }
-#endif
 
-#if HAVE_JSON
 static void pdf_free_stats(struct pdf_struct *pdf)
 {
 
@@ -4817,9 +4699,7 @@ static void pdf_free_stats(struct pdf_struct *pdf)
         pdf->stats.keywords = NULL;
     }
 }
-#endif
 
-#if HAVE_JSON
 static void pdf_export_json(struct pdf_struct *pdf)
 {
     cli_ctx *ctx = NULL;
@@ -5101,4 +4981,3 @@ static void pdf_export_json(struct pdf_struct *pdf)
 cleanup:
     pdf_free_stats(pdf);
 }
-#endif

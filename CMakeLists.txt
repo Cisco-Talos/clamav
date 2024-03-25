@@ -456,9 +456,6 @@ include(CPack)
 
 # libclamav efficacy dependencies
 find_package(OpenSSL REQUIRED)
-if(OPENSSL_FOUND)
-    set(HAVE_LIBSSL 1)
-endif()
 
 find_package(ZLIB REQUIRED)
 
@@ -489,8 +486,6 @@ else()
     set(JSONC_USE_STATIC ON)
 endif()
 find_package(JSONC REQUIRED)
-# Set variable required by libclamav to use libjson-c
-set(HAVE_JSON 1)
 
 set(LLVM_MAX_VER "13")
 set(LLVM_MIN_VER "8")

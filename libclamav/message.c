@@ -194,10 +194,8 @@ void messageReset(message *m)
         free(m->encodingTypes);
     }
 
-#if HAVE_JSON
     if (m->jobj)
         cli_json_delobj(m->jobj);
-#endif
 
     memset(m, '\0', sizeof(message));
     m->mimeType = NOMIME;
@@ -2670,7 +2668,6 @@ int isuuencodebegin(const char *line)
            isdigit(line[8]) && (line[9] == ' ');
 }
 
-#if HAVE_JSON
 json_object *messageGetJObj(message *m)
 {
     if (m == NULL) {
@@ -2682,4 +2679,3 @@ json_object *messageGetJObj(message *m)
 
     return m->jobj;
 }
-#endif

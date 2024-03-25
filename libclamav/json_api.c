@@ -27,7 +27,6 @@
 #include "others.h"
 #include "json_api.h"
 
-#ifdef HAVE_JSON
 cl_error_t cli_json_timeout_cycle_check(cli_ctx *ctx, int *toval)
 {
     if (SCAN_COLLECT_METADATA) {
@@ -353,30 +352,6 @@ json_object *cli_jsonobj(json_object *obj, const char *key)
     return newobj;
 }
 
-#if HAVE_DEPRECATED_JSON
-int json_object_object_get_ex(struct json_object *obj, const char *key, struct json_object **value)
-{
-    struct json_object *res;
-
-    if (value != NULL)
-        *value = NULL;
-
-    if (obj == NULL)
-        return 0;
-
-    if (json_object_get_type(obj) != json_type_object)
-        return 0;
-
-    res = json_object_object_get(obj, key);
-    if (value != NULL) {
-        *value = res;
-        return (res != NULL);
-    }
-
-    return (res != NULL);
-}
-#endif
-
 /* adding an object does NOT increment reference count */
 cl_error_t cli_json_addowner(json_object *owner, json_object *child, const char *key, int idx)
 {
@@ -464,77 +439,3 @@ cl_error_t cli_json_delowner(json_object *owner, const char *key, int idx)
 
     return CL_SUCCESS;
 }
-
-#else
-
-cl_error_t cli_json_nojson()
-{
-    nojson_func("nojson: json needs to be enabled for this feature\n");
-    return CL_SUCCESS;
-}
-
-cl_error_t cli_jsonnull_nojson(const char* key)
-{
-    nojson_func("nojson: %s: null\n", key);
-    return CL_SUCCESS;
-}
-
-cl_error_t cli_jsonstr_nojson(const char* key, const char* s)
-{
-    nojson_func("nojson: %s: %s\n", key, s);
-    return CL_SUCCESS;
-}
-
-cl_error_t cli_jsonstrlen_nojson(const char* key, const char* s, int len)
-{
-    char* sp = cli_max_malloc(len + 1);
-    if (NULL == sp) {
-        cli_errmsg("json: no memory for json strlen object.\n");
-        return CL_EMEM;
-    }
-    strncpy(sp, s, len);
-    sp[len] = '\0';
-
-    nojson_func("nojson: %s: %s\n", key, sp);
-
-    free(sp);
-    return CL_SUCCESS;
-}
-
-cl_error_t cli_jsonint_nojson(const char* key, int32_t i)
-{
-    nojson_func("nojson: %s: %d\n", key, i);
-    return CL_SUCCESS;
-}
-
-cl_error_t cli_jsonint64_nojson(const char* key, int64_t i)
-{
-    nojson_func("nojson: %s: %ld\n", key, (long int)i);
-    return CL_SUCCESS;
-}
-
-cl_error_t cli_jsonbool_nojson(const char* key, int i)
-{
-    nojson_func("nojson: %s: %s\n", key, i ? "true" : "false");
-    return CL_SUCCESS;
-}
-
-cl_error_t cli_jsondouble_nojson(const char* key, double d)
-{
-    nojson_func("nojson: %s: %f\n", key, d);
-    return CL_SUCCESS;
-}
-
-void* cli_jsonarray_nojson(const char* key)
-{
-    nojson_func("nojson: %s\n", key);
-    return NULL;
-}
-
-cl_error_t cli_jsonint_array_nojson(int32_t val)
-{
-    nojson_func("nojson: %d\n", val);
-    return CL_SUCCESS;
-}
-
-#endif

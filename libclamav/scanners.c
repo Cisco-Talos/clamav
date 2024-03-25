@@ -1647,7 +1647,6 @@ static cl_error_t cli_ole2_tempdir_scan_vba_new(const char *dir, cli_ctx *ctx, s
                 continue;
             }
 
-#if HAVE_JSON
             if (*has_macros && SCAN_COLLECT_METADATA && (ctx->wrkproperty != NULL)) {
                 cli_jsonbool(ctx->wrkproperty, "HasMacros", 1);
                 json_object *macro_languages = cli_jsonarray(ctx->wrkproperty, "MacroLanguages");
@@ -1657,7 +1656,7 @@ static cl_error_t cli_ole2_tempdir_scan_vba_new(const char *dir, cli_ctx *ctx, s
                     cli_dbgmsg("[cli_ole2_tempdir_scan_vba_new] Failed to add \"VBA\" entry to MacroLanguages JSON array\n");
                 }
             }
-#endif
+
             if (SCAN_HEURISTIC_MACROS && *has_macros) {
                 ret = cli_append_potentially_unwanted(ctx, "Heuristics.OLE2.ContainsMacros.VBA");
                 if (ret == CL_VIRUS) {
@@ -1727,7 +1726,6 @@ static cl_error_t cli_ole2_tempdir_scan_summary(const char *dir, cli_ctx *ctx, s
     char *hash;
     uint32_t hashcnt = 0;
 
-#if HAVE_JSON
     if (CL_SUCCESS != (ret = uniq_get(U, "_5_summaryinformation", 21, &hash, &hashcnt))) {
         cli_dbgmsg("cli_ole2_tempdir_scan_summary: uniq_get('_5_summaryinformation') failed with ret code (%d)!\n", ret);
         status = ret;
@@ -1769,7 +1767,6 @@ static cl_error_t cli_ole2_tempdir_scan_summary(const char *dir, cli_ctx *ctx, s
         }
         hashcnt--;
     }
-#endif
 
 done:
 
@@ -2010,7 +2007,6 @@ static cl_error_t cli_ole2_tempdir_scan_vba(const char *dir, cli_ctx *ctx, struc
 done:
 
     if (*has_macros) {
-#if HAVE_JSON
         if (SCAN_COLLECT_METADATA && (ctx->wrkproperty != NULL)) {
             cli_jsonbool(ctx->wrkproperty, "HasMacros", 1);
             json_object *macro_languages = cli_jsonarray(ctx->wrkproperty, "MacroLanguages");
@@ -2020,7 +2016,6 @@ done:
                 cli_dbgmsg("cli_ole2_tempdir_scan_vba: Failed to add \"VBA\" entry to MacroLanguages JSON array\n");
             }
         }
-#endif
 
         if (SCAN_HEURISTIC_MACROS) {
             ret = cli_append_potentially_unwanted(ctx, "Heuristics.OLE2.ContainsMacros.VBA");
@@ -3277,11 +3272,7 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
 
     cli_file_t found_type;
 
-#if HAVE_JSON
     struct json_object *parent_property = NULL;
-#else
-    void *parent_property = NULL;
-#endif
 
     if ((typercg) &&
         // We should also omit bzips, but DMG's may be detected in bzips. (type != CL_TYPE_BZ) &&        /* Omit BZ files because they can contain portions of original files like zip file entries that cause invalid extractions and lots of warnings. Decompress first, then scan! */
@@ -3320,7 +3311,6 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
             if (fpt->offset > 0) {
                 bool type_has_been_handled = true;
 
-#if HAVE_JSON
                 /*
                  * Add embedded file to metadata JSON.
                  */
@@ -3359,7 +3349,7 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
                         break;
                     }
                 }
-#endif
+
                 /*
                  * First, use "embedded type recognition" to identify a file's actual type.
                  * (a.k.a. not embedded files, but file type detection corrections)
@@ -3874,12 +3864,10 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
 
             fpt = fpt->next;
 
-#if HAVE_JSON
             if (NULL != parent_property) {
                 ctx->wrkproperty = (struct json_object *)(parent_property);
                 parent_property  = NULL;
             }
-#endif
         } // end while (fpt) loop
 
         if (!((nret == CL_EMEM) || (ctx->abort_scan))) {
@@ -3919,11 +3907,9 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
         ret = nret;
     } // end if (ret >= CL_TYPENO)
 
-#if HAVE_JSON
     if (NULL != parent_property) {
         ctx->wrkproperty = (struct json_object *)(parent_property);
     }
-#endif
 
     while (ftoffset) {
         fpt      = ftoffset;
@@ -4236,11 +4222,7 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
     bitset_t *old_hook_lsig_matches = NULL;
     const char *filetype;
 
-#if HAVE_JSON
     struct json_object *parent_property = NULL;
-#else
-    void *parent_property = NULL;
-#endif
 
     char *old_temp_path = NULL;
     char *new_temp_path = NULL;
@@ -4332,7 +4314,6 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
     /* set current layer to the type we found */
     cli_recursion_stack_change_type(ctx, type);
 
-#if HAVE_JSON
     if (SCAN_COLLECT_METADATA) {
         /*
          * Create JSON object to record metadata during the scan.
@@ -4407,7 +4388,6 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
             goto early_ret;
         }
     }
-#endif
 
     /*
      * Run the pre_scan callback.
@@ -4447,7 +4427,6 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
     cache_check_result = clean_cache_check(hash, hashed_size, ctx);
     perf_stop(ctx, PERFT_CACHE);
 
-#if HAVE_JSON
     if (SCAN_COLLECT_METADATA) {
         char hashstr[CLI_HASHLEN_MD5 * 2 + 1];
         snprintf(hashstr, CLI_HASHLEN_MD5 * 2 + 1, "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
@@ -4463,7 +4442,6 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
             goto early_ret;
         }
     }
-#endif
 
     if (cache_check_result != CL_VIRUS) {
         cli_dbgmsg("cli_magic_scan: returning %d %s (no post, no cache)\n", ret, __AT__);
@@ -4582,7 +4560,6 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
         case CL_TYPE_OOXML_PPT:
         case CL_TYPE_OOXML_XL:
         case CL_TYPE_OOXML_HWP:
-#if HAVE_JSON
             if (SCAN_PARSE_XMLDOCS && (DCONF_DOC & DOC_CONF_OOXML)) {
                 if (SCAN_COLLECT_METADATA && (ctx->wrkproperty != NULL)) {
                     ret = cli_process_ooxml(ctx, type);
@@ -4601,7 +4578,6 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
                     }
                 }
             }
-#endif
             /* fall-through */
         case CL_TYPE_ZIP:
             if (SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_ZIP))
@@ -5028,9 +5004,7 @@ done:
         ctx->hook_lsig_matches = old_hook_lsig_matches;
     }
 
-#if HAVE_JSON
     ctx->wrkproperty = (struct json_object *)(parent_property);
-#endif
 
     /*
      * Determine if there was an alert for this layer (or its children).
@@ -5106,11 +5080,9 @@ early_ret:
         ctx->sub_tmpdir = old_temp_path;
     }
 
-#if HAVE_JSON
     if (NULL != parent_property) {
         ctx->wrkproperty = (struct json_object *)(parent_property);
     }
-#endif
 
     return ret;
 }
@@ -5513,7 +5485,6 @@ static cl_error_t scan_common(cl_fmap_t *map, const char *filepath, const char *
 
     status = cli_magic_scan(&ctx, CL_TYPE_ANY);
 
-#if HAVE_JSON
     if (ctx.options->general & CL_SCAN_GENERAL_COLLECT_METADATA && (ctx.properties != NULL)) {
         json_object *jobj;
         const char *jstring;
@@ -5602,7 +5573,6 @@ static cl_error_t scan_common(cl_fmap_t *map, const char *filepath, const char *
             }
         }
     }
-#endif // HAVE_JSON
 
     // If any alerts occurred, set the output pointer to the "latest" alert signature name.
     if (0 < evidence_num_alerts(ctx.evidence)) {
