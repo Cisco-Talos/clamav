@@ -104,9 +104,6 @@
 /* attrib packed */
 #cmakedefine HAVE_ATTRIB_PACKED 1
 
-/* have bzip2 */
-#cmakedefine HAVE_BZLIB_H 1
-
 /* Define to 1 if you have the `ctime_r' function. */
 #cmakedefine HAVE_CTIME_R 1
 

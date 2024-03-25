@@ -37,13 +37,11 @@
 #if HAVE_LIBZ
 #include <zlib.h>
 #endif
-#if HAVE_BZLIB_H
 #include <bzlib.h>
 #ifdef NOBZ2PREFIX
 #define BZ2_bzDecompress bzDecompress
 #define BZ2_bzDecompressEnd bzDecompressEnd
 #define BZ2_bzDecompressInit bzDecompressInit
-#endif
 #endif
 
 #include <libxml/xmlreader.h>
@@ -552,13 +550,8 @@ static int dmg_track_sectors(uint64_t *total, uint8_t *data_to_write,
 #endif
             break;
         case DMG_STRIPE_BZ:
-#if HAVE_BZLIB_H
             *data_to_write = 1;
             usable         = 1;
-#else
-            cli_warnmsg("dmg_track_sectors: Need bzip2 decompression to properly scan this file.\n");
-            return CL_EFORMAT;
-#endif
             break;
         case DMG_STRIPE_EMPTY:
         case DMG_STRIPE_ZEROES:
@@ -846,16 +839,13 @@ static int dmg_stripe_bzip(cli_ctx *ctx, int fd, uint32_t index, struct dmg_mish
     size_t len            = mish_set->stripes[index].dataLength;
     uint64_t size_so_far  = 0;
     uint64_t expected_len = mish_set->stripes[index].sectorCount * DMG_SECTOR_SIZE;
-#if HAVE_BZLIB_H
     int rc;
     bz_stream strm;
     uint8_t obuf[BUFSIZ];
-#endif
 
     cli_dbgmsg("dmg_stripe_bzip: stripe " STDu32 " initial len " STDu64 " expected len " STDu64 "\n",
                index, (uint64_t)len, (uint64_t)expected_len);
 
-#if HAVE_BZLIB_H
     memset(&strm, 0, sizeof(strm));
     strm.next_out  = (char *)obuf;
     strm.avail_out = sizeof(obuf);
@@ -953,7 +943,6 @@ static int dmg_stripe_bzip(cli_ctx *ctx, int fd, uint32_t index, struct dmg_mish
     } while ((rc == BZ_OK) && (len > 0));
 
     BZ2_bzDecompressEnd(&strm);
-#endif
 
     if (ret == CL_CLEAN) {
         if (size_so_far != expected_len) {

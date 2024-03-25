@@ -121,9 +121,7 @@
 // libclamunrar_iface
 #include "unrar_iface.h"
 
-#ifdef HAVE_BZLIB_H
 #include <bzlib.h>
-#endif
 
 #include <fcntl.h>
 #include <string.h>
@@ -1236,15 +1234,6 @@ static cl_error_t cli_scangzip(cli_ctx *ctx)
     return ret;
 }
 
-#ifndef HAVE_BZLIB_H
-static cl_error_t cli_scanbzip(cli_ctx *ctx)
-{
-    cli_warnmsg("cli_scanbzip: bzip2 support not compiled in\n");
-    return CL_CLEAN;
-}
-
-#else
-
 #ifdef NOBZ2PREFIX
 #define BZ2_bzDecompressInit bzDecompressInit
 #define BZ2_bzDecompress bzDecompress
@@ -1341,7 +1330,6 @@ static cl_error_t cli_scanbzip(cli_ctx *ctx)
 
     return ret;
 }
-#endif
 
 static cl_error_t cli_scanxz(cli_ctx *ctx)
 {

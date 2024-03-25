@@ -467,9 +467,6 @@ if(ZLIB_FOUND)
 endif()
 
 find_package(BZip2 REQUIRED)
-if(BZIP2_FOUND)
-    set(HAVE_BZLIB_H 1)
-endif()
 
 # Disable CMAKE_FIND_PACKAGE_PREFER_CONFIG, temporarily, because
 # we don't presently support the using libxml2's Config.cmake
