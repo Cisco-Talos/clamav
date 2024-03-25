@@ -412,7 +412,7 @@ impl AlzLocalFileHeader {
         let mut decompressor = BzDecoder::new(contents);
         let ret = decompressor.read_exact(&mut out);
         if ret.is_err() {
-            info!("Unable to decompress bz2 data");
+            debug!("Unable to decompress bz2 data");
             return Err(Error::Extract);
         }
 
