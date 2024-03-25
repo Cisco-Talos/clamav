@@ -304,11 +304,11 @@ impl AlzLocalFileHeader {
 
     pub fn is_supported(&self) -> Result<(), Error> {
         if self.is_encrypted() {
-            return Err(Error::UnsupportedFeature( "Encryption Unsupported"));
+            return Err(Error::UnsupportedFeature("Encryption Unsupported"));
         }
 
         if self.is_data_descriptor() {
-            return Err(Error::UnsupportedFeature( "Data Descriptors are Unsupported"));
+            return Err(Error::UnsupportedFeature("Data Descriptors are Unsupported"));
         }
 
         Ok(())
