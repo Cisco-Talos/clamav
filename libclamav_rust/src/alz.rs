@@ -467,7 +467,7 @@ impl<'aa> Alz {
         }
 
         if let Err(err) = local_fileheader.is_supported() {
-            info!("{err}");
+            debug!("{err}");
             return false;
         }
 
