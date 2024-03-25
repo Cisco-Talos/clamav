@@ -378,7 +378,7 @@ impl AlzLocalFileHeader {
         #[allow(clippy::cast_possible_truncation)]
         let idx1: usize = idx0 + len as usize;
         if idx1 > cursor.get_ref().len() {
-            info!("Invalid data length");
+            debug!("Invalid data length");
             return Err(Error::Extract);
         }
 
