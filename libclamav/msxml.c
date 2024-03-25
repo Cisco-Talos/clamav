@@ -35,7 +35,6 @@
 #include "msxml.h"
 #include "msxml_parser.h"
 
-#if HAVE_LIBXML2
 #include <libxml/xmlreader.h>
 
 #define MSXML_VERBIOSE 0
@@ -223,11 +222,9 @@ int msxml_read_cb(void *ctx, char *buffer, int buffer_len)
     cbdata->winpos = cbdata->winsize - rbytes;
     return (int)wbytes;
 }
-#endif
 
 cl_error_t cli_scanmsxml(cli_ctx *ctx)
 {
-#if HAVE_LIBXML2
     struct msxml_cbdata cbdata;
     xmlTextReaderPtr reader = NULL;
     cl_error_t ret          = CL_SUCCESS;
@@ -255,11 +252,4 @@ cl_error_t cli_scanmsxml(cli_ctx *ctx)
     xmlTextReaderClose(reader);
     xmlFreeTextReader(reader);
     return ret;
-#else
-    UNUSEDPARAM(ctx);
-    cli_dbgmsg("in cli_scanmsxml()\n");
-    cli_dbgmsg("cli_scanmsxml: scanning msxml documents requires libxml2!\n");
-
-    return CL_SUCCESS;
-#endif
 }

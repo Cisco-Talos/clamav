@@ -23,10 +23,7 @@
 #include "clamav-config.h"
 #endif
 
-#if HAVE_LIBXML2
 #include <libxml/xmlreader.h>
-#endif
-
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -1928,7 +1925,6 @@ cl_error_t cli_scanhwp3(cli_ctx *ctx)
 }
 
 /*** HWPML (hijacking the msxml parser) ***/
-#if HAVE_LIBXML2
 static const struct key_entry hwpml_keys[] = {
     {"hwpml", "HWPML", MSXML_JSON_ROOT | MSXML_JSON_ATTRIB},
 
@@ -2102,13 +2098,11 @@ hwpml_end:
     }
     return ret;
 }
-#endif /* HAVE_LIBXML2 */
 
 cl_error_t cli_scanhwpml(cli_ctx *ctx)
 {
     cl_error_t ret = CL_SUCCESS;
 
-#if HAVE_LIBXML2
     struct msxml_cbdata cbdata;
     struct msxml_ctx mxctx;
     xmlTextReaderPtr reader = NULL;
@@ -2137,11 +2131,6 @@ cl_error_t cli_scanhwpml(cli_ctx *ctx)
 
     xmlTextReaderClose(reader);
     xmlFreeTextReader(reader);
-#else
-    UNUSEDPARAM(ctx);
-    cli_dbgmsg("in cli_scanhwpml()\n");
-    cli_dbgmsg("cli_scanhwpml: scanning hwpml documents requires libxml2!\n");
-#endif
 
     return ret;
 }

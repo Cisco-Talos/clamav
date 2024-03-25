@@ -23,8 +23,6 @@
 #ifndef __MSXML_PARSER_H
 #define __MSXML_PARSER_H
 
-#if HAVE_LIBXML2
-
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
 #endif
@@ -87,7 +85,5 @@ struct msxml_ctx {
 };
 
 cl_error_t cli_msxml_parse_document(cli_ctx *ctx, xmlTextReaderPtr reader, const struct key_entry *keys, const size_t num_keys, uint32_t flags, struct msxml_ctx *mxctx);
-
-#endif /* HAVE_LIBXML2 */
 
 #endif /* __MSXML_PARSER_H */
