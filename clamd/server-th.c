@@ -1377,17 +1377,9 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
         options.dev |= CL_SCAN_DEV_COLLECT_SHA;
 #endif
 
-#if HAVE_JSON
     /* JSON check to prevent engine loading if specified without libjson-c */
     if (optget(opts, "GenerateMetadataJson")->enabled)
         options.general |= CL_SCAN_GENERAL_COLLECT_METADATA;
-#else
-    if (optget(opts, "GenerateMetadataJson")->enabled) {
-        logg(LOGG_ERROR, "Can't generate json (gen-json). libjson-c dev library was missing or misconfigured when ClamAV was built.\n");
-        cl_engine_free(engine);
-        return 1;
-    }
-#endif
 
     selfchk = optget(opts, "SelfCheck")->numarg;
     if (!selfchk) {

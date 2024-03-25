@@ -466,9 +466,6 @@ int main(int argc, char **argv)
 #ifdef HAVE_ICONV
     printf("ICONV ");
 #endif
-#ifdef HAVE_JSON
-    printf("JSON ");
-#endif
     if (have_rar)
         printf("RAR ");
     if (have_clamjit())

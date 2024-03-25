@@ -23,9 +23,7 @@
 #include "clamav-config.h"
 #endif
 
-#if HAVE_JSON
 #include "json.h"
-#endif
 
 #include <libxml/xmlreader.h>
 
@@ -36,8 +34,6 @@
 #include "json_api.h"
 #include "msxml_parser.h"
 #include "ooxml.h"
-
-#if HAVE_JSON
 
 // clang-format off
 
@@ -384,8 +380,6 @@ static cl_error_t ooxml_hwp_cb(int fd, const char *filepath, cli_ctx *ctx, const
     return ret;
 }
 
-#endif /* HAVE_JSON */
-
 cli_file_t cli_ooxml_filetype(cli_ctx *ctx, fmap_t *map)
 {
     struct zip_requests requests;
@@ -426,7 +420,6 @@ cli_file_t cli_ooxml_filetype(cli_ctx *ctx, fmap_t *map)
 
 cl_error_t cli_process_ooxml(cli_ctx *ctx, int type)
 {
-#if HAVE_JSON
     uint32_t loff  = 0;
     cl_error_t ret = CL_SUCCESS;
 
@@ -483,12 +476,4 @@ cl_error_t cli_process_ooxml(cli_ctx *ctx, int type)
     }
 
     return ret;
-#else
-    UNUSEDPARAM(ctx);
-    cli_dbgmsg("in cli_process_ooxml\n");
-#if !HAVE_JSON
-    cli_dbgmsg("cli_process_ooxml: libjson needs to enabled!\n");
-#endif
-    return CL_SUCCESS;
-#endif
 }

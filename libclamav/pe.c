@@ -2247,11 +2247,7 @@ static inline int hash_impfns(cli_ctx *ctx, void **hashctx, uint32_t *impsz, str
     int num_fns = 0, ret = CL_SUCCESS;
     const char *buffer;
     cli_hash_type_t type;
-#if HAVE_JSON
     json_object *imptbl = NULL;
-#else
-    void *imptbl = NULL;
-#endif
 
     if (image->u.OriginalFirstThunk)
         thuoff = cli_rawaddr(image->u.OriginalFirstThunk, peinfo->sections, peinfo->nsections, &err, fsize, peinfo->hdr_size);
@@ -2262,7 +2258,6 @@ static inline int hash_impfns(cli_ctx *ctx, void **hashctx, uint32_t *impsz, str
         return CL_EFORMAT;
     }
 
-#if HAVE_JSON
     if (ctx->wrkproperty) {
         imptbl = cli_jsonarray(ctx->wrkproperty, "ImportTable");
         if (!imptbl) {
@@ -2270,7 +2265,6 @@ static inline int hash_impfns(cli_ctx *ctx, void **hashctx, uint32_t *impsz, str
             return CL_EMEM;
         }
     }
-#endif
 
 #define UPDATE_IMPHASH()                                                            \
     do {                                                                            \
@@ -2601,11 +2595,7 @@ static cl_error_t scan_pe_imp(cli_ctx *ctx, struct cli_exe_info *peinfo)
     }
 
     /* Force md5 hash generation for debug and preclass */
-#if HAVE_JSON
     if ((cli_debug_flag || ctx->wrkproperty) && !genhash[CLI_HASH_MD5]) {
-#else
-    if (cli_debug_flag && !genhash[CLI_HASH_MD5]) {
-#endif
         genhash[CLI_HASH_MD5] = 1;
         hashset[CLI_HASH_MD5] = calloc(hashlen[CLI_HASH_MD5], sizeof(char));
         if (!hashset[CLI_HASH_MD5]) {
@@ -2629,17 +2619,13 @@ static cl_error_t scan_pe_imp(cli_ctx *ctx, struct cli_exe_info *peinfo)
     }
 
     /* Print hash */
-#if HAVE_JSON
     if (cli_debug_flag || ctx->wrkproperty) {
-#else
-    if (cli_debug_flag) {
-#endif
         char *dstr = cli_str2hex((char *)hashset[CLI_HASH_MD5], hashlen[CLI_HASH_MD5]);
         cli_dbgmsg("IMP: %s:%u\n", dstr ? (char *)dstr : "(NULL)", impsz);
-#if HAVE_JSON
+
         if (ctx->wrkproperty)
             cli_jsonstr(ctx->wrkproperty, "Imphash", dstr ? dstr : "(NULL)");
-#endif
+
         if (dstr)
             free(dstr);
     }
@@ -2665,7 +2651,6 @@ static cl_error_t scan_pe_imp(cli_ctx *ctx, struct cli_exe_info *peinfo)
     return ret;
 }
 
-#if HAVE_JSON
 static struct json_object *get_pe_property(cli_ctx *ctx)
 {
     struct json_object *pe;
@@ -2776,7 +2761,6 @@ static void add_section_info(cli_ctx *ctx, struct cli_exe_section *s)
 
     json_object_array_add(sections, section);
 }
-#endif
 
 int cli_scanpe(cli_ctx *ctx)
 {
@@ -2800,17 +2784,14 @@ int cli_scanpe(cli_ctx *ctx)
 #ifdef HAVE__INTERNAL__SHA_COLLECT
     int sha_collect = ctx->sha_collect;
 #endif
-#if HAVE_JSON
     int toval                   = 0;
     struct json_object *pe_json = NULL;
-#endif
 
     if (!ctx) {
         cli_errmsg("cli_scanpe: ctx == NULL\n");
         return CL_ENULLARG;
     }
 
-#if HAVE_JSON
     if (cli_json_timeout_cycle_check(ctx, &toval) != CL_SUCCESS) {
         return CL_ETIMEOUT;
     }
@@ -2818,7 +2799,7 @@ int cli_scanpe(cli_ctx *ctx)
     if (SCAN_COLLECT_METADATA) {
         pe_json = get_pe_property(ctx);
     }
-#endif
+
     map   = ctx->fmap;
     fsize = map->len;
 
@@ -2827,11 +2808,9 @@ int cli_scanpe(cli_ctx *ctx)
 
     uint32_t opts = CLI_PEHEADER_OPT_DBG_PRINT_INFO | CLI_PEHEADER_OPT_REMOVE_MISSING_SECTIONS;
 
-#if HAVE_JSON
     if (SCAN_COLLECT_METADATA) {
         opts |= CLI_PEHEADER_OPT_COLLECT_JSON;
     }
-#endif
 
     if (DETECT_BROKEN_PE) {
         opts |= CLI_PEHEADER_OPT_STRICT_ON_PE_ERRORS;
@@ -2983,11 +2962,7 @@ int cli_scanpe(cli_ctx *ctx)
 
     /* Attempt to run scans on import table */
     /* Run if there are existing signatures and/or preclassing */
-#if HAVE_JSON
     if (DCONF & PE_CONF_IMPTBL && (ctx->engine->hm_imp || ctx->wrkproperty)) {
-#else
-    if (DCONF & PE_CONF_IMPTBL && ctx->engine->hm_imp) {
-#endif
         ret = scan_pe_imp(ctx, peinfo);
         switch (ret) {
             case CL_SUCCESS:
@@ -3301,10 +3276,10 @@ int cli_scanpe(cli_ctx *ctx)
             if (!peinfo->sections[i].rsz && peinfo->sections[i].vsz && peinfo->sections[i + 1].rsz && peinfo->sections[i + 1].vsz) {
                 found = 1;
                 cli_dbgmsg("cli_scanpe: UPX/FSG/MEW: empty section found - assuming compression\n");
-#if HAVE_JSON
+
                 if (pe_json != NULL)
                     cli_jsonbool(pe_json, "HasEmptySection", 1);
-#endif
+
                 break;
             }
         }
@@ -3401,10 +3376,8 @@ int cli_scanpe(cli_ctx *ctx)
                 uselzma = 0;
             }
 
-#if HAVE_JSON
             if (pe_json != NULL)
                 cli_jsonstr(pe_json, "Packer", "MEW");
-#endif
 
             CLI_UNPTEMP("cli_scanpe: MEW", (src, 0));
             CLI_UNPRESULTS("cli_scanpe: MEW", (unmew11(src, offdiff, ssize, dsize, EC32(peinfo->pe_opt.opt32.ImageBase), peinfo->sections[0].rva, uselzma, ndesc)), 1, (src, 0));
@@ -3509,10 +3482,8 @@ int cli_scanpe(cli_ctx *ctx)
                 break;
             }
 
-#if HAVE_JSON
             if (pe_json != NULL)
                 cli_jsonstr(pe_json, "Packer", "Upack");
-#endif
 
             CLI_UNPTEMP("cli_scanpe: Upack", (dest, 0));
             CLI_UNPRESULTS("cli_scanpe: Upack", (unupack(upack, dest, dsize, epbuff, vma, peinfo->ep, EC32(peinfo->pe_opt.opt32.ImageBase), peinfo->sections[0].rva, ndesc)), 1, (dest, 0));
@@ -3596,10 +3567,8 @@ int cli_scanpe(cli_ctx *ctx)
             return CL_EMEM;
         }
 
-#if HAVE_JSON
         if (pe_json != NULL)
             cli_jsonstr(pe_json, "Packer", "FSG");
-#endif
 
         CLI_UNPTEMP("cli_scanpe: FSG", (dest, 0));
         CLI_UNPRESULTSFSG2("cli_scanpe: FSG", (unfsg_200(newesi - peinfo->sections[i + 1].rva + src, dest, ssize + peinfo->sections[i + 1].rva - newesi, dsize, newedi, EC32(peinfo->pe_opt.opt32.ImageBase), newedx, ndesc)), 1, (dest, 0));
@@ -3703,10 +3672,8 @@ int cli_scanpe(cli_ctx *ctx)
         oldep = peinfo->vep + 161 + 6 + cli_readint32(epbuff + 163);
         cli_dbgmsg("cli_scanpe: FSG: found old EP @%x\n", oldep);
 
-#if HAVE_JSON
         if (pe_json != NULL)
             cli_jsonstr(pe_json, "Packer", "FSG");
-#endif
 
         CLI_UNPTEMP("cli_scanpe: FSG", (dest, sections, 0));
         CLI_UNPRESULTSFSG1("cli_scanpe: FSG", (unfsg_133(src + newesi - peinfo->sections[i + 1].rva, dest, ssize + peinfo->sections[i + 1].rva - newesi, dsize, sections, sectcnt, EC32(peinfo->pe_opt.opt32.ImageBase), oldep, ndesc)), 1, (dest, sections, 0));
@@ -3806,10 +3773,8 @@ int cli_scanpe(cli_ctx *ctx)
         oldep = peinfo->vep + gp + 6 + cli_readint32(src + gp + 2 + oldep);
         cli_dbgmsg("cli_scanpe: FSG: found old EP @%x\n", oldep);
 
-#if HAVE_JSON
         if (pe_json != NULL)
             cli_jsonstr(pe_json, "Packer", "FSG");
-#endif
 
         CLI_UNPTEMP("cli_scanpe: FSG", (dest, sections, 0));
         CLI_UNPRESULTSFSG1("cli_scanpe: FSG", (unfsg_133(src + newesi - peinfo->sections[i + 1].rva, dest, ssize + peinfo->sections[i + 1].rva - newesi, dsize, sections, sectcnt, EC32(peinfo->pe_opt.opt32.ImageBase), oldep, ndesc)), 1, (dest, sections, 0));
@@ -3951,10 +3916,9 @@ int cli_scanpe(cli_ctx *ctx)
         cli_exe_info_destroy(peinfo);
 
         CLI_UNPTEMP("cli_scanpe: UPX/FSG", (dest, 0));
-#if HAVE_JSON
+
         if (pe_json != NULL)
             cli_jsonstr(pe_json, "Packer", "UPX");
-#endif
 
         if ((unsigned int)write(ndesc, dest, dsize) != dsize) {
             cli_dbgmsg("cli_scanpe: UPX/FSG: Can't write %d bytes\n", dsize);
@@ -4051,10 +4015,8 @@ int cli_scanpe(cli_ctx *ctx)
                 }
             }
 
-#if HAVE_JSON
             if (pe_json != NULL)
                 cli_jsonstr(pe_json, "Packer", "Petite");
-#endif
 
             CLI_UNPTEMP("cli_scanpe: Petite", (dest, 0));
             CLI_UNPRESULTS("Petite", (petite_inflate2x_1to9(dest, peinfo->min, peinfo->max - peinfo->min, peinfo->sections, peinfo->nsections - (found == 1 ? 1 : 0), EC32(peinfo->pe_opt.opt32.ImageBase), peinfo->vep, ndesc, found, peinfo->dirs[2].VirtualAddress, peinfo->dirs[2].Size)), 0, (dest, 0));
@@ -4086,10 +4048,8 @@ int cli_scanpe(cli_ctx *ctx)
             return CL_EREAD;
         }
 
-#if HAVE_JSON
         if (pe_json != NULL)
             cli_jsonstr(pe_json, "Packer", "PEspin");
-#endif
 
         CLI_UNPTEMP("cli_scanpe: PESpin", (spinned, 0));
         CLI_UNPRESULTS_("cli_scanpe: PEspin", SPINCASE(), (unspin(spinned, fsize, peinfo->sections, peinfo->nsections - 1, peinfo->vep, ndesc, ctx)), 0, (spinned, 0));
@@ -4155,10 +4115,8 @@ int cli_scanpe(cli_ctx *ctx)
                 return CL_EREAD;
             }
 
-#if HAVE_JSON
             if (pe_json != NULL)
                 cli_jsonstr(pe_json, "Packer", "yC");
-#endif
 
             // record number of alerts before unpacking and scanning
             num_alerts = evidence_num_alerts(ctx->evidence);
@@ -4250,10 +4208,8 @@ int cli_scanpe(cli_ctx *ctx)
             return CL_EREAD;
         }
 
-#if HAVE_JSON
         if (pe_json != NULL)
             cli_jsonstr(pe_json, "Packer", "WWPack");
-#endif
 
         CLI_UNPTEMP("cli_scanpe: WWPack", (src, packer, 0));
         CLI_UNPRESULTS("cli_scanpe: WWPack", (wwunpack((uint8_t *)src, ssize, packer, peinfo->sections, peinfo->nsections - 1, peinfo->e_lfanew, ndesc)), 0, (src, packer, 0));
@@ -4312,10 +4268,8 @@ int cli_scanpe(cli_ctx *ctx)
             break;
         }
 
-#if HAVE_JSON
         if (pe_json != NULL)
             cli_jsonstr(pe_json, "Packer", "Aspack");
-#endif
 
         CLI_UNPTEMP("cli_scanpe: Aspack", (src, 0));
         CLI_UNPRESULTS("cli_scanpe: Aspack", (unaspack((uint8_t *)src, ssize, peinfo->sections, peinfo->nsections, peinfo->vep - 1, EC32(peinfo->pe_opt.opt32.ImageBase), ndesc, aspack_ver)), 1, (src, 0));
@@ -4396,10 +4350,8 @@ int cli_scanpe(cli_ctx *ctx)
         eprva = eprva + 5 + cli_readint32(nbuff + 1);
         cli_dbgmsg("cli_scanpe: NsPack: OEP = %08x\n", eprva);
 
-#if HAVE_JSON
         if (pe_json != NULL)
             cli_jsonstr(pe_json, "Packer", "NsPack");
-#endif
 
         CLI_UNPTEMP("cli_scanpe: NsPack", (dest, 0));
         CLI_UNPRESULTS("cli_scanpe: NsPack", (unspack(src, dest, ctx, peinfo->sections[0].rva, EC32(peinfo->pe_opt.opt32.ImageBase), eprva, ndesc)), 0, (dest, 0));
@@ -4441,10 +4393,8 @@ int cli_scanpe(cli_ctx *ctx)
 
     cli_exe_info_destroy(peinfo);
 
-#if HAVE_JSON
     if (cli_json_timeout_cycle_check(ctx, &toval) != CL_SUCCESS)
         return CL_ETIMEOUT;
-#endif
 
     return CL_SUCCESS;
 }
@@ -4537,11 +4487,9 @@ cl_error_t cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts,
     size_t read;
     uint32_t temp;
 
-#if HAVE_JSON
     int toval                   = 0;
     struct json_object *pe_json = NULL;
     char jsonbuf[128];
-#endif
 
     if (ctx == NULL &&
         (opts & CLI_PEHEADER_OPT_COLLECT_JSON ||
@@ -4550,11 +4498,9 @@ cl_error_t cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts,
         goto done;
     }
 
-#if HAVE_JSON
     if (opts & CLI_PEHEADER_OPT_COLLECT_JSON) {
         pe_json = get_pe_property(ctx);
     }
-#endif
 
     fsize = map->len - peinfo->offset;
     if (fmap_readn(map, &e_magic, peinfo->offset, sizeof(e_magic)) != sizeof(e_magic)) {
@@ -4599,10 +4545,9 @@ cl_error_t cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts,
 
     if (EC16(file_hdr->Characteristics) & 0x2000) {
 
-#if HAVE_JSON
         if (opts & CLI_PEHEADER_OPT_COLLECT_JSON)
             cli_jsonstr(pe_json, "Type", "DLL");
-#endif
+
         if (opts & CLI_PEHEADER_OPT_DBG_PRINT_INFO) {
             cli_dbgmsg("File type: DLL\n");
         }
@@ -4610,10 +4555,9 @@ cl_error_t cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts,
         is_dll = 1;
     } else if (EC16(file_hdr->Characteristics) & 0x0002) {
 
-#if HAVE_JSON
         if (opts & CLI_PEHEADER_OPT_COLLECT_JSON)
             cli_jsonstr(pe_json, "Type", "EXE");
-#endif
+
         if (opts & CLI_PEHEADER_OPT_DBG_PRINT_INFO) {
             cli_dbgmsg("File type: Executable\n");
         }
@@ -4744,20 +4688,17 @@ cl_error_t cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts,
         if (opts & CLI_PEHEADER_OPT_DBG_PRINT_INFO)
             cli_dbgmsg("Machine type: %s\n", archtype);
 
-#if HAVE_JSON
         if (opts & CLI_PEHEADER_OPT_COLLECT_JSON)
             cli_jsonstr(pe_json, "ArchType", archtype);
-#endif
     }
 
     peinfo->nsections = EC16(file_hdr->NumberOfSections);
     if (peinfo->nsections == 0) {
 
-#if HAVE_JSON
         if (opts & CLI_PEHEADER_OPT_COLLECT_JSON) {
             pe_add_heuristic_property(ctx, "BadNumberOfSections");
         }
-#endif
+
         // TODO Investigate how corrupted_input is set and whether this
         // check is needed
         if (opts & CLI_PEHEADER_OPT_DBG_PRINT_INFO &&
@@ -4779,14 +4720,12 @@ cl_error_t cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts,
         cli_dbgmsg("SizeOfOptionalHeader: 0x%x\n", opt_hdr_size);
     }
 
-#if HAVE_JSON
     if (opts & CLI_PEHEADER_OPT_COLLECT_JSON) {
         cli_jsonint(pe_json, "NumberOfSections", peinfo->nsections);
         /* NOTE: the TimeDateStamp value will look like "Wed Dec 31 19:00:00 1969\n" */
         cli_jsonstr(pe_json, "TimeDateStamp", cli_ctime(&timestamp, timestr, sizeof(timestr)));
         cli_jsonint(pe_json, "SizeOfOptionalHeader", opt_hdr_size);
     }
-#endif
 
     // Ensure there are enough bytes to cover the full optional header,
     // not including the data directory entries (which aren't all guaranteed
@@ -4794,11 +4733,10 @@ cl_error_t cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts,
     if (opt_hdr_size < sizeof(struct pe_image_optional_hdr32)) {
         cli_dbgmsg("cli_peheader: SizeOfOptionalHeader too small\n");
 
-#if HAVE_JSON
         if (opts & CLI_PEHEADER_OPT_COLLECT_JSON) {
             pe_add_heuristic_property(ctx, "BadOptionalHeaderSize");
         }
-#endif
+
         ret = CL_EFORMAT;
         goto done;
     }
@@ -4820,11 +4758,11 @@ cl_error_t cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts,
 
         if (opt_hdr_size < sizeof(struct pe_image_optional_hdr64)) {
             cli_dbgmsg("cli_peheader: Incorrect SizeOfOptionalHeader for PE32+\n");
-#if HAVE_JSON
+
             if (opts & CLI_PEHEADER_OPT_COLLECT_JSON) {
                 pe_add_heuristic_property(ctx, "BadOptionalHeaderSizePE32Plus");
             }
-#endif
+
             ret = CL_EFORMAT;
             goto done;
         }
@@ -4863,7 +4801,6 @@ cl_error_t cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts,
             cli_dbgmsg("NumberOfRvaAndSizes: %u\n", peinfo->ndatadirs);
         }
 
-#if HAVE_JSON
         if (opts & CLI_PEHEADER_OPT_COLLECT_JSON) {
             cli_jsonint(pe_json, "MajorLinkerVersion", opt64->MajorLinkerVersion);
             cli_jsonint(pe_json, "MinorLinkerVersion", opt64->MinorLinkerVersion);
@@ -4892,7 +4829,6 @@ cl_error_t cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts,
             snprintf(jsonbuf, sizeof(jsonbuf), "0x%x", peinfo->hdr_size);
             cli_jsonstr(pe_json, "SizeOfHeaders", jsonbuf);
         }
-#endif
 
     } else { /* PE */
         peinfo->is_pe32plus = 0;
@@ -4918,7 +4854,6 @@ cl_error_t cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts,
             cli_dbgmsg("NumberOfRvaAndSizes: %u\n", peinfo->ndatadirs);
         }
 
-#if HAVE_JSON
         if (opts & CLI_PEHEADER_OPT_COLLECT_JSON) {
             cli_jsonint(pe_json, "MajorLinkerVersion", opt32->MajorLinkerVersion);
             cli_jsonint(pe_json, "MinorLinkerVersion", opt32->MinorLinkerVersion);
@@ -4947,7 +4882,6 @@ cl_error_t cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts,
             snprintf(jsonbuf, sizeof(jsonbuf), "0x%x", peinfo->hdr_size);
             cli_jsonstr(pe_json, "SizeOfHeaders", jsonbuf);
         }
-#endif
     }
 
     salign = (peinfo->is_pe32plus && opt64 != NULL) ? EC32(opt64->SectionAlignment) : EC32(opt32->SectionAlignment);
@@ -5006,10 +4940,8 @@ cl_error_t cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts,
         cli_dbgmsg("------------------------------------\n");
     }
 
-#if HAVE_JSON
     if (opts & CLI_PEHEADER_OPT_COLLECT_JSON)
         cli_jsonstr(pe_json, "Subsystem", subsystem);
-#endif
 
     if (!native && (!salign || (salign % 0x1000))) {
         cli_dbgmsg("cli_peheader: Bad section alignment\n");
@@ -5199,7 +5131,6 @@ cl_error_t cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts,
         strncpy(sname, (char *)section_hdr->Name, 8);
         sname[8] = '\0';
 
-#if HAVE_JSON
         if (opts & CLI_PEHEADER_OPT_COLLECT_JSON) {
             add_section_info(ctx, &peinfo->sections[i]);
 
@@ -5208,7 +5139,6 @@ cl_error_t cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts,
                 goto done;
             }
         }
-#endif
 
         // TODO Why do we do this
         // TODO Should this be done before we dump the json
@@ -5307,7 +5237,6 @@ cl_error_t cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts,
         goto done;
     }
 
-#if HAVE_JSON
     if (opts & CLI_PEHEADER_OPT_COLLECT_JSON) {
         cli_jsonint(pe_json, "EntryPointOffset", peinfo->ep);
 
@@ -5316,7 +5245,6 @@ cl_error_t cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts,
             goto done;
         }
     }
-#endif
 
     if (opts & CLI_PEHEADER_OPT_DBG_PRINT_INFO) {
         cli_dbgmsg("EntryPoint offset: 0x%x (%d)\n", peinfo->ep, peinfo->ep);

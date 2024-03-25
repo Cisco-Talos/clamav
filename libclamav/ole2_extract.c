@@ -50,9 +50,7 @@
 #include "scanners.h"
 #include "fmap.h"
 #include "json_api.h"
-#if HAVE_JSON
 #include "msdoc.h"
-#endif
 #include "rijndael.h"
 #include "ole2_encryption.h"
 
@@ -611,10 +609,8 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
     char *dirname;
     ole2_list_t node_list;
     cl_error_t ret;
-#if HAVE_JSON
     char *name;
     int toval = 0;
-#endif
 
     ole2_listmsg("ole2_walk_property_tree() called\n");
     ole2_list_init(&node_list);
@@ -642,12 +638,11 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
 
     while (!ole2_list_is_empty(&node_list)) {
         ole2_listmsg("within working loop, worklist size: %d\n", ole2_list_size(&node_list));
-#if HAVE_JSON
+
         if (cli_json_timeout_cycle_check(ctx, &toval) != CL_SUCCESS) {
             ole2_list_delete(&node_list);
             return CL_ETIMEOUT;
         }
-#endif
 
         current_block = hdr->prop_start;
 
@@ -779,7 +774,6 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
             case 1: /* Directory */
                 ole2_listmsg("directory node\n");
                 if (dir) {
-#if HAVE_JSON
                     if (SCAN_COLLECT_METADATA && (ctx->wrkproperty != NULL)) {
                         if (!json_object_object_get_ex(ctx->wrkproperty, "DigitalSignatures", NULL)) {
                             name = cli_ole2_get_property_name2(prop_block[idx].name, prop_block[idx].name_size);
@@ -791,7 +785,7 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
                             }
                         }
                     }
-#endif
+
                     dirname = (char *)cli_max_malloc(strlen(dir) + 8);
                     if (!dirname) {
                         ole2_listmsg("OLE2: malloc failed for dirname\n");
@@ -1062,7 +1056,6 @@ static cl_error_t scan_biff_for_xlm_macros_and_images(
             default:
                 switch (state->state) {
                     case BIFF_PARSER_NAME_RECORD:
-#if HAVE_JSON
                         if (state->data_offset == 0) {
                             state->tmp = buff[i] & 0x20;
                         } else if ((state->data_offset == 14 || state->data_offset == 15) && state->tmp) {
@@ -1081,14 +1074,13 @@ static cl_error_t scan_biff_for_xlm_macros_and_images(
                                 state->tmp = 0;
                             }
                         }
-#endif
                         break;
                     case BIFF_PARSER_BOUNDSHEET_RECORD:
                         if (state->data_offset == 4) {
                             state->tmp = buff[i];
                         } else if (state->data_offset == 5 && buff[i] == 1) { // Excel 4.0 macro sheet
                             cli_dbgmsg("[scan_biff_for_xlm_macros_and_images] Found XLM macro sheet\n");
-#if HAVE_JSON
+
                             if (SCAN_COLLECT_METADATA && (ctx->wrkproperty != NULL)) {
                                 cli_jsonbool(ctx->wrkproperty, "HasMacros", 1);
                                 json_object *macro_languages = cli_jsonarray(ctx->wrkproperty, "MacroLanguages");
@@ -1106,7 +1098,7 @@ static cl_error_t scan_biff_for_xlm_macros_and_images(
                                     }
                                 }
                             }
-#endif
+
                             *found_macro = true;
                         }
                         break;
@@ -1244,11 +1236,12 @@ static cl_error_t handler_enum(ole2_header_t *hdr, property_t *prop, const char 
     char *name               = NULL;
     unsigned char *hwp_check = NULL;
     int32_t offset           = 0;
-#if HAVE_JSON
+
     json_object *arrobj  = NULL;
     json_object *strmobj = NULL;
 
     UNUSEDPARAM(handler_ctx);
+    UNUSEDPARAM(dir);
 
     name = cli_ole2_get_property_name2(prop->name, prop->name_size);
     if (name) {
@@ -1272,10 +1265,6 @@ static cl_error_t handler_enum(ole2_header_t *hdr, property_t *prop, const char 
             }
         }
     }
-#else
-    UNUSEDPARAM(ctx);
-#endif
-    UNUSEDPARAM(dir);
 
     if (!hdr->has_vba) {
         if (!name)
@@ -1327,9 +1316,9 @@ static cl_error_t handler_enum(ole2_header_t *hdr, property_t *prop, const char 
                     /* compare against HWP signature; we could add the 15 padding NULLs too */
                     if (!memcmp(hwp_check + offset, "HWP Document File", 17)) {
                         hwp5_header_t *hwp_new;
-#if HAVE_JSON
+
                         cli_jsonstr(ctx->wrkproperty, "FileType", "CL_TYPE_HWP5");
-#endif
+
                         CLI_CALLOC_OR_GOTO_DONE(hwp_new, 1, sizeof(hwp5_header_t), status = CL_EMEM);
 
                         /*
@@ -1645,7 +1634,6 @@ static cl_error_t handler_otf(ole2_header_t *hdr, property_t *prop, const char *
         goto done;
     }
 
-#if HAVE_JSON
     /* JSON Output Summary Information */
     if (SCAN_COLLECT_METADATA && (ctx->properties != NULL)) {
         if (!name) {
@@ -1671,7 +1659,6 @@ static cl_error_t handler_otf(ole2_header_t *hdr, property_t *prop, const char *
             }
         }
     }
-#endif
 
     if (hdr->is_hwp) {
         if (!name) {
@@ -1887,8 +1874,6 @@ static cl_error_t handler_otf_encrypted(ole2_header_t *hdr, property_t *prop, co
         goto done;
     }
 
-#if HAVE_JSON
-
     /* JSON Output Summary Information */
     if (SCAN_COLLECT_METADATA && (ctx->properties != NULL)) {
         if (!name) {
@@ -1914,8 +1899,6 @@ static cl_error_t handler_otf_encrypted(ole2_header_t *hdr, property_t *prop, co
             }
         }
     }
-
-#endif
 
     if (hdr->is_hwp) {
         if (!name) {
@@ -2592,11 +2575,9 @@ cl_error_t cli_ole2_extract(const char *dirname, cli_ctx *ctx, struct uniq **fil
 
         cli_dbgmsg("Encrypted with VelvetSweatshop: %d\n", bEncrypted);
 
-#if HAVE_JSON
         if (ctx->wrkproperty == ctx->properties) {
             cli_jsonint(ctx->wrkproperty, "EncryptedWithVelvetSweatshop", bEncrypted);
         }
-#endif /* HAVE_JSON */
     }
 
     /* 8 SBAT blocks per file block */

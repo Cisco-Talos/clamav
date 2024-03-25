@@ -35,9 +35,7 @@
 #include <math.h>
 #include <ctype.h>
 
-#if HAVE_JSON
 #include <json.h>
-#endif
 #include <bzlib.h>
 
 #include "clamav.h"
@@ -2007,21 +2005,15 @@ int32_t cli_bcapi_get_file_reliability(struct cli_bc_ctx *ctx)
 
 int32_t cli_bcapi_json_is_active(struct cli_bc_ctx *ctx)
 {
-#if HAVE_JSON
     cli_ctx *cctx = (cli_ctx *)ctx->ctx;
     if (cctx->properties != NULL) {
         return 1;
     }
-#else
-    UNUSEDPARAM(ctx);
-    cli_dbgmsg("bytecode api: libjson is not enabled!\n");
-#endif
     return 0;
 }
 
 static int32_t cli_bcapi_json_objs_init(struct cli_bc_ctx *ctx)
 {
-#if HAVE_JSON
     unsigned n = ctx->njsonobjs + 1;
     json_object **j, **jobjs = (json_object **)(ctx->jsonobjs);
     cli_ctx *cctx = (cli_ctx *)ctx->ctx;
@@ -2036,10 +2028,6 @@ static int32_t cli_bcapi_json_objs_init(struct cli_bc_ctx *ctx)
     j[n - 1]       = cctx->properties;
 
     return 0;
-#else
-    UNUSEDPARAM(ctx);
-    return -1;
-#endif
 }
 
 #define INIT_JSON_OBJS(ctx)                  \
@@ -2053,7 +2041,6 @@ static int32_t cli_bcapi_json_objs_init(struct cli_bc_ctx *ctx)
 
 int32_t cli_bcapi_json_get_object(struct cli_bc_ctx *ctx, const int8_t *name, int32_t name_len, int32_t objid)
 {
-#if HAVE_JSON
     unsigned n;
     json_object **j, *jobj, **jobjs;
     char *namep;
@@ -2098,19 +2085,10 @@ int32_t cli_bcapi_json_get_object(struct cli_bc_ctx *ctx, const int8_t *name, in
     cli_dbgmsg("bytecode api[json_get_object]: assigned %s => ID %d\n", namep, n - 1);
     free(namep);
     return n - 1;
-#else
-    UNUSEDPARAM(ctx);
-    UNUSEDPARAM(name);
-    UNUSEDPARAM(name_len);
-    UNUSEDPARAM(objid);
-    cli_dbgmsg("bytecode api: libjson is not enabled!\n");
-    return -1;
-#endif
 }
 
 int32_t cli_bcapi_json_get_type(struct cli_bc_ctx *ctx, int32_t objid)
 {
-#if HAVE_JSON
     enum json_type type;
     json_object **jobjs;
 
@@ -2141,17 +2119,11 @@ int32_t cli_bcapi_json_get_type(struct cli_bc_ctx *ctx, int32_t objid)
             cli_dbgmsg("bytecode api[json_get_type]: unrecognized json type %d\n", type);
     }
 
-#else
-    UNUSEDPARAM(ctx);
-    UNUSEDPARAM(objid);
-    cli_dbgmsg("bytecode api: libjson is not enabled!\n");
-#endif
     return -1;
 }
 
 int32_t cli_bcapi_json_get_array_length(struct cli_bc_ctx *ctx, int32_t objid)
 {
-#if HAVE_JSON
     enum json_type type;
     json_object **jobjs;
 
@@ -2168,17 +2140,10 @@ int32_t cli_bcapi_json_get_array_length(struct cli_bc_ctx *ctx, int32_t objid)
     }
 
     return json_object_array_length(jobjs[objid]);
-#else
-    UNUSEDPARAM(ctx);
-    UNUSEDPARAM(objid);
-    cli_dbgmsg("bytecode api: libjson is not enabled!\n");
-    return -1;
-#endif
 }
 
 int32_t cli_bcapi_json_get_array_idx(struct cli_bc_ctx *ctx, int32_t idx, int32_t objid)
 {
-#if HAVE_JSON
     enum json_type type;
     unsigned n;
     int length;
@@ -2223,18 +2188,10 @@ int32_t cli_bcapi_json_get_array_idx(struct cli_bc_ctx *ctx, int32_t idx, int32_
     }
 
     return 0;
-#else
-    UNUSEDPARAM(ctx);
-    UNUSEDPARAM(idx);
-    UNUSEDPARAM(objid);
-    cli_dbgmsg("bytecode api: libjson is not enabled!\n");
-    return -1;
-#endif
 }
 
 int32_t cli_bcapi_json_get_string_length(struct cli_bc_ctx *ctx, int32_t objid)
 {
-#if HAVE_JSON
     enum json_type type;
     json_object *jobj, **jobjs;
     int32_t len;
@@ -2261,17 +2218,10 @@ int32_t cli_bcapi_json_get_string_length(struct cli_bc_ctx *ctx, int32_t objid)
     len  = strlen(jstr);
 
     return len;
-#else
-    UNUSEDPARAM(ctx);
-    UNUSEDPARAM(objid);
-    cli_dbgmsg("bytecode api: libjson is not enabled!\n");
-    return -1;
-#endif
 }
 
 int32_t cli_bcapi_json_get_string(struct cli_bc_ctx *ctx, int8_t *str, int32_t str_len, int32_t objid)
 {
-#if HAVE_JSON
     enum json_type type;
     json_object *jobj, **jobjs;
     int32_t len;
@@ -2308,19 +2258,10 @@ int32_t cli_bcapi_json_get_string(struct cli_bc_ctx *ctx, int8_t *str, int32_t s
         str[len] = '\0';
         return len + 1;
     }
-#else
-    UNUSEDPARAM(ctx);
-    UNUSEDPARAM(str);
-    UNUSEDPARAM(str_len);
-    UNUSEDPARAM(objid);
-    cli_dbgmsg("bytecode api: libjson is not enabled!\n");
-    return -1;
-#endif
 }
 
 int32_t cli_bcapi_json_get_boolean(struct cli_bc_ctx *ctx, int32_t objid)
 {
-#if HAVE_JSON
     json_object *jobj, **jobjs;
 
     INIT_JSON_OBJS(ctx);
@@ -2332,17 +2273,10 @@ int32_t cli_bcapi_json_get_boolean(struct cli_bc_ctx *ctx, int32_t objid)
 
     jobj = jobjs[objid];
     return json_object_get_boolean(jobj);
-#else
-    UNUSEDPARAM(ctx);
-    UNUSEDPARAM(objid);
-    cli_dbgmsg("bytecode api: libjson is not enabled!\n");
-    return 0;
-#endif
 }
 
 int32_t cli_bcapi_json_get_int(struct cli_bc_ctx *ctx, int32_t objid)
 {
-#if HAVE_JSON
     json_object *jobj, **jobjs;
 
     INIT_JSON_OBJS(ctx);
@@ -2354,13 +2288,4 @@ int32_t cli_bcapi_json_get_int(struct cli_bc_ctx *ctx, int32_t objid)
 
     jobj = jobjs[objid];
     return json_object_get_int(jobj);
-#else
-    UNUSEDPARAM(ctx);
-    UNUSEDPARAM(objid);
-    cli_dbgmsg("bytecode api: libjson is not enabled!\n");
-    return 0;
-#endif
 }
-
-// int64_t cli_bcapi_json_get_int64(struct cli_bc_ctx *ctx, int32_t objid);
-// double cli_bcapi_json_get_double(struct cli_bc_ctx *ctx, int32_t objid);

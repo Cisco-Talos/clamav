@@ -35,9 +35,7 @@
 #include <ctype.h>
 
 #include <zlib.h>
-#ifdef HAVE_JSON
 #include <json.h>
-#endif
 
 #include "clamav.h"
 

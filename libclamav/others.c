@@ -1118,12 +1118,10 @@ void cli_append_potentially_unwanted_if_heur_exceedsmax(cli_ctx *ctx, char *vnam
             cli_dbgmsg("%s: scanning may be incomplete and additional analysis needed for this file.\n", vname);
         }
 
-#if HAVE_JSON
         /* Also record the event in the scan metadata, under "ParseErrors" */
         if (SCAN_COLLECT_METADATA && ctx->wrkproperty) {
             cli_json_parse_error(ctx->wrkproperty, vname);
         }
-#endif
     }
 }
 
@@ -1391,7 +1389,6 @@ static cl_error_t append_virus(cli_ctx *ctx, const char *virname, IndicatorType 
         cli_virus_found_cb(ctx, virname);
     }
 
-#if HAVE_JSON
     if (SCAN_COLLECT_METADATA && ctx->wrkproperty) {
         json_object *arrobj, *virobj;
         if (!json_object_object_get_ex(ctx->wrkproperty, "Viruses", &arrobj)) {
@@ -1411,7 +1408,6 @@ static cl_error_t append_virus(cli_ctx *ctx, const char *virname, IndicatorType 
         }
         json_object_array_add(arrobj, virobj);
     }
-#endif
 
     if (SCAN_ALLMATCHES) {
         // Never break.
