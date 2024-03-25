@@ -51,9 +51,7 @@ typedef struct message {
     unsigned int isInfected : 1;
     unsigned int isTruncated : 1;
 
-#if HAVE_JSON
     json_object *jobj;
-#endif
 } message;
 
 message *messageCreate(void);
@@ -89,8 +87,6 @@ int isuuencodebegin(const char *line);
 void messageSetCTX(message *m, cli_ctx *ctx);
 int messageContainsVirus(const message *m);
 int messageSavePartial(message *m, const char *dir, const char *id, unsigned part);
-#if HAVE_JSON
 json_object *messageGetJObj(message *m);
-#endif
 
 #endif /*_MESSAGE_H*/

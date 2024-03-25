@@ -62,11 +62,8 @@ struct msxml_ictx {
     uint32_t flags;
     const struct key_entry *keys;
     size_t num_keys;
-
-#if HAVE_JSON
     json_object *root;
     int toval;
-#endif
 };
 
 struct key_entry blank_key = {NULL, NULL, 0};
@@ -112,7 +109,6 @@ static void msxml_error_handler(void *arg, const char *msg, xmlParserSeverities 
     free(URI);
 }
 
-#if HAVE_JSON
 static int msxml_is_int(const char *value, size_t len, int32_t *val)
 {
     long val2;
@@ -159,7 +155,6 @@ static int msxml_parse_value(json_object *wrkptr, const char *arrname, const xml
     json_object_array_add(arrobj, newobj);
     return CL_SUCCESS;
 }
-#endif /* HAVE_JSON */
 
 #define MAX_ATTRIBS 20
 static cl_error_t msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr reader, int rlvl, void *jptr)
@@ -171,14 +166,10 @@ static cl_error_t msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr 
     cl_error_t ret;
     int state, node_type, endtag = 0, num_attribs = 0;
     cli_ctx *ctx = mxctx->ictx->ctx;
-#if HAVE_JSON
+
     json_object *root     = mxctx->ictx->root;
     json_object *parent   = (json_object *)jptr;
     json_object *thisjobj = NULL;
-#else
-    void *parent   = NULL;
-    void *thisjobj = NULL;
-#endif
 
     cli_msxmlmsg("in msxml_parse_element @ layer %d\n", rlvl);
 
@@ -186,13 +177,11 @@ static cl_error_t msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr 
     if (rlvl >= MSXML_RECLEVEL_MAX) {
         cli_dbgmsg("msxml_parse_element: reached msxml json recursion limit\n");
 
-#if HAVE_JSON
         if (track_json(mxctx)) {
             cl_error_t tmp = cli_json_parse_error(root, "MSXML_RECURSIVE_LIMIT");
             if (tmp != CL_SUCCESS)
                 return tmp;
         }
-#endif
 
         /* skip it */
         state = xmlTextReaderNext(reader);
@@ -217,13 +206,13 @@ static cl_error_t msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr 
             element_name = node_name;
             if (!element_name) {
                 cli_dbgmsg("msxml_parse_element: element tag node nameless\n");
-#if HAVE_JSON
+
                 if (track_json(mxctx)) {
                     cl_error_t tmp = cli_json_parse_error(root, "MSXML_NAMELESS_ELEMENT");
                     if (tmp != CL_SUCCESS)
                         return tmp;
                 }
-#endif
+
                 return CL_EPARSE; /* no name, nameless */
             }
 
@@ -243,7 +232,6 @@ static cl_error_t msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr 
                 return CL_SUCCESS;
             }
 
-#if HAVE_JSON
             if (track_json(mxctx) && (keyinfo->type & MSXML_JSON_TRACK)) {
                 if (keyinfo->type & MSXML_JSON_ROOT)
                     thisjobj = cli_jsonobj(root, keyinfo->name);
@@ -307,7 +295,7 @@ static cl_error_t msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr 
                         return CL_EPARSE;
                 }
             }
-#endif
+
             /* populate attributes for scanning callback - BROKEN, probably from the fact the reader is pointed to the attribute from previously parsing attributes */
             if ((keyinfo->type & MSXML_SCAN_CB) && mxctx->scan_cb) {
                 state = xmlTextReaderHasAttributes(reader);
@@ -357,10 +345,8 @@ static cl_error_t msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr 
             check_state(state);
 
             while (!endtag) {
-#if HAVE_JSON
                 if (track_json(mxctx) && (cli_json_timeout_cycle_check(ctx, &(mxctx->ictx->toval)) != CL_SUCCESS))
                     return CL_ETIMEOUT;
-#endif
 
                 node_type = xmlTextReaderNodeType(reader);
                 if (node_type == -1)
@@ -379,7 +365,6 @@ static cl_error_t msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr 
 
                         cli_msxmlmsg("TEXT: %s\n", node_value);
 
-#if HAVE_JSON
                         if (thisjobj && (keyinfo->type & MSXML_JSON_VALUE)) {
 
                             ret = msxml_parse_value(thisjobj, "Value", node_value);
@@ -388,7 +373,7 @@ static cl_error_t msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr 
 
                             cli_msxmlmsg("msxml_parse_element: added json value [%s: %s]\n", keyinfo->name, (const char *)node_value);
                         }
-#endif
+
                         /* callback-based scanning mechanism for embedded objects (used by HWPML) */
                         if ((keyinfo->type & MSXML_SCAN_CB) && mxctx->scan_cb) {
                             char name[1024];
@@ -481,11 +466,7 @@ static cl_error_t msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr 
 
                         /* callback-based scanning mechanism for comments (used by MHTML) */
                         if ((keyinfo->type & MSXML_COMMENT_CB) && mxctx->comment_cb) {
-#if HAVE_JSON
                             ret = mxctx->comment_cb((const char *)node_value, ctx, thisjobj, mxctx->comment_data);
-#else
-                            ret = mxctx->comment_cb((const char *)node_value, ctx, NULL, mxctx->comment_data);
-#endif
                             if (ret != CL_SUCCESS) {
                                 return ret;
                             }
@@ -571,7 +552,7 @@ cl_error_t cli_msxml_parse_document(cli_ctx *ctx, xmlTextReaderPtr reader, const
     ictx.flags    = flags;
     ictx.keys     = keys;
     ictx.num_keys = num_keys;
-#if HAVE_JSON
+
     if (flags & MSXML_FLAG_JSON) {
         ictx.root = ctx->wrkproperty;
         /* JSON Sanity Check */
@@ -581,9 +562,6 @@ cl_error_t cli_msxml_parse_document(cli_ctx *ctx, xmlTextReaderPtr reader, const
     } else {
         ictx.root = NULL;
     }
-#else
-    ictx.flags &= ~MSXML_FLAG_JSON;
-#endif
     mxctx->ictx = &ictx;
 
     /* Error Handler (setting handler on tree walker causes segfault) */
@@ -593,14 +571,10 @@ cl_error_t cli_msxml_parse_document(cli_ctx *ctx, xmlTextReaderPtr reader, const
 
     /* Main Processing Loop */
     while ((state = xmlTextReaderRead(reader)) == 1) {
-#if HAVE_JSON
         if ((ictx.flags & MSXML_FLAG_JSON) && (cli_json_timeout_cycle_check(ictx.ctx, &(ictx.toval)) != CL_SUCCESS))
             return CL_ETIMEOUT;
 
         ret = msxml_parse_element(mxctx, reader, 0, ictx.root);
-#else
-        ret = msxml_parse_element(mxctx, reader, 0, NULL);
-#endif
         if (ret != CL_SUCCESS) {
             if (ret == CL_VIRUS || ret == CL_ETIMEOUT || ret == CL_BREAK) {
                 cli_dbgmsg("cli_msxml_parse_document: encountered halt event in parsing xml document\n");
@@ -616,7 +590,6 @@ cl_error_t cli_msxml_parse_document(cli_ctx *ctx, xmlTextReaderPtr reader, const
         ret = CL_EPARSE;
     }
 
-#if HAVE_JSON
     /* Parse General Error Handler */
     if (ictx.flags & MSXML_FLAG_JSON) {
         cl_error_t tmp = CL_SUCCESS;
@@ -649,7 +622,6 @@ cl_error_t cli_msxml_parse_document(cli_ctx *ctx, xmlTextReaderPtr reader, const
             return tmp;
         }
     }
-#endif
 
     /* non-critical return suppression */
     if (ret == CL_BREAK)

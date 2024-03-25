@@ -40,9 +40,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-#ifdef HAVE_JSON
 #include <json.h>
-#endif
 
 #include "clamav.h"
 #include "dconf.h"
@@ -216,10 +214,8 @@ typedef struct cli_ctx_tag {
 #ifdef HAVE__INTERNAL__SHA_COLLECT
     int sha_collect;
 #endif
-#ifdef HAVE_JSON
     struct json_object *properties;
     struct json_object *wrkproperty;
-#endif
     struct timeval time_limit;
     bool limit_exceeded; /* To guard against alerting on limits exceeded more than once, or storing that in the JSON metadata more than once. */
     bool abort_scan;     /* So we can guarantee a scan is aborted, even if CL_ETIMEOUT/etc. status is lost in the scan recursion stack. */

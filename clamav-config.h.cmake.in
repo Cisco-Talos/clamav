@@ -117,10 +117,6 @@
    you don't. */
 #cmakedefine HAVE_DECL_CYGWIN_CONV_PATH 1
 
-/* Define to 1 if you have a deprecated version of the 'libjson' library
-   (-ljson). */
-#cmakedefine HAVE_DEPRECATED_JSON 1
-
 /* Define to 1 if you have the <dirent.h> header file. */
 #cmakedefine HAVE_DIRENT_H 1
 
@@ -178,9 +174,6 @@
 /* Define to 1 if you have the <inttypes.h> header file (for libjson-c). */
 #cmakedefine JSON_C_HAVE_INTTYPES_H 1
 
-/* Define to 1 if you have the 'libjson' library (-ljson). */
-#cmakedefine HAVE_JSON 1
-
 /* Define to '1' if you have the check.h library */
 #cmakedefine HAVE_LIBCHECK 1
 
@@ -189,9 +182,6 @@
 
 /* Define to '1' if you have the curses.h library */
 #cmakedefine HAVE_LIBPDCURSES 1
-
-/* Define to 1 if you have the `ssl' library (-lssl). */
-#cmakedefine HAVE_LIBSSL 1
 
 /* Define to 1 if you have the <limits.h> header file. */
 #cmakedefine HAVE_LIMITS_H 1

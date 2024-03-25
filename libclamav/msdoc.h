@@ -27,8 +27,6 @@
 #include "others.h"
 #include "uniq.h"
 
-#if HAVE_JSON
-
 #define PROPCNTLIMIT 25
 #define PROPSTRLIMIT 256 /* affects property strs, NOT sanitized strs (may result in a buffer allocating PROPSTRLIMIT*6) */
 #define UTF16_MS "UTF-16LE"
@@ -169,7 +167,5 @@ typedef struct summary_ctx {
 
 /* Summary and Document Information Parsing to JSON */
 int cli_ole2_summary_json(cli_ctx *ctx, int fd, int mode);
-
-#endif /* HAVE_JSON */
 
 #endif /* __MSDOC_H_ */
