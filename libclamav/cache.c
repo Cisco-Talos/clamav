@@ -752,11 +752,6 @@ cl_error_t clean_cache_check(unsigned char *md5, size_t size, cli_ctx *ctx)
         return CL_VIRUS;
     }
 
-    if (ctx->engine->engine_options & ENGINE_OPTIONS_DISABLE_CACHE) {
-        cli_dbgmsg("clean_cache_check: Caching disabled. Returning CL_VIRUS.\n");
-        return CL_VIRUS;
-    }
-
     ret = cache_lookup_hash(md5, size, ctx->engine->cache, ctx->recursion_level);
     cli_dbgmsg("clean_cache_check: %02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x is %s\n", md5[0], md5[1], md5[2], md5[3], md5[4], md5[5], md5[6], md5[7], md5[8], md5[9], md5[10], md5[11], md5[12], md5[13], md5[14], md5[15], (ret == CL_VIRUS) ? "negative" : "positive");
     return ret;
