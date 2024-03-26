@@ -3,6 +3,10 @@
 Note: This file refers to the official packages. Things described here may
 differ slightly from third-party binary packages.
 
+## 1.2.3
+
+ClamAV 1.2.3 is a critical patch release with the following fix:
+
 ## 1.2.2
 
 ClamAV 1.2.2 is a critical patch release with the following fix:
