@@ -29,10 +29,7 @@
 #include <assert.h>
 #include <fcntl.h>
 
-#if HAVE_JSON
 #include "json.h"
-#endif
-
 #include "dconf.h"
 #include "clamav.h"
 #include "others.h"
@@ -195,13 +192,11 @@ static void bytecode_context_reset(struct cli_bc_ctx *ctx)
     ctx->lzmas  = NULL;
     ctx->nlzmas = 0;
 
-#if HAVE_BZLIB_H
     for (i = 0; i < ctx->nbzip2s; i++)
         cli_bcapi_bzip2_done(ctx, i);
     free(ctx->bzip2s);
     ctx->bzip2s  = NULL;
     ctx->nbzip2s = 0;
-#endif
 
     for (i = 0; i < ctx->nbuffers; i++)
         cli_bcapi_buffer_pipe_done(ctx, i);
@@ -231,11 +226,9 @@ static void bytecode_context_reset(struct cli_bc_ctx *ctx)
     /* Use input_switch() to free the extracted file fmap, if one exists */
     cli_bcapi_input_switch(ctx, 0);
 
-#if HAVE_JSON
     free((json_object **)(ctx->jsonobjs));
     ctx->jsonobjs  = NULL;
     ctx->njsonobjs = 0;
-#endif
 
     ctx->containertype = CL_TYPE_ANY;
 }

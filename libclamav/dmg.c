@@ -34,21 +34,15 @@
 #include <sys/param.h> /* for NAME_MAX */
 #endif
 
-#if HAVE_LIBZ
 #include <zlib.h>
-#endif
-#if HAVE_BZLIB_H
 #include <bzlib.h>
 #ifdef NOBZ2PREFIX
 #define BZ2_bzDecompress bzDecompress
 #define BZ2_bzDecompressEnd bzDecompressEnd
 #define BZ2_bzDecompressInit bzDecompressInit
 #endif
-#endif
 
-#if HAVE_LIBXML2
 #include <libxml/xmlreader.h>
-#endif
 
 #include "clamav.h"
 #include "others.h"
@@ -85,9 +79,7 @@ enum dmgReadState {
 };
 
 static int dmg_extract_xml(cli_ctx *, char *, struct dmg_koly_block *);
-#if HAVE_LIBXML2
 static int dmg_decode_mish(cli_ctx *, unsigned int *, xmlChar *, struct dmg_mish_with_stripes *);
-#endif
 static int cmp_mish_stripes(const void *stripe_a, const void *stripe_b);
 static int dmg_track_sectors(uint64_t *, uint8_t *, uint32_t, uint32_t, uint64_t);
 static int dmg_handle_mish(cli_ctx *, unsigned int, char *, uint64_t, struct dmg_mish_with_stripes *);
@@ -104,9 +96,7 @@ int cli_scandmg(cli_ctx *ctx)
     struct dmg_mish_with_stripes *mish_list = NULL, *mish_list_tail = NULL;
     enum dmgReadState state = DMG_FIND_BASE_PLIST;
     int stateDepth[DMG_MAX_STATE];
-#if HAVE_LIBXML2
     xmlTextReaderPtr reader;
-#endif
 
     if (!ctx || !ctx->fmap) {
         cli_errmsg("cli_scandmg: Invalid context\n");
@@ -203,9 +193,6 @@ int cli_scandmg(cli_ctx *ctx)
     /* plist -> dict -> (key:resource_fork) dict -> (key:blkx) array -> dict */
     /* each of those bottom level dict should have 4 parts */
     /* [ Attributes, Data, ID, Name ], where Data is Base64 mish block */
-
-/* This is the block where we require libxml2 */
-#if HAVE_LIBXML2
 
 #define DMG_XML_PARSE_OPTS ((XML_PARSE_NONET | XML_PARSE_COMPACT) | CLAMAV_MIN_XMLREADER_FLAGS)
 
@@ -434,12 +421,6 @@ int cli_scandmg(cli_ctx *ctx)
 
     xmlFreeTextReader(reader);
 
-#else
-
-    cli_dbgmsg("cli_scandmg: libxml2 support is compiled out. It is required for full DMG support.\n");
-
-#endif
-
     /* Loop over mish array */
     file = 0;
     while ((ret == CL_CLEAN) && (mish_list != NULL)) {
@@ -465,7 +446,6 @@ int cli_scandmg(cli_ctx *ctx)
     return ret;
 }
 
-#if HAVE_LIBXML2
 /* Transform the base64-encoded string into the binary structure
  * After this, the base64 string (from xml) can be released
  * If mish_set->mish is set by this function, it must be freed by the caller */
@@ -535,7 +515,6 @@ static int dmg_decode_mish(cli_ctx *ctx, unsigned int *mishblocknum, xmlChar *mi
     mish_set->stripes = (struct dmg_block_data *)(decoded + sizeof(struct dmg_mish_block));
     return CL_CLEAN;
 }
-#endif
 
 /* Comparator for stripe sorting */
 static int cmp_mish_stripes(const void *stripe_a, const void *stripe_b)
@@ -560,22 +539,12 @@ static int dmg_track_sectors(uint64_t *total, uint8_t *data_to_write,
             usable         = 1;
             break;
         case DMG_STRIPE_DEFLATE:
-#if HAVE_LIBZ
             *data_to_write = 1;
             usable         = 1;
-#else
-            cli_warnmsg("dmg_track_sectors: Need zlib decompression to properly scan this file.\n");
-            return CL_EFORMAT;
-#endif
             break;
         case DMG_STRIPE_BZ:
-#if HAVE_BZLIB_H
             *data_to_write = 1;
             usable         = 1;
-#else
-            cli_warnmsg("dmg_track_sectors: Need bzip2 decompression to properly scan this file.\n");
-            return CL_EFORMAT;
-#endif
             break;
         case DMG_STRIPE_EMPTY:
         case DMG_STRIPE_ZEROES:
@@ -863,16 +832,13 @@ static int dmg_stripe_bzip(cli_ctx *ctx, int fd, uint32_t index, struct dmg_mish
     size_t len            = mish_set->stripes[index].dataLength;
     uint64_t size_so_far  = 0;
     uint64_t expected_len = mish_set->stripes[index].sectorCount * DMG_SECTOR_SIZE;
-#if HAVE_BZLIB_H
     int rc;
     bz_stream strm;
     uint8_t obuf[BUFSIZ];
-#endif
 
     cli_dbgmsg("dmg_stripe_bzip: stripe " STDu32 " initial len " STDu64 " expected len " STDu64 "\n",
                index, (uint64_t)len, (uint64_t)expected_len);
 
-#if HAVE_BZLIB_H
     memset(&strm, 0, sizeof(strm));
     strm.next_out  = (char *)obuf;
     strm.avail_out = sizeof(obuf);
@@ -970,7 +936,6 @@ static int dmg_stripe_bzip(cli_ctx *ctx, int fd, uint32_t index, struct dmg_mish
     } while ((rc == BZ_OK) && (len > 0));
 
     BZ2_bzDecompressEnd(&strm);
-#endif
 
     if (ret == CL_CLEAN) {
         if (size_so_far != expected_len) {

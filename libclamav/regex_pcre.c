@@ -25,19 +25,13 @@
 #include "clamav-config.h"
 #endif
 
-#if HAVE_PCRE
-#if USING_PCRE2
 #define PCRE2_CODE_UNIT_WIDTH 8
 #include <pcre2.h>
-#else
-#include <pcre.h>
-#endif
 
 #include "clamav.h"
 #include "others.h"
 #include "regex_pcre.h"
 
-#if USING_PCRE2
 /* NOTE: pcre2 could use mpool through ext */
 void *cli_pcre_malloc(size_t size, void *ext)
 {
@@ -50,20 +44,6 @@ void cli_pcre_free(void *ptr, void *ext)
     UNUSEDPARAM(ext);
     free(ptr);
 }
-#endif
-
-/* cli_pcre_init_internal: redefine pcre_malloc and pcre_free; pcre2 does this during compile */
-cl_error_t cli_pcre_init_internal()
-{
-#if !USING_PCRE2
-    pcre_malloc       = cli_max_malloc;
-    pcre_free         = free;
-    pcre_stack_malloc = cli_max_malloc;
-    pcre_stack_free   = free;
-#endif
-
-    return CL_SUCCESS;
-}
 
 cl_error_t cli_pcre_addoptions(struct cli_pcre_data *pd, const char **opt, int errout)
 {
@@ -72,7 +52,6 @@ cl_error_t cli_pcre_addoptions(struct cli_pcre_data *pd, const char **opt, int e
 
     while (**opt != '\0') {
         switch (**opt) {
-#if USING_PCRE2
             case 'i':
                 pd->options |= PCRE2_CASELESS;
                 break;
@@ -96,31 +75,6 @@ cl_error_t cli_pcre_addoptions(struct cli_pcre_data *pd, const char **opt, int e
             case 'U':
                 pd->options |= PCRE2_UNGREEDY;
                 break;
-#else
-            case 'i':
-                pd->options |= PCRE_CASELESS;
-                break;
-            case 's':
-                pd->options |= PCRE_DOTALL;
-                break;
-            case 'm':
-                pd->options |= PCRE_MULTILINE;
-                break;
-            case 'x':
-                pd->options |= PCRE_EXTENDED;
-                break;
-
-                /* these are pcre specific... don't work with perl */
-            case 'A':
-                pd->options |= PCRE_ANCHORED;
-                break;
-            case 'E':
-                pd->options |= PCRE_DOLLAR_ENDONLY;
-                break;
-            case 'U':
-                pd->options |= PCRE_UNGREEDY;
-                break;
-#endif
             default:
                 if (errout) {
                     cli_errmsg("cli_pcre_addoptions: unknown/extra pcre option encountered %c\n", **opt);
@@ -134,7 +88,6 @@ cl_error_t cli_pcre_addoptions(struct cli_pcre_data *pd, const char **opt, int e
     return CL_SUCCESS;
 }
 
-#if USING_PCRE2
 cl_error_t cli_pcre_compile(struct cli_pcre_data *pd, long long unsigned match_limit, long long unsigned match_limit_recursion, unsigned int options, int opt_override)
 {
     int errornum;
@@ -192,78 +145,20 @@ cl_error_t cli_pcre_compile(struct cli_pcre_data *pd, long long unsigned match_l
     pcre2_general_context_free(gctx);
     return CL_SUCCESS;
 }
-#else
-cl_error_t cli_pcre_compile(struct cli_pcre_data *pd, long long unsigned match_limit, long long unsigned match_limit_recursion, unsigned int options, int opt_override)
-{
-    const char *error;
-    int erroffset;
-
-    if (!pd || !pd->expression) {
-        cli_errmsg("cli_pcre_compile: NULL pd or NULL pd->expression\n");
-        return CL_ENULLARG;
-    }
-
-    /* compile the pcre regex last arg is charset, allow for options override */
-    if (opt_override)
-        pd->re = pcre_compile(pd->expression, options, &error, &erroffset, NULL); /* pd->re handled by pcre -> call pcre_free() -> calls free() */
-    else
-        pd->re = pcre_compile(pd->expression, pd->options, &error, &erroffset, NULL); /* pd->re handled by pcre -> call pcre_free() -> calls free() */
-    if (pd->re == NULL) {
-        cli_errmsg("cli_pcre_compile: PCRE compilation failed at offset %d: %s\n", erroffset, error);
-        return CL_EMALFDB;
-    }
-
-    /* now study it... (section totally not from snort) */
-    pd->ex = pcre_study(pd->re, 0, &error);
-    if (!(pd->ex)) {
-        pd->ex = (pcre_extra *)calloc(1, sizeof(*(pd->ex)));
-        if (!(pd->ex)) {
-            cli_errmsg("cli_pcre_compile: Unable to allocate memory for extra data\n");
-            return CL_EMEM;
-        }
-    }
-
-    /* set the match limits */
-    if (pd->ex->flags & PCRE_EXTRA_MATCH_LIMIT) {
-        pd->ex->match_limit = match_limit;
-    } else {
-        pd->ex->flags |= PCRE_EXTRA_MATCH_LIMIT;
-        pd->ex->match_limit = match_limit;
-    }
-
-    /* set the recursion match limits */
-#ifdef PCRE_EXTRA_MATCH_LIMIT_RECURSION
-    if (pd->ex->flags & PCRE_EXTRA_MATCH_LIMIT_RECURSION) {
-        pd->ex->match_limit_recursion = match_limit_recursion;
-    } else {
-        pd->ex->flags |= PCRE_EXTRA_MATCH_LIMIT_RECURSION;
-        pd->ex->match_limit_recursion = match_limit_recursion;
-    }
-#endif /* PCRE_EXTRA_MATCH_LIMIT_RECURSION */
-
-    /* non-dynamic allocated fields set by caller */
-    return CL_SUCCESS;
-}
-#endif
 
 int cli_pcre_match(struct cli_pcre_data *pd, const unsigned char *buffer, size_t buflen, size_t override_offset, int options, struct cli_pcre_results *results)
 {
     int rc;
 
-#if USING_PCRE2
     PCRE2_SIZE *ovector;
     size_t startoffset;
-#else
-    int startoffset;
-#endif
 
     /* set the startoffset, override if a value is specified */
     startoffset = pd->search_offset;
     if (override_offset != pd->search_offset)
         startoffset = override_offset;
 
-        /* execute the pcre and return */
-#if USING_PCRE2
+    /* execute the pcre and return */
     rc = pcre2_match(pd->re, buffer, buflen, startoffset, options, results->match_data, pd->mctx);
     if (rc < 0 && rc != PCRE2_ERROR_NOMATCH) {
         switch (rc) {
@@ -291,33 +186,7 @@ int cli_pcre_match(struct cli_pcre_data *pd, const unsigned char *buffer, size_t
     } else {
         results->match[0] = results->match[1] = 0;
     }
-#else
-    rc = pcre_exec(pd->re, pd->ex, (const char *)buffer, (int)buflen, (int)startoffset, options, results->ovector, OVECCOUNT);
-    if (rc < 0 && rc != PCRE_ERROR_NOMATCH) {
-        switch (rc) {
-            case PCRE_ERROR_CALLOUT:
-                break;
-            case PCRE_ERROR_NOMEMORY:
-                cli_errmsg("cli_pcre_match: pcre_exec: out of memory\n");
-                results->err = CL_EMEM;
-                break;
-            case PCRE_ERROR_MATCHLIMIT:
-                cli_dbgmsg("cli_pcre_match: pcre_exec: match limit exceeded\n");
-                break;
-            case PCRE_ERROR_RECURSIONLIMIT:
-                cli_dbgmsg("cli_pcre_match: pcre_exec: recursive limit exceeded\n");
-                break;
-            default:
-                cli_errmsg("cli_pcre_match: pcre_exec: returned error %d\n", rc);
-                results->err = CL_BREAK;
-        }
-    } else if (rc > 0) {
-        results->match[0] = results->ovector[0];
-        results->match[1] = results->ovector[1];
-    } else {
-        results->match[0] = results->match[1] = 0;
-    }
-#endif
+
     return rc;
 }
 
@@ -325,19 +194,11 @@ int cli_pcre_match(struct cli_pcre_data *pd, const unsigned char *buffer, size_t
 #define MATCH_MAXLEN 1028 /*because lolz*/
 
 /* TODO: audit this function */
-#if USING_PCRE2
 static void named_substr_print(const struct cli_pcre_data *pd, const unsigned char *buffer, PCRE2_SIZE *ovector)
-#else
-static void named_substr_print(const struct cli_pcre_data *pd, const unsigned char *buffer, int *ovector)
-#endif
 {
     int i, namecount, trunc;
 
-#if USING_PCRE2
     PCRE2_SIZE length, j;
-#else
-    int length, j;
-#endif
 
     unsigned char *tabptr;
     int name_entry_size;
@@ -346,24 +207,16 @@ static void named_substr_print(const struct cli_pcre_data *pd, const unsigned ch
     char outstr[2 * MATCH_MAXLEN + 1];
 
     /* determine if there are named substrings */
-#if USING_PCRE2
     (void)pcre2_pattern_info(pd->re, PCRE2_INFO_NAMECOUNT, &namecount);
-#else
-    (void)pcre_fullinfo(pd->re, pd->ex, PCRE_INFO_NAMECOUNT, &namecount);
-#endif
+
     if (namecount <= 0) {
         cli_dbgmsg("cli_pcre_report: no named substrings\n");
     } else {
         cli_dbgmsg("cli_pcre_report: named substrings\n");
 
         /* extract named substring translation table */
-#if USING_PCRE2
         (void)pcre2_pattern_info(pd->re, PCRE2_INFO_NAMETABLE, &name_table);
         (void)pcre2_pattern_info(pd->re, PCRE2_INFO_NAMEENTRYSIZE, &name_entry_size);
-#else
-        (void)pcre_fullinfo(pd->re, pd->ex, PCRE_INFO_NAMETABLE, &name_table);
-        (void)pcre_fullinfo(pd->re, pd->ex, PCRE_INFO_NAMEENTRYSIZE, &name_entry_size);
-#endif
 
         /* print named substring information */
         tabptr = name_table;
@@ -398,42 +251,27 @@ void cli_pcre_report(const struct cli_pcre_data *pd, const unsigned char *buffer
 {
     int i, trunc;
 
-#if USING_PCRE2
     PCRE2_SIZE length, j;
-#else
-    int length, j;
-#endif
 
     const char *start;
     char outstr[2 * MATCH_MAXLEN + 1];
 
-#if USING_PCRE2
     PCRE2_SIZE *ovector;
     ovector = pcre2_get_ovector_pointer(results->match_data);
-#else
-    int *ovector = results->ovector;
-#endif
 
     /* print out additional diagnostics if cli_debug_flag is set */
     if (!DISABLE_PCRE_REPORT) {
         cli_dbgmsg("\n");
-#if USING_PCRE2
         cli_dbgmsg("cli_pcre_report: PCRE2 Execution Report:\n");
-#else
-        cli_dbgmsg("cli_pcre_report: PCRE Execution Report:\n");
-#endif
         cli_dbgmsg("cli_pcre_report: running regex /%s/ returns %d\n", pd->expression, rc);
+
         if (rc > 0) {
             /* print out full-match and capture groups */
             for (i = 0; i < rc; ++i) {
                 start  = (const char *)buffer + ovector[2 * i];
                 length = ovector[2 * i + 1] - ovector[2 * i];
 
-#ifdef USING_PCRE2
                 if (ovector[2 * i + 1] > buflen) {
-#else
-                if (ovector[2 * i + 1] > (int)buflen) {
-#endif
                     cli_warnmsg("cli_pcre_report: reported match goes outside buffer\n");
                     continue;
                 }
@@ -452,12 +290,7 @@ void cli_pcre_report(const struct cli_pcre_data *pd, const unsigned char *buffer
             }
 
             named_substr_print(pd, buffer, ovector);
-        }
-#if USING_PCRE2
-        else if (rc == 0 || rc == PCRE2_ERROR_NOMATCH) {
-#else
-        else if (rc == 0 || rc == PCRE_ERROR_NOMATCH) {
-#endif
+        } else if (rc == 0 || rc == PCRE2_ERROR_NOMATCH) {
             cli_dbgmsg("cli_pcre_report: no match found\n");
         } else {
             cli_dbgmsg("cli_pcre_report: error occurred in pcre_match: %d\n", rc);
@@ -472,30 +305,25 @@ cl_error_t cli_pcre_results_reset(struct cli_pcre_results *results, const struct
 {
     results->err      = CL_SUCCESS;
     results->match[0] = results->match[1] = 0;
-#if USING_PCRE2
+
     if (results->match_data)
         pcre2_match_data_free(results->match_data);
 
     results->match_data = pcre2_match_data_create_from_pattern(pd->re, NULL);
     if (!results->match_data)
         return CL_EMEM;
-#else
-    memset(results->ovector, 0, OVECCOUNT);
-#endif
+
     return CL_SUCCESS;
 }
 
 void cli_pcre_results_free(struct cli_pcre_results *results)
 {
-#if USING_PCRE2
     if (results->match_data)
         pcre2_match_data_free(results->match_data);
-#endif
 }
 
 void cli_pcre_free_single(struct cli_pcre_data *pd)
 {
-#if USING_PCRE2
     if (pd->re) {
         pcre2_code_free(pd->re);
         pd->re = NULL;
@@ -505,19 +333,9 @@ void cli_pcre_free_single(struct cli_pcre_data *pd)
         pcre2_match_context_free(pd->mctx);
         pd->mctx = NULL;
     }
-#else
-    if (pd->re) {
-        pcre_free(pd->re);
-        pd->re = NULL;
-    }
-    if (pd->ex) {
-        free(pd->ex);
-        pd->ex = NULL;
-    }
-#endif
+
     if (pd->expression) {
         free(pd->expression);
         pd->expression = NULL;
     }
 }
-#endif /* HAVE_PCRE */

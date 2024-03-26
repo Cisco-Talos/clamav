@@ -104,9 +104,6 @@
 /* attrib packed */
 #cmakedefine HAVE_ATTRIB_PACKED 1
 
-/* have bzip2 */
-#cmakedefine HAVE_BZLIB_H 1
-
 /* Define to 1 if you have the `ctime_r' function. */
 #cmakedefine HAVE_CTIME_R 1
 
@@ -119,10 +116,6 @@
 /* Define to 1 if you have the declaration of `cygwin_conv_path', and to 0 if
    you don't. */
 #cmakedefine HAVE_DECL_CYGWIN_CONV_PATH 1
-
-/* Define to 1 if you have a deprecated version of the 'libjson' library
-   (-ljson). */
-#cmakedefine HAVE_DEPRECATED_JSON 1
 
 /* Define to 1 if you have the <dirent.h> header file. */
 #cmakedefine HAVE_DIRENT_H 1
@@ -181,9 +174,6 @@
 /* Define to 1 if you have the <inttypes.h> header file (for libjson-c). */
 #cmakedefine JSON_C_HAVE_INTTYPES_H 1
 
-/* Define to 1 if you have the 'libjson' library (-ljson). */
-#cmakedefine HAVE_JSON 1
-
 /* Define to '1' if you have the check.h library */
 #cmakedefine HAVE_LIBCHECK 1
 
@@ -192,15 +182,6 @@
 
 /* Define to '1' if you have the curses.h library */
 #cmakedefine HAVE_LIBPDCURSES 1
-
-/* Define to 1 if you have the `ssl' library (-lssl). */
-#cmakedefine HAVE_LIBSSL 1
-
-/* Define to 1 if you have the 'libxml2' library (-lxml2). */
-#cmakedefine HAVE_LIBXML2 1
-
-/* Define to 1 if you have the `z' library (-lz). */
-#cmakedefine HAVE_LIBZ 1
 
 /* Define to 1 if you have the <limits.h> header file. */
 #cmakedefine HAVE_LIMITS_H 1
@@ -220,12 +201,6 @@
 /* Define to 1 if you have a working `mmap' system call that supports
    MAP_PRIVATE. */
 #cmakedefine HAVE_MMAP 1
-
-/* Define to 1 if you have a pcre library (-lpcre). */
-#cmakedefine HAVE_PCRE 1
-
-/* Define to 1 if you using the pcre2 library. */
-#cmakedefine USING_PCRE2 1
 
 /* Define to 1 if you have the `poll' function. */
 #cmakedefine HAVE_POLL 1
@@ -389,9 +364,6 @@
 /* yara sources are compiled in */
 #define HAVE_YARA 1
 
-/* Define to 1 if you have the <zlib.h> header file. */
-#cmakedefine HAVE_ZLIB_H 1
-
 /* For internal use only - DO NOT DEFINE */
 #cmakedefine HAVE__INTERNAL__SHA_COLLECT 1
 
@@ -492,9 +464,6 @@
 
 /* Define to if you have the ANSI C header files. */
 #cmakedefine STDC_HEADERS 1
-
-/* Support for IPv6 */
-#cmakedefine SUPPORT_IPv6 1
 
 /* enable memory pools */
 #cmakedefine USE_MPOOL 1

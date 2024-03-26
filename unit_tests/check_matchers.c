@@ -125,8 +125,6 @@ static const struct ac_sigopts_testdata_s {
 
     {NULL, 0, NULL, NULL, ACPATT_OPTION_NOOPTS, NULL, CL_CLEAN}};
 
-#if HAVE_PCRE
-
 static const struct pcre_testdata_s {
     const char *data;
     const char *hexsig;
@@ -151,8 +149,6 @@ static const struct pcre_testdata_s {
     {"notasadtruly", "/asad/e", "2,6", ACPATT_OPTION_NOOPTS, "Test11: rolling(off) encompass", CL_VIRUS},
 
     {NULL, NULL, NULL, ACPATT_OPTION_NOOPTS, NULL, CL_CLEAN}};
-
-#endif /* HAVE_PCRE */
 
 static cli_ctx ctx;
 static struct cl_scan_options options;
@@ -456,8 +452,6 @@ START_TEST(test_bm_scanbuff_allscan)
 }
 END_TEST
 
-#if HAVE_PCRE
-
 START_TEST(test_pcre_scanbuff)
 {
     struct cli_ac_data mdata;
@@ -472,9 +466,6 @@ START_TEST(test_pcre_scanbuff)
 #ifdef USE_MPOOL
     root->mempool = mpool_create();
 #endif
-    ret = cli_pcre_init();
-    ck_assert_msg(ret == CL_SUCCESS, "[pcre] cli_pcre_init() failed");
-
     for (i = 0; pcre_testdata[i].data; i++) {
         hexlen = strlen(PCRE_BYPASS) + strlen(pcre_testdata[i].hexsig) + 1;
 
@@ -526,8 +517,6 @@ START_TEST(test_pcre_scanbuff_allscan)
 #ifdef USE_MPOOL
     root->mempool = mpool_create();
 #endif
-    ret = cli_pcre_init();
-    ck_assert_msg(ret == CL_SUCCESS, "[pcre] cli_pcre_init() failed");
 
     for (i = 0; pcre_testdata[i].data; i++) {
         hexlen = strlen(PCRE_BYPASS) + strlen(pcre_testdata[i].hexsig) + 1;
@@ -581,8 +570,6 @@ START_TEST(test_pcre_scanbuff_allscan)
 }
 END_TEST
 
-#endif /* HAVE_PCRE */
-
 Suite *test_matchers_suite(void)
 {
     Suite *s = suite_create("matchers");
@@ -593,14 +580,10 @@ Suite *test_matchers_suite(void)
     tcase_add_test(tc_matchers, test_ac_scanbuff);
     tcase_add_test(tc_matchers, test_ac_scanbuff_ex);
     tcase_add_test(tc_matchers, test_bm_scanbuff);
-#if HAVE_PCRE
     tcase_add_test(tc_matchers, test_pcre_scanbuff);
-#endif
     tcase_add_test(tc_matchers, test_ac_scanbuff_allscan);
     tcase_add_test(tc_matchers, test_ac_scanbuff_allscan_ex);
     tcase_add_test(tc_matchers, test_bm_scanbuff_allscan);
-#if HAVE_PCRE
     tcase_add_test(tc_matchers, test_pcre_scanbuff_allscan);
-#endif
     return s;
 }

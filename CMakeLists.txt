@@ -456,20 +456,10 @@ include(CPack)
 
 # libclamav efficacy dependencies
 find_package(OpenSSL REQUIRED)
-if(OPENSSL_FOUND)
-    set(HAVE_LIBSSL 1)
-endif()
 
 find_package(ZLIB REQUIRED)
-if(ZLIB_FOUND)
-    set(HAVE_ZLIB_H 1)
-    set(HAVE_LIBZ 1)
-endif()
 
 find_package(BZip2 REQUIRED)
-if(BZIP2_FOUND)
-    set(HAVE_BZLIB_H 1)
-endif()
 
 # Disable CMAKE_FIND_PACKAGE_PREFER_CONFIG, temporarily, because
 # we don't presently support the using libxml2's Config.cmake
@@ -477,17 +467,11 @@ set(PACKAGE_PREFER_CONFIG_BAK ${CMAKE_FIND_PACKAGE_PREFER_CONFIG})
 set(CMAKE_FIND_PACKAGE_PREFER_CONFIG FALSE)
 
 find_package(LibXml2 REQUIRED)
-if(LibXml2_FOUND)
-    set(HAVE_LIBXML2 1)
-endif()
+
 # Restore the requested CMAKE_FIND_PACKAGE_PREFER_CONFIG setting
 set(CMAKE_FIND_PACKAGE_PREFER_CONFIG ${PACKAGE_PREFER_CONFIG_BAK})
 
 find_package(PCRE2 REQUIRED)
-if(PCRE2_FOUND)
-    set(HAVE_PCRE 1)
-    set(USING_PCRE2 1)
-endif()
 
 # libclamav feature dependencies
 if(NOT WIN32)
@@ -502,8 +486,6 @@ else()
     set(JSONC_USE_STATIC ON)
 endif()
 find_package(JSONC REQUIRED)
-# Set variable required by libclamav to use libjson-c
-set(HAVE_JSON 1)
 
 set(LLVM_MAX_VER "13")
 set(LLVM_MIN_VER "8")

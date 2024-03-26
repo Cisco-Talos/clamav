@@ -34,7 +34,6 @@
 #include "others.h"
 #include "openioc.h"
 
-#ifdef HAVE_LIBXML2
 #include <libxml/xmlreader.h>
 
 struct openioc_hash {
@@ -334,10 +333,3 @@ int openioc_parse(const char *fname, int fd, struct cl_engine *engine, unsigned 
 
     return CL_SUCCESS;
 }
-#else
-int openioc_parse(const char *fname, int fd, struct cl_engine *engine, unsigned int options)
-{
-    cli_dbgmsg("openioc_parse: libxml2 support is compiled out and is needed for OpenIOC support.\n");
-    return CL_SUCCESS;
-}
-#endif

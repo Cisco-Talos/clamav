@@ -58,9 +58,7 @@
 #include <pthread.h>
 #endif
 
-#ifdef HAVE_LIBXML2
 #include <libxml/parser.h>
-#endif
 
 #ifndef _WIN32
 #include <dlfcn.h>
@@ -442,9 +440,9 @@ cl_error_t cl_init(unsigned int initoptions)
     rc = bytecode_init();
     if (rc)
         return rc;
-#ifdef HAVE_LIBXML2
+
     xmlInitParser();
-#endif
+
     return CL_SUCCESS;
 }
 
@@ -581,9 +579,6 @@ struct cl_engine *cl_engine_new(void)
     new->maxrechwp3 = CLI_DEFAULT_MAXRECHWP3;
 
     /* PCRE matching limitations */
-#if HAVE_PCRE
-    cli_pcre_init();
-#endif
     new->pcre_match_limit    = CLI_DEFAULT_PCRE_MATCH_LIMIT;
     new->pcre_recmatch_limit = CLI_DEFAULT_PCRE_RECMATCH_LIMIT;
     new->pcre_max_filesize   = CLI_DEFAULT_PCRE_MAX_FILESIZE;
@@ -1123,12 +1118,10 @@ void cli_append_potentially_unwanted_if_heur_exceedsmax(cli_ctx *ctx, char *vnam
             cli_dbgmsg("%s: scanning may be incomplete and additional analysis needed for this file.\n", vname);
         }
 
-#if HAVE_JSON
         /* Also record the event in the scan metadata, under "ParseErrors" */
         if (SCAN_COLLECT_METADATA && ctx->wrkproperty) {
             cli_json_parse_error(ctx->wrkproperty, vname);
         }
-#endif
     }
 }
 
@@ -1396,7 +1389,6 @@ static cl_error_t append_virus(cli_ctx *ctx, const char *virname, IndicatorType 
         cli_virus_found_cb(ctx, virname);
     }
 
-#if HAVE_JSON
     if (SCAN_COLLECT_METADATA && ctx->wrkproperty) {
         json_object *arrobj, *virobj;
         if (!json_object_object_get_ex(ctx->wrkproperty, "Viruses", &arrobj)) {
@@ -1416,7 +1408,6 @@ static cl_error_t append_virus(cli_ctx *ctx, const char *virname, IndicatorType 
         }
         json_object_array_add(arrobj, virobj);
     }
-#endif
 
     if (SCAN_ALLMATCHES) {
         // Never break.

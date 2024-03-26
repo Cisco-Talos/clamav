@@ -39,9 +39,8 @@
 
 #include <zlib.h>
 #include "inflate64.h"
-#if HAVE_BZLIB_H
+
 #include <bzlib.h>
-#endif
 
 #include "explode.h"
 #include "others.h"
@@ -242,7 +241,6 @@ static cl_error_t unz(
             break;
         }
 
-#if HAVE_BZLIB_H
 #ifdef NOBZ2PREFIX
 #define BZ2_bzDecompress bzDecompress
 #define BZ2_bzDecompressEnd bzDecompressEnd
@@ -284,7 +282,6 @@ static cl_error_t unz(
             if (res == BZ_STREAM_END) res = 0;
             break;
         }
-#endif /* HAVE_BZLIB_H */
 
         case ALG_IMPLODE: {
             struct xplstate strm;
@@ -322,9 +319,6 @@ static cl_error_t unz(
         case ALG_LZMA:
             /* easy but there's not a single sample in the zoo */
 
-#if !HAVE_BZLIB_H
-        case ALG_BZIP2:
-#endif
         case ALG_SHRUNK:
         case ALG_REDUCE1:
         case ALG_REDUCE2:
@@ -1181,9 +1175,7 @@ cl_error_t cli_unzip(cli_ctx *ctx)
     fmap_t *map = ctx->fmap;
     char *tmpd  = NULL;
     const char *ptr;
-#if HAVE_JSON
-    int toval = 0;
-#endif
+    int toval                        = 0;
     struct zip_record *zip_catalogue = NULL;
     size_t records_count             = 0;
     size_t i;
@@ -1294,11 +1286,10 @@ cl_error_t cli_unzip(cli_ctx *ctx)
                 goto done;
             }
 
-#if HAVE_JSON
             if (cli_json_timeout_cycle_check(ctx, &toval) != CL_SUCCESS) {
                 ret = CL_ETIMEOUT;
             }
-#endif
+
             if (ret != CL_SUCCESS) {
                 break;
             }
@@ -1343,11 +1334,10 @@ cl_error_t cli_unzip(cli_ctx *ctx)
                 cli_append_potentially_unwanted_if_heur_exceedsmax(ctx, "Heuristics.Limits.Exceeded.MaxFiles");
                 ret = CL_EMAXFILES;
             }
-#if HAVE_JSON
+
             if (cli_json_timeout_cycle_check(ctx, &toval) != CL_SUCCESS) {
                 ret = CL_ETIMEOUT;
             }
-#endif
         }
     }
 
@@ -1444,9 +1434,8 @@ cl_error_t unzip_search(cli_ctx *ctx, fmap_t *map, struct zip_requests *requests
     uint32_t coff = 0;
     const char *ptr;
     cl_error_t ret = CL_CLEAN;
-#if HAVE_JSON
     uint32_t toval = 0;
-#endif
+
     cli_dbgmsg("in unzip_search\n");
 
     if ((!ctx && !map) || !requests) {
@@ -1501,11 +1490,10 @@ cl_error_t unzip_search(cli_ctx *ctx, fmap_t *map, struct zip_requests *requests
                 cli_append_potentially_unwanted_if_heur_exceedsmax(ctx, "Heuristics.Limits.Exceeded.MaxFiles");
                 ret = CL_EMAXFILES;
             }
-#if HAVE_JSON
+
             if (ctx && cli_json_timeout_cycle_check(ctx, (int *)(&toval)) != CL_SUCCESS) {
                 ret = CL_ETIMEOUT;
             }
-#endif
         }
     } else {
         cli_dbgmsg("unzip_search: cannot locate central directory\n");

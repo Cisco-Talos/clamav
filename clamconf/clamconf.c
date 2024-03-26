@@ -446,12 +446,6 @@ int main(int argc, char **argv)
 #ifdef USE_MPOOL
     printf("MEMPOOL ");
 #endif
-#ifdef SUPPORT_IPv6
-    printf("IPv6 ");
-#endif
-#ifdef CLAMUKO
-    printf("CLAMUKO ");
-#endif
 #ifdef C_BIGSTACK
     printf("BIGSTACK ");
 #endif
@@ -462,25 +456,9 @@ int main(int argc, char **argv)
     if (get_fpu_endian() != FPU_ENDIAN_UNKNOWN)
 #endif
         printf("AUTOIT_EA06 ");
-#ifdef HAVE_BZLIB_H
-    printf("BZIP2 ");
-#endif
 
-#ifdef HAVE_LIBXML2
-    printf("LIBXML2 ");
-#endif
-#ifdef HAVE_PCRE
-#if USING_PCRE2
-    printf("PCRE2 ");
-#else
-    printf("PCRE ");
-#endif
-#endif
 #ifdef HAVE_ICONV
     printf("ICONV ");
-#endif
-#ifdef HAVE_JSON
-    printf("JSON ");
 #endif
     if (have_rar)
         printf("RAR ");
