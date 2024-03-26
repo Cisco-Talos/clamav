@@ -824,7 +824,7 @@ size_t HeaderCallback(char *buffer,
     size_t totBytes          = size * nitems;
     if (totBytes >= strlen(needle) + CFRAY_LEN) {
         if (0 == strncmp(needle, buffer, strlen(needle))) {
-            uint8_t **last = (uint8_t **)userdata;
+            uint8_t *last = (uint8_t *)userdata;
             memcpy(last, &(buffer[strlen(needle)]), CFRAY_LEN);
             last[CFRAY_LEN] = 0;
         }
@@ -1315,7 +1315,7 @@ static fc_error_t downloadFile(
         logg(LOGG_ERROR, "downloadFile: Failed to set write-data file handle for curl session.\n");
     }
 
-    if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_HEADERDATA, &g_lastRay)) {
+    if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_HEADERDATA, g_lastRay)) {
         logg(LOGG_ERROR, "downloadFile: Failed to set header-data for header callback for curl session.\n");
     }
 
