@@ -47,3 +47,24 @@ if(WIN32)
 else()
     install(TARGETS clamdscan DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT programs)
 endif()
+
+if(SYSTEMD_FOUND)
+    configure_file(
+        ${CMAKE_CURRENT_SOURCE_DIR}/clamav-clamdscan@.service.in
+        ${CMAKE_CURRENT_BINARY_DIR}/clamav-clamdscan@.service @ONLY)
+    configure_file(
+        ${CMAKE_CURRENT_SOURCE_DIR}/clamav-clamdscan@.timer.in
+        ${CMAKE_CURRENT_BINARY_DIR}/clamav-clamdscan@.timer @ONLY)
+    install(
+        FILES ${CMAKE_CURRENT_BINARY_DIR}/clamav-clamdscan@.service
+        DESTINATION ${SYSTEMD_UNIT_DIR} COMPONENT programs)
+    install(
+        FILES ${CMAKE_CURRENT_BINARY_DIR}/clamav-clamdscan@.service
+        DESTINATION ${SYSTEMD_USER_UNIT_DIR} COMPONENT programs)
+    install(
+        FILES ${CMAKE_CURRENT_BINARY_DIR}/clamav-clamdscan@.timer
+        DESTINATION ${SYSTEMD_UNIT_DIR} COMPONENT programs)
+    install(
+        FILES ${CMAKE_CURRENT_BINARY_DIR}/clamav-clamdscan@.timer
+        DESTINATION ${SYSTEMD_USER_UNIT_DIR} COMPONENT programs)
+endif()
