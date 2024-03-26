@@ -4586,6 +4586,11 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
             if (SCAN_PARSE_ONENOTE && (DCONF_ARCH & DOC_CONF_ONENOTE))
                 ret = scan_onenote(ctx);
             break;
+        case CL_TYPE_ALZ:
+            if (SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_ALZ)) {
+                ret = cli_scanalz(ctx);
+            }
+            break;
 
         case CL_TYPE_OOXML_WORD:
         case CL_TYPE_OOXML_PPT:

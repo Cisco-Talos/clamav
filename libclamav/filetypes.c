@@ -138,6 +138,7 @@ static const struct ftmap_s {
     { "CL_TYPE_EGG",                CL_TYPE_EGG             },
     { "CL_TYPE_EGGSFX",             CL_TYPE_EGGSFX          },
     { "CL_TYPE_UDF",                CL_TYPE_UDF             },
+    { "CL_TYPE_ALZ",                CL_TYPE_ALZ             },
     { "CL_TYPE_ONENOTE",            CL_TYPE_ONENOTE         },
     { "CL_TYPE_PYTHON_COMPILED",    CL_TYPE_PYTHON_COMPILED },
     { NULL,                         CL_TYPE_IGNORED         }
