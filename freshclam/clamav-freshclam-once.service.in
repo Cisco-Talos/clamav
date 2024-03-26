@@ -1,12 +1,61 @@
 [Unit]
 Description=Update ClamAV virus database once
 Documentation=man:freshclam(1) man:freshclam.conf(5) https://docs.clamav.net/
+;ConditionPathExists=!/etc/cron.d/clamav-freshclam
 Wants=network-online.target
 After=network-online.target
+Conflicts=clamav-freshclam.service
 
 [Service]
 Type=oneshot
+# WARNING: Must match clamd.conf directive
+User=clamav
+Group=clamav
+;DynamicUser=yes
 ExecStart=@prefix@/bin/freshclam
+LogsDirectory=clamav
+ConfigurationDirectory=clamav
+RuntimeDirectory=clamav
+
+#============================#
+# Security Hardening Options #
+#============================#
+NoNewPrivileges=yes
+;PrivateUsers=no
+
+ProtectSystem=full
+ProtectHome=tmpfs
+PrivateTmp=yes
+PrivateDevices=yes
+ReadWritePaths=@DATADIR@
+
+NoExecPaths=/
+# WARNING: To execute targets of `OnUpdateExecute`, `OnErrorExecute` and `OnOutdatedExecute`
+# directives in freshclam.conf, whitelist them in ExecPaths.
+;ExecPaths=@prefix@/sbin/freshclam /usr/local/bin/OnOutdated.sh /usr/local/bin/OnErrorExecute.sh
+ExecPaths=@prefix@/bin/freshclam
+
+ProtectClock=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+SystemCallArchitectures=native
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+RestrictRealtime=yes
+
+PrivateNetwork=no
+IPAddressAllow=any
+RestrictAddressFamilies=AF_INET AF_INET6
+
+ProtectProc=noaccess
+ProcSubset=pid
+
+CapabilityBoundingSet=CAP_CHOWN CAP_SETGID CAP_SETUID CAP_DAC_OVERRIDE CAP_MKNOD
+RestrictNamespaces=yes
+SystemCallFilter=~@clock @cpu-emulation @debug @module @mount @obsolete @raw-io @reboot @resources @swap
 
 [Install]
 WantedBy=multi-user.target
