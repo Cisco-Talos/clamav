@@ -12,6 +12,7 @@ Type=simple
 User=root
 ExecStartPre=/bin/bash -c "while [ ! -S /run/clamav/clamd.ctl ]; do sleep 1; done"
 ExecStart=@prefix@/sbin/clamonacc -F --log=/var/log/clamav/clamonacc.log --move=/root/quarantine
+ExecStop=/bin/kill -SIGKILL $MAINPID
 
 [Install]
 WantedBy=multi-user.target
