@@ -175,7 +175,7 @@ pub unsafe extern "C" fn scan_lha_lzh(ctx: *mut cli_ctx) -> cl_error_t {
     let result = match result_result {
         Ok(result) => result,
         Err(_) => {
-            debug!("Panic occured when trying to open LHA archive with delharc crate");
+            debug!("Panic occurred when trying to open LHA archive with delharc crate");
             return cl_error_t_CL_EFORMAT;
         }
     };
@@ -213,7 +213,7 @@ pub unsafe extern "C" fn scan_lha_lzh(ctx: *mut cli_ctx) -> cl_error_t {
                 // Error checking CRC.
                 // Use debug-level because may not actually be an LHA/LZH archive.
                 // LHA/LZH does not have particularly identifiable magic bytes.
-                debug!("An error occured when checking the CRC of this LHA or LZH archive: {err}");
+                debug!("An error occurred when checking the CRC of this LHA or LZH archive: {err}");
                 // break;
             }
         }
@@ -287,7 +287,7 @@ pub unsafe extern "C" fn scan_lha_lzh(ctx: *mut cli_ctx) -> cl_error_t {
                 // Error getting the next file.
                 // Use debug-level because may not actually be an LHA/LZH archive.
                 // LHA/LZH does not have particularly identifiable magic bytes.
-                debug!("An error occured when checking for the next file in this LHA or LZH archive: {err}");
+                debug!("An error occurred when checking for the next file in this LHA or LZH archive: {err}");
                 break;
             }
         }
