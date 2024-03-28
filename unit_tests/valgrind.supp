@@ -320,7 +320,6 @@
    statx(file_name)
    fun:statx
    fun:statx
-   fun:_ZN3std3sys4unix2fs9try_statx*
    ...
 }
 {
@@ -329,7 +328,6 @@
    statx(buf)
    fun:statx
    fun:statx
-   fun:_ZN3std3sys4unix2fs9try_statx*
    ...
 }
 {
@@ -338,7 +336,6 @@
    statx(file_name)
    fun:syscall
    fun:statx
-   fun:_ZN3std3sys4unix2fs9try_statx*
    ...
 }
 {
@@ -347,7 +344,6 @@
    statx(buf)
    fun:syscall
    fun:statx
-   fun:_ZN3std3sys4unix2fs9try_statx*
    ...
 }
 {
@@ -357,7 +353,6 @@
    fun:__fxstatat
    fun:statx_generic*
    fun:statx
-   fun:_ZN3std3sys4unix2fs9try_statx*
    ...
 }
 {
@@ -368,7 +363,7 @@
    fun:statx_generic*
    fun:statx
    fun:statx
-   fun:_ZN3std3sys4unix2fs9try_statx*
+   ...
 }
 {
    <rayon-jpeg-decoder-error>
