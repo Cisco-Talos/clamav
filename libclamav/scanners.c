@@ -390,7 +390,7 @@ static cl_error_t cli_scanrar_file(const char *filepath, int desc, cli_ctx *ctx)
                 /*
                  * Extract the file...
                  */
-                if (NULL != metadata.filename) {
+                if (0 != metadata.filename[0]) {
                     (void)cli_basename(metadata.filename, strlen(metadata.filename), &filename_base);
                 }
 

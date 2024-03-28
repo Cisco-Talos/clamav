@@ -65,6 +65,7 @@ typedef struct __attribute__((packed)) {
 
 } lb_addr;
 
+
 typedef struct __attribute__((packed)) {
     uint32_t length; // 4/14.14.1.1
     /*30 least significant bits are length in bytes.
@@ -183,6 +184,7 @@ typedef struct __attribute__((packed)) {
 
     long_ad icb;
 
+    /*L_IU specified in 1/7.1.3 */
     uint16_t implementationLength;
 
     uint8_t rest[1];
@@ -195,7 +197,7 @@ typedef struct __attribute__((packed)) {
 static uint32_t getFileIdentifierDescriptorPaddingLength(const FileIdentifierDescriptor* const fid)
 {
     uint32_t ret = 0;
-    uint32_t tmp = fid->implementationLength + fid->fileIdentifierLength + 38;
+    uint32_t tmp = le16_to_host(fid->implementationLength) + fid->fileIdentifierLength + 38;
     ret          = tmp + 3;
     ret          = ret / 4;
 
@@ -208,7 +210,12 @@ static uint32_t getFileIdentifierDescriptorPaddingLength(const FileIdentifierDes
 static inline size_t getFileIdentifierDescriptorSize(const FileIdentifierDescriptor* fid)
 {
 
-    return FILE_IDENTIFIER_DESCRIPTOR_SIZE_KNOWN + fid->implementationLength + fid->fileIdentifierLength + getFileIdentifierDescriptorPaddingLength(fid);
+    fprintf(stderr, "%s::%d::Could we check for VOLUME_DESCRIPTOR_SIZE???\n", __FUNCTION__, __LINE__);
+
+    return FILE_IDENTIFIER_DESCRIPTOR_SIZE_KNOWN
+        + le16_to_host(fid->implementationLength)
+        + fid->fileIdentifierLength
+        + getFileIdentifierDescriptorPaddingLength(fid);
 }
 
 typedef struct __attribute__((packed)) {
@@ -260,7 +267,7 @@ typedef struct __attribute__((packed)) {
 #define FILE_ENTRY_DESCRIPTOR_SIZE_KNOWN (sizeof(FileEntryDescriptor) - 1)
 static inline size_t getFileEntryDescriptorSize(const FileEntryDescriptor* fed)
 {
-    return FILE_ENTRY_DESCRIPTOR_SIZE_KNOWN + fed->extendedAttrLen + fed->allocationDescLen;
+    return FILE_ENTRY_DESCRIPTOR_SIZE_KNOWN + le32_to_host(fed->extendedAttrLen) + le32_to_host(fed->allocationDescLen);
 }
 
 typedef struct __attribute__((packed)) {
