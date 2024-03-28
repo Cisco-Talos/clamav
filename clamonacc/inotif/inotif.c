@@ -143,6 +143,7 @@ int onas_ddd_init(uint64_t nwatches, size_t ht_size)
     int ret                            = 0;
     char nwatch_str[MAX_WATCH_LEN + 1] = {0};
     char *p                            = NULL;
+    int64_t tmp                        = 0;
     nwatches                           = 0;
 
     nwfd = open(nwatch_file, O_RDONLY);
@@ -152,7 +153,13 @@ int onas_ddd_init(uint64_t nwatches, size_t ht_size)
     close(nwfd);
     if (ret < 0) return CL_EREAD;
 
-    nwatches = strtol(nwatch_str, &p, 10);
+    tmp = strtol(nwatch_str, &p, 10);
+    if (tmp < 0 || tmp == LONG_MAX){
+        /*Seems like a sane value (also the value on my ubuntu system)*/
+        nwatches = 0x10000;
+    } else {
+        nwatches = tmp;
+    }
 
     ret = onas_ddd_init_wdlt(nwatches);
     if (ret) return ret;
