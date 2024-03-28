@@ -171,7 +171,7 @@ int cli_7unz(cli_ctx *ctx, size_t offset)
                     }
                 }
             }
-            if (CL_VIRUS == cli_matchmeta(ctx, name, 0, f->Size, encrypted, i, f->CrcDefined ? f->Crc : 0, NULL)) {
+            if (CL_VIRUS == cli_matchmeta(ctx, name, 0, f->Size, encrypted, i, f->CrcDefined ? f->Crc : 0)) {
                 found = CL_VIRUS;
                 break;
             }

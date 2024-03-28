@@ -22,7 +22,7 @@
 #include <string.h>
 #include "w32_errno.h"
 
-char *w32_strerror(int errnum)
+const char *w32_strerror(int errnum)
 {
     size_t i;
     for (i = 0; i < sizeof(w32_errnos) / sizeof(w32_errnos[0]); i++) {

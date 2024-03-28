@@ -924,7 +924,7 @@ static int dmg_stripe_bzip(cli_ctx *ctx, int fd, uint32_t index, struct dmg_mish
                     break;
                 }
 
-                ret = cli_checklimits("dmg_stripe_bzip", ctx, (unsigned long)(size_so_far + sizeof(obuf)), 0, 0);
+                ret = cli_checklimits("dmg_stripe_bzip", ctx, size_so_far + sizeof(obuf), 0, 0);
                 if (ret != CL_CLEAN) {
                     break;
                 }
@@ -953,7 +953,7 @@ static int dmg_stripe_bzip(cli_ctx *ctx, int fd, uint32_t index, struct dmg_mish
             size_so_far += next_write;
             dmg_bzipmsg("dmg_stripe_bzip: size_so_far: " STDu64 " next_write: %zu\n", size_so_far, next_write);
 
-            ret = cli_checklimits("dmg_stripe_bzip", ctx, (unsigned long)(size_so_far + sizeof(obuf)), 0, 0);
+            ret = cli_checklimits("dmg_stripe_bzip", ctx, size_so_far + sizeof(obuf), 0, 0);
             if (ret != CL_CLEAN) {
                 break;
             }

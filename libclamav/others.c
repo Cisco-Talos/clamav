@@ -250,7 +250,7 @@ static void *get_module_function(HMODULE handle, const char *name)
                 NULL,
                 lasterr,
                 MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-                (LPCSTR)&err,
+                (LPSTR)&err,
                 0,
                 NULL);
         }
@@ -1132,10 +1132,10 @@ void cli_append_potentially_unwanted_if_heur_exceedsmax(cli_ctx *ctx, char *vnam
     }
 }
 
-cl_error_t cli_checklimits(const char *who, cli_ctx *ctx, unsigned long need1, unsigned long need2, unsigned long need3)
+cl_error_t cli_checklimits(const char *who, cli_ctx *ctx, uint64_t need1, uint64_t need2, uint64_t need3)
 {
     cl_error_t ret = CL_SUCCESS;
-    unsigned long needed;
+    uint64_t needed;
 
     if (!ctx) {
         /* if called without limits, go on, unpack, scan */
@@ -1156,7 +1156,7 @@ cl_error_t cli_checklimits(const char *who, cli_ctx *ctx, unsigned long need1, u
     /* Enforce global scan-size limit, if limit enabled */
     if (needed && (ctx->engine->maxscansize != 0) && (ctx->engine->maxscansize - ctx->scansize < needed)) {
         /* The size needed is greater than the remaining scansize ... Skip this file. */
-        cli_dbgmsg("%s: scansize exceeded (initial: %lu, consumed: %lu, needed: %lu)\n", who, (unsigned long int)ctx->engine->maxscansize, (unsigned long int)ctx->scansize, needed);
+        cli_dbgmsg("%s: scansize exceeded (initial: %lu, consumed: %lu, needed: %lu)\n", who, ctx->engine->maxscansize, ctx->scansize, needed);
         ret = CL_EMAXSIZE;
         cli_append_potentially_unwanted_if_heur_exceedsmax(ctx, "Heuristics.Limits.Exceeded.MaxScanSize");
         goto done;
@@ -1165,7 +1165,7 @@ cl_error_t cli_checklimits(const char *who, cli_ctx *ctx, unsigned long need1, u
     /* Enforce per-file file-size limit, if limit enabled */
     if (needed && (ctx->engine->maxfilesize != 0) && (ctx->engine->maxfilesize < needed)) {
         /* The size needed is greater than that limit ... Skip this file. */
-        cli_dbgmsg("%s: filesize exceeded (allowed: %lu, needed: %lu)\n", who, (unsigned long int)ctx->engine->maxfilesize, needed);
+        cli_dbgmsg("%s: filesize exceeded (allowed: %lu, needed: %lu)\n", who, ctx->engine->maxfilesize, needed);
         ret = CL_EMAXSIZE;
         cli_append_potentially_unwanted_if_heur_exceedsmax(ctx, "Heuristics.Limits.Exceeded.MaxFileSize");
         goto done;

@@ -53,7 +53,7 @@ void w32_freeaddrinfo(struct addrinfo *res);
 const char *w32_inet_ntop(int af, const void *src, char *dst, socklen_t size);
 int w32_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struct timeval *timeout);
 int poll_with_event(struct pollfd *fds, int nfds, int timeout, HANDLE event);
-int w32_accept(SOCKET sockfd, const struct sockaddr *addr, socklen_t *addrlen);
+int w32_accept(SOCKET sockfd, struct sockaddr *addr, socklen_t *addrlen);
 int w32_listen(int sockfd, int backlog);
 int w32_shutdown(int sockfd, int how);
 int w32_getpeername(int sd, struct sockaddr *name, int *namelen);

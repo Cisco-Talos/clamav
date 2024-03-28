@@ -623,7 +623,7 @@ static void decode_de(yystype *params[], struct text_buffer *txtbuf)
         else
             textbuffer_append(txtbuf, tokens[val]);
     } while (*p);
-    free(tokens);
+    free((void *)tokens);
     textbuffer_append(txtbuf, "\0");
 }
 

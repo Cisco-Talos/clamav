@@ -30,10 +30,10 @@
 
 char *cli_strdup_to_utf8(const char *s)
 {
-    char *r = cli_to_utf8_maybe_alloc(s);
+    const char *r = cli_to_utf8_maybe_alloc(s);
     if (!r) return NULL;
     if (r == s) return _strdup(r);
-    return r;
+    return (char *)r;
 }
 
 #define MAYBE_FREE_W                  \
@@ -44,7 +44,7 @@ char *cli_strdup_to_utf8(const char *s)
     do {                              \
         if (utf8 != tmpu) free(utf8); \
     } while (0)
-char *cli_to_utf8_maybe_alloc(const char *s)
+const char *cli_to_utf8_maybe_alloc(const char *s)
 {
     int len = strlen(s) + 1;
     wchar_t tmpw[1024], *wdup;

@@ -671,7 +671,7 @@ static unsigned int parse_local_file_header(
     /* ZMDfmt virname:encrypted(0-1):filename(exact|*):usize(exact|*):csize(exact|*):crc32(exact|*):method(exact|*):fileno(exact|*):maxdepth(exact|*) */
 
     /* Scan file header metadata. */
-    if (cli_matchmeta(ctx, name, LOCAL_HEADER_csize, LOCAL_HEADER_usize, (LOCAL_HEADER_flags & F_ENCR) != 0, file_count, LOCAL_HEADER_crc32, NULL) == CL_VIRUS) {
+    if (cli_matchmeta(ctx, name, LOCAL_HEADER_csize, LOCAL_HEADER_usize, (LOCAL_HEADER_flags & F_ENCR) != 0, file_count, LOCAL_HEADER_crc32) == CL_VIRUS) {
         *ret = CL_VIRUS;
         goto done;
     }
@@ -861,7 +861,7 @@ parse_central_directory_file_header(
     coff += CENTRAL_HEADER_flen;
 
     /* requests do not supply a ctx; also prevent multiple scans */
-    if (ctx && (CL_VIRUS == cli_matchmeta(ctx, name, CENTRAL_HEADER_csize, CENTRAL_HEADER_usize, (CENTRAL_HEADER_flags & F_ENCR) != 0, file_count, CENTRAL_HEADER_crc32, NULL))) {
+    if (ctx && (CL_VIRUS == cli_matchmeta(ctx, name, CENTRAL_HEADER_csize, CENTRAL_HEADER_usize, (CENTRAL_HEADER_flags & F_ENCR) != 0, file_count, CENTRAL_HEADER_crc32))) {
         last = 1;
         *ret = CL_VIRUS;
         goto done;

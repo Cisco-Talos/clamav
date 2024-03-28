@@ -406,7 +406,7 @@ cl_error_t cli_scanishield(cli_ctx *ctx, off_t off, size_t sz)
             (size_t)(data - fname) >= sz - fsize) break;
 
         cli_dbgmsg("ishield: @%lx found file %s (%s) - version %s - size %lu\n", (unsigned long int)coff, fname, path, version, (unsigned long int)fsize);
-        if (CL_SUCCESS != cli_matchmeta(ctx, fname, fsize, fsize, 0, fc++, 0, NULL)) {
+        if (CL_SUCCESS != cli_matchmeta(ctx, fname, fsize, fsize, 0, fc++, 0)) {
             ret = CL_VIRUS;
             break;
         }

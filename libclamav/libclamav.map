@@ -301,6 +301,8 @@ CLAMAV_PRIVATE {
     fuzzy_hash_calculate_image;
     ffierror_fmt;
     cli_magic_scan_buff;
+    cli_checklimits;
+    cli_matchmeta;
 
     __cli_strcasestr;
     __cli_strndup;

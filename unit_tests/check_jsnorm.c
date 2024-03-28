@@ -114,7 +114,7 @@ END_TEST
 
 START_TEST(test_token_scope)
 {
-    struct scope *sc = (struct scope *)0xdeadbeef;
+    struct scope *sc = (struct scope *)(uint64_t)0xdeadbeef;
     yystype tok;
     memset(&tok, 0, sizeof(tok));
 

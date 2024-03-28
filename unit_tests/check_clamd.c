@@ -890,9 +890,12 @@ static Suite *test_clamd_suite(void)
     return s;
 }
 
-int main(void)
+int main(int argc, char **argv)
 {
     int num_fds;
+
+    UNUSEDPARAM(argc);
+    UNUSEDPARAM(argv);
 
 #ifdef _WIN32
     WSADATA wsaData;

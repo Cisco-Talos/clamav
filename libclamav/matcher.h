@@ -375,7 +375,7 @@ cl_error_t cli_caloff(const char *offstr, const struct cli_target_info *info, un
  */
 cl_error_t cli_check_fp(cli_ctx *ctx, const char *vname);
 
-cl_error_t cli_matchmeta(cli_ctx *ctx, const char *fname, size_t fsizec, size_t fsizer, int encrypted, unsigned int filepos, int res1, void *res2);
+cl_error_t cli_matchmeta(cli_ctx *ctx, const char *fname, size_t fsizec, size_t fsizer, int encrypted, unsigned int filepos, int res1);
 
 /** Parse the executable headers and, if successful, populate exeinfo
  *

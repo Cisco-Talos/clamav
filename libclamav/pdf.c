@@ -632,9 +632,9 @@ cl_error_t pdf_findobj(struct pdf_struct *pdf)
          *
          * If this is the case, we can detect it and continue parsing after the %%EOF.
          */
-        if (objid_search_index - strlen("\%\%EO") > start) {
-            const char *lastfile = objid_search_index - strlen("\%\%EO");
-            if (0 != strncmp(lastfile, "\%\%EOF", 5)) {
+        if (objid_search_index - strlen("%%EO") > start) {
+            const char *lastfile = objid_search_index - strlen("%%EO");
+            if (0 != strncmp(lastfile, "%%EOF", 5)) {
                 /* Nope, wasn't %%EOF */
                 cli_dbgmsg("pdf_findobj: Failed to parse object objid (# objects found: %u)\n", pdf->nobjs);
                 /* Skip past the "obj" thing, and continue. */
@@ -645,7 +645,7 @@ cl_error_t pdf_findobj(struct pdf_struct *pdf)
             /* Yup, Looks, like the file continues after %%EOF.
              * Probably another revision.  Keep parsing... */
             objid_search_index++;
-            cli_dbgmsg("pdf_findobj: \%\%EOF detected before end of file, at offset: %zu\n", (size_t)(objid_search_index - pdf->map));
+            cli_dbgmsg("pdf_findobj: %%%%EOF detected before end of file, at offset: %zu\n", (size_t)(objid_search_index - pdf->map));
         } else {
             /* Failed parsing at the very beginning */
             cli_dbgmsg("pdf_findobj: Failed to parse object objid (# objects found: %u)\n", pdf->nobjs);
@@ -742,8 +742,8 @@ static size_t filter_writen(struct pdf_struct *pdf, struct pdf_obj *obj, int fou
 {
     UNUSEDPARAM(obj);
 
-    if (cli_checklimits("pdf", pdf->ctx, (unsigned long)*sum, 0, 0)) /* TODO: May truncate for large values on 64-bit platforms */
-        return len;                                                  /* pretend it was a successful write to suppress CL_EWRITE */
+    if (cli_checklimits("pdf", pdf->ctx, (uint64_t)*sum, 0, 0))
+        return len;
 
     *sum += len;
 
@@ -1083,7 +1083,7 @@ static void dbg_printhex(const char *msg, const char *hex, unsigned len);
 
 static void aes_256cbc_decrypt(const unsigned char *in, size_t *length, unsigned char *q, char *key, unsigned key_n, int has_iv)
 {
-    unsigned long rk[RKLENGTH(256)];
+    uint32_t rk[RKLENGTH(256)];
     unsigned char iv[16];
     size_t len = 0;
     unsigned char pad, i;
@@ -1171,7 +1171,7 @@ static void aes_256cbc_decrypt(const unsigned char *in, size_t *length, unsigned
 
 static void aes_128cbc_encrypt(const unsigned char *in, size_t in_length, unsigned char *out, size_t *out_length, const unsigned char *key, size_t key_n, const unsigned char *iv)
 {
-    unsigned long rk[RKLENGTH(128)];
+    uint32_t rk[RKLENGTH(128)];
     unsigned char real_iv[16] = {0};
     int nrounds;
     uint8_t i = 0;

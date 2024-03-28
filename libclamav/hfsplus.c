@@ -344,7 +344,7 @@ static cl_error_t hfsplus_scanfile(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader,
         goto done;
     }
 #endif
-    status = cli_checklimits("hfsplus_scanfile", ctx, (unsigned long)targetSize, 0, 0);
+    status = cli_checklimits("hfsplus_scanfile", ctx, targetSize, 0, 0);
     if (status != CL_SUCCESS) {
         goto done;
     }

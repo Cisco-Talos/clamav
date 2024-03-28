@@ -94,6 +94,7 @@ typedef enum cli_file {
     CL_TYPE_EGG,
     CL_TYPE_ONENOTE,
     CL_TYPE_PYTHON_COMPILED,
+    CL_TYPE_LHA_LZH,
 
     /* Section for partition types */
     CL_TYPE_PART_ANY, /* unknown partition type */

@@ -302,7 +302,7 @@ cl_error_t cli_untar(const char *dir, unsigned int posix, cli_ctx *ctx)
 
             strncpy(name, block, 100);
             name[100] = '\0';
-            if (cli_matchmeta(ctx, name, size, size, 0, files, 0, NULL) == CL_VIRUS) {
+            if (cli_matchmeta(ctx, name, size, size, 0, files, 0) == CL_VIRUS) {
                 return CL_VIRUS;
             }
 
@@ -331,7 +331,7 @@ cl_error_t cli_untar(const char *dir, unsigned int posix, cli_ctx *ctx)
             if (limitnear > 0) {
                 currsize += nbytes;
                 cli_dbgmsg("cli_untar: Approaching limit...\n");
-                if (cli_checklimits("cli_untar", ctx, (unsigned long)currsize, 0, 0) != CL_SUCCESS) {
+                if (cli_checklimits("cli_untar", ctx, (uint64_t)currsize, 0, 0) != CL_SUCCESS) {
                     // Limit would be exceeded by this file, suppress writing beyond limit
                     // Need to keep reading to get to end of file chunk
                     skipwrite++;

@@ -143,7 +143,7 @@ START_TEST(test_suffix)
     ck_assert_msg(!!pattern, "test pattern");
     preg = malloc(sizeof(*regex.preg));
     ck_assert_msg(!!preg, "malloc");
-    rc = cli_regex2suffix(pattern, preg, cb_expect_multi, tests[_i]);
+    rc = cli_regex2suffix(pattern, preg, cb_expect_multi, (void *)tests[_i]);
     ck_assert_msg(rc == CL_SUCCESS, "single character pattern");
     cli_regfree(preg);
     free(preg);

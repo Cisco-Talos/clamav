@@ -49,7 +49,7 @@ cl_error_t cert_store_load(X509 **trusted_certs, size_t trusted_cert_count)
     cert_store_t *store = NULL;
     bool locked         = false;
 
-    hStore = CertOpenSystemStoreA(NULL, "ROOT");
+    hStore = CertOpenSystemStoreA(0, "ROOT");
     if (NULL == hStore) {
         mprintf(LOGG_ERROR, "Failed to open system certificate store.\n");
         goto done;
