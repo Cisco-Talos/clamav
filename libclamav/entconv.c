@@ -688,17 +688,31 @@ static int in_iconv_u16(const m_area_t* in_m_area, iconv_t* iconv_struct, m_area
         return 0;
     }
     /* convert encoding conv->tmp_area. conv->out_area */
-    alignfix = inleft % 4; /* iconv gives an error if we give him 3 bytes to convert,
-                               and we are using ucs4, ditto for utf16, and 1 byte*/
+
+    /*
+     * iconv gives an error if we give it less than 4 bytes to convert,
+     * and we are using ucs4, ditto for utf16, and 1 byte.
+     *
+     * If an alignfix is needed, we just trim the extra un-aligned
+     * bytes from the buffer.
+     * We hold on to the extra bytes, putting them into an aligned 4-byte
+     * buffer (tmp4), and then convert them with a final call to iconv.
+     */
+    alignfix = inleft % 4;
     inleft -= alignfix;
 
-    if (!inleft && alignfix) {
-        /* EOF, and we have less than 4 bytes to convert */
+    if (alignfix) {
+        /* Number of bytes is not mod(4).
+         * Copy the unaligned bytes from the end of the input.*/
         memset(tmp4, 0, 4);
-        memcpy(tmp4, input, alignfix);
-        input    = tmp4;
-        inleft   = 4;
-        alignfix = 0;
+        memcpy(tmp4, input + inleft, alignfix);
+
+        if (inleft == 0) {
+            /* Total number of bytes was < 4, so we only have the "unaligned" bytes to convert. */
+            inleft   = 4;
+            input    = tmp4;
+            alignfix = 0;
+        }
     }
 
     while (inleft && (outleft >= 2)) { /* iconv doesn't like inleft to be 0 */
@@ -711,6 +725,18 @@ static int in_iconv_u16(const m_area_t* in_m_area, iconv_t* iconv_struct, m_area
                 break;
             }
             /*cli_dbgmsg(MODULE_NAME "iconv error:%s\n", cli_strerror(errno, err, sizeof(err)));*/
+        } else if (0 == inleft) {
+            cli_dbgmsg(MODULE_NAME "iconv consumed all input\n");
+            if (alignfix) {
+                /* Convert the "unaligned" bytes. */
+                inleft   = 4;
+                input    = tmp4;
+                alignfix = 0;
+                continue;
+            } else {
+                /* no more data */
+                break;
+            }
         } else if (outleft == outleft_last) {
             cli_dbgmsg(MODULE_NAME "iconv stall (no output)\n");
         } else {
@@ -726,8 +752,21 @@ static int in_iconv_u16(const m_area_t* in_m_area, iconv_t* iconv_struct, m_area
         *out++ = 0;
         *out++ = *input++;
         inleft--;
+
+        if (0 == inleft && alignfix) {
+            /* Convert the "unaligned" bytes. */
+            inleft   = 4;
+            input    = tmp4;
+            alignfix = 0;
+            continue;
+        } else {
+            /* no more data */
+            break;
+        }
     }
+
     cli_dbgmsg("in_iconv_u16: unprocessed bytes: %lu\n", (unsigned long)inleft);
+
     if (out_m_area->length >= 0 && out_m_area->length >= (off_t)outleft) {
         out_m_area->length -= (off_t)outleft;
     } else {
