@@ -106,7 +106,7 @@
 #define OID_1_3_6_1_4_1_311_12_1_2 "\x2b\x06\x01\x04\x01\x82\x37\x0c\x01\x02"
 #define OID_szOID_CATALOG_LIST_MEMBER OID_1_3_6_1_4_1_311_12_1_2
 
-/* CATALOG_LIST_MEMBER2 seems to be whats used by the SHA256-based CAT files */
+/* CATALOG_LIST_MEMBER2 seems to be what's used by the SHA256-based CAT files */
 #define OID_1_3_6_1_4_1_311_12_1_3 "\x2b\x06\x01\x04\x01\x82\x37\x0c\x01\x03"
 #define OID_szOID_CATALOG_LIST_MEMBER2 OID_1_3_6_1_4_1_311_12_1_3
 

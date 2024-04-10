@@ -131,7 +131,7 @@ set(CMAKE_SYSROOT           /opt/aarch64-wrs-linux-sysroot)
 # Note, you may need to set ENABLE_JSON_SHARED if your sysroot provides libjson-c.so instead of libjson-c.a.
 #set(ENABLE_JSON_SHARED      ON)
 
-# You may need to set the following if CMake has some trouble finding the depenencies.
+# You may need to set the following if CMake has some trouble finding the dependencies.
 # For example if you have `libjson-c.a` in your sysroot, here: `/opt/aarch64-wrs-linux-sysroot/usr/lib64/libjson-c.a`
 # then you would set:
 #set(JSONC_LIBRARY           "/usr/lib64/libjson-c.a")

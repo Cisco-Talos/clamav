@@ -172,7 +172,7 @@ static inline void funmap(fmap_t *m)
  * @param m     The fmap.
  * @param at    The map offset requested.
  * @param len   The data length requested.
- * @return const void* A pointer into to the fmap->data at the requested ofset. NULL if offset/len are not contained in the fmap.
+ * @return const void* A pointer into to the fmap->data at the requested offset. NULL if offset/len are not contained in the fmap.
  */
 static inline const void *fmap_need_off(fmap_t *m, size_t at, size_t len)
 {
@@ -190,7 +190,7 @@ static inline const void *fmap_need_off(fmap_t *m, size_t at, size_t len)
  * @param m     The fmap.
  * @param at    The map offset requested.
  * @param len   The data length requested.
- * @return const void* A pointer into to the fmap->data at the requested ofset. NULL if offset/len are not contained in the fmap.
+ * @return const void* A pointer into to the fmap->data at the requested offset. NULL if offset/len are not contained in the fmap.
  */
 static inline const void *fmap_need_off_once(fmap_t *m, size_t at, size_t len)
 {
@@ -228,7 +228,7 @@ static inline size_t fmap_ptr2off(const fmap_t *m, const void *ptr)
  * @param m     The fmap.
  * @param ptr   A pointer into the fmap->data.
  * @param len   The data length requested.
- * @return const void* A pointer into to the fmap->data at the requested ofset. NULL if offset/len are not contained in the fmap.
+ * @return const void* A pointer into to the fmap->data at the requested offset. NULL if offset/len are not contained in the fmap.
  */
 static inline const void *fmap_need_ptr(fmap_t *m, const void *ptr, size_t len)
 {
@@ -246,7 +246,7 @@ static inline const void *fmap_need_ptr(fmap_t *m, const void *ptr, size_t len)
  * @param m     The fmap.
  * @param ptr   A pointer into the fmap->data.
  * @param len   The data length requested.
- * @return const void* A pointer into to the fmap->data at the requested ofset. NULL if offset/len are not contained in the fmap.
+ * @return const void* A pointer into to the fmap->data at the requested offset. NULL if offset/len are not contained in the fmap.
  */
 static inline const void *fmap_need_ptr_once(fmap_t *m, const void *ptr, size_t len)
 {
@@ -370,7 +370,7 @@ static inline const void *fmap_gets(fmap_t *m, char *dst, size_t *at, size_t max
  * @param at            The map offset requested.
  * @param len           Maximum length of data requested.
  * @param[out] lenout   The actual len of data available.
- * @return const void*  A pointer into to the fmap->data at the requested ofset. NULL if offset/len are not contained in the fmap.
+ * @return const void*  A pointer into to the fmap->data at the requested offset. NULL if offset/len are not contained in the fmap.
  */
 static inline const void *fmap_need_off_once_len(fmap_t *m, size_t at, size_t len, size_t *lenout)
 {
@@ -396,7 +396,7 @@ static inline const void *fmap_need_off_once_len(fmap_t *m, size_t at, size_t le
  * @param ptr           A pointer into the fmap->data.
  * @param len           Maximum length of data requested.
  * @param[out] lenout   The actual len of data available.
- * @return const void* A pointer into to the fmap->data at the requested ofset. NULL if offset/len are not contained in the fmap.
+ * @return const void* A pointer into to the fmap->data at the requested offset. NULL if offset/len are not contained in the fmap.
  */
 static inline const void *fmap_need_ptr_once_len(fmap_t *m, const void *ptr, size_t len, size_t *lenout)
 {

@@ -1270,7 +1270,7 @@ START_TEST(test_fmap_assorted_api)
     free_duplicate_fmap(dup_map);
     dup_map = NULL;
 
-    /* We can close the fd-based map now that we're done with it's duplicate */
+    /* We can close the fd-based map now that we're done with its duplicate */
     cl_fmap_close(fd_based_map);
     fd_based_map = NULL;
 
