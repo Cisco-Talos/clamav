@@ -536,7 +536,7 @@ fn rgb_to_luma(rgb: &[u8]) -> u8 {
 
 /// Convert the supplied image to grayscale. Alpha channel is discarded.
 ///
-/// This is a customized implemententation of the grayscale feature from the `image` crate.
+/// This is a customized implementation of the grayscale feature from the `image` crate.
 /// This allows us to:
 /// - use RGB->LUMA constants that match those used by the Python Pillow package.
 /// - round the luma floating point value to the nearest integer rather than truncating.

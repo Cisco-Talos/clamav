@@ -190,7 +190,7 @@ static const unsigned short int __mon_yday[2][13] =
 static void
 day_of_the_week(struct tm *tm)
 {
-    /* We know that January 1st 1970 was a Thursday (= 4).  Compute the
+    /* We know that January 1st 1970 was a Thursday (= 4).  Compute
      the difference between this data in the one on TM and so determine
      the weekday.  */
     int corr_year = 1900 + tm->tm_year - (tm->tm_mon < 2);

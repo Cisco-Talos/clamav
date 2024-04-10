@@ -50,7 +50,7 @@ int getopt_reset(void)
 
 /* this is the plain old UNIX getopt, with GNU-style extensions. */
 /* if you're porting some piece of UNIX software, this is all you need. */
-/* this supports GNU-style permution and optional arguments */
+/* this supports GNU-style permutation and optional arguments */
 
 int my_getopt(int argc, char *argvc[], const char *opts)
 {

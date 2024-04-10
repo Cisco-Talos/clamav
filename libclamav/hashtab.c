@@ -477,7 +477,7 @@ const struct cli_element *cli_hashtab_insert(struct cli_hashtable *s, const char
         } while (tries <= s->capacity);
         /* no free place found*/
         PROFILE_HASH_EXHAUSTED(s);
-        cli_dbgmsg("hashtab.c: Growing hashtable %p, because its full, old size: %zu.\n", (void *)s, s->capacity);
+        cli_dbgmsg("hashtab.c: Growing hashtable %p, because it's full, old size: %zu.\n", (void *)s, s->capacity);
     } while (cli_hashtab_grow(s) >= 0);
     cli_warnmsg("hashtab.c: Unable to grow hashtable\n");
     return NULL;
@@ -529,7 +529,7 @@ cl_error_t cli_htu32_insert(struct cli_htu32 *s, const struct cli_htu32_element 
         } while (tries <= s->capacity);
         /* no free place found*/
         PROFILE_HASH_EXHAUSTED(s);
-        cli_dbgmsg("hashtab.c: Growing hashtable %p, because its full, old size: %zu.\n", (void *)s, s->capacity);
+        cli_dbgmsg("hashtab.c: Growing hashtable %p, because it's full, old size: %zu.\n", (void *)s, s->capacity);
     } while ((ret = cli_htu32_grow(s, mempool)) >= 0);
     cli_warnmsg("hashtab.c: Unable to grow hashtable\n");
     return ret;

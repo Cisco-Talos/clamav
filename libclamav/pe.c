@@ -5797,12 +5797,12 @@ finish:
  * If the section hashes are to be computed and returned, this function
  * allocates memory for the section hashes, and it's up to the caller to free
  * it.  hashes->sections will be initialized to NULL at the beginning of the
- * function, and if after the call it's value is non-NULL, the memory should be
+ * function, and if after the call its value is non-NULL, the memory should be
  * freed.  Furthermore, if hashes->sections is non-NULL, the hashes can assume
  * to be valid regardless of the return code.
  *
  * Also, a few other notes:
- *  - If a section has a virtual size of zero, it's corresponding hash value
+ *  - If a section has a virtual size of zero, its corresponding hash value
  *    will not be computed and the hash contents will be all zeroes.
  *  - If a section extends beyond the end of the file, the section data and
  *    length will be truncated, and the hash generated accordingly
