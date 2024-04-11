@@ -25,6 +25,7 @@
 
 #define UDF_EMPTY_LEN 32768
 
+// All Volume Descriptors are the same size.
 #define VOLUME_DESCRIPTOR_SIZE 0x800
 
 #ifndef HAVE_ATTRIB_PACKED
@@ -66,6 +67,7 @@ typedef struct __attribute__((packed)) {
 } lb_addr;
 
 
+// Long allocation descriptor
 typedef struct __attribute__((packed)) {
     uint32_t length; // 4/14.14.1.1
     /*30 least significant bits are length in bytes.
@@ -209,9 +211,6 @@ static uint32_t getFileIdentifierDescriptorPaddingLength(const FileIdentifierDes
 
 static inline size_t getFileIdentifierDescriptorSize(const FileIdentifierDescriptor* fid)
 {
-
-    fprintf(stderr, "%s::%d::Could we check for VOLUME_DESCRIPTOR_SIZE???\n", __FUNCTION__, __LINE__);
-
     return FILE_IDENTIFIER_DESCRIPTOR_SIZE_KNOWN
         + le16_to_host(fid->implementationLength)
         + fid->fileIdentifierLength
@@ -324,6 +323,7 @@ typedef struct __attribute__((packed)) {
 
 } ExtendedFileEntryDescriptor;
 
+// Short allocation descriptor
 typedef struct __attribute__((packed)) {
 
     uint32_t length;
@@ -520,6 +520,13 @@ typedef struct __attribute__((packed)) {
     uint8_t reserved[32];
 
 } FileSetDescriptor;
+
+typedef struct  __attribute__((packed)) {
+    uint8_t structType;
+    char standardIdentifier[5];
+    uint8_t structVersion;
+    uint8_t rest[2041];
+} GenericVolumeStructureDescriptor;
 
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack()
