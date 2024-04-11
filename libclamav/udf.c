@@ -29,6 +29,7 @@
 #include "hashtab.h"
 
 typedef enum {
+    INVALID_DESCRIPTOR                          = 0,
     PRIMARY_VOLUME_DESCRIPTOR                   = 1,
     IMPLEMENTATION_USE_VOLUME_DESCRIPTOR        = 4,
     LOGICAL_VOLUME_DESCRIPTOR                   = 6,
@@ -36,17 +37,16 @@ typedef enum {
     UNALLOCATED_SPACE_DESCRIPTOR                = 7,
     TERMINATING_DESCRIPTOR                      = 8,
     LOGICAL_VOLUME_INTEGRITY_DESCRIPTOR         = 9,
-    ANCHOR_VOLUME_DESCRIPTOR_DESCRIPTOR_POINTER = 2
+    ANCHOR_VOLUME_DESCRIPTOR_DESCRIPTOR_POINTER = 2,
+    FILE_SET_DESCRIPTOR                         = 256,
+    FILE_IDENTIFIER_DESCRIPTOR                  = 257,
+    FILE_ENTRY_DESCRIPTOR                       = 261,
+    EXTENDED_FILE_ENTRY_DESCRIPTOR              = 266
+} tag_identifier;
 
-    ,
-    FILE_SET_DESCRIPTOR        = 256,
-    FILE_IDENTIFIER_DESCRIPTOR = 257,
-    FILE_ENTRY_DESCRIPTOR      = 261
-} VOLUME_DESCRIPTOR_TAG;
-
-static uint16_t getDescriptorTagId(const uint8_t *const buffer)
+static tag_identifier getDescriptorTagId(DescriptorTag *tag)
 {
-    return le16_to_host(((DescriptorTag *)buffer)->tagId);
+    return le16_to_host(tag->tagId);
 }
 
 static bool isDirectory(FileIdentifierDescriptor *fid)
@@ -56,7 +56,6 @@ static bool isDirectory(FileIdentifierDescriptor *fid)
 
 static cl_error_t writeWholeFile(cli_ctx *ctx, const char *const fileName, const uint8_t *const data, const size_t dataLen)
 {
-
     int fd     = -1;
     char *tmpf = NULL;
 
@@ -105,23 +104,32 @@ done:
     return status;
 }
 
-static cl_error_t extractFile(cli_ctx *ctx, PartitionDescriptor *pPartitionDescriptor, LogicalVolumeDescriptor *pLogicalVolumeDescriptor, void *address, uint16_t icbFlags, FileIdentifierDescriptor *fileIdentifierDescriptor)
+static cl_error_t extractFile(cli_ctx *ctx, PartitionDescriptor *pPartitionDescriptor, LogicalVolumeDescriptor *pLogicalVolumeDescriptor,
+                              void *allocation_descriptor,
+                              size_t allocation_descriptor_len,
+                              uint16_t icbFlags, FileIdentifierDescriptor *fileIdentifierDescriptor)
 {
-
-    cl_error_t ret    = CL_SUCCESS;
-    uint32_t offset   = 0;
-    uint32_t length   = 0;
-    uint8_t *contents = NULL;
-    uint32_t partitionStartingLocation = le32_to_host(pPartitionDescriptor->partitionStartingLocation); 
-    uint32_t logicalBlockSize = le32_to_host( pLogicalVolumeDescriptor->logicalBlockSize); 
+    cl_error_t ret                     = CL_EPARSE;
+    uint32_t offset                    = 0;
+    uint32_t length                    = 0;
+    uint8_t *contents                  = NULL;
+    uint32_t partitionStartingLocation = le32_to_host(pPartitionDescriptor->partitionStartingLocation);
+    uint32_t logicalBlockSize          = le32_to_host(pLogicalVolumeDescriptor->logicalBlockSize);
 
     if (isDirectory(fileIdentifierDescriptor)) {
+        cli_dbgmsg("extractFile: Skipping directory\n");
+        ret = CL_SUCCESS;
         goto done;
     }
 
     switch (icbFlags & 3) {
         case 0: {
-            short_ad *shortDesc = (short_ad *)address;
+            if (sizeof(short_ad) != allocation_descriptor_len) {
+                cli_warnmsg("extractFile: Short Allocation Descriptor length is incorrect.\n");
+                goto done;
+            }
+
+            short_ad *shortDesc = (short_ad *)allocation_descriptor;
 
             offset = partitionStartingLocation * logicalBlockSize;
             offset += le32_to_host(shortDesc->position) * logicalBlockSize;
@@ -130,12 +138,17 @@ static cl_error_t extractFile(cli_ctx *ctx, PartitionDescriptor *pPartitionDescr
 
         } break;
         case 1: {
-            long_ad *longDesc = (long_ad *)address;
-            offset            = partitionStartingLocation * logicalBlockSize;
-            length            = le32_to_host(longDesc->length);
+            if (sizeof(long_ad) != allocation_descriptor_len) {
+                cli_warnmsg("extractFile: Long Allocation Descriptor length is incorrect.\n");
+                goto done;
+            }
 
-            if (le16_to_host(longDesc->extentLocation.partitionReferenceNumber)
-                    != le16_to_host(pPartitionDescriptor->partitionNumber)) {
+            long_ad *longDesc = (long_ad *)allocation_descriptor;
+
+            offset = partitionStartingLocation * logicalBlockSize;
+            length = le32_to_host(longDesc->length);
+
+            if (le16_to_host(longDesc->extentLocation.partitionReferenceNumber) != le16_to_host(pPartitionDescriptor->partitionNumber)) {
                 cli_warnmsg("extractFile: Unable to extract the files because the Partition Descriptor Reference Numbers don't match\n");
                 goto done;
             }
@@ -144,12 +157,17 @@ static cl_error_t extractFile(cli_ctx *ctx, PartitionDescriptor *pPartitionDescr
 
         } break;
         case 2: {
-            ext_ad *extDesc = (ext_ad *)address;
-            offset          = partitionStartingLocation * logicalBlockSize;
-            length          = le32_to_host(extDesc->recordedLen);
+            if (sizeof(ext_ad) != allocation_descriptor_len) {
+                cli_warnmsg("extractFile: Extended Allocation Descriptor length is incorrect.\n");
+                goto done;
+            }
 
-            if (le16_to_host(extDesc->extentLocation.partitionReferenceNumber)
-                    != le16_to_host(pPartitionDescriptor->partitionNumber)) {
+            ext_ad *extDesc = (ext_ad *)allocation_descriptor;
+
+            offset = partitionStartingLocation * logicalBlockSize;
+            length = le32_to_host(extDesc->recordedLen);
+
+            if (le16_to_host(extDesc->extentLocation.partitionReferenceNumber) != le16_to_host(pPartitionDescriptor->partitionNumber)) {
                 cli_warnmsg("extractFile: Unable to extract the files because the Partition Descriptor Reference Numbers don't match\n");
                 goto done;
             }
@@ -177,28 +195,49 @@ done:
     return ret;
 }
 
-static bool parseFileEntryDescriptor(cli_ctx *ctx, const uint8_t *const data, PartitionDescriptor *pPartitionDescriptor, LogicalVolumeDescriptor *pLogicalVolumeDescriptor, FileIdentifierDescriptor *fileIdentifierDescriptor)
+static bool parseFileEntryDescriptor(cli_ctx *ctx, FileEntryDescriptor *fed, PartitionDescriptor *pPartitionDescriptor, LogicalVolumeDescriptor *pLogicalVolumeDescriptor, FileIdentifierDescriptor *fileIdentifierDescriptor)
 {
+    bool ret                    = false;
+    uint16_t tagId              = getDescriptorTagId(&fed->tag);
+    void *allocation_descriptor = NULL;
 
-    FileEntryDescriptor *fed = (FileEntryDescriptor *)data;
-    bool ret                 = false;
-    uint16_t tagId = getDescriptorTagId((const uint8_t*) &(fed->tag));
+    size_t file_entry_descriptor_size;
+    size_t allocation_descriptor_len;
 
     if (FILE_ENTRY_DESCRIPTOR != tagId) {
         cli_warnmsg("parseFileEntryDescriptor: Tag ID of 0x%x does not match File Entry Descriptor.\n", tagId);
         goto done;
     }
 
-    tagId = getDescriptorTagId((const uint8_t*) &(fileIdentifierDescriptor->tag));
+    tagId = getDescriptorTagId(&fileIdentifierDescriptor->tag);
     if (FILE_IDENTIFIER_DESCRIPTOR != tagId) {
         cli_warnmsg("parseFileEntryDescriptor: Tag ID of 0x%x does not match File Identifier Descriptor.\n", tagId);
         goto done;
     }
 
+    // Calculate pointer for the allocation descriptor.
+    // The allocation descriptors are the last bytes of the Extended File Entry.
+    // See Section 14.17 in https://www.ecma-international.org/wp-content/uploads/ECMA-167_3rd_edition_june_1997.pdf
+    file_entry_descriptor_size = getFileEntryDescriptorSize(fed);
+    allocation_descriptor_len  = le32_to_host(fed->allocationDescLen);
+
+    if (allocation_descriptor_len > file_entry_descriptor_size) {
+        cli_dbgmsg("parseFileEntryDescriptor: Allocation Descriptor Length is greater than the File Entry Descriptor Size.\n");
+        goto done;
+    }
+    allocation_descriptor = (void *)((uint8_t *)fed + (file_entry_descriptor_size - allocation_descriptor_len));
+
+    // The Allocation Descriptor was taken from the end of the  File Entry Descriptor.
+    // We already verified that the File Entry Descriptor is within the fmap,
+    // so it's safe to say the Allocation Descriptor is also within the fmap.
+    // No need to use an `fmap_need...()` function here.
+
+    // Extract the file.
     if (CL_SUCCESS != extractFile(ctx, pPartitionDescriptor, pLogicalVolumeDescriptor,
-                                  (void *)&(data[getFileEntryDescriptorSize(fed) - le32_to_host(fed->allocationDescLen)]),
+                                  allocation_descriptor,
+                                  allocation_descriptor_len,
                                   le16_to_host(fed->icbTag.flags), fileIdentifierDescriptor)) {
-        ret = false;
+        cli_dbgmsg("parseFileEntryDescriptor: Failed to extract file.\n");
         goto done;
     }
 
@@ -222,12 +261,6 @@ static void dumpTag (DescriptorTag *dt)
 }
 */
 
-typedef struct {
-    uint8_t structType;
-    char standardIdentifier[5];
-    uint8_t structVersion;
-    uint8_t rest[2041];
-} GenericVolumeStructureDescriptor;
 #define NUM_GENERIC_VOLUME_DESCRIPTORS 3
 
 /* If this function fails, idx will not be updated */
@@ -240,7 +273,6 @@ static bool skipEmptyDescriptors(cli_ctx *ctx, size_t *idxp, size_t *lastOffsetp
     size_t i;
 
     while (1) {
-
         buffer = (uint8_t *)fmap_need_off(ctx->fmap, idx, VOLUME_DESCRIPTOR_SIZE);
         if (NULL == buffer) {
             goto done;
@@ -272,7 +304,6 @@ done:
  * Return error if the next non-empty descriptor is not a PrimaryVolumeDescriptor. */
 static PrimaryVolumeDescriptor *getPrimaryVolumeDescriptor(cli_ctx *ctx, size_t *idxp, size_t *lastOffsetp)
 {
-    uint8_t *buffer               = NULL;
     PrimaryVolumeDescriptor *test = NULL;
     PrimaryVolumeDescriptor *ret  = NULL;
     size_t idx                    = *idxp;
@@ -285,15 +316,13 @@ static PrimaryVolumeDescriptor *getPrimaryVolumeDescriptor(cli_ctx *ctx, size_t 
     idx        = *idxp;
     lastOffset = *lastOffsetp;
 
-    buffer = (uint8_t *)fmap_need_off(ctx->fmap, idx, VOLUME_DESCRIPTOR_SIZE);
-    if (NULL == buffer) {
+    test = (PrimaryVolumeDescriptor *)fmap_need_off(ctx->fmap, idx, VOLUME_DESCRIPTOR_SIZE);
+    if (NULL == test) {
         goto done;
     }
     lastOffset = idx;
 
-    test = (PrimaryVolumeDescriptor *)buffer;
-
-    if (PRIMARY_VOLUME_DESCRIPTOR != getDescriptorTagId((const uint8_t*) &(test->tag))) {
+    if (PRIMARY_VOLUME_DESCRIPTOR != getDescriptorTagId(&test->tag)) {
         goto done;
     }
 
@@ -311,7 +340,6 @@ done:
  * Return error if the next non-empty descriptor is not an ImplementationUseVolumeDescriptor. */
 static ImplementationUseVolumeDescriptor *getImplementationUseVolumeDescriptor(cli_ctx *ctx, size_t *idxp, size_t *lastOffsetp)
 {
-    uint8_t *buffer                         = NULL;
     ImplementationUseVolumeDescriptor *test = NULL;
     ImplementationUseVolumeDescriptor *ret  = NULL;
     size_t idx                              = *idxp;
@@ -324,14 +352,13 @@ static ImplementationUseVolumeDescriptor *getImplementationUseVolumeDescriptor(c
     idx        = *idxp;
     lastOffset = *lastOffsetp;
 
-    buffer = (uint8_t *)fmap_need_off(ctx->fmap, idx, VOLUME_DESCRIPTOR_SIZE);
-    if (NULL == buffer) {
+    test = (ImplementationUseVolumeDescriptor *)fmap_need_off(ctx->fmap, idx, VOLUME_DESCRIPTOR_SIZE);
+    if (NULL == test) {
         goto done;
     }
     lastOffset = idx;
 
-    test = (ImplementationUseVolumeDescriptor *)buffer;
-    if (IMPLEMENTATION_USE_VOLUME_DESCRIPTOR != getDescriptorTagId((const uint8_t*) &(test->tag))) {
+    if (IMPLEMENTATION_USE_VOLUME_DESCRIPTOR != getDescriptorTagId(&test->tag)) {
         goto done;
     }
 
@@ -349,7 +376,6 @@ done:
  * Return error if the next non-empty descriptor is not a LogicalVolumeDescriptor. */
 static LogicalVolumeDescriptor *getLogicalVolumeDescriptor(cli_ctx *ctx, size_t *idxp, size_t *lastOffsetp)
 {
-    uint8_t *buffer               = NULL;
     LogicalVolumeDescriptor *ret  = NULL;
     LogicalVolumeDescriptor *test = NULL;
     size_t idx                    = *idxp;
@@ -362,14 +388,13 @@ static LogicalVolumeDescriptor *getLogicalVolumeDescriptor(cli_ctx *ctx, size_t 
     idx        = *idxp;
     lastOffset = *lastOffsetp;
 
-    buffer = (uint8_t *)fmap_need_off(ctx->fmap, idx, VOLUME_DESCRIPTOR_SIZE);
-    if (NULL == buffer) {
+    test = (LogicalVolumeDescriptor *)fmap_need_off(ctx->fmap, idx, VOLUME_DESCRIPTOR_SIZE);
+    if (NULL == test) {
         goto done;
     }
     lastOffset = idx;
 
-    test = (LogicalVolumeDescriptor *)buffer;
-    if (LOGICAL_VOLUME_DESCRIPTOR != getDescriptorTagId((const uint8_t*) &(test->tag))) {
+    if (LOGICAL_VOLUME_DESCRIPTOR != getDescriptorTagId(&test->tag)) {
         goto done;
     }
 
@@ -387,7 +412,6 @@ done:
  * Return error if the next non-empty descriptor is not a PartitionDescriptor. */
 static PartitionDescriptor *getPartitionDescriptor(cli_ctx *ctx, size_t *idxp, size_t *lastOffsetp)
 {
-    uint8_t *buffer           = NULL;
     PartitionDescriptor *ret  = NULL;
     PartitionDescriptor *test = NULL;
     size_t idx                = *idxp;
@@ -400,14 +424,13 @@ static PartitionDescriptor *getPartitionDescriptor(cli_ctx *ctx, size_t *idxp, s
     idx        = *idxp;
     lastOffset = *lastOffsetp;
 
-    buffer = (uint8_t *)fmap_need_off(ctx->fmap, idx, VOLUME_DESCRIPTOR_SIZE);
-    if (NULL == buffer) {
+    test = (PartitionDescriptor *)fmap_need_off(ctx->fmap, idx, VOLUME_DESCRIPTOR_SIZE);
+    if (NULL == test) {
         goto done;
     }
     lastOffset = idx;
 
-    test = (PartitionDescriptor *)buffer;
-    if (PARTITION_DESCRIPTOR != getDescriptorTagId((const uint8_t*) &(test->tag))) {
+    if (PARTITION_DESCRIPTOR != getDescriptorTagId(&test->tag)) {
         goto done;
     }
 
@@ -425,7 +448,6 @@ done:
  * Return error if the next non-empty descriptor is not a UnallocatedSpaceDescriptor. */
 static UnallocatedSpaceDescriptor *getUnallocatedSpaceDescriptor(cli_ctx *ctx, size_t *idxp, size_t *lastOffsetp)
 {
-    uint8_t *buffer                  = NULL;
     UnallocatedSpaceDescriptor *ret  = NULL;
     UnallocatedSpaceDescriptor *test = NULL;
     size_t idx                       = *idxp;
@@ -438,14 +460,13 @@ static UnallocatedSpaceDescriptor *getUnallocatedSpaceDescriptor(cli_ctx *ctx, s
     idx        = *idxp;
     lastOffset = *lastOffsetp;
 
-    buffer = (uint8_t *)fmap_need_off(ctx->fmap, idx, VOLUME_DESCRIPTOR_SIZE);
-    if (NULL == buffer) {
+    test = (UnallocatedSpaceDescriptor *)fmap_need_off(ctx->fmap, idx, VOLUME_DESCRIPTOR_SIZE);
+    if (NULL == test) {
         goto done;
     }
     lastOffset = idx;
 
-    test = (UnallocatedSpaceDescriptor *)buffer;
-    if (UNALLOCATED_SPACE_DESCRIPTOR != getDescriptorTagId((const uint8_t*) &(test->tag))) {
+    if (UNALLOCATED_SPACE_DESCRIPTOR != getDescriptorTagId(&test->tag)) {
         goto done;
     }
 
@@ -463,7 +484,6 @@ done:
  * Return error if the next non-empty descriptor is not a TerminatingDescriptor. */
 static TerminatingDescriptor *getTerminatingDescriptor(cli_ctx *ctx, size_t *idxp, size_t *lastOffsetp)
 {
-    uint8_t *buffer             = NULL;
     TerminatingDescriptor *ret  = NULL;
     TerminatingDescriptor *test = NULL;
     size_t idx                  = *idxp;
@@ -476,14 +496,13 @@ static TerminatingDescriptor *getTerminatingDescriptor(cli_ctx *ctx, size_t *idx
     idx        = *idxp;
     lastOffset = *lastOffsetp;
 
-    buffer = (uint8_t *)fmap_need_off(ctx->fmap, idx, VOLUME_DESCRIPTOR_SIZE);
-    if (NULL == buffer) {
+    test = (TerminatingDescriptor *)fmap_need_off(ctx->fmap, idx, VOLUME_DESCRIPTOR_SIZE);
+    if (NULL == test) {
         goto done;
     }
     lastOffset = idx;
 
-    test = (TerminatingDescriptor *)buffer;
-    if (TERMINATING_DESCRIPTOR != getDescriptorTagId((const uint8_t*) &(test->tag))) {
+    if (TERMINATING_DESCRIPTOR != getDescriptorTagId(&test->tag)) {
         goto done;
     }
 
@@ -501,7 +520,6 @@ done:
  * Return error if the next non-empty descriptor is not a LogicalVolumeIntegrityDescriptor. */
 static LogicalVolumeIntegrityDescriptor *getLogicalVolumeIntegrityDescriptor(cli_ctx *ctx, size_t *idxp, size_t *lastOffsetp)
 {
-    uint8_t *buffer                        = NULL;
     LogicalVolumeIntegrityDescriptor *ret  = NULL;
     LogicalVolumeIntegrityDescriptor *test = NULL;
     size_t idx                             = *idxp;
@@ -514,14 +532,13 @@ static LogicalVolumeIntegrityDescriptor *getLogicalVolumeIntegrityDescriptor(cli
     idx        = *idxp;
     lastOffset = *lastOffsetp;
 
-    buffer = (uint8_t *)fmap_need_off(ctx->fmap, idx, VOLUME_DESCRIPTOR_SIZE);
-    if (NULL == buffer) {
+    test = (LogicalVolumeIntegrityDescriptor *)fmap_need_off(ctx->fmap, idx, VOLUME_DESCRIPTOR_SIZE);
+    if (NULL == test) {
         goto done;
     }
     lastOffset = idx;
 
-    test = (LogicalVolumeIntegrityDescriptor *)buffer;
-    if (LOGICAL_VOLUME_INTEGRITY_DESCRIPTOR != getDescriptorTagId((const uint8_t*) &(test->tag))) {
+    if (LOGICAL_VOLUME_INTEGRITY_DESCRIPTOR != getDescriptorTagId(&test->tag)) {
         goto done;
     }
 
@@ -539,7 +556,6 @@ done:
  * Return error if the next non-empty descriptor is not an AnchorVolumeDescriptor. */
 static AnchorVolumeDescriptorPointer *getAnchorVolumeDescriptorPointer(cli_ctx *ctx, size_t *idxp, size_t *lastOffsetp)
 {
-    uint8_t *buffer                     = NULL;
     AnchorVolumeDescriptorPointer *ret  = NULL;
     AnchorVolumeDescriptorPointer *test = NULL;
     size_t idx                          = *idxp;
@@ -552,19 +568,17 @@ static AnchorVolumeDescriptorPointer *getAnchorVolumeDescriptorPointer(cli_ctx *
     idx        = *idxp;
     lastOffset = *lastOffsetp;
 
-    buffer = (uint8_t *)fmap_need_off(ctx->fmap, idx, VOLUME_DESCRIPTOR_SIZE);
-    if (NULL == buffer) {
+    test = (AnchorVolumeDescriptorPointer *)fmap_need_off(ctx->fmap, idx, VOLUME_DESCRIPTOR_SIZE);
+    if (NULL == test) {
         goto done;
     }
     lastOffset = idx;
 
-    test = (AnchorVolumeDescriptorPointer *)buffer;
-    if (ANCHOR_VOLUME_DESCRIPTOR_DESCRIPTOR_POINTER != getDescriptorTagId((const uint8_t*) &(test->tag))) {
+    if (ANCHOR_VOLUME_DESCRIPTOR_DESCRIPTOR_POINTER != getDescriptorTagId(&test->tag)) {
         goto done;
     }
 
     ret = test;
-
     idx += VOLUME_DESCRIPTOR_SIZE;
 
 done:
@@ -578,7 +592,6 @@ done:
  * Return error if the next non-empty descriptor is not a FileSetDescriptor. */
 static FileSetDescriptor *getFileSetDescriptor(cli_ctx *ctx, size_t *idxp, size_t *lastOffsetp)
 {
-    uint8_t *buffer         = NULL;
     FileSetDescriptor *ret  = NULL;
     FileSetDescriptor *test = NULL;
     size_t idx              = *idxp;
@@ -591,14 +604,13 @@ static FileSetDescriptor *getFileSetDescriptor(cli_ctx *ctx, size_t *idxp, size_
     idx        = *idxp;
     lastOffset = *lastOffsetp;
 
-    buffer = (uint8_t *)fmap_need_off(ctx->fmap, idx, VOLUME_DESCRIPTOR_SIZE);
-    if (NULL == buffer) {
+    test = (FileSetDescriptor *)fmap_need_off(ctx->fmap, idx, VOLUME_DESCRIPTOR_SIZE);
+    if (NULL == test) {
         goto done;
     }
     lastOffset = idx;
 
-    test = (FileSetDescriptor *)buffer;
-    if (FILE_SET_DESCRIPTOR != getDescriptorTagId((const uint8_t*) &(test->tag))) {
+    if (FILE_SET_DESCRIPTOR != getDescriptorTagId(&test->tag)) {
         goto done;
     }
 
@@ -665,11 +677,10 @@ done:
 
 static cl_error_t findFileIdentifiers(const uint8_t *const input, PointerList *pfil)
 {
-
     cl_error_t ret        = CL_SUCCESS;
     const uint8_t *buffer = input;
-    uint16_t tagId        = getDescriptorTagId(buffer);
-    uint64_t bufUsed;
+    uint16_t tagId        = getDescriptorTagId((DescriptorTag *)buffer);
+    size_t bufUsed;
     size_t fidDescSize;
 
     while (FILE_IDENTIFIER_DESCRIPTOR == tagId) {
@@ -680,16 +691,16 @@ static cl_error_t findFileIdentifiers(const uint8_t *const input, PointerList *p
         }
 
         /*This is how far into the Volume we already are.*/
-        bufUsed = ((uint64_t) buffer) - ((uint64_t) input);
+        bufUsed     = buffer - input;
         fidDescSize = getFileIdentifierDescriptorSize((FileIdentifierDescriptor *)buffer);
 
         /* Check that it's safe to read the header for the next FileIdentifierDescriptor */
-        if (VOLUME_DESCRIPTOR_SIZE < (fidDescSize + bufUsed + FILE_IDENTIFIER_DESCRIPTOR_SIZE_KNOWN)){
+        if (VOLUME_DESCRIPTOR_SIZE < (fidDescSize + bufUsed + FILE_IDENTIFIER_DESCRIPTOR_SIZE_KNOWN)) {
             break;
         }
 
         buffer = buffer + fidDescSize;
-        tagId  = getDescriptorTagId(buffer);
+        tagId  = getDescriptorTagId((DescriptorTag *)buffer);
     }
 
 done:
@@ -698,11 +709,10 @@ done:
 
 static cl_error_t findFileEntries(const uint8_t *const input, PointerList *pfil)
 {
-
     cl_error_t ret        = CL_SUCCESS;
     const uint8_t *buffer = input;
-    uint16_t tagId        = getDescriptorTagId(buffer);
-    uint64_t bufUsed;
+    uint16_t tagId        = getDescriptorTagId((DescriptorTag *)buffer);
+    size_t bufUsed;
     size_t fedDescSize;
 
     while (FILE_ENTRY_DESCRIPTOR == tagId) {
@@ -711,16 +721,16 @@ static cl_error_t findFileEntries(const uint8_t *const input, PointerList *pfil)
         }
 
         /*This is how far into the Volume we already are.*/
-        bufUsed = ((uint64_t) buffer) - ((uint64_t) input);
+        bufUsed     = buffer - input;
         fedDescSize = getFileEntryDescriptorSize((FileEntryDescriptor *)buffer);
 
         /* Check that it's safe to read the header for the next FileEntryDescriptor */
-        if (VOLUME_DESCRIPTOR_SIZE < (fedDescSize + bufUsed + FILE_ENTRY_DESCRIPTOR_SIZE_KNOWN )){
+        if (VOLUME_DESCRIPTOR_SIZE < (fedDescSize + bufUsed + FILE_ENTRY_DESCRIPTOR_SIZE_KNOWN)) {
             break;
         }
 
         buffer = buffer + fedDescSize;
-        tagId  = getDescriptorTagId(buffer);
+        tagId  = getDescriptorTagId((DescriptorTag *)buffer);
     }
 
 done:
@@ -733,7 +743,6 @@ cl_error_t cli_scanudf(cli_ctx *ctx, const size_t offset)
     size_t idx                              = offset;
     size_t lastOffset                       = 0;
     size_t i                                = 0;
-    uint8_t *buffer                         = NULL;
     PrimaryVolumeDescriptor *pvd            = NULL;
     GenericVolumeStructureDescriptor *gvsd  = NULL;
     ImplementationUseVolumeDescriptor *iuvd = NULL;
@@ -743,6 +752,8 @@ cl_error_t cli_scanudf(cli_ctx *ctx, const size_t offset)
     TerminatingDescriptor *td               = NULL;
     LogicalVolumeIntegrityDescriptor *lvid  = NULL;
     AnchorVolumeDescriptorPointer *avdp     = NULL;
+    FileSetDescriptor *fsd                  = NULL;
+    DescriptorTag *file_volume_tag          = NULL;
 
     bool isInitialized             = false;
     PointerList fileIdentifierList = {0};
@@ -752,14 +763,16 @@ cl_error_t cli_scanudf(cli_ctx *ctx, const size_t offset)
         return CL_SUCCESS; /* Need 16 sectors at least 2048 bytes long */
     }
 
-    buffer = (uint8_t *)fmap_need_off(ctx->fmap, idx, NUM_GENERIC_VOLUME_DESCRIPTORS * VOLUME_DESCRIPTOR_SIZE);
-    if (NULL == buffer) {
-        ret = CL_SUCCESS;
-        goto done;
-    }
+    cli_dbgmsg("Scanning UDF file\n");
 
     for (i = 0; i < NUM_GENERIC_VOLUME_DESCRIPTORS; i++) {
-        gvsd       = (GenericVolumeStructureDescriptor *)fmap_need_off(ctx->fmap, idx, VOLUME_DESCRIPTOR_SIZE);
+        gvsd = (GenericVolumeStructureDescriptor *)fmap_need_off(ctx->fmap, idx, sizeof(GenericVolumeStructureDescriptor));
+        if (NULL == gvsd) {
+            // File isn't long enough to store the required generic volume structure descriptors at the given offset.
+            ret = CL_SUCCESS;
+            goto done;
+        }
+
         lastOffset = idx;
 
         if (strncmp("BEA01", gvsd->standardIdentifier, 5)) {
@@ -781,121 +794,187 @@ cl_error_t cli_scanudf(cli_ctx *ctx, const size_t offset)
             break;
         }
 
-        idx += VOLUME_DESCRIPTOR_SIZE;
+        fmap_unneed_ptr(ctx->fmap, gvsd, sizeof(GenericVolumeStructureDescriptor));
+
+        idx += sizeof(GenericVolumeStructureDescriptor);
     }
 
     while (1) {
 
         if (!isInitialized) {
+            /* We don't use most of these descriptors, but verify they all exist because
+             * they are part of a properly formatted udf file. */
 
             if (CL_SUCCESS != (ret = initPointerList(&fileIdentifierList))) {
+                cli_dbgmsg("Failed to initialize fileIdentifierList\n");
                 goto done;
             }
 
             if (CL_SUCCESS != (ret = initPointerList(&fileEntryList))) {
+                cli_dbgmsg("Failed to initialize fileEntryList\n");
                 goto done;
             }
 
             if (NULL == (pvd = getPrimaryVolumeDescriptor(ctx, &idx, &lastOffset))) {
+                cli_dbgmsg("Failed to get Primary Volume Descriptor\n");
                 goto done;
             }
+            fmap_unneed_ptr(ctx->fmap, pvd, VOLUME_DESCRIPTOR_SIZE);
 
             if (NULL == (iuvd = getImplementationUseVolumeDescriptor(ctx, &idx, &lastOffset))) {
+                cli_dbgmsg("Failed to get Implementation Use Volume Descriptor\n");
                 goto done;
             }
+            // Hold on to this pointer, we'll use it later.
+            // We'll release it after `done`.
 
             if (NULL == (lvd = getLogicalVolumeDescriptor(ctx, &idx, &lastOffset))) {
+                cli_dbgmsg("Failed to get Logical Volume Descriptor\n");
                 goto done;
             }
+            // Hold on to this pointer, we'll use it later.
+            // We'll release it after `done`.
 
             if (NULL == (pd = getPartitionDescriptor(ctx, &idx, &lastOffset))) {
+                cli_dbgmsg("Failed to get Partition Descriptor\n");
                 goto done;
             }
+            fmap_unneed_ptr(ctx->fmap, pd, VOLUME_DESCRIPTOR_SIZE);
 
             if (NULL == (usd = getUnallocatedSpaceDescriptor(ctx, &idx, &lastOffset))) {
+                cli_dbgmsg("Failed to get Unallocated Space Descriptor\n");
                 goto done;
             }
+            fmap_unneed_ptr(ctx->fmap, usd, VOLUME_DESCRIPTOR_SIZE);
 
             if (NULL == (td = getTerminatingDescriptor(ctx, &idx, &lastOffset))) {
+                cli_dbgmsg("Failed to get Terminating Descriptor\n");
                 goto done;
             }
+            fmap_unneed_ptr(ctx->fmap, td, VOLUME_DESCRIPTOR_SIZE);
 
-            /* May not be every file, need to verify. */
             if (NULL == (lvid = getLogicalVolumeIntegrityDescriptor(ctx, &idx, &lastOffset))) {
+                cli_dbgmsg("Failed to get Logical Volume Integrity Descriptor\n");
                 goto done;
             }
+            fmap_unneed_ptr(ctx->fmap, lvid, VOLUME_DESCRIPTOR_SIZE);
 
             if (NULL == (td = getTerminatingDescriptor(ctx, &idx, &lastOffset))) {
+                cli_dbgmsg("Failed to get Terminating Descriptor\n");
                 goto done;
             }
+            fmap_unneed_ptr(ctx->fmap, td, VOLUME_DESCRIPTOR_SIZE);
 
             if (NULL == (avdp = getAnchorVolumeDescriptorPointer(ctx, &idx, &lastOffset))) {
+                cli_dbgmsg("Failed to get Anchor Volume Descriptor Pointer\n");
                 goto done;
             }
+            fmap_unneed_ptr(ctx->fmap, avdp, VOLUME_DESCRIPTOR_SIZE);
 
-            if (NULL == getFileSetDescriptor(ctx, &idx, &lastOffset)) {
-                /*We don't actually use the FileSetDescriptor, but verify it is there because
-                 * that is part of a properly formatted udf file.*/
-                goto done;
+            if (NULL == (fsd = getFileSetDescriptor(ctx, &idx, &lastOffset))) {
+                cli_dbgmsg("Failed to get File Set Descriptor\n");
+
+                // The file set descriptor may come after an extended file entry descriptor.
+                idx = lastOffset;
+            } else {
+                fmap_unneed_ptr(ctx->fmap, fsd, VOLUME_DESCRIPTOR_SIZE);
             }
 
             isInitialized = true;
         }
 
-        buffer = (uint8_t *)fmap_need_off(ctx->fmap, idx, VOLUME_DESCRIPTOR_SIZE);
-        if (NULL == buffer) {
+        /*
+         * Find all of the file identifier descriptors and file entry descriptors.
+         */
+
+        // Need the entire volume descriptor. We'll un-need it at the end.
+        file_volume_tag = (DescriptorTag *)fmap_need_off(ctx->fmap, idx, VOLUME_DESCRIPTOR_SIZE);
+        if (NULL == file_volume_tag) {
+            cli_dbgmsg("Failed to get File Volume Tag\n");
             goto done;
         }
         lastOffset = idx;
 
-        uint16_t tagId = getDescriptorTagId(buffer);
-        if (tagId) {
-            switch (tagId) {
-                case FILE_IDENTIFIER_DESCRIPTOR: {
-                    cl_error_t temp = findFileIdentifiers(buffer, &fileIdentifierList);
-                    if (CL_SUCCESS != temp) {
-                        ret = temp;
+        tag_identifier tagId = getDescriptorTagId(file_volume_tag);
+
+        cli_dbgmsg("UDF Descriptor Tag ID: %d\n", tagId);
+
+        switch (tagId) {
+            case FILE_IDENTIFIER_DESCRIPTOR: {
+                cl_error_t temp = findFileIdentifiers((const uint8_t *)file_volume_tag, &fileIdentifierList);
+                if (CL_SUCCESS != temp) {
+                    ret = temp;
+                    goto done;
+                }
+                break;
+            }
+
+            case FILE_ENTRY_DESCRIPTOR: {
+                cl_error_t temp = findFileEntries((const uint8_t *)file_volume_tag, &fileEntryList);
+                if (CL_SUCCESS != temp) {
+                    ret = temp;
+                    goto done;
+                }
+                break;
+            }
+
+            case EXTENDED_FILE_ENTRY_DESCRIPTOR: {
+                // Not supported yet. Skip.
+                break;
+            }
+
+            case TERMINATING_DESCRIPTOR: {
+                // Skip.
+                break;
+            }
+
+            case INVALID_DESCRIPTOR: {
+                // Skip.
+                break;
+            }
+
+            default: {
+                // TODO: Something feels wrong about doing this in `default:`.
+                // Is there a specific value we can look for to be certain we found them all?
+                // Right now this code appears to work by running into an invalid tagId when
+                // actually is out of descriptors and starts indexing into file data.
+                // Ideally we would end the loop when we know we've found all the descriptors,
+                // and then do this after the loop.
+
+                cli_dbgmsg("cli_scanudf: Parsing %d file entries.\n", fileEntryList.cnt);
+
+                /* Dump all the files here. */
+                size_t cnt = fileIdentifierList.cnt;
+
+                /* The number of file entries should match the number of file identifiers, but in the
+                 * case that the file is malformed, we are going to do the best we can to extract as much as we can.
+                 */
+                if (fileEntryList.cnt < cnt) {
+                    cnt = fileEntryList.cnt;
+                }
+
+                for (i = 0; i < cnt; i++) {
+                    if (!parseFileEntryDescriptor(ctx,
+                                                  (FileEntryDescriptor *)fileEntryList.idxs[i],
+                                                  pd, lvd, (FileIdentifierDescriptor *)fileIdentifierList.idxs[i])) {
+                        cli_dbgmsg("cli_scanudf: Failed to extract file %zu\n", i);
                         goto done;
                     }
-                    break;
                 }
 
-                case FILE_ENTRY_DESCRIPTOR: {
-                    cl_error_t temp = findFileEntries(buffer, &fileEntryList);
-                    if (CL_SUCCESS != temp) {
-                        ret = temp;
-                        goto done;
-                    }
-                    break;
-                }
+                /*
+                 * We're done with this volume. Release our pointers and free up our pointer lists.
+                 * Start looking for the next volume.
+                 */
+                fmap_unneed_ptr(ctx->fmap, iuvd, VOLUME_DESCRIPTOR_SIZE);
+                iuvd = NULL;
+                fmap_unneed_ptr(ctx->fmap, lvd, VOLUME_DESCRIPTOR_SIZE);
+                lvd = NULL;
+                fmap_unneed_ptr(ctx->fmap, file_volume_tag, VOLUME_DESCRIPTOR_SIZE);
+                file_volume_tag = NULL;
 
-                case TERMINATING_DESCRIPTOR:
-                    break;
-
-                default: {
-                    /* Dump all the files here. */
-                    size_t i;
-                    size_t cnt = fileIdentifierList.cnt;
-
-                    /* The number of file entries should match the number of file identifiers, but in the
-                     * case that the file is malformed, we are going to do the best we can to extract as much as we can.
-                     */
-                    if (fileEntryList.cnt < cnt) {
-                        cnt = fileEntryList.cnt;
-                    }
-
-                    for (i = 0; i < cnt; i++) {
-                        if (!parseFileEntryDescriptor(ctx,
-                                                      (const uint8_t *const)fileEntryList.idxs[i],
-                                                      pd, lvd, (FileIdentifierDescriptor *)fileIdentifierList.idxs[i])) {
-                            goto done;
-                        }
-                    }
-
-                    /* Start looking for the next volume */
-                    isInitialized = false;
-                    break;
-                }
+                isInitialized = false;
+                break;
             }
         }
 
@@ -906,8 +985,14 @@ done:
     freePointerList(&fileIdentifierList);
     freePointerList(&fileEntryList);
 
-    for (idx = offset; idx <= lastOffset; idx += VOLUME_DESCRIPTOR_SIZE) {
-        fmap_unneed_off(ctx->fmap, idx, VOLUME_DESCRIPTOR_SIZE);
+    if (NULL != iuvd) {
+        fmap_unneed_ptr(ctx->fmap, iuvd, VOLUME_DESCRIPTOR_SIZE);
+    }
+    if (NULL != lvd) {
+        fmap_unneed_ptr(ctx->fmap, lvd, VOLUME_DESCRIPTOR_SIZE);
+    }
+    if (NULL != file_volume_tag) {
+        fmap_unneed_ptr(ctx->fmap, file_volume_tag, VOLUME_DESCRIPTOR_SIZE);
     }
 
     return ret;
