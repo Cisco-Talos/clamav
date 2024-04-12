@@ -998,7 +998,7 @@ fc_error_t get_official_database_lists(
     uint32_t i;
 
     const char *hardcodedStandardDatabaseList[] = {"daily", "main", "bytecode"};
-    const char *hardcodedOptionalDatabaseList[] = {"safebrowsing", "test"};
+    const char *hardcodedOptionalDatabaseList[] = {"safebrowsing", "test", "valhalla"};
 
     if ((NULL == standardDatabases) || (NULL == nStandardDatabases) || (NULL == optionalDatabases) || (NULL == nOptionalDatabases)) {
         mprintf("!get_official_database_lists: Invalid arguments.\n");
