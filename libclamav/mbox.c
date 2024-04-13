@@ -3217,7 +3217,7 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 #ifdef CL_THREAD_SAFE
                                 s = strtok_r(NULL, ";", &strptr);
 #else
-                                s = strtok(NULL, ";");
+                                s       = strtok(NULL, ";");
 #endif
                                 if (s == NULL)
                                     break;
@@ -4387,7 +4387,7 @@ do_multipart(message *mainMessage, message **messages, int i, mbox_status *rc, m
              * This can save a lot of memory
              */
             messageDestroy(messages[i]);
-            messages[i] = NULL;
+            messages[i]  = NULL;
             mctx->wrkobj = thisobj;
 
             if (body) {

@@ -1,5 +1,5 @@
 /*
- *  ALZ archive extraction. 
+ *  ALZ archive extraction.
  *
  *  Copyright (C) 2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *
@@ -308,7 +308,9 @@ impl AlzLocalFileHeader {
         }
 
         if self.is_data_descriptor() {
-            return Err(Error::UnsupportedFeature("Data Descriptors are Unsupported"));
+            return Err(Error::UnsupportedFeature(
+                "Data Descriptors are Unsupported",
+            ));
         }
 
         Ok(())

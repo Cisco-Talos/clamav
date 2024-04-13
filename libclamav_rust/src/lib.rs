@@ -23,6 +23,7 @@
 /// cbindgen:ignore
 pub mod sys;
 
+pub mod alz;
 pub mod cdiff;
 pub mod css_image_extract;
 pub mod ctx;
@@ -34,4 +35,3 @@ pub mod logging;
 pub mod onenote;
 pub mod scanners;
 pub mod util;
-pub mod alz;

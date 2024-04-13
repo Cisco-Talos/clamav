@@ -1828,7 +1828,6 @@ static cl_error_t hwp3_cb(void *cbdata, int fd, const char *filepath, cli_ctx *c
     if (SCAN_COLLECT_METADATA)
         cli_jsonint(ctx->wrkproperty, "ParagraphCount", p);
 
-
     last = 0;
     /* 'additional information block #1's - attachments and media */
     while (!last && ((ret = parsehwp3_infoblk_1(ctx, map, &offset, &last)) == CL_SUCCESS)) continue;
