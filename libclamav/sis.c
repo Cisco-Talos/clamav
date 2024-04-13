@@ -628,7 +628,7 @@ enum { T_INVALID,
 
 const char *sisfields[] = {"Invalid", "String", "Array", "Compressed", "Version", "VersionRange", "Date", "Time", "DateTime", "Uid", "Unused", "Language", "Contents", "Controller", "Info", "SupportedLanguages", "SupportedOptions", "Prerequisites", "Dependency", "Properties", "Property", "Signatures", "CertificateChain", "Logo", "FileDescription", "Hash", "If", "ElseIf", "InstallBlock", "Expression", "Data", "DataUnit", "FileData", "SupportedOption", "ControllerChecksum", "DataChecksum", "Signature", "Blob", "SignatureAlgorithm", "SignatureCertificateChain", "DataIndex", "Capabilities"};
 
-#define ALIGN4(x) (((x) & ~3) + ((((x) & 1) | (((x) >> 1) & 1)) << 2))
+#define ALIGN4(x) (((x) & ~3) + ((((x)&1) | (((x) >> 1) & 1)) << 2))
 
 #define HERE printf("here\n"), abort();
 

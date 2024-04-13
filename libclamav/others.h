@@ -587,16 +587,16 @@ extern LIBCLAMAV_EXPORT int have_rar;
 
 /* based on macros from A. Melnikoff */
 #define cbswap16(v) (((v & 0xff) << 8) | (((v) >> 8) & 0xff))
-#define cbswap32(v) ((((v) & 0x000000ff) << 24) | (((v) & 0x0000ff00) << 8) | \
-                     (((v) & 0x00ff0000) >> 8) | (((v) & 0xff000000) >> 24))
-#define cbswap64(v) ((((v) & 0x00000000000000ffULL) << 56) | \
-                     (((v) & 0x000000000000ff00ULL) << 40) | \
-                     (((v) & 0x0000000000ff0000ULL) << 24) | \
-                     (((v) & 0x00000000ff000000ULL) << 8) |  \
-                     (((v) & 0x000000ff00000000ULL) >> 8) |  \
-                     (((v) & 0x0000ff0000000000ULL) >> 24) | \
-                     (((v) & 0x00ff000000000000ULL) >> 40) | \
-                     (((v) & 0xff00000000000000ULL) >> 56))
+#define cbswap32(v) ((((v)&0x000000ff) << 24) | (((v)&0x0000ff00) << 8) | \
+                     (((v)&0x00ff0000) >> 8) | (((v)&0xff000000) >> 24))
+#define cbswap64(v) ((((v)&0x00000000000000ffULL) << 56) | \
+                     (((v)&0x000000000000ff00ULL) << 40) | \
+                     (((v)&0x0000000000ff0000ULL) << 24) | \
+                     (((v)&0x00000000ff000000ULL) << 8) |  \
+                     (((v)&0x000000ff00000000ULL) >> 8) |  \
+                     (((v)&0x0000ff0000000000ULL) >> 24) | \
+                     (((v)&0x00ff000000000000ULL) >> 40) | \
+                     (((v)&0xff00000000000000ULL) >> 56))
 
 #ifndef HAVE_ATTRIB_PACKED
 #define __attribute__(x)
@@ -822,8 +822,8 @@ size_t cli_recursion_stack_get_size(cli_ctx *ctx, int index);
 /* used by: spin, yc (C) aCaB */
 #define __SHIFTBITS(a) (sizeof(a) << 3)
 #define __SHIFTMASK(a) (__SHIFTBITS(a) - 1)
-#define CLI_ROL(a, b) a = (a << ((b) & __SHIFTMASK(a))) | (a >> ((__SHIFTBITS(a) - (b)) & __SHIFTMASK(a)))
-#define CLI_ROR(a, b) a = (a >> ((b) & __SHIFTMASK(a))) | (a << ((__SHIFTBITS(a) - (b)) & __SHIFTMASK(a)))
+#define CLI_ROL(a, b) a = (a << ((b)&__SHIFTMASK(a))) | (a >> ((__SHIFTBITS(a) - (b)) & __SHIFTMASK(a)))
+#define CLI_ROR(a, b) a = (a >> ((b)&__SHIFTMASK(a))) | (a << ((__SHIFTBITS(a) - (b)) & __SHIFTMASK(a)))
 
 /* Implementation independent sign-extended signed right shift */
 #ifdef HAVE_SAR
