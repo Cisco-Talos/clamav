@@ -5,7 +5,40 @@ differ slightly from third-party binary packages.
 
 ## 1.3.1
 
-ClamAV 1.3.1 is a critical patch release with the following fix:
+ClamAV 1.3.1 is a critical patch release with the following fixes:
+
+- [CVE-2024-20380](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2024-20380):
+  Fixed a possible crash in the HTML file parser that could cause a
+  denial-of-service (DoS) condition.
+
+  This issue affects version 1.3.0 only and does not affect prior versions.
+
+  Thank you to Błażej Pawłowski for identifying this issue.
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1242)
+
+- Updated select Rust dependencies to the latest versions.
+  This resolved Cargo audit complaints and included PNG parser bug fixes.
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1227)
+
+- Fixed a bug causing some text to be truncated when converting from UTF-16.
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1230)
+
+- Fixed assorted complaints identified by Coverity static analysis.
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1235)
+
+- Fixed a bug causing CVDs downloaded by the `DatabaseCustomURL` Freshclam
+  config option to be pruned and then re-downloaded with every update.
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1238)
+
+- Added the new 'valhalla' database name to the list of optional databases in
+  preparation for future work.
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1238)
+
+- Added symbols to the `libclamav.map` file to enable additional build
+  configurations.
+
+  Patch courtesy of Neil Wilson.
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1244)
 
 ## 1.3.0
 
