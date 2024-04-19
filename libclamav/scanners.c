@@ -4443,9 +4443,6 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
                  hash[8], hash[9], hash[10], hash[11], hash[12], hash[13], hash[14], hash[15]);
 
         ret = cli_jsonstr(ctx->wrkproperty, "FileMD5", hashstr);
-        if (ctx->engine->engine_options & ENGINE_OPTIONS_DISABLE_CACHE) {
-            memset(hash, 0, CLI_HASHLEN_MD5);
-        }
         if (ret != CL_SUCCESS) {
             cli_dbgmsg("cli_magic_scan: returning %d %s (no post, no cache)\n", ret, __AT__);
             goto early_ret;
@@ -4498,7 +4495,7 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
          * If self protection mechanism enabled, do the scanraw() scan first
          * before extracting with a file type parser.
          */
-        ret = scanraw(ctx, type, 0, &dettype, (ctx->engine->engine_options & ENGINE_OPTIONS_DISABLE_CACHE) ? NULL : hash);
+        ret = scanraw(ctx, type, 0, &dettype, hash);
 
         // Evaluate the result from the scan to see if it end the scan of this layer early,
         // and to decid if we should propagate an error or not.
@@ -4935,7 +4932,7 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
 
     /* CL_TYPE_HTML: raw HTML files are not scanned, unless safety measure activated via DCONF */
     if (type != CL_TYPE_IGNORED && (type != CL_TYPE_HTML || !(SCAN_PARSE_HTML) || !(DCONF_DOC & DOC_CONF_HTML_SKIPRAW)) && !ctx->engine->sdb) {
-        ret = scanraw(ctx, type, typercg, &dettype, (ctx->engine->engine_options & ENGINE_OPTIONS_DISABLE_CACHE) ? NULL : hash);
+        ret = scanraw(ctx, type, typercg, &dettype, hash);
 
         // Evaluate the result from the scan to see if it end the scan of this layer early,
         // and to decid if we should propagate an error or not.
