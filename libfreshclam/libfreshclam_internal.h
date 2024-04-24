@@ -40,6 +40,9 @@ typedef struct _freshclam_dat_v1 {
     time_t retry_after;        /** retry date. If > 0, don't update until after this date */
 } freshclam_dat_v1_t;
 
+/*Length of a cf-ray id.*/
+#define CFRAY_LEN 20
+
 /* ----------------------------------------------------------------------------
  * Internal libfreshclam globals
  */
