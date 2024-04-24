@@ -17,6 +17,43 @@ ClamAV 1.4.0 includes the following improvements and changes:
 
 Special thanks to the following people for code contributions and bug reports:
 
+## 1.3.1
+
+ClamAV 1.3.1 is a critical patch release with the following fixes:
+
+- [CVE-2024-20380](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2024-20380):
+  Fixed a possible crash in the HTML file parser that could cause a
+  denial-of-service (DoS) condition.
+
+  This issue affects version 1.3.0 only and does not affect prior versions.
+
+  Thank you to Błażej Pawłowski for identifying this issue.
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1242)
+
+- Updated select Rust dependencies to the latest versions.
+  This resolved Cargo audit complaints and included PNG parser bug fixes.
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1227)
+
+- Fixed a bug causing some text to be truncated when converting from UTF-16.
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1230)
+
+- Fixed assorted complaints identified by Coverity static analysis.
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1235)
+
+- Fixed a bug causing CVDs downloaded by the `DatabaseCustomURL` Freshclam
+  config option to be pruned and then re-downloaded with every update.
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1238)
+
+- Added the new 'valhalla' database name to the list of optional databases in
+  preparation for future work.
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1238)
+
+- Added symbols to the `libclamav.map` file to enable additional build
+  configurations.
+
+  Patch courtesy of Neil Wilson.
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1244)
+
 ## 1.3.0
 
 ClamAV 1.3.0 includes the following improvements and changes:
@@ -110,6 +147,32 @@ Special thanks to the following people for code contributions and bug reports:
 - Luca D'Amico
 - RainRat
 - teoberi
+
+## 1.2.3
+
+ClamAV 1.2.3 is a critical patch release with the following fixes:
+
+- Updated select Rust dependencies to the latest versions.
+  This resolved Cargo audit complaints and included PNG parser bug fixes.
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1226)
+
+- Fixed a bug causing some text to be truncated when converting from UTF-16.
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1231)
+
+- Fixed assorted complaints identified by Coverity static analysis.
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1236)
+
+- Fixed a bug causing CVDs downloaded by the `DatabaseCustomURL` Freshclam
+  config option to be pruned and then re-downloaded with every update.
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1239)
+
+- Added the new 'valhalla' database name to the list of optional databases in
+  preparation for future work.
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1239)
+
+- Silenced a warning "Unexpected early end-of-file" that occured when
+  scanning some PNG files.
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1215)
 
 ## 1.2.2
 
@@ -548,6 +611,32 @@ Special thanks to the following people for code contributions and bug reports:
 - Shawn Iverson
 - Sebastian Andrzej Siewior
 - The OSS-Fuzz project
+
+## 1.0.6
+
+ClamAV 1.0.6 is a critical patch release with the following fixes:
+
+- Updated select Rust dependencies to the latest versions.
+  This resolved Cargo audit complaints and included PNG parser bug fixes.
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1225)
+
+- Fixed a bug causing some text to be truncated when converting from UTF-16.
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1232)
+
+- Fixed assorted complaints identified by Coverity static analysis.
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1237)
+
+- Fixed a bug causing CVDs downloaded by the `DatabaseCustomURL` Freshclam
+  config option to be pruned and then re-downloaded with every update.
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1240)
+
+- Added the new 'valhalla' database name to the list of optional databases in
+  preparation for future work.
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1240)
+
+- Silenced a warning "Unexpected early end-of-file" that occured when
+  scanning some PNG files.
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1216)
 
 ## 1.0.5
 
