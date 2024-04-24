@@ -9,13 +9,103 @@ ClamAV 1.4.0 includes the following improvements and changes:
 
 ### Major changes
 
+- Added support for extracting ALZ archives.
+  The new ClamAV file type for ALZ archives is `CL_TYPE_ALZ`.
+  Added a [DCONF](https://docs.clamav.net/manual/Signatures/DynamicConfig.html)
+  option to enable or disable ALZ archive support.
+  > _Tip_: DCONF (Dynamic CONFiguration) is a feature that allows for some
+  > configuration changes to be made via ClamAV `.cfg` "signatures".
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1183)
+
+- Added support for extracting LHA / LZH archives.
+  The new ClamAV file type for ALZ archives is `CL_TYPE_LHA_LZH`.
+  Added a [DCONF](https://docs.clamav.net/manual/Signatures/DynamicConfig.html)
+  option to enable or disable LHA / LZH archive support.
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1192)
+
+- Added the ability to disable image fuzzy hashing, if needed. For context,
+  image fuzzy hashing is a detection mechanism useful for identifying malware
+  by matching images included with the malware or phishing email / document.
+
+  New ClamScan options:
+  ```
+  --scan-image[=yes(*)/no]
+  --scan-image-fuzzy-hash[=yes(*)/no]
+  ```
+
+  New ClamD config options:
+  ```
+  ScanImage yes(*)/no
+  ScanImageFuzzyHash yes(*)/no
+  ```
+
+  New libclamav scan options:
+  ```c
+  options.parse &= ~CL_SCAN_PARSE_IMAGE;
+  options.parse &= ~CL_SCAN_PARSE_IMAGE_FUZZY_HASH;
+  ```
+
+  Added a [DCONF](https://docs.clamav.net/manual/Signatures/DynamicConfig.html)
+  option to enable or disable image fuzzy hashing support.
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1186)
+
 ### Other improvements
 
+- Added cross-compiling instructions for targeting ARM64 / aarch64 processors
+  for both
+  [Windows](https://github.com/Cisco-Talos/clamav/blob/main/INSTALL-cross-windows-arm64.md)
+  and
+  [Linux](https://github.com/Cisco-Talos/clamav/blob/main/INSTALL-cross-linux-arm64.md).
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1116)
+
+- Improved the Freshclam warning messages when being blocked or rate limited
+  so as to include the Cloudflare Ray ID which helps with issue triage.
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1195)
+
+- Removed unnecessary memory allocation checks when the size to be allocated
+  is fixed or comes from a trusted source.
+  Also renamed internal memory allocation functions and macros so it is more
+  obvious what each function does.
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1137)
+
+- Improved the Freshclam documentation to make it clear that the `--datadir`
+  option must be an absolute path to a directory that already exists, is
+  writable by Freshclam, and is readable by ClamScan and ClamD.
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1199)
+
+- Added an optimization to avoid calculating the file hash if the clean file
+  cache has been disabled. The file hash may still be calculated as needed to
+  perform hash-based signature matching if any hash-based signatures exist that
+  target a file of the same size, or if any hash-based signatures exist that
+  target "any" file size.
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1167)
+
 ### Bug fixes
+
+- Silenced confusing warning message when scanning some HTML files.
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1252)
+
+- Fixed minor compiler warnings.
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1197)
+
+- Since the build system changed from Autotools to CMake, ClamAV no longer
+  supports building with configurations where bzip2, libxml2, libz, libjson-c,
+  or libpcre2 are not available. In addition, libpcre is no longer supported,
+  in favor of libpcre2.
+  In this release, we removed all the dead code associated with those
+  unsupported build configurations.
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1217)
+
+- Fixed assorted typos. Patch courtesy of RainRat.
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1228)
+
+- Added missing documentation for the ClamScan `--force-to-disk` option.
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1186)
 
 ### Acknowledgments
 
 Special thanks to the following people for code contributions and bug reports:
+- RainRat
 
 ## 1.3.1
 
