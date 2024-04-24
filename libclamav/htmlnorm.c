@@ -1194,7 +1194,7 @@ static bool cli_html_normalise(cli_ctx *ctx, int fd, m_area_t *m_area, const cha
                             style_end = ptr - strlen("</style>");
 
                             if (style_end < style_begin) {
-                                cli_errmsg("cli_html_normalise: style chunk size underflow\n");
+                                cli_dbgmsg("cli_html_normalise: style chunk size underflow\n");
                                 goto done;
                             }
 
@@ -1830,7 +1830,7 @@ static bool cli_html_normalise(cli_ctx *ctx, int fd, m_area_t *m_area, const cha
 
         if (in_tag == TAG_STYLE) {
             if (ptr < style_begin) {
-                cli_errmsg("cli_html_normalise: style chunk size underflow\n");
+                cli_dbgmsg("cli_html_normalise: style chunk size underflow\n");
                 goto done;
             }
 
@@ -1882,7 +1882,7 @@ static bool cli_html_normalise(cli_ctx *ctx, int fd, m_area_t *m_area, const cha
     }
 
     if (style_buff != NULL) {
-        // Found contents of <style> ... </style> block. 
+        // Found contents of <style> ... </style> block.
         // Search it for images embedded in the CSS.
         cl_error_t ret = html_style_block_handler(ctx, (const char *)style_buff);
         if (CL_SUCCESS != ret) {
