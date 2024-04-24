@@ -238,9 +238,6 @@ fc_error_t fc_update_databases(
     void *context,
     uint32_t *nUpdated);
 
-/*Length of a cf-ray id.*/
-#define CFRAY_LEN 20
-
 /* ----------------------------------------------------------------------------
  * Callback function type definitions.
  */
