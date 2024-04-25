@@ -7,11 +7,68 @@ ConditionPathExistsGlob=@DATADIR@/main.{c[vl]d,inc}
 ConditionPathExistsGlob=@DATADIR@/daily.{c[vl]d,inc}
 
 [Service]
+Type=simple
+# WARNING: Must match clamd.conf directive
+User=clamav
+Group=clamav
+;DynamicUser=yes
+;ExecStartPre=/usr/bin/install --owner=root --group=root --mode=640 --directory /var/local/quarantine
 ExecStart=@prefix@/sbin/clamd --foreground=true
 # Reload the database
 ExecReload=/bin/kill -USR2 $MAINPID
 TimeoutStartSec=420
+LogsDirectory=clamav
+ConfigurationDirectory=clamav
+RuntimeDirectory=clamav
+
+#============================#
+# Security Hardening Options #
+#============================#
+NoNewPrivileges=yes
+;PrivateUsers=no
+
+# Remove `ProtectSystem`, `ProtectHome`, and `ReadWritePaths`
+# if you want ClamAV to be able to quarantine (`--move`) infected files.
+ProtectSystem=strict
+ProtectHome=read-only
+PrivateTmp=yes
+PrivateDevices=yes
+ReadWritePaths=/var/local/quarantine
+
+NoExecPaths=/
+# WARNING: To execute targets of `VirusEvent` and `VirusAction` directives
+# in the configuration, whitelist them in ExecPaths.
+;ExecPaths=@prefix@/sbin/clamd /usr/local/bin/send_sms /usr/local/bin/my_infected_message_handler
+ExecPaths=@prefix@/sbin/clamd @CMAKE_INSTALL_FULL_LIBDIR@ /bin/kill /usr/bin/install
+
+ProtectClock=yes
+ProtectHostname=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+SystemCallArchitectures=native
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+RestrictRealtime=yes
+
+PrivateNetwork=yes
+IPAddressDeny=any
+RestrictAddressFamilies=none
+
+# ProtectProc is only effective if:
+# (1) Service is a system service and not a user service.
+# (2) CAP_SYS_PTRACE is restricted and
+# (3) Service user is non-root.
+ProtectProc=invisible
+ProcSubset=pid
+
+CapabilityBoundingSet=CAP_CHOWN CAP_SETGID CAP_SETUID CAP_DAC_OVERRIDE CAP_MKNOD
+RestrictNamespaces=yes
+SystemCallFilter=~@clock @cpu-emulation @debug @module @mount @obsolete @raw-io @reboot @resources @swap
 
 [Install]
 WantedBy=multi-user.target
 Also=clamav-daemon.socket
+Alias=clamd.service

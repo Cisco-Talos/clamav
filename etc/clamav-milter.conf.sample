@@ -204,6 +204,9 @@ Example
 # Note #2: the process is invoked in the context of clamav-milter
 # Note #3: clamav-milter will wait for the process to exit. Be quick or fork to
 # avoid unnecessary delays in email delivery
+# Note #4: When using systemd to manage ClamAv daemon, ensure that the full path to
+#   the VirusAction target binary / executable is listed in ExecPaths in the service
+#   file clamav-daemon.service in order for the process to be able to execute it.
 # Default: disabled
 #VirusAction /usr/local/bin/my_infected_message_handler
 

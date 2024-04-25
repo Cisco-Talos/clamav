@@ -154,15 +154,27 @@ DatabaseMirror database.clamav.net
 
 # Run command after successful database update.
 # Use EXIT_1 to return 1 after successful database update.
+# Note: When using systemd to manage FreshClam service, append the
+#   full path to the OnUpdateExecute target command to `ExecPaths` in the
+#   service file clamav-freshclam.service in order for the  process to
+#   be able to execute it.
 # Default: disabled
 #OnUpdateExecute command
 
 # Run command when database update process fails.
+# Note: When using systemd to manage FreshClam service, append the
+#   full path to the OnErrorExecute target command to `ExecPaths` in the
+#   service file clamav-freshclam.service in order for the process to
+#   be able to execute it.
 # Default: disabled
 #OnErrorExecute command
 
 # Run command when freshclam reports outdated version.
 # In the command string %v will be replaced by the new version number.
+# Note: When using systemd to manage FreshClam service, append the
+#   full path to the OnOutdatedExecute target command to `ExecPaths`
+#   in the service file clamav-freshclam.service in order for the process to
+#   be able to execute it.
 # Default: disabled
 #OnOutdatedExecute command
 
