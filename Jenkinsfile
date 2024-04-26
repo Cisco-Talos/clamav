@@ -47,118 +47,144 @@ properties(
     ]
 )
 
-node('ubuntu-18-x64') {
-    stage('Generate Tarball') {
-        cleanWs()
 
-        checkout scm
+pipeline {
 
-        dir(path: 'clamav_documentation') {
-            git(url: 'https://github.com/Cisco-Talos/clamav-documentation.git', branch: "gh-pages")
-        }
-
-        dir(path: 'docs/html') {
-            sh '''# Move the clamav-documentation here.
-                cp -r ../../clamav_documentation/* .
-                # Clean-up
-                rm -rf ../../clamav_documentation
-                rm -rf .git .nojekyll CNAME Placeholder || true
-                '''
-        }
-
-        dir(path: 'build') {
-            sh """# CPack
-                cmake .. -D VENDOR_DEPENDENCIES=ON
-                cpack --config CPackSourceConfig.cmake """
-            archiveArtifacts(artifacts: "clamav-${params.VERSION}*.tar.gz", onlyIfSuccessful: true)
-        }
-
-        cleanWs()
+    agent {
+        label "ubuntu-18-x64"
     }
 
-    def buildResult
+    stages {
 
-    stage('Build') {
-        buildResult = build(job: "test-pipelines/${params.BUILD_PIPELINE}",
-            propagate: true,
-            wait: true,
-            parameters: [
-                [$class: 'StringParameterValue', name: 'CLAMAV_JOB_NAME', value: "${JOB_NAME}"],
-                [$class: 'StringParameterValue', name: 'CLAMAV_JOB_NUMBER', value: "${BUILD_NUMBER}"],
-                [$class: 'StringParameterValue', name: 'FRAMEWORK_BRANCH', value: "${params.FRAMEWORK_BRANCH}"],
-                [$class: 'StringParameterValue', name: 'VERSION', value: "${params.VERSION}"],
-                [$class: 'StringParameterValue', name: 'SHARED_LIB_BRANCH', value: "${params.SHARED_LIB_BRANCH}"]
-            ]
-        )
-        echo "test-pipelines/${params.BUILD_PIPELINE} #${buildResult.number} succeeded."
-    }
-
-    stage('Test') {
-        def tasks = [:]
-
-        tasks["regular_and_custom"] = {
-            def regularResult
-            def exception = null
-            try {
-                stage("Regular Pipeline") {
-                    regularResult = build(job: "test-pipelines/${params.REGULAR_PIPELINE}",
-                        propagate: true,
-                        wait: true,
-                        parameters: [
-                            [$class: 'StringParameterValue', name: 'CLAMAV_JOB_NAME', value: "${JOB_NAME}"],
-                            [$class: 'StringParameterValue', name: 'CLAMAV_JOB_NUMBER', value: "${BUILD_NUMBER}"],
-                            [$class: 'StringParameterValue', name: 'BUILD_JOB_NAME', value: "test-pipelines/${params.BUILD_PIPELINE}"],
-                            [$class: 'StringParameterValue', name: 'BUILD_JOB_NUMBER', value: "${buildResult.number}"],
-                            [$class: 'StringParameterValue', name: 'TESTS_BRANCH', value: "${params.TESTS_BRANCH}"],
-                            [$class: 'StringParameterValue', name: 'FRAMEWORK_BRANCH', value: "${params.FRAMEWORK_BRANCH}"],
-                            [$class: 'StringParameterValue', name: 'VERSION', value: "${params.VERSION}"],
-                            [$class: 'StringParameterValue', name: 'SHARED_LIB_BRANCH', value: "${params.SHARED_LIB_BRANCH}"]
-                        ]
-                    )
-                    echo "test-pipelines/${params.REGULAR_PIPELINE} #${regularResult.number} succeeded."
+        stage('GitGaurdian Scan') {
+            environment {
+                GITGUARDIAN_API_KEY = credentials('gitgaudian-ravi-token')
+            }
+            agent { label "docker" }
+            steps {
+                withDockerContainer(args: "-i --entrypoint=''", image: 'gitguardian/ggshield:latest') {
+                    sh 'ggshield secret scan ci'
                 }
-            } catch (exc) {
-                echo "test-pipelines/${params.REGULAR_PIPELINE} failed."
-                exception = exc
-            }
-            stage("Custom Pipeline") {
-                final customResult = build(job: "test-pipelines/${params.CUSTOM_PIPELINE}",
-                    propagate: true,
-                    wait: true,
-                    parameters: [
-                        [$class: 'StringParameterValue', name: 'CLAMAV_JOB_NAME', value: "${JOB_NAME}"],
-                        [$class: 'StringParameterValue', name: 'CLAMAV_JOB_NUMBER', value: "${BUILD_NUMBER}"],
-                        [$class: 'StringParameterValue', name: 'TESTS_BRANCH', value: "${params.TESTS_CUSTOM_BRANCH}"],
-                        [$class: 'StringParameterValue', name: 'FRAMEWORK_BRANCH', value: "${params.FRAMEWORK_BRANCH}"],
-                        [$class: 'StringParameterValue', name: 'VERSION', value: "${params.VERSION}"],
-                        [$class: 'StringParameterValue', name: 'SHARED_LIB_BRANCH', value: "${params.SHARED_LIB_BRANCH}"]
-                    ]
-                )
-                echo "test-pipelines/${params.CUSTOM_PIPELINE} #${customResult.number} succeeded."
-            }
-            if(exception != null) {
-                echo "Custom Pipeline passed, but Regular pipeline failed!"
-                throw exception
             }
         }
 
-        tasks["fuzz_regression"] = {
-            stage("Fuzz Regression") {
-                final fuzzResult = build(job: "test-pipelines/${params.FUZZ_PIPELINE}",
-                    propagate: true,
-                    wait: true,
-                    parameters: [
-                        [$class: 'StringParameterValue', name: 'CLAMAV_JOB_NAME', value: "${JOB_NAME}"],
-                        [$class: 'StringParameterValue', name: 'CLAMAV_JOB_NUMBER', value: "${BUILD_NUMBER}"],
-                        [$class: 'StringParameterValue', name: 'TESTS_FUZZ_BRANCH', value: "${params.TESTS_FUZZ_BRANCH}"],
-                        [$class: 'StringParameterValue', name: 'FUZZ_CORPUS_BRANCH', value: "${params.FUZZ_CORPUS_BRANCH}"],
-                        [$class: 'StringParameterValue', name: 'VERSION', value: "${params.VERSION}"]
-                    ]
-                )
-                echo "test-pipelines/${params.FUZZ_PIPELINE} #${fuzzResult.number} succeeded."
+        stage('Generate Tarball') {
+            steps {
+
+                cleanWs()
+
+                checkout scm
+
+                dir(path: 'clamav_documentation') {
+                    git(url: 'https://github.com/Cisco-Talos/clamav-documentation.git', branch: "gh-pages")
+                }
+
+                dir(path: 'docs/html') {
+                    sh """# Move the clamav-documentation here.
+                    cp -r ../../clamav_documentation/* .
+                    # Clean-up
+                    rm -rf ../../clamav_documentation
+                    rm -rf .git .nojekyll CNAME Placeholder || true
+                    """
+                }
+
+                dir(path: 'build') {
+                    sh """# CPack
+                    cmake .. -D VENDOR_DEPENDENCIES=ON
+                    cpack --config CPackSourceConfig.cmake """
+                    archiveArtifacts(artifacts: "clamav-${params.VERSION}*.tar.gz", onlyIfSuccessful: true)
+                }
+
+                cleanWs()
             }
         }
 
-        parallel tasks
+        stage('Build') {
+            steps {
+                script{
+                    buildResult = build(job: "test-pipelines/${params.BUILD_PIPELINE}",
+                            propagate: true,
+                            wait: true,
+                            parameters: [
+                                    [$class: 'StringParameterValue', name: 'CLAMAV_JOB_NAME', value: "${JOB_NAME}"],
+                                    [$class: 'StringParameterValue', name: 'CLAMAV_JOB_NUMBER', value: "${BUILD_NUMBER}"],
+                                    [$class: 'StringParameterValue', name: 'FRAMEWORK_BRANCH', value: "${params.FRAMEWORK_BRANCH}"],
+                                    [$class: 'StringParameterValue', name: 'VERSION', value: "${params.VERSION}"],
+                                    [$class: 'StringParameterValue', name: 'SHARED_LIB_BRANCH', value: "${params.SHARED_LIB_BRANCH}"]
+                            ]
+                    )
+                    echo "test-pipelines/${params.BUILD_PIPELINE} #${buildResult.number} succeeded."
+                }
+            }
+        }
+
+        stage('Tests') {
+            parallel {
+                stage('Pipeline') {
+                    stages{
+                        // Regular and custom tests run sequentially on same infra
+                        stage("Regular") {
+                            steps {
+                                script{
+                                    regularResult = build(job: "test-pipelines/${params.REGULAR_PIPELINE}",
+                                            propagate: true,
+                                            wait: true,
+                                            parameters: [
+                                                    [$class: 'StringParameterValue', name: 'CLAMAV_JOB_NAME', value: "${JOB_NAME}"],
+                                                    [$class: 'StringParameterValue', name: 'CLAMAV_JOB_NUMBER', value: "${BUILD_NUMBER}"],
+                                                    [$class: 'StringParameterValue', name: 'BUILD_JOB_NAME', value: "test-pipelines/${params.BUILD_PIPELINE}"],
+                                                    [$class: 'StringParameterValue', name: 'BUILD_JOB_NUMBER', value: "${buildResult.number}"],
+                                                    [$class: 'StringParameterValue', name: 'TESTS_BRANCH', value: "${params.TESTS_BRANCH}"],
+                                                    [$class: 'StringParameterValue', name: 'FRAMEWORK_BRANCH', value: "${params.FRAMEWORK_BRANCH}"],
+                                                    [$class: 'StringParameterValue', name: 'VERSION', value: "${params.VERSION}"],
+                                                    [$class: 'StringParameterValue', name: 'SHARED_LIB_BRANCH', value: "${params.SHARED_LIB_BRANCH}"]
+                                            ]
+                                    )
+                                    echo "test-pipelines/${params.REGULAR_PIPELINE} #${regularResult.number} succeeded."
+                                }
+                            }
+                        }
+
+                        stage("Custom") {
+                            steps {
+                                script{
+                                    customResult = build(job: "test-pipelines/${params.CUSTOM_PIPELINE}",
+                                            propagate: true,
+                                            wait: true,
+                                            parameters: [
+                                                    [$class: 'StringParameterValue', name: 'CLAMAV_JOB_NAME', value: "${JOB_NAME}"],
+                                                    [$class: 'StringParameterValue', name: 'CLAMAV_JOB_NUMBER', value: "${BUILD_NUMBER}"],
+                                                    [$class: 'StringParameterValue', name: 'TESTS_BRANCH', value: "${params.TESTS_CUSTOM_BRANCH}"],
+                                                    [$class: 'StringParameterValue', name: 'FRAMEWORK_BRANCH', value: "${params.FRAMEWORK_BRANCH}"],
+                                                    [$class: 'StringParameterValue', name: 'VERSION', value: "${params.VERSION}"],
+                                                    [$class: 'StringParameterValue', name: 'SHARED_LIB_BRANCH', value: "${params.SHARED_LIB_BRANCH}"]
+                                            ]
+                                    )
+                                    echo "test-pipelines/${params.CUSTOM_PIPELINE} #${customResult.number} succeeded."
+                                }
+                            }
+                        }
+                    }
+                }
+                stage("Fuzz Regression") {
+                    steps {
+                        script{
+                            fuzzResult = build(job: "test-pipelines/${params.FUZZ_PIPELINE}",
+                                    propagate: true,
+                                    wait: true,
+                                    parameters: [
+                                            [$class: 'StringParameterValue', name: 'CLAMAV_JOB_NAME', value: "${JOB_NAME}"],
+                                            [$class: 'StringParameterValue', name: 'CLAMAV_JOB_NUMBER', value: "${BUILD_NUMBER}"],
+                                            [$class: 'StringParameterValue', name: 'TESTS_FUZZ_BRANCH', value: "${params.TESTS_FUZZ_BRANCH}"],
+                                            [$class: 'StringParameterValue', name: 'FUZZ_CORPUS_BRANCH', value: "${params.FUZZ_CORPUS_BRANCH}"],
+                                            [$class: 'StringParameterValue', name: 'VERSION', value: "${params.VERSION}"]
+                                    ]
+                            )
+                            echo "test-pipelines/${params.FUZZ_PIPELINE} #${fuzzResult.number} succeeded."
+                        }
+                    }
+                }
+            }
+        }
     }
 }
