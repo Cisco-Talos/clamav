@@ -24,6 +24,9 @@ properties(
                 string(name: 'TESTS_FUZZ_BRANCH',
                        defaultValue: '1.0',
                        description: 'tests-fuzz-regression branch'),
+                string(name: 'TEST_PIPELINES_PATH',
+                       defaultValue: 'ClamAV/test-pipelines',
+                       description: 'test-pipelines path for clamav in Jenkins'),
                 string(name: 'BUILD_PIPELINE',
                        defaultValue: 'build-1.0',
                        description: 'test-pipelines branch for build acceptance'),
@@ -82,7 +85,7 @@ node('master') {
     def buildResult
 
     stage('Build') {
-        buildResult = build(job: "test-pipelines/${params.BUILD_PIPELINE}",
+        buildResult = build(job: "${params.TEST_PIPELINES_PATH}/${params.BUILD_PIPELINE}",
             propagate: true,
             wait: true,
             parameters: [
@@ -93,7 +96,7 @@ node('master') {
                 [$class: 'StringParameterValue', name: 'SHARED_LIB_BRANCH', value: "${params.SHARED_LIB_BRANCH}"]
             ]
         )
-        echo "test-pipelines/${params.BUILD_PIPELINE} #${buildResult.number} succeeded."
+        echo "${params.TEST_PIPELINES_PATH}/${params.BUILD_PIPELINE} #${buildResult.number} succeeded."
     }
 
     stage('Test') {
@@ -104,13 +107,13 @@ node('master') {
             def exception = null
             try {
                 stage("Regular Pipeline") {
-                    regularResult = build(job: "test-pipelines/${params.REGULAR_PIPELINE}",
+                    regularResult = build(job: "${params.TEST_PIPELINES_PATH}/${params.REGULAR_PIPELINE}",
                         propagate: true,
                         wait: true,
                         parameters: [
                             [$class: 'StringParameterValue', name: 'CLAMAV_JOB_NAME', value: "${JOB_NAME}"],
                             [$class: 'StringParameterValue', name: 'CLAMAV_JOB_NUMBER', value: "${BUILD_NUMBER}"],
-                            [$class: 'StringParameterValue', name: 'BUILD_JOB_NAME', value: "test-pipelines/${params.BUILD_PIPELINE}"],
+                            [$class: 'StringParameterValue', name: 'BUILD_JOB_NAME', value: "${params.TEST_PIPELINES_PATH}/${params.BUILD_PIPELINE}"],
                             [$class: 'StringParameterValue', name: 'BUILD_JOB_NUMBER', value: "${buildResult.number}"],
                             [$class: 'StringParameterValue', name: 'TESTS_BRANCH', value: "${params.TESTS_BRANCH}"],
                             [$class: 'StringParameterValue', name: 'FRAMEWORK_BRANCH', value: "${params.FRAMEWORK_BRANCH}"],
@@ -118,14 +121,14 @@ node('master') {
                             [$class: 'StringParameterValue', name: 'SHARED_LIB_BRANCH', value: "${params.SHARED_LIB_BRANCH}"]
                         ]
                     )
-                    echo "test-pipelines/${params.REGULAR_PIPELINE} #${regularResult.number} succeeded."
+                    echo "${params.TEST_PIPELINES_PATH}/${params.REGULAR_PIPELINE} #${regularResult.number} succeeded."
                 }
             } catch (exc) {
-                echo "test-pipelines/${params.REGULAR_PIPELINE} failed."
+                echo "${params.TEST_PIPELINES_PATH}/${params.REGULAR_PIPELINE} failed."
                 exception = exc
             }
             stage("Custom Pipeline") {
-                final customResult = build(job: "test-pipelines/${params.CUSTOM_PIPELINE}",
+                final customResult = build(job: "${params.TEST_PIPELINES_PATH}/${params.CUSTOM_PIPELINE}",
                     propagate: true,
                     wait: true,
                     parameters: [
@@ -137,7 +140,7 @@ node('master') {
                         [$class: 'StringParameterValue', name: 'SHARED_LIB_BRANCH', value: "${params.SHARED_LIB_BRANCH}"]
                     ]
                 )
-                echo "test-pipelines/${params.CUSTOM_PIPELINE} #${customResult.number} succeeded."
+                echo "${params.TEST_PIPELINES_PATH}/${params.CUSTOM_PIPELINE} #${customResult.number} succeeded."
             }
             if(exception != null) {
                 echo "Custom Pipeline passed, but Regular pipeline failed!"
@@ -147,7 +150,7 @@ node('master') {
 
         tasks["fuzz_regression"] = {
             stage("Fuzz Regression") {
-                final fuzzResult = build(job: "test-pipelines/${params.FUZZ_PIPELINE}",
+                final fuzzResult = build(job: "${params.TEST_PIPELINES_PATH}/${params.FUZZ_PIPELINE}",
                     propagate: true,
                     wait: true,
                     parameters: [
@@ -158,7 +161,7 @@ node('master') {
                         [$class: 'StringParameterValue', name: 'VERSION', value: "${params.VERSION}"]
                     ]
                 )
-                echo "test-pipelines/${params.FUZZ_PIPELINE} #${fuzzResult.number} succeeded."
+                echo "${params.TEST_PIPELINES_PATH}/${params.FUZZ_PIPELINE} #${fuzzResult.number} succeeded."
             }
         }
 
