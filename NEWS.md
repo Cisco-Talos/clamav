@@ -17,15 +17,15 @@ ClamAV 1.4.0 includes the following improvements and changes:
   > configuration changes to be made via ClamAV `.cfg` "signatures".
   - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1183)
 
-- Added support for extracting LHA / LZH archives.
+- Added support for extracting LHA/LZH archives.
   The new ClamAV file type for ALZ archives is `CL_TYPE_LHA_LZH`.
   Added a [DCONF](https://docs.clamav.net/manual/Signatures/DynamicConfig.html)
-  option to enable or disable LHA / LZH archive support.
+  option to enable or disable LHA/LZH archive support.
   - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1192)
 
 - Added the ability to disable image fuzzy hashing, if needed. For context,
   image fuzzy hashing is a detection mechanism useful for identifying malware
-  by matching images included with the malware or phishing email / document.
+  by matching images included with the malware or phishing email/document.
 
   New ClamScan options:
   ```
@@ -51,21 +51,20 @@ ClamAV 1.4.0 includes the following improvements and changes:
 
 ### Other improvements
 
-- Added cross-compiling instructions for targeting ARM64 / aarch64 processors
-  for both
+- Added cross-compiling instructions for targeting ARM64/aarch64 processors for
   [Windows](https://github.com/Cisco-Talos/clamav/blob/main/INSTALL-cross-windows-arm64.md)
   and
   [Linux](https://github.com/Cisco-Talos/clamav/blob/main/INSTALL-cross-linux-arm64.md).
   - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1116)
 
 - Improved the Freshclam warning messages when being blocked or rate limited
-  so as to include the Cloudflare Ray ID which helps with issue triage.
+  so as to include the Cloudflare Ray ID, which helps with issue triage.
   - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1195)
 
 - Removed unnecessary memory allocation checks when the size to be allocated
   is fixed or comes from a trusted source.
-  Also renamed internal memory allocation functions and macros so it is more
-  obvious what each function does.
+  We also renamed internal memory allocation functions and macros, so it is
+  more obvious what each function does.
   - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1137)
 
 - Improved the Freshclam documentation to make it clear that the `--datadir`
@@ -90,9 +89,8 @@ ClamAV 1.4.0 includes the following improvements and changes:
 
 - Since the build system changed from Autotools to CMake, ClamAV no longer
   supports building with configurations where bzip2, libxml2, libz, libjson-c,
-  or libpcre2 are not available. In addition, libpcre is no longer supported,
-  in favor of libpcre2.
-  In this release, we removed all the dead code associated with those
+  or libpcre2 are not available. Libpcre is no longer supported in favor of
+  libpcre2. In this release, we removed all the dead code associated with those
   unsupported build configurations.
   - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1217)
 
