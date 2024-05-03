@@ -93,13 +93,13 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install Build Tools
-        run: brew install bison flex
+        run: brew install bison flex pipx
 
       - name: Install Dependencies
-        run: brew install bzip2 check curl-openssl json-c libxml2 ncurses openssl@1.1 pcre2 zlib
+        run: brew install bzip2 check curl json-c libxml2 ncurses openssl@3 pcre2 zlib
 
       - name: Install pytest for easier to read test results
-        run: python3 -m pip install pytest
+        run: pipx install pytest
 
       - uses: lukka/get-cmake@v3.30.0
 
@@ -118,9 +118,9 @@ jobs:
         # The CMake binaries on the Github Actions machines are (as of this writing) 3.12
         run:
           cmake ${{runner.workspace}}/clamav -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }}
-          -DOPENSSL_ROOT_DIR=/usr/local/opt/openssl@1.1/
-          -DOPENSSL_CRYPTO_LIBRARY=/usr/local/opt/openssl@1.1/lib/libcrypto.1.1.dylib
-          -DOPENSSL_SSL_LIBRARY=/usr/local/opt/openssl@1.1/lib/libssl.1.1.dylib
+          -DOPENSSL_ROOT_DIR=/opt/homebrew/include/
+          -DOPENSSL_CRYPTO_LIBRARY=/opt/homebrew/lib/libcrypto.3.dylib
+          -DOPENSSL_SSL_LIBRARY=/opt/homebrew/lib/libssl.3.dylib
           -DENABLE_STATIC_LIB=ON
           -DENABLE_EXAMPLES=ON
 
@@ -147,13 +147,13 @@ jobs:
         run: sudo apt-get update
 
       - name: Install Build Tools
-        run: sudo apt-get install -y bison flex valgrind
+        run: sudo apt-get install -y bison flex valgrind pipx
 
       - name: Install Dependencies
         run: sudo apt-get install -y check libbz2-dev libcurl4-openssl-dev libjson-c-dev libmilter-dev libncurses5-dev libpcre3-dev libssl-dev libxml2-dev zlib1g-dev
 
       - name: Install pytest for easier to read test results
-        run: python3 -m pip install pytest
+        run: pipx install pytest
 
       - uses: lukka/get-cmake@v3.30.0
 
