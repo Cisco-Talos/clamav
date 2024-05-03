@@ -92,106 +92,27 @@ static int is_rar_inited = 0;
 #define PASTE2(a, b) a #b
 #define PASTE(a, b) PASTE2(a, b)
 
+#ifdef _WIN32
+
 static void *load_module(const char *name, const char *featurename)
 {
-#ifdef _WIN32
-    static const char *suffixes[] = {LT_MODULE_EXT};
-#else
-    static const char *suffixes[] = {
-        LT_MODULE_EXT "." LIBCLAMAV_FULLVER,
-        PASTE(LT_MODULE_EXT ".", LIBCLAMAV_MAJORVER),
-        LT_MODULE_EXT,
-        "." LT_LIBEXT};
-#endif
-
-    const char *searchpath;
+    HMODULE rhandle = NULL;
     char modulename[128];
     size_t i;
-#ifdef _WIN32
-    HMODULE rhandle = NULL;
-#else
-    void *rhandle;
-#endif
 
-#ifdef _WIN32
     /*
-     * First try a standard LoadLibraryA() without specifying a full path.
+     * For Windows, just try a standard LoadLibraryA() with each of the different possible suffixes.
      * For more information on the DLL search order, see:
-     *  https://docs.microsoft.com/en-us/windows/desktop/Dlls/dynamic-link-library-search-order
+     *  https://learn.microsoft.com/en-us/windows/win32/dlls/dynamic-link-library-search-order
      */
     cli_dbgmsg("searching for %s\n", featurename);
-#else
-    /*
-     * First search using the provided SEARCH_LIBDIR (e.g. "<prefix>/lib")
-     * Known issue: If an older clamav version is already installed, the clamav
-     * unit tests using this function will load the older library version from
-     * the install path first.
-     */
-    searchpath = SEARCH_LIBDIR;
-    cli_dbgmsg("searching for %s, user-searchpath: %s\n", featurename, searchpath);
-#endif
 
-    for (i = 0; i < sizeof(suffixes) / sizeof(suffixes[0]); i++) {
-#ifdef _WIN32
-        snprintf(modulename, sizeof(modulename), "%s%s", name, suffixes[i]);
-        rhandle = LoadLibraryA(modulename);
-#else  // !_WIN32
-        snprintf(modulename, sizeof(modulename), "%s" PATHSEP "%s%s", searchpath, name, suffixes[i]);
-        rhandle = dlopen(modulename, RTLD_NOW);
-#endif // !_WIN32
-        if (rhandle) {
-            break;
-        }
+    snprintf(modulename, sizeof(modulename), "%s%s", name, LT_MODULE_EXT);
 
-        cli_dbgmsg("searching for %s: %s not found\n", featurename, modulename);
-    }
-
+    rhandle = LoadLibraryA(modulename);
     if (NULL == rhandle) {
-        char *ld_library_path = NULL;
-        /*
-         * library not found.
-         * Try again using LD_LIBRARY_PATH environment variable for the path.
-         */
-        ld_library_path = getenv("LD_LIBRARY_PATH");
-        if (NULL != ld_library_path) {
-#define MAX_LIBRARY_PATHS 10
-            size_t token_index;
-            size_t tokens_count;
-            const char *tokens[MAX_LIBRARY_PATHS];
+        char *err = NULL;
 
-            char *tokenized_library_path = NULL;
-
-            tokenized_library_path = strdup(ld_library_path);
-            tokens_count           = cli_strtokenize(tokenized_library_path, ':', MAX_LIBRARY_PATHS, tokens);
-
-            for (token_index = 0; token_index < tokens_count; token_index++) {
-                cli_dbgmsg("searching for %s, LD_LIBRARY_PATH: %s\n", featurename, tokens[token_index]);
-
-                for (i = 0; i < sizeof(suffixes) / sizeof(suffixes[0]); i++) {
-                    snprintf(modulename, sizeof(modulename), "%s" PATHSEP "%s%s", tokens[token_index], name, suffixes[i]);
-#ifdef _WIN32
-                    rhandle = LoadLibraryA(modulename);
-#else  // !_WIN32
-                    rhandle = dlopen(modulename, RTLD_NOW);
-#endif // !_WIN32
-                    if (rhandle) {
-                        break;
-                    }
-
-                    cli_dbgmsg("searching for %s: %s not found\n", featurename, modulename);
-                }
-
-                if (rhandle) {
-                    break;
-                }
-            }
-            free(tokenized_library_path);
-        }
-    }
-
-    if (NULL == rhandle) {
-#ifdef _WIN32
-        char *err     = NULL;
         DWORD lasterr = GetLastError();
         if (0 < lasterr) {
             FormatMessageA(
@@ -203,35 +124,111 @@ static void *load_module(const char *name, const char *featurename)
                 0,
                 NULL);
         }
-#else  // !_WIN32
-        const char *err = dlerror();
-#endif // !_WIN32
 
-#ifdef WARN_DLOPEN_FAIL
         if (NULL == err) {
-            cli_warnmsg("Cannot dlopen %s: Unknown error - %s support unavailable\n", name, featurename);
+            cli_dbgmsg("Cannot LoadLibraryA %s: Unknown error - %s support unavailable\n", name, featurename);
         } else {
-            cli_warnmsg("Cannot dlopen %s: %s - %s support unavailable\n", name, err, featurename);
-        }
-#else
-        if (NULL == err) {
-            cli_dbgmsg("Cannot dlopen %s: Unknown error - %s support unavailable\n", name, featurename);
-        } else {
-            cli_dbgmsg("Cannot dlopen %s: %s - %s support unavailable\n", name, err, featurename);
-        }
-#endif
-
-#ifdef _WIN32
-        if (NULL != err) {
+            cli_dbgmsg("Cannot LoadLibraryA %s: %s - %s support unavailable\n", name, err, featurename);
             LocalFree(err);
         }
-#endif
-        return rhandle;
+
+        goto done;
     }
 
     cli_dbgmsg("%s support loaded from %s\n", featurename, modulename);
+
+done:
+
     return (void *)rhandle;
 }
+
+#else
+
+static void *load_module(const char *name, const char *featurename)
+{
+    static const char *suffixes[] = {
+        LT_MODULE_EXT "." LIBCLAMAV_FULLVER,
+        PASTE(LT_MODULE_EXT ".", LIBCLAMAV_MAJORVER),
+        LT_MODULE_EXT,
+        "." LT_LIBEXT};
+    void *rhandle                = NULL;
+    char *tokenized_library_path = NULL;
+    char *ld_library_path        = NULL;
+    const char *err;
+
+    char modulename[128];
+    size_t i;
+
+    /*
+     * First try using LD_LIBRARY_PATH environment variable for the path.
+     * We do this first because LD_LIBRARY_PATH is intended as an option to override the installed library path.
+     *
+     * We don't do this for Windows because Windows doesn't have an equivalent to LD_LIBRARY_PATH
+     * and because LoadLibraryA() will search the executable's folder, which works for the unit tests.
+     */
+    ld_library_path = getenv("LD_LIBRARY_PATH");
+    if (NULL != ld_library_path && strlen(ld_library_path) > 0) {
+#define MAX_LIBRARY_PATHS 10
+        size_t token_index;
+        size_t tokens_count;
+        const char *tokens[MAX_LIBRARY_PATHS];
+
+        /*
+         * LD_LIBRARY_PATH may be a colon-separated list of directories.
+         * Tokenize the list and try to load the library from each directory.
+         */
+        tokenized_library_path = strdup(ld_library_path);
+        tokens_count           = cli_strtokenize(tokenized_library_path, ':', MAX_LIBRARY_PATHS, tokens);
+
+        for (token_index = 0; token_index < tokens_count; token_index++) {
+            cli_dbgmsg("searching for %s, LD_LIBRARY_PATH: %s\n", featurename, tokens[token_index]);
+
+            for (i = 0; i < sizeof(suffixes) / sizeof(suffixes[0]); i++) {
+                snprintf(modulename, sizeof(modulename), "%s" PATHSEP "%s%s", tokens[token_index], name, suffixes[i]);
+
+                rhandle = dlopen(modulename, RTLD_NOW);
+                if (NULL != rhandle) {
+                    cli_dbgmsg("%s support loaded from %s\n", featurename, modulename);
+                    goto done;
+                }
+
+                cli_dbgmsg("searching for %s: %s not found\n", featurename, modulename);
+            }
+        }
+    }
+
+    /*
+     * Search in "<prefix>/lib" checking with each of the different possible suffixes.
+     */
+    cli_dbgmsg("searching for %s, user-searchpath: %s\n", featurename, SEARCH_LIBDIR);
+
+    for (i = 0; i < sizeof(suffixes) / sizeof(suffixes[0]); i++) {
+        snprintf(modulename, sizeof(modulename), "%s" PATHSEP "%s%s", SEARCH_LIBDIR, name, suffixes[i]);
+
+        rhandle = dlopen(modulename, RTLD_NOW);
+        if (NULL != rhandle) {
+            cli_dbgmsg("%s support loaded from %s\n", featurename, modulename);
+            goto done;
+        }
+
+        cli_dbgmsg("searching for %s: %s not found\n", featurename, modulename);
+    }
+
+    err = dlerror();
+    if (NULL == err) {
+        cli_dbgmsg("Cannot dlopen %s: Unknown error - %s support unavailable\n", name, featurename);
+    } else {
+        cli_dbgmsg("Cannot dlopen %s: %s - %s support unavailable\n", name, err, featurename);
+    }
+
+done:
+
+    free(tokenized_library_path);
+
+    return (void *)rhandle;
+}
+
+#endif
 
 #ifdef _WIN32
 
