@@ -25,7 +25,7 @@ hex-literal = "0.4"
 inflate = "0.4"
 bzip2-rs = "0.1"
 byteorder = "1.5"
-delharc = "0.5"
+delharc = "0.6"
 
 [lib]
 crate-type = ["staticlib"]
