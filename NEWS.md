@@ -79,6 +79,10 @@ ClamAV 1.4.0 includes the following improvements and changes:
   target "any" file size.
   - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1167)
 
+- Added an improvement to the SystemD service file for ClamOnAcc so that the
+  service will shut down faster on some systems.
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1164)
+
 ### Bug fixes
 
 - Silenced confusing warning message when scanning some HTML files.
@@ -99,6 +103,11 @@ ClamAV 1.4.0 includes the following improvements and changes:
 
 - Added missing documentation for the ClamScan `--force-to-disk` option.
   - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1186)
+
+- Fixed an issue where ClamAV unit tests would prefer an older
+  libclamunrar_iface library from the install path, if present, rather than
+  the recently compiled library in the build path.
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1258)
 
 ### Acknowledgments
 
