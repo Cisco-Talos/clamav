@@ -209,21 +209,6 @@ pub unsafe extern "C" fn scan_lha_lzh(ctx: *mut cli_ctx) -> cl_error_t {
         // Get the file header.
         let header = decoder.header();
 
-        // Verify the CRC check. This is important because LHA/LZH does not have particularly identifiable magic bytes.
-        match decoder.crc_check() {
-            Ok(crc) => {
-                // CRC is valid.  Very likely it is indeed an LHA/LZH archive.
-                debug!("CRC check passed.  Very likely this is an LHA or LZH archive.  CRC: {crc}");
-            }
-            Err(err) => {
-                // Error checking CRC.
-                // Use debug-level because may not actually be an LHA/LZH archive.
-                // LHA/LZH does not have particularly identifiable magic bytes.
-                debug!("An error occurred when checking the CRC of this LHA or LZH archive: {err}");
-                // break;
-            }
-        }
-
         let filepath = header.parse_pathname();
         let filename = filepath.to_string_lossy();
         if header.is_directory() {
@@ -254,11 +239,31 @@ pub unsafe extern "C" fn scan_lha_lzh(ctx: *mut cli_ctx) -> cl_error_t {
                         debug!("err: unsupported compression method");
                     } else {
                         // Read the file into a buffer.
-                        let mut file_data = Vec::<u8>::new();
+                        let mut file_data: Vec<u8> = Vec::<u8>::new();
 
                         match decoder.read_to_end(&mut file_data) {
                             Ok(bytes_read) => {
                                 if bytes_read > 0 {
+                                    debug!(
+                                        "Read {bytes_read} bytes from file {filename} in the LHA archive."
+                                    );
+
+                                    // Verify the CRC check *after* reading the file.
+                                    match decoder.crc_check() {
+                                        Ok(crc) => {
+                                            // CRC is valid.  Very likely this is an LHA or LZH archive.
+                                            debug!("CRC check passed.  Very likely this is an LHA or LZH archive.  CRC: {crc}");
+                                        }
+                                        Err(err) => {
+                                            // Error checking CRC.
+                                            debug!("An error occurred when checking the CRC of this LHA or LZH archive: {err}");
+
+                                            // Allow the scan to continue even with a CRC error, for now.
+                                            // break;
+                                        }
+                                    }
+
+                                    // Scan the file.
                                     let ret =
                                         magic_scan(ctx, &file_data, Some(filename.to_string()));
                                     if ret != cl_error_t_CL_SUCCESS {
