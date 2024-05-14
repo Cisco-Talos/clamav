@@ -250,7 +250,7 @@ fc_error_t load_freshclam_dat(void)
             if (sizeof(g_lastRay) != (bread = read(handle, &g_lastRay, sizeof(g_lastRay)))) {
                 char error_message[260];
                 cli_strerror(errno, error_message, 260);
-                logg(LOGG_WARNING, "Last cf-ray not present in freshclam.dat.\n");
+                logg(LOGG_DEBUG, "Last cf-ray not present in freshclam.dat.\n");
                 memset(g_lastRay, 0, sizeof(g_lastRay));
             }
 
