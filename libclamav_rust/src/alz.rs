@@ -358,7 +358,9 @@ impl AlzLocalFileHeader {
             data: buffer.to_vec(),
         };
 
-        files.push(extracted_file);
+        if 0 != extracted_file.data.len() {
+            files.push(extracted_file);
+        }
     }
 
     fn extract_file_nocomp(
