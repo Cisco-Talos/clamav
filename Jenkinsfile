@@ -11,19 +11,25 @@ properties(
                        description: 'test-framework branch'),
                 string(name: 'TESTS_BRANCH',
                        defaultValue: '0.103',
-                       description: 'tests branch'),
+                       description: 'tests branch for the package and regular tests'),
                 string(name: 'TESTS_CUSTOM_BRANCH',
                        defaultValue: '0.103',
                        description: 'tests-custom branch'),
                 string(name: 'TESTS_FUZZ_BRANCH',
                        defaultValue: '0.103',
                        description: 'tests-fuzz-regression branch'),
+                string(name: 'BUILD_PIPELINES_PATH',
+                       defaultValue: 'ClamAV/build-pipelines',
+                       description: 'build-pipelines path for clamav in Jenkins'),
                 string(name: 'TEST_PIPELINES_PATH',
                        defaultValue: 'ClamAV/test-pipelines',
                        description: 'test-pipelines path for clamav in Jenkins'),
                 string(name: 'BUILD_PIPELINE',
                        defaultValue: 'build-0.103',
                        description: 'test-pipelines branch for build acceptance'),
+                string(name: 'PACKAGE_PIPELINE',
+                       defaultValue: 'package-0.103',
+                       description: 'test-pipelines branch for package tests.'),
                 string(name: 'REGULAR_PIPELINE',
                        defaultValue: 'regular-0.103',
                        description: 'test-pipelines branch for regular tests.'),
@@ -47,7 +53,7 @@ properties(
     ]
 )
 
-node('ubuntu-18-x64') {
+node('default') {
     stage('Generate Tarball') {
         cleanWs()
 
@@ -81,10 +87,11 @@ node('ubuntu-18-x64') {
     def buildResult
 
     stage('Build') {
-        buildResult = build(job: "${params.TEST_PIPELINES_PATH}/${params.BUILD_PIPELINE}",
+        buildResult = build(job: "${params.BUILD_PIPELINES_PATH}/${params.BUILD_PIPELINE}",
             propagate: true,
             wait: true,
             parameters: [
+                [$class: 'StringParameterValue', name: 'PIPELINE_BRANCH_NAME', value: "${params.BUILD_PIPELINE}"],
                 [$class: 'StringParameterValue', name: 'CLAMAV_JOB_NAME', value: "${JOB_NAME}"],
                 [$class: 'StringParameterValue', name: 'CLAMAV_JOB_NUMBER', value: "${BUILD_NUMBER}"],
                 [$class: 'StringParameterValue', name: 'FRAMEWORK_BRANCH', value: "${params.FRAMEWORK_BRANCH}"],
@@ -92,21 +99,45 @@ node('ubuntu-18-x64') {
                 [$class: 'StringParameterValue', name: 'SHARED_LIB_BRANCH', value: "${params.SHARED_LIB_BRANCH}"]
             ]
         )
-        echo "${params.TEST_PIPELINES_PATH}/${params.BUILD_PIPELINE} #${buildResult.number} succeeded."
+        echo "${params.BUILD_PIPELINES_PATH}/${params.BUILD_PIPELINE} #${buildResult.number} succeeded."
     }
 
     stage('Test') {
         def tasks = [:]
 
-        tasks["regular_and_custom"] = {
-            def regularResult
+        tasks["package_regular_custom"] = {
             def exception = null
             try {
-                stage("Regular Pipeline") {
-                    regularResult = build(job: "${params.TEST_PIPELINES_PATH}/${params.REGULAR_PIPELINE}",
+                stage("Package") {
+                    final regularResult = build(job: "${params.TEST_PIPELINES_PATH}/${params.PACKAGE_PIPELINE}",
                         propagate: true,
                         wait: true,
                         parameters: [
+                            [$class: 'StringParameterValue', name: 'PIPELINE_BRANCH_NAME', value: "${params.PACKAGE_PIPELINE}"],
+                            [$class: 'StringParameterValue', name: 'CLAMAV_JOB_NAME', value: "${JOB_NAME}"],
+                            [$class: 'StringParameterValue', name: 'CLAMAV_JOB_NUMBER', value: "${BUILD_NUMBER}"],
+                            [$class: 'StringParameterValue', name: 'BUILD_JOB_NAME', value: "${params.TEST_PIPELINES_PATH}/${params.BUILD_PIPELINE}"],
+                            [$class: 'StringParameterValue', name: 'BUILD_JOB_NUMBER', value: "${buildResult.number}"],
+                            [$class: 'StringParameterValue', name: 'TESTS_BRANCH', value: "${params.TESTS_BRANCH}"],
+                            [$class: 'StringParameterValue', name: 'FRAMEWORK_BRANCH', value: "${params.FRAMEWORK_BRANCH}"],
+                            [$class: 'StringParameterValue', name: 'VERSION', value: "${params.VERSION}"],
+                            [$class: 'StringParameterValue', name: 'SHARED_LIB_BRANCH', value: "${params.SHARED_LIB_BRANCH}"]
+                        ]
+                    )
+                    echo "${params.TEST_PIPELINES_PATH}/${params.PACKAGE_PIPELINE} #${regularResult.number} succeeded."
+                }
+            } catch (exc) {
+                echo "${params.TEST_PIPELINES_PATH}/${params.PACKAGE_PIPELINE} failed."
+                exception = exc
+            }
+
+            try {
+                stage("Regular From-Source") {
+                    final regularResult = build(job: "${params.TEST_PIPELINES_PATH}/${params.REGULAR_PIPELINE}",
+                        propagate: true,
+                        wait: true,
+                        parameters: [
+                            [$class: 'StringParameterValue', name: 'PIPELINE_BRANCH_NAME', value: "${params.REGULAR_PIPELINE}"],
                             [$class: 'StringParameterValue', name: 'CLAMAV_JOB_NAME', value: "${JOB_NAME}"],
                             [$class: 'StringParameterValue', name: 'CLAMAV_JOB_NUMBER', value: "${BUILD_NUMBER}"],
                             [$class: 'StringParameterValue', name: 'BUILD_JOB_NAME', value: "${params.TEST_PIPELINES_PATH}/${params.BUILD_PIPELINE}"],
@@ -123,11 +154,13 @@ node('ubuntu-18-x64') {
                 echo "${params.TEST_PIPELINES_PATH}/${params.REGULAR_PIPELINE} failed."
                 exception = exc
             }
-            stage("Custom Pipeline") {
+
+            stage("Custom From-Source") {
                 final customResult = build(job: "${params.TEST_PIPELINES_PATH}/${params.CUSTOM_PIPELINE}",
                     propagate: true,
                     wait: true,
                     parameters: [
+                        [$class: 'StringParameterValue', name: 'PIPELINE_BRANCH_NAME', value: "${params.CUSTOM_PIPELINE}"],
                         [$class: 'StringParameterValue', name: 'CLAMAV_JOB_NAME', value: "${JOB_NAME}"],
                         [$class: 'StringParameterValue', name: 'CLAMAV_JOB_NUMBER', value: "${BUILD_NUMBER}"],
                         [$class: 'StringParameterValue', name: 'TESTS_BRANCH', value: "${params.TESTS_CUSTOM_BRANCH}"],
@@ -139,7 +172,7 @@ node('ubuntu-18-x64') {
                 echo "${params.TEST_PIPELINES_PATH}/${params.CUSTOM_PIPELINE} #${customResult.number} succeeded."
             }
             if(exception != null) {
-                echo "Custom Pipeline passed, but Regular pipeline failed!"
+                echo "Custom Pipeline passed, but prior pipelines failed!"
                 throw exception
             }
         }
