@@ -49,8 +49,8 @@ pub fn magic_scan(ctx: *mut cli_ctx, buf: &[u8], name: Option<String>) -> cl_err
     let ptr = buf.as_ptr();
     let len = buf.len();
 
-    if 0 == len{
-        return cl_error_t_CL_SUCCESS ;
+    if 0 == len {
+        return cl_error_t_CL_SUCCESS;
     }
 
     match &name {
@@ -79,7 +79,7 @@ pub fn magic_scan(ctx: *mut cli_ctx, buf: &[u8], name: Option<String>) -> cl_err
     }
 
     // Okay now safe to drop the name CString.
-    if !name_ptr.is_null(){
+    if !name_ptr.is_null() {
         let _ = unsafe { CString::from_raw(name_ptr) };
     }
 
