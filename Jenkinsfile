@@ -77,7 +77,27 @@ node('default') {
 
         dir(path: 'build') {
             sh """# CPack
-                cmake .. -D VENDOR_DEPENDENCIES=ON
+                cmake .. -D VENDOR_DEPENDENCIES=ON \
+                    -D JSONC_INCLUDE_DIR="$HOME/.mussels/install/host-static/include/json-c" \
+                    -D JSONC_LIBRARY="$HOME/.mussels/install/host-static/lib/libjson-c.a" \
+                    -D ENABLE_JSON_SHARED=OFF \
+                    -D BZIP2_INCLUDE_DIR="$HOME/.mussels/install/host-static/include" \
+                    -D BZIP2_LIBRARY_RELEASE="$HOME/bzip2-1.0.8-install/lib/libbz2.a" \
+                    -D OPENSSL_ROOT_DIR="$HOME/.mussels/install/host-static" \
+                    -D OPENSSL_INCLUDE_DIR="$HOME/.mussels/install/host-static/include" \
+                    -D OPENSSL_CRYPTO_LIBRARY="$HOME/.mussels/install/host-static/lib/libcrypto.a" \
+                    -D OPENSSL_SSL_LIBRARY="$HOME/.mussels/install/host-static/lib/libssl.a" \
+                    -D LIBXML2_INCLUDE_DIR="$HOME/.mussels/install/host-static/include/libxml2" \
+                    -D LIBXML2_LIBRARY="$HOME/.mussels/install/host-static/lib/libxml2.a" \
+                    -D PCRE2_INCLUDE_DIR="$HOME/.mussels/install/host-static/include" \
+                    -D PCRE2_LIBRARY="$HOME/.mussels/install/host-static/lib/libpcre2-8.a" \
+                    -D CURSES_INCLUDE_DIR="$HOME/.mussels/install/host-static/include" \
+                    -D CURSES_LIBRARY="$HOME/.mussels/install/host-static/lib/libncurses.a;$HOME/.mussels/install/host-static/lib/libtinfo.a" \
+                    -D ZLIB_INCLUDE_DIR="$HOME/.mussels/install/host-static/include" \
+                    -D ZLIB_LIBRARY="$HOME/.mussels/install/host-static/lib/libz.a" \
+                    -D LIBCHECK_INCLUDE_DIR="$HOME/.mussels/install/host-static/include" \
+                    -D LIBCHECK_LIBRARY="$HOME/.mussels/install/host-static/lib/libcheck.a"
+
                 cpack --config CPackSourceConfig.cmake """
             archiveArtifacts(artifacts: "clamav-${params.VERSION}*.tar.gz", onlyIfSuccessful: true)
         }
