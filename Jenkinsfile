@@ -91,7 +91,6 @@ node('default') {
             propagate: true,
             wait: true,
             parameters: [
-                [$class: 'StringParameterValue', name: 'PIPELINE_BRANCH_NAME', value: "${params.BUILD_PIPELINE}"],
                 [$class: 'StringParameterValue', name: 'CLAMAV_JOB_NAME', value: "${JOB_NAME}"],
                 [$class: 'StringParameterValue', name: 'CLAMAV_JOB_NUMBER', value: "${BUILD_NUMBER}"],
                 [$class: 'StringParameterValue', name: 'FRAMEWORK_BRANCH', value: "${params.FRAMEWORK_BRANCH}"],
@@ -113,10 +112,9 @@ node('default') {
                         propagate: true,
                         wait: true,
                         parameters: [
-                            [$class: 'StringParameterValue', name: 'PIPELINE_BRANCH_NAME', value: "${params.PACKAGE_PIPELINE}"],
                             [$class: 'StringParameterValue', name: 'CLAMAV_JOB_NAME', value: "${JOB_NAME}"],
                             [$class: 'StringParameterValue', name: 'CLAMAV_JOB_NUMBER', value: "${BUILD_NUMBER}"],
-                            [$class: 'StringParameterValue', name: 'BUILD_JOB_NAME', value: "${params.TEST_PIPELINES_PATH}/${params.BUILD_PIPELINE}"],
+                            [$class: 'StringParameterValue', name: 'BUILD_JOB_NAME', value: "${params.BUILD_PIPELINES_PATH}/${params.BUILD_PIPELINE}"],
                             [$class: 'StringParameterValue', name: 'BUILD_JOB_NUMBER', value: "${buildResult.number}"],
                             [$class: 'StringParameterValue', name: 'TESTS_BRANCH', value: "${params.TESTS_BRANCH}"],
                             [$class: 'StringParameterValue', name: 'FRAMEWORK_BRANCH', value: "${params.FRAMEWORK_BRANCH}"],
@@ -137,11 +135,8 @@ node('default') {
                         propagate: true,
                         wait: true,
                         parameters: [
-                            [$class: 'StringParameterValue', name: 'PIPELINE_BRANCH_NAME', value: "${params.REGULAR_PIPELINE}"],
                             [$class: 'StringParameterValue', name: 'CLAMAV_JOB_NAME', value: "${JOB_NAME}"],
                             [$class: 'StringParameterValue', name: 'CLAMAV_JOB_NUMBER', value: "${BUILD_NUMBER}"],
-                            [$class: 'StringParameterValue', name: 'BUILD_JOB_NAME', value: "${params.TEST_PIPELINES_PATH}/${params.BUILD_PIPELINE}"],
-                            [$class: 'StringParameterValue', name: 'BUILD_JOB_NUMBER', value: "${buildResult.number}"],
                             [$class: 'StringParameterValue', name: 'TESTS_BRANCH', value: "${params.TESTS_BRANCH}"],
                             [$class: 'StringParameterValue', name: 'FRAMEWORK_BRANCH', value: "${params.FRAMEWORK_BRANCH}"],
                             [$class: 'StringParameterValue', name: 'VERSION', value: "${params.VERSION}"],
@@ -160,7 +155,6 @@ node('default') {
                     propagate: true,
                     wait: true,
                     parameters: [
-                        [$class: 'StringParameterValue', name: 'PIPELINE_BRANCH_NAME', value: "${params.CUSTOM_PIPELINE}"],
                         [$class: 'StringParameterValue', name: 'CLAMAV_JOB_NAME', value: "${JOB_NAME}"],
                         [$class: 'StringParameterValue', name: 'CLAMAV_JOB_NUMBER', value: "${BUILD_NUMBER}"],
                         [$class: 'StringParameterValue', name: 'TESTS_BRANCH', value: "${params.TESTS_CUSTOM_BRANCH}"],
