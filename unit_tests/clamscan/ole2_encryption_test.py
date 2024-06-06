@@ -5,6 +5,8 @@ Run clamscan tests.
 """
 
 import sys
+import os
+import re
 
 sys.path.append('../unit_tests')
 import testcase
@@ -18,6 +20,33 @@ class TC(testcase.TestCase):
     @classmethod
     def tearDownClass(cls):
         super(TC, cls).tearDownClass()
+
+    @classmethod
+    def assertStrings(self, tempdir, strings):
+        foundList = []
+        for s in strings:
+            foundList.append(False)
+
+        for parent, dirs, files in os.walk(tempdir):
+            for f in files:
+                if "metadata.json" == f:
+                    mdf = os.path.join(parent, f)
+                    handle = open(mdf)
+                    lines = handle.readlines()
+                    handle.close()
+                    for l in lines:
+                        for i in range(0, len(strings)):
+                            m = re.search(strings[i], l)
+                            if m:
+                                foundList[i] = True
+                                break
+
+                        if not (False in foundList):
+                            break
+
+                    #Only one metadata.json
+                    break
+        assert not (False in foundList)
 
     def setUp(self):
         super(TC, self).setUp()
@@ -44,6 +73,29 @@ class TC(testcase.TestCase):
         ]
         self.verify_output(output.out, expected=expected_results)
 
+    def test_FAT_doc_metadata(self):
+        self.step_name('Test FAT doc')
+
+        tempdir=self.path_tmp / "TD"
+        if not os.path.isdir(tempdir):
+            os.makedirs(tempdir);
+
+        testfile = TC.path_source / 'unit_tests' / 'input' / 'other_scanfiles' / 'ole2_encryption' / 'password.fat.doc'
+        command = '{valgrind} {valgrind_args} {clamscan} -d {path_db} --gen-json --leave-temps --tempdir={tempdir} {testfile}'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan,
+            path_db=TC.path_source / 'unit_tests' / 'input' / 'other_sigs' / 'Clamav-Unit-Test-Signature.ndb',
+            tempdir=tempdir,
+            testfile=testfile,
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 0  # clean
+
+        neededStrings = [ '"Encrypted":1'
+                , '"EncryptedWithVelvetSweatshop":0'
+                ]
+        self.assertStrings(tempdir, neededStrings)
+
     def test_ministream_doc(self):
         self.step_name('Test ministream doc')
 
@@ -61,6 +113,29 @@ class TC(testcase.TestCase):
             'Heuristics.Encrypted.OLE2 FOUND',
         ]
         self.verify_output(output.out, expected=expected_results)
+
+    def test_ministream_doc_metadata(self):
+        self.step_name('Test ministream doc')
+
+        tempdir=self.path_tmp / "TD"
+        if not os.path.isdir(tempdir):
+            os.makedirs(tempdir);
+
+        testfile = TC.path_source / 'unit_tests' / 'input' / 'other_scanfiles' / 'ole2_encryption' / 'password.ministream.doc'
+        command = '{valgrind} {valgrind_args} {clamscan} -d {path_db} --gen-json --leave-temps --tempdir={tempdir} {testfile}'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan,
+            path_db=TC.path_source / 'unit_tests' / 'input' / 'other_sigs' / 'Clamav-Unit-Test-Signature.ndb',
+            tempdir=tempdir,
+            testfile=testfile,
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 0  # clean
+
+        neededStrings = [ '"Encrypted":1'
+                , '"EncryptedWithVelvetSweatshop":0'
+                ]
+        self.assertStrings(tempdir, neededStrings)
 
 
     def test_FAT_docx(self):
@@ -81,6 +156,29 @@ class TC(testcase.TestCase):
         ]
         self.verify_output(output.out, expected=expected_results)
 
+    def test_FAT_docx_metadata(self):
+        self.step_name('Test FAT docx')
+
+        tempdir=self.path_tmp / "TD"
+        if not os.path.isdir(tempdir):
+            os.makedirs(tempdir);
+
+        testfile = TC.path_source / 'unit_tests' / 'input' / 'other_scanfiles' / 'ole2_encryption' / 'password.fat.docx'
+        command = '{valgrind} {valgrind_args} {clamscan} -d {path_db} --gen-json --leave-temps --tempdir={tempdir} {testfile}'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan,
+            path_db=TC.path_source / 'unit_tests' / 'input' / 'other_sigs' / 'Clamav-Unit-Test-Signature.ndb',
+            tempdir=tempdir,
+            testfile=testfile,
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 0  # clean
+
+        neededStrings = [ '"Encrypted":1'
+                , '"EncryptedWithVelvetSweatshop":0'
+                ]
+        self.assertStrings(tempdir, neededStrings)
+
     def test_ministream_docx(self):
         self.step_name('Test ministream docx')
 
@@ -99,6 +197,28 @@ class TC(testcase.TestCase):
         ]
         self.verify_output(output.out, expected=expected_results)
 
+    def test_ministream_docx_metadata(self):
+        self.step_name('Test ministream docx')
+
+        tempdir=self.path_tmp / "TD"
+        if not os.path.isdir(tempdir):
+            os.makedirs(tempdir);
+
+        testfile = TC.path_source / 'unit_tests' / 'input' / 'other_scanfiles' / 'ole2_encryption' / 'password.ministream.docx'
+        command = '{valgrind} {valgrind_args} {clamscan} -d {path_db} --gen-json --leave-temps --tempdir={tempdir} {testfile}'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan,
+            path_db=TC.path_source / 'unit_tests' / 'input' / 'other_sigs' / 'Clamav-Unit-Test-Signature.ndb',
+            tempdir=tempdir,
+            testfile=testfile,
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 0  # clean
+
+        neededStrings = [ '"Encrypted":1'
+                , '"EncryptedWithVelvetSweatshop":0'
+                ]
+        self.assertStrings(tempdir, neededStrings)
 
     def test_FAT_dot(self):
         self.step_name('Test FAT dot')
@@ -118,6 +238,29 @@ class TC(testcase.TestCase):
         ]
         self.verify_output(output.out, expected=expected_results)
 
+    def test_FAT_dot_metadata(self):
+        self.step_name('Test FAT dot')
+
+        tempdir=self.path_tmp / "TD"
+        if not os.path.isdir(tempdir):
+            os.makedirs(tempdir);
+
+        testfile = TC.path_source / 'unit_tests' / 'input' / 'other_scanfiles' / 'ole2_encryption' / 'password.fat.dot'
+        command = '{valgrind} {valgrind_args} {clamscan} -d {path_db} --gen-json --leave-temps --tempdir={tempdir} {testfile}'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan,
+            path_db=TC.path_source / 'unit_tests' / 'input' / 'other_sigs' / 'Clamav-Unit-Test-Signature.ndb',
+            tempdir=tempdir,
+            testfile=testfile,
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 0  # clean
+
+        neededStrings = [ '"Encrypted":1'
+                , '"EncryptedWithVelvetSweatshop":0'
+                ]
+        self.assertStrings(tempdir, neededStrings)
+
     def test_ministream_dot(self):
         self.step_name('Test ministream dot')
 
@@ -135,6 +278,29 @@ class TC(testcase.TestCase):
             'Heuristics.Encrypted.OLE2 FOUND',
         ]
         self.verify_output(output.out, expected=expected_results)
+
+    def test_ministream_dot_metadata(self):
+        self.step_name('Test ministream dot')
+
+        tempdir=self.path_tmp / "TD"
+        if not os.path.isdir(tempdir):
+            os.makedirs(tempdir);
+
+        testfile = TC.path_source / 'unit_tests' / 'input' / 'other_scanfiles' / 'ole2_encryption' / 'password.ministream.dot'
+        command = '{valgrind} {valgrind_args} {clamscan} -d {path_db} --gen-json --leave-temps --tempdir={tempdir} {testfile}'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan,
+            path_db=TC.path_source / 'unit_tests' / 'input' / 'other_sigs' / 'Clamav-Unit-Test-Signature.ndb',
+            tempdir=tempdir,
+            testfile=testfile,
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 0  # clean
+
+        neededStrings = [ '"Encrypted":1'
+                , '"EncryptedWithVelvetSweatshop":0'
+                ]
+        self.assertStrings(tempdir, neededStrings)
 
     def test_FAT_ppsx(self):
         self.step_name('Test FAT ppsx')
@@ -154,6 +320,29 @@ class TC(testcase.TestCase):
         ]
         self.verify_output(output.out, expected=expected_results)
 
+    def test_FAT_ppsx_metadata(self):
+        self.step_name('Test FAT ppsx')
+
+        tempdir=self.path_tmp / "TD"
+        if not os.path.isdir(tempdir):
+            os.makedirs(tempdir);
+
+        testfile = TC.path_source / 'unit_tests' / 'input' / 'other_scanfiles' / 'ole2_encryption' / 'password.fat.ppsx'
+        command = '{valgrind} {valgrind_args} {clamscan} -d {path_db} --gen-json --leave-temps --tempdir={tempdir} {testfile}'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan,
+            path_db=TC.path_source / 'unit_tests' / 'input' / 'other_sigs' / 'Clamav-Unit-Test-Signature.ndb',
+            tempdir=tempdir,
+            testfile=testfile,
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 0  # clean
+
+        neededStrings = [ '"Encrypted":1'
+                , '"EncryptedWithVelvetSweatshop":0'
+                ]
+        self.assertStrings(tempdir, neededStrings)
+
     def test_ministream_ppsx(self):
         self.step_name('Test ministream ppsx')
 
@@ -171,6 +360,29 @@ class TC(testcase.TestCase):
             'Heuristics.Encrypted.OLE2 FOUND',
         ]
         self.verify_output(output.out, expected=expected_results)
+
+    def test_ministream_ppsx_metadata(self):
+        self.step_name('Test ministream ppsx')
+
+        tempdir=self.path_tmp / "TD"
+        if not os.path.isdir(tempdir):
+            os.makedirs(tempdir);
+
+        testfile = TC.path_source / 'unit_tests' / 'input' / 'other_scanfiles' / 'ole2_encryption' / 'password.ministream.ppsx'
+        command = '{valgrind} {valgrind_args} {clamscan} -d {path_db} --gen-json --leave-temps --tempdir={tempdir} {testfile}'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan,
+            path_db=TC.path_source / 'unit_tests' / 'input' / 'other_sigs' / 'Clamav-Unit-Test-Signature.ndb',
+            tempdir=tempdir,
+            testfile=testfile,
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 0  # clean
+
+        neededStrings = [ '"Encrypted":1'
+                , '"EncryptedWithVelvetSweatshop":0'
+                ]
+        self.assertStrings(tempdir, neededStrings)
 
     def test_FAT_pptx(self):
         self.step_name('Test FAT pptx')
@@ -190,6 +402,29 @@ class TC(testcase.TestCase):
         ]
         self.verify_output(output.out, expected=expected_results)
 
+    def test_FAT_pptx_metadata(self):
+        self.step_name('Test FAT pptx')
+
+        tempdir=self.path_tmp / "TD"
+        if not os.path.isdir(tempdir):
+            os.makedirs(tempdir);
+
+        testfile = TC.path_source / 'unit_tests' / 'input' / 'other_scanfiles' / 'ole2_encryption' / 'password.fat.pptx'
+        command = '{valgrind} {valgrind_args} {clamscan} -d {path_db} --gen-json --leave-temps --tempdir={tempdir} {testfile}'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan,
+            path_db=TC.path_source / 'unit_tests' / 'input' / 'other_sigs' / 'Clamav-Unit-Test-Signature.ndb',
+            tempdir=tempdir,
+            testfile=testfile,
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 0  # clean
+
+        neededStrings = [ '"Encrypted":1'
+                , '"EncryptedWithVelvetSweatshop":0'
+                ]
+        self.assertStrings(tempdir, neededStrings)
+
     def test_ministream_pptx(self):
         self.step_name('Test ministream pptx')
 
@@ -207,6 +442,29 @@ class TC(testcase.TestCase):
             'Heuristics.Encrypted.OLE2 FOUND',
         ]
         self.verify_output(output.out, expected=expected_results)
+
+    def test_ministream_pptx_metadata(self):
+        self.step_name('Test ministream pptx')
+
+        tempdir=self.path_tmp / "TD"
+        if not os.path.isdir(tempdir):
+            os.makedirs(tempdir);
+
+        testfile = TC.path_source / 'unit_tests' / 'input' / 'other_scanfiles' / 'ole2_encryption' / 'password.ministream.pptx'
+        command = '{valgrind} {valgrind_args} {clamscan} -d {path_db} --gen-json --leave-temps --tempdir={tempdir} {testfile}'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan,
+            path_db=TC.path_source / 'unit_tests' / 'input' / 'other_sigs' / 'Clamav-Unit-Test-Signature.ndb',
+            tempdir=tempdir,
+            testfile=testfile,
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 0  # clean
+
+        neededStrings = [ '"Encrypted":1'
+                , '"EncryptedWithVelvetSweatshop":0'
+                ]
+        self.assertStrings(tempdir, neededStrings)
 
     def test_FAT_xls(self):
         self.step_name('Test FAT xls')
@@ -226,6 +484,30 @@ class TC(testcase.TestCase):
         ]
         self.verify_output(output.out, expected=expected_results)
 
+    def test_FAT_xls_metadata(self):
+        self.step_name('Test FAT xls')
+
+        tempdir=self.path_tmp / "TD"
+        if not os.path.isdir(tempdir):
+            os.makedirs(tempdir);
+
+        testfile = TC.path_source / 'unit_tests' / 'input' / 'other_scanfiles' / 'ole2_encryption' / 'password.fat.xls'
+        command = '{valgrind} {valgrind_args} {clamscan} -d {path_db} --gen-json --leave-temps --tempdir={tempdir} {testfile}'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan,
+            path_db=TC.path_source / 'unit_tests' / 'input' / 'other_sigs' / 'Clamav-Unit-Test-Signature.ndb',
+            tempdir=tempdir,
+            testfile=testfile,
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 0  # clean
+
+        neededStrings = [ '"Encrypted":1'
+                , '"EncryptedWithVelvetSweatshop":0'
+                , '"RC4Encryption":1'
+                ]
+        self.assertStrings(tempdir, neededStrings)
+
     def test_ministream_xls(self):
         self.step_name('Test ministream xls')
 
@@ -243,6 +525,30 @@ class TC(testcase.TestCase):
             'Heuristics.Encrypted.OLE2 FOUND',
         ]
         self.verify_output(output.out, expected=expected_results)
+
+    def test_ministream_xls_metadata(self):
+        self.step_name('Test ministream xls')
+
+        tempdir=self.path_tmp / "TD"
+        if not os.path.isdir(tempdir):
+            os.makedirs(tempdir);
+
+        testfile = TC.path_source / 'unit_tests' / 'input' / 'other_scanfiles' / 'ole2_encryption' / 'password.ministream.xls'
+        command = '{valgrind} {valgrind_args} {clamscan} -d {path_db} --gen-json --leave-temps --tempdir={tempdir} {testfile}'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan,
+            path_db=TC.path_source / 'unit_tests' / 'input' / 'other_sigs' / 'Clamav-Unit-Test-Signature.ndb',
+            tempdir=tempdir,
+            testfile=testfile,
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 0  # clean
+
+        neededStrings = [ '"Encrypted":1'
+                , '"EncryptedWithVelvetSweatshop":0'
+                , '"RC4Encryption":1'
+                ]
+        self.assertStrings(tempdir, neededStrings)
 
     def test_FAT_xlsx(self):
         self.step_name('Test FAT xlsx')
@@ -262,6 +568,29 @@ class TC(testcase.TestCase):
         ]
         self.verify_output(output.out, expected=expected_results)
 
+    def test_FAT_xlsx_metadata(self):
+        self.step_name('Test FAT xlsx')
+
+        tempdir=self.path_tmp / "TD"
+        if not os.path.isdir(tempdir):
+            os.makedirs(tempdir);
+
+        testfile = TC.path_source / 'unit_tests' / 'input' / 'other_scanfiles' / 'ole2_encryption' / 'password.fat.xlsx'
+        command = '{valgrind} {valgrind_args} {clamscan} -d {path_db} --gen-json --leave-temps --tempdir={tempdir} {testfile}'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan,
+            path_db=TC.path_source / 'unit_tests' / 'input' / 'other_sigs' / 'Clamav-Unit-Test-Signature.ndb',
+            tempdir=tempdir,
+            testfile=testfile,
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 0  # clean
+
+        neededStrings = [ '"Encrypted":1'
+                , '"EncryptedWithVelvetSweatshop":0'
+                ]
+        self.assertStrings(tempdir, neededStrings)
+
     def test_ministream_xlsx(self):
         self.step_name('Test ministream xlsx')
 
@@ -279,6 +608,29 @@ class TC(testcase.TestCase):
             'Heuristics.Encrypted.OLE2 FOUND',
         ]
         self.verify_output(output.out, expected=expected_results)
+
+    def test_ministream_xlsx_metadata(self):
+        self.step_name('Test ministream xlsx')
+
+        tempdir=self.path_tmp / "TD"
+        if not os.path.isdir(tempdir):
+            os.makedirs(tempdir);
+
+        testfile = TC.path_source / 'unit_tests' / 'input' / 'other_scanfiles' / 'ole2_encryption' / 'password.ministream.xlsx'
+        command = '{valgrind} {valgrind_args} {clamscan} -d {path_db} --gen-json --leave-temps --tempdir={tempdir} {testfile}'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan,
+            path_db=TC.path_source / 'unit_tests' / 'input' / 'other_sigs' / 'Clamav-Unit-Test-Signature.ndb',
+            tempdir=tempdir,
+            testfile=testfile,
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 0  # clean
+
+        neededStrings = [ '"Encrypted":1'
+                , '"EncryptedWithVelvetSweatshop":0'
+                ]
+        self.assertStrings(tempdir, neededStrings)
 
 
 
