@@ -490,6 +490,7 @@ static inline void html_tag_contents_append(struct tag_contents *cont, const uns
     uint32_t mbchar = 0;
     if (!begin || !end)
         return;
+
     for (i = cont->pos; i < MAX_TAG_CONTENTS_LENGTH && (begin < end); i++) {
         uint8_t c = *begin++;
         if (mbchar && (c < 0x80 || mbchar >= 0x10000)) {
@@ -686,6 +687,7 @@ static bool cli_html_normalise(cli_ctx *ctx, int fd, m_area_t *m_area, const cha
     struct tag_contents contents;
     uint32_t mbchar  = 0;
     uint32_t mbchar2 = 0;
+
 
     /*
      * Initialize stack buffers.
@@ -1929,6 +1931,7 @@ done:
         cli_js_destroy(js_state);
         js_state = NULL;
     }
+
     html_tag_arg_free(&tag_args);
     if (!m_area) {
         fclose(stream_in);

@@ -2082,6 +2082,69 @@ done:
     return ret;
 }
 
+const char * const HTML_URLS_JSON_KEY = "HTMLUrls";
+
+
+
+static bool is_url(const char * const str){
+
+#define MATCH(str, prefix) \
+    do { \
+        if (str && (strlen(str) > strlen(prefix)) \
+                && (0 == strncasecmp(str, prefix, strlen(prefix)))) { \
+            bRet = true; \
+            goto done; \
+        } \
+    } while (0);
+
+    bool bRet = false;
+
+    MATCH(str, "https://");
+    MATCH(str, "http://");
+    MATCH(str, "ftp://");
+done:
+    return bRet;
+#undef MATCH
+}
+static void save_urls(cli_ctx * ctx, tag_arguments_t * hrefs) {
+    int i = 0;
+    bool haveOne = false;
+    if (NULL == hrefs) {
+        return;
+    }
+
+    if (ctx->wrkproperty != ctx->properties) {
+        return;
+    }
+
+    if (!(STORE_HTML_URLS && SCAN_COLLECT_METADATA && (ctx->wrkproperty != NULL))) {
+        return;
+    }
+
+    for (i = 0; i < hrefs->count; i++){
+        if (is_url((const char *) hrefs->value[i])) {
+            haveOne = true;
+            break;
+        }
+    }
+    
+    if (!haveOne){
+        return;
+    }
+
+    json_object *ary = cli_jsonarray(ctx->wrkproperty, HTML_URLS_JSON_KEY );
+    if (ary) {
+        for (i = 0; i < hrefs->count; i++){
+            if (is_url((const char *) hrefs->value[i])){
+                cli_jsonstr(ary, NULL, (const char *) hrefs->value[i]);
+            }
+        }
+    } else {
+        cli_dbgmsg("[cli_scanhtml] Failed to add \"%s\" entry JSON array\n", HTML_URLS_JSON_KEY );
+    }
+    
+}
+
 static cl_error_t cli_scanhtml(cli_ctx *ctx)
 {
     cl_error_t status = CL_SUCCESS;
@@ -2113,7 +2176,15 @@ static cl_error_t cli_scanhtml(cli_ctx *ctx)
 
     cli_dbgmsg("cli_scanhtml: using tempdir %s\n", tempname);
 
-    (void)html_normalise_map(ctx, map, tempname, NULL, ctx->dconf);
+    /* Output JSON Summary Information */
+    if (STORE_HTML_URLS && SCAN_COLLECT_METADATA && (ctx->wrkproperty != NULL)) {
+        tag_arguments_t hrefs = {0};
+        hrefs.scanContents = 1;
+        (void)html_normalise_map(ctx, map, tempname, &hrefs, ctx->dconf);
+        save_urls(ctx, &hrefs);
+    } else {
+        (void)html_normalise_map(ctx, map, tempname, NULL, ctx->dconf);
+    }
 
     snprintf(fullname, 1024, "%s" PATHSEP "nocomment.html", tempname);
     fd = open(fullname, O_RDONLY | O_BINARY);
