@@ -719,9 +719,9 @@ void cli_hashset_destroy(struct cli_hashset *hs)
     hs->capacity          = 0;
 }
 
-#define BITMAP_CONTAINS(bmap, val) ((bmap)[(val) >> 5] & ((uint64_t)1 << ((val) & 0x1f)))
-#define BITMAP_INSERT(bmap, val) ((bmap)[(val) >> 5] |= ((uint64_t)1 << ((val) & 0x1f)))
-#define BITMAP_REMOVE(bmap, val) ((bmap)[(val) >> 5] &= ~((uint64_t)1 << ((val) & 0x1f)))
+#define BITMAP_CONTAINS(bmap, val) ((bmap)[(val) >> 5] & ((uint64_t)1 << ((val)&0x1f)))
+#define BITMAP_INSERT(bmap, val) ((bmap)[(val) >> 5] |= ((uint64_t)1 << ((val)&0x1f)))
+#define BITMAP_REMOVE(bmap, val) ((bmap)[(val) >> 5] &= ~((uint64_t)1 << ((val)&0x1f)))
 
 /*
  * searches the hashset for the @key.
