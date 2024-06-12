@@ -235,28 +235,6 @@ int ole2_list_delete(ole2_list_t *list)
     return CL_SUCCESS;
 }
 
-static void insert_metadata(cli_ctx *ctx, const char *const key, bool value)
-{
-    if (SCAN_COLLECT_METADATA && (ctx->wrkproperty != NULL)) {
-        if (NULL != key) {
-            if (ctx->wrkproperty == ctx->properties) {
-                cli_jsonint(ctx->wrkproperty, key, value);
-            }
-        }
-    }
-}
-
-static void print_heuristic(cli_ctx *ctx, const char *const warning)
-{
-    /*Sets value if '--alert-encrypted-doc' option is provided.*/
-    if (SCAN_HEURISTIC_ENCRYPTED_DOC && (NULL != warning)) {
-        cl_error_t status = cli_append_potentially_unwanted(ctx, warning);
-        if (CL_SUCCESS != status) {
-            cli_errmsg("OLE2 : Unable to warn potentially unwanted signature '%s'\n", "Heuristics.Encrypted.OLE2");
-        }
-    }
-}
-
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack()
 #endif
@@ -714,11 +692,17 @@ typedef struct {
 
 } encryption_status_t;
 
+            const char * const ENCRYPTED_JSON_KEY = "Encrypted";
+
 const char *const RC4_ENCRYPTION    = "RC4Encryption";
 const char *const XOR_OBFUSCATION   = "XORObfuscation";
 const char *const AES128_ENCRYPTION = "EncryptedWithAES128";
 const char *const AES192_ENCRYPTION = "EncryptedWithAES192";
 const char *const AES256_ENCRYPTION = "EncryptedWithAES256";
+const char * const VELVET_SWEATSHOP_ENCRYPTION = "VelvetSweatshop";
+                const char * const GENERIC_ENCRYPTED = "ENCRYPTION_TYPE_UNKNOWN";
+
+        const char * const OLE2_HEURISTIC_ENCRYPTED_WARNING = "Heuristics.Encrypted.OLE2";
 
 const uint16_t XLS_XOR_OBFUSCATION    = 0;
 const uint16_t XLS_RC4_ENCRYPTION     = 1;
@@ -782,18 +766,22 @@ static void test_for_encryption(const property_t *word_block, ole2_header_t *hdr
     }
 }
 
-static bool read_uint16(const uint8_t *const ptr, uint32_t ptr_size, uint32_t *idx, uint16_t *dst)
+static size_t read_uint16(const uint8_t *const ptr, uint32_t ptr_size, uint32_t *idx, uint16_t *dst)
 {
     if (*idx + sizeof(uint16_t) >= ptr_size) {
-        return false;
+        return 0;
     }
 
     memcpy(dst, &(ptr[*idx]), 2);
     *dst = ole2_endian_convert_16(*dst);
     *idx += sizeof(uint16_t);
-    return true;
+    return sizeof(uint16_t);
 }
 
+/* Search for the FILE_PASS number.  If I don't find it, the next two bytes are
+ * a length.  Consume that length of data, and try again.  Go until you either find
+ * the number or run out of data.
+ */
 static bool find_file_pass(const uint8_t *const ptr, uint32_t ptr_size, uint32_t *idx)
 {
 
@@ -802,11 +790,11 @@ static bool find_file_pass(const uint8_t *const ptr, uint32_t ptr_size, uint32_t
     const uint32_t FILE_PASS_NUM = 47;
 
     while (true) {
-        if (!read_uint16(ptr, ptr_size, idx, &val)) {
+        if (sizeof(uint16_t) != read_uint16(ptr, ptr_size, idx, &val)) {
             return false;
         }
 
-        if (!read_uint16(ptr, ptr_size, idx, &size)) {
+        if (sizeof(uint16_t) != read_uint16(ptr, ptr_size, idx, &size)) {
             return false;
         }
 
@@ -841,7 +829,7 @@ static void test_for_xls_encryption(const property_t *word_block, ole2_header_t 
 
     /*Validate keyword*/
     idx = 0;
-    if (!read_uint16(ptr, block_size, &idx, &tmp16)) {
+    if (sizeof(uint16_t) != read_uint16(ptr, block_size, &idx, &tmp16)) {
         return;
     }
 
@@ -852,7 +840,7 @@ static void test_for_xls_encryption(const property_t *word_block, ole2_header_t 
 
     /*Skip past this size.*/
     memcpy(&tmp16, &(ptr[idx]), 2);
-    if (!read_uint16(ptr, block_size, &idx, &tmp16)) {
+    if (sizeof(uint16_t) != read_uint16(ptr, block_size, &idx, &tmp16)) {
         return;
     }
     idx += tmp16;
@@ -861,7 +849,7 @@ static void test_for_xls_encryption(const property_t *word_block, ole2_header_t 
         return;
     }
 
-    if (!read_uint16(ptr, block_size, &idx, &tmp16)) {
+    if (sizeof(uint16_t) != read_uint16(ptr, block_size, &idx, &tmp16)) {
         return;
     }
 
@@ -2755,6 +2743,7 @@ static bool initialize_encryption_key(
 
     memcpy(encryptionKey, &key, sizeof(encryption_key_t));
     bRet = true;
+    pEncryptionStatus->encryption_type = VELVET_SWEATSHOP_ENCRYPTION;
 done:
 
     if (pEncryptionStatus->encryption_type) {
@@ -2953,19 +2942,26 @@ cl_error_t cli_ole2_extract(const char *dirname, cli_ctx *ctx, struct uniq **fil
         }
     }
 
+
+    if (SCAN_COLLECT_METADATA && (ctx->wrkproperty != NULL)) {
+        if (encryption_status.encrypted){
+            if (encryption_status.encryption_type){
+                cli_jsonstr(ctx->wrkproperty, ENCRYPTED_JSON_KEY, encryption_status.encryption_type);
+            } else {
+                cli_jsonstr(ctx->wrkproperty, ENCRYPTED_JSON_KEY, GENERIC_ENCRYPTED);
+            }
+        }
+    }
+
+    if (SCAN_HEURISTIC_ENCRYPTED_DOC && encryption_status.encrypted && (!encryption_status.velvet_sweatshop)) {
+        cl_error_t status = cli_append_potentially_unwanted(ctx, OLE2_HEURISTIC_ENCRYPTED_WARNING );
+        if (CL_SUCCESS != status) {
+            cli_errmsg("OLE2 : Unable to warn potentially unwanted signature '%s'\n", "Heuristics.Encrypted.OLE2");
+            ret = status;
+        }
+    }
+
 done:
-
-    if (encryption_status.encryption_type) {
-        insert_metadata(ctx, encryption_status.encryption_type, true);
-    }
-    insert_metadata(ctx, "Encrypted", encryption_status.encrypted);
-    insert_metadata(ctx, "EncryptedWithVelvetSweatshop", encryption_status.velvet_sweatshop);
-
-    if (encryption_status.velvet_sweatshop) {
-        print_heuristic(ctx, "Heuristics.Encrypted.OLE2.VelvetSweatshop");
-    } else if (encryption_status.encrypted) {
-        print_heuristic(ctx, "Heuristics.Encrypted.OLE2");
-    }
 
     if (hdr.bitset) {
         cli_bitset_free(hdr.bitset);
