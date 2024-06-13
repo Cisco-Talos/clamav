@@ -708,11 +708,11 @@ const uint16_t XLS_XOR_OBFUSCATION    = 0;
 const uint16_t XLS_RC4_ENCRYPTION     = 1;
 const uint32_t MINISTREAM_CUTOFF_SIZE = 0x1000;
 
-static uint32_t get_stream_data_offset(ole2_header_t *hdr, const property_t *word_block, uint16_t sector)
+static size_t get_stream_data_offset(ole2_header_t *hdr, const property_t *word_block, uint16_t sector)
 {
-    uint32_t offset      = (1 << hdr->log2_big_block_size);
-    uint32_t sector_size = offset;
-    uint32_t fib_offset  = 0;
+    size_t offset      = (1 << hdr->log2_big_block_size);
+    size_t sector_size = offset;
+    size_t fib_offset  = 0;
 
     if (word_block->size < MINISTREAM_CUTOFF_SIZE) {
         fib_offset = offset + sector_size * hdr->sbat_root_start;
@@ -839,7 +839,6 @@ static void test_for_xls_encryption(const property_t *word_block, ole2_header_t 
     }
 
     /*Skip past this size.*/
-    memcpy(&tmp16, &(ptr[idx]), 2);
     if (sizeof(uint16_t) != read_uint16(ptr, block_size, &idx, &tmp16)) {
         return;
     }

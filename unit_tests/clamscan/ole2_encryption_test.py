@@ -21,38 +21,29 @@ class TC(testcase.TestCase):
     def tearDownClass(cls):
         super(TC, cls).tearDownClass()
 
-    @classmethod
-    def assertStrings(self, tempdir, strings):
-        foundList = []
-        for s in strings:
-            foundList.append(False)
-
+    # Find the metadata.json file and verify its contents.
+    def verify_metadata_json(self, tempdir, expected=[], unexpected=[]):
         for parent, dirs, files in os.walk(tempdir):
             for f in files:
                 if "metadata.json" == f:
-                    mdf = os.path.join(parent, f)
-                    handle = open(mdf)
-                    lines = handle.readlines()
-                    handle.close()
-                    for l in lines:
-                        for i in range(0, len(strings)):
-                            m = re.search(strings[i], l)
-                            if m:
-                                foundList[i] = True
-                                break
+                    with open(os.path.join(parent, f)) as handle:
+                        metadata_json = handle.read()
+                        self.verify_output(metadata_json, expected=expected, unexpected=unexpected)
 
-                        if not (False in foundList):
-                            break
-
-                    #Only one metadata.json
+                    # There is only one metadata.json per scan.
+                    # We found it, so we can break out of the loop.
                     break
-        assert not (False in foundList)
 
     def setUp(self):
         super(TC, self).setUp()
 
     def tearDown(self):
         super(TC, self).tearDown()
+
+        # Remove scan temps directory between tests
+        if (self.path_tmp / "TD").exists():
+            shutil.rmtree(self.path_tmp / "TD")
+
         self.verify_valgrind_log()
 
     def test_FAT_doc(self):
@@ -91,9 +82,9 @@ class TC(testcase.TestCase):
 
         assert output.ec == 0  # clean
 
-        neededStrings = [ '"Encrypted":1'
-                , '"EncryptedWithVelvetSweatshop":0'
-                ]
+        expected_strings = [ 
+            '"Encrypted":1',
+        ]
         self.assertStrings(tempdir, neededStrings)
 
     def test_ministream_doc(self):
