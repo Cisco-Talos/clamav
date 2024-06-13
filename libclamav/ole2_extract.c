@@ -694,11 +694,11 @@ typedef struct {
 
             const char * const ENCRYPTED_JSON_KEY = "Encrypted";
 
-const char *const RC4_ENCRYPTION    = "RC4Encryption";
+const char *const RC4_ENCRYPTION    = "RC4";
 const char *const XOR_OBFUSCATION   = "XORObfuscation";
-const char *const AES128_ENCRYPTION = "EncryptedWithAES128";
-const char *const AES192_ENCRYPTION = "EncryptedWithAES192";
-const char *const AES256_ENCRYPTION = "EncryptedWithAES256";
+const char *const AES128_ENCRYPTION = "AES128";
+const char *const AES192_ENCRYPTION = "AES192";
+const char *const AES256_ENCRYPTION = "AES256";
 const char * const VELVET_SWEATSHOP_ENCRYPTION = "VelvetSweatshop";
                 const char * const GENERIC_ENCRYPTED = "ENCRYPTION_TYPE_UNKNOWN";
 
