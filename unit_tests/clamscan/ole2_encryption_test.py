@@ -7,6 +7,7 @@ Run clamscan tests.
 import sys
 import os
 import re
+import shutil
 
 sys.path.append('../unit_tests')
 import testcase
@@ -20,19 +21,6 @@ class TC(testcase.TestCase):
     @classmethod
     def tearDownClass(cls):
         super(TC, cls).tearDownClass()
-
-    # Find the metadata.json file and verify its contents.
-    def verify_metadata_json(self, tempdir, expected=[], unexpected=[]):
-        for parent, dirs, files in os.walk(tempdir):
-            for f in files:
-                if "metadata.json" == f:
-                    with open(os.path.join(parent, f)) as handle:
-                        metadata_json = handle.read()
-                        self.verify_output(metadata_json, expected=expected, unexpected=unexpected)
-
-                    # There is only one metadata.json per scan.
-                    # We found it, so we can break out of the loop.
-                    break
 
     def setUp(self):
         super(TC, self).setUp()
@@ -82,10 +70,8 @@ class TC(testcase.TestCase):
 
         assert output.ec == 0  # clean
 
-        expected_strings = [ 
-            '"Encrypted":1',
-        ]
-        self.assertStrings(tempdir, neededStrings)
+        expected_strings = [ '"Encrypted":"ENCRYPTION_TYPE_UNKNOWN"' ]
+        self.verify_metadata_json(tempdir, expected_strings)
 
     def test_ministream_doc(self):
         self.step_name('Test ministream doc')
@@ -123,10 +109,8 @@ class TC(testcase.TestCase):
 
         assert output.ec == 0  # clean
 
-        neededStrings = [ '"Encrypted":1'
-                , '"EncryptedWithVelvetSweatshop":0'
-                ]
-        self.assertStrings(tempdir, neededStrings)
+        expected_strings = [ '"Encrypted":"ENCRYPTION_TYPE_UNKNOWN"' ]
+        self.verify_metadata_json(tempdir, expected_strings)
 
 
     def test_FAT_docx(self):
@@ -165,10 +149,8 @@ class TC(testcase.TestCase):
 
         assert output.ec == 0  # clean
 
-        neededStrings = [ '"Encrypted":1'
-                , '"EncryptedWithVelvetSweatshop":0'
-                ]
-        self.assertStrings(tempdir, neededStrings)
+        expected_strings = [ '"Encrypted":"ENCRYPTION_TYPE_UNKNOWN"' ]
+        self.verify_metadata_json(tempdir, expected_strings)
 
     def test_ministream_docx(self):
         self.step_name('Test ministream docx')
@@ -206,10 +188,8 @@ class TC(testcase.TestCase):
 
         assert output.ec == 0  # clean
 
-        neededStrings = [ '"Encrypted":1'
-                , '"EncryptedWithVelvetSweatshop":0'
-                ]
-        self.assertStrings(tempdir, neededStrings)
+        expected_strings = [ '"Encrypted":"ENCRYPTION_TYPE_UNKNOWN"' ]
+        self.verify_metadata_json(tempdir, expected_strings)
 
     def test_FAT_dot(self):
         self.step_name('Test FAT dot')
@@ -247,10 +227,8 @@ class TC(testcase.TestCase):
 
         assert output.ec == 0  # clean
 
-        neededStrings = [ '"Encrypted":1'
-                , '"EncryptedWithVelvetSweatshop":0'
-                ]
-        self.assertStrings(tempdir, neededStrings)
+        expected_strings = [ '"Encrypted":"ENCRYPTION_TYPE_UNKNOWN"' ]
+        self.verify_metadata_json(tempdir, expected_strings)
 
     def test_ministream_dot(self):
         self.step_name('Test ministream dot')
@@ -288,10 +266,8 @@ class TC(testcase.TestCase):
 
         assert output.ec == 0  # clean
 
-        neededStrings = [ '"Encrypted":1'
-                , '"EncryptedWithVelvetSweatshop":0'
-                ]
-        self.assertStrings(tempdir, neededStrings)
+        expected_strings = [ '"Encrypted":"ENCRYPTION_TYPE_UNKNOWN"' ]
+        self.verify_metadata_json(tempdir, expected_strings)
 
     def test_FAT_ppsx(self):
         self.step_name('Test FAT ppsx')
@@ -329,10 +305,8 @@ class TC(testcase.TestCase):
 
         assert output.ec == 0  # clean
 
-        neededStrings = [ '"Encrypted":1'
-                , '"EncryptedWithVelvetSweatshop":0'
-                ]
-        self.assertStrings(tempdir, neededStrings)
+        expected_strings = [ '"Encrypted":"ENCRYPTION_TYPE_UNKNOWN"' ]
+        self.verify_metadata_json(tempdir, expected_strings)
 
     def test_ministream_ppsx(self):
         self.step_name('Test ministream ppsx')
@@ -370,10 +344,8 @@ class TC(testcase.TestCase):
 
         assert output.ec == 0  # clean
 
-        neededStrings = [ '"Encrypted":1'
-                , '"EncryptedWithVelvetSweatshop":0'
-                ]
-        self.assertStrings(tempdir, neededStrings)
+        expected_strings = [ '"Encrypted":"ENCRYPTION_TYPE_UNKNOWN"' ]
+        self.verify_metadata_json(tempdir, expected_strings)
 
     def test_FAT_pptx(self):
         self.step_name('Test FAT pptx')
@@ -411,10 +383,8 @@ class TC(testcase.TestCase):
 
         assert output.ec == 0  # clean
 
-        neededStrings = [ '"Encrypted":1'
-                , '"EncryptedWithVelvetSweatshop":0'
-                ]
-        self.assertStrings(tempdir, neededStrings)
+        expected_strings = [ '"Encrypted":"ENCRYPTION_TYPE_UNKNOWN"' ]
+        self.verify_metadata_json(tempdir, expected_strings)
 
     def test_ministream_pptx(self):
         self.step_name('Test ministream pptx')
@@ -452,10 +422,8 @@ class TC(testcase.TestCase):
 
         assert output.ec == 0  # clean
 
-        neededStrings = [ '"Encrypted":1'
-                , '"EncryptedWithVelvetSweatshop":0'
-                ]
-        self.assertStrings(tempdir, neededStrings)
+        expected_strings = [ '"Encrypted":"ENCRYPTION_TYPE_UNKNOWN"' ]
+        self.verify_metadata_json(tempdir, expected_strings)
 
     def test_FAT_xls(self):
         self.step_name('Test FAT xls')
@@ -493,11 +461,8 @@ class TC(testcase.TestCase):
 
         assert output.ec == 0  # clean
 
-        neededStrings = [ '"Encrypted":1'
-                , '"EncryptedWithVelvetSweatshop":0'
-                , '"RC4Encryption":1'
-                ]
-        self.assertStrings(tempdir, neededStrings)
+        expected_strings = [ '"Encrypted":"RC4"' ]
+        self.verify_metadata_json(tempdir, expected_strings)
 
     def test_ministream_xls(self):
         self.step_name('Test ministream xls')
@@ -535,11 +500,8 @@ class TC(testcase.TestCase):
 
         assert output.ec == 0  # clean
 
-        neededStrings = [ '"Encrypted":1'
-                , '"EncryptedWithVelvetSweatshop":0'
-                , '"RC4Encryption":1'
-                ]
-        self.assertStrings(tempdir, neededStrings)
+        expected_strings = [ '"Encrypted":"RC4"' ]
+        self.verify_metadata_json(tempdir, expected_strings)
 
     def test_FAT_xlsx(self):
         self.step_name('Test FAT xlsx')
@@ -577,10 +539,8 @@ class TC(testcase.TestCase):
 
         assert output.ec == 0  # clean
 
-        neededStrings = [ '"Encrypted":1'
-                , '"EncryptedWithVelvetSweatshop":0'
-                ]
-        self.assertStrings(tempdir, neededStrings)
+        expected_strings = [ '"Encrypted":"ENCRYPTION_TYPE_UNKNOWN"' ]
+        self.verify_metadata_json(tempdir, expected_strings)
 
     def test_ministream_xlsx(self):
         self.step_name('Test ministream xlsx')
@@ -618,10 +578,8 @@ class TC(testcase.TestCase):
 
         assert output.ec == 0  # clean
 
-        neededStrings = [ '"Encrypted":1'
-                , '"EncryptedWithVelvetSweatshop":0'
-                ]
-        self.assertStrings(tempdir, neededStrings)
+        expected_strings = [ '"Encrypted":"ENCRYPTION_TYPE_UNKNOWN"' ]
+        self.verify_metadata_json(tempdir, expected_strings)
 
 
 
