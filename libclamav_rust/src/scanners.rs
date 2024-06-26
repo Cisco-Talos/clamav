@@ -49,8 +49,12 @@ pub fn magic_scan(ctx: *mut cli_ctx, buf: &[u8], name: Option<String>) -> cl_err
     let ptr = buf.as_ptr();
     let len = buf.len();
 
+    if 0 == len {
+        return cl_error_t_CL_SUCCESS;
+    }
+
     match &name {
-        Some(name) => debug!("Scanning {}-byte file named {}.", len, name),
+        Some(name) => debug!("Scanning {}-byte file named {:?}.", len, name),
         None => debug!("Scanning {}-byte unnamed file.", len),
     }
 
@@ -70,13 +74,14 @@ pub fn magic_scan(ctx: *mut cli_ctx, buf: &[u8], name: Option<String>) -> cl_err
     };
 
     let ret = unsafe { cli_magic_scan_buff(ptr as *const c_void, len, ctx, name_ptr, 0) };
-
     if ret != cl_error_t_CL_SUCCESS {
         debug!("cli_magic_scan_buff returned error: {}", ret);
     }
 
     // Okay now safe to drop the name CString.
-    let _ = unsafe { CString::from_raw(name_ptr) };
+    if !name_ptr.is_null() {
+        let _ = unsafe { CString::from_raw(name_ptr) };
+    }
 
     ret
 }
