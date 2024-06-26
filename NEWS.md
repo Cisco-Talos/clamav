@@ -18,7 +18,7 @@ ClamAV 1.4.0 includes the following improvements and changes:
   - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1183)
 
 - Added support for extracting LHA/LZH archives.
-  The new ClamAV file type for ALZ archives is `CL_TYPE_LHA_LZH`.
+  The new ClamAV file type for LHA/LZH archives is `CL_TYPE_LHA_LZH`.
   Added a [DCONF](https://docs.clamav.net/manual/Signatures/DynamicConfig.html)
   option to enable or disable LHA/LZH archive support.
   - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1192)
