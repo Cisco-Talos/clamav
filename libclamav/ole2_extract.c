@@ -152,6 +152,30 @@ typedef struct property_tag {
     unsigned char reserved[4];
 } property_t;
 
+
+/*
+ * File Information Block Base.
+ * Naming is consistent with
+ * https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-doc/26fb6c06-4e5c-4778-ab4e-edbf26a545bb
+ * */
+typedef struct __attribute__((packed)) fib_base_type {
+    uint16_t wIdent;
+    uint16_t nFib;
+    uint16_t unused;
+    uint16_t lid;
+    uint16_t pnNext;
+    uint16_t ABCDEFGHIJKLM;
+    uint16_t nFibBack;
+    uint32_t lKey;
+    uint8_t envr;
+    uint8_t NOPQRS;
+    uint16_t reserved3;
+    uint16_t reserved4;
+    uint32_t reserved5;
+    uint32_t reserved6;
+} fib_base_t;
+
+
 struct ole2_list_node;
 
 typedef struct ole2_list_node {
@@ -615,28 +639,6 @@ static int ole2_cmp_name(const char *const name, uint32_t name_size, const char 
 
     return strcasecmp(decoded, keyword);
 }
-
-/*
- * File Information Block Base.
- * Naming is consistent with
- * https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-doc/26fb6c06-4e5c-4778-ab4e-edbf26a545bb
- * */
-typedef struct fib_base_type {
-    uint16_t wIdent __attribute__((packed));
-    uint16_t nFib;
-    uint16_t unused;
-    uint16_t lid;
-    uint16_t pnNext;
-    uint16_t ABCDEFGHIJKLM;
-    uint16_t nFibBack;
-    uint32_t lKey;
-    uint8_t envr;
-    uint8_t NOPQRS;
-    uint16_t reserved3;
-    uint16_t reserved4;
-    uint32_t reserved5;
-    uint32_t reserved6;
-} fib_base_t;
 
 static void copy_fib_base(fib_base_t *pFib, const uint8_t *const ptr)
 {
