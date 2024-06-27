@@ -508,6 +508,20 @@ class TestCase(unittest.TestCase):
         """
         return self.execute(cmd, **kwargs)
 
+    # Find the metadata.json file and verify its contents.
+    def verify_metadata_json(self, tempdir, expected=[], unexpected=[]):
+        for parent, dirs, files in os.walk(tempdir):
+            for f in files:
+                if "metadata.json" == f:
+                    with open(os.path.join(parent, f)) as handle:
+                        metadata_json = handle.read()
+                        self.verify_output(metadata_json, expected=expected, unexpected=unexpected)
+
+                    # There is only one metadata.json per scan.
+                    # We found it, so we can break out of the loop.
+                    break
+
+
 
 class Logger(object):
 
