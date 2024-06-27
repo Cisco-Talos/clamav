@@ -152,6 +152,28 @@ typedef struct property_tag {
     unsigned char reserved[4];
 } property_t;
 
+/*
+ * File Information Block Base.
+ * Naming is consistent with
+ * https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-doc/26fb6c06-4e5c-4778-ab4e-edbf26a545bb
+ * */
+typedef struct __attribute__((packed)) fib_base_type {
+    uint16_t wIdent;
+    uint16_t nFib;
+    uint16_t unused;
+    uint16_t lid;
+    uint16_t pnNext;
+    uint16_t ABCDEFGHIJKLM;
+    uint16_t nFibBack;
+    uint32_t lKey;
+    uint8_t envr;
+    uint8_t NOPQRS;
+    uint16_t reserved3;
+    uint16_t reserved4;
+    uint32_t reserved5;
+    uint32_t reserved6;
+} fib_base_t;
+
 struct ole2_list_node;
 
 typedef struct ole2_list_node {
@@ -586,6 +608,259 @@ static cl_error_t handler_enum(ole2_header_t *hdr, property_t *prop, const char 
 static cl_error_t handler_otf_encrypted(ole2_header_t *hdr, property_t *prop, const char *dir, cli_ctx *ctx, void *handler_ctx);
 static cl_error_t handler_otf(ole2_header_t *hdr, property_t *prop, const char *dir, cli_ctx *ctx, void *handler_ctx);
 
+/*
+ * Compare strings ignoring case.
+ * This is a somewhat special case, since name is actually a utf-16 encoded string, stored
+ * in a char * with a known size of 64 bytes, so we can avoid a 'alloc since the size is
+ * so small.  See https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-cfb/60fe8611-66c3-496b-b70d-a504c94c9ace
+ *
+ * @param name:                     'name' from property_t struct
+ * @param name_size:                'name_size' from property_t struct
+ * @param keyword:                  Known value we are looking for
+ *
+ * @return int:                     Return '0' if the values are equivalent, something else otherwise.
+ */
+static int ole2_cmp_name(const char *const name, uint32_t name_size, const char *const keyword)
+{
+    char decoded[64];
+    uint32_t i = 0, j = 0;
+
+    if (64 < name_size || name_size % 2) {
+        return -1;
+    }
+
+    memset(decoded, 0, sizeof(decoded));
+    for (i = 0, j = 0; i < name_size; i += 2, j++) {
+        decoded[j] = ((unsigned char)name[i + 1]) << 4;
+        decoded[j] += name[i];
+    }
+
+    return strcasecmp(decoded, keyword);
+}
+
+static void copy_fib_base(fib_base_t *pFib, const uint8_t *const ptr)
+{
+    memcpy(pFib, ptr, sizeof(fib_base_t));
+    pFib->wIdent = ole2_endian_convert_16(pFib->wIdent);
+    pFib->nFib   = ole2_endian_convert_16(pFib->nFib);
+    pFib->unused = ole2_endian_convert_16(pFib->unused);
+    pFib->lid    = ole2_endian_convert_16(pFib->lid);
+    pFib->pnNext = ole2_endian_convert_16(pFib->pnNext);
+
+    /*Don't know whether to do this or not.*/
+    pFib->ABCDEFGHIJKLM = ole2_endian_convert_16(pFib->ABCDEFGHIJKLM);
+
+    pFib->nFibBack  = ole2_endian_convert_16(pFib->nFibBack);
+    pFib->nFibBack  = ole2_endian_convert_32(pFib->lKey);
+    pFib->reserved3 = ole2_endian_convert_16(pFib->reserved3);
+    pFib->reserved4 = ole2_endian_convert_16(pFib->reserved4);
+    pFib->reserved5 = ole2_endian_convert_32(pFib->reserved5);
+    pFib->reserved6 = ole2_endian_convert_32(pFib->reserved6);
+}
+
+static inline bool is_encrypted(const fib_base_t *const pFib)
+{
+    return pFib->ABCDEFGHIJKLM & (1 << 8);
+}
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-function"
+static void dump_fib_base(fib_base_t *pFib)
+{
+    fprintf(stderr, "%s::%d::%x\n", __FUNCTION__, __LINE__, pFib->wIdent);
+}
+
+/*
+ * This is currently unused, but I am leaving it in in case it can be useful in the future.  See
+ * https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-doc/79dea1e9-4dce-4fa0-8c6b-56ba37b68351
+ *
+ * I have not looked into it in detail, but if it is a 1-byte xor, it could be possible to brute-force it in some cases.
+ *
+ */
+static inline bool is_obfuscated(const fib_base_t *const pFib)
+{
+    return pFib->ABCDEFGHIJKLM & (1 << 15);
+}
+#pragma GCC diagnostic pop
+
+typedef struct {
+    bool velvet_sweatshop;
+
+    bool encrypted;
+
+    const char *encryption_type;
+
+} encryption_status_t;
+
+const char *const ENCRYPTED_JSON_KEY = "Encrypted";
+
+const char *const RC4_ENCRYPTION              = "RC4";
+const char *const XOR_OBFUSCATION             = "XORObfuscation";
+const char *const AES128_ENCRYPTION           = "AES128";
+const char *const AES192_ENCRYPTION           = "AES192";
+const char *const AES256_ENCRYPTION           = "AES256";
+const char *const VELVET_SWEATSHOP_ENCRYPTION = "VelvetSweatshop";
+const char *const GENERIC_ENCRYPTED           = "ENCRYPTION_TYPE_UNKNOWN";
+
+const char *const OLE2_HEURISTIC_ENCRYPTED_WARNING = "Heuristics.Encrypted.OLE2";
+
+const uint16_t XLS_XOR_OBFUSCATION    = 0;
+const uint16_t XLS_RC4_ENCRYPTION     = 1;
+const uint32_t MINISTREAM_CUTOFF_SIZE = 0x1000;
+
+static size_t get_stream_data_offset(ole2_header_t *hdr, const property_t *word_block, uint16_t sector)
+{
+    size_t offset      = (1 << hdr->log2_big_block_size);
+    size_t sector_size = offset;
+    size_t fib_offset  = 0;
+
+    if (word_block->size < MINISTREAM_CUTOFF_SIZE) {
+        fib_offset = offset + sector_size * hdr->sbat_root_start;
+        fib_offset += (word_block->start_block * (1 << hdr->log2_small_block_size));
+    } else {
+        fib_offset = offset + sector_size * sector;
+    }
+
+    return fib_offset;
+}
+
+/* See information about the File Information Block here
+ * https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-doc/26fb6c06-4e5c-4778-ab4e-edbf26a545bb
+ * for more information.
+ */
+static void test_for_encryption(const property_t *word_block, ole2_header_t *hdr, encryption_status_t *pEncryptionStatus)
+{
+
+    const uint8_t *ptr = NULL;
+    fib_base_t fib     = {0};
+
+    uint32_t fib_offset = get_stream_data_offset(hdr, word_block, word_block->start_block);
+
+    if ((size_t)(hdr->m_length) < (size_t)(fib_offset + sizeof(fib_base_t))) {
+        cli_dbgmsg("ERROR: Invalid offset for File Information Block %d (0x%x)\n", fib_offset, fib_offset);
+        return;
+    }
+
+    ptr = fmap_need_off_once(hdr->map, fib_offset, sizeof(fib_base_t));
+    if (NULL == ptr) {
+        cli_dbgmsg("ERROR: Invalid offset for File Information Block %d (0x%x)\n", fib_offset, fib_offset);
+        return;
+    }
+    copy_fib_base(&fib, ptr);
+
+#define FIB_BASE_IDENTIFIER 0xa5ec
+
+    if (FIB_BASE_IDENTIFIER != fib.wIdent) {
+        cli_dbgmsg("ERROR: Invalid identifier for File Information Block %d (0x%x)\n", fib.wIdent, fib.wIdent);
+        return;
+    }
+
+    /*TODO: Look into whether or not it's possible to determine the xor key when
+     * a document is obfuscated with xor
+     * (is_obfuscated function)
+     */
+    pEncryptionStatus->encrypted = is_encrypted(&fib);
+
+    if (is_obfuscated(&fib)) {
+        pEncryptionStatus->encryption_type = XOR_OBFUSCATION;
+    }
+}
+
+static size_t read_uint16(const uint8_t *const ptr, uint32_t ptr_size, uint32_t *idx, uint16_t *dst)
+{
+    if (*idx + sizeof(uint16_t) >= ptr_size) {
+        return 0;
+    }
+
+    memcpy(dst, &(ptr[*idx]), 2);
+    *dst = ole2_endian_convert_16(*dst);
+    *idx += sizeof(uint16_t);
+    return sizeof(uint16_t);
+}
+
+/* Search for the FILE_PASS number.  If I don't find it, the next two bytes are
+ * a length.  Consume that length of data, and try again.  Go until you either find
+ * the number or run out of data.
+ */
+static bool find_file_pass(const uint8_t *const ptr, uint32_t ptr_size, uint32_t *idx)
+{
+
+    uint16_t val, size;
+
+    const uint32_t FILE_PASS_NUM = 47;
+
+    while (true) {
+        if (sizeof(uint16_t) != read_uint16(ptr, ptr_size, idx, &val)) {
+            return false;
+        }
+
+        if (sizeof(uint16_t) != read_uint16(ptr, ptr_size, idx, &size)) {
+            return false;
+        }
+
+        if (FILE_PASS_NUM == val) {
+            return true;
+        }
+
+        *idx += size;
+    }
+
+    /*Should never get here.*/
+    return false;
+}
+
+/*
+ * Search for the FilePass structure.
+ * https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-xls/cf9ae8d5-4e8c-40a2-95f1-3b31f16b5529
+ */
+static void test_for_xls_encryption(const property_t *word_block, ole2_header_t *hdr, encryption_status_t *pEncryptionStatus)
+{
+    uint16_t tmp16;
+    uint32_t idx;
+
+    uint32_t stream_data_offset = get_stream_data_offset(hdr, word_block, word_block->start_block);
+
+    uint32_t block_size      = (1 << hdr->log2_big_block_size);
+    const uint8_t *const ptr = fmap_need_off_once(hdr->map, stream_data_offset, block_size);
+    if (NULL == ptr) {
+        cli_dbgmsg("ERROR: Invalid offset for File Information Block %d (0x%x)\n", stream_data_offset, stream_data_offset);
+        return;
+    }
+
+    /*Validate keyword*/
+    idx = 0;
+    if (sizeof(uint16_t) != read_uint16(ptr, block_size, &idx, &tmp16)) {
+        return;
+    }
+
+    /*Invalid keyword*/
+    if (2057 != tmp16) {
+        return;
+    }
+
+    /*Skip past this size.*/
+    if (sizeof(uint16_t) != read_uint16(ptr, block_size, &idx, &tmp16)) {
+        return;
+    }
+    idx += tmp16;
+
+    if (!find_file_pass(ptr, block_size, &idx)) {
+        return;
+    }
+
+    if (sizeof(uint16_t) != read_uint16(ptr, block_size, &idx, &tmp16)) {
+        return;
+    }
+
+    if (XLS_RC4_ENCRYPTION == tmp16) {
+        pEncryptionStatus->encryption_type = RC4_ENCRYPTION;
+        pEncryptionStatus->encrypted       = true;
+    } else if (XLS_XOR_OBFUSCATION == tmp16) {
+        pEncryptionStatus->encryption_type = XOR_OBFUSCATION;
+        pEncryptionStatus->encrypted       = true;
+    }
+}
+
 /**
  * @brief Walk an ole2 property tree, calling the handler for each file found
  *
@@ -602,7 +877,8 @@ static cl_error_t handler_otf(ole2_header_t *hdr, property_t *prop, const char *
 static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t prop_index,
                                    ole2_walk_property_tree_file_handler handler,
                                    unsigned int rec_level, unsigned int *file_count,
-                                   cli_ctx *ctx, unsigned long *scansize, void *handler_ctx)
+                                   cli_ctx *ctx, unsigned long *scansize, void *handler_ctx,
+                                   encryption_status_t *pEncryptionStatus)
 {
     property_t prop_block[4];
     int32_t idx, current_block, i, curindex;
@@ -681,6 +957,23 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
         prop_block[idx].start_block     = ole2_endian_convert_32(prop_block[idx].start_block);
         prop_block[idx].size            = ole2_endian_convert_32(prop_block[idx].size);
 
+        if ((64 < prop_block[idx].name_size) || (prop_block[idx].name_size % 2)) {
+            cli_dbgmsg("ERROR: Invalid name_size %d\n", prop_block[idx].name_size);
+            continue;
+        }
+
+        if (0 == ole2_cmp_name(prop_block[idx].name, prop_block[idx].name_size, "WORDDocument")) {
+            test_for_encryption(&(prop_block[idx]), hdr, pEncryptionStatus);
+        } else if (0 == ole2_cmp_name(prop_block[idx].name, prop_block[idx].name_size, "WorkBook")) {
+            test_for_xls_encryption(&(prop_block[idx]), hdr, pEncryptionStatus);
+        } else if (0 == ole2_cmp_name(prop_block[idx].name, prop_block[idx].name_size, "PowerPoint Document")) {
+            test_for_encryption(&(prop_block[idx]), hdr, pEncryptionStatus);
+        } else if (0 == ole2_cmp_name(prop_block[idx].name, prop_block[idx].name_size, "EncryptionInfo")) {
+            pEncryptionStatus->encrypted = true;
+        } else if (0 == ole2_cmp_name(prop_block[idx].name, prop_block[idx].name_size, "EncryptedPackage")) {
+            pEncryptionStatus->encrypted = true;
+        }
+
         ole2_listmsg("printing ole2 property\n");
         if (dir)
             print_ole2_property(&prop_block[idx]);
@@ -711,7 +1004,7 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
                 }
                 hdr->sbat_root_start = prop_block[idx].start_block;
                 if ((int)(prop_block[idx].child) != -1) {
-                    ret = ole2_walk_property_tree(hdr, dir, prop_block[idx].child, handler, rec_level + 1, file_count, ctx, scansize, handler_ctx);
+                    ret = ole2_walk_property_tree(hdr, dir, prop_block[idx].child, handler, rec_level + 1, file_count, ctx, scansize, handler_ctx, pEncryptionStatus);
                     if (ret != CL_SUCCESS) {
                         ole2_list_delete(&node_list);
                         return ret;
@@ -752,7 +1045,7 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
                     cli_dbgmsg("OLE2: filesize exceeded\n");
                 }
                 if ((int)(prop_block[idx].child) != -1) {
-                    ret = ole2_walk_property_tree(hdr, dir, prop_block[idx].child, handler, rec_level, file_count, ctx, scansize, handler_ctx);
+                    ret = ole2_walk_property_tree(hdr, dir, prop_block[idx].child, handler, rec_level, file_count, ctx, scansize, handler_ctx, pEncryptionStatus);
                     if (ret != CL_SUCCESS) {
                         ole2_list_delete(&node_list);
                         return ret;
@@ -803,7 +1096,7 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
                 } else
                     dirname = NULL;
                 if ((int)(prop_block[idx].child) != -1) {
-                    ret = ole2_walk_property_tree(hdr, dirname, prop_block[idx].child, handler, rec_level + 1, file_count, ctx, scansize, handler_ctx);
+                    ret = ole2_walk_property_tree(hdr, dirname, prop_block[idx].child, handler, rec_level + 1, file_count, ctx, scansize, handler_ctx, pEncryptionStatus);
                     if (ret != CL_SUCCESS) {
                         ole2_list_delete(&node_list);
                         if (dirname) {
@@ -835,6 +1128,7 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
         }
         ole2_listmsg("loop ended: %d %d\n", ole2_list_size(&node_list), ole2_list_is_empty(&node_list));
     }
+
     ole2_list_delete(&node_list);
     return CL_SUCCESS;
 }
@@ -2261,7 +2555,8 @@ done:
 static bool initialize_encryption_key(
     const uint8_t *encryptionInfoStreamPtr,
     size_t remainingBytes,
-    encryption_key_t *encryptionKey)
+    encryption_key_t *encryptionKey,
+    encryption_status_t *pEncryptionStatus)
 {
     bool bRet  = false;
     size_t idx = 0;
@@ -2334,7 +2629,8 @@ static bool initialize_encryption_key(
                 cli_dbgmsg("ole2: Key length does not match algorithm id\n");
                 goto done;
             }
-            bAES = true;
+            bAES                               = true;
+            pEncryptionStatus->encryption_type = AES128_ENCRYPTION;
             break;
         case SE_HEADER_EI_AES192:
             // not implemented
@@ -2342,7 +2638,8 @@ static bool initialize_encryption_key(
                 cli_dbgmsg("ole2: Key length does not match algorithm id\n");
                 goto done;
             }
-            bAES = true;
+            bAES                               = true;
+            pEncryptionStatus->encryption_type = AES192_ENCRYPTION;
             goto done;
         case SE_HEADER_EI_AES256:
             // not implemented
@@ -2350,10 +2647,12 @@ static bool initialize_encryption_key(
                 cli_dbgmsg("ole2: Key length does not match algorithm id\n");
                 goto done;
             }
-            bAES = true;
+            bAES                               = true;
+            pEncryptionStatus->encryption_type = AES256_ENCRYPTION;
             goto done;
         case SE_HEADER_EI_RC4:
             // not implemented
+            pEncryptionStatus->encryption_type = RC4_ENCRYPTION;
             goto done;
         default:
             cli_dbgmsg("ole2: Invalid Algorithm ID: 0x%x\n", encryptionInfo.encryptionInfo.algorithmID);
@@ -2442,8 +2741,14 @@ static bool initialize_encryption_key(
     }
 
     memcpy(encryptionKey, &key, sizeof(encryption_key_t));
-    bRet = true;
+    bRet                               = true;
+    pEncryptionStatus->encryption_type = VELVET_SWEATSHOP_ENCRYPTION;
 done:
+
+    if (pEncryptionStatus->encryption_type) {
+        pEncryptionStatus->encrypted = true;
+    }
+    pEncryptionStatus->velvet_sweatshop = bRet;
 
     return bRet;
 }
@@ -2468,8 +2773,9 @@ cl_error_t cli_ole2_extract(const char *dirname, cli_ctx *ctx, struct uniq **fil
     unsigned long scansize, scansize2;
     const void *phdr;
     encryption_key_t key;
-    bool bEncrypted          = false;
-    size_t encryption_offset = 0;
+    bool bEncrypted                       = false;
+    size_t encryption_offset              = 0;
+    encryption_status_t encryption_status = {0};
 
     cli_dbgmsg("in cli_ole2_extract()\n");
     if (!ctx) {
@@ -2571,13 +2877,7 @@ cl_error_t cli_ole2_extract(const char *dirname, cli_ctx *ctx, struct uniq **fil
         bEncrypted = initialize_encryption_key(
             &(((const uint8_t *)phdr)[encryption_offset]),
             hdr.m_length - encryption_offset,
-            &key);
-
-        cli_dbgmsg("Encrypted with VelvetSweatshop: %d\n", bEncrypted);
-
-        if (ctx->wrkproperty == ctx->properties) {
-            cli_jsonint(ctx->wrkproperty, "EncryptedWithVelvetSweatshop", bEncrypted);
-        }
+            &key, &encryption_status);
     }
 
     /* 8 SBAT blocks per file block */
@@ -2590,7 +2890,7 @@ cl_error_t cli_ole2_extract(const char *dirname, cli_ctx *ctx, struct uniq **fil
     hdr.has_vba   = false;
     hdr.has_xlm   = false;
     hdr.has_image = false;
-    ret           = ole2_walk_property_tree(&hdr, NULL, 0, handler_enum, 0, &file_count, ctx, &scansize, NULL);
+    ret           = ole2_walk_property_tree(&hdr, NULL, 0, handler_enum, 0, &file_count, ctx, &scansize, NULL, &encryption_status);
     cli_bitset_free(hdr.bitset);
     hdr.bitset = NULL;
     if (!file_count || !(hdr.bitset = cli_bitset_init())) {
@@ -2618,7 +2918,7 @@ cl_error_t cli_ole2_extract(const char *dirname, cli_ctx *ctx, struct uniq **fil
             goto done;
         }
         file_count = 0;
-        ole2_walk_property_tree(&hdr, dirname, 0, handler_writefile, 0, &file_count, ctx, &scansize2, NULL);
+        ole2_walk_property_tree(&hdr, dirname, 0, handler_writefile, 0, &file_count, ctx, &scansize2, NULL, &encryption_status);
         ret    = CL_CLEAN;
         *files = hdr.U;
         if (has_vba) {
@@ -2635,13 +2935,32 @@ cl_error_t cli_ole2_extract(const char *dirname, cli_ctx *ctx, struct uniq **fil
         /* PASS 2/B : OTF scan */
         file_count = 0;
         if (bEncrypted) {
-            ret = ole2_walk_property_tree(&hdr, NULL, 0, handler_otf_encrypted, 0, &file_count, ctx, &scansize2, &key);
+            ret = ole2_walk_property_tree(&hdr, NULL, 0, handler_otf_encrypted, 0, &file_count, ctx, &scansize2, &key, &encryption_status);
         } else {
-            ret = ole2_walk_property_tree(&hdr, NULL, 0, handler_otf, 0, &file_count, ctx, &scansize2, NULL);
+            ret = ole2_walk_property_tree(&hdr, NULL, 0, handler_otf, 0, &file_count, ctx, &scansize2, NULL, &encryption_status);
+        }
+    }
+
+    if (SCAN_COLLECT_METADATA && (ctx->wrkproperty != NULL)) {
+        if (encryption_status.encrypted) {
+            if (encryption_status.encryption_type) {
+                cli_jsonstr(ctx->wrkproperty, ENCRYPTED_JSON_KEY, encryption_status.encryption_type);
+            } else {
+                cli_jsonstr(ctx->wrkproperty, ENCRYPTED_JSON_KEY, GENERIC_ENCRYPTED);
+            }
+        }
+    }
+
+    if (SCAN_HEURISTIC_ENCRYPTED_DOC && encryption_status.encrypted && (!encryption_status.velvet_sweatshop)) {
+        cl_error_t status = cli_append_potentially_unwanted(ctx, OLE2_HEURISTIC_ENCRYPTED_WARNING);
+        if (CL_SUCCESS != status) {
+            cli_errmsg("OLE2 : Unable to warn potentially unwanted signature '%s'\n", "Heuristics.Encrypted.OLE2");
+            ret = status;
         }
     }
 
 done:
+
     if (hdr.bitset) {
         cli_bitset_free(hdr.bitset);
     }
