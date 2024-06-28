@@ -659,7 +659,7 @@ static bool cli_html_normalise(cli_ctx *ctx, int fd, m_area_t *m_area, const cha
     FILE *stream_in  = NULL;
     html_state state = HTML_NORM, next_state = HTML_BAD_STATE, saved_next_state = HTML_BAD_STATE;
     char filename[1024], tag[HTML_STR_LENGTH + 1], tag_arg[HTML_STR_LENGTH + 1];
-    char tag_val[HTML_STR_LENGTH + 1], *tmp_file, *arg_value;
+    char tag_val[HTML_STR_LENGTH + 1], *tmp_file = NULL, *arg_value = NULL;
     unsigned char *line = NULL, *ptr, *ptr_screnc = NULL;
     tag_arguments_t tag_args;
     quoted_state quoted  = NOT_QUOTED;
@@ -687,6 +687,23 @@ static bool cli_html_normalise(cli_ctx *ctx, int fd, m_area_t *m_area, const cha
     uint32_t mbchar  = 0;
     uint32_t mbchar2 = 0;
 
+#define DUMP \
+    /* if  (filename) fprintf(stderr, "%s::%d::filename::%s\n", __FUNCTION__, __LINE__, filename); */ \
+    if (tag) fprintf(stderr, "%s::%d::tag::%s\n", __FUNCTION__, __LINE__, tag); \
+    if (tag_arg) fprintf(stderr, "%s::%d::tag_arg::%s\n", __FUNCTION__, __LINE__, tag_arg); \
+    if (tag_val) fprintf(stderr, "%s::%d::tag_val::%s\n", __FUNCTION__, __LINE__, tag_val); \
+    if (tmp_file) fprintf(stderr, "%s::%d::tmp_file::%s\n", __FUNCTION__, __LINE__, tmp_file); \
+    if (arg_value) fprintf(stderr, "%s::%d::arg_value::%s\n", __FUNCTION__, __LINE__, arg_value); \
+    /* if (line) fprintf(stderr, "%s::%d::line::%s\n", __FUNCTION__, __LINE__, line); */ \
+    /* if (ptr) fprintf(stderr, "%s::%d::ptr::%s\n", __FUNCTION__, __LINE__, ptr); */ \
+    if (ptr_screnc) fprintf(stderr, "%s::%d::ptr_screnc::%s\n", __FUNCTION__, __LINE__, ptr_screnc); \
+    if (href_contents_begin) fprintf(stderr, "%s::%d::href_contents_begin::%s\n", __FUNCTION__, __LINE__, href_contents_begin); \
+    /* if (ptrend) fprintf(stderr, "%s::%d::ptrend::%s\n", __FUNCTION__, __LINE__, ptrend); */ \
+    if (in_form_action) fprintf(stderr, "%s::%d::in_form_action::%s\n", __FUNCTION__, __LINE__, in_form_action); \
+    ;
+
+
+fprintf(stderr, "%s::%d::ENTERING\n", __FUNCTION__, __LINE__);
     /*
      * Initialize stack buffers.
      */
@@ -768,12 +785,15 @@ static bool cli_html_normalise(cli_ctx *ctx, int fd, m_area_t *m_area, const cha
     ptr = line = cli_readchunk(stream_in, m_area, 8192);
 
     while (line) {
+
+    //fprintf(stderr, "%s::%d::%s\n", __FUNCTION__, __LINE__, in_form_action);
         if (href_contents_begin)
             href_contents_begin = ptr; /*start of a new line, last line already appended to contents see below*/
         while (*ptr && isspace(*ptr)) {
             ptr++;
         }
         while (*ptr) {
+        //DUMP;
             if (!binary && *ptr == '\n') {
                 /* Convert it to a space and re-process */
                 *ptr = ' ';
@@ -1224,8 +1244,10 @@ static bool cli_html_normalise(cli_ctx *ctx, int fd, m_area_t *m_area, const cha
                             href_contents_begin = ptr;
                         }
                         if (strcmp(tag, "/form") == 0) {
-                            if (in_form_action)
+                            if (in_form_action) {
+//fprintf(stderr, "%s::%d::%s\n", __FUNCTION__, __LINE__, in_form_action);
                                 free(in_form_action);
+                            }
                             in_form_action = NULL;
                         }
                     } else if (strcmp(tag, "script") == 0) {
@@ -1292,6 +1314,7 @@ static bool cli_html_normalise(cli_ctx *ctx, int fd, m_area_t *m_area, const cha
                                         html_tag_contents_done(hrefs, hrefs->count, &contents);
                                     }
                                     if (in_form_action) {
+//fprintf(stderr, "%s::%d::%s\n", __FUNCTION__, __LINE__, in_form_action);
                                         /* form action is the real URL, and href is the 'displayed' */
                                         html_tag_arg_add(hrefs, "form", arg_value);
                                         contents.pos = 0;
@@ -1309,10 +1332,15 @@ static bool cli_html_normalise(cli_ctx *ctx, int fd, m_area_t *m_area, const cha
                             }
                         } else if (strcmp(tag, "form") == 0 && hrefs->scanContents) {
                             const char *arg_action_value = html_tag_arg_value(&tag_args, "action");
+                            //fprintf(stderr, "%s::%d::%s\n", __FUNCTION__, __LINE__, arg_action_value);
                             if (arg_action_value) {
-                                if (in_form_action)
+                                if (in_form_action) {
+//fprintf(stderr, "%s::%d::%s\n", __FUNCTION__, __LINE__, in_form_action);
                                     free(in_form_action);
+                                }
                                 in_form_action = (unsigned char *)cli_safer_strdup(arg_action_value);
+fprintf(stderr, "%s::%d::SAVE VALUE HERE for FORM TAGS!!!!!\n", __FUNCTION__, __LINE__);
+fprintf(stderr, "%s::%d::%s\n", __FUNCTION__, __LINE__, in_form_action);
                             }
                         } else if (strcmp(tag, "img") == 0) {
                             arg_value = html_tag_arg_value(&tag_args, "src");
@@ -1322,6 +1350,7 @@ static bool cli_html_normalise(cli_ctx *ctx, int fd, m_area_t *m_area, const cha
                                     /* "contents" of an img tag, is the URL of its parent <a> tag */
                                     hrefs->contents[hrefs->count - 1] = (unsigned char *)cli_safer_strdup((const char *)hrefs->value[in_ahref - 1]);
                                 if (in_form_action) {
+//fprintf(stderr, "%s::%d::%s\n", __FUNCTION__, __LINE__, in_form_action);
                                     /* form action is the real URL, and href is the 'displayed' */
                                     html_tag_arg_add(hrefs, "form", arg_value);
                                     contents.pos = 0;
@@ -1337,6 +1366,7 @@ static bool cli_html_normalise(cli_ctx *ctx, int fd, m_area_t *m_area, const cha
                                     /* see above */
                                     hrefs->contents[hrefs->count - 1] = (unsigned char *)cli_safer_strdup((const char *)hrefs->value[in_ahref - 1]);
                                 if (in_form_action) {
+//fprintf(stderr, "%s::%d::%s\n", __FUNCTION__, __LINE__, in_form_action);
                                     /* form action is the real URL, and href is the 'displayed' */
                                     html_tag_arg_add(hrefs, "form", arg_value);
                                     contents.pos = 0;
@@ -1353,6 +1383,7 @@ static bool cli_html_normalise(cli_ctx *ctx, int fd, m_area_t *m_area, const cha
                                     /* see above */
                                     hrefs->contents[hrefs->count - 1] = (unsigned char *)cli_safer_strdup((const char *)hrefs->value[in_ahref - 1]);
                                 if (in_form_action) {
+//fprintf(stderr, "%s::%d::%s\n", __FUNCTION__, __LINE__, in_form_action);
                                     /* form action is the real URL, and href is the 'displayed' */
                                     html_tag_arg_add(hrefs, "form", arg_value);
                                     contents.pos = 0;
@@ -1369,6 +1400,7 @@ static bool cli_html_normalise(cli_ctx *ctx, int fd, m_area_t *m_area, const cha
                                     /* see above */
                                     hrefs->contents[hrefs->count - 1] = (unsigned char *)cli_safer_strdup((const char *)hrefs->value[in_ahref - 1]);
                                 if (in_form_action) {
+//fprintf(stderr, "%s::%d::%s\n", __FUNCTION__, __LINE__, in_form_action);
                                     /* form action is the real URL, and href is the 'displayed' */
                                     html_tag_arg_add(hrefs, "form", arg_value);
                                     contents.pos = 0;
@@ -1917,8 +1949,10 @@ static bool cli_html_normalise(cli_ctx *ctx, int fd, m_area_t *m_area, const cha
 done:
     if (line) /* only needed for done case */
         free(line);
-    if (in_form_action)
+    if (in_form_action) {
+//fprintf(stderr, "%s::%d::%s\n", __FUNCTION__, __LINE__, in_form_action);
         free(in_form_action);
+    }
     if (in_ahref) /* tag not closed, force closing */
         html_tag_contents_done(hrefs, in_ahref, &contents);
 
