@@ -48,7 +48,8 @@
 
 int cli_check_mydoom_log(cli_ctx *ctx)
 {
-    const uint32_t *record;
+    uint32_t record[16];
+    const uint32_t *ptr;
     uint32_t check, key;
     fmap_t *map         = ctx->fmap;
     unsigned int blocks = map->len / (8 * 4);
@@ -59,13 +60,23 @@ int cli_check_mydoom_log(cli_ctx *ctx)
     if (blocks > 5)
         blocks = 5;
 
-    record = fmap_need_off_once(map, 0, 8 * 4 * blocks);
-    if (!record)
+    /*
+     * The following pointer might not be properly aligned. There there is
+     * memcmp() + memcpy() workaround to avoid performing an unaligned access
+     * while reading the uint32_t.
+     */
+    ptr = fmap_need_off_once(map, 0, 8 * 4 * blocks);
+    if (!ptr)
         return CL_CLEAN;
+
     while (blocks) { /* This wasn't probably intended but that's what the current code does anyway */
-        if (record[--blocks] == 0xffffffff)
+        const uint32_t marker_ff = 0xffffffff;
+
+	if (!memcmp(&ptr[--blocks], &marker_ff, sizeof(uint32_t)))
             return CL_CLEAN;
     }
+
+    memcpy(record, ptr, sizeof(record));
 
     key   = ~be32_to_host(record[0]);
     check = (be32_to_host(record[1]) ^ key) +
