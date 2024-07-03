@@ -488,7 +488,7 @@ elseif(${CMAKE_BUILD_TYPE} STREQUAL "RelWithDebInfo")
 else()
     set(CARGO_BUILD_TYPE "debug")
 endif()
-string(STRIP "${RUSTFLAGS}" RUSTFLAGS)
+string(STRIP "${RUSTFLAGS} $ENV{RUSTFLAGS}" RUSTFLAGS)
 
 find_package_handle_standard_args(Rust
     REQUIRED_VARS cargo_EXECUTABLE
