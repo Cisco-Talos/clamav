@@ -28,17 +28,17 @@ jobs:
         run: rm /usr/bin/link.exe
         shell: bash
 
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v4
 
       - name: Install Build Tools
-        uses: crazy-max/ghaction-chocolatey@v1
+        uses: crazy-max/ghaction-chocolatey@v3
         with:
           args: install wixtoolset
 
       - name: Install pytest for easier to read test results
         run: python3 -m pip install pytest
 
-      - uses: lukka/get-cmake@v3.21.2
+      - uses: lukka/get-cmake@v3.30.0
 
       # Restore from cache the previously built ports. If cache-miss, download, build vcpkg ports.
       - name: Restore vcpkg ports from cache or install vcpkg
@@ -90,7 +90,7 @@ jobs:
     runs-on: macos-latest
 
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v4
 
       - name: Install Build Tools
         run: brew install bison flex
@@ -101,7 +101,7 @@ jobs:
       - name: Install pytest for easier to read test results
         run: python3 -m pip install pytest
 
-      - uses: lukka/get-cmake@v3.21.2
+      - uses: lukka/get-cmake@v3.30.0
 
       - name: Create Build Directory
         shell: bash
@@ -141,7 +141,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v4
 
       - name: Update package listings
         run: sudo apt-get update
@@ -155,7 +155,7 @@ jobs:
       - name: Install pytest for easier to read test results
         run: python3 -m pip install pytest
 
-      - uses: lukka/get-cmake@v3.21.2
+      - uses: lukka/get-cmake@v3.30.0
 
       - name: Create Build Directory
         shell: bash
