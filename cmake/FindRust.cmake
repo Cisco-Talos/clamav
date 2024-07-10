@@ -428,6 +428,10 @@ foreach(LINE ${LINE_LIST})
     endif()
 
     string(REPLACE "native-static-libs: " "" LINE "${LINE}")
+
+    # Some Rust versions have a defaultlib:msvcrt; in the output, which we don't want.
+    string(REGEX REPLACE " /defaultlib:msvcrt" "" LINE "${LINE}")
+
     string(REGEX REPLACE "  " "" LINE "${LINE}")
     string(REGEX REPLACE " " ";" LINE "${LINE}")
 
