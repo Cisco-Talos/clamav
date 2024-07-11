@@ -430,6 +430,8 @@ foreach(LINE ${LINE_LIST})
     string(REPLACE "native-static-libs: " "" LINE "${LINE}")
     string(REGEX REPLACE "  " "" LINE "${LINE}")
     string(REGEX REPLACE " " ";" LINE "${LINE}")
+    # remove linker flags
+    list(FILTER LINE EXCLUDE REGEX "/.*")
 
     if(LINE)
         message(STATUS "Rust's native static libs: ${LINE}")
