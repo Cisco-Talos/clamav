@@ -62,9 +62,9 @@
 
 #define MAXCMDOPTS 150
 
-#define MATCH_NUMBER "^[0-9]+$"
-#define MATCH_SIZE   "^[0-9]+[KMG]?$"
-#define MATCH_BOOL   "^(yes|true|1|no|false|0)$"
+#define MATCH_NUMBER "^[0-9]+((( +)?#(.*))?)$"
+#define MATCH_SIZE   "^[0-9]+[KMG]?(( +)?#(.*))?$"
+#define MATCH_BOOL   "^(yes|true|1|no|false|0)(( +)?#(.*))?$"
 
 #define FLAG_MULTIPLE 1 /* option can be used multiple times */
 #define FLAG_REQUIRED 2 /* arg is required, even if there's a default value */
@@ -972,7 +972,9 @@ struct optstruct *optparse(const char *cfgfile, int argc, char **argv, int verbo
     char shortopts[MAXCMDOPTS];
     regex_t regex;
     long long numarg, lnumarg, lnumlimit;
-    int regflags = REG_EXTENDED | REG_NOSUB;
+    int regflags              = REG_EXTENDED | REG_NOSUB;
+    const char *inlinecomment = NULL;
+    char *trim_comment;
 
 #ifdef _WIN32
     if (!is_initialized) {
@@ -1228,7 +1230,14 @@ struct optstruct *optparse(const char *cfgfile, int argc, char **argv, int verbo
             }
         }
 
-        numarg = -1;
+        numarg        = -1;
+        inlinecomment = strchr(arg, '#');
+        if (inlinecomment != NULL) {
+            arg          = strtok(arg, "#");
+            trim_comment = arg + strlen(arg) - 1;
+            while (trim_comment >= arg && *trim_comment == ' ')
+                *(trim_comment--) = '\0';
+        }
         switch (optentry->argtype) {
             case CLOPT_TYPE_STRING:
                 if (!arg)
