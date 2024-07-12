@@ -780,6 +780,178 @@ static size_t read_uint16(const uint8_t *const ptr, uint32_t ptr_size, uint32_t 
     return sizeof(uint16_t);
 }
 
+
+
+
+
+
+
+
+
+
+static void parse_fibRgFcLcb97(const uint8_t * ptr){
+    fprintf(stderr, "%s::%d::UNIMPLEMENTED\n", __FUNCTION__, __LINE__); exit(11);
+
+}
+
+static void parse_fibRgFcLcb2000(const uint8_t * ptr){
+    fprintf(stderr, "%s::%d::UNIMPLEMENTED\n", __FUNCTION__, __LINE__); exit(11);
+
+}
+
+
+
+
+
+
+static void parse_fibRgFcLcb2002(const uint8_t * ptr){
+    fprintf(stderr, "%s::%d::Data is in the fcDggInfo, size is in the lcbDggInfo\n", __FUNCTION__, __LINE__);
+    fprintf(stderr, "%s::%d::Structure is the FibRgFcLcb97\n", __FUNCTION__, __LINE__);
+
+
+
+
+
+
+
+    fprintf(stderr, "%s::%d::UNIMPLEMENTED\n", __FUNCTION__, __LINE__); exit(11);
+
+}
+
+static void parse_fibRgFcLcb2003(const uint8_t * ptr){
+    fprintf(stderr, "%s::%d::UNIMPLEMENTED\n", __FUNCTION__, __LINE__); exit(11);
+
+}
+
+static void parse_fibRgFcLcb2007(const uint8_t * ptr){
+    fprintf(stderr, "%s::%d::UNIMPLEMENTED\n", __FUNCTION__, __LINE__); exit(11);
+
+}
+
+
+
+
+
+static void test_for_pictures( const property_t *word_block, ole2_header_t *hdr) {
+
+    const uint8_t *ptr = NULL;
+    fib_base_t fib     = {0};
+    size_t i;
+    size_t to_read = 0x1000;
+
+    fprintf(stderr,"%s::%d\n", __FUNCTION__, __LINE__);
+
+    uint32_t fib_offset = get_stream_data_offset(hdr, word_block, word_block->start_block);
+    fprintf(stderr,"%s::%d\n", __FUNCTION__, __LINE__);
+
+    if ((size_t)(hdr->m_length) < (size_t)(fib_offset + sizeof(fib_base_t))) {
+        cli_dbgmsg("ERROR: Invalid offset for File Information Block %d (0x%x)\n", fib_offset, fib_offset);
+        return;
+    }
+    fprintf(stderr,"%s::%d\n", __FUNCTION__, __LINE__);
+
+    //ptr = fmap_need_off_once(hdr->map, fib_offset, sizeof(fib_base_t));
+    fprintf(stderr, "%s::%d::TODO: Add the correct size, trying to read 4k because, why not?\n", __FUNCTION__, __LINE__);
+
+    ptr = fmap_need_off_once(hdr->map, fib_offset, to_read);
+    if (NULL == ptr) {
+        cli_dbgmsg("ERROR: Invalid offset for File Information Block %d (0x%x)\n", fib_offset, fib_offset);
+        return;
+    }
+    fprintf(stderr,"%s::%d\n", __FUNCTION__, __LINE__);
+    copy_fib_base(&fib, ptr);
+    fprintf(stderr,"%s::%d\n", __FUNCTION__, __LINE__);
+
+#define FIB_BASE_IDENTIFIER 0xa5ec
+    fprintf(stderr,"%s::%d\n", __FUNCTION__, __LINE__);
+
+    if (FIB_BASE_IDENTIFIER != fib.wIdent) {
+        cli_dbgmsg("ERROR: Invalid identifier for File Information Block %d (0x%x)\n", fib.wIdent, fib.wIdent);
+        return;
+    }
+
+    uint32_t idx = sizeof(fib);
+    /* https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-doc/9aeaa2e7-4a45-468e-ab13-3f6193eb9394 */
+    uint16_t csw;
+    read_uint16(ptr, to_read, &idx, &csw);
+    if (0x000e != csw){
+        fprintf(stderr, "%s::%d::Invalid csw = 0x%x\n", __FUNCTION__, __LINE__, csw);
+        return;
+    }
+
+    idx += 28; /* Size of the fibRgW.  Don't think I need anything from there. */
+
+    uint16_t cslw;
+    read_uint16(ptr, to_read, &idx, &cslw);
+    if (0x0016 != cslw) {
+        fprintf(stderr, "%s::%d::Invalid cslw = 0x%x\n", __FUNCTION__, __LINE__, cslw);
+        return;
+    }
+    idx += 88; /* Size of the FibRgLw97.  Don't think I need anything from there. */
+
+    uint16_t cbRgFcLcb;
+    read_uint16(ptr, to_read, &idx, &cbRgFcLcb);
+#if 0
+    if (!= cbRgFcLcb){
+        fprintf(stderr, "%s::%d::Invalid cbRgFcLcb of 0x%x\n", __FUNCTION__, __LINE__, cbRgFcLcb);
+        return;
+    }
+#else
+    fprintf(stderr, "nFib = 0x%x::cbRgFcLcb = 0x%x\n", fib.nFib, cbRgFcLcb );
+    switch (fib.nFib){
+        default:
+            fprintf(stderr, "%s::%d::Invalid fib.nFib\n", __FUNCTION__, __LINE__);
+            return;
+        case 0x00c1:
+            if (0x005d != cbRgFcLcb){
+                fprintf(stderr, "%s::%d::Invalid fib.nFib(0x%x) cbRgFcLcb(0x%x) combo\n", __FUNCTION__, __LINE__, fib.nFib, cbRgFcLcb);
+                return;
+            }
+            parse_fibRgFcLcb97(ptr);
+            break;
+        case 0x00d9:
+            if (0x006c != cbRgFcLcb){
+                fprintf(stderr, "%s::%d::Invalid fib.nFib(0x%x) cbRgFcLcb(0x%x) combo\n", __FUNCTION__, __LINE__, fib.nFib, cbRgFcLcb);
+                return;
+            }
+            parse_fibRgFcLcb2000(ptr);
+            break;
+        case 0x0101:
+            if (0x0088 != cbRgFcLcb){
+                fprintf(stderr, "%s::%d::Invalid fib.nFib(0x%x) cbRgFcLcb(0x%x) combo\n", __FUNCTION__, __LINE__, fib.nFib, cbRgFcLcb);
+                return;
+            }
+            parse_fibRgFcLcb2002(ptr);
+            break;
+        case 0x010c:
+            if (0x00a4 != cbRgFcLcb){
+                fprintf(stderr, "%s::%d::Invalid fib.nFib(0x%x) cbRgFcLcb(0x%x) combo\n", __FUNCTION__, __LINE__, fib.nFib, cbRgFcLcb);
+                return;
+            }
+            parse_fibRgFcLcb2003(ptr);
+            break;
+        case 0x0112:
+            if (0x00b7 != cbRgFcLcb){
+                fprintf(stderr, "%s::%d::Invalid fib.nFib(0x%x) cbRgFcLcb(0x%x) combo\n", __FUNCTION__, __LINE__, fib.nFib, cbRgFcLcb);
+                return;
+            }
+            parse_fibRgFcLcb2007(ptr);
+            break;
+    }
+#endif
+
+
+    fprintf(stderr, "%s::%d::", __FUNCTION__, __LINE__);
+    for (i = idx; i < to_read; i++){
+        fprintf(stderr, "%02x ", ptr[i]);
+    }
+    fprintf(stderr, "\n");
+
+
+    fprintf(stderr,"%s::%d::GOT TO END!!!\n", __FUNCTION__, __LINE__);
+
+}
+
 /* Search for the FILE_PASS number.  If I don't find it, the next two bytes are
  * a length.  Consume that length of data, and try again.  Go until you either find
  * the number or run out of data.
@@ -966,6 +1138,9 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
 
         if (0 == ole2_cmp_name(prop_block[idx].name, prop_block[idx].name_size, "WORDDocument")) {
             test_for_encryption(&(prop_block[idx]), hdr, pEncryptionStatus);
+
+            test_for_pictures(&(prop_block[idx]), hdr);
+
         } else if (0 == ole2_cmp_name(prop_block[idx].name, prop_block[idx].name_size, "WorkBook")) {
             test_for_xls_encryption(&(prop_block[idx]), hdr, pEncryptionStatus);
         } else if (0 == ole2_cmp_name(prop_block[idx].name, prop_block[idx].name_size, "PowerPoint Document")) {
