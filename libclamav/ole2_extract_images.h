@@ -405,6 +405,7 @@ static void parse_fibRgFcLcb2002(const uint8_t * ptr){
 
     fprintf(stderr, "%s::%d::The offset and size information is for the OfficeArtContent header information\n", __FUNCTION__, __LINE__);
 
+    fprintf(stderr, "https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-doc/8699a984-3718-44be-adae-08b05827f8b3\n");
 
 
     fprintf(stderr, "%s::%d::UNIMPLEMENTED\n", __FUNCTION__, __LINE__); exit(11);
