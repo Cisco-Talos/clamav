@@ -1251,6 +1251,15 @@ int scanmanager(const struct optstruct *opts)
     if ((opt = optget(opts, "database"))->active) {
         while (opt) {
             if (optget(opts, "fail-if-cvd-older-than")->enabled) {
+                if (LSTAT(opt->strarg, &sb) == -1) {
+                    logg(LOGG_ERROR, "Can't access database directory/file: %s\n", opt->strarg);
+                    ret = 2;
+                    goto done;
+                }
+                if (!S_ISDIR(sb.st_mode) && !CLI_DBEXT_SIGNATURE(opt->strarg)) {
+                    opt = opt->nextarg;
+                    continue;
+                }
                 if (check_if_cvd_outdated(opt->strarg, optget(opts, "fail-if-cvd-older-than")->numarg) != CL_SUCCESS) {
                     ret = 2;
                     goto done;
