@@ -399,6 +399,8 @@ static void parse_fibRgFcLcb2002(const uint8_t * ptr){
     FibRgFcLcb97 header;
     copy_FibRgFcLcb97(&header, ptr);
 
+    fprintf(stderr, "%s::%d::Offset = %d (0x%x)\n", __FUNCTION__, __LINE__, header.fcDggInfo, header.fcDggInfo);
+    fprintf(stderr, "%s::%d::Size = %d (0x%x)\n", __FUNCTION__, __LINE__, header.lcbDggInfo, header.lcbDggInfo);
 
 
 
@@ -504,7 +506,7 @@ static void test_for_pictures( const property_t *word_block, ole2_header_t *hdr)
                 fprintf(stderr, "%s::%d::Invalid fib.nFib(0x%x) cbRgFcLcb(0x%x) combo\n", __FUNCTION__, __LINE__, fib.nFib, cbRgFcLcb);
                 return;
             }
-            parse_fibRgFcLcb2002(ptr);
+            parse_fibRgFcLcb2002(&(ptr[idx]));
             break;
         case 0x010c:
             if (0x00a4 != cbRgFcLcb){
