@@ -190,6 +190,13 @@ typedef struct __attribute__((packed)) {
     uint32_t lcbSttbfUssr;
 } FibRgFcLcb97;
 
+static void copy_FibRgFcLcb97(FibRgFcLcb97 * pHeader, const uint8_t *const ptr) {
+
+    memcpy(pHeader, ptr, sizeof(*pHeader));
+
+
+
+}
 
 static void parse_fibRgFcLcb97(const uint8_t * ptr){
     fprintf(stderr, "%s::%d::UNIMPLEMENTED\n", __FUNCTION__, __LINE__); exit(11);
@@ -202,6 +209,15 @@ static void parse_fibRgFcLcb2000(const uint8_t * ptr){
 static void parse_fibRgFcLcb2002(const uint8_t * ptr){
     fprintf(stderr, "%s::%d::Data is in the fcDggInfo, size is in the lcbDggInfo\n", __FUNCTION__, __LINE__);
     fprintf(stderr, "%s::%d::Structure is the FibRgFcLcb97\n", __FUNCTION__, __LINE__);
+
+    FibRgFcLcb97 header;
+    copy_FibRgFcLcb97(&header, ptr);
+
+
+
+
+
+
     fprintf(stderr, "%s::%d::UNIMPLEMENTED\n", __FUNCTION__, __LINE__); exit(11);
 }
 
