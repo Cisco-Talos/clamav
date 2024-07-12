@@ -403,6 +403,7 @@ static void parse_fibRgFcLcb2002(const uint8_t * ptr){
     fprintf(stderr, "%s::%d::Size = %d (0x%x)\n", __FUNCTION__, __LINE__, header.lcbDggInfo, header.lcbDggInfo);
 
 
+    fprintf(stderr, "%s::%d::The offset and size information is for the OfficeArtContent header information\n", __FUNCTION__, __LINE__);
 
 
 
