@@ -395,6 +395,7 @@ typedef struct __attribute__((packed)) {
 static void copy_OfficeArtRecordHeader (OfficeArtRecordHeader * header, const uint8_t * const ptr) {
     memcpy(header, ptr, sizeof(OfficeArtRecordHeader));
 
+    header->recVer_recInstance = ole2_endian_convert_16(header->recVer_recInstance);
     header->recType = ole2_endian_convert_16(header->recType);
     header->recLen = ole2_endian_convert_32(header->recLen);
 
@@ -641,13 +642,15 @@ static void extract_images( FibRgFcLcb97 * header, const property_t * table_stre
 static void extract_images_2( FibRgFcLcb97 * header, const uint8_t * ptr) {
     fprintf(stderr, "%s::%d::%p::%p\n", __FUNCTION__, __LINE__, header, ptr);
     size_t offset = header->fcDggInfo;
-
-    fprintf(stderr, "%s::%d::", __FUNCTION__, __LINE__);
     int i;
+
+#if 0
+    fprintf(stderr, "%s::%d::", __FUNCTION__, __LINE__);
     for (i= 0; i < 100; i++) {
         fprintf(stderr, "%02x ", ptr[i]);
     }
         fprintf(stderr, "\n");
+#endif
 
 
     /*
@@ -677,7 +680,7 @@ static void extract_images_2( FibRgFcLcb97 * header, const uint8_t * ptr) {
     offset += hdr.recLen;
 
     offset += sizeof(OfficeArtRecordHeader);
-    fprintf(stderr, "%s::%d::Before last one\n", __FUNCTION__, __LINE__);
+    fprintf(stderr, "\n%s::%d::Before last one\n", __FUNCTION__, __LINE__);
 
     /*
      * OfficeArtBStoreContainer
@@ -687,7 +690,22 @@ static void extract_images_2( FibRgFcLcb97 * header, const uint8_t * ptr) {
     OfficeArtRecordHeader blipStoreRecordHeader;
     copy_OfficeArtRecordHeader(&blipStoreRecordHeader,  &(ptr[offset]));
 
-    fprintf(stderr, "%s::%d::Process blip store here\n", __FUNCTION__, __LINE__);
+//fprintf(stderr, "%s::%d::Process blip store here\n", __FUNCTION__, __LINE__);
+    uint16_t numRecords = (blipStoreRecordHeader.recVer_recInstance & 0xfff0) >> 4;
+
+    offset += sizeof(OfficeArtRecordHeader);
+
+    /*I am thinking I need to increment offset by 2 here, but I can't find anything in the docs to say why.
+     * That's just what all the files appear to be expecting.*/
+
+    fprintf(stderr, "%s::%d::numRecords = 0x%x\n", __FUNCTION__, __LINE__, numRecords);
+
+    fprintf(stderr, "%s::%d::", __FUNCTION__, __LINE__);
+    for (i = 0; i < blipStoreRecordHeader.recLen; i++){
+    //for (i = 0; i < 512; i++){
+        fprintf(stderr, "%02x ", ptr[offset + i]);
+    }
+    fprintf(stderr, "\n");
 
 
     fprintf(stderr, "%s::%d::Got to end\n", __FUNCTION__, __LINE__);
