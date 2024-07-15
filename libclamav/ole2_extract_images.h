@@ -642,14 +642,52 @@ static void extract_images_2( FibRgFcLcb97 * header, const uint8_t * ptr) {
     fprintf(stderr, "%s::%d::%p::%p\n", __FUNCTION__, __LINE__, header, ptr);
     size_t offset = header->fcDggInfo;
 
-    OfficeArtRecordHeader officeArtDggContainer;
-    copy_OfficeArtRecordHeader (&officeArtDggContainer, &(ptr[offset]));
+    fprintf(stderr, "%s::%d::", __FUNCTION__, __LINE__);
+    int i;
+    for (i= 0; i < 100; i++) {
+        fprintf(stderr, "%02x ", ptr[i]);
+    }
+        fprintf(stderr, "\n");
 
-    if (0xf != officeArtDggContainer.recVer_recInstance){
+
+    /*
+     * Start of OfficeArtContent
+     * https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-doc/8699a984-3718-44be-adae-08b05827f8b3
+     * First record is an OfficeArtDggContainer
+     * https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-odraw/dd7133b6-ed10-4bcb-be29-67b0544f884f
+     */
+    OfficeArtRecordHeader oadc_recordHeader;
+    copy_OfficeArtRecordHeader (&oadc_recordHeader, &(ptr[offset]));
+
+    if (0xf != oadc_recordHeader.recVer_recInstance){
         fprintf(stderr, "%s::%d::Error\n", __FUNCTION__, __LINE__);
         exit(11);
     }
 
+    offset += sizeof (OfficeArtRecordHeader );
+
+    /*
+     * Next is the OfficeArtFDGGBlock 
+     * https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-odraw/a9ff4320-4fa3-4408-8ea4-85c3cec0b501
+     * We shouldn't have to care about that, since it's for drawings and not actual file images.
+     * Going to just skip this record for now.
+     * */
+    OfficeArtRecordHeader hdr;
+    copy_OfficeArtRecordHeader(&hdr,  &(ptr[offset]));
+    offset += hdr.recLen;
+
+    offset += sizeof(OfficeArtRecordHeader);
+    fprintf(stderr, "%s::%d::Before last one\n", __FUNCTION__, __LINE__);
+
+    /*
+     * OfficeArtBStoreContainer
+     * https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-odraw/561cb6d4-d38b-4666-b2b4-10abc1dce44c
+     *
+     */
+    OfficeArtRecordHeader blipStoreRecordHeader;
+    copy_OfficeArtRecordHeader(&blipStoreRecordHeader,  &(ptr[offset]));
+
+    fprintf(stderr, "%s::%d::Process blip store here\n", __FUNCTION__, __LINE__);
 
 
     fprintf(stderr, "%s::%d::Got to end\n", __FUNCTION__, __LINE__);
