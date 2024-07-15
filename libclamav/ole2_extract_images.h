@@ -645,7 +645,14 @@ static void extract_images_2( FibRgFcLcb97 * header, const uint8_t * ptr) {
     OfficeArtRecordHeader officeArtDggContainer;
     copy_OfficeArtRecordHeader (&officeArtDggContainer, &(ptr[offset]));
 
+    if (0xf != officeArtDggContainer.recVer_recInstance){
+        fprintf(stderr, "%s::%d::Error\n", __FUNCTION__, __LINE__);
+        exit(11);
+    }
 
+
+
+    fprintf(stderr, "%s::%d::Got to end\n", __FUNCTION__, __LINE__);
 
     exit(11);
 }
