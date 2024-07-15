@@ -1014,6 +1014,13 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
     fprintf(stderr, "%s::%d::offset = %lu::offset = %lx\n", __FUNCTION__, __LINE__, offset, offset);
 
     fprintf(stderr, "%s::%d::FOUND THE OFFSET OF THE DATA.  This offset + the offset referenced in 'header'\n", __FUNCTION__, __LINE__);
+    fprintf(stderr, "%s::%d::Asking for 4k, because, why not???\n", __FUNCTION__, __LINE__);
+    const uint8_t * const ptr = fmap_need_off_once(hdr->map, offset, 4096);
+    if (NULL == ptr) {
+        cli_dbgmsg("ERROR: Invalid offset for File Information Block %ld (0x%lx)\n", offset, offset);
+        exit(11);
+    }
+    extract_images_2(&header, ptr);
 
 
 

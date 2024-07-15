@@ -607,6 +607,7 @@ fprintf(stderr,"%s::%d\n", __FUNCTION__, __LINE__);
 
 
 
+#if 0
 static void extract_images( FibRgFcLcb97 * header, const property_t * table_stream,  ole2_header_t *hdr) {
 
     int i;
@@ -633,15 +634,23 @@ static void extract_images( FibRgFcLcb97 * header, const property_t * table_stre
 
     offset += 8; //size of OfficeArtRecordHeader
 
-    
-
-
-
-
-
-
     fprintf(stderr, "%s::%d::Leaving\n", __FUNCTION__, __LINE__);
 }
+#else
+
+static void extract_images_2( FibRgFcLcb97 * header, const uint8_t * ptr) {
+    fprintf(stderr, "%s::%d::%p::%p\n", __FUNCTION__, __LINE__, header, ptr);
+    size_t offset = header->fcDggInfo;
+
+    OfficeArtRecordHeader officeArtDggContainer;
+    copy_OfficeArtRecordHeader (&officeArtDggContainer, &(ptr[offset]));
+
+
+
+    exit(11);
+}
+
+#endif
 
 
 
