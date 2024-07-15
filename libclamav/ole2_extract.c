@@ -636,6 +636,7 @@ static int ole2_cmp_name(const char *const name, uint32_t name_size, const char 
         decoded[j] = ((unsigned char)name[i + 1]) << 4;
         decoded[j] += name[i];
     }
+    fprintf(stderr, "%s::%d::%s\n", __FUNCTION__, __LINE__, decoded);
 
     return strcasecmp(decoded, keyword);
 }
@@ -895,6 +896,8 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
     cl_error_t ret;
     char *name;
     int toval = 0;
+    property_t * wordDocStream = NULL;
+    property_t * tableStream = NULL;
 
     ole2_listmsg("ole2_walk_property_tree() called\n");
     ole2_list_init(&node_list);
@@ -953,6 +956,7 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
         }
         ole2_listmsg("reading prop block\n");
 
+//fprintf(stderr, "%s::%d::%p\n", __FUNCTION__, __LINE__, &(prop_block[idx]));
         prop_block[idx].name_size       = ole2_endian_convert_16(prop_block[idx].name_size);
         prop_block[idx].prev            = ole2_endian_convert_32(prop_block[idx].prev);
         prop_block[idx].next            = ole2_endian_convert_32(prop_block[idx].next);
@@ -973,7 +977,27 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
         if (0 == ole2_cmp_name(prop_block[idx].name, prop_block[idx].name_size, "WORDDocument")) {
             test_for_encryption(&(prop_block[idx]), hdr, pEncryptionStatus);
 
-            test_for_pictures(&(prop_block[idx]), hdr);
+            test_for_pictures(&(prop_block[idx]), tableStream, hdr);
+            wordDocStream  = &(prop_block[idx]);
+            fprintf(stderr, "%s::%d::%p::setting wordDocStream\n", __FUNCTION__, __LINE__, wordDocStream);
+
+
+
+#if 0
+            {
+                size_t i;
+                fprintf(stderr, "%s::%d::", __FUNCTION__, __LINE__);
+                for (i = 0; i < 4096; i++){
+                    if (i && (0 == i%512)){
+                        fprintf("\n%s::%d::", __FUNCTION__, __LINE__);
+                    }
+                    fprintf(stderr, "%02x ", ((uint8_t*) &(prop_block[idx])[i]);
+                }
+            }
+#endif
+
+
+
 
         } else if (0 == ole2_cmp_name(prop_block[idx].name, prop_block[idx].name_size, "WorkBook")) {
             test_for_xls_encryption(&(prop_block[idx]), hdr, pEncryptionStatus);
@@ -983,7 +1007,62 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
             pEncryptionStatus->encrypted = true;
         } else if (0 == ole2_cmp_name(prop_block[idx].name, prop_block[idx].name_size, "EncryptedPackage")) {
             pEncryptionStatus->encrypted = true;
+        } else if (0 == ole2_cmp_name(prop_block[idx].name, prop_block[idx].name_size, "1Table")) {
+            tableStream = &(prop_block[idx]);
+
+    size_t offset = get_stream_data_offset(hdr, tableStream, tableStream->start_block);
+    fprintf(stderr, "%s::%d::offset = %lu::offset = %lx\n", __FUNCTION__, __LINE__, offset, offset);
+
+    fprintf(stderr, "%s::%d::FOUND THE OFFSET OF THE DATA.  This offset + the offset referenced in 'header'\n", __FUNCTION__, __LINE__);
+
+
+
+#if 0
+
+            fprintf(stderr, "%s::%d::TODO: Move this to where the data is actually processed\n", __FUNCTION__, __LINE__);
+            //uint8_t* ptr = fmap_need_off_once(hdr->map, tableStream, 0x1000);
+            uint8_t* ptr = (uint8_t*) tableStream;
+            fprintf(stderr, "%s::%d::%p\n", __FUNCTION__, __LINE__, ptr);
+            size_t i;
+            fprintf(stderr, "%s::%d::", __FUNCTION__, __LINE__);
+                for (i = 0; i < 1024; i++){
+                    fprintf(stderr, "%02x ", ptr[ i ]);
+                }
+                    fprintf(stderr, "\n");
+
+
+            extract_images(&header, tableStream, hdr);
+
+#endif
+
+            fprintf(stderr, "%s::%d::TODO: HANDLE TABLE STREAM\n", __FUNCTION__, __LINE__);
+
+
+        } else if (0 == ole2_cmp_name(prop_block[idx].name, prop_block[idx].name_size, "0Table")) {
+
+fprintf(stderr, "%s::%d::Implement this\n", __FUNCTION__, __LINE__); exit(112);
+
+#if 0
+            tableStream = &(prop_block[idx]);
+            extract_images(&header, tableStream);
+            fprintf(stderr, "%s::%d::TODO: HANDLE TABLE STREAM\n", __FUNCTION__, __LINE__);
+#endif
         }
+
+#if 0
+        if (wordDocStream && tableStream) {
+            test_for_pictures(wordDocStream, tableStream, hdr);
+        }
+#endif
+
+
+//        { if (wordDocStream) { fprintf(stderr, "%s::%d::Calling test_for_pictures\n", __FUNCTION__, __LINE__); test_for_pictures(wordDocStream, tableStream, hdr); } }
+
+
+
+
+
+
 
         ole2_listmsg("printing ole2 property\n");
         if (dir)
@@ -1002,6 +1081,8 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
             continue;
         }
         ole2_listmsg("prev: %d next %d child %d\n", prop_block[idx].prev, prop_block[idx].next, prop_block[idx].child);
+
+        //{ if (wordDocStream) { fprintf(stderr, "%s::%d::Calling test_for_pictures\n", __FUNCTION__, __LINE__); test_for_pictures(wordDocStream, tableStream, hdr); } }
 
         ole2_listmsg("node type: %d\n", prop_block[idx].type);
         switch (prop_block[idx].type) {
@@ -1138,7 +1219,17 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
                 break;
         }
         ole2_listmsg("loop ended: %d %d\n", ole2_list_size(&node_list), ole2_list_is_empty(&node_list));
+//{ if (wordDocStream) { fprintf(stderr, "%s::%d::Calling test_for_pictures (end of loop)\n", __FUNCTION__, __LINE__); test_for_pictures(wordDocStream, tableStream, hdr); } }
     }
+
+#if 0
+    fprintf(stderr, "%s::%d::%p\n", __FUNCTION__, __LINE__, wordDocStream);
+    fprintf(stderr, "%s::%d::%p\n", __FUNCTION__, __LINE__, tableStream);
+
+    if (wordDocStream && tableStream){
+        test_for_pictures(wordDocStream, tableStream, hdr);
+    }
+#endif
 
     ole2_list_delete(&node_list);
     return CL_SUCCESS;

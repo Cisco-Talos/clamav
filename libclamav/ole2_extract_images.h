@@ -384,23 +384,79 @@ pHeader->lcbSttbfUssr = ole2_endian_convert_32(pHeader->lcbSttbfUssr);
 
 }
 
+/* https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-odraw/5dc1b9ed-818c-436f-8a4f-905a7ebb1ba9 */
+typedef struct __attribute__((packed)) {
+    uint16_t recVer_recInstance;
+    uint16_t recType;
+    uint32_t recLen;
+} OfficeArtRecordHeader;
+
+/* https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-odraw/5dc1b9ed-818c-436f-8a4f-905a7ebb1ba9  */
+static void copy_OfficeArtRecordHeader (OfficeArtRecordHeader * header, const uint8_t * const ptr) {
+    memcpy(header, ptr, sizeof(OfficeArtRecordHeader));
+
+    header->recType = ole2_endian_convert_16(header->recType);
+    header->recLen = ole2_endian_convert_32(header->recLen);
+
+    fprintf(stderr, "%s::%d::recVer_recInstance = %x\n", __FUNCTION__, __LINE__, header->recVer_recInstance);
+    fprintf(stderr, "%s::%d::recType = %x\n", __FUNCTION__, __LINE__, header->recType);
+    fprintf(stderr, "%s::%d::recLen = %x\n", __FUNCTION__, __LINE__, header->recLen);
+
+}
+
+
+
+
 static void parse_fibRgFcLcb97(const uint8_t * ptr){
-    fprintf(stderr, "%s::%d::UNIMPLEMENTED\n", __FUNCTION__, __LINE__); exit(11);
+    fprintf(stderr, "%s::%d::%p::UNIMPLEMENTED\n", __FUNCTION__, __LINE__, ptr); exit(11);
 }
 
 static void parse_fibRgFcLcb2000(const uint8_t * ptr){
-    fprintf(stderr, "%s::%d::UNIMPLEMENTED\n", __FUNCTION__, __LINE__); exit(11);
+    fprintf(stderr, "%s::%d::%p::UNIMPLEMENTED\n", __FUNCTION__, __LINE__, ptr); exit(11);
 }
 
-static void parse_fibRgFcLcb2002(const uint8_t * ptr){
+
+/*
+ * TODO: MOVE THIS TO A STRUCTURE THAT IS PASSED IN, BUT 
+ * CURRENTLY TRYING TO FIGURE OUT IF I AM FINDING ALL THE DATA CORRECTLY
+ */
+FibRgFcLcb97 header;
+
+
+
+
+static void parse_fibRgFcLcb2002(const uint8_t * base_ptr, size_t idx, const property_t * table_stream){
+    const uint8_t * ptr = &(base_ptr[idx]);
+
     fprintf(stderr, "%s::%d::Data is in the fcDggInfo, size is in the lcbDggInfo\n", __FUNCTION__, __LINE__);
     fprintf(stderr, "%s::%d::Structure is the FibRgFcLcb97\n", __FUNCTION__, __LINE__);
+    fprintf(stderr, "%s::%d::%p\n", __FUNCTION__, __LINE__, table_stream);
 
-    FibRgFcLcb97 header;
     copy_FibRgFcLcb97(&header, ptr);
 
-    fprintf(stderr, "%s::%d::Offset = %d (0x%x)\n", __FUNCTION__, __LINE__, header.fcDggInfo, header.fcDggInfo);
-    fprintf(stderr, "%s::%d::Size = %d (0x%x)\n", __FUNCTION__, __LINE__, header.lcbDggInfo, header.lcbDggInfo);
+    /*Offset is in the TableStream.*/
+    size_t offset = header.fcDggInfo;
+    size_t size = header.lcbDggInfo;
+    fprintf(stderr, "%s::%d::Offset = %lu (0x%lx)\n", __FUNCTION__, __LINE__, offset, offset);
+    fprintf(stderr, "%s::%d::Size = %lu (0x%lx)\n", __FUNCTION__, __LINE__, size, size);
+
+    /*Information about 
+     * https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-odraw/dd7133b6-ed10-4bcb-be29-67b0544f884f 
+     * at the beginning of 
+     * https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-doc/8699a984-3718-44be-adae-08b05827f8b3
+     * */
+    OfficeArtRecordHeader drawingGroupDataRecordHeader;
+    copy_OfficeArtRecordHeader (&drawingGroupDataRecordHeader, &(ptr[offset]));
+
+    fprintf(stderr, "%s::%d::Calling second time\n", __FUNCTION__, __LINE__);
+    copy_OfficeArtRecordHeader (&drawingGroupDataRecordHeader, &(base_ptr[offset]));
+
+#if 0
+    if (table_stream) {
+        fprintf(stderr, "%s::%d::Calling THIRD time\n", __FUNCTION__, __LINE__);
+        copy_OfficeArtRecordHeader (&drawingGroupDataRecordHeader, &(((const uint8_t*)   table_stream   )[offset]));
+    }
+#endif
 
 
     fprintf(stderr, "%s::%d::The offset and size information is for the OfficeArtContent header information\n", __FUNCTION__, __LINE__);
@@ -408,28 +464,28 @@ static void parse_fibRgFcLcb2002(const uint8_t * ptr){
     fprintf(stderr, "https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-doc/8699a984-3718-44be-adae-08b05827f8b3\n");
 
 
-    fprintf(stderr, "%s::%d::UNIMPLEMENTED\n", __FUNCTION__, __LINE__); exit(11);
+    fprintf(stderr, "%s::%d::UNIMPLEMENTED\n", __FUNCTION__, __LINE__); /* exit(11); */
 }
 
 static void parse_fibRgFcLcb2003(const uint8_t * ptr){
-    fprintf(stderr, "%s::%d::UNIMPLEMENTED\n", __FUNCTION__, __LINE__); exit(11);
+    fprintf(stderr, "%s::%d::%p::UNIMPLEMENTED\n", __FUNCTION__, __LINE__, ptr); exit(11);
 }
 
 static void parse_fibRgFcLcb2007(const uint8_t * ptr){
-    fprintf(stderr, "%s::%d::UNIMPLEMENTED\n", __FUNCTION__, __LINE__); exit(11);
+    fprintf(stderr, "%s::%d::%p::UNIMPLEMENTED\n", __FUNCTION__, __LINE__, ptr); exit(11);
 }
 
-static void test_for_pictures( const property_t *word_block, ole2_header_t *hdr) {
+static void test_for_pictures( const property_t *word_block, const property_t * table_stream, ole2_header_t *hdr) {
 
     const uint8_t *ptr = NULL;
     fib_base_t fib     = {0};
-    size_t i;
+    //size_t i;
     size_t to_read = 0x1000;
 
-    fprintf(stderr,"%s::%d\n", __FUNCTION__, __LINE__);
+    fprintf(stderr,"%s::%d::Entering\n", __FUNCTION__, __LINE__);
 
     uint32_t fib_offset = get_stream_data_offset(hdr, word_block, word_block->start_block);
-    fprintf(stderr,"%s::%d\n", __FUNCTION__, __LINE__);
+//    fprintf(stderr,"%s::%d::fib_offset = %x\n", __FUNCTION__, __LINE__, fib_offset);
 
     if ((size_t)(hdr->m_length) < (size_t)(fib_offset + sizeof(fib_base_t))) {
         cli_dbgmsg("ERROR: Invalid offset for File Information Block %d (0x%x)\n", fib_offset, fib_offset);
@@ -445,9 +501,9 @@ static void test_for_pictures( const property_t *word_block, ole2_header_t *hdr)
         cli_dbgmsg("ERROR: Invalid offset for File Information Block %d (0x%x)\n", fib_offset, fib_offset);
         return;
     }
-    fprintf(stderr,"%s::%d\n", __FUNCTION__, __LINE__);
+fprintf(stderr,"%s::%d\n", __FUNCTION__, __LINE__);
     copy_fib_base(&fib, ptr);
-    fprintf(stderr,"%s::%d\n", __FUNCTION__, __LINE__);
+fprintf(stderr,"%s::%d\n", __FUNCTION__, __LINE__);
 
 #define FIB_BASE_IDENTIFIER 0xa5ec
     fprintf(stderr,"%s::%d\n", __FUNCTION__, __LINE__);
@@ -456,6 +512,7 @@ static void test_for_pictures( const property_t *word_block, ole2_header_t *hdr)
         cli_dbgmsg("ERROR: Invalid identifier for File Information Block %d (0x%x)\n", fib.wIdent, fib.wIdent);
         return;
     }
+    fprintf(stderr,"%s::%d\n", __FUNCTION__, __LINE__);
 
     uint32_t idx = sizeof(fib);
     /* https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-doc/9aeaa2e7-4a45-468e-ab13-3f6193eb9394 */
@@ -465,6 +522,7 @@ static void test_for_pictures( const property_t *word_block, ole2_header_t *hdr)
         fprintf(stderr, "%s::%d::Invalid csw = 0x%x\n", __FUNCTION__, __LINE__, csw);
         return;
     }
+    fprintf(stderr,"%s::%d\n", __FUNCTION__, __LINE__);
 
     idx += 28; /* Size of the fibRgW.  Don't think I need anything from there. */
 
@@ -508,7 +566,9 @@ static void test_for_pictures( const property_t *word_block, ole2_header_t *hdr)
                 fprintf(stderr, "%s::%d::Invalid fib.nFib(0x%x) cbRgFcLcb(0x%x) combo\n", __FUNCTION__, __LINE__, fib.nFib, cbRgFcLcb);
                 return;
             }
-            parse_fibRgFcLcb2002(&(ptr[idx]));
+            fprintf(stderr, "%s::%d::idx = %u (0x%x)\n", __FUNCTION__, __LINE__, idx, idx);
+            //parse_fibRgFcLcb2002(&(ptr[idx]));
+            parse_fibRgFcLcb2002(ptr, idx, table_stream);
             break;
         case 0x010c:
             if (0x00a4 != cbRgFcLcb){
@@ -528,16 +588,69 @@ static void test_for_pictures( const property_t *word_block, ole2_header_t *hdr)
 #endif
 
 
+#if 0
+    {
+        int i;
     fprintf(stderr, "%s::%d::", __FUNCTION__, __LINE__);
     for (i = idx; i < to_read; i++){
         fprintf(stderr, "%02x ", ptr[i]);
     }
     fprintf(stderr, "\n");
+}
+#endif
 
 
     fprintf(stderr,"%s::%d::GOT TO END!!!\n", __FUNCTION__, __LINE__);
 
 }
+
+
+
+
+static void extract_images( FibRgFcLcb97 * header, const property_t * table_stream,  ole2_header_t *hdr) {
+
+    int i;
+    const uint8_t * table_stream_data = (const uint8_t*) table_stream;
+    size_t offset = header->fcDggInfo;
+
+    fprintf(stderr, "%s::%d::%p::%lu::(0x%lx)Entering\n", __FUNCTION__, __LINE__, hdr, offset, offset);
+#if 0
+    const uint8_t * ptr = fmap_need_off_once(hdr->map, &(table_stream_data[offset]), header->lcbDggInfo );
+#else
+    const uint8_t * ptr = &(table_stream_data[offset]);
+#endif
+    fprintf(stderr, "%s::%d::%p\n", __FUNCTION__, __LINE__, ptr);
+
+    OfficeArtRecordHeader officeArtDggContainer;
+    copy_OfficeArtRecordHeader (&officeArtDggContainer, ptr);
+    /*None of the values make sense.*/
+
+    fprintf(stderr, "%s::%d::", __FUNCTION__, __LINE__);
+    for (i = 0; i < 8; i++){
+        fprintf(stderr, "%02x ", table_stream_data[offset + i]);
+    }
+    fprintf(stderr, "\n");
+
+    offset += 8; //size of OfficeArtRecordHeader
+
+    
+
+
+
+
+
+
+    fprintf(stderr, "%s::%d::Leaving\n", __FUNCTION__, __LINE__);
+}
+
+
+
+
+
+
+
+
+
 
 
 #endif /* OLE2_EXTRACT_IMAGES_H_ */
