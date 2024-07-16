@@ -639,6 +639,23 @@ static void extract_images( FibRgFcLcb97 * header, const property_t * table_stre
 }
 #else
 
+typedef struct __attribute__((packed)) {
+    uint32_t spidMax;
+    uint32_t cidcl;
+    uint32_t cspSaved;
+    uint32_t cdgSaved;
+} OfficeArtFDGG;
+
+static void copy_OfficeArtFDGG(OfficeArtFDGG * dst, const uint8_t * const ptr){
+    size_t idx = 0;
+    memcpy(dst, ptr, sizeof(OfficeArtFDGG));
+
+    dst->spidMax = ole2_endian_convert_32(dst->spidMax);
+    dst->cidcl = ole2_endian_convert_32(dst->cidcl);
+    dst->cspSaved = ole2_endian_convert_32(dst->cspSaved );
+    dst->cdgSaved = ole2_endian_convert_32(dst->cdgSaved );
+}
+
 static void extract_images_2( FibRgFcLcb97 * header, const uint8_t * ptr) {
     fprintf(stderr, "%s::%d::%p::%p\n", __FUNCTION__, __LINE__, header, ptr);
     size_t offset = header->fcDggInfo;
@@ -652,6 +669,7 @@ static void extract_images_2( FibRgFcLcb97 * header, const uint8_t * ptr) {
         fprintf(stderr, "\n");
 #endif
 
+        fprintf(stderr, "%s::%d::offset = %lx\n", __FUNCTION__, __LINE__, offset);
 
     /*
      * Start of OfficeArtContent
@@ -659,7 +677,7 @@ static void extract_images_2( FibRgFcLcb97 * header, const uint8_t * ptr) {
      * First record is an OfficeArtDggContainer
      * https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-odraw/dd7133b6-ed10-4bcb-be29-67b0544f884f
      */
-    OfficeArtRecordHeader oadc_recordHeader;
+    OfficeArtRecordHeader oadc_recordHeader; //OfficeArtDggContainer
     copy_OfficeArtRecordHeader (&oadc_recordHeader, &(ptr[offset]));
 
     if (0xf != oadc_recordHeader.recVer_recInstance){
@@ -675,11 +693,23 @@ static void extract_images_2( FibRgFcLcb97 * header, const uint8_t * ptr) {
      * We shouldn't have to care about that, since it's for drawings and not actual file images.
      * Going to just skip this record for now.
      * */
-    OfficeArtRecordHeader hdr;
+    OfficeArtRecordHeader hdr; //OfficeArtFDGGBlock
     copy_OfficeArtRecordHeader(&hdr,  &(ptr[offset]));
-    offset += hdr.recLen;
+    //offset += hdr.recLen; not right, doesn't *always* seem to be a size.
 
     offset += sizeof(OfficeArtRecordHeader);
+
+    OfficeArtFDGG fdgg;
+    copy_OfficeArtFDGG(&fdgg, &(ptr[offset]));
+    offset += sizeof(OfficeArtFDGG);
+
+    fprintf(stderr, "%s::%d::fdgg.cidcl = %d\n", __FUNCTION__, __LINE__, fdgg.cidcl);
+/* OfficeArtIDCL is not used in parsing images, only drawings.  If details are needed, they are
+ * https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-odraw/2335d2f8-109b-4cd6-ac8d-40b1237283f3
+ * */
+#define OFFICE_ART_IDCL_LEN 8 
+    offset += (OFFICE_ART_IDCL_LEN  * (fdgg.cidcl-1));
+
     fprintf(stderr, "\n%s::%d::Before last one\n", __FUNCTION__, __LINE__);
 
     /*
@@ -698,6 +728,7 @@ static void extract_images_2( FibRgFcLcb97 * header, const uint8_t * ptr) {
     /*I am thinking I need to increment offset by 2 here, but I can't find anything in the docs to say why.
      * That's just what all the files appear to be expecting.*/
 
+        fprintf(stderr, "%s::%d::offset = %lx\n", __FUNCTION__, __LINE__, offset);
     fprintf(stderr, "%s::%d::numRecords = 0x%x\n", __FUNCTION__, __LINE__, numRecords);
 
     fprintf(stderr, "%s::%d::", __FUNCTION__, __LINE__);
