@@ -521,6 +521,11 @@ char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *
         if (!(newobj))
             return NULL;
 
+        if (!CLI_ISCONTAINED(pdf->map, pdf->size, newobj->start, newobj->size)) {
+            cli_dbgmsg("pdf_parse_string: object not contained in PDF\n");
+            return NULL;
+        }
+
         if (newobj == obj)
             return NULL;
 
