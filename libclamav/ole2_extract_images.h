@@ -802,7 +802,7 @@ static void processOfficeArtFBSE(OfficeArtRecordHeader * imageHeader, const uint
 
     fprintf(stderr, "%s::%d::Since the recLen is 36 (for this file), there is no name data or embedded blip record, so I need to figure out how this delay stream works???\n", __FUNCTION__, __LINE__);
 
-    if (imageHeader->recLen > (offset - sizeof(OfficeArtRecordHeader))) {
+    if (imageHeader->recLen == (sizeof(OfficeArtFBSEKnown) + fbse.cbName + fbse.size)) {
         /* The BLIP is embedded in this record*/ 
         processOfficeArtBlip(&(ptr[offset]));
     } else {
