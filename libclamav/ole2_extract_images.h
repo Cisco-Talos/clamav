@@ -699,28 +699,80 @@ static void copy_OfficeArtFBSEKnown (OfficeArtFBSEKnown * dst, const uint8_t * c
 }
 
 static void saveImageFile(const uint8_t * const ptr, size_t size){
-    fprintf(stderr, "%s::%d::Actually extracting the file, FINALLY!!!\n", __FUNCTION__, __LINE__);
+    fprintf(stderr, "%s::%d::Actually extracting the file, FINALLY %p %lu!!!\n", __FUNCTION__, __LINE__, ptr, size);
 }
 
 
-/*https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-odraw/2c09e2c4-0513-419f-b5f9-4feb0a71ef32*/
-static void processOfficeArtBlipEMF(OfficeArtRecordHeader * rh, const uint8_t * const ptr) {
-    size_t offset = 16; /* Size of rgbUid1*/
+/*All these structures (except JPEG) are exactly the same, with the exception of the recInst values for 1 or 2 UIDs, 
+ * so this function accepts them as parameters.
+ * 
+ * https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-odraw/2c09e2c4-0513-419f-b5f9-4feb0a71ef32
+ * https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-odraw/ee892f04-f001-4531-a34b-67aab3426dcb
+ * https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-odraw/4b6c5fc5-98cc-445a-8ec7-12b2f2c05b9f
+ * https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-odraw/7af7d17e-6ae1-4c43-a3d6-691e6b3b4a45 
+ *
+ */
+static void processOfficeArtBlipGeneric(OfficeArtRecordHeader * rh, const uint8_t * const ptr,
+        uint16_t riSingleUID, uint16_t riDoubleUID, uint32_t bytesAfterUIDs) {
+    size_t offset = 16; /* Size of rh*/
 
     uint16_t recInst = getRecInst(rh);
 
-    if (0x3d5 == recInst) {
+    if (riDoubleUID == recInst) {
         offset += 16;
-    } else if (0x3d4 != recInst) {
+    } else if (riSingleUID != recInst) {
         fprintf(stderr, "%s::%d::Invaild recInst\n", __FUNCTION__, __LINE__);
         exit(121); //normally just return, will fix
     }
-    offset += 34; /*metafile header*/
+    offset += bytesAfterUIDs; /*metafile header*/
 
     saveImageFile(&(ptr[offset]), rh->recLen - offset);
 }
 
+/* https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-odraw/2c09e2c4-0513-419f-b5f9-4feb0a71ef32 */
+static void processOfficeArtBlipEMF(OfficeArtRecordHeader * rh, const uint8_t * const ptr) {
+    processOfficeArtBlipGeneric(rh, ptr, 0x3d4, 0x3d5, 34) ;
+}
 
+/* https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-odraw/ee892f04-f001-4531-a34b-67aab3426dcb */
+static void processOfficeArtBlipWMF(OfficeArtRecordHeader * rh, const uint8_t * const ptr){
+    processOfficeArtBlipGeneric(rh, ptr, 0x216, 0x217, 34) ;
+}
+
+/* https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-odraw/4b6c5fc5-98cc-445a-8ec7-12b2f2c05b9f */
+static void processOfficeArtBlipPICT(OfficeArtRecordHeader * rh, const uint8_t * const ptr){
+    processOfficeArtBlipGeneric(rh, ptr, 0x542, 0x543, 34) ;
+}
+
+/*https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-odraw/704b3ec5-3e3f-425f-b2f7-a090cc68e624*/
+static void processOfficeArtBlipJPEG(OfficeArtRecordHeader * rh, const uint8_t * const ptr){
+    size_t offset = 16; /* Size of rh*/
+    uint16_t recInst = getRecInst(rh);
+
+    if ((0x46b == recInst) || (0x6e3 != recInst)){
+        offset += 16;
+    } else if ((0x46a != recInst) && (0x6e2 != recInst)) {
+        fprintf(stderr, "%s::%d::Invaild recInst\n", __FUNCTION__, __LINE__);
+        exit(121); //normally just return, will fix
+    }
+    offset += 1; /*metafile header*/
+
+    saveImageFile(&(ptr[offset]), rh->recLen - offset);
+}
+
+/* https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-odraw/7af7d17e-6ae1-4c43-a3d6-691e6b3b4a45 */
+static void processOfficeArtBlipPNG(OfficeArtRecordHeader * rh, const uint8_t * const ptr){
+    processOfficeArtBlipGeneric(rh, ptr, 0x6e0, 0x6e1, 1) ;
+}
+
+/* https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-odraw/1393bf5e-6fa0-4665-b3ec-68199b555656 */
+static void processOfficeArtBlipDIB(OfficeArtRecordHeader * rh, const uint8_t * const ptr){
+    processOfficeArtBlipGeneric(rh, ptr, 0x7a8, 0x7a9, 1) ;
+}
+
+static void processOfficeArtBlipTIFF(OfficeArtRecordHeader * rh, const uint8_t * const ptr){
+    processOfficeArtBlipGeneric(rh, ptr, 0x6e4, 0x6e5, 1) ;
+}
 
 static void processOfficeArtBlip(const uint8_t * const ptr){
 
@@ -735,35 +787,44 @@ static void processOfficeArtBlip(const uint8_t * const ptr){
         exit(110);
     }
 
+#define RECTYPE_OFFICE_ART_BLIP_EMF 0xf01a
+#define RECTYPE_OFFICE_ART_BLIP_WMF 0xf01b
+#define RECTYPE_OFFICE_ART_BLIP_PICT 0xf01c
+#define RECTYPE_OFFICE_ART_BLIP_JPEG 0xf01d
+#define RECTYPE_OFFICE_ART_BLIP_PNG 0xf01e
+#define RECTYPE_OFFICE_ART_BLIP_DIB 0xf01f
+#define RECTYPE_OFFICE_ART_BLIP_TIFF 0xf029
+#define RECTYPE_OFFICE_ART_BLIP_JPEG2 0xf02a
+
     switch (rh.recType) {
-        case 0xf01a:
+        case RECTYPE_OFFICE_ART_BLIP_EMF:
             processOfficeArtBlipEMF(&rh, &(ptr[offset]));
+            break;
+        case RECTYPE_OFFICE_ART_BLIP_WMF :
+            processOfficeArtBlipWMF(&rh, &(ptr[offset]));
+            break;
+        case RECTYPE_OFFICE_ART_BLIP_PICT:
+            processOfficeArtBlipPICT(&rh, &(ptr[offset]));
+            break;
+        case RECTYPE_OFFICE_ART_BLIP_JPEG:
+            /* fallthrough */
+        case RECTYPE_OFFICE_ART_BLIP_JPEG2:
+            processOfficeArtBlipJPEG(&rh, &(ptr[offset]));
+            break;
+        case RECTYPE_OFFICE_ART_BLIP_PNG:
+            processOfficeArtBlipPNG(&rh, &(ptr[offset]));
+            break;
+        case RECTYPE_OFFICE_ART_BLIP_DIB:
+            processOfficeArtBlipDIB(&rh, &(ptr[offset]));
+            break;
+        case RECTYPE_OFFICE_ART_BLIP_TIFF:
+            processOfficeArtBlipTIFF(&rh, &(ptr[offset]));
             break;
         default:
             fprintf(stderr, "%s::%d::Invalid 0x%x::", __FUNCTION__, __LINE__, rh.recType);
-
-            {
-                size_t andy;
-                for (andy = 0; andy < 100; andy++){
-                fprintf(stderr, "%02x ", ptr[offset + andy]);
-
-                }
-                fprintf(stderr, "\n");
-            }
-
-
-
-
             exit(11);
             break;
     }
-
-    //get them from
-    //https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-odraw/c67b883b-8136-4e91-a1a3-2981d16e934f
-    fprintf(stderr, "%s::%d::Make sure you get them all, dumbass\n", __FUNCTION__, __LINE__);
-    exit(12);
-
-
 }
 
 
