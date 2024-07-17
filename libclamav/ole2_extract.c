@@ -1054,6 +1054,24 @@ fprintf(stderr, "%s::%d::Implement this\n", __FUNCTION__, __LINE__); exit(112);
             extract_images(&header, tableStream);
             fprintf(stderr, "%s::%d::TODO: HANDLE TABLE STREAM\n", __FUNCTION__, __LINE__);
 #endif
+        } else {
+
+            property_t * prop = &(prop_block[idx]);
+            size_t off = get_stream_data_offset(hdr, prop, prop->start_block);
+            size_t size = 4096 * 2;
+            size = 4096;
+            const uint8_t * const ptr = fmap_need_off_once(hdr->map, off, size);
+            size_t i;
+            if (ptr) {
+            fprintf(stderr, "%s::%d::", __FUNCTION__, __LINE__);
+            for (i = 0; i < size ; i++) {
+                //fprintf(stderr, "%02x ", ptr[i + 3623]);
+                fprintf(stderr, "%02x ", ptr[i]);
+            }
+            fprintf(stderr, "\n");
+            }
+
+
         }
 
 #if 0

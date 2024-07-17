@@ -792,9 +792,24 @@ static void processOfficeArtFBSE(OfficeArtRecordHeader * imageHeader, const uint
 
     fprintf(stderr, "%s::%d::imageHeader->recLen = %d\n", __FUNCTION__, __LINE__, imageHeader->recLen);
     fprintf(stderr, "%s::%d::blip size = %d\n", __FUNCTION__, __LINE__, fbse.size);
-    //fprintf(stderr, "%s::%d::delay = %d\n", __FUNCTION__, __LINE__, fbse.foDelay);
+    fprintf(stderr, "%s::%d::delay = %d\n", __FUNCTION__, __LINE__, fbse.foDelay);
+    fprintf(stderr, "%s::%d::recInst = %d (0x%x)\n", __FUNCTION__, __LINE__, recInst, recInst);
+
+    fprintf(stderr, "%s::%d::fbse.btWin32 = %d (0x%x)\n", __FUNCTION__, __LINE__, fbse.btWin32, fbse.btWin32);
+    fprintf(stderr, "%s::%d::fbse.btMacOS = %d (0x%x)\n", __FUNCTION__, __LINE__, fbse.btMacOS, fbse.btMacOS);
 
     offset += fbse.cbName;
+
+    fprintf(stderr, "%s::%d::Since the recLen is 36 (for this file), there is no name data or embedded blip record, so I need to figure out how this delay stream works???\n", __FUNCTION__, __LINE__);
+
+    if (imageHeader->recLen > (offset - sizeof(OfficeArtRecordHeader))) {
+        /* The BLIP is embedded in this record*/ 
+        processOfficeArtBlip(&(ptr[offset]));
+    } else {
+        fprintf(stderr, "%s::%d::Still trying to figure out where teh BLIP is!!!\n", __FUNCTION__, __LINE__);
+        fprintf(stderr, "%s::%d::Found the BLIP in the 'DocumentSummaryInformation' stream (searching), but can't find structures that point towards it\n", __FUNCTION__, __LINE__);
+    }
+
 
 
 #if 0
@@ -804,24 +819,33 @@ static void processOfficeArtFBSE(OfficeArtRecordHeader * imageHeader, const uint
 #else
 
 
+#if 1
     {
         size_t andy;
         fprintf(stderr, "%s::%d::", __FUNCTION__, __LINE__);
         for (andy = 0; andy < 1024; andy++) {
-            if (offset == andy) {
-        fprintf(stderr, "\n");
-            }
-            fprintf(stderr, "%02x ", ptr[andy]);
+            fprintf(stderr, "%02x ", ptr[offset + andy]);
 
         }
         fprintf(stderr, "\n");
+
+        fprintf(stderr, "%s::%d::", __FUNCTION__, __LINE__);
+        for (andy = 0; andy < 1024; andy++) {
+            char c = ptr[offset + andy];
+            if (c) fprintf(stderr, "%c ", c);
+            else fprintf(stderr, " ");
+
+        }
+        fprintf(stderr, "\n");
+
         fprintf(stderr, "%s::%d::Figure out what is going on here, since none of the record types match the documentation\n", __FUNCTION__, __LINE__);
         exit(1);
     }
+#endif
 
 
 
-    processOfficeArtBlip(&(ptr[offset]));
+//    processOfficeArtBlip(&(ptr[offset]));
 #endif
 
 }
