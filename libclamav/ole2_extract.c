@@ -995,7 +995,7 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
                 fprintf(stderr, "%02x ", ptr[i]);
             }
 
-            DATA  IS HERE;
+            DATA  IS HERE at delay.  Some other bytes there, but really close, so need to *hopefully* figure out how to parse whatever header there is and verify that this is actually my data;
 
             fprintf(stderr, "\n");
 
