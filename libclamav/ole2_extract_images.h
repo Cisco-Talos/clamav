@@ -405,7 +405,13 @@ static void copy_OfficeArtRecordHeader (OfficeArtRecordHeader * header, const ui
 
 }
 
+static uint16_t getRecInst(OfficeArtRecordHeader * header) {
+    return ole2_endian_convert_16((header->recVer_recInstance & 0xfff0) >> 4);
+}
 
+static uint8_t getRecVer(OfficeArtRecordHeader * header) {
+    return header->recVer_recInstance & 0xf;
+}
 
 
 static void parse_fibRgFcLcb97(const uint8_t * ptr){
@@ -476,7 +482,9 @@ static void parse_fibRgFcLcb2007(const uint8_t * ptr){
     fprintf(stderr, "%s::%d::%p::UNIMPLEMENTED\n", __FUNCTION__, __LINE__, ptr); exit(11);
 }
 
+ole2_header_t * pGLOBAL_HEADER;
 static void test_for_pictures( const property_t *word_block, const property_t * table_stream, ole2_header_t *hdr) {
+    pGLOBAL_HEADER = hdr;
 
     const uint8_t *ptr = NULL;
     fib_base_t fib     = {0};
@@ -647,7 +655,7 @@ typedef struct __attribute__((packed)) {
 } OfficeArtFDGG;
 
 static void copy_OfficeArtFDGG(OfficeArtFDGG * dst, const uint8_t * const ptr){
-    size_t idx = 0;
+    //size_t idx = 0;
     memcpy(dst, ptr, sizeof(OfficeArtFDGG));
 
     dst->spidMax = ole2_endian_convert_32(dst->spidMax);
@@ -656,10 +664,172 @@ static void copy_OfficeArtFDGG(OfficeArtFDGG * dst, const uint8_t * const ptr){
     dst->cdgSaved = ole2_endian_convert_32(dst->cdgSaved );
 }
 
+
+/*This does NOT include the rh (OfficeArtRecordHeader) 
+ *
+ * https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-odraw/2f2d7f5e-d5c4-4cb7-b230-59b3fe8f10d6
+ * */
+typedef struct __attribute__((packed)) {
+    uint8_t btWin32;
+
+    uint8_t btMacOS;
+
+    uint8_t rgbUid[16];
+    uint16_t tag;
+    uint32_t size;
+    uint32_t cRef;
+    uint32_t foDelay;
+
+    uint8_t unused1;
+    uint8_t cbName;
+    uint8_t unused2;
+    uint8_t unused3;
+
+    //followed by namedata
+    //followed by blip
+} OfficeArtFBSEKnown;
+
+static void copy_OfficeArtFBSEKnown (OfficeArtFBSEKnown * dst, const uint8_t * const ptr) {
+    memcpy(dst, ptr, sizeof(OfficeArtFBSEKnown));
+
+    dst->tag = ole2_endian_convert_16(dst->tag);
+    dst->size = ole2_endian_convert_32(dst->size);
+    dst->cRef = ole2_endian_convert_32(dst->cRef);
+    dst->foDelay = ole2_endian_convert_32(dst->foDelay);
+}
+
+static void saveImageFile(const uint8_t * const ptr, size_t size){
+    fprintf(stderr, "%s::%d::Actually extracting the file, FINALLY!!!\n", __FUNCTION__, __LINE__);
+}
+
+
+/*https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-odraw/2c09e2c4-0513-419f-b5f9-4feb0a71ef32*/
+static void processOfficeArtBlipEMF(OfficeArtRecordHeader * rh, const uint8_t * const ptr) {
+    size_t offset = 16; /* Size of rgbUid1*/
+
+    uint16_t recInst = getRecInst(rh);
+
+    if (0x3d5 == recInst) {
+        offset += 16;
+    } else if (0x3d4 != recInst) {
+        fprintf(stderr, "%s::%d::Invaild recInst\n", __FUNCTION__, __LINE__);
+        exit(121); //normally just return, will fix
+    }
+    offset += 34; /*metafile header*/
+
+    saveImageFile(&(ptr[offset]), rh->recLen - offset);
+}
+
+
+
+static void processOfficeArtBlip(const uint8_t * const ptr){
+
+    size_t offset = 0;
+    OfficeArtRecordHeader rh;
+
+    copy_OfficeArtRecordHeader (&rh, ptr);
+    offset += sizeof(OfficeArtRecordHeader );
+    uint8_t recVer = getRecVer(&rh);
+    if (0 != recVer) {
+        fprintf(stderr, "%s::%d::Invalid recver\n", __FUNCTION__, __LINE__);
+        exit(110);
+    }
+
+    switch (rh.recType) {
+        case 0xf01a:
+            processOfficeArtBlipEMF(&rh, &(ptr[offset]));
+            break;
+        default:
+            fprintf(stderr, "%s::%d::Invalid 0x%x::", __FUNCTION__, __LINE__, rh.recType);
+
+            {
+                size_t andy;
+                for (andy = 0; andy < 100; andy++){
+                fprintf(stderr, "%02x ", ptr[offset + andy]);
+
+                }
+                fprintf(stderr, "\n");
+            }
+
+
+
+
+            exit(11);
+            break;
+    }
+
+    //get them from
+    //https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-odraw/c67b883b-8136-4e91-a1a3-2981d16e934f
+    fprintf(stderr, "%s::%d::Make sure you get them all, dumbass\n", __FUNCTION__, __LINE__);
+    exit(12);
+
+
+}
+
+
+/*
+ * https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-odraw/2f2d7f5e-d5c4-4cb7-b230-59b3fe8f10d6
+ */
+static void processOfficeArtFBSE(OfficeArtRecordHeader * imageHeader, const uint8_t * const ptr) {
+
+    size_t i;
+    OfficeArtFBSEKnown fbse;
+
+    uint32_t offset = sizeof(OfficeArtRecordHeader);
+    uint16_t recInst = getRecInst(imageHeader);
+
+    copy_OfficeArtFBSEKnown (&fbse, &(ptr[offset]));
+    offset += sizeof(OfficeArtFBSEKnown );
+
+    if ((recInst != fbse.btWin32) && (recInst != fbse.btMacOS)) {
+        fprintf(stderr, "%s::%d::Invalid record, exiting (fix later)\n", __FUNCTION__, __LINE__);
+        exit(1);
+    }
+    if (imageHeader->recType != 0xf007) {
+        fprintf(stderr, "%s::%d::Invalid record, exiting (fix later)\n", __FUNCTION__, __LINE__);
+        exit(1);
+    }
+
+    fprintf(stderr, "%s::%d::imageHeader->recLen = %d\n", __FUNCTION__, __LINE__, imageHeader->recLen);
+    fprintf(stderr, "%s::%d::blip size = %d\n", __FUNCTION__, __LINE__, fbse.size);
+    //fprintf(stderr, "%s::%d::delay = %d\n", __FUNCTION__, __LINE__, fbse.foDelay);
+
+    offset += fbse.cbName;
+
+
+#if 0
+    offset += fbse.foDelay;
+    uint8_t * blah = fmap_need_off_once(pGLOBAL_HEADER->map, offset, fbse.size);
+    processOfficeArtBlip(blah);
+#else
+
+
+    {
+        size_t andy;
+        fprintf(stderr, "%s::%d::", __FUNCTION__, __LINE__);
+        for (andy = 0; andy < 1024; andy++) {
+            if (offset == andy) {
+        fprintf(stderr, "\n");
+            }
+            fprintf(stderr, "%02x ", ptr[andy]);
+
+        }
+        fprintf(stderr, "\n");
+        fprintf(stderr, "%s::%d::Figure out what is going on here, since none of the record types match the documentation\n", __FUNCTION__, __LINE__);
+        exit(1);
+    }
+
+
+
+    processOfficeArtBlip(&(ptr[offset]));
+#endif
+
+}
+
 static void extract_images_2( FibRgFcLcb97 * header, const uint8_t * ptr) {
     fprintf(stderr, "%s::%d::%p::%p\n", __FUNCTION__, __LINE__, header, ptr);
     size_t offset = header->fcDggInfo;
-    int i;
+    uint32_t i;
 
 #if 0
     fprintf(stderr, "%s::%d::", __FUNCTION__, __LINE__);
@@ -680,6 +850,7 @@ static void extract_images_2( FibRgFcLcb97 * header, const uint8_t * ptr) {
     OfficeArtRecordHeader oadc_recordHeader; //OfficeArtDggContainer
     copy_OfficeArtRecordHeader (&oadc_recordHeader, &(ptr[offset]));
 
+    /*TODO: validate recVer and recInst separately*/
     if (0xf != oadc_recordHeader.recVer_recInstance){
         fprintf(stderr, "%s::%d::Error\n", __FUNCTION__, __LINE__);
         exit(11);
@@ -720,20 +891,94 @@ static void extract_images_2( FibRgFcLcb97 * header, const uint8_t * ptr) {
     OfficeArtRecordHeader blipStoreRecordHeader;
     copy_OfficeArtRecordHeader(&blipStoreRecordHeader,  &(ptr[offset]));
 
+    fprintf(stderr, "%s::%d::RecVer = %x\n", __FUNCTION__, __LINE__, getRecVer(&blipStoreRecordHeader));
+    if (0xf != getRecVer(&blipStoreRecordHeader)) {
+        fprintf(stderr, "%s::%d::Not a correct value, exiting (during debugging, normally just return)\n", __FUNCTION__, __LINE__);
+        exit(11);
+    }
+
+    if (0xf001 != blipStoreRecordHeader.recType){
+        fprintf(stderr, "%s::%d::Not a correct value, exiting (during debugging, normally just return)\n", __FUNCTION__, __LINE__);
+        exit(11);
+    }
+
+    uint32_t imageCnt = getRecInst (&blipStoreRecordHeader);
+    fprintf(stderr, "%s::%d::imageCnt = %d\n", __FUNCTION__, __LINE__, imageCnt);
+
+    offset += sizeof(OfficeArtRecordHeader);
+
+#if 0
+    /*I *hate* doing this, but I have been unable to figuer out why I need to increment by 2 bytes here.  There is
+     * nothing in the documentation that I have found to account for these bytes, so I am going to increment them
+     * here, and hope it makes sense at some point???
+     *
+     * https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-odraw/561cb6d4-d38b-4666-b2b4-10abc1dce44c
+     *
+     * */
+    offset += 2;
+#endif
+
+
+
+
+
+
+
+
+
+
+
+    /*Rec types taken from 
+     * https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-odraw/a7d7d967-6bff-489c-a267-3ec30448344a
+     * https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-odraw/2f2d7f5e-d5c4-4cb7-b230-59b3fe8f10d6
+     * https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-odraw/c67b883b-8136-4e91-a1a3-2981d16e934f
+     *
+     * */
+#define OFFICE_ART_FBSE_REC_TYPE 0x2
+    for (i = 0; i < imageCnt; i++) {
+        OfficeArtRecordHeader imageHeader;
+        copy_OfficeArtRecordHeader(&imageHeader,  &(ptr[offset]));
+        uint8_t recVer = getRecVer(&imageHeader);
+        fprintf(stderr, "%s::%d::recType = %x\n", __FUNCTION__, __LINE__, recVer);
+
+        if (OFFICE_ART_FBSE_REC_TYPE == recVer){
+            /* OfficeArtFBSE 
+             * https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-odraw/2f2d7f5e-d5c4-4cb7-b230-59b3fe8f10d6
+             */
+            processOfficeArtFBSE(&imageHeader, &(ptr[offset]));
+        } else {
+            processOfficeArtBlip(&(ptr[offset]));
+        }
+    }
+
+
+
+
+
+
+#if 0
+
+
+
+
+
+
+
 //fprintf(stderr, "%s::%d::Process blip store here\n", __FUNCTION__, __LINE__);
     uint16_t numRecords = (blipStoreRecordHeader.recVer_recInstance & 0xfff0) >> 4;
 
     offset += sizeof(OfficeArtRecordHeader);
 
+
     /*I am thinking I need to increment offset by 2 here, but I can't find anything in the docs to say why.
      * That's just what all the files appear to be expecting.*/
 
-        fprintf(stderr, "%s::%d::offset = %lx\n", __FUNCTION__, __LINE__, offset);
+    fprintf(stderr, "%s::%d::offset = %lx\n", __FUNCTION__, __LINE__, offset);
     fprintf(stderr, "%s::%d::numRecords = 0x%x\n", __FUNCTION__, __LINE__, numRecords);
+#endif
 
     fprintf(stderr, "%s::%d::", __FUNCTION__, __LINE__);
     for (i = 0; i < blipStoreRecordHeader.recLen; i++){
-    //for (i = 0; i < 512; i++){
         fprintf(stderr, "%02x ", ptr[offset + i]);
     }
     fprintf(stderr, "\n");
