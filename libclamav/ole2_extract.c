@@ -982,6 +982,27 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
             fprintf(stderr, "%s::%d::%p::setting wordDocStream\n", __FUNCTION__, __LINE__, wordDocStream);
 
 
+            {
+
+                property_t * prop = &(prop_block[idx]);
+                size_t off = get_stream_data_offset(hdr, wordDocStream, wordDocStream->start_block);
+                size_t size = 4096 * 2;
+                size = 4096;
+                const uint8_t * const ptr = fmap_need_off_once(hdr->map, off, size);
+                size_t i;
+            fprintf(stderr, "%s::%d::WORDDOCUMENT::", __FUNCTION__, __LINE__);
+            for (i = 0; i < size; i++) {
+                fprintf(stderr, "%02x ", ptr[i]);
+            }
+
+            DATA  IS HERE;
+
+            fprintf(stderr, "\n");
+
+            }
+
+
+
 
 #if 0
             {
