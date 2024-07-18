@@ -700,6 +700,25 @@ static void copy_OfficeArtFBSEKnown (OfficeArtFBSEKnown * dst, const uint8_t * c
 
 static void saveImageFile(const uint8_t * const ptr, size_t size){
     fprintf(stderr, "%s::%d::Actually extracting the file, FINALLY %p %lu!!!\n", __FUNCTION__, __LINE__, ptr, size);
+
+    FILE * fp = fopen("andy_out.jpg", "wb");
+    size_t bytesWritten = 0;
+    while (bytesWritten < size) {
+        int ret = fwrite(&(ptr[bytesWritten]), 1, size - bytesWritten, fp);
+        if (ret > 0) {
+            bytesWritten += ret;
+        } else {
+            break;
+        }
+    }
+
+    if (bytesWritten == size) {
+        fprintf(stderr, "%s::%d::Success\n", __FUNCTION__, __LINE__);
+    } else {
+        fprintf(stderr, "%s::%d::NOT Success\n", __FUNCTION__, __LINE__);
+    }
+
+    exit(11);
 }
 
 
@@ -748,14 +767,16 @@ static void processOfficeArtBlipPICT(OfficeArtRecordHeader * rh, const uint8_t *
 static void processOfficeArtBlipJPEG(OfficeArtRecordHeader * rh, const uint8_t * const ptr){
     size_t offset = 16; /* Size of rh*/
     uint16_t recInst = getRecInst(rh);
+    fprintf(stderr, "%s::%d::recInst = 0x%x\n", __FUNCTION__, __LINE__, recInst);
 
-    if ((0x46b == recInst) || (0x6e3 != recInst)){
+    if ((0x46b == recInst) || (0x6e3 == recInst)){
         offset += 16;
     } else if ((0x46a != recInst) && (0x6e2 != recInst)) {
         fprintf(stderr, "%s::%d::Invaild recInst\n", __FUNCTION__, __LINE__);
         exit(121); //normally just return, will fix
     }
     offset += 1; /*metafile header*/
+    fprintf(stderr, "%s::%d::offset = %ld\n", __FUNCTION__, __LINE__, offset);
 
     saveImageFile(&(ptr[offset]), rh->recLen - offset);
 }
