@@ -549,27 +549,33 @@ static bool test_for_pictures( const property_t *word_block, ole2_header_t *hdr,
 #define FIB_VERSION_FIBRGFCLCB2003 0x010c
 #define FIB_VERSION_FIBRGFCLCB2007 0x0112
 
+#define FIB_64BITCNT_FIBRGFCLCB97 0x005d
+#define FIB_64BITCNT_FIBRGFCLCB2000 0x006c
+#define FIB_64BITCNT_FIBRGFCLCB2002 0x0088
+#define FIB_64BITCNT_FIBRGFCLCB2003 0x00a4
+#define FIB_64BITCNT_FIBRGFCLCB2007 0x00b7
+
 
     switch (fib.nFib){
         default:
             fprintf(stderr, "%s::%d::Invalid fib.nFib\n", __FUNCTION__, __LINE__);
             goto done;
         case FIB_VERSION_FIBRGFCLCB97:
-            if (0x005d != cbRgFcLcb){
+            if (FIB_64BITCNT_FIBRGFCLCB97 != cbRgFcLcb){
                 fprintf(stderr, "%s::%d::Invalid fib.nFib(0x%x) cbRgFcLcb(0x%x) combo\n", __FUNCTION__, __LINE__, fib.nFib, cbRgFcLcb);
                 goto done;
             }
             bRet = parse_fibRgFcLcb97(ptr);
             break;
         case FIB_VERSION_FIBRGFCLCB2000:
-            if (0x006c != cbRgFcLcb){
+            if (FIB_64BITCNT_FIBRGFCLCB2000 != cbRgFcLcb){
                 fprintf(stderr, "%s::%d::Invalid fib.nFib(0x%x) cbRgFcLcb(0x%x) combo\n", __FUNCTION__, __LINE__, fib.nFib, cbRgFcLcb);
                 goto done;
             }
             bRet = parse_fibRgFcLcb2000(ptr);
             break;
         case FIB_VERSION_FIBRGFCLCB2002:
-            if (0x0088 != cbRgFcLcb){
+            if (FIB_64BITCNT_FIBRGFCLCB2002 != cbRgFcLcb){
                 fprintf(stderr, "%s::%d::Invalid fib.nFib(0x%x) cbRgFcLcb(0x%x) combo\n", __FUNCTION__, __LINE__, fib.nFib, cbRgFcLcb);
                 goto done;
             }
@@ -577,14 +583,14 @@ static bool test_for_pictures( const property_t *word_block, ole2_header_t *hdr,
             bRet = parse_fibRgFcLcb2002(ptr, idx, g_FibRgFcLcb97Header);
             break;
         case FIB_VERSION_FIBRGFCLCB2003:
-            if (0x00a4 != cbRgFcLcb){
+            if (FIB_64BITCNT_FIBRGFCLCB2003 != cbRgFcLcb){
                 fprintf(stderr, "%s::%d::Invalid fib.nFib(0x%x) cbRgFcLcb(0x%x) combo\n", __FUNCTION__, __LINE__, fib.nFib, cbRgFcLcb);
                 goto done;
             }
             bRet = parse_fibRgFcLcb2003(ptr);
             break;
         case FIB_VERSION_FIBRGFCLCB2007:
-            if (0x00b7 != cbRgFcLcb){
+            if (FIB_64BITCNT_FIBRGFCLCB2007 != cbRgFcLcb){
                 fprintf(stderr, "%s::%d::Invalid fib.nFib(0x%x) cbRgFcLcb(0x%x) combo\n", __FUNCTION__, __LINE__, fib.nFib, cbRgFcLcb);
                 goto done;
             }
