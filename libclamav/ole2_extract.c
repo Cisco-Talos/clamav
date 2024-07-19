@@ -1049,7 +1049,7 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
         cli_dbgmsg("ERROR: Invalid offset for File Information Block %ld (0x%lx)\n", offset, offset);
         exit(11);
     }
-    extract_images_2(&header, ptr);
+    extract_images_2(&g_FibRgFcLcb97Header, ptr);
 
 
 

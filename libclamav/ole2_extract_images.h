@@ -427,7 +427,7 @@ static void parse_fibRgFcLcb2000(const uint8_t * ptr){
  * TODO: MOVE THIS TO A STRUCTURE THAT IS PASSED IN, BUT 
  * CURRENTLY TRYING TO FIGURE OUT IF I AM FINDING ALL THE DATA CORRECTLY
  */
-FibRgFcLcb97 header;
+FibRgFcLcb97 g_FibRgFcLcb97Header;
 
 
 
@@ -439,11 +439,11 @@ static void parse_fibRgFcLcb2002(const uint8_t * base_ptr, size_t idx, const pro
     fprintf(stderr, "%s::%d::Structure is the FibRgFcLcb97\n", __FUNCTION__, __LINE__);
     fprintf(stderr, "%s::%d::%p\n", __FUNCTION__, __LINE__, table_stream);
 
-    copy_FibRgFcLcb97(&header, ptr);
+    copy_FibRgFcLcb97(&g_FibRgFcLcb97Header, ptr);
 
     /*Offset is in the TableStream.*/
-    size_t offset = header.fcDggInfo;
-    size_t size = header.lcbDggInfo;
+    size_t offset = g_FibRgFcLcb97Header.fcDggInfo;
+    size_t size = g_FibRgFcLcb97Header.lcbDggInfo;
     fprintf(stderr, "%s::%d::Offset = %lu (0x%lx)\n", __FUNCTION__, __LINE__, offset, offset);
     fprintf(stderr, "%s::%d::Size = %lu (0x%lx)\n", __FUNCTION__, __LINE__, size, size);
 
@@ -482,14 +482,7 @@ static void parse_fibRgFcLcb2007(const uint8_t * ptr){
     fprintf(stderr, "%s::%d::%p::UNIMPLEMENTED\n", __FUNCTION__, __LINE__, ptr); exit(11);
 }
 
-#if 0
-ole2_header_t * pGLOBAL_HEADER;
-#endif
 static void test_for_pictures( const property_t *word_block, const property_t * table_stream, ole2_header_t *hdr) {
-#if 0
-    pGLOBAL_HEADER = hdr;
-#endif
-
     const uint8_t *ptr = NULL;
     fib_base_t fib     = {0};
     size_t to_read = 0x1000;
@@ -500,28 +493,20 @@ static void test_for_pictures( const property_t *word_block, const property_t * 
         cli_dbgmsg("ERROR: Invalid offset for File Information Block %d (0x%x)\n", fib_offset, fib_offset);
         return;
     }
-    //fprintf(stderr,"%s::%d\n", __FUNCTION__, __LINE__);
-
-    //ptr = fmap_need_off_once(hdr->map, fib_offset, sizeof(fib_base_t));
-    //fprintf(stderr, "%s::%d::TODO: Add the correct size, trying to read 4k because, why not?\n", __FUNCTION__, __LINE__);
 
     ptr = fmap_need_off_once(hdr->map, fib_offset, to_read);
     if (NULL == ptr) {
         cli_dbgmsg("ERROR: Invalid offset for File Information Block %d (0x%x)\n", fib_offset, fib_offset);
         return;
     }
-//fprintf(stderr,"%s::%d\n", __FUNCTION__, __LINE__);
     copy_fib_base(&fib, ptr);
-//fprintf(stderr,"%s::%d\n", __FUNCTION__, __LINE__);
 
 #define FIB_BASE_IDENTIFIER 0xa5ec
-//    fprintf(stderr,"%s::%d\n", __FUNCTION__, __LINE__);
 
     if (FIB_BASE_IDENTIFIER != fib.wIdent) {
         cli_dbgmsg("ERROR: Invalid identifier for File Information Block %d (0x%x)\n", fib.wIdent, fib.wIdent);
         return;
     }
-//    fprintf(stderr,"%s::%d\n", __FUNCTION__, __LINE__);
 
     uint32_t idx = sizeof(fib);
     /* https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-doc/9aeaa2e7-4a45-468e-ab13-3f6193eb9394 */
@@ -531,8 +516,8 @@ static void test_for_pictures( const property_t *word_block, const property_t * 
         fprintf(stderr, "%s::%d::Invalid csw = 0x%x\n", __FUNCTION__, __LINE__, csw);
         return;
     }
-//    fprintf(stderr,"%s::%d\n", __FUNCTION__, __LINE__);
 
+    fprintf(stderr, "%s::%d::TODO: Make this a #define\n", __FUNCTION__, __LINE__);
     idx += 28; /* Size of the fibRgW.  Don't think I need anything from there. */
 
     uint16_t cslw;
@@ -545,13 +530,6 @@ static void test_for_pictures( const property_t *word_block, const property_t * 
 
     uint16_t cbRgFcLcb;
     read_uint16(ptr, to_read, &idx, &cbRgFcLcb);
-#if 0
-    if (!= cbRgFcLcb){
-        fprintf(stderr, "%s::%d::Invalid cbRgFcLcb of 0x%x\n", __FUNCTION__, __LINE__, cbRgFcLcb);
-        return;
-    }
-#else
-//    fprintf(stderr, "nFib = 0x%x::cbRgFcLcb = 0x%x\n", fib.nFib, cbRgFcLcb );
     switch (fib.nFib){
         default:
             fprintf(stderr, "%s::%d::Invalid fib.nFib\n", __FUNCTION__, __LINE__);
@@ -576,7 +554,6 @@ static void test_for_pictures( const property_t *word_block, const property_t * 
                 return;
             }
             fprintf(stderr, "%s::%d::idx = %u (0x%x)\n", __FUNCTION__, __LINE__, idx, idx);
-            //parse_fibRgFcLcb2002(&(ptr[idx]));
             parse_fibRgFcLcb2002(ptr, idx, table_stream);
             break;
         case 0x010c:
@@ -594,23 +571,6 @@ static void test_for_pictures( const property_t *word_block, const property_t * 
             parse_fibRgFcLcb2007(ptr);
             break;
     }
-#endif
-
-
-#if 0
-    {
-        int i;
-    fprintf(stderr, "%s::%d::", __FUNCTION__, __LINE__);
-    for (i = idx; i < to_read; i++){
-        fprintf(stderr, "%02x ", ptr[i]);
-    }
-    fprintf(stderr, "\n");
-}
-#endif
-
-
-    fprintf(stderr,"%s::%d::GOT TO END!!!\n", __FUNCTION__, __LINE__);
-
 }
 
 
@@ -718,7 +678,7 @@ static void saveImageFile(const uint8_t * const ptr, size_t size){
         fprintf(stderr, "%s::%d::NOT Success\n", __FUNCTION__, __LINE__);
     }
 
-    exit(11);
+    //exit(11);
 }
 
 
@@ -900,7 +860,7 @@ static void processOfficeArtFBSE(OfficeArtRecordHeader * imageHeader, const uint
 #else
 
 
-#if 1
+#if 0
     {
         size_t andy;
         fprintf(stderr, "%s::%d::", __FUNCTION__, __LINE__);
