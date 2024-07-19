@@ -408,7 +408,7 @@ static uint8_t getRecVer(OfficeArtRecordHeader * header) {
     return header->recVer_recInstance & 0xf;
 }
 
-static const uint8_t* load_pointer_to_stream_from_fmap(ole2_header_t * hdr, const property_t * block, size_t to_read){
+static const uint8_t* load_pointer_to_stream_from_fmap(ole2_header_t * hdr, const property_t * block, size_t size){
     const uint8_t * ptr = NULL;
 
     uint32_t offset = get_stream_data_offset(hdr, block, block->start_block);
@@ -417,7 +417,7 @@ static const uint8_t* load_pointer_to_stream_from_fmap(ole2_header_t * hdr, cons
         goto done;
     }
 
-    ptr = fmap_need_off_once(hdr->map, offset, to_read);
+    ptr = fmap_need_off_once(hdr->map, offset, size);
     if (NULL == ptr) {
         cli_dbgmsg("ERROR: Invalid offset for File Information Block %d (0x%x)\n", offset, offset);
         goto done;
@@ -432,15 +432,13 @@ static bool test_for_pictures( const property_t *word_block, ole2_header_t *hdr,
 
     const uint8_t *ptr = NULL;
     fib_base_t fib     = {0};
-    size_t to_read = 0x1000;
 
 #define FIBRGW97_SIZE 28
 #define FIBRGLW97_SIZE 88
-
     /*Bytes we need.
      * https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-doc/9aeaa2e7-4a45-468e-ab13-3f6193eb9394
      * */
-    to_read = sizeof(fib_base_t) +
+    size_t size = sizeof(fib_base_t) +
         2 +  /*csw*/
         FIBRGW97_SIZE +
         2 +  /*cslw*/
@@ -449,24 +447,10 @@ static bool test_for_pictures( const property_t *word_block, ole2_header_t *hdr,
         sizeof(FibRgFcLcb97)
         ;
 
-#if 0
-    uint32_t fib_offset = get_stream_data_offset(hdr, word_block, word_block->start_block);
-    if ((size_t)(hdr->m_length) < (size_t)(fib_offset + sizeof(fib_base_t))) {
-        cli_dbgmsg("ERROR: Invalid offset for File Information Block %d (0x%x)\n", fib_offset, fib_offset);
-        goto done;
-    }
-
-    ptr = fmap_need_off_once(hdr->map, fib_offset, to_read);
-    if (NULL == ptr) {
-        cli_dbgmsg("ERROR: Invalid offset for File Information Block %d (0x%x)\n", fib_offset, fib_offset);
-        goto done;
-    }
-#else
-    ptr = load_pointer_to_stream_from_fmap(hdr, word_block, to_read);
+    ptr = load_pointer_to_stream_from_fmap(hdr, word_block, size);
     if (NULL == ptr) {
         goto done;
     }
-#endif
     copy_fib_base(&fib, ptr);
 
 #define FIB_BASE_IDENTIFIER 0xa5ec
@@ -479,7 +463,7 @@ static bool test_for_pictures( const property_t *word_block, ole2_header_t *hdr,
     uint32_t idx = sizeof(fib);
     /* https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-doc/9aeaa2e7-4a45-468e-ab13-3f6193eb9394 */
     uint16_t csw;
-    read_uint16(ptr, to_read, &idx, &csw);
+    read_uint16(ptr, size, &idx, &csw);
     if (0x000e != csw){
         fprintf(stderr, "%s::%d::Invalid csw = 0x%x\n", __FUNCTION__, __LINE__, csw);
         goto done;
@@ -488,7 +472,7 @@ static bool test_for_pictures( const property_t *word_block, ole2_header_t *hdr,
     idx += FIBRGW97_SIZE; /* Size of the fibRgW.  Don't think I need anything from there. */
 
     uint16_t cslw;
-    read_uint16(ptr, to_read, &idx, &cslw);
+    read_uint16(ptr, size, &idx, &cslw);
     if (0x0016 != cslw) {
         fprintf(stderr, "%s::%d::Invalid cslw = 0x%x\n", __FUNCTION__, __LINE__, cslw);
         goto done;
@@ -496,7 +480,7 @@ static bool test_for_pictures( const property_t *word_block, ole2_header_t *hdr,
     idx += FIBRGLW97_SIZE; /* Size of the FibRgLw97.  Don't think I need anything from there. */
 
     uint16_t cbRgFcLcb;
-    read_uint16(ptr, to_read, &idx, &cbRgFcLcb);
+    read_uint16(ptr, size, &idx, &cbRgFcLcb);
 
     /*For FIB Version numbers, see
      * https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-doc/175d2fe1-92dd-45d2-b091-1fe8a0c0d40a
