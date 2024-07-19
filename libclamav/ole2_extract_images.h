@@ -877,7 +877,6 @@ static void extract_images(ole2_header_t * ole2Hdr, FibRgFcLcb97 * header, const
     OfficeArtRecordHeader oadc_recordHeader; //OfficeArtDggContainer
     copy_OfficeArtRecordHeader (&oadc_recordHeader, &(ptr[offset]));
 
-    /*TODO: validate recVer and recInst separately*/
     if (0xf != oadc_recordHeader.recVer_recInstance){
         cli_dbgmsg("ERROR: Invalid record version (%x)\n", oadc_recordHeader.recVer_recInstance);
         return;
