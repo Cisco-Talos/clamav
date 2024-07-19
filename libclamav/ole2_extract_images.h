@@ -408,46 +408,14 @@ static uint8_t getRecVer(OfficeArtRecordHeader * header) {
     return header->recVer_recInstance & 0xf;
 }
 
-
 #if 0
-static bool parse_fibRgFcLcb97(const uint8_t * ptr){
-    fprintf(stderr, "%s::%d::%p::UNIMPLEMENTED\n", __FUNCTION__, __LINE__, ptr); exit(11);
-    return true;
-}
-
-static bool parse_fibRgFcLcb2000(const uint8_t * ptr){
-    fprintf(stderr, "%s::%d::%p::UNIMPLEMENTED\n", __FUNCTION__, __LINE__, ptr); exit(11);
-    return true;
-}
-
-
-/*
- * TODO: MOVE THIS TO A STRUCTURE THAT IS PASSED IN, BUT 
- * CURRENTLY TRYING TO FIGURE OUT IF I AM FINDING ALL THE DATA CORRECTLY
- */
-FibRgFcLcb97 g_FibRgFcLcb97Header;
-#endif
-
-
-
-
-static bool parse_fibRgFcLcb97(const uint8_t * base_ptr, size_t idx
-        , FibRgFcLcb97 * g_FibRgFcLcb97Header
-){
+static bool parse_fibRgFcLcb97(const uint8_t * base_ptr, size_t idx, FibRgFcLcb97 * g_FibRgFcLcb97Header){
 
     const uint8_t * ptr = &(base_ptr[idx]);
-
-    fprintf(stderr, "%s::%d::Data is in the fcDggInfo, size is in the lcbDggInfo\n", __FUNCTION__, __LINE__);
-    fprintf(stderr, "%s::%d::Structure is the FibRgFcLcb97\n", __FUNCTION__, __LINE__);
-//    fprintf(stderr, "%s::%d::%p\n", __FUNCTION__, __LINE__, table_stream);
-
     copy_FibRgFcLcb97(g_FibRgFcLcb97Header, ptr);
 
     /*Offset is in the TableStream.*/
     size_t offset = g_FibRgFcLcb97Header->fcDggInfo;
-    size_t size = g_FibRgFcLcb97Header->lcbDggInfo;
-    fprintf(stderr, "%s::%d::Offset = %lu (0x%lx)\n", __FUNCTION__, __LINE__, offset, offset);
-    fprintf(stderr, "%s::%d::Size = %lu (0x%lx)\n", __FUNCTION__, __LINE__, size, size);
 
     /*Information about 
      * https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-odraw/dd7133b6-ed10-4bcb-be29-67b0544f884f 
@@ -456,28 +424,11 @@ static bool parse_fibRgFcLcb97(const uint8_t * base_ptr, size_t idx
      * */
     OfficeArtRecordHeader drawingGroupDataRecordHeader;
     copy_OfficeArtRecordHeader (&drawingGroupDataRecordHeader, &(ptr[offset]));
-
-    fprintf(stderr, "%s::%d::Calling second time\n", __FUNCTION__, __LINE__);
     copy_OfficeArtRecordHeader (&drawingGroupDataRecordHeader, &(base_ptr[offset]));
 
-#if 0
-    if (table_stream) {
-        fprintf(stderr, "%s::%d::Calling THIRD time\n", __FUNCTION__, __LINE__);
-        copy_OfficeArtRecordHeader (&drawingGroupDataRecordHeader, &(((const uint8_t*)   table_stream   )[offset]));
-    }
-#endif
-
-
-    fprintf(stderr, "%s::%d::The offset and size information is for the OfficeArtContent header information\n", __FUNCTION__, __LINE__);
-
-    fprintf(stderr, "https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-doc/8699a984-3718-44be-adae-08b05827f8b3\n");
-
-
-    fprintf(stderr, "%s::%d::UNIMPLEMENTED\n", __FUNCTION__, __LINE__); /* exit(11); */
-
-    fprintf(stderr, "%s::%d::TODO:Verify the structure is at the beginning for all of these, and change it to a normal copy\n", __FUNCTION__, __LINE__);
     return true;
 }
+#endif
 
 #if 0
 static bool parse_fibRgFcLcb2003(const uint8_t * ptr){
@@ -598,7 +549,13 @@ static bool test_for_pictures( const property_t *word_block, ole2_header_t *hdr,
      * See https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-doc/175d2fe1-92dd-45d2-b091-1fe8a0c0d40a
      * for more details
      */
+#if 0
     bRet = parse_fibRgFcLcb97(ptr, idx, g_FibRgFcLcb97Header);
+#else
+    //const uint8_t * ptr = &(base_ptr[idx]);
+    copy_FibRgFcLcb97(g_FibRgFcLcb97Header, &(ptr[idx]));
+    bRet = true;
+#endif
 
 done:
     return bRet;
