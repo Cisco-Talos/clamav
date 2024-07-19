@@ -818,7 +818,7 @@ static void processOfficeArtBlip(const uint8_t * const ptr){
 /*
  * https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-odraw/2f2d7f5e-d5c4-4cb7-b230-59b3fe8f10d6
  */
-static void processOfficeArtFBSE(ole2_header_t *hdr, OfficeArtRecordHeader * imageHeader, const uint8_t * const ptr, property_t * wordDocStream, FibRgFcLcb97 * fibRgFcLcb97) {
+static void processOfficeArtFBSE(ole2_header_t *hdr, OfficeArtRecordHeader * imageHeader, const uint8_t * const ptr, property_t * wordDocStream) {
     OfficeArtFBSEKnown fbse;
 
     uint32_t offset = sizeof(OfficeArtRecordHeader);
@@ -859,7 +859,6 @@ static void processOfficeArtFBSE(ole2_header_t *hdr, OfficeArtRecordHeader * ima
             exit(11);
         }
 
-        fprintf(stderr, "%s::%d::HERE\n", __FUNCTION__, __LINE__);
         processOfficeArtBlip(ptr);
     }
 
@@ -983,7 +982,7 @@ static void extract_images_2(ole2_header_t * ole2Hdr, FibRgFcLcb97 * header, con
             /* OfficeArtFBSE 
              * https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-odraw/2f2d7f5e-d5c4-4cb7-b230-59b3fe8f10d6
              */
-            processOfficeArtFBSE(ole2Hdr, &imageHeader, &(ptr[offset]), wordDocStream, header);
+            processOfficeArtFBSE(ole2Hdr, &imageHeader, &(ptr[offset]), wordDocStream);
         } else {
             processOfficeArtBlip(&(ptr[offset]));
         }

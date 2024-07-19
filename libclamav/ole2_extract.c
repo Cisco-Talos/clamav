@@ -895,11 +895,8 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
     cl_error_t ret;
     char *name;
     int toval = 0;
-    //property_t * wordDocStream = NULL;
-    //property_t * tableStream = NULL;
     FibRgFcLcb97 fibRgFcLcb97Header = {0};
     bool bFibRgFcLcb97HeaderInitialized = false;
-    fib_base_t fibBase     = {0};
     property_t wordDocumentStream = {0};
     property_t TableStream1 = {0};
     property_t TableStream0 = {0};
@@ -1335,17 +1332,6 @@ fprintf(stderr, "%s::%d::get_stream_data_offset returned %lu\n", __FUNCTION__, _
 //{ if (wordDocStream) { fprintf(stderr, "%s::%d::Calling test_for_pictures (end of loop)\n", __FUNCTION__, __LINE__); test_for_pictures(wordDocStream, tableStream, hdr); } }
     }
 
-#if 1
-#if 0
-    FibRgFcLcb97 fibRgFcLcb97Header = {0};
-    bool bFibRgFcLcb97HeaderInitialized = false;
-    fib_base_t fibBase     = {0};
-    property_t wordDocumentStream = {0};
-    property_t TableStream1 = {0};
-    property_t TableStream0 = {0};
-    bool TableStream1Initialized = false;
-    bool TableStream0Initialized = false;
-#endif
     if (bFibRgFcLcb97HeaderInitialized  && (TableStream1Initialized || TableStream0Initialized)) {
         property_t * tableStream = NULL;
         if (TableStream0Initialized) {
@@ -1398,29 +1384,9 @@ fprintf(stderr, "%s::%d::get_stream_data_offset returned %lu\n", __FUNCTION__, _
         exit(11);
     }
 
-
-    uint8_t * wordStream = NULL;
-    {
-                size_t off = get_stream_data_offset(hdr, &wordDocumentStream, wordDocumentStream.start_block);
-                //off += 3623; /*Hardcoding the size of the delay, need to get it progromatically.*/
-
-                //fprintf(stderr, "%s::%d::off = %ld (0x%lx)\n", __FUNCTION__, __LINE__, off, off);
-                //size_t size = 70682; //hardcoded size of the blip (temporarily);
-
-//                wordStream = fmap_need_off_once(hdr->map, off, size);
-    fprintf(stderr, "%s::%d::VALIDATE wordStream\n", __FUNCTION__, __LINE__);
-
-    }
-
-
-
     extract_images_2(hdr, &fibRgFcLcb97Header, ptr, &wordDocumentStream);
 
-
-
-
     }
-#endif
 
     ole2_list_delete(&node_list);
     return CL_SUCCESS;
