@@ -979,98 +979,9 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
         }
 
         if (0 == ole2_cmp_name(prop_block[idx].name, prop_block[idx].name_size, "WORDDocument")) {
-#if 0
-            uint32_t fib_offset = get_stream_data_offset(hdr, &(prop_block[idx]), prop_block[idx].start_block);
-            const uint8_t * ptr = NULL;
-
-            if ((size_t)(hdr->m_length) < (size_t)(fib_offset + sizeof(fib_base_t))) {
-                cli_dbgmsg("ERROR: Invalid offset for File Information Block %d (0x%x)\n", fib_offset, fib_offset);
-                continue;
-            }
-
-            ptr = fmap_need_off_once(hdr->map, fib_offset, sizeof(fib_base_t));
-            if (NULL == ptr) {
-                cli_dbgmsg("ERROR: Invalid offset for File Information Block %d (0x%x)\n", fib_offset, fib_offset);
-                continue;
-            }
-            copy_fib_base(&fibBase, ptr);
-#endif
             memcpy(&wordDocumentStream, &(prop_block[idx]), sizeof(wordDocumentStream));
             test_for_encryption(&(prop_block[idx]), hdr, pEncryptionStatus);
             bFibRgFcLcb97HeaderInitialized = test_for_pictures(&(prop_block[idx]), hdr, &fibRgFcLcb97Header);
-
-#if 1
-            {
-            fprintf(stderr, "%s::%d::Delete this when ready\n", __FUNCTION__, __LINE__);
-            if (bFibRgFcLcb97HeaderInitialized) {
-                size_t offset = fibRgFcLcb97Header.fcDggInfo;
-                size_t size = fibRgFcLcb97Header.lcbDggInfo;
-                fprintf(stderr, "%s::%d::Offset = %lu (0x%lx)\n", __FUNCTION__, __LINE__, offset, offset);
-                fprintf(stderr, "%s::%d::Size = %lu (0x%lx)\n", __FUNCTION__, __LINE__, size, size);
-                fprintf(stderr, "%s::%d::verify that these values are the same as the offset and size printed in 'parse_fibRgFcLcb2002'\n", __FUNCTION__, __LINE__);
-            }
-            fprintf(stderr, "%s::%d::END Delete this when ready\n", __FUNCTION__, __LINE__);
-        }
-#endif
-
-
-
-            //wordDocStream  = &(prop_block[idx]);
-            //fprintf(stderr, "%s::%d::%p::setting wordDocStream\n", __FUNCTION__, __LINE__, wordDocStream);
-
-
-#if 0
-            {
-
-                //property_t * prop = &(prop_block[idx]);
-                //size_t off = get_stream_data_offset(hdr, wordDocStream, wordDocStream->start_block);
-                size_t off = get_stream_data_offset(hdr, &wordDocumentStream, wordDocumentStream.start_block);
-fprintf(stderr, "%s::%d::get_stream_data_offset returned %lu\n", __FUNCTION__, __LINE__, off);
-                off += 3623; /*Hardcoding the size of the delay, need to get it progromatically.*/
-                fprintf(stderr, "%s::%d::CALCULATED OFFSET = %lu (0x%lx)\n", __FUNCTION__, __LINE__, off, off);
-
-                fprintf(stderr, "%s::%d::off = %ld (0x%lx)\n", __FUNCTION__, __LINE__, off, off);
-                size_t size = 70682; //hardcoded size of the blip (temporarily);
-
-                const uint8_t * const ptr = fmap_need_off_once(hdr->map, off, size);
-                size_t i;
-            fprintf(stderr, "%s::%d::WORDDOCUMENT::", __FUNCTION__, __LINE__);
-            for (i = 0; i < 50; i++) {
-                fprintf(stderr, "%02x ", ptr[i]);
-            }
-            fprintf(stderr, "\n");
-
-                fprintf(stderr, "%s::%d::MOVE THIS TO SOMEPLACE THAT ACTUALLY MAKES SENSE!!!\n", __FUNCTION__, __LINE__);
-
-                processOfficeArtBlip(ptr);
-
-
-
-//            DATA  IS HERE at delay.  Some other bytes there, but really close, so need to *hopefully* figure out how to parse whatever header there is and verify that this is actually my data;
-
-
-            }
-#endif
-
-
-
-
-#if 0
-            {
-                size_t i;
-                fprintf(stderr, "%s::%d::", __FUNCTION__, __LINE__);
-                for (i = 0; i < 4096; i++){
-                    if (i && (0 == i%512)){
-                        fprintf("\n%s::%d::", __FUNCTION__, __LINE__);
-                    }
-                    fprintf(stderr, "%02x ", ((uint8_t*) &(prop_block[idx])[i]);
-                }
-            }
-#endif
-
-
-
-
         } else if (0 == ole2_cmp_name(prop_block[idx].name, prop_block[idx].name_size, "WorkBook")) {
             test_for_xls_encryption(&(prop_block[idx]), hdr, pEncryptionStatus);
         } else if (0 == ole2_cmp_name(prop_block[idx].name, prop_block[idx].name_size, "PowerPoint Document")) {
@@ -1080,99 +991,12 @@ fprintf(stderr, "%s::%d::get_stream_data_offset returned %lu\n", __FUNCTION__, _
         } else if (0 == ole2_cmp_name(prop_block[idx].name, prop_block[idx].name_size, "EncryptedPackage")) {
             pEncryptionStatus->encrypted = true;
         } else if (0 == ole2_cmp_name(prop_block[idx].name, prop_block[idx].name_size, "1Table")) {
-#if 0
-            tableStream = &(prop_block[idx]);
-#else
             memcpy(&TableStream1, &(prop_block[idx]), sizeof(TableStream1));
             TableStream1Initialized = true;
-#endif
-
-#if 0
-    size_t offset = get_stream_data_offset(hdr, tableStream, tableStream->start_block);
-    fprintf(stderr, "%s::%d::offset = %lu::offset = %lx\n", __FUNCTION__, __LINE__, offset, offset);
-
-    fprintf(stderr, "%s::%d::FOUND THE OFFSET OF THE DATA.  This offset + the offset referenced in 'header'\n", __FUNCTION__, __LINE__);
-    fprintf(stderr, "%s::%d::Asking for 4k, because, why not???\n", __FUNCTION__, __LINE__);
-    const uint8_t * const ptr = fmap_need_off_once(hdr->map, offset, 4096);
-    if (NULL == ptr) {
-        cli_dbgmsg("ERROR: Invalid offset for File Information Block %ld (0x%lx)\n", offset, offset);
-        exit(11);
-    }
-    extract_images_2(&fibRgFcLcb97Header, ptr);
-#else
-    fprintf(stderr, "%s::%d::JUST REMOVED\n", __FUNCTION__, __LINE__);
-#endif
-
-
-
-#if 0
-
-            fprintf(stderr, "%s::%d::TODO: Move this to where the data is actually processed\n", __FUNCTION__, __LINE__);
-            //uint8_t* ptr = fmap_need_off_once(hdr->map, tableStream, 0x1000);
-            uint8_t* ptr = (uint8_t*) tableStream;
-            fprintf(stderr, "%s::%d::%p\n", __FUNCTION__, __LINE__, ptr);
-            size_t i;
-            fprintf(stderr, "%s::%d::", __FUNCTION__, __LINE__);
-                for (i = 0; i < 1024; i++){
-                    fprintf(stderr, "%02x ", ptr[ i ]);
-                }
-                    fprintf(stderr, "\n");
-
-
-            extract_images(&header, tableStream, hdr);
-
-#endif
-
-            fprintf(stderr, "%s::%d::TODO: HANDLE TABLE STREAM\n", __FUNCTION__, __LINE__);
-
-
         } else if (0 == ole2_cmp_name(prop_block[idx].name, prop_block[idx].name_size, "0Table")) {
-
             memcpy(&TableStream0, &(prop_block[idx]), sizeof(TableStream0));
             TableStream0Initialized = true;
-//fprintf(stderr, "%s::%d::Implement this\n", __FUNCTION__, __LINE__); exit(112);
-
-#if 0
-            tableStream = &(prop_block[idx]);
-            extract_images(&header, tableStream);
-            fprintf(stderr, "%s::%d::TODO: HANDLE TABLE STREAM\n", __FUNCTION__, __LINE__);
-#endif
-#if 0
-        } else {
-
-            property_t * prop = &(prop_block[idx]);
-            size_t off = get_stream_data_offset(hdr, prop, prop->start_block);
-            size_t size = 4096 * 2;
-            size = 4096;
-            const uint8_t * const ptr = fmap_need_off_once(hdr->map, off, size);
-            size_t i;
-            if (ptr) {
-            fprintf(stderr, "%s::%d::", __FUNCTION__, __LINE__);
-            for (i = 0; i < size ; i++) {
-                //fprintf(stderr, "%02x ", ptr[i + 3623]);
-                fprintf(stderr, "%02x ", ptr[i]);
-            }
-            fprintf(stderr, "\n");
-            }
-
-#endif
-
         }
-
-#if 0
-        if (wordDocStream && tableStream) {
-            test_for_pictures(wordDocStream, tableStream, hdr);
-        }
-#endif
-
-
-//        { if (wordDocStream) { fprintf(stderr, "%s::%d::Calling test_for_pictures\n", __FUNCTION__, __LINE__); test_for_pictures(wordDocStream, tableStream, hdr); } }
-
-
-
-
-
-
 
         ole2_listmsg("printing ole2 property\n");
         if (dir)
@@ -1191,8 +1015,6 @@ fprintf(stderr, "%s::%d::get_stream_data_offset returned %lu\n", __FUNCTION__, _
             continue;
         }
         ole2_listmsg("prev: %d next %d child %d\n", prop_block[idx].prev, prop_block[idx].next, prop_block[idx].child);
-
-        //{ if (wordDocStream) { fprintf(stderr, "%s::%d::Calling test_for_pictures\n", __FUNCTION__, __LINE__); test_for_pictures(wordDocStream, tableStream, hdr); } }
 
         ole2_listmsg("node type: %d\n", prop_block[idx].type);
         switch (prop_block[idx].type) {
@@ -1329,7 +1151,6 @@ fprintf(stderr, "%s::%d::get_stream_data_offset returned %lu\n", __FUNCTION__, _
                 break;
         }
         ole2_listmsg("loop ended: %d %d\n", ole2_list_size(&node_list), ole2_list_is_empty(&node_list));
-//{ if (wordDocStream) { fprintf(stderr, "%s::%d::Calling test_for_pictures (end of loop)\n", __FUNCTION__, __LINE__); test_for_pictures(wordDocStream, tableStream, hdr); } }
     }
 
     if (bFibRgFcLcb97HeaderInitialized  && (TableStream1Initialized || TableStream0Initialized)) {
@@ -1367,24 +1188,15 @@ fprintf(stderr, "%s::%d::get_stream_data_offset returned %lu\n", __FUNCTION__, _
             }
         }
 
-
-
-
-
         /*Call Extract */
-    size_t offset = get_stream_data_offset(hdr, tableStream, tableStream->start_block);
-    fprintf(stderr, "%s::%d::VALIDATE OFFSETS\n", __FUNCTION__, __LINE__);
-    fprintf(stderr, "%s::%d::offset = %lu::offset = %lx\n", __FUNCTION__, __LINE__, offset, offset);
+        size_t offset = get_stream_data_offset(hdr, tableStream, tableStream->start_block);
+        const uint8_t * const ptr = fmap_need_off_once(hdr->map, offset, 4096);
+        if (NULL == ptr) {
+            cli_dbgmsg("ERROR: Invalid offset for File Information Block %ld (0x%lx)\n", offset, offset);
+            exit(11);
+        }
 
-    fprintf(stderr, "%s::%d::FOUND THE OFFSET OF THE DATA.  This offset + the offset referenced in 'header'\n", __FUNCTION__, __LINE__);
-    fprintf(stderr, "%s::%d::Asking for 4k, because, why not???\n", __FUNCTION__, __LINE__);
-    const uint8_t * const ptr = fmap_need_off_once(hdr->map, offset, 4096);
-    if (NULL == ptr) {
-        cli_dbgmsg("ERROR: Invalid offset for File Information Block %ld (0x%lx)\n", offset, offset);
-        exit(11);
-    }
-
-    extract_images_2(hdr, &fibRgFcLcb97Header, ptr, &wordDocumentStream);
+        extract_images_2(hdr, &fibRgFcLcb97Header, ptr, &wordDocumentStream);
 
     }
 
