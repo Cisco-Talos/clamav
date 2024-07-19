@@ -895,7 +895,7 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
     cl_error_t ret;
     char *name;
     int toval = 0;
-    property_t * wordDocStream = NULL;
+    //property_t * wordDocStream = NULL;
     //property_t * tableStream = NULL;
     FibRgFcLcb97 fibRgFcLcb97Header = {0};
     bool bFibRgFcLcb97HeaderInitialized = false;
@@ -1018,15 +1018,19 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
 
 
 
-            wordDocStream  = &(prop_block[idx]);
-            fprintf(stderr, "%s::%d::%p::setting wordDocStream\n", __FUNCTION__, __LINE__, wordDocStream);
+            //wordDocStream  = &(prop_block[idx]);
+            //fprintf(stderr, "%s::%d::%p::setting wordDocStream\n", __FUNCTION__, __LINE__, wordDocStream);
 
 
+#if 0
             {
 
                 //property_t * prop = &(prop_block[idx]);
-                size_t off = get_stream_data_offset(hdr, wordDocStream, wordDocStream->start_block);
+                //size_t off = get_stream_data_offset(hdr, wordDocStream, wordDocStream->start_block);
+                size_t off = get_stream_data_offset(hdr, &wordDocumentStream, wordDocumentStream.start_block);
+fprintf(stderr, "%s::%d::get_stream_data_offset returned %lu\n", __FUNCTION__, __LINE__, off);
                 off += 3623; /*Hardcoding the size of the delay, need to get it progromatically.*/
+                fprintf(stderr, "%s::%d::CALCULATED OFFSET = %lu (0x%lx)\n", __FUNCTION__, __LINE__, off, off);
 
                 fprintf(stderr, "%s::%d::off = %ld (0x%lx)\n", __FUNCTION__, __LINE__, off, off);
                 size_t size = 70682; //hardcoded size of the blip (temporarily);
@@ -1049,6 +1053,7 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
 
 
             }
+#endif
 
 
 
@@ -1382,6 +1387,7 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
 
         /*Call Extract */
     size_t offset = get_stream_data_offset(hdr, tableStream, tableStream->start_block);
+    fprintf(stderr, "%s::%d::VALIDATE OFFSETS\n", __FUNCTION__, __LINE__);
     fprintf(stderr, "%s::%d::offset = %lu::offset = %lx\n", __FUNCTION__, __LINE__, offset, offset);
 
     fprintf(stderr, "%s::%d::FOUND THE OFFSET OF THE DATA.  This offset + the offset referenced in 'header'\n", __FUNCTION__, __LINE__);
@@ -1391,7 +1397,24 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
         cli_dbgmsg("ERROR: Invalid offset for File Information Block %ld (0x%lx)\n", offset, offset);
         exit(11);
     }
-    extract_images_2(&fibRgFcLcb97Header, ptr);
+
+
+    uint8_t * wordStream = NULL;
+    {
+                size_t off = get_stream_data_offset(hdr, &wordDocumentStream, wordDocumentStream.start_block);
+                //off += 3623; /*Hardcoding the size of the delay, need to get it progromatically.*/
+
+                //fprintf(stderr, "%s::%d::off = %ld (0x%lx)\n", __FUNCTION__, __LINE__, off, off);
+                //size_t size = 70682; //hardcoded size of the blip (temporarily);
+
+//                wordStream = fmap_need_off_once(hdr->map, off, size);
+    fprintf(stderr, "%s::%d::VALIDATE wordStream\n", __FUNCTION__, __LINE__);
+
+    }
+
+
+
+    extract_images_2(hdr, &fibRgFcLcb97Header, ptr, &wordDocumentStream);
 
 
 

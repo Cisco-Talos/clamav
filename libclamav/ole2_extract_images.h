@@ -826,11 +826,14 @@ static void processOfficeArtBlip(const uint8_t * const ptr){
 }
 
 
+
+
+
+
 /*
  * https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-odraw/2f2d7f5e-d5c4-4cb7-b230-59b3fe8f10d6
  */
-static void processOfficeArtFBSE(OfficeArtRecordHeader * imageHeader, const uint8_t * const ptr) {
-
+static void processOfficeArtFBSE(ole2_header_t *hdr, OfficeArtRecordHeader * imageHeader, const uint8_t * const ptr, property_t * wordDocStream, FibRgFcLcb97 * fibRgFcLcb97) {
     OfficeArtFBSEKnown fbse;
 
     uint32_t offset = sizeof(OfficeArtRecordHeader);
@@ -865,6 +868,36 @@ static void processOfficeArtFBSE(OfficeArtRecordHeader * imageHeader, const uint
         processOfficeArtBlip(&(ptr[offset]));
     } else {
         /* The BLIP is in the 'WordDocument' stream. */
+        size_t offset = fibRgFcLcb97->fcDggInfo;
+        size_t size = fibRgFcLcb97->lcbDggInfo;
+
+        fprintf(stderr, "%s::%d::offset = %lu (0x%lx)\n", __FUNCTION__, __LINE__, offset, offset);
+        fprintf(stderr, "%s::%d::size = %lu (0x%lx)\n", __FUNCTION__, __LINE__, size, size);
+
+        size = fbse.size;
+        offset= fbse.foDelay;
+        fprintf(stderr, "%s::%d::offset = %lu (0x%lx)\n", __FUNCTION__, __LINE__, offset, offset);
+        fprintf(stderr, "%s::%d::size = %lu (0x%lx)\n", __FUNCTION__, __LINE__, size, size);
+        size_t off = get_stream_data_offset(hdr, wordDocStream, wordDocStream->start_block);
+        fprintf(stderr, "%s::%d::get_stream_data_offset returned %lu\n", __FUNCTION__, __LINE__, off);
+        off += offset;
+                fprintf(stderr, "%s::%d::CALCULATED OFFSET = %lu (0x%lx)\n", __FUNCTION__, __LINE__, off, off);
+        if ((size_t)(hdr->m_length) < (size_t)(off + size)) {
+            cli_dbgmsg("ERROR: Invalid offset for File Information Block %lu (0x%lx)\n", offset, offset);
+            exit(11);
+        }
+
+        const uint8_t * const ptr = fmap_need_off_once(hdr->map, off, size);
+        if (NULL == ptr) {
+            cli_dbgmsg("ERROR: Invalid offset for File Information Block %lu (0x%lx)\n", offset, offset);
+            fprintf(stderr, "%s::%d::ERROR (fix message)\n", __FUNCTION__, __LINE__);
+            exit(11);
+        }
+
+        fprintf(stderr, "%s::%d::HERE\n", __FUNCTION__, __LINE__);
+        processOfficeArtBlip(ptr);
+
+
 
         fprintf(stderr, "%s::%d::Need to get the pointer from the word document stream here, since it's not embedded in the FBSE Structure\n", __FUNCTION__, __LINE__);
         exit(11);
@@ -910,7 +943,7 @@ static void processOfficeArtFBSE(OfficeArtRecordHeader * imageHeader, const uint
 
 }
 
-static void extract_images_2( FibRgFcLcb97 * header, const uint8_t * ptr) {
+static void extract_images_2(ole2_header_t * ole2Hdr, FibRgFcLcb97 * header, const uint8_t * ptr, property_t * wordDocStream) {
     size_t offset = header->fcDggInfo;
     uint32_t i;
 
@@ -1028,7 +1061,7 @@ static void extract_images_2( FibRgFcLcb97 * header, const uint8_t * ptr) {
             /* OfficeArtFBSE 
              * https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-odraw/2f2d7f5e-d5c4-4cb7-b230-59b3fe8f10d6
              */
-            processOfficeArtFBSE(&imageHeader, &(ptr[offset]));
+            processOfficeArtFBSE(ole2Hdr, &imageHeader, &(ptr[offset]), wordDocStream, header);
         } else {
             processOfficeArtBlip(&(ptr[offset]));
         }
