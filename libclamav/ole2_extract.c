@@ -636,7 +636,6 @@ static int ole2_cmp_name(const char *const name, uint32_t name_size, const char 
         decoded[j] = ((unsigned char)name[i + 1]) << 4;
         decoded[j] += name[i];
     }
-    fprintf(stderr, "%s::%d::%s\n", __FUNCTION__, __LINE__, decoded);
 
     return strcasecmp(decoded, keyword);
 }
@@ -984,7 +983,7 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
 
             {
 
-                property_t * prop = &(prop_block[idx]);
+                //property_t * prop = &(prop_block[idx]);
                 size_t off = get_stream_data_offset(hdr, wordDocStream, wordDocStream->start_block);
                 off += 3623; /*Hardcoding the size of the delay, need to get it progromatically.*/
 
@@ -1084,6 +1083,7 @@ fprintf(stderr, "%s::%d::Implement this\n", __FUNCTION__, __LINE__); exit(112);
             extract_images(&header, tableStream);
             fprintf(stderr, "%s::%d::TODO: HANDLE TABLE STREAM\n", __FUNCTION__, __LINE__);
 #endif
+#if 0
         } else {
 
             property_t * prop = &(prop_block[idx]);
@@ -1101,6 +1101,7 @@ fprintf(stderr, "%s::%d::Implement this\n", __FUNCTION__, __LINE__); exit(112);
             fprintf(stderr, "\n");
             }
 
+#endif
 
         }
 

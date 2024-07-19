@@ -488,40 +488,36 @@ static void test_for_pictures( const property_t *word_block, const property_t * 
 
     const uint8_t *ptr = NULL;
     fib_base_t fib     = {0};
-    //size_t i;
     size_t to_read = 0x1000;
 
-    fprintf(stderr,"%s::%d::Entering\n", __FUNCTION__, __LINE__);
-
     uint32_t fib_offset = get_stream_data_offset(hdr, word_block, word_block->start_block);
-//    fprintf(stderr,"%s::%d::fib_offset = %x\n", __FUNCTION__, __LINE__, fib_offset);
 
     if ((size_t)(hdr->m_length) < (size_t)(fib_offset + sizeof(fib_base_t))) {
         cli_dbgmsg("ERROR: Invalid offset for File Information Block %d (0x%x)\n", fib_offset, fib_offset);
         return;
     }
-    fprintf(stderr,"%s::%d\n", __FUNCTION__, __LINE__);
+    //fprintf(stderr,"%s::%d\n", __FUNCTION__, __LINE__);
 
     //ptr = fmap_need_off_once(hdr->map, fib_offset, sizeof(fib_base_t));
-    fprintf(stderr, "%s::%d::TODO: Add the correct size, trying to read 4k because, why not?\n", __FUNCTION__, __LINE__);
+    //fprintf(stderr, "%s::%d::TODO: Add the correct size, trying to read 4k because, why not?\n", __FUNCTION__, __LINE__);
 
     ptr = fmap_need_off_once(hdr->map, fib_offset, to_read);
     if (NULL == ptr) {
         cli_dbgmsg("ERROR: Invalid offset for File Information Block %d (0x%x)\n", fib_offset, fib_offset);
         return;
     }
-fprintf(stderr,"%s::%d\n", __FUNCTION__, __LINE__);
+//fprintf(stderr,"%s::%d\n", __FUNCTION__, __LINE__);
     copy_fib_base(&fib, ptr);
-fprintf(stderr,"%s::%d\n", __FUNCTION__, __LINE__);
+//fprintf(stderr,"%s::%d\n", __FUNCTION__, __LINE__);
 
 #define FIB_BASE_IDENTIFIER 0xa5ec
-    fprintf(stderr,"%s::%d\n", __FUNCTION__, __LINE__);
+//    fprintf(stderr,"%s::%d\n", __FUNCTION__, __LINE__);
 
     if (FIB_BASE_IDENTIFIER != fib.wIdent) {
         cli_dbgmsg("ERROR: Invalid identifier for File Information Block %d (0x%x)\n", fib.wIdent, fib.wIdent);
         return;
     }
-    fprintf(stderr,"%s::%d\n", __FUNCTION__, __LINE__);
+//    fprintf(stderr,"%s::%d\n", __FUNCTION__, __LINE__);
 
     uint32_t idx = sizeof(fib);
     /* https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-doc/9aeaa2e7-4a45-468e-ab13-3f6193eb9394 */
@@ -531,7 +527,7 @@ fprintf(stderr,"%s::%d\n", __FUNCTION__, __LINE__);
         fprintf(stderr, "%s::%d::Invalid csw = 0x%x\n", __FUNCTION__, __LINE__, csw);
         return;
     }
-    fprintf(stderr,"%s::%d\n", __FUNCTION__, __LINE__);
+//    fprintf(stderr,"%s::%d\n", __FUNCTION__, __LINE__);
 
     idx += 28; /* Size of the fibRgW.  Don't think I need anything from there. */
 
@@ -551,7 +547,7 @@ fprintf(stderr,"%s::%d\n", __FUNCTION__, __LINE__);
         return;
     }
 #else
-    fprintf(stderr, "nFib = 0x%x::cbRgFcLcb = 0x%x\n", fib.nFib, cbRgFcLcb );
+//    fprintf(stderr, "nFib = 0x%x::cbRgFcLcb = 0x%x\n", fib.nFib, cbRgFcLcb );
     switch (fib.nFib){
         default:
             fprintf(stderr, "%s::%d::Invalid fib.nFib\n", __FUNCTION__, __LINE__);
@@ -854,7 +850,6 @@ static void processOfficeArtBlip(const uint8_t * const ptr){
  */
 static void processOfficeArtFBSE(OfficeArtRecordHeader * imageHeader, const uint8_t * const ptr) {
 
-    size_t i;
     OfficeArtFBSEKnown fbse;
 
     uint32_t offset = sizeof(OfficeArtRecordHeader);
