@@ -843,28 +843,18 @@ static void processOfficeArtFBSE(ole2_header_t *hdr, OfficeArtRecordHeader * ima
         processOfficeArtBlip(&(ptr[offset]));
     } else {
         /* The BLIP is in the 'WordDocument' stream. */
-        size_t offset = fibRgFcLcb97->fcDggInfo;
-        size_t size = fibRgFcLcb97->lcbDggInfo;
+        size_t size = fbse.size;
 
-        fprintf(stderr, "%s::%d::offset = %lu (0x%lx)\n", __FUNCTION__, __LINE__, offset, offset);
-        fprintf(stderr, "%s::%d::size = %lu (0x%lx)\n", __FUNCTION__, __LINE__, size, size);
-
-        size = fbse.size;
-        offset= fbse.foDelay;
-        fprintf(stderr, "%s::%d::offset = %lu (0x%lx)\n", __FUNCTION__, __LINE__, offset, offset);
-        fprintf(stderr, "%s::%d::size = %lu (0x%lx)\n", __FUNCTION__, __LINE__, size, size);
         size_t off = get_stream_data_offset(hdr, wordDocStream, wordDocStream->start_block);
-        fprintf(stderr, "%s::%d::get_stream_data_offset returned %lu\n", __FUNCTION__, __LINE__, off);
-        off += offset;
-                fprintf(stderr, "%s::%d::CALCULATED OFFSET = %lu (0x%lx)\n", __FUNCTION__, __LINE__, off, off);
+        off += fbse.foDelay;
         if ((size_t)(hdr->m_length) < (size_t)(off + size)) {
-            cli_dbgmsg("ERROR: Invalid offset for File Information Block %lu (0x%lx)\n", offset, offset);
+            cli_dbgmsg("ERROR: Invalid offset for File Information Block %u (0x%x)\n", fbse.foDelay, fbse.foDelay);
             exit(11);
         }
 
         const uint8_t * const ptr = fmap_need_off_once(hdr->map, off, size);
         if (NULL == ptr) {
-            cli_dbgmsg("ERROR: Invalid offset for File Information Block %lu (0x%lx)\n", offset, offset);
+            cli_dbgmsg("ERROR: Invalid offset for File Information Block %u (0x%x)\n", fbse.foDelay, fbse.foDelay);
             fprintf(stderr, "%s::%d::ERROR (fix message)\n", __FUNCTION__, __LINE__);
             exit(11);
         }
