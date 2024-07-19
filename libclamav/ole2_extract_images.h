@@ -414,36 +414,43 @@ static uint8_t getRecVer(OfficeArtRecordHeader * header) {
 }
 
 
-static void parse_fibRgFcLcb97(const uint8_t * ptr){
+static bool parse_fibRgFcLcb97(const uint8_t * ptr){
     fprintf(stderr, "%s::%d::%p::UNIMPLEMENTED\n", __FUNCTION__, __LINE__, ptr); exit(11);
+    return true;
 }
 
-static void parse_fibRgFcLcb2000(const uint8_t * ptr){
+static bool parse_fibRgFcLcb2000(const uint8_t * ptr){
     fprintf(stderr, "%s::%d::%p::UNIMPLEMENTED\n", __FUNCTION__, __LINE__, ptr); exit(11);
+    return true;
 }
 
 
+#if 0
 /*
  * TODO: MOVE THIS TO A STRUCTURE THAT IS PASSED IN, BUT 
  * CURRENTLY TRYING TO FIGURE OUT IF I AM FINDING ALL THE DATA CORRECTLY
  */
 FibRgFcLcb97 g_FibRgFcLcb97Header;
+#endif
 
 
 
 
-static void parse_fibRgFcLcb2002(const uint8_t * base_ptr, size_t idx, const property_t * table_stream){
+static bool parse_fibRgFcLcb2002(const uint8_t * base_ptr, size_t idx, const property_t * table_stream
+        , FibRgFcLcb97 * g_FibRgFcLcb97Header
+){
+
     const uint8_t * ptr = &(base_ptr[idx]);
 
     fprintf(stderr, "%s::%d::Data is in the fcDggInfo, size is in the lcbDggInfo\n", __FUNCTION__, __LINE__);
     fprintf(stderr, "%s::%d::Structure is the FibRgFcLcb97\n", __FUNCTION__, __LINE__);
     fprintf(stderr, "%s::%d::%p\n", __FUNCTION__, __LINE__, table_stream);
 
-    copy_FibRgFcLcb97(&g_FibRgFcLcb97Header, ptr);
+    copy_FibRgFcLcb97(g_FibRgFcLcb97Header, ptr);
 
     /*Offset is in the TableStream.*/
-    size_t offset = g_FibRgFcLcb97Header.fcDggInfo;
-    size_t size = g_FibRgFcLcb97Header.lcbDggInfo;
+    size_t offset = g_FibRgFcLcb97Header->fcDggInfo;
+    size_t size = g_FibRgFcLcb97Header->lcbDggInfo;
     fprintf(stderr, "%s::%d::Offset = %lu (0x%lx)\n", __FUNCTION__, __LINE__, offset, offset);
     fprintf(stderr, "%s::%d::Size = %lu (0x%lx)\n", __FUNCTION__, __LINE__, size, size);
 
@@ -472,17 +479,24 @@ static void parse_fibRgFcLcb2002(const uint8_t * base_ptr, size_t idx, const pro
 
 
     fprintf(stderr, "%s::%d::UNIMPLEMENTED\n", __FUNCTION__, __LINE__); /* exit(11); */
+
+    fprintf(stderr, "%s::%d::TODO:Verify the structure is at the beginning for all of these, and change it to a normal copy\n", __FUNCTION__, __LINE__);
+    return true;
 }
 
-static void parse_fibRgFcLcb2003(const uint8_t * ptr){
+static bool parse_fibRgFcLcb2003(const uint8_t * ptr){
     fprintf(stderr, "%s::%d::%p::UNIMPLEMENTED\n", __FUNCTION__, __LINE__, ptr); exit(11);
+    return true;
 }
 
-static void parse_fibRgFcLcb2007(const uint8_t * ptr){
+static bool parse_fibRgFcLcb2007(const uint8_t * ptr){
     fprintf(stderr, "%s::%d::%p::UNIMPLEMENTED\n", __FUNCTION__, __LINE__, ptr); exit(11);
+    return true;
 }
 
-static void test_for_pictures( const property_t *word_block, const property_t * table_stream, ole2_header_t *hdr) {
+static bool test_for_pictures( const property_t *word_block, const property_t * table_stream, ole2_header_t *hdr, FibRgFcLcb97 * g_FibRgFcLcb97Header) {
+    bool bRet = false;
+
     const uint8_t *ptr = NULL;
     fib_base_t fib     = {0};
     size_t to_read = 0x1000;
@@ -491,13 +505,13 @@ static void test_for_pictures( const property_t *word_block, const property_t * 
 
     if ((size_t)(hdr->m_length) < (size_t)(fib_offset + sizeof(fib_base_t))) {
         cli_dbgmsg("ERROR: Invalid offset for File Information Block %d (0x%x)\n", fib_offset, fib_offset);
-        return;
+        goto done;
     }
 
     ptr = fmap_need_off_once(hdr->map, fib_offset, to_read);
     if (NULL == ptr) {
         cli_dbgmsg("ERROR: Invalid offset for File Information Block %d (0x%x)\n", fib_offset, fib_offset);
-        return;
+        goto done;
     }
     copy_fib_base(&fib, ptr);
 
@@ -505,7 +519,7 @@ static void test_for_pictures( const property_t *word_block, const property_t * 
 
     if (FIB_BASE_IDENTIFIER != fib.wIdent) {
         cli_dbgmsg("ERROR: Invalid identifier for File Information Block %d (0x%x)\n", fib.wIdent, fib.wIdent);
-        return;
+        goto done;
     }
 
     uint32_t idx = sizeof(fib);
@@ -514,7 +528,7 @@ static void test_for_pictures( const property_t *word_block, const property_t * 
     read_uint16(ptr, to_read, &idx, &csw);
     if (0x000e != csw){
         fprintf(stderr, "%s::%d::Invalid csw = 0x%x\n", __FUNCTION__, __LINE__, csw);
-        return;
+        goto done;
     }
 
     fprintf(stderr, "%s::%d::TODO: Make this a #define\n", __FUNCTION__, __LINE__);
@@ -524,7 +538,7 @@ static void test_for_pictures( const property_t *word_block, const property_t * 
     read_uint16(ptr, to_read, &idx, &cslw);
     if (0x0016 != cslw) {
         fprintf(stderr, "%s::%d::Invalid cslw = 0x%x\n", __FUNCTION__, __LINE__, cslw);
-        return;
+        goto done;
     }
     idx += 88; /* Size of the FibRgLw97.  Don't think I need anything from there. */
 
@@ -533,44 +547,47 @@ static void test_for_pictures( const property_t *word_block, const property_t * 
     switch (fib.nFib){
         default:
             fprintf(stderr, "%s::%d::Invalid fib.nFib\n", __FUNCTION__, __LINE__);
-            return;
+            goto done;
         case 0x00c1:
             if (0x005d != cbRgFcLcb){
                 fprintf(stderr, "%s::%d::Invalid fib.nFib(0x%x) cbRgFcLcb(0x%x) combo\n", __FUNCTION__, __LINE__, fib.nFib, cbRgFcLcb);
-                return;
+                goto done;
             }
-            parse_fibRgFcLcb97(ptr);
+            bRet = parse_fibRgFcLcb97(ptr);
             break;
         case 0x00d9:
             if (0x006c != cbRgFcLcb){
                 fprintf(stderr, "%s::%d::Invalid fib.nFib(0x%x) cbRgFcLcb(0x%x) combo\n", __FUNCTION__, __LINE__, fib.nFib, cbRgFcLcb);
-                return;
+                goto done;
             }
-            parse_fibRgFcLcb2000(ptr);
+            bRet = parse_fibRgFcLcb2000(ptr);
             break;
         case 0x0101:
             if (0x0088 != cbRgFcLcb){
                 fprintf(stderr, "%s::%d::Invalid fib.nFib(0x%x) cbRgFcLcb(0x%x) combo\n", __FUNCTION__, __LINE__, fib.nFib, cbRgFcLcb);
-                return;
+                goto done;
             }
             fprintf(stderr, "%s::%d::idx = %u (0x%x)\n", __FUNCTION__, __LINE__, idx, idx);
-            parse_fibRgFcLcb2002(ptr, idx, table_stream);
+            bRet = parse_fibRgFcLcb2002(ptr, idx, table_stream, g_FibRgFcLcb97Header);
             break;
         case 0x010c:
             if (0x00a4 != cbRgFcLcb){
                 fprintf(stderr, "%s::%d::Invalid fib.nFib(0x%x) cbRgFcLcb(0x%x) combo\n", __FUNCTION__, __LINE__, fib.nFib, cbRgFcLcb);
-                return;
+                goto done;
             }
-            parse_fibRgFcLcb2003(ptr);
+            bRet = parse_fibRgFcLcb2003(ptr);
             break;
         case 0x0112:
             if (0x00b7 != cbRgFcLcb){
                 fprintf(stderr, "%s::%d::Invalid fib.nFib(0x%x) cbRgFcLcb(0x%x) combo\n", __FUNCTION__, __LINE__, fib.nFib, cbRgFcLcb);
-                return;
+                goto done;
             }
-            parse_fibRgFcLcb2007(ptr);
+            bRet = parse_fibRgFcLcb2007(ptr);
             break;
     }
+
+done:
+    return bRet;
 }
 
 

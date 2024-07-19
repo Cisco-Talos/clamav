@@ -897,6 +897,8 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
     int toval = 0;
     property_t * wordDocStream = NULL;
     property_t * tableStream = NULL;
+    FibRgFcLcb97 fibRgFcLcb97Header = {0};
+    bool bFibRgFcLcb97HeaderInitialized = false;
 
     ole2_listmsg("ole2_walk_property_tree() called\n");
     ole2_list_init(&node_list);
@@ -975,8 +977,24 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
 
         if (0 == ole2_cmp_name(prop_block[idx].name, prop_block[idx].name_size, "WORDDocument")) {
             test_for_encryption(&(prop_block[idx]), hdr, pEncryptionStatus);
+            bFibRgFcLcb97HeaderInitialized = test_for_pictures(&(prop_block[idx]), tableStream, hdr, &fibRgFcLcb97Header);
 
-            test_for_pictures(&(prop_block[idx]), tableStream, hdr);
+#if 1
+            {
+            fprintf(stderr, "%s::%d::Delete this when ready\n", __FUNCTION__, __LINE__);
+            if (bFibRgFcLcb97HeaderInitialized) {
+                size_t offset = fibRgFcLcb97Header.fcDggInfo;
+                size_t size = fibRgFcLcb97Header.lcbDggInfo;
+                fprintf(stderr, "%s::%d::Offset = %lu (0x%lx)\n", __FUNCTION__, __LINE__, offset, offset);
+                fprintf(stderr, "%s::%d::Size = %lu (0x%lx)\n", __FUNCTION__, __LINE__, size, size);
+                fprintf(stderr, "%s::%d::verify that these values are the same as the offset and size printed in 'parse_fibRgFcLcb2002'\n", __FUNCTION__, __LINE__);
+            }
+            fprintf(stderr, "%s::%d::END Delete this when ready\n", __FUNCTION__, __LINE__);
+        }
+#endif
+
+
+
             wordDocStream  = &(prop_block[idx]);
             fprintf(stderr, "%s::%d::%p::setting wordDocStream\n", __FUNCTION__, __LINE__, wordDocStream);
 
@@ -1049,7 +1067,7 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
         cli_dbgmsg("ERROR: Invalid offset for File Information Block %ld (0x%lx)\n", offset, offset);
         exit(11);
     }
-    extract_images_2(&g_FibRgFcLcb97Header, ptr);
+    extract_images_2(&fibRgFcLcb97Header, ptr);
 
 
 
