@@ -525,9 +525,6 @@ done:
 
 
 
-#if 0
-#else
-
 typedef struct __attribute__((packed)) {
     uint32_t spidMax;
     uint32_t cidcl;
@@ -536,7 +533,6 @@ typedef struct __attribute__((packed)) {
 } OfficeArtFDGG;
 
 static void copy_OfficeArtFDGG(OfficeArtFDGG * dst, const uint8_t * const ptr){
-    //size_t idx = 0;
     memcpy(dst, ptr, sizeof(OfficeArtFDGG));
 
     dst->spidMax = ole2_endian_convert_32(dst->spidMax);
@@ -872,7 +868,6 @@ static void extract_images(ole2_header_t * ole2Hdr, FibRgFcLcb97 * header, const
     }
 }
 
-#endif
 
 
 
