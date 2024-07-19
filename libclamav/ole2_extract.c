@@ -899,6 +899,7 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
     property_t * tableStream = NULL;
     FibRgFcLcb97 fibRgFcLcb97Header = {0};
     bool bFibRgFcLcb97HeaderInitialized = false;
+    fib_base_t fibBase     = {0};
 
     ole2_listmsg("ole2_walk_property_tree() called\n");
     ole2_list_init(&node_list);
@@ -976,8 +977,22 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
         }
 
         if (0 == ole2_cmp_name(prop_block[idx].name, prop_block[idx].name_size, "WORDDocument")) {
+            uint32_t fib_offset = get_stream_data_offset(hdr, &(prop_block[idx]), prop_block[idx].start_block);
+            const uint8_t * ptr = NULL;
+
+            if ((size_t)(hdr->m_length) < (size_t)(fib_offset + sizeof(fib_base_t))) {
+                cli_dbgmsg("ERROR: Invalid offset for File Information Block %d (0x%x)\n", fib_offset, fib_offset);
+                continue;
+            }
+
+            ptr = fmap_need_off_once(hdr->map, fib_offset, sizeof(fib_base_t));
+            if (NULL == ptr) {
+                cli_dbgmsg("ERROR: Invalid offset for File Information Block %d (0x%x)\n", fib_offset, fib_offset);
+                continue;
+            }
+            copy_fib_base(&fibBase, ptr);
             test_for_encryption(&(prop_block[idx]), hdr, pEncryptionStatus);
-            bFibRgFcLcb97HeaderInitialized = test_for_pictures(&(prop_block[idx]), tableStream, hdr, &fibRgFcLcb97Header);
+            bFibRgFcLcb97HeaderInitialized = test_for_pictures(&(prop_block[idx]), hdr, &fibRgFcLcb97Header);
 
 #if 1
             {

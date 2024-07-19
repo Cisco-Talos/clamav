@@ -436,7 +436,7 @@ FibRgFcLcb97 g_FibRgFcLcb97Header;
 
 
 
-static bool parse_fibRgFcLcb2002(const uint8_t * base_ptr, size_t idx, const property_t * table_stream
+static bool parse_fibRgFcLcb2002(const uint8_t * base_ptr, size_t idx
         , FibRgFcLcb97 * g_FibRgFcLcb97Header
 ){
 
@@ -444,7 +444,7 @@ static bool parse_fibRgFcLcb2002(const uint8_t * base_ptr, size_t idx, const pro
 
     fprintf(stderr, "%s::%d::Data is in the fcDggInfo, size is in the lcbDggInfo\n", __FUNCTION__, __LINE__);
     fprintf(stderr, "%s::%d::Structure is the FibRgFcLcb97\n", __FUNCTION__, __LINE__);
-    fprintf(stderr, "%s::%d::%p\n", __FUNCTION__, __LINE__, table_stream);
+//    fprintf(stderr, "%s::%d::%p\n", __FUNCTION__, __LINE__, table_stream);
 
     copy_FibRgFcLcb97(g_FibRgFcLcb97Header, ptr);
 
@@ -494,7 +494,7 @@ static bool parse_fibRgFcLcb2007(const uint8_t * ptr){
     return true;
 }
 
-static bool test_for_pictures( const property_t *word_block, const property_t * table_stream, ole2_header_t *hdr, FibRgFcLcb97 * g_FibRgFcLcb97Header) {
+static bool test_for_pictures( const property_t *word_block, ole2_header_t *hdr, FibRgFcLcb97 * g_FibRgFcLcb97Header) {
     bool bRet = false;
 
     const uint8_t *ptr = NULL;
@@ -568,7 +568,7 @@ static bool test_for_pictures( const property_t *word_block, const property_t * 
                 goto done;
             }
             fprintf(stderr, "%s::%d::idx = %u (0x%x)\n", __FUNCTION__, __LINE__, idx, idx);
-            bRet = parse_fibRgFcLcb2002(ptr, idx, table_stream, g_FibRgFcLcb97Header);
+            bRet = parse_fibRgFcLcb2002(ptr, idx, g_FibRgFcLcb97Header);
             break;
         case 0x010c:
             if (0x00a4 != cbRgFcLcb){
@@ -864,8 +864,10 @@ static void processOfficeArtFBSE(OfficeArtRecordHeader * imageHeader, const uint
         /* The BLIP is embedded in this record*/ 
         processOfficeArtBlip(&(ptr[offset]));
     } else {
-        fprintf(stderr, "%s::%d::Still trying to figure out where teh BLIP is!!!\n", __FUNCTION__, __LINE__);
-        fprintf(stderr, "%s::%d::Found the BLIP in the 'DocumentSummaryInformation' stream (searching), but can't find structures that point towards it\n", __FUNCTION__, __LINE__);
+        /* The BLIP is in the 'WordDocument' stream. */
+
+        fprintf(stderr, "%s::%d::Need to get the pointer from the word document stream here, since it's not embedded in the FBSE Structure\n", __FUNCTION__, __LINE__);
+        exit(11);
     }
 
 
@@ -909,7 +911,6 @@ static void processOfficeArtFBSE(OfficeArtRecordHeader * imageHeader, const uint
 }
 
 static void extract_images_2( FibRgFcLcb97 * header, const uint8_t * ptr) {
-    fprintf(stderr, "%s::%d::%p::%p\n", __FUNCTION__, __LINE__, header, ptr);
     size_t offset = header->fcDggInfo;
     uint32_t i;
 
