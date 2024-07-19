@@ -567,36 +567,30 @@ static bool test_for_pictures( const property_t *word_block, ole2_header_t *hdr,
                 fprintf(stderr, "%s::%d::Invalid fib.nFib(0x%x) cbRgFcLcb(0x%x) combo\n", __FUNCTION__, __LINE__, fib.nFib, cbRgFcLcb);
                 goto done;
             }
-            //bRet = parse_fibRgFcLcb97(ptr);
             break;
         case FIB_VERSION_FIBRGFCLCB2000:
             if (FIB_64BITCNT_FIBRGFCLCB2000 != cbRgFcLcb){
                 fprintf(stderr, "%s::%d::Invalid fib.nFib(0x%x) cbRgFcLcb(0x%x) combo\n", __FUNCTION__, __LINE__, fib.nFib, cbRgFcLcb);
                 goto done;
             }
-            //bRet = parse_fibRgFcLcb2000(ptr);
             break;
         case FIB_VERSION_FIBRGFCLCB2002:
             if (FIB_64BITCNT_FIBRGFCLCB2002 != cbRgFcLcb){
                 fprintf(stderr, "%s::%d::Invalid fib.nFib(0x%x) cbRgFcLcb(0x%x) combo\n", __FUNCTION__, __LINE__, fib.nFib, cbRgFcLcb);
                 goto done;
             }
-            //fprintf(stderr, "%s::%d::idx = %u (0x%x)\n", __FUNCTION__, __LINE__, idx, idx);
-            //bRet = parse_fibRgFcLcb2002(ptr, idx, g_FibRgFcLcb97Header);
             break;
         case FIB_VERSION_FIBRGFCLCB2003:
             if (FIB_64BITCNT_FIBRGFCLCB2003 != cbRgFcLcb){
                 fprintf(stderr, "%s::%d::Invalid fib.nFib(0x%x) cbRgFcLcb(0x%x) combo\n", __FUNCTION__, __LINE__, fib.nFib, cbRgFcLcb);
                 goto done;
             }
-            //bRet = parse_fibRgFcLcb2003(ptr);
             break;
         case FIB_VERSION_FIBRGFCLCB2007:
             if (FIB_64BITCNT_FIBRGFCLCB2007 != cbRgFcLcb){
                 fprintf(stderr, "%s::%d::Invalid fib.nFib(0x%x) cbRgFcLcb(0x%x) combo\n", __FUNCTION__, __LINE__, fib.nFib, cbRgFcLcb);
                 goto done;
             }
-            //bRet = parse_fibRgFcLcb2007(ptr);
             break;
     }
 
@@ -614,34 +608,6 @@ done:
 
 
 #if 0
-static void extract_images( FibRgFcLcb97 * header, const property_t * table_stream,  ole2_header_t *hdr) {
-
-    int i;
-    const uint8_t * table_stream_data = (const uint8_t*) table_stream;
-    size_t offset = header->fcDggInfo;
-
-    fprintf(stderr, "%s::%d::%p::%lu::(0x%lx)Entering\n", __FUNCTION__, __LINE__, hdr, offset, offset);
-#if 0
-    const uint8_t * ptr = fmap_need_off_once(hdr->map, &(table_stream_data[offset]), header->lcbDggInfo );
-#else
-    const uint8_t * ptr = &(table_stream_data[offset]);
-#endif
-    fprintf(stderr, "%s::%d::%p\n", __FUNCTION__, __LINE__, ptr);
-
-    OfficeArtRecordHeader officeArtDggContainer;
-    copy_OfficeArtRecordHeader (&officeArtDggContainer, ptr);
-    /*None of the values make sense.*/
-
-    fprintf(stderr, "%s::%d::", __FUNCTION__, __LINE__);
-    for (i = 0; i < 8; i++){
-        fprintf(stderr, "%02x ", table_stream_data[offset + i]);
-    }
-    fprintf(stderr, "\n");
-
-    offset += 8; //size of OfficeArtRecordHeader
-
-    fprintf(stderr, "%s::%d::Leaving\n", __FUNCTION__, __LINE__);
-}
 #else
 
 typedef struct __attribute__((packed)) {
@@ -715,7 +681,6 @@ static void saveImageFile(const uint8_t * const ptr, size_t size){
         fprintf(stderr, "%s::%d::NOT Success\n", __FUNCTION__, __LINE__);
     }
 
-    //exit(11);
 }
 
 
@@ -871,17 +836,7 @@ static void processOfficeArtFBSE(ole2_header_t *hdr, OfficeArtRecordHeader * ima
         exit(1);
     }
 
-    fprintf(stderr, "%s::%d::imageHeader->recLen = %d\n", __FUNCTION__, __LINE__, imageHeader->recLen);
-    fprintf(stderr, "%s::%d::blip size = %d\n", __FUNCTION__, __LINE__, fbse.size);
-    fprintf(stderr, "%s::%d::delay = %d\n", __FUNCTION__, __LINE__, fbse.foDelay);
-    fprintf(stderr, "%s::%d::recInst = %d (0x%x)\n", __FUNCTION__, __LINE__, recInst, recInst);
-
-    fprintf(stderr, "%s::%d::fbse.btWin32 = %d (0x%x)\n", __FUNCTION__, __LINE__, fbse.btWin32, fbse.btWin32);
-    fprintf(stderr, "%s::%d::fbse.btMacOS = %d (0x%x)\n", __FUNCTION__, __LINE__, fbse.btMacOS, fbse.btMacOS);
-
     offset += fbse.cbName;
-
-    fprintf(stderr, "%s::%d::Since the recLen is 36 (for this file), there is no name data or embedded blip record, so I need to figure out how this delay stream works???\n", __FUNCTION__, __LINE__);
 
     if (imageHeader->recLen == (sizeof(OfficeArtFBSEKnown) + fbse.cbName + fbse.size)) {
         /* The BLIP is embedded in this record*/ 
@@ -916,50 +871,7 @@ static void processOfficeArtFBSE(ole2_header_t *hdr, OfficeArtRecordHeader * ima
 
         fprintf(stderr, "%s::%d::HERE\n", __FUNCTION__, __LINE__);
         processOfficeArtBlip(ptr);
-
-
-
-        fprintf(stderr, "%s::%d::Need to get the pointer from the word document stream here, since it's not embedded in the FBSE Structure\n", __FUNCTION__, __LINE__);
-        exit(11);
     }
-
-
-
-#if 0
-    offset += fbse.foDelay;
-    uint8_t * blah = fmap_need_off_once(pGLOBAL_HEADER->map, offset, fbse.size);
-    processOfficeArtBlip(blah);
-#else
-
-
-#if 0
-    {
-        size_t andy;
-        fprintf(stderr, "%s::%d::", __FUNCTION__, __LINE__);
-        for (andy = 0; andy < 1024; andy++) {
-            fprintf(stderr, "%02x ", ptr[offset + andy]);
-
-        }
-        fprintf(stderr, "\n");
-
-        fprintf(stderr, "%s::%d::", __FUNCTION__, __LINE__);
-        for (andy = 0; andy < 1024; andy++) {
-            char c = ptr[offset + andy];
-            if (c) fprintf(stderr, "%c ", c);
-            else fprintf(stderr, " ");
-
-        }
-        fprintf(stderr, "\n");
-
-        fprintf(stderr, "%s::%d::Figure out what is going on here, since none of the record types match the documentation\n", __FUNCTION__, __LINE__);
-        exit(1);
-    }
-#endif
-
-
-
-//    processOfficeArtBlip(&(ptr[offset]));
-#endif
 
 }
 
