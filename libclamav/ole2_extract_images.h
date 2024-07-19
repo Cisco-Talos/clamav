@@ -482,9 +482,13 @@ static void parse_fibRgFcLcb2007(const uint8_t * ptr){
     fprintf(stderr, "%s::%d::%p::UNIMPLEMENTED\n", __FUNCTION__, __LINE__, ptr); exit(11);
 }
 
+#if 0
 ole2_header_t * pGLOBAL_HEADER;
+#endif
 static void test_for_pictures( const property_t *word_block, const property_t * table_stream, ole2_header_t *hdr) {
+#if 0
     pGLOBAL_HEADER = hdr;
+#endif
 
     const uint8_t *ptr = NULL;
     fib_base_t fib     = {0};
