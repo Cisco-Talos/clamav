@@ -408,40 +408,6 @@ static uint8_t getRecVer(OfficeArtRecordHeader * header) {
     return header->recVer_recInstance & 0xf;
 }
 
-#if 0
-static bool parse_fibRgFcLcb97(const uint8_t * base_ptr, size_t idx, FibRgFcLcb97 * g_FibRgFcLcb97Header){
-
-    const uint8_t * ptr = &(base_ptr[idx]);
-    copy_FibRgFcLcb97(g_FibRgFcLcb97Header, ptr);
-
-    /*Offset is in the TableStream.*/
-    size_t offset = g_FibRgFcLcb97Header->fcDggInfo;
-
-    /*Information about 
-     * https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-odraw/dd7133b6-ed10-4bcb-be29-67b0544f884f 
-     * at the beginning of 
-     * https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-doc/8699a984-3718-44be-adae-08b05827f8b3
-     * */
-    OfficeArtRecordHeader drawingGroupDataRecordHeader;
-    copy_OfficeArtRecordHeader (&drawingGroupDataRecordHeader, &(ptr[offset]));
-    copy_OfficeArtRecordHeader (&drawingGroupDataRecordHeader, &(base_ptr[offset]));
-
-    return true;
-}
-#endif
-
-#if 0
-static bool parse_fibRgFcLcb2003(const uint8_t * ptr){
-    fprintf(stderr, "%s::%d::%p::UNIMPLEMENTED\n", __FUNCTION__, __LINE__, ptr); exit(11);
-    return true;
-}
-
-static bool parse_fibRgFcLcb2007(const uint8_t * ptr){
-    fprintf(stderr, "%s::%d::%p::UNIMPLEMENTED\n", __FUNCTION__, __LINE__, ptr); exit(11);
-    return true;
-}
-#endif
-
 static bool test_for_pictures( const property_t *word_block, ole2_header_t *hdr, FibRgFcLcb97 * g_FibRgFcLcb97Header) {
     bool bRet = false;
 
@@ -545,17 +511,12 @@ static bool test_for_pictures( const property_t *word_block, ole2_header_t *hdr,
             break;
     }
 
-    /* Since all of the FibBlock structures have a FibRgFcLcb97 at the beginning, we only need one copy function.
+    /* Since all of the FibBlock structures have a FibRgFcLcb97 at the beginning, we just copy the struct.
      * See https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-doc/175d2fe1-92dd-45d2-b091-1fe8a0c0d40a
      * for more details
      */
-#if 0
-    bRet = parse_fibRgFcLcb97(ptr, idx, g_FibRgFcLcb97Header);
-#else
-    //const uint8_t * ptr = &(base_ptr[idx]);
     copy_FibRgFcLcb97(g_FibRgFcLcb97Header, &(ptr[idx]));
     bRet = true;
-#endif
 
 done:
     return bRet;
