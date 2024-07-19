@@ -1196,7 +1196,7 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
             exit(11);
         }
 
-        extract_images_2(hdr, &fibRgFcLcb97Header, ptr, &wordDocumentStream);
+        extract_images(hdr, &fibRgFcLcb97Header, ptr, &wordDocumentStream);
 
     }
 

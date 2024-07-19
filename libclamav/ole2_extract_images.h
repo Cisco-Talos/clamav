@@ -864,19 +864,9 @@ static void processOfficeArtFBSE(ole2_header_t *hdr, OfficeArtRecordHeader * ima
 
 }
 
-static void extract_images_2(ole2_header_t * ole2Hdr, FibRgFcLcb97 * header, const uint8_t * ptr, property_t * wordDocStream) {
+static void extract_images(ole2_header_t * ole2Hdr, FibRgFcLcb97 * header, const uint8_t * ptr, property_t * wordDocStream) {
     size_t offset = header->fcDggInfo;
     uint32_t i;
-
-#if 0
-    fprintf(stderr, "%s::%d::", __FUNCTION__, __LINE__);
-    for (i= 0; i < 100; i++) {
-        fprintf(stderr, "%02x ", ptr[i]);
-    }
-        fprintf(stderr, "\n");
-#endif
-
-        fprintf(stderr, "%s::%d::offset = %lx\n", __FUNCTION__, __LINE__, offset);
 
     /*
      * Start of OfficeArtContent
@@ -889,8 +879,8 @@ static void extract_images_2(ole2_header_t * ole2Hdr, FibRgFcLcb97 * header, con
 
     /*TODO: validate recVer and recInst separately*/
     if (0xf != oadc_recordHeader.recVer_recInstance){
-        fprintf(stderr, "%s::%d::Error\n", __FUNCTION__, __LINE__);
-        exit(11);
+        cli_dbgmsg("ERROR: Invalid record version (%x)\n", oadc_recordHeader.recVer_recInstance);
+        return;
     }
 
     offset += sizeof (OfficeArtRecordHeader );
@@ -911,14 +901,11 @@ static void extract_images_2(ole2_header_t * ole2Hdr, FibRgFcLcb97 * header, con
     copy_OfficeArtFDGG(&fdgg, &(ptr[offset]));
     offset += sizeof(OfficeArtFDGG);
 
-    fprintf(stderr, "%s::%d::fdgg.cidcl = %d\n", __FUNCTION__, __LINE__, fdgg.cidcl);
 /* OfficeArtIDCL is not used in parsing images, only drawings.  If details are needed, they are
  * https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-odraw/2335d2f8-109b-4cd6-ac8d-40b1237283f3
  * */
 #define OFFICE_ART_IDCL_LEN 8 
     offset += (OFFICE_ART_IDCL_LEN  * (fdgg.cidcl-1));
-
-    fprintf(stderr, "\n%s::%d::Before last one\n", __FUNCTION__, __LINE__);
 
     /*
      * OfficeArtBStoreContainer
