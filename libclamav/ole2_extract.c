@@ -896,10 +896,15 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
     char *name;
     int toval = 0;
     property_t * wordDocStream = NULL;
-    property_t * tableStream = NULL;
+    //property_t * tableStream = NULL;
     FibRgFcLcb97 fibRgFcLcb97Header = {0};
     bool bFibRgFcLcb97HeaderInitialized = false;
     fib_base_t fibBase     = {0};
+    property_t wordDocumentStream = {0};
+    property_t TableStream1 = {0};
+    property_t TableStream0 = {0};
+    bool TableStream1Initialized = false;
+    bool TableStream0Initialized = false;
 
     ole2_listmsg("ole2_walk_property_tree() called\n");
     ole2_list_init(&node_list);
@@ -977,6 +982,7 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
         }
 
         if (0 == ole2_cmp_name(prop_block[idx].name, prop_block[idx].name_size, "WORDDocument")) {
+#if 0
             uint32_t fib_offset = get_stream_data_offset(hdr, &(prop_block[idx]), prop_block[idx].start_block);
             const uint8_t * ptr = NULL;
 
@@ -991,6 +997,8 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
                 continue;
             }
             copy_fib_base(&fibBase, ptr);
+#endif
+            memcpy(&wordDocumentStream, &(prop_block[idx]), sizeof(wordDocumentStream));
             test_for_encryption(&(prop_block[idx]), hdr, pEncryptionStatus);
             bFibRgFcLcb97HeaderInitialized = test_for_pictures(&(prop_block[idx]), hdr, &fibRgFcLcb97Header);
 
@@ -1070,8 +1078,14 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
         } else if (0 == ole2_cmp_name(prop_block[idx].name, prop_block[idx].name_size, "EncryptedPackage")) {
             pEncryptionStatus->encrypted = true;
         } else if (0 == ole2_cmp_name(prop_block[idx].name, prop_block[idx].name_size, "1Table")) {
+#if 0
             tableStream = &(prop_block[idx]);
+#else
+            memcpy(&TableStream1, &(prop_block[idx]), sizeof(TableStream1));
+            TableStream1Initialized = true;
+#endif
 
+#if 0
     size_t offset = get_stream_data_offset(hdr, tableStream, tableStream->start_block);
     fprintf(stderr, "%s::%d::offset = %lu::offset = %lx\n", __FUNCTION__, __LINE__, offset, offset);
 
@@ -1083,6 +1097,9 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
         exit(11);
     }
     extract_images_2(&fibRgFcLcb97Header, ptr);
+#else
+    fprintf(stderr, "%s::%d::JUST REMOVED\n", __FUNCTION__, __LINE__);
+#endif
 
 
 
@@ -1109,7 +1126,9 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
 
         } else if (0 == ole2_cmp_name(prop_block[idx].name, prop_block[idx].name_size, "0Table")) {
 
-fprintf(stderr, "%s::%d::Implement this\n", __FUNCTION__, __LINE__); exit(112);
+            memcpy(&TableStream0, &(prop_block[idx]), sizeof(TableStream0));
+            TableStream0Initialized = true;
+//fprintf(stderr, "%s::%d::Implement this\n", __FUNCTION__, __LINE__); exit(112);
 
 #if 0
             tableStream = &(prop_block[idx]);
@@ -1311,12 +1330,72 @@ fprintf(stderr, "%s::%d::Implement this\n", __FUNCTION__, __LINE__); exit(112);
 //{ if (wordDocStream) { fprintf(stderr, "%s::%d::Calling test_for_pictures (end of loop)\n", __FUNCTION__, __LINE__); test_for_pictures(wordDocStream, tableStream, hdr); } }
     }
 
+#if 1
 #if 0
-    fprintf(stderr, "%s::%d::%p\n", __FUNCTION__, __LINE__, wordDocStream);
-    fprintf(stderr, "%s::%d::%p\n", __FUNCTION__, __LINE__, tableStream);
+    FibRgFcLcb97 fibRgFcLcb97Header = {0};
+    bool bFibRgFcLcb97HeaderInitialized = false;
+    fib_base_t fibBase     = {0};
+    property_t wordDocumentStream = {0};
+    property_t TableStream1 = {0};
+    property_t TableStream0 = {0};
+    bool TableStream1Initialized = false;
+    bool TableStream0Initialized = false;
+#endif
+    if (bFibRgFcLcb97HeaderInitialized  && (TableStream1Initialized || TableStream0Initialized)) {
+        property_t * tableStream = NULL;
+        if (TableStream0Initialized) {
+            tableStream = &TableStream0;
+        }
+        if (TableStream1Initialized) {
+            tableStream = &TableStream1;
+        }
+        if (TableStream0Initialized && TableStream1Initialized) {
+            /*Get the FIBBase*/
+            fib_base_t fib;
+            uint32_t fib_offset = get_stream_data_offset(hdr, &wordDocumentStream, wordDocumentStream.start_block);
+            const uint8_t * ptr = NULL;
 
-    if (wordDocStream && tableStream){
-        test_for_pictures(wordDocStream, tableStream, hdr);
+            if ((size_t)(hdr->m_length) < (size_t)(fib_offset + sizeof(fib_base_t))) {
+                cli_dbgmsg("ERROR: Invalid offset for File Information Block %d (0x%x)\n", fib_offset, fib_offset);
+                exit(99);
+            }
+
+            ptr = fmap_need_off_once(hdr->map, fib_offset, sizeof(fib_base_t));
+            if (NULL == ptr) {
+                cli_dbgmsg("ERROR: Invalid offset for File Information Block %d (0x%x)\n", fib_offset, fib_offset);
+                exit(99);
+            }
+            copy_fib_base(&fib, ptr);
+            fprintf(stderr, "%s::%d::create call for 'initializeFibBase'\n", __FUNCTION__, __LINE__);
+
+#define FIB_BASE_fWhichTblStm_OFFSET 9
+            if (fib.ABCDEFGHIJKLM & (1 << FIB_BASE_fWhichTblStm_OFFSET)) {
+                tableStream = &TableStream1;
+            } else {
+                tableStream = &TableStream0;
+            }
+        }
+
+
+
+
+
+        /*Call Extract */
+    size_t offset = get_stream_data_offset(hdr, tableStream, tableStream->start_block);
+    fprintf(stderr, "%s::%d::offset = %lu::offset = %lx\n", __FUNCTION__, __LINE__, offset, offset);
+
+    fprintf(stderr, "%s::%d::FOUND THE OFFSET OF THE DATA.  This offset + the offset referenced in 'header'\n", __FUNCTION__, __LINE__);
+    fprintf(stderr, "%s::%d::Asking for 4k, because, why not???\n", __FUNCTION__, __LINE__);
+    const uint8_t * const ptr = fmap_need_off_once(hdr->map, offset, 4096);
+    if (NULL == ptr) {
+        cli_dbgmsg("ERROR: Invalid offset for File Information Block %ld (0x%lx)\n", offset, offset);
+        exit(11);
+    }
+    extract_images_2(&fibRgFcLcb97Header, ptr);
+
+
+
+
     }
 #endif
 
