@@ -944,27 +944,6 @@ static void extract_images_2(ole2_header_t * ole2Hdr, FibRgFcLcb97 * header, con
 
     offset += sizeof(OfficeArtRecordHeader);
 
-#if 0
-    /*I *hate* doing this, but I have been unable to figuer out why I need to increment by 2 bytes here.  There is
-     * nothing in the documentation that I have found to account for these bytes, so I am going to increment them
-     * here, and hope it makes sense at some point???
-     *
-     * https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-odraw/561cb6d4-d38b-4666-b2b4-10abc1dce44c
-     *
-     * */
-    offset += 2;
-#endif
-
-
-
-
-
-
-
-
-
-
-
     /*Rec types taken from 
      * https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-odraw/a7d7d967-6bff-489c-a267-3ec30448344a
      * https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-odraw/2f2d7f5e-d5c4-4cb7-b230-59b3fe8f10d6
@@ -987,43 +966,6 @@ static void extract_images_2(ole2_header_t * ole2Hdr, FibRgFcLcb97 * header, con
             processOfficeArtBlip(&(ptr[offset]));
         }
     }
-
-
-
-
-
-
-#if 0
-
-
-
-
-
-
-
-//fprintf(stderr, "%s::%d::Process blip store here\n", __FUNCTION__, __LINE__);
-    uint16_t numRecords = (blipStoreRecordHeader.recVer_recInstance & 0xfff0) >> 4;
-
-    offset += sizeof(OfficeArtRecordHeader);
-
-
-    /*I am thinking I need to increment offset by 2 here, but I can't find anything in the docs to say why.
-     * That's just what all the files appear to be expecting.*/
-
-    fprintf(stderr, "%s::%d::offset = %lx\n", __FUNCTION__, __LINE__, offset);
-    fprintf(stderr, "%s::%d::numRecords = 0x%x\n", __FUNCTION__, __LINE__, numRecords);
-#endif
-
-    fprintf(stderr, "%s::%d::", __FUNCTION__, __LINE__);
-    for (i = 0; i < blipStoreRecordHeader.recLen; i++){
-        fprintf(stderr, "%02x ", ptr[offset + i]);
-    }
-    fprintf(stderr, "\n");
-
-
-    fprintf(stderr, "%s::%d::Got to end\n", __FUNCTION__, __LINE__);
-
-    exit(11);
 }
 
 #endif
