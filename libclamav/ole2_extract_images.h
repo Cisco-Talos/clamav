@@ -409,6 +409,7 @@ static uint8_t getRecVer(OfficeArtRecordHeader * header) {
 }
 
 
+#if 0
 static bool parse_fibRgFcLcb97(const uint8_t * ptr){
     fprintf(stderr, "%s::%d::%p::UNIMPLEMENTED\n", __FUNCTION__, __LINE__, ptr); exit(11);
     return true;
@@ -420,7 +421,6 @@ static bool parse_fibRgFcLcb2000(const uint8_t * ptr){
 }
 
 
-#if 0
 /*
  * TODO: MOVE THIS TO A STRUCTURE THAT IS PASSED IN, BUT 
  * CURRENTLY TRYING TO FIGURE OUT IF I AM FINDING ALL THE DATA CORRECTLY
@@ -431,7 +431,7 @@ FibRgFcLcb97 g_FibRgFcLcb97Header;
 
 
 
-static bool parse_fibRgFcLcb2002(const uint8_t * base_ptr, size_t idx
+static bool parse_fibRgFcLcb97(const uint8_t * base_ptr, size_t idx
         , FibRgFcLcb97 * g_FibRgFcLcb97Header
 ){
 
@@ -479,6 +479,7 @@ static bool parse_fibRgFcLcb2002(const uint8_t * base_ptr, size_t idx
     return true;
 }
 
+#if 0
 static bool parse_fibRgFcLcb2003(const uint8_t * ptr){
     fprintf(stderr, "%s::%d::%p::UNIMPLEMENTED\n", __FUNCTION__, __LINE__, ptr); exit(11);
     return true;
@@ -488,6 +489,7 @@ static bool parse_fibRgFcLcb2007(const uint8_t * ptr){
     fprintf(stderr, "%s::%d::%p::UNIMPLEMENTED\n", __FUNCTION__, __LINE__, ptr); exit(11);
     return true;
 }
+#endif
 
 static bool test_for_pictures( const property_t *word_block, ole2_header_t *hdr, FibRgFcLcb97 * g_FibRgFcLcb97Header) {
     bool bRet = false;
@@ -565,38 +567,44 @@ static bool test_for_pictures( const property_t *word_block, ole2_header_t *hdr,
                 fprintf(stderr, "%s::%d::Invalid fib.nFib(0x%x) cbRgFcLcb(0x%x) combo\n", __FUNCTION__, __LINE__, fib.nFib, cbRgFcLcb);
                 goto done;
             }
-            bRet = parse_fibRgFcLcb97(ptr);
+            //bRet = parse_fibRgFcLcb97(ptr);
             break;
         case FIB_VERSION_FIBRGFCLCB2000:
             if (FIB_64BITCNT_FIBRGFCLCB2000 != cbRgFcLcb){
                 fprintf(stderr, "%s::%d::Invalid fib.nFib(0x%x) cbRgFcLcb(0x%x) combo\n", __FUNCTION__, __LINE__, fib.nFib, cbRgFcLcb);
                 goto done;
             }
-            bRet = parse_fibRgFcLcb2000(ptr);
+            //bRet = parse_fibRgFcLcb2000(ptr);
             break;
         case FIB_VERSION_FIBRGFCLCB2002:
             if (FIB_64BITCNT_FIBRGFCLCB2002 != cbRgFcLcb){
                 fprintf(stderr, "%s::%d::Invalid fib.nFib(0x%x) cbRgFcLcb(0x%x) combo\n", __FUNCTION__, __LINE__, fib.nFib, cbRgFcLcb);
                 goto done;
             }
-            fprintf(stderr, "%s::%d::idx = %u (0x%x)\n", __FUNCTION__, __LINE__, idx, idx);
-            bRet = parse_fibRgFcLcb2002(ptr, idx, g_FibRgFcLcb97Header);
+            //fprintf(stderr, "%s::%d::idx = %u (0x%x)\n", __FUNCTION__, __LINE__, idx, idx);
+            //bRet = parse_fibRgFcLcb2002(ptr, idx, g_FibRgFcLcb97Header);
             break;
         case FIB_VERSION_FIBRGFCLCB2003:
             if (FIB_64BITCNT_FIBRGFCLCB2003 != cbRgFcLcb){
                 fprintf(stderr, "%s::%d::Invalid fib.nFib(0x%x) cbRgFcLcb(0x%x) combo\n", __FUNCTION__, __LINE__, fib.nFib, cbRgFcLcb);
                 goto done;
             }
-            bRet = parse_fibRgFcLcb2003(ptr);
+            //bRet = parse_fibRgFcLcb2003(ptr);
             break;
         case FIB_VERSION_FIBRGFCLCB2007:
             if (FIB_64BITCNT_FIBRGFCLCB2007 != cbRgFcLcb){
                 fprintf(stderr, "%s::%d::Invalid fib.nFib(0x%x) cbRgFcLcb(0x%x) combo\n", __FUNCTION__, __LINE__, fib.nFib, cbRgFcLcb);
                 goto done;
             }
-            bRet = parse_fibRgFcLcb2007(ptr);
+            //bRet = parse_fibRgFcLcb2007(ptr);
             break;
     }
+
+    /* Since all of the FibBlock structures have a FibRgFcLcb97 at the beginning, we only need one copy function.
+     * See https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-doc/175d2fe1-92dd-45d2-b091-1fe8a0c0d40a
+     * for more details
+     */
+    bRet = parse_fibRgFcLcb97(ptr, idx, g_FibRgFcLcb97Header);
 
 done:
     return bRet;
