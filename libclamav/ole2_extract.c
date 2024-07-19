@@ -897,7 +897,7 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
     int toval = 0;
     FibRgFcLcb97 fibRgFcLcb97Header = {0};
     bool bFibRgFcLcb97HeaderInitialized = false;
-    property_t wordDocumentStream = {0};
+    property_t wordDocumentBlock = {0};
     property_t TableStream1 = {0};
     property_t TableStream0 = {0};
     bool TableStream1Initialized = false;
@@ -979,7 +979,7 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
         }
 
         if (0 == ole2_cmp_name(prop_block[idx].name, prop_block[idx].name_size, "WORDDocument")) {
-            memcpy(&wordDocumentStream, &(prop_block[idx]), sizeof(wordDocumentStream));
+            memcpy(&wordDocumentBlock, &(prop_block[idx]), sizeof(wordDocumentBlock));
             test_for_encryption(&(prop_block[idx]), hdr, pEncryptionStatus);
             bFibRgFcLcb97HeaderInitialized = getFibRgFcLcb97Header(&(prop_block[idx]), hdr, &fibRgFcLcb97Header);
         } else if (0 == ole2_cmp_name(prop_block[idx].name, prop_block[idx].name_size, "WorkBook")) {
@@ -1164,7 +1164,7 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
         if (TableStream0Initialized && TableStream1Initialized) {
             /*Get the FIBBase*/
             fib_base_t fib;
-            uint32_t fib_offset = get_stream_data_offset(hdr, &wordDocumentStream, wordDocumentStream.start_block);
+            uint32_t fib_offset = get_stream_data_offset(hdr, &wordDocumentBlock, wordDocumentBlock.start_block);
             const uint8_t * ptr = NULL;
 
             if ((size_t)(hdr->m_length) < (size_t)(fib_offset + sizeof(fib_base_t))) {
@@ -1196,7 +1196,8 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
             exit(11);
         }
 
-        extract_images(hdr, &fibRgFcLcb97Header, ptr, &wordDocumentStream);
+        fprintf(stderr, "%s::%d::Calling extract_images\n", __FUNCTION__, __LINE__);
+        extract_images(hdr, &fibRgFcLcb97Header, ptr, &wordDocumentBlock);
 
     }
 
