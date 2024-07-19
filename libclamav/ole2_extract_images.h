@@ -408,10 +408,11 @@ static uint8_t getRecVer(OfficeArtRecordHeader * header) {
     return header->recVer_recInstance & 0xf;
 }
 
-static const uint8_t* load_pointer_to_stream_from_fmap(ole2_header_t * hdr, const property_t * block, size_t size){
+static const uint8_t* load_pointer_to_stream_from_fmap(ole2_header_t * hdr, const property_t * block, size_t delay, size_t size){
     const uint8_t * ptr = NULL;
 
     uint32_t offset = get_stream_data_offset(hdr, block, block->start_block);
+    offset += delay;
     if ((size_t)(hdr->m_length) < (size_t)(offset + sizeof(fib_base_t))) {
         cli_dbgmsg("ERROR: Invalid offset for stream %d (0x%x)\n", offset, offset);
         goto done;
@@ -427,7 +428,7 @@ done:
     return ptr;
 }
 
-static bool test_for_pictures( const property_t *word_block, ole2_header_t *hdr, FibRgFcLcb97 * g_FibRgFcLcb97Header) {
+static bool getFibRgFcLcb97Header( const property_t *word_block, ole2_header_t *hdr, FibRgFcLcb97 * pFibRgFcLcb97Header) {
     bool bRet = false;
 
     const uint8_t *ptr = NULL;
@@ -447,7 +448,7 @@ static bool test_for_pictures( const property_t *word_block, ole2_header_t *hdr,
         sizeof(FibRgFcLcb97)
         ;
 
-    ptr = load_pointer_to_stream_from_fmap(hdr, word_block, size);
+    ptr = load_pointer_to_stream_from_fmap(hdr, word_block, 0, size);
     if (NULL == ptr) {
         goto done;
     }
@@ -465,7 +466,7 @@ static bool test_for_pictures( const property_t *word_block, ole2_header_t *hdr,
     uint16_t csw;
     read_uint16(ptr, size, &idx, &csw);
     if (0x000e != csw){
-        fprintf(stderr, "%s::%d::Invalid csw = 0x%x\n", __FUNCTION__, __LINE__, csw);
+        cli_dbgmsg("ERROR Invalid csw = 0x%x\n", csw);
         goto done;
     }
 
@@ -474,7 +475,7 @@ static bool test_for_pictures( const property_t *word_block, ole2_header_t *hdr,
     uint16_t cslw;
     read_uint16(ptr, size, &idx, &cslw);
     if (0x0016 != cslw) {
-        fprintf(stderr, "%s::%d::Invalid cslw = 0x%x\n", __FUNCTION__, __LINE__, cslw);
+        cli_dbgmsg("ERROR Invalid cslw = 0x%x\n", cslw);
         goto done;
     }
     idx += FIBRGLW97_SIZE; /* Size of the FibRgLw97.  Don't think I need anything from there. */
@@ -500,35 +501,35 @@ static bool test_for_pictures( const property_t *word_block, ole2_header_t *hdr,
 
     switch (fib.nFib){
         default:
-            fprintf(stderr, "%s::%d::Invalid fib.nFib\n", __FUNCTION__, __LINE__);
+            cli_dbgmsg("ERROR Invalid fib.nFib = 0x%x\n", fib.nFib);
             goto done;
         case FIB_VERSION_FIBRGFCLCB97:
             if (FIB_64BITCNT_FIBRGFCLCB97 != cbRgFcLcb){
-                fprintf(stderr, "%s::%d::Invalid fib.nFib(0x%x) cbRgFcLcb(0x%x) combo\n", __FUNCTION__, __LINE__, fib.nFib, cbRgFcLcb);
+                cli_dbgmsg("ERROR Invalid fib.nFib(0x%x) cbRgFcLcb(0x%x) combo\n", fib.nFib, cbRgFcLcb);
                 goto done;
             }
             break;
         case FIB_VERSION_FIBRGFCLCB2000:
             if (FIB_64BITCNT_FIBRGFCLCB2000 != cbRgFcLcb){
-                fprintf(stderr, "%s::%d::Invalid fib.nFib(0x%x) cbRgFcLcb(0x%x) combo\n", __FUNCTION__, __LINE__, fib.nFib, cbRgFcLcb);
+                cli_dbgmsg("ERROR Invalid fib.nFib(0x%x) cbRgFcLcb(0x%x) combo\n", fib.nFib, cbRgFcLcb);
                 goto done;
             }
             break;
         case FIB_VERSION_FIBRGFCLCB2002:
             if (FIB_64BITCNT_FIBRGFCLCB2002 != cbRgFcLcb){
-                fprintf(stderr, "%s::%d::Invalid fib.nFib(0x%x) cbRgFcLcb(0x%x) combo\n", __FUNCTION__, __LINE__, fib.nFib, cbRgFcLcb);
+                cli_dbgmsg("ERROR Invalid fib.nFib(0x%x) cbRgFcLcb(0x%x) combo\n", fib.nFib, cbRgFcLcb);
                 goto done;
             }
             break;
         case FIB_VERSION_FIBRGFCLCB2003:
             if (FIB_64BITCNT_FIBRGFCLCB2003 != cbRgFcLcb){
-                fprintf(stderr, "%s::%d::Invalid fib.nFib(0x%x) cbRgFcLcb(0x%x) combo\n", __FUNCTION__, __LINE__, fib.nFib, cbRgFcLcb);
+                cli_dbgmsg("ERROR Invalid fib.nFib(0x%x) cbRgFcLcb(0x%x) combo\n", fib.nFib, cbRgFcLcb);
                 goto done;
             }
             break;
         case FIB_VERSION_FIBRGFCLCB2007:
             if (FIB_64BITCNT_FIBRGFCLCB2007 != cbRgFcLcb){
-                fprintf(stderr, "%s::%d::Invalid fib.nFib(0x%x) cbRgFcLcb(0x%x) combo\n", __FUNCTION__, __LINE__, fib.nFib, cbRgFcLcb);
+                cli_dbgmsg("ERROR Invalid fib.nFib(0x%x) cbRgFcLcb(0x%x) combo\n", fib.nFib, cbRgFcLcb);
                 goto done;
             }
             break;
@@ -538,7 +539,7 @@ static bool test_for_pictures( const property_t *word_block, ole2_header_t *hdr,
      * See https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-doc/175d2fe1-92dd-45d2-b091-1fe8a0c0d40a
      * for more details
      */
-    copy_FibRgFcLcb97(g_FibRgFcLcb97Header, &(ptr[idx]));
+    copy_FibRgFcLcb97(pFibRgFcLcb97Header, &(ptr[idx]));
     bRet = true;
 
 done:
@@ -639,8 +640,8 @@ static void processOfficeArtBlipGeneric(OfficeArtRecordHeader * rh, const uint8_
     if (riDoubleUID == recInst) {
         offset += 16;
     } else if (riSingleUID != recInst) {
-        fprintf(stderr, "%s::%d::Invaild recInst\n", __FUNCTION__, __LINE__);
-        exit(121); //normally just return, will fix
+        cli_dbgmsg("ERROR Invalid recInst 0x%x\n", recInst);
+        return;
     }
     offset += bytesAfterUIDs; /*metafile header*/
 
@@ -666,16 +667,14 @@ static void processOfficeArtBlipPICT(OfficeArtRecordHeader * rh, const uint8_t *
 static void processOfficeArtBlipJPEG(OfficeArtRecordHeader * rh, const uint8_t * const ptr){
     size_t offset = 16; /* Size of rh*/
     uint16_t recInst = getRecInst(rh);
-    fprintf(stderr, "%s::%d::recInst = 0x%x\n", __FUNCTION__, __LINE__, recInst);
 
     if ((0x46b == recInst) || (0x6e3 == recInst)){
         offset += 16;
     } else if ((0x46a != recInst) && (0x6e2 != recInst)) {
-        fprintf(stderr, "%s::%d::Invaild recInst\n", __FUNCTION__, __LINE__);
-        exit(121); //normally just return, will fix
+        cli_dbgmsg("ERROR Invalid recInst 0x%x\n", recInst);
+        return;
     }
     offset += 1; /*metafile header*/
-    fprintf(stderr, "%s::%d::offset = %ld\n", __FUNCTION__, __LINE__, offset);
 
     saveImageFile(&(ptr[offset]), rh->recLen - offset);
 }
@@ -703,8 +702,8 @@ static void processOfficeArtBlip(const uint8_t * const ptr){
     offset += sizeof(OfficeArtRecordHeader );
     uint8_t recVer = getRecVer(&rh);
     if (0 != recVer) {
-        fprintf(stderr, "%s::%d::Invalid recver\n", __FUNCTION__, __LINE__);
-        exit(110);
+        cli_dbgmsg("ERROR Invalid recVer 0x%x\n", recVer);
+        return;
     }
 
 #define RECTYPE_OFFICE_ART_BLIP_EMF 0xf01a
@@ -741,16 +740,10 @@ static void processOfficeArtBlip(const uint8_t * const ptr){
             processOfficeArtBlipTIFF(&rh, &(ptr[offset]));
             break;
         default:
-            fprintf(stderr, "%s::%d::Invalid 0x%x::", __FUNCTION__, __LINE__, rh.recType);
-            exit(11);
+            cli_dbgmsg("ERROR Invalid recType 0x%x\n", rh.recType);
             break;
     }
 }
-
-
-
-
-
 
 /*
  * https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-odraw/2f2d7f5e-d5c4-4cb7-b230-59b3fe8f10d6
@@ -765,12 +758,12 @@ static void processOfficeArtFBSE(ole2_header_t *hdr, OfficeArtRecordHeader * ima
     offset += sizeof(OfficeArtFBSEKnown );
 
     if ((recInst != fbse.btWin32) && (recInst != fbse.btMacOS)) {
-        fprintf(stderr, "%s::%d::Invalid record, exiting (fix later)\n", __FUNCTION__, __LINE__);
-        exit(1);
+        cli_dbgmsg("ERROR Invalid recInst 0x%x\n", recInst);
+        return;
     }
     if (imageHeader->recType != 0xf007) {
-        fprintf(stderr, "%s::%d::Invalid record, exiting (fix later)\n", __FUNCTION__, __LINE__);
-        exit(1);
+        cli_dbgmsg("ERROR Invalid recType 0x%x\n", imageHeader->recType);
+        return;
     }
 
     offset += fbse.cbName;
@@ -782,6 +775,7 @@ static void processOfficeArtFBSE(ole2_header_t *hdr, OfficeArtRecordHeader * ima
         /* The BLIP is in the 'WordDocument' stream. */
         size_t size = fbse.size;
 
+#if 0
         size_t off = get_stream_data_offset(hdr, wordDocStream, wordDocStream->start_block);
         off += fbse.foDelay;
         if ((size_t)(hdr->m_length) < (size_t)(off + size)) {
@@ -795,6 +789,9 @@ static void processOfficeArtFBSE(ole2_header_t *hdr, OfficeArtRecordHeader * ima
             fprintf(stderr, "%s::%d::ERROR (fix message)\n", __FUNCTION__, __LINE__);
             exit(11);
         }
+#else
+        const uint8_t * const ptr = load_pointer_to_stream_from_fmap(hdr, wordDocStream, fbse.foDelay, size);
+#endif
 
         processOfficeArtBlip(ptr);
     }
@@ -851,19 +848,17 @@ static void extract_images(ole2_header_t * ole2Hdr, FibRgFcLcb97 * header, const
     OfficeArtRecordHeader blipStoreRecordHeader;
     copy_OfficeArtRecordHeader(&blipStoreRecordHeader,  &(ptr[offset]));
 
-    fprintf(stderr, "%s::%d::RecVer = %x\n", __FUNCTION__, __LINE__, getRecVer(&blipStoreRecordHeader));
     if (0xf != getRecVer(&blipStoreRecordHeader)) {
-        fprintf(stderr, "%s::%d::Not a correct value, exiting (during debugging, normally just return)\n", __FUNCTION__, __LINE__);
-        exit(11);
+        cli_dbgmsg("ERROR Invalid recVer 0x%x\n", getRecVer(&blipStoreRecordHeader));
+        return;
     }
 
     if (0xf001 != blipStoreRecordHeader.recType){
-        fprintf(stderr, "%s::%d::Not a correct value, exiting (during debugging, normally just return)\n", __FUNCTION__, __LINE__);
-        exit(11);
+        cli_dbgmsg("ERROR Invalid recType 0x%x\n", getRecVer(&blipStoreRecordHeader));
+        return;
     }
 
     uint32_t imageCnt = getRecInst (&blipStoreRecordHeader);
-    fprintf(stderr, "%s::%d::imageCnt = %d\n", __FUNCTION__, __LINE__, imageCnt);
 
     offset += sizeof(OfficeArtRecordHeader);
 
@@ -878,7 +873,6 @@ static void extract_images(ole2_header_t * ole2Hdr, FibRgFcLcb97 * header, const
         OfficeArtRecordHeader imageHeader;
         copy_OfficeArtRecordHeader(&imageHeader,  &(ptr[offset]));
         uint8_t recVer = getRecVer(&imageHeader);
-        fprintf(stderr, "%s::%d::recType = %x\n", __FUNCTION__, __LINE__, recVer);
 
         if (OFFICE_ART_FBSE_REC_TYPE == recVer){
             /* OfficeArtFBSE 

@@ -981,7 +981,7 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
         if (0 == ole2_cmp_name(prop_block[idx].name, prop_block[idx].name_size, "WORDDocument")) {
             memcpy(&wordDocumentStream, &(prop_block[idx]), sizeof(wordDocumentStream));
             test_for_encryption(&(prop_block[idx]), hdr, pEncryptionStatus);
-            bFibRgFcLcb97HeaderInitialized = test_for_pictures(&(prop_block[idx]), hdr, &fibRgFcLcb97Header);
+            bFibRgFcLcb97HeaderInitialized = getFibRgFcLcb97Header(&(prop_block[idx]), hdr, &fibRgFcLcb97Header);
         } else if (0 == ole2_cmp_name(prop_block[idx].name, prop_block[idx].name_size, "WorkBook")) {
             test_for_xls_encryption(&(prop_block[idx]), hdr, pEncryptionStatus);
         } else if (0 == ole2_cmp_name(prop_block[idx].name, prop_block[idx].name_size, "PowerPoint Document")) {
