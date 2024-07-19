@@ -398,11 +398,6 @@ static void copy_OfficeArtRecordHeader (OfficeArtRecordHeader * header, const ui
     header->recVer_recInstance = ole2_endian_convert_16(header->recVer_recInstance);
     header->recType = ole2_endian_convert_16(header->recType);
     header->recLen = ole2_endian_convert_32(header->recLen);
-
-    fprintf(stderr, "%s::%d::recVer_recInstance = %x\n", __FUNCTION__, __LINE__, header->recVer_recInstance);
-    fprintf(stderr, "%s::%d::recType = %x\n", __FUNCTION__, __LINE__, header->recType);
-    fprintf(stderr, "%s::%d::recLen = %x\n", __FUNCTION__, __LINE__, header->recLen);
-
 }
 
 static uint16_t getRecInst(OfficeArtRecordHeader * header) {
