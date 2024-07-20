@@ -612,9 +612,6 @@ static void saveImageFile( cli_ctx * ctx, const uint8_t * const ptr, size_t size
         goto done;
     }
 
-    fprintf(stderr, "%s::%d::Actually extracting the file, FINALLY %p %lu!!!\n", __FUNCTION__, __LINE__, ptr, size);
-
-    //FILE * fp = fopen("andy_out.jpg", "wb");
     fp = fdopen(out_fd, "wb");
     while (bytesWritten < size) {
         int ret = fwrite(&(ptr[bytesWritten]), 1, size - bytesWritten, fp);
@@ -628,8 +625,6 @@ static void saveImageFile( cli_ctx * ctx, const uint8_t * const ptr, size_t size
     if (bytesWritten != size) {
         cli_dbgmsg("ERROR unable to write to '%s'\n", tempfile);
     }
-
-    fprintf(stderr, "%s::%d::Wrote to '%s'\n", __FUNCTION__, __LINE__, tempfile);
 
 done:
     if (tempfile && !ctx->engine->keeptmp) {
