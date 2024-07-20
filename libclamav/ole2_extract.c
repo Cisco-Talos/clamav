@@ -660,6 +660,8 @@ static void copy_fib_base(fib_base_t *pFib, const uint8_t *const ptr)
     pFib->reserved6 = ole2_endian_convert_32(pFib->reserved6);
 }
 
+
+
 static inline bool is_encrypted(const fib_base_t *const pFib)
 {
     return pFib->ABCDEFGHIJKLM & (1 << 8);
@@ -1155,13 +1157,6 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
 
     if (bFibRgFcLcb97HeaderInitialized  && (TableStream1Initialized || TableStream0Initialized)) {
         property_t * tableStream = NULL;
-        if (TableStream0Initialized) {
-            tableStream = &TableStream0;
-        }
-        if (TableStream1Initialized) {
-            tableStream = &TableStream1;
-        }
-        if (TableStream0Initialized && TableStream1Initialized) {
             /*Get the FIBBase*/
             fib_base_t fib;
             uint32_t fib_offset = get_stream_data_offset(hdr, &wordDocumentBlock, wordDocumentBlock.start_block);
@@ -1169,38 +1164,43 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
 
             if ((size_t)(hdr->m_length) < (size_t)(fib_offset + sizeof(fib_base_t))) {
                 cli_dbgmsg("ERROR: Invalid offset for File Information Block %d (0x%x)\n", fib_offset, fib_offset);
-                exit(99);
+                goto done;
             }
 
             ptr = fmap_need_off_once(hdr->map, fib_offset, sizeof(fib_base_t));
             if (NULL == ptr) {
                 cli_dbgmsg("ERROR: Invalid offset for File Information Block %d (0x%x)\n", fib_offset, fib_offset);
-                exit(99);
+                goto done;
             }
             copy_fib_base(&fib, ptr);
-            fprintf(stderr, "%s::%d::create call for 'initializeFibBase'\n", __FUNCTION__, __LINE__);
 
 #define FIB_BASE_fWhichTblStm_OFFSET 9
             if (fib.ABCDEFGHIJKLM & (1 << FIB_BASE_fWhichTblStm_OFFSET)) {
                 tableStream = &TableStream1;
+                if (!TableStream1Initialized){
+                    cli_dbgmsg("ERROR: FIB references 1Table stream, that does not exist\n");
+                    goto done;
+                }
             } else {
                 tableStream = &TableStream0;
+                if (!TableStream0Initialized){
+                    cli_dbgmsg("ERROR: FIB references 0Table stream, that does not exist\n");
+                    goto done;
+                }
             }
-        }
 
         /*Call Extract */
         size_t offset = get_stream_data_offset(hdr, tableStream, tableStream->start_block);
-        const uint8_t * const ptr = fmap_need_off_once(hdr->map, offset, 4096);
+        ptr = fmap_need_off_once(hdr->map, offset, 4096);
         if (NULL == ptr) {
             cli_dbgmsg("ERROR: Invalid offset for File Information Block %ld (0x%lx)\n", offset, offset);
-            exit(11);
+            goto done;
         }
 
-        fprintf(stderr, "%s::%d::Calling extract_images\n", __FUNCTION__, __LINE__);
         extract_images(hdr, &fibRgFcLcb97Header, ptr, &wordDocumentBlock);
-
     }
 
+done:
     ole2_list_delete(&node_list);
     return CL_SUCCESS;
 }
