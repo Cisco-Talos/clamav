@@ -604,6 +604,8 @@ static void saveImageFile( cli_ctx * ctx, const uint8_t * const ptr, size_t size
     char *tempfile = NULL;
     int out_fd = -1;
     cl_error_t ret ;
+    size_t bytesWritten = 0;
+    FILE * fp = NULL;
 
     if ((ret = cli_gentempfd_with_prefix(ctx->sub_tmpdir, "ole2_images", &tempfile, &out_fd)) != CL_SUCCESS) {
         cli_dbgmsg("[ole2_process_image_directory] Failed to open output file descriptor\n");
@@ -612,8 +614,8 @@ static void saveImageFile( cli_ctx * ctx, const uint8_t * const ptr, size_t size
 
     fprintf(stderr, "%s::%d::Actually extracting the file, FINALLY %p %lu!!!\n", __FUNCTION__, __LINE__, ptr, size);
 
-    FILE * fp = fopen("andy_out.jpg", "wb");
-    size_t bytesWritten = 0;
+    //FILE * fp = fopen("andy_out.jpg", "wb");
+    fp = fdopen(out_fd, "wb");
     while (bytesWritten < size) {
         int ret = fwrite(&(ptr[bytesWritten]), 1, size - bytesWritten, fp);
         if (ret > 0) {
@@ -623,11 +625,11 @@ static void saveImageFile( cli_ctx * ctx, const uint8_t * const ptr, size_t size
         }
     }
 
-    if (bytesWritten == size) {
-        fprintf(stderr, "%s::%d::Success\n", __FUNCTION__, __LINE__);
-    } else {
-        fprintf(stderr, "%s::%d::NOT Success\n", __FUNCTION__, __LINE__);
+    if (bytesWritten != size) {
+        cli_dbgmsg("ERROR unable to write to '%s'\n", tempfile);
     }
+
+    fprintf(stderr, "%s::%d::Wrote to '%s'\n", __FUNCTION__, __LINE__, tempfile);
 
 done:
     if (tempfile && !ctx->engine->keeptmp) {
