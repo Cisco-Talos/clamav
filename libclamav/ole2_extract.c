@@ -888,7 +888,7 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
                                    ole2_walk_property_tree_file_handler handler,
                                    unsigned int rec_level, unsigned int *file_count,
                                    cli_ctx *ctx, unsigned long *scansize, void *handler_ctx,
-                                   encryption_status_t *pEncryptionStatus)
+                                   encryption_status_t *pEncryptionStatus, ole2_image_directory_t * pImageDirectory)
 {
     property_t prop_block[4];
     int32_t idx, current_block, i, curindex;
@@ -897,6 +897,7 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
     cl_error_t ret;
     char *name;
     int toval = 0;
+#if 0
     FibRgFcLcb97 fibRgFcLcb97Header = {0};
     bool bFibRgFcLcb97HeaderInitialized = false;
     property_t wordDocumentBlock = {0};
@@ -904,6 +905,7 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
     property_t TableStream0 = {0};
     bool TableStream1Initialized = false;
     bool TableStream0Initialized = false;
+#endif
 
     ole2_listmsg("ole2_walk_property_tree() called\n");
     ole2_list_init(&node_list);
@@ -981,9 +983,11 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
         }
 
         if (0 == ole2_cmp_name(prop_block[idx].name, prop_block[idx].name_size, "WORDDocument")) {
-            memcpy(&wordDocumentBlock, &(prop_block[idx]), sizeof(wordDocumentBlock));
             test_for_encryption(&(prop_block[idx]), hdr, pEncryptionStatus);
-            bFibRgFcLcb97HeaderInitialized = getFibRgFcLcb97Header(&(prop_block[idx]), hdr, &fibRgFcLcb97Header);
+            if (pImageDirectory) {
+                memcpy(&(pImageDirectory->word_block), &(prop_block[idx]), sizeof((pImageDirectory->word_block)));
+                pImageDirectory->bFibRgFcLcb97Header_initialized = getFibRgFcLcb97Header(&(prop_block[idx]), hdr, &(pImageDirectory->fibRgFcLcb97Header));
+            }
         } else if (0 == ole2_cmp_name(prop_block[idx].name, prop_block[idx].name_size, "WorkBook")) {
             test_for_xls_encryption(&(prop_block[idx]), hdr, pEncryptionStatus);
         } else if (0 == ole2_cmp_name(prop_block[idx].name, prop_block[idx].name_size, "PowerPoint Document")) {
@@ -993,11 +997,15 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
         } else if (0 == ole2_cmp_name(prop_block[idx].name, prop_block[idx].name_size, "EncryptedPackage")) {
             pEncryptionStatus->encrypted = true;
         } else if (0 == ole2_cmp_name(prop_block[idx].name, prop_block[idx].name_size, "1Table")) {
-            memcpy(&TableStream1, &(prop_block[idx]), sizeof(TableStream1));
-            TableStream1Initialized = true;
+            if (pImageDirectory) {
+                memcpy(&(pImageDirectory->table_stream_1_block), &(prop_block[idx]), sizeof(pImageDirectory->table_stream_1_block));
+                pImageDirectory->table_stream_1_initialized = true;
+            }
         } else if (0 == ole2_cmp_name(prop_block[idx].name, prop_block[idx].name_size, "0Table")) {
-            memcpy(&TableStream0, &(prop_block[idx]), sizeof(TableStream0));
-            TableStream0Initialized = true;
+            if (pImageDirectory) {
+                memcpy(&(pImageDirectory->table_stream_0_block), &(prop_block[idx]), sizeof(pImageDirectory->table_stream_0_block));
+                pImageDirectory->table_stream_0_initialized = true;
+            }
         }
 
         ole2_listmsg("printing ole2 property\n");
@@ -1030,7 +1038,7 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
                 }
                 hdr->sbat_root_start = prop_block[idx].start_block;
                 if ((int)(prop_block[idx].child) != -1) {
-                    ret = ole2_walk_property_tree(hdr, dir, prop_block[idx].child, handler, rec_level + 1, file_count, ctx, scansize, handler_ctx, pEncryptionStatus);
+                    ret = ole2_walk_property_tree(hdr, dir, prop_block[idx].child, handler, rec_level + 1, file_count, ctx, scansize, handler_ctx, pEncryptionStatus, pImageDirectory);
                     if (ret != CL_SUCCESS) {
                         ole2_list_delete(&node_list);
                         return ret;
@@ -1071,7 +1079,7 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
                     cli_dbgmsg("OLE2: filesize exceeded\n");
                 }
                 if ((int)(prop_block[idx].child) != -1) {
-                    ret = ole2_walk_property_tree(hdr, dir, prop_block[idx].child, handler, rec_level, file_count, ctx, scansize, handler_ctx, pEncryptionStatus);
+                    ret = ole2_walk_property_tree(hdr, dir, prop_block[idx].child, handler, rec_level, file_count, ctx, scansize, handler_ctx, pEncryptionStatus, pImageDirectory);
                     if (ret != CL_SUCCESS) {
                         ole2_list_delete(&node_list);
                         return ret;
@@ -1122,7 +1130,7 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
                 } else
                     dirname = NULL;
                 if ((int)(prop_block[idx].child) != -1) {
-                    ret = ole2_walk_property_tree(hdr, dirname, prop_block[idx].child, handler, rec_level + 1, file_count, ctx, scansize, handler_ctx, pEncryptionStatus);
+                    ret = ole2_walk_property_tree(hdr, dirname, prop_block[idx].child, handler, rec_level + 1, file_count, ctx, scansize, handler_ctx, pEncryptionStatus, pImageDirectory);
                     if (ret != CL_SUCCESS) {
                         ole2_list_delete(&node_list);
                         if (dirname) {
@@ -1155,6 +1163,7 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
         ole2_listmsg("loop ended: %d %d\n", ole2_list_size(&node_list), ole2_list_is_empty(&node_list));
     }
 
+#if 0
     if (bFibRgFcLcb97HeaderInitialized  && (TableStream1Initialized || TableStream0Initialized)) {
         property_t * tableStream = NULL;
             /*Get the FIBBase*/
@@ -1197,10 +1206,12 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
             goto done;
         }
 
-        extract_images(hdr, &fibRgFcLcb97Header, ptr, &wordDocumentBlock);
+        ole2_extract_images(hdr, &fibRgFcLcb97Header, ptr, &wordDocumentBlock);
     }
+#else
+    fprintf(stderr, "%s::%d::MOVE THIS\n", __FUNCTION__, __LINE__);
+#endif
 
-done:
     ole2_list_delete(&node_list);
     return CL_SUCCESS;
 }
@@ -2839,6 +2850,7 @@ done:
 cl_error_t cli_ole2_extract(const char *dirname, cli_ctx *ctx, struct uniq **files, int *has_vba, int *has_xlm, int *has_image)
 {
     ole2_header_t hdr;
+    ole2_image_directory_t image_directory = {0};
     cl_error_t ret = CL_CLEAN;
     size_t hdr_size;
     unsigned int file_count = 0;
@@ -2962,7 +2974,7 @@ cl_error_t cli_ole2_extract(const char *dirname, cli_ctx *ctx, struct uniq **fil
     hdr.has_vba   = false;
     hdr.has_xlm   = false;
     hdr.has_image = false;
-    ret           = ole2_walk_property_tree(&hdr, NULL, 0, handler_enum, 0, &file_count, ctx, &scansize, NULL, &encryption_status);
+    ret           = ole2_walk_property_tree(&hdr, NULL, 0, handler_enum, 0, &file_count, ctx, &scansize, NULL, &encryption_status, &image_directory);
     cli_bitset_free(hdr.bitset);
     hdr.bitset = NULL;
     if (!file_count || !(hdr.bitset = cli_bitset_init())) {
@@ -2990,7 +3002,7 @@ cl_error_t cli_ole2_extract(const char *dirname, cli_ctx *ctx, struct uniq **fil
             goto done;
         }
         file_count = 0;
-        ole2_walk_property_tree(&hdr, dirname, 0, handler_writefile, 0, &file_count, ctx, &scansize2, NULL, &encryption_status);
+        ole2_walk_property_tree(&hdr, dirname, 0, handler_writefile, 0, &file_count, ctx, &scansize2, NULL, &encryption_status, NULL);
         ret    = CL_CLEAN;
         *files = hdr.U;
         if (has_vba) {
@@ -3007,9 +3019,9 @@ cl_error_t cli_ole2_extract(const char *dirname, cli_ctx *ctx, struct uniq **fil
         /* PASS 2/B : OTF scan */
         file_count = 0;
         if (bEncrypted) {
-            ret = ole2_walk_property_tree(&hdr, NULL, 0, handler_otf_encrypted, 0, &file_count, ctx, &scansize2, &key, &encryption_status);
+            ret = ole2_walk_property_tree(&hdr, NULL, 0, handler_otf_encrypted, 0, &file_count, ctx, &scansize2, &key, &encryption_status, NULL);
         } else {
-            ret = ole2_walk_property_tree(&hdr, NULL, 0, handler_otf, 0, &file_count, ctx, &scansize2, NULL, &encryption_status);
+            ret = ole2_walk_property_tree(&hdr, NULL, 0, handler_otf, 0, &file_count, ctx, &scansize2, NULL, &encryption_status, NULL);
         }
     }
 
@@ -3031,6 +3043,8 @@ cl_error_t cli_ole2_extract(const char *dirname, cli_ctx *ctx, struct uniq **fil
             ret = status;
         }
     }
+
+    ole2_process_image_directory(ctx, &hdr, &image_directory );
 
 done:
 
