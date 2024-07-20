@@ -606,6 +606,7 @@ static void saveImageFile( cli_ctx * ctx, const uint8_t * const ptr, size_t size
     cl_error_t ret ;
     size_t bytesWritten = 0;
     FILE * fp = NULL;
+    static json_object * ary = NULL;
 
     if ((ret = cli_gentempfd_with_prefix(ctx->sub_tmpdir, "ole2_images", &tempfile, &out_fd)) != CL_SUCCESS) {
         cli_dbgmsg("[ole2_process_image_directory] Failed to open output file descriptor\n");
@@ -624,6 +625,16 @@ static void saveImageFile( cli_ctx * ctx, const uint8_t * const ptr, size_t size
 
     if (bytesWritten != size) {
         cli_dbgmsg("ERROR unable to write to '%s'\n", tempfile);
+    }
+
+    if (SCAN_COLLECT_METADATA && ctx->wrkproperty != NULL){
+        if (NULL == ary) {
+#define OLE2_EXTRACTED_IMAGES_JSON_KEY "OLE2_IMAGES"
+            ary = cli_jsonarray(ctx->wrkproperty, OLE2_EXTRACTED_IMAGES_JSON_KEY);
+        }
+        if (ary) {
+            cli_jsonstr(ary, NULL, tempfile);
+        }
     }
 
 done:
