@@ -119,7 +119,7 @@ def gen_ca_cert():
     # TODO Explore making this cert have attributes that look more like
     # a real CA cert (ex: restrict its uses)
     subj = "/C=US/ST=Maryland/L=Fulton/O=Cisco Talos/OU=ClamAV Test CA %016x/emailAddress=rfc2606@example.net" % (random.randint(1,0xFFFFFFFFFFFFFFFF))
-    cmd = 'openssl req -new -x509 -days 3650 -key build/ca.key -out build/ca.crt -subj "%s"' % (subj)
+    cmd = 'openssl req -new -x509 -days 73000 -key build/ca.key -out build/ca.crt -subj "%s"' % (subj)
     run_cmd(cmd)
 
 # https://blog.didierstevens.com/2008/12/30/howto-make-your-own-cert-with-openssl/
@@ -136,7 +136,7 @@ def gen_cs_cert(name, ext):
     cmd = 'openssl req -new -key %s -out %s -subj "%s"' % (key_name, csr_name, subj)
     run_cmd(cmd)
 
-    cmd = 'openssl x509 -req -days 730 -in %s -CA build/ca.crt -CAkey build/ca.key -out %s -set_serial %012d -extfile ./cs.extfile.cfg' % (csr_name, crt_name, random.randint(100000000000,999999999999))
+    cmd = 'openssl x509 -req -days 73000 -in %s -CA build/ca.crt -CAkey build/ca.key -out %s -set_serial %012d -extfile ./cs.extfile.cfg' % (csr_name, crt_name, random.randint(100000000000,999999999999))
     run_cmd(cmd)
 
     return (key_name, crt_name)
