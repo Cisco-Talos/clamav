@@ -142,6 +142,8 @@ int onas_ht_init(struct onas_ht **ht, uint32_t size)
     **ht = (struct onas_ht){
         .htable = NULL,
         .size   = size,
+        .head   = NULL,
+        .tail   = NULL,
         .nbckts = 0,
     };
 
@@ -260,6 +262,19 @@ int onas_ht_insert(struct onas_ht *ht, struct onas_element *elem)
         bckt            = ht->htable[idx];
     }
 
+    /* Init activated buckets */
+    if (ht->nbckts == 0) {
+        ht->head   = bckt;
+        ht->tail   = bckt;
+        bckt->prev = NULL;
+        bckt->next = NULL;
+    } else {
+        struct onas_bucket *ht_tail = ht->tail;
+        ht_tail->next               = bckt;
+        bckt->prev                  = ht_tail;
+        bckt->next                  = NULL;
+        ht->tail                    = bckt;
+    }
     bsize = bckt->size;
     ret   = onas_bucket_insert(bckt, elem);
 

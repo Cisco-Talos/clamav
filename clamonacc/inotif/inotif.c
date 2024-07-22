@@ -49,7 +49,7 @@
 // common
 #include "optparser.h"
 #include "output.h"
-
+#include "misc.h"
 // clamd
 #include "server.h"
 #include "clamd_others.h"
@@ -531,15 +531,28 @@ void *onas_ddd_th(void *arg)
     /* Remove provided paths recursively. */
     if ((pt = optget(ctx->clamdopts, "OnAccessExcludePath"))->enabled) {
         while (pt) {
-            size_t ptlen = strlen(pt->strarg);
-            if (onas_ht_get(ddd_ht, pt->strarg, ptlen, NULL) == CL_SUCCESS) {
-                if (onas_ht_rm_hierarchy(ddd_ht, pt->strarg, ptlen, 0)) {
-                    logg(LOGG_ERROR, "ClamInotif: can't exclude '%s'\n", pt->strarg);
-                    return NULL;
-                } else
-                    logg(LOGG_INFO, "ClamInotif: excluding '%s' (and all sub-directories)\n", pt->strarg);
+            struct onas_bucket *ob = ddd_ht->head;
+            /* Iterate through the activated buckets to find matched paths */
+            while (ob != NULL) {
+                struct onas_element *oe = ob->head;
+                while (oe != NULL) {
+                    if (match_regex(oe->key, pt->strarg)) {
+                        if (onas_ht_get(ddd_ht, oe->key, oe->klen, NULL) == CL_SUCCESS) {
+                            char *oe_key = cli_safer_strdup(oe->key);
+                            if (onas_ht_rm_hierarchy(ddd_ht, oe->key, oe->klen, 0)) {
+                                logg(LOGG_ERROR, "ClamInotif: can't exclude '%s'\n", oe_key);
+                                free(oe_key);
+                                return NULL;
+                            } else {
+                                logg(LOGG_INFO, "ClamInotif: excluding '%s' (and all sub-directories)\n", oe_key);
+                                free(oe_key);
+                            }
+                        }
+                    }
+                    oe = oe->next;
+                }
+                ob = ob->next;
             }
-
             pt = (struct optstruct *)pt->nextarg;
         }
     }
