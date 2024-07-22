@@ -366,6 +366,12 @@
    ...
 }
 {
+   <statx7-cdiff_apply>
+   Memcheck:Addr8
+   fun:cdiff_apply
+   ...
+}
+{
    <rayon-jpeg-decoder-error>
    Memcheck:Cond
    fun:drop_in_place<core::result::Result<(), std::sync::mpsc::SendError<alloc::vec::Vec<u8, alloc::alloc::Global>>>>
