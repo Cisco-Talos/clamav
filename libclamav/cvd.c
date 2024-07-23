@@ -851,7 +851,7 @@ cl_error_t cl_cvdgetage(const char *path, time_t *age_seconds)
         if (!strcmp(dent->d_name, ".") || !strcmp(dent->d_name, ".."))
             continue;
 
-        if (!CLI_DBEXT(dent->d_name))
+        if (!CLI_DBEXT_SIGNATURE(dent->d_name))
             continue;
 
         if (ends_with_sep)
