@@ -97,7 +97,7 @@ static int is_rar_inited = 0;
 static void *load_module(const char *name, const char *featurename)
 {
     HMODULE rhandle = NULL;
-    char modulename[128];
+    char modulename[512];
     size_t i;
 
     /*
@@ -156,7 +156,7 @@ static void *load_module(const char *name, const char *featurename)
     char *ld_library_path        = NULL;
     const char *err;
 
-    char modulename[128];
+    char modulename[512];
     size_t i;
 
     /*
