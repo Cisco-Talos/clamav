@@ -445,8 +445,8 @@ struct cl_cvd *cl_cvdparse(const char *head)
     cvd->fl = atoi(pt);
     free(pt);
 
-    if (!(cvd->md5 = cli_strtok(head, 5, ":"))) {
-        cli_errmsg("cli_cvdparse: Can't parse the MD5 checksum\n");
+    if (!(cvd->sha256= cli_strtok(head, 5, ":"))) {
+        cli_errmsg("cli_cvdparse: Can't parse the SHA256 checksum\n");
         free(cvd->time);
         free(cvd);
         return NULL;
@@ -455,7 +455,7 @@ struct cl_cvd *cl_cvdparse(const char *head)
     if (!(cvd->dsig = cli_strtok(head, 6, ":"))) {
         cli_errmsg("cli_cvdparse: Can't parse the digital signature\n");
         free(cvd->time);
-        free(cvd->md5);
+        free(cvd->sha256);
         free(cvd);
         return NULL;
     }
@@ -463,7 +463,7 @@ struct cl_cvd *cl_cvdparse(const char *head)
     if (!(cvd->builder = cli_strtok(head, 7, ":"))) {
         cli_errmsg("cli_cvdparse: Can't parse the builder name\n");
         free(cvd->time);
-        free(cvd->md5);
+        free(cvd->sha256);
         free(cvd->dsig);
         free(cvd);
         return NULL;
@@ -513,7 +513,7 @@ struct cl_cvd *cl_cvdhead(const char *file)
 void cl_cvdfree(struct cl_cvd *cvd)
 {
     free(cvd->time);
-    free(cvd->md5);
+    free(cvd->sha256);
     free(cvd->dsig);
     free(cvd->builder);
     free(cvd);
@@ -530,7 +530,7 @@ void cl_cvdfree(struct cl_cvd *cvd)
 static cl_error_t cli_cvdverify(FILE *fs, struct cl_cvd *cvdpt, unsigned int skipsig)
 {
     struct cl_cvd *cvd;
-    char *md5, head[513];
+    char *sha256, head[513];
     int i;
 
     fseek(fs, 0, SEEK_SET);
@@ -554,29 +554,29 @@ static cl_error_t cli_cvdverify(FILE *fs, struct cl_cvd *cvdpt, unsigned int ski
         return CL_SUCCESS;
     }
 
-    md5 = cli_hashstream(fs, NULL, 1);
-    if (md5 == NULL) {
+    sha256 = cli_hashstream(fs, NULL, -1);
+    if (sha256 == NULL) {
         cli_dbgmsg("cli_cvdverify: Cannot generate hash, out of memory\n");
         cl_cvdfree(cvd);
         return CL_EMEM;
     }
-    cli_dbgmsg("MD5(.tar.gz) = %s\n", md5);
+    cli_dbgmsg("SHA256(.tar.gz) = %s\n", sha256);
 
-    if (strncmp(md5, cvd->md5, 32)) {
-        cli_dbgmsg("cli_cvdverify: MD5 verification error\n");
-        free(md5);
+    if (strncmp(sha256, cvd->sha256, 32)) {
+        cli_dbgmsg("cli_cvdverify: SHA256 verification error\n");
+        free(sha256);
         cl_cvdfree(cvd);
         return CL_EVERIFY;
     }
 
-    if (cli_versig(md5, cvd->dsig)) {
+    if (cli_versig(sha256, cvd->dsig)) {
         cli_dbgmsg("cli_cvdverify: Digital signature verification error\n");
-        free(md5);
+        free(sha256);
         cl_cvdfree(cvd);
         return CL_EVERIFY;
     }
 
-    free(md5);
+    free(sha256);
     cl_cvdfree(cvd);
     return CL_SUCCESS;
 }
