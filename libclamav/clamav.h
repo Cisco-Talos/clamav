@@ -1101,7 +1101,7 @@ struct cl_cvd {           /* field no. */
     unsigned int sigs;    /* 4 */
     unsigned int fl;      /* 5 */
                           /* padding */
-    char *md5;            /* 6 */
+    char *sha256;            /* 6 */
     char *dsig;           /* 7 */
     char *builder;        /* 8 */
     unsigned int stime;   /* 9 */
