@@ -1054,7 +1054,7 @@ static int build(const struct optstruct *opts)
 
     real_header = strlen(header);
 
-    /* add fake MD5 and dsig (for writeinfo) */
+    /* add fake SHA256 and dsig (for writeinfo) */
     strcat(header, "X:X:");
 
     if ((pt = getenv("SIGNDUSER"))) {
@@ -1140,7 +1140,7 @@ static int build(const struct optstruct *opts)
     gzclose(tar);
     FREE_LS(dblist2);
 
-    /* MD5 + dsig */
+    /* SHA256 + dsig */
     if (!(fh = fopen(tarfile, "rb"))) {
         mprintf(LOGG_ERROR, "build: Can't open file %s for reading\n", tarfile);
         unlink(tarfile);
@@ -1148,8 +1148,8 @@ static int build(const struct optstruct *opts)
         return -1;
     }
 
-    if (!(pt = cli_hashstream(fh, buffer, 1))) {
-        mprintf(LOGG_ERROR, "build: Can't generate MD5 checksum for %s\n", tarfile);
+    if (!(pt = cli_hashstream(fh, buffer, -1))) {
+        mprintf(LOGG_ERROR, "build: Can't generate SHA256 checksum for %s\n", tarfile);
         fclose(fh);
         unlink(tarfile);
         free(tarfile);
@@ -1365,7 +1365,7 @@ static int cvdinfo(const struct optstruct *opts)
 
     pt = optget(opts, "info")->strarg;
     if (cli_strbcasestr(pt, ".cvd")) {
-        mprintf(LOGG_INFO, "MD5: %s\n", cvd->md5);
+        mprintf(LOGG_INFO, "SHA256: %s\n", cvd->sha256);
         mprintf(LOGG_INFO, "Digital signature: %s\n", cvd->dsig);
     }
     cl_cvdfree(cvd);
@@ -2009,24 +2009,24 @@ static int maxlinelen(const char *file)
 static int compare(const char *oldpath, const char *newpath, FILE *diff)
 {
     FILE *old, *new;
-    char *obuff, *nbuff, *tbuff, *pt, *omd5, *nmd5;
+    char *obuff, *nbuff, *tbuff, *pt, *osha256, *nsha256;
     unsigned int oline = 0, tline, found, i, badxchg = 0;
     int l1 = 0, l2;
     long opos;
 
-    if (!access(oldpath, R_OK) && (omd5 = cli_hashfile(oldpath, 1))) {
-        if (!(nmd5 = cli_hashfile(newpath, 1))) {
-            mprintf(LOGG_ERROR, "compare: Can't get MD5 checksum of %s\n", newpath);
-            free(omd5);
+    if (!access(oldpath, R_OK) && (osha256 = cli_hashfile(oldpath, NULL))) {
+        if (!(nsha256 = cli_hashfile(newpath, NULL))) {
+            mprintf(LOGG_ERROR, "compare: Can't get SHA256 checksum of %s\n", newpath);
+            free(osha256);
             return -1;
         }
-        if (!strcmp(omd5, nmd5)) {
-            free(omd5);
-            free(nmd5);
+        if (!strcmp(osha256, nsha256)) {
+            free(osha256);
+            free(nsha256);
             return 0;
         }
-        free(omd5);
-        free(nmd5);
+        free(osha256);
+        free(nsha256);
         l1 = maxlinelen(oldpath);
     }
 
@@ -3646,8 +3646,8 @@ static void help(void)
     mprintf(LOGG_INFO, "    --stdout                               Write to stdout instead of stderr. Does not affect 'debug' messages.\n");
     mprintf(LOGG_INFO, "    --hex-dump                             Convert data from stdin to a hex\n");
     mprintf(LOGG_INFO, "                                           string and print it on stdout\n");
-    mprintf(LOGG_INFO, "    --md5 [FILES]                          Generate MD5 checksum from stdin\n");
-    mprintf(LOGG_INFO, "                                           or MD5 sigs for FILES\n");
+    mprintf(LOGG_INFO, "    --md5 [FILES]                          Generate md5 checksum from stdin\n");
+    mprintf(LOGG_INFO, "                                           or SHA256 sigs for FILES\n");
     mprintf(LOGG_INFO, "    --sha1 [FILES]                         Generate SHA1 checksum from stdin\n");
     mprintf(LOGG_INFO, "                                           or SHA1 sigs for FILES\n");
     mprintf(LOGG_INFO, "    --sha256 [FILES]                       Generate SHA256 checksum from stdin\n");
