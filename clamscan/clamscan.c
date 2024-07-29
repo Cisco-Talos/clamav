@@ -254,6 +254,8 @@ void help(void)
     mprintf(LOGG_INFO, "    --gen-json[=yes/no(*)]               Generate JSON metadata for the scanned file(s). For testing & development use ONLY.\n");
     mprintf(LOGG_INFO, "                                         JSON will be printed if --debug is enabled.\n");
     mprintf(LOGG_INFO, "                                         A JSON file will dropped to the temp directory if --leave-temps is enabled.\n");
+    mprintf(LOGG_INFO, "    --json-store-html-urls[=yes(*)/no]   Store html URLs in metadata.\n");
+    mprintf(LOGG_INFO, "                                         URLs will be written to the metadata.json file in an array called 'HTMLUrls'\n");
     mprintf(LOGG_INFO, "    --database=FILE/DIR   -d FILE/DIR    Load virus database from FILE or load all supported db files from DIR\n");
     mprintf(LOGG_INFO, "    --official-db-only[=yes/no(*)]       Only load official signatures\n");
     mprintf(LOGG_INFO, "    --fail-if-cvd-older-than=days        Return with a nonzero error code if virus database outdated.\n");

@@ -226,6 +226,12 @@ TCPAddr localhost
 # Default: no
 #GenerateMetadataJson yes
 
+# Store URLs found in html files to the json metadata.
+# URLs will be stored in an array with the tag 'HTMLUrls'
+# GenerateMetadataJson is required for this feature.
+# Default: yes (if GenerateMetadataJson is used)
+#JsonStoreHTMLUrls no
+
 # Permit use of the ALLMATCHSCAN command. If set to no, clamd will reject
 # any ALLMATCHSCAN command as invalid.
 # Default: yes
