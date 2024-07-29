@@ -350,6 +350,9 @@ int logg(loglevel_t loglevel, const char *str, ...)
             current_dir = (char*)realloc(current_dir, strlen(current_dir) + strlen(token) + 2);
             strcat(current_dir, token);
             token = strtok(NULL, "/");
+            if(token == NULL) {
+                break;
+            }
             if(LSTAT(current_dir, &sb) == -1) {
                 if(mkdir(current_dir, 0755) == -1) {
                     printf("ERROR: Failed to create required directory %s. Will continue without writing in %s.\n", current_dir, logg_file);
@@ -360,7 +363,6 @@ int logg(loglevel_t loglevel, const char *str, ...)
             }
             strcat(current_dir, "/");
         }
-        //create file
         if ((logg_fp = fopen(logg_file, "at")) == NULL) {
             printf("ERROR: Can't open %s in append mode (check permissions!).\n", logg_file);
             free(current_dir);
