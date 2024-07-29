@@ -83,6 +83,16 @@ ClamAV 1.4.0 includes the following improvements and changes:
   service will shut down faster on some systems.
   - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1164)
 
+- Added a CMake build dependency on the version map files so that the build
+  will re-run if changes are made to the version map files.
+  Work courtesy of Sebastian Andrzej Siewior.
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1294)
+
+- Added an improvement to the CMake build so that the RUSTFLAGS settings
+  are inherited from the environment.
+  Work courtesy of liushuyu.
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1301)
+
 ### Bug fixes
 
 - Silenced confusing warning message when scanning some HTML files.
@@ -109,9 +119,26 @@ ClamAV 1.4.0 includes the following improvements and changes:
   the recently compiled library in the build path.
   - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1258)
 
+- Fixed a build issue on Windows with newer versions of Rust.
+  Also upgraded GitHub Actions imports to fix CI failures.
+  Fixes courtesy of liushuyu.
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1307)
+
+- Fixed an unaligned pointer dereference issue on select architectures.
+  Fix courtesy of Sebastian Andrzej Siewior.
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1293)
+
+- Fixed a bug that prevented loading plaintext (non-CVD) signature files
+  when using the `--fail-if-cvd-older-than=DAYS` / `FailIfCvdOlderThan` option.
+  Fix courtesy of Bark.
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1309)
+
 ### Acknowledgments
 
 Special thanks to the following people for code contributions and bug reports:
+- Bark
+- liushuyu
+- Sebastian Andrzej Siewior
 - RainRat
 
 ## 1.3.1
