@@ -56,9 +56,6 @@
 #include "others.h"
 #include "str.h"
 #include "output.h"
-#include "optparser.h"
-#include <pwd.h>
-#include "output.h"
 
 #ifdef CL_THREAD_SAFE
 #include <pthread.h>
@@ -273,12 +270,10 @@ static int logg_open(void)
 
     if (logg_file)
         if (logg_size > 0)
-            if (CLAMSTAT(logg_file, &sb) != -1) {
+            if (CLAMSTAT(logg_file, &sb) != -1)
                 if (sb.st_size > logg_size)
                     if (rename_logg(&sb))
                         return -1;
-            } else
-                return -1;
 
     return 0;
 }
@@ -338,6 +333,7 @@ int logg(loglevel_t loglevel, const char *str, ...)
 #ifdef CL_THREAD_SAFE
     pthread_mutex_lock(&logg_mutex);
 #endif
+
     logg_open();
 
     if (!logg_fp && logg_file) {
