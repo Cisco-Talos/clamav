@@ -60,6 +60,7 @@ typedef struct fc_config_ {
     const char *proxyPassword;       /**< (optional) Password for proxy server authentication. */
     const char *databaseDirectory;   /**< Filepath of database directory. */
     const char *tempDirectory;       /**< Filepath to store temp files. */
+    const char *dbOwner;             /**< Owner of DB, used when creating log file/folder. */
 } fc_config;
 
 typedef enum fc_error_tag {

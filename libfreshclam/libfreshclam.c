@@ -123,6 +123,58 @@ const char *fc_strerror(fc_error_t fcerror)
     }
 }
 
+int fc_upsert_logg_file(fc_config *fcConfig)
+{
+    int ret = 0;
+    char* current_dir = "/";
+    char* file_path = strdup(fcConfig->logFile);
+    char* log_file = fcConfig->logFile;
+    char* token = strtok(file_path, "/");
+    FILE *logg_fp = NULL;
+    struct passwd *current_user = getpwuid(getuid());
+    struct passwd *db_owner = getpwnam(fcConfig->dbOwner);
+    current_dir = (char*)malloc(2);
+    strcpy(current_dir, "/");
+    STATBUF sb;
+
+    while (token != NULL) {
+        current_dir = (char*)realloc(current_dir, strlen(current_dir) + strlen(token) + 2);
+        strcat(current_dir, token);
+        token = strtok(NULL, "/");
+        if(token == NULL) {
+            break;
+        }
+        if(LSTAT(current_dir, &sb) == -1) {
+            if(mkdir(current_dir, 0755) == -1) {
+                printf("ERROR: Failed to create required directory %s. Will continue without writing in %s.\n", current_dir, log_file);
+                ret = -1;
+                goto cleanup;
+            }
+            if(chown(current_dir, db_owner->pw_uid, db_owner->pw_gid) == -1) {
+                printf("ERROR: Failed to change owner of %s to %s. Will continue without writing in %s.\n", current_dir, fcConfig->dbOwner, log_file);
+                ret = -1;
+                goto cleanup;
+            }
+        }
+        strcat(current_dir, "/");
+    }
+    if ((logg_fp = fopen(log_file, "at")) == NULL) {
+        printf("ERROR: Can't open %s in append mode (check permissions!).\n", log_file);
+        ret = -1;
+        goto cleanup;
+    }
+    lchown(log_file, db_owner->pw_uid, db_owner->pw_gid);
+
+cleanup:
+    free(current_dir);
+    free(file_path);
+    if(logg_fp != NULL) {
+        fclose(logg_fp);
+    }
+
+    return ret;
+}
+
 fc_error_t fc_initialize(fc_config *fcConfig)
 {
     fc_error_t status = FC_EARG;
@@ -157,6 +209,8 @@ fc_error_t fc_initialize(fc_config *fcConfig)
     logg_rotate  = (fcConfig->logFlags & FC_CONFIG_LOG_ROTATE) ? 1 : 0;
     logg_size    = fcConfig->maxLogSize;
     /* Set a log file if requested, and is not already set */
+    fc_upsert_logg_file(fcConfig);
+
     if ((NULL == logg_file) && (NULL != fcConfig->logFile)) {
         logg_file = cli_safer_strdup(fcConfig->logFile);
         if (0 != logg(LOGG_INFO_NF, "--------------------------------------\n")) {
