@@ -45,11 +45,15 @@ struct onas_bucket {
 
     struct onas_element *head;
     struct onas_element *tail;
+    struct onas_bucket *next;
+    struct onas_bucket *prev;
 };
 
 struct onas_ht {
 
     struct onas_bucket **htable;
+    struct onas_bucket *head;
+    struct onas_bucket *tail;
 
     /* Must be a sufficiently high power of two--will not grow. */
     uint32_t size;
