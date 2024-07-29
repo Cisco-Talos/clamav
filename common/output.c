@@ -55,6 +55,7 @@
 #include "clamav.h"
 #include "others.h"
 #include "str.h"
+
 #include "output.h"
 
 #ifdef CL_THREAD_SAFE
