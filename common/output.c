@@ -271,10 +271,12 @@ static int logg_open(void)
 
     if (logg_file)
         if (logg_size > 0)
-            if (CLAMSTAT(logg_file, &sb) != -1)
+            if (CLAMSTAT(logg_file, &sb) != -1) {
                 if (sb.st_size > logg_size)
                     if (rename_logg(&sb))
                         return -1;
+            } else
+                return -1;
 
     return 0;
 }
@@ -335,7 +337,37 @@ int logg(loglevel_t loglevel, const char *str, ...)
     pthread_mutex_lock(&logg_mutex);
 #endif
 
-    logg_open();
+    if(logg_open() == -1) {
+        printf("WARNING: Can't open %s in append mode (check permissions!). Will attempt to create it.\n", logg_file);
+        char* current_dir = "/";
+        char* file_path = strdup(logg_file);
+        char* token = strtok(file_path, "/");
+        current_dir = (char*)malloc(2);
+        strcpy(current_dir, "/");
+        STATBUF sb;
+
+        while (token != NULL) {
+            current_dir = (char*)realloc(current_dir, strlen(current_dir) + strlen(token) + 2);
+            strcat(current_dir, token);
+            token = strtok(NULL, "/");
+            if(LSTAT(current_dir, &sb) == -1) {
+                if(mkdir(current_dir, 0755) == -1) {
+                    printf("ERROR: Failed to create required directory %s. Will continue without writing in %s.\n", current_dir, logg_file);
+                    free(current_dir);
+                    free(file_path);
+                    return -1;
+                }
+            }
+            strcat(current_dir, "/");
+        }
+        //create file
+        if ((logg_fp = fopen(logg_file, "at")) == NULL) {
+            printf("ERROR: Can't open %s in append mode (check permissions!).\n", logg_file);
+            free(current_dir);
+            free(file_path);
+            return -1;
+        }
+    }
 
     if (!logg_fp && logg_file) {
         old_umask = umask(0037);
