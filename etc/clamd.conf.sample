@@ -585,6 +585,7 @@ Example
 # deeply the process should be continued.
 # Note: setting this limit too high may result in severe damage to the system.
 # Default: 17
+# Maximum: 100
 #MaxRecursion 10
 
 # Number of files to be scanned within an archive, a document, or any other

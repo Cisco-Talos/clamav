@@ -56,6 +56,7 @@
 #include "matcher-pcre.h"
 #include "str.h"
 #include "readdb.h"
+#include "default.h"
 
 // common
 #include "optparser.h"
@@ -1388,6 +1389,13 @@ int scanmanager(const struct optstruct *opts)
     }
 
     if ((opt = optget(opts, "max-recursion"))->active) {
+        uint32_t opt_value = opt->numarg;
+        if ((0 == opt_value) || (opt_value > CLI_MAX_MAXRECLEVEL)) {
+            logg(LOGG_ERROR, "max-recursion set to %u, but  cannot be larger than %u, and cannot be 0.\n",
+                    opt_value, CLI_MAX_MAXRECLEVEL);
+            ret = 2;
+            goto done;
+        }
         if ((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_RECURSION, opt->numarg))) {
             logg(LOGG_ERROR, "cli_engine_set_num(CL_ENGINE_MAX_RECURSION) failed: %s\n", cl_strerror(ret));
             ret = 2;

@@ -58,6 +58,8 @@
 #define CLI_DEFAULT_PCRE_RECMATCH_LIMIT 2000
 #define CLI_DEFAULT_PCRE_MAX_FILESIZE   (1024 * 1024 * 100)   // 100 MB
 
+/* Maximums */
+#define CLI_MAX_MAXRECLEVEL     100
 // clang-format on
 
 #endif

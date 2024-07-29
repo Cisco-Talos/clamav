@@ -50,6 +50,7 @@
 #include "clamav.h"
 #include "others.h"
 #include "readdb.h"
+#include "default.h"
 
 // common
 #include "output.h"
@@ -981,6 +982,12 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
 #endif
 
     if ((opt = optget(opts, "MaxRecursion"))->active) {
+        if ((0 == opt->numarg) || (opt->numarg > CLI_MAX_MAXRECLEVEL)) {
+            logg(LOGG_ERROR, "MaxRecursion set to %zu, but cannot be larger than %u, and cannot be 0.\n",
+                    (size_t) opt->numarg, CLI_MAX_MAXRECLEVEL);
+            cl_engine_free(engine);
+            return 1;
+        }
         if ((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_RECURSION, opt->numarg))) {
             logg(LOGG_ERROR, "cl_engine_set_num(CL_ENGINE_MAX_RECURSION) failed: %s\n", cl_strerror(ret));
             cl_engine_free(engine);
