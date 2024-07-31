@@ -2870,6 +2870,10 @@ cl_error_t cli_ole2_extract(const char *dirname, cli_ctx *ctx, struct uniq **fil
     hdr.xbat_start            = ole2_endian_convert_32(hdr.xbat_start);
     hdr.xbat_count            = ole2_endian_convert_32(hdr.xbat_count);
 
+    fprintf(stderr, "%s::%d::bat_count (sector count) and prop_start are different\n", __FUNCTION__, __LINE__);
+    fprintf(stderr, "%s::%d::bat_count = %d\n", __FUNCTION__, __LINE__, hdr.bat_count);
+print_ole2_header(&hdr);
+
     hdr.sbat_root_start = -1;
 
     hdr.bitset = cli_bitset_init();
