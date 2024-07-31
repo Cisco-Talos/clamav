@@ -720,7 +720,8 @@ static size_t get_stream_data_offset(ole2_header_t *hdr, const property_t *word_
 
     if (word_block->size < MINISTREAM_CUTOFF_SIZE) {
         fib_offset = offset + sector_size * hdr->sbat_root_start;
-        fib_offset += (word_block->start_block * (1 << hdr->log2_small_block_size));
+        //fib_offset += (word_block->start_block * (1 << hdr->log2_small_block_size));
+        fib_offset += (sector * (1 << hdr->log2_small_block_size));
     } else {
         fib_offset = offset + sector_size * sector;
     }
