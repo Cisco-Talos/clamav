@@ -793,14 +793,105 @@ static void processOfficeArtFBSE(cli_ctx * ctx, ole2_header_t *hdr, OfficeArtRec
     offset += fbse.cbName;
 
     if (imageHeader->recLen == (sizeof(OfficeArtFBSEKnown) + fbse.cbName + fbse.size)) {
+fprintf(stderr, "%s::%d::Blip is embedded\n", __FUNCTION__, __LINE__);
         /* The BLIP is embedded in this record*/ 
         processOfficeArtBlip(ctx, &(ptr[offset]));
     } else {
         /* The BLIP is in the 'WordDocument' stream. */
         size_t size = fbse.size;
         const uint8_t * const ptr = load_pointer_to_stream_from_fmap(hdr, wordDocBlock, fbse.foDelay, size);
+fprintf(stderr, "%s::%d::Blip is in WordDocument stream, delay = %u (0x%x)\n", __FUNCTION__, __LINE__, fbse.foDelay, fbse.foDelay);
         processOfficeArtBlip(ctx, ptr);
     }
+
+#if 0
+    size_t i;
+    fprintf(stderr, "%s::%d::", __FUNCTION__, __LINE__);
+    for (i = 0; i < 16; i++) {
+        fprintf(stderr, "%02x ", ptr[i + offset]);
+    }
+    fprintf(stderr, "\n");
+#endif
+
+
+
+#if 1
+    fprintf(stderr, "%s::%d::before cpy\n", __FUNCTION__, __LINE__);
+    copy_OfficeArtRecordHeader(imageHeader, &(ptr[offset]));
+    offset += sizeof(OfficeArtRecordHeader);
+
+    copy_OfficeArtFBSEKnown (&fbse, &(ptr[offset]));
+    offset += sizeof(OfficeArtFBSEKnown );
+    recInst = getRecInst(imageHeader);
+
+    fprintf(stderr, "%s::%d::recInst = %d\n", __FUNCTION__, __LINE__, recInst);
+    fprintf(stderr, "%s::%d::fbse.btWin32 = %d\n", __FUNCTION__, __LINE__, fbse.btWin32);
+    fprintf(stderr, "%s::%d::fbse.btMacOS = %d\n", __FUNCTION__, __LINE__, fbse.btMacOS);
+
+    //here;
+
+
+    if ((recInst != fbse.btWin32) && (recInst != fbse.btMacOS)) {
+        cli_dbgmsg("ERROR Invalid recInst 0x%x\n", recInst);
+        return;
+    }
+    fprintf(stderr, "%s::%d\n", __FUNCTION__, __LINE__);
+    if (imageHeader->recType != 0xf007) {
+        cli_dbgmsg("ERROR Invalid recType 0x%x\n", imageHeader->recType);
+        return;
+    }
+    fprintf(stderr, "%s::%d\n", __FUNCTION__, __LINE__);
+
+    offset += fbse.cbName;
+
+    if (imageHeader->recLen == (sizeof(OfficeArtFBSEKnown) + fbse.cbName + fbse.size)) {
+fprintf(stderr, "%s::%d::Blip is embedded\n", __FUNCTION__, __LINE__);
+        /* The BLIP is embedded in this record*/ 
+        processOfficeArtBlip(ctx, &(ptr[offset]));
+    } else {
+        /* The BLIP is in the 'WordDocument' stream. */
+        size_t size = fbse.size;
+        const uint8_t * const ptr = load_pointer_to_stream_from_fmap(hdr, wordDocBlock, fbse.foDelay, size);
+fprintf(stderr, "%s::%d::Blip is in WordDocument stream, delay = %u (0x%x)\n", __FUNCTION__, __LINE__, fbse.foDelay, fbse.foDelay);
+        processOfficeArtBlip(ctx, ptr);
+    }
+
+#endif
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    fprintf(stderr, "%s::%d::Looks like this might be IT!!!!\n", __FUNCTION__, __LINE__);
 
 }
 
@@ -875,6 +966,7 @@ static void ole2_extract_images(cli_ctx * ctx, ole2_header_t * ole2Hdr, FibRgFcL
      *
      * */
 #define OFFICE_ART_FBSE_REC_TYPE 0x2
+    fprintf(stderr, "%s::%d::imageCnt = %d\n", __FUNCTION__, __LINE__, imageCnt);
     for (i = 0; i < imageCnt; i++) {
         OfficeArtRecordHeader imageHeader;
         copy_OfficeArtRecordHeader(&imageHeader,  &(ptr[offset]));
@@ -884,11 +976,17 @@ static void ole2_extract_images(cli_ctx * ctx, ole2_header_t * ole2Hdr, FibRgFcL
             /* OfficeArtFBSE 
              * https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-odraw/2f2d7f5e-d5c4-4cb7-b230-59b3fe8f10d6
              */
+            fprintf(stderr, "%s::%d::calling processOfficeArtFBSE\n", __FUNCTION__, __LINE__);
             processOfficeArtFBSE(ctx, ole2Hdr, &imageHeader, &(ptr[offset]), wordDocBlock);
         } else {
+            fprintf(stderr, "%s::%d::calling processOfficeArtBlip\n", __FUNCTION__, __LINE__);
             processOfficeArtBlip(ctx, &(ptr[offset]));
         }
     }
+
+    //here;
+
+
 }
 
 
@@ -943,6 +1041,7 @@ void ole2_process_image_directory( cli_ctx * ctx, ole2_header_t * hdr, ole2_imag
 
         /*Call Extract */
         size_t offset = get_stream_data_offset(hdr, tableStream, tableStream->start_block);
+        /*TODO: Fix hardcoded 4k*/
         ptr = fmap_need_off_once(hdr->map, offset, 4096);
         if (NULL == ptr) {
             cli_dbgmsg("ERROR: Invalid offset for File Information Block %ld (0x%lx)\n", offset, offset);

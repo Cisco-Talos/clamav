@@ -4626,6 +4626,8 @@ cl_error_t cli_extract_xlm_macros_and_images(const char *dir, cli_ctx *ctx, char
     unsigned char *drawinggroup = NULL;
     size_t drawinggroup_len     = 0;
 
+    fprintf(stderr, "%s::%d::INHREE\n", __FUNCTION__, __LINE__);
+
     biff8_opcode previous_biff8_opcode = 0x0; // Initialize to 0x0, which isn't even in our enum.
                                               // This variable will allow the OPC_CONTINUE record
                                               // to know which record it is continuing.
