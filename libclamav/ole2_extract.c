@@ -415,7 +415,6 @@ print_ole2_property(property_t *property)
 static void
 print_ole2_header(ole2_header_t *hdr)
 {
-#if 0
     if (!hdr || !cli_debug_flag) {
         return;
     }
@@ -443,40 +442,6 @@ print_ole2_header(ole2_header_t *hdr)
     cli_dbgmsg("XBat start:\t\t%d\n", hdr->xbat_start);
     cli_dbgmsg("XBat block count:\t%d\n", hdr->xbat_count);
     cli_dbgmsg("\n");
-
-
-
-#endif
-    fprintf(stderr, "\n");
-    fprintf(stderr, "Magic:\t\t\t0x%x%x%x%x%x%x%x%x\n",
-               hdr->magic[0], hdr->magic[1], hdr->magic[2], hdr->magic[3],
-               hdr->magic[4], hdr->magic[5], hdr->magic[6], hdr->magic[7]);
-
-    fprintf(stderr, "CLSID:\t\t\t{%x%x%x%x-%x%x-%x%x-%x%x-%x%x%x%x%x%x}\n",
-               hdr->clsid[0], hdr->clsid[1], hdr->clsid[2], hdr->clsid[3],
-               hdr->clsid[4], hdr->clsid[5], hdr->clsid[6], hdr->clsid[7],
-               hdr->clsid[8], hdr->clsid[9], hdr->clsid[10], hdr->clsid[11],
-               hdr->clsid[12], hdr->clsid[13], hdr->clsid[14], hdr->clsid[15]);
-
-    fprintf(stderr, "Minor version:\t\t0x%x\n", hdr->minor_version);
-    fprintf(stderr, "DLL version:\t\t0x%x\n", hdr->dll_version);
-    fprintf(stderr, "Byte Order:\t\t%d\n", hdr->byte_order);
-    fprintf(stderr, "Big Block Size:\t%i\n", hdr->log2_big_block_size);
-    fprintf(stderr, "Small Block Size:\t%i\n", hdr->log2_small_block_size);
-    fprintf(stderr, "BAT count:\t\t%d\n", hdr->bat_count);
-    fprintf(stderr, "Prop start:\t\t%d\n", hdr->prop_start);
-    fprintf(stderr, "SBAT cutoff:\t\t%d\n", hdr->sbat_cutoff);
-    fprintf(stderr, "SBat start:\t\t%d\n", hdr->sbat_start);
-    fprintf(stderr, "SBat block count:\t%d\n", hdr->sbat_block_count);
-    fprintf(stderr, "XBat start:\t\t%d\n", hdr->xbat_start);
-    fprintf(stderr, "XBat block count:\t%d\n", hdr->xbat_count);
-    fprintf(stderr, "\n");
-
-
-
-
-
-
     return;
 }
 
@@ -2912,9 +2877,21 @@ cl_error_t cli_ole2_extract(const char *dirname, cli_ctx *ctx, struct uniq **fil
     hdr.xbat_start            = ole2_endian_convert_32(hdr.xbat_start);
     hdr.xbat_count            = ole2_endian_convert_32(hdr.xbat_count);
 
-    fprintf(stderr, "%s::%d::bat_count (sector count) and prop_start are different\n", __FUNCTION__, __LINE__);
-    fprintf(stderr, "%s::%d::bat_count = %d\n", __FUNCTION__, __LINE__, hdr.bat_count);
-print_ole2_header(&hdr);
+
+
+#if 0
+    int32_t bat_count __attribute__((packed)); NUMBER of directory sectors
+    int32_t prop_start __attribute__((packed)); number of fat sectors
+
+    uint32_t signature __attribute__((packed)); first directory sector location
+#endif
+    fprintf(stderr, "%s::%d::Number of directory sectors = %d (0x%x)\n", __FUNCTION__, __LINE__, hdr.bat_count, hdr.bat_count);
+    fprintf(stderr, "%s::%d::Number of FAT sectors = %d (0x%x)\n", __FUNCTION__, __LINE__, hdr.prop_start, hdr.prop_start);
+    fprintf(stderr, "%s::%d::Transaction sector Number = %d (0x%x)\n", __FUNCTION__, __LINE__, hdr.signature, hdr.signature);
+
+
+
+
 
     hdr.sbat_root_start = -1;
 
