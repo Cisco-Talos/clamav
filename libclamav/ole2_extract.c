@@ -983,6 +983,8 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
         prop_block[idx].start_block     = ole2_endian_convert_32(prop_block[idx].start_block);
         prop_block[idx].size            = ole2_endian_convert_32(prop_block[idx].size);
 
+        //fprintf(stderr, "%s::%d::start_block = %d (0x%x)\n", __FUNCTION__, __LINE__, prop_block[idx].start_block, prop_block[idx].start_block);
+
         if ((64 < prop_block[idx].name_size) || (prop_block[idx].name_size % 2)) {
             cli_dbgmsg("ERROR: Invalid name_size %d\n", prop_block[idx].name_size);
             continue;
@@ -994,20 +996,6 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
                 memcpy(&(pImageDirectory->word_block), &(prop_block[idx]), sizeof((pImageDirectory->word_block)));
                 pImageDirectory->bFibRgFcLcb97Header_initialized = getFibRgFcLcb97Header(&(prop_block[idx]), hdr, &(pImageDirectory->fibRgFcLcb97Header));
             }
-
-#if 0
-            {
-                size_t i;
-                here;
-    fprintf(stderr, "%s::%d::", __FUNCTION__, __LINE__ );
-    for (i = sizeof(property_t); i < 1024; i++){
-        fprintf(stderr, "%02x ", name[i]);
-    }
-    fprintf(stderr, "\n");
-            }
-#endif
-
-
         } else if (0 == ole2_cmp_name(prop_block[idx].name, prop_block[idx].name_size, "WorkBook")) {
             test_for_xls_encryption(&(prop_block[idx]), hdr, pEncryptionStatus);
         } else if (0 == ole2_cmp_name(prop_block[idx].name, prop_block[idx].name_size, "PowerPoint Document")) {
@@ -1026,6 +1014,18 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
                 memcpy(&(pImageDirectory->table_stream_0_block), &(prop_block[idx]), sizeof(pImageDirectory->table_stream_0_block));
                 pImageDirectory->table_stream_0_initialized = true;
             }
+} else {
+    not finding it anywhere, try looking in the table stream;
+    size_t i;
+uint32_t data_offset = get_stream_data_offset(hdr, &(prop_block[idx]), prop_block[idx].start_block);
+uint8_t * ptr  = fmap_need_off_once(hdr->map, data_offset, 4096);
+fprintf(stderr, "%s::%d::%p", __FUNCTION__, __LINE__, ptr);
+fprintf(stderr, "%s::%d::", __FUNCTION__, __LINE__);
+for (i = 0; i < 25; i++){
+    fprintf(stderr, "%02x ", ptr[i]);
+}
+fprintf(stderr, "\n");
+
         }
 
         ole2_listmsg("printing ole2 property\n");
@@ -2901,6 +2901,9 @@ cl_error_t cli_ole2_extract(const char *dirname, cli_ctx *ctx, struct uniq **fil
     fprintf(stderr, "%s::%d::Number of directory sectors = %d (0x%x)\n", __FUNCTION__, __LINE__, hdr.bat_count, hdr.bat_count);
     fprintf(stderr, "%s::%d::Number of FAT sectors = %d (0x%x)\n", __FUNCTION__, __LINE__, hdr.prop_start, hdr.prop_start);
     fprintf(stderr, "%s::%d::Transaction sector Number = %d (0x%x)\n", __FUNCTION__, __LINE__, hdr.signature, hdr.signature);
+
+    fprintf(stderr, "%s::%d::First directory sector = %d (0x%x)\n", __FUNCTION__, __LINE__, hdr.signature * (1 << hdr.log2_big_block_size), hdr.signature * (1 << hdr.log2_big_block_size));
+
 
 
 

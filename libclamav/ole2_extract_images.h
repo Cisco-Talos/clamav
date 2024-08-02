@@ -988,7 +988,7 @@ void ole2_process_image_directory( cli_ctx * ctx, ole2_header_t * hdr, ole2_imag
 fprintf(stderr, "\n%s::%d::tableStream->size = %d (0x%x)\n", __FUNCTION__, __LINE__, tableStream->size, tableStream->size);
 fprintf(stderr, "%s::%d::tableStream->type = %d (0x%x)\n", __FUNCTION__, __LINE__, tableStream->type, tableStream->type);
 fprintf(stderr, "%s::%d::tableStream->next = %d (0x%x)\n", __FUNCTION__, __LINE__, tableStream->next, tableStream->next);
-fprintf(stderr, "%s::%d::Fix hardcoded 4k, probably with tableStream->size\n", __FUNCTION__, __LINE__);
+fprintf(stderr, "%s::%d::Fix hardcoded 4k, probably with tableStream->size or block size\n", __FUNCTION__, __LINE__);
         if (NULL == ptr) {
             cli_dbgmsg("ERROR: Invalid offset for File Information Block %ld (0x%lx)\n", offset, offset);
             goto done;
