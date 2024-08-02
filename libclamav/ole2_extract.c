@@ -641,7 +641,6 @@ static int ole2_cmp_name(const char *const name, uint32_t name_size, const char 
         decoded[j] = ((unsigned char)name[i + 1]) << 4;
         decoded[j] += name[i];
     }
-    //fprintf(stderr, "%s::%d::%s\n", __FUNCTION__, __LINE__, decoded);
 
     return strcasecmp(decoded, keyword);
 }
@@ -995,6 +994,20 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
                 memcpy(&(pImageDirectory->word_block), &(prop_block[idx]), sizeof((pImageDirectory->word_block)));
                 pImageDirectory->bFibRgFcLcb97Header_initialized = getFibRgFcLcb97Header(&(prop_block[idx]), hdr, &(pImageDirectory->fibRgFcLcb97Header));
             }
+
+#if 0
+            {
+                size_t i;
+                here;
+    fprintf(stderr, "%s::%d::", __FUNCTION__, __LINE__ );
+    for (i = sizeof(property_t); i < 1024; i++){
+        fprintf(stderr, "%02x ", name[i]);
+    }
+    fprintf(stderr, "\n");
+            }
+#endif
+
+
         } else if (0 == ole2_cmp_name(prop_block[idx].name, prop_block[idx].name_size, "WorkBook")) {
             test_for_xls_encryption(&(prop_block[idx]), hdr, pEncryptionStatus);
         } else if (0 == ole2_cmp_name(prop_block[idx].name, prop_block[idx].name_size, "PowerPoint Document")) {
