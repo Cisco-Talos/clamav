@@ -77,14 +77,15 @@
 #endif
 
 // https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-cfb/05060311-bfce-4b12-874d-71fd4ce63aea
-typedef struct ole2_header_tag {
+typedef struct __attribute__((packed)) ole2_header_tag {
     unsigned char magic[8]; /* should be: 0xd0cf11e0a1b11ae1 */
     unsigned char clsid[16];
     uint16_t minor_version __attribute__((packed));
-    uint16_t dll_version __attribute__((packed));
+    uint16_t dll_version __attribute__((packed)); //major version
     int16_t byte_order __attribute__((packed)); /* -2=intel */
 
-    uint16_t log2_big_block_size __attribute__((packed));   /* usually 9 (2^9 = 512) */
+    uint16_t log2_big_block_size __attribute__((packed));   /* usually 9 (2^9 = 512) */ //sector shift
+#if 0
     uint32_t log2_small_block_size __attribute__((packed)); /* usually 6 (2^6 = 64) */
     /*
      * This is technically incorrect.  log2_small_block_size should be a uint16_t, and reserved should
@@ -93,19 +94,27 @@ typedef struct ole2_header_tag {
      */
 
     int32_t reserved[2] __attribute__((packed));
-    int32_t bat_count __attribute__((packed));
-    int32_t prop_start __attribute__((packed));
+#else
 
-    uint32_t signature __attribute__((packed));
+    uint16_t log2_small_block_size __attribute__((packed)); /* usually 6 (2^6 = 64) */ //mini sector shift
+    uint8_t reserved[6];
+
+#endif
+    uint32_t num_directory_sectors __attribute__((packed));         //If dll_version is 3, this must be 0
+    int32_t bat_count __attribute__((packed));                      //num fat sectors
+    int32_t prop_start __attribute__((packed));                     //first directory sector location
+
+    uint32_t signature __attribute__((packed));                     //transaction signature number
     uint32_t sbat_cutoff __attribute__((packed)); /* cutoff for files held
                                                    * in small blocks
                                                    * (4096) */
+                                                                    //ministream cutoff size
 
-    int32_t sbat_start __attribute__((packed));
-    int32_t sbat_block_count __attribute__((packed));
-    int32_t xbat_start __attribute__((packed));
-    int32_t xbat_count __attribute__((packed));
-    int32_t bat_array[109] __attribute__((packed));
+    int32_t sbat_start __attribute__((packed));                     //first mini fat sector location
+    int32_t sbat_block_count __attribute__((packed));               //number of minifat sectors
+    int32_t xbat_start __attribute__((packed));                     //first DIFAT sector location
+    int32_t xbat_count __attribute__((packed));                     //number of difat sectors
+    int32_t bat_array[109] __attribute__((packed));                 //DIFAT
 
     /*
      * The following is not part of the ole2 header, but stuff we need in
@@ -724,10 +733,12 @@ static size_t get_stream_data_offset(ole2_header_t *hdr, const property_t *word_
     size_t fib_offset  = 0;
 
     if (word_block->size < MINISTREAM_CUTOFF_SIZE) {
+        fprintf(stderr, "%s::%d::In the mini stream\n", __FUNCTION__, __LINE__);
         fib_offset = offset + sector_size * hdr->sbat_root_start;
         //fib_offset += (word_block->start_block * (1 << hdr->log2_small_block_size));
         fib_offset += (sector * (1 << hdr->log2_small_block_size));
     } else {
+        fprintf(stderr, "%s::%d::Not in the mini stream\n", __FUNCTION__, __LINE__);
         fib_offset = offset + sector_size * sector;
     }
 
@@ -1008,6 +1019,12 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
             if (pImageDirectory) {
                 memcpy(&(pImageDirectory->table_stream_1_block), &(prop_block[idx]), sizeof(pImageDirectory->table_stream_1_block));
                 pImageDirectory->table_stream_1_initialized = true;
+
+
+                fprintf(stderr, "%s::%d::prev = %d (0x%x)\n", __FUNCTION__, __LINE__, pImageDirectory->table_stream_1_block.prev, pImageDirectory->table_stream_1_block.prev);
+                fprintf(stderr, "%s::%d::next = %d (0x%x)\n", __FUNCTION__, __LINE__, pImageDirectory->table_stream_1_block.next, pImageDirectory->table_stream_1_block.next);
+                fprintf(stderr, "%s::%d::child = %d (0x%x)\n", __FUNCTION__, __LINE__, pImageDirectory->table_stream_1_block.child, pImageDirectory->table_stream_1_block.child);
+
             }
         } else if (0 == ole2_cmp_name(prop_block[idx].name, prop_block[idx].name_size, "0Table")) {
             if (pImageDirectory) {
@@ -2869,7 +2886,8 @@ cl_error_t cli_ole2_extract(const char *dirname, cli_ctx *ctx, struct uniq **fil
     hdr.dll_version           = ole2_endian_convert_16(hdr.dll_version);
     hdr.byte_order            = ole2_endian_convert_16(hdr.byte_order);
     hdr.log2_big_block_size   = ole2_endian_convert_16(hdr.log2_big_block_size);
-    hdr.log2_small_block_size = ole2_endian_convert_32(hdr.log2_small_block_size);
+    //hdr.log2_small_block_size = ole2_endian_convert_32(hdr.log2_small_block_size);
+    hdr.log2_small_block_size = ole2_endian_convert_16(hdr.log2_small_block_size);
     hdr.bat_count             = ole2_endian_convert_32(hdr.bat_count);
     hdr.prop_start            = ole2_endian_convert_32(hdr.prop_start);
     hdr.sbat_cutoff           = ole2_endian_convert_32(hdr.sbat_cutoff);
@@ -2886,11 +2904,84 @@ cl_error_t cli_ole2_extract(const char *dirname, cli_ctx *ctx, struct uniq **fil
 
     uint32_t signature __attribute__((packed)); first directory sector location
 #endif
-    fprintf(stderr, "%s::%d::Number of directory sectors = %d (0x%x)\n", __FUNCTION__, __LINE__, hdr.bat_count, hdr.bat_count);
-    fprintf(stderr, "%s::%d::Number of FAT sectors = %d (0x%x)\n", __FUNCTION__, __LINE__, hdr.prop_start, hdr.prop_start);
-    fprintf(stderr, "%s::%d::Transaction sector Number = %d (0x%x)\n", __FUNCTION__, __LINE__, hdr.signature, hdr.signature);
+    //fprintf(stderr, "%s::%d::Number of directory sectors = %d (0x%x)\n", __FUNCTION__, __LINE__, hdr.bat_count, hdr.bat_count);
+    //fprintf(stderr, "%s::%d::Number of FAT sectors = %d (0x%x)\n", __FUNCTION__, __LINE__, hdr.prop_start, hdr.prop_start);
+    //fprintf(stderr, "%s::%d::Transaction sector Number = %d (0x%x)\n", __FUNCTION__, __LINE__, hdr.signature, hdr.signature);
 
-    fprintf(stderr, "%s::%d::First directory sector = %d (0x%x)\n", __FUNCTION__, __LINE__, hdr.signature * (1 << hdr.log2_big_block_size), hdr.signature * (1 << hdr.log2_big_block_size));
+    //fprintf(stderr, "%s::%d::First directory sector = %d (0x%x)\n", __FUNCTION__, __LINE__, hdr.signature * (1 << hdr.log2_big_block_size), hdr.signature * (1 << hdr.log2_big_block_size));
+
+#if 0
+    unsigned char magic[8]; /* should be: 0xd0cf11e0a1b11ae1 */
+    unsigned char clsid[16];
+    uint16_t minor_version __attribute__((packed));
+    uint16_t dll_version __attribute__((packed)); //major version
+    int16_t byte_order __attribute__((packed)); /* -2=intel */
+
+    uint16_t log2_big_block_size __attribute__((packed));   /* usually 9 (2^9 = 512) */ //sector shift
+    uint16_t log2_small_block_size __attribute__((packed)); /* usually 6 (2^6 = 64) */ //mini sector shift
+    uint8_t reserved[6] __attribute__((packed));
+    uint32_t num_directory_sectors __attribute__((packed));
+    int32_t bat_count __attribute__((packed));                      //num fat sectors
+    int32_t prop_start __attribute__((packed));                     //first directory sector location
+
+    uint32_t signature __attribute__((packed));                     //transaction signature number
+    uint32_t sbat_cutoff __attribute__((packed)); /* cutoff for files held
+                                                   * in small blocks
+                                                   * (4096) */
+                                                                    //ministream cutoff size
+
+    int32_t sbat_start __attribute__((packed));                     //first mini fat sector location
+    int32_t sbat_block_count __attribute__((packed));               //number of minifat sectors
+    int32_t xbat_start __attribute__((packed));                     //first DIFAT sector location
+    int32_t xbat_count __attribute__((packed));                     //number of difat sectors
+    int32_t bat_array[109] __attribute__((packed));                 //DIFAT
+
+#endif
+    {
+        size_t andy;
+    fprintf(stderr, "%s::%d::minor_version = %d (0x%x)\n", __FUNCTION__, __LINE__, hdr.minor_version, hdr.minor_version);
+    fprintf(stderr, "%s::%d::dll_version = %d (0x%x)\n", __FUNCTION__, __LINE__, hdr.dll_version, hdr.dll_version);
+    fprintf(stderr, "%s::%d::byte_order = %d (0x%x)\n", __FUNCTION__, __LINE__, hdr.byte_order, hdr.byte_order);
+    fprintf(stderr, "%s::%d::log2_big_block_size = %d (0x%x)\n", __FUNCTION__, __LINE__, hdr.log2_big_block_size, hdr.log2_big_block_size);
+    fprintf(stderr, "%s::%d::log2_small_block_size = %d (0x%x)\n", __FUNCTION__, __LINE__, hdr.log2_small_block_size, hdr.log2_small_block_size);
+    fprintf(stderr, "%s::%d::reserved::", __FUNCTION__, __LINE__);
+    for (andy = 0; andy < 6; andy++) {
+        fprintf(stderr, "%02x ", hdr.reserved[andy]);
+    }
+    fprintf(stderr, "\n");
+
+
+    fprintf(stderr, "%s::%d::num_directory_sectors = %d (0x%x)\n", __FUNCTION__, __LINE__, hdr.num_directory_sectors, hdr.num_directory_sectors);
+    fprintf(stderr, "%s::%d::bat_count = %d (0x%x)\n", __FUNCTION__, __LINE__, hdr.bat_count, hdr.bat_count);
+    fprintf(stderr, "%s::%d::prop_start = %d (0x%x)\n", __FUNCTION__, __LINE__, hdr.prop_start, hdr.prop_start);
+    fprintf(stderr, "%s::%d::signature = %d (0x%x)\n", __FUNCTION__, __LINE__, hdr.signature, hdr.signature);
+    fprintf(stderr, "%s::%d::sbat_cutoff = %d (0x%x)\n", __FUNCTION__, __LINE__, hdr.sbat_cutoff, hdr.sbat_cutoff);
+    fprintf(stderr, "%s::%d::sbat_start = %d (0x%x)\n", __FUNCTION__, __LINE__, hdr.sbat_start, hdr.sbat_start);
+    fprintf(stderr, "%s::%d::sbat_block_count = %d (0x%x)\n", __FUNCTION__, __LINE__, hdr.sbat_block_count, hdr.sbat_block_count);
+    fprintf(stderr, "%s::%d::xbat_start = %d (0x%x)\n", __FUNCTION__, __LINE__, hdr.xbat_start, hdr.xbat_start);
+    fprintf(stderr, "%s::%d::xbat_count = %d (0x%x)\n", __FUNCTION__, __LINE__, hdr.xbat_count, hdr.xbat_count);
+
+    /*
+     * The random block that we *don't* want that is stuffed in the middel is in the DIFAT.
+     * Need to skip it (1 << log2_big_block_size) and keep going.
+     */
+    for (andy = 0; andy < 109; andy++) {
+        fprintf(stderr, "%s::%d::difat[%ld] = %d (0x%x)\n", __FUNCTION__, __LINE__, andy, hdr.bat_array[andy], hdr.bat_array[andy]);
+        if (-1 == hdr.bat_array[andy]) {
+            break;
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+    }
 
 
 
