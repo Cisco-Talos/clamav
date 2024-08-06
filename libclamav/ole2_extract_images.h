@@ -866,6 +866,8 @@ static void ole2_extract_images(cli_ctx * ctx, ole2_header_t * ole2Hdr, ole2_ima
 #endif
 
     size_t offset = header->fcDggInfo;
+    fprintf(stderr, "%s::%d::blahblah::offset = %ld (0x%lx)\n", __FUNCTION__, __LINE__, offset, offset);
+    PUT IN CODE TO ONLY FMAP 1 BLOCK AT A TIME, MAYBE TRACK BLOCK SIZE INSTEAD OF OFFSET;
 
     /*
      * Start of OfficeArtContent
