@@ -1042,7 +1042,7 @@ fprintf(stderr, "%s::%d::Fix hardcoded 4k, probably with tableStream->size or bl
         ole2_extract_images(ctx, hdr, &(directory->fibRgFcLcb97Header), ptr, &(directory->word_block));
     }
 done:
-    ;
+    return ;
 }
 
 
