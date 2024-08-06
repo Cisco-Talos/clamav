@@ -1014,18 +1014,6 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
                 memcpy(&(pImageDirectory->table_stream_0_block), &(prop_block[idx]), sizeof(pImageDirectory->table_stream_0_block));
                 pImageDirectory->table_stream_0_initialized = true;
             }
-} else {
-    not finding it anywhere, try looking in the table stream;
-    size_t i;
-uint32_t data_offset = get_stream_data_offset(hdr, &(prop_block[idx]), prop_block[idx].start_block);
-uint8_t * ptr  = fmap_need_off_once(hdr->map, data_offset, 4096);
-fprintf(stderr, "%s::%d::%p", __FUNCTION__, __LINE__, ptr);
-fprintf(stderr, "%s::%d::", __FUNCTION__, __LINE__);
-for (i = 0; i < 25; i++){
-    fprintf(stderr, "%02x ", ptr[i]);
-}
-fprintf(stderr, "\n");
-
         }
 
         ole2_listmsg("printing ole2 property\n");
