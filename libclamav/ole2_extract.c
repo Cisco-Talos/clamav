@@ -2966,16 +2966,12 @@ cl_error_t cli_ole2_extract(const char *dirname, cli_ctx *ctx, struct uniq **fil
      * Need to skip it (1 << log2_big_block_size) and keep going.
      */
     for (andy = 0; andy < 109; andy++) {
-        fprintf(stderr, "%s::%d::difat[%ld] = %d (0x%x)\n", __FUNCTION__, __LINE__, andy, hdr.bat_array[andy], hdr.bat_array[andy]);
         if (-1 == hdr.bat_array[andy]) {
             break;
         }
+        fprintf(stderr, "%s::%d::difat[%ld] = %d (0x%x)\n", __FUNCTION__, __LINE__, andy, hdr.bat_array[andy], hdr.bat_array[andy]);
+        fprintf(stderr, "%s::%d::RESERVED BLOCK::%x\n", __FUNCTION__, __LINE__, ((hdr.bat_array[andy]+1) << hdr.log2_big_block_size));
     }
-
-
-
-
-
 
 
 

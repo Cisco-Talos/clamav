@@ -749,7 +749,6 @@ static size_t processOfficeArtBlip(cli_ctx * ctx, const uint8_t * const ptr){
         cli_dbgmsg("ERROR Invalid recVer 0x%x\n", recVer);
         goto done;
     }
-    fprintf(stderr, "%s::%d::ADDTO::SHOULDBEIT::offset = %ld (0x%lx)\n", __FUNCTION__, __LINE__, offset, offset);
 
 #define RECTYPE_OFFICE_ART_BLIP_EMF 0xf01a
 #define RECTYPE_OFFICE_ART_BLIP_WMF 0xf01b
@@ -827,19 +826,10 @@ fprintf(stderr, "%s::%d::ADDTO::offset = %d (0x%x)\n", __FUNCTION__, __LINE__, o
 fprintf(stderr, "%s::%d::ADDTO::fbse.foDelay = %d (0x%x)\n", __FUNCTION__, __LINE__, fbse.foDelay, fbse.foDelay);
         const uint8_t * const ptr = load_pointer_to_stream_from_fmap(hdr, wordDocBlock, fbse.foDelay, size);
         processOfficeArtBlip(ctx, ptr);
-
-        /* I don't *think* I need to add anything to the offset here, because the actual data is not here.
+        /* I don't need to add anything to the offset here, because the actual data is not here.
          * The data is in a different stream
          */
     }
-#if 0
-    size_t i;
-    fprintf(stderr, "%s::%d::", __FUNCTION__, __LINE__);
-    for (i = 0; i < 16; i++) {
-        fprintf(stderr, "%02x ", ptr[i + offset]);
-    }
-    fprintf(stderr, "\n");
-#endif
 
     return offset;
 }
@@ -847,23 +837,6 @@ fprintf(stderr, "%s::%d::ADDTO::fbse.foDelay = %d (0x%x)\n", __FUNCTION__, __LIN
 //ptr is a pointer to the head of the table stream.
 static void ole2_extract_images(cli_ctx * ctx, ole2_header_t * ole2Hdr, FibRgFcLcb97 * header, const uint8_t * ptr, property_t * wordDocBlock) {
     size_t offset = header->fcDggInfo;
-
-
-#if 0
-{
-    size_t andy;
-    fprintf(stderr, "%s::%d::", __FUNCTION__, __LINE__);
-    for (andy = 0; andy < 512; andy++){
-        fprintf(stderr, "%02x ", ptr[andy]);
-    }
-    fprintf(stderr, "\n");
-}
-#endif
-
-
-
-
-
 
     /*
      * Start of OfficeArtContent
@@ -958,10 +931,8 @@ fprintf(stderr, "%s::%d::ADDTO::offset = %ld (0x%lx)\n", __FUNCTION__, __LINE__,
             /* OfficeArtFBSE 
              * https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-odraw/2f2d7f5e-d5c4-4cb7-b230-59b3fe8f10d6
              */
-            fprintf(stderr, "%s::%d::calling processOfficeArtFBSE\n", __FUNCTION__, __LINE__);
             bytesProcessed += processOfficeArtFBSE(ctx, ole2Hdr, &imageHeader, &(ptr[off]), wordDocBlock);
         } else {
-            fprintf(stderr, "%s::%d::calling processOfficeArtBlip\n", __FUNCTION__, __LINE__);
             bytesProcessed += processOfficeArtBlip(ctx, &(ptr[off]));
         }
     }
@@ -992,7 +963,6 @@ void ole2_process_image_directory( cli_ctx * ctx, ole2_header_t * hdr, ole2_imag
         /*Get the FIBBase*/
         fib_base_t fib;
         uint32_t fib_offset = get_stream_data_offset(hdr, &(directory->word_block), directory->word_block.start_block);
-fprintf(stderr, "%s::%d::fib_offset = %d (0x%x\n", __FUNCTION__, __LINE__, fib_offset, fib_offset);
         const uint8_t * ptr = NULL;
 
         if ((size_t)(hdr->m_length) < (size_t)(fib_offset + sizeof(fib_base_t))) {
@@ -1023,10 +993,11 @@ fprintf(stderr, "%s::%d::fib_offset = %d (0x%x\n", __FUNCTION__, __LINE__, fib_o
         }
 
         /*Call Extract */
-        /*This offset is an actual offset in the file.*/
+        /*This offset is an actual offset of the table stream in the file.*/
         size_t offset = get_stream_data_offset(hdr, tableStream, tableStream->start_block);
 fprintf(stderr, "\n%s::%d::ADDTO::offset (start block of table stream)= %ld (0x%lx)\n", __FUNCTION__, __LINE__, offset, offset);
-        /*TODO: Fix hardcoded 4k*/
+        /*TODO: Fix hardcoded 4k.  Change it to read 512 bytes (block size) at a time, and continue reading.
+         */
         ptr = fmap_need_off_once(hdr->map, offset, 4096);
 fprintf(stderr, "%s::%d::tableStream->size = %d (0x%x)\n", __FUNCTION__, __LINE__, tableStream->size, tableStream->size);
 fprintf(stderr, "%s::%d::tableStream->user_flags = %d (0x%x)\n", __FUNCTION__, __LINE__, tableStream->user_flags, tableStream->user_flags);
