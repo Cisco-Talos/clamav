@@ -1,6 +1,7 @@
 #ifndef OLE2_EXTRACT_IMAGES_H_
 #define OLE2_EXTRACT_IMAGES_H_
 
+
 void dump_some(const char * const func, const size_t line, const uint8_t * const ptr, size_t cnt) {
     size_t i;
     fprintf(stderr, "%s::%ld::", func, line);
@@ -394,6 +395,17 @@ static void copy_FibRgFcLcb97(FibRgFcLcb97 * pHeader, const uint8_t *const ptr) 
 
 
 }
+
+typedef struct {
+    FibRgFcLcb97 fibRgFcLcb97Header;
+    bool bFibRgFcLcb97Header_initialized;
+    property_t word_block;
+    property_t table_stream_0_block;
+    property_t table_stream_1_block;
+    bool table_stream_0_initialized;
+    bool table_stream_1_initialized;
+} ole2_image_directory_t;
+
 
 /* https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-odraw/5dc1b9ed-818c-436f-8a4f-905a7ebb1ba9 */
 typedef struct __attribute__((packed)) {
@@ -835,7 +847,24 @@ fprintf(stderr, "%s::%d::ADDTO::fbse.foDelay = %d (0x%x)\n", __FUNCTION__, __LIN
 }
 
 //ptr is a pointer to the head of the table stream.
+#if 0
 static void ole2_extract_images(cli_ctx * ctx, ole2_header_t * ole2Hdr, FibRgFcLcb97 * header, const uint8_t * ptr, property_t * wordDocBlock) {
+#else
+static void ole2_extract_images(cli_ctx * ctx, ole2_header_t * ole2Hdr, ole2_image_directory_t * directory, property_t * tableStream) {
+    FibRgFcLcb97 * header = &(directory->fibRgFcLcb97Header);
+    property_t * wordDocBlock = &(directory->word_block);
+    const uint8_t * ptr = NULL;
+
+    /*This offset is an actual offset of the table stream in the file.*/
+    size_t tableStreamOffset = get_stream_data_offset(ole2Hdr, tableStream, tableStream->start_block);
+    /*TODO: Fix hardcoded 4k.  Change it to read 512 bytes (block size) at a time, and continue reading.  */
+    ptr = fmap_need_off_once(ole2Hdr->map, tableStreamOffset, 4096);
+    if (NULL == ptr) {
+        cli_dbgmsg("ERROR: Invalid tableStreamOffset for File Information Block %ld (0x%lx)\n", tableStreamOffset, tableStreamOffset);
+        goto done;
+    }
+#endif
+
     size_t offset = header->fcDggInfo;
 
     /*
@@ -939,21 +968,13 @@ fprintf(stderr, "%s::%d::ADDTO::offset = %ld (0x%lx)\n", __FUNCTION__, __LINE__,
 
     //here;
 
+done:
+    return;
 
 }
 
 
 
-
-typedef struct {
-    FibRgFcLcb97 fibRgFcLcb97Header;
-    bool bFibRgFcLcb97Header_initialized;
-    property_t word_block;
-    property_t table_stream_0_block;
-    property_t table_stream_1_block;
-    bool table_stream_0_initialized;
-    bool table_stream_1_initialized;
-} ole2_image_directory_t;
 
 
 void ole2_process_image_directory( cli_ctx * ctx, ole2_header_t * hdr, ole2_image_directory_t * directory ) {
@@ -992,6 +1013,7 @@ void ole2_process_image_directory( cli_ctx * ctx, ole2_header_t * hdr, ole2_imag
             }
         }
 
+#if 0
         /*Call Extract */
         /*This offset is an actual offset of the table stream in the file.*/
         size_t offset = get_stream_data_offset(hdr, tableStream, tableStream->start_block);
@@ -1011,6 +1033,10 @@ fprintf(stderr, "%s::%d::Fix hardcoded 4k, probably with tableStream->size or bl
         dump_some(__FUNCTION__, __LINE__, ptr, 25);
 
         ole2_extract_images(ctx, hdr, &(directory->fibRgFcLcb97Header), ptr, &(directory->word_block));
+#else
+        ole2_extract_images(ctx, hdr, directory, tableStream);
+
+#endif
     }
 done:
     return ;
