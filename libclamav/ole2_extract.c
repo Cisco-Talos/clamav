@@ -734,12 +734,9 @@ static size_t get_stream_data_offset(ole2_header_t *hdr, const property_t *word_
     size_t fib_offset  = 0;
 
     if (word_block->size < MINISTREAM_CUTOFF_SIZE) {
-        fprintf(stderr, "%s::%d::In the mini stream\n", __FUNCTION__, __LINE__);
         fib_offset = offset + sector_size * hdr->sbat_root_start;
-        //fib_offset += (word_block->start_block * (1 << hdr->log2_small_block_size));
         fib_offset += (sector * (1 << hdr->log2_small_block_size));
     } else {
-        fprintf(stderr, "%s::%d::Not in the mini stream\n", __FUNCTION__, __LINE__);
         fib_offset = offset + sector_size * sector;
     }
 
@@ -982,7 +979,6 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
         }
         ole2_listmsg("reading prop block\n");
 
-//fprintf(stderr, "%s::%d::%p\n", __FUNCTION__, __LINE__, &(prop_block[idx]));
         prop_block[idx].name_size       = ole2_endian_convert_16(prop_block[idx].name_size);
         prop_block[idx].prev            = ole2_endian_convert_32(prop_block[idx].prev);
         prop_block[idx].next            = ole2_endian_convert_32(prop_block[idx].next);
@@ -994,8 +990,6 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
         prop_block[idx].mod_highdate    = ole2_endian_convert_32(prop_block[idx].mod_highdate);
         prop_block[idx].start_block     = ole2_endian_convert_32(prop_block[idx].start_block);
         prop_block[idx].size            = ole2_endian_convert_32(prop_block[idx].size);
-
-        //fprintf(stderr, "%s::%d::start_block = %d (0x%x)\n", __FUNCTION__, __LINE__, prop_block[idx].start_block, prop_block[idx].start_block);
 
         if ((64 < prop_block[idx].name_size) || (prop_block[idx].name_size % 2)) {
             cli_dbgmsg("ERROR: Invalid name_size %d\n", prop_block[idx].name_size);
@@ -1020,12 +1014,6 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
             if (pImageDirectory) {
                 memcpy(&(pImageDirectory->table_stream_1_block), &(prop_block[idx]), sizeof(pImageDirectory->table_stream_1_block));
                 pImageDirectory->table_stream_1_initialized = true;
-
-
-                fprintf(stderr, "%s::%d::prev = %d (0x%x)\n", __FUNCTION__, __LINE__, pImageDirectory->table_stream_1_block.prev, pImageDirectory->table_stream_1_block.prev);
-                fprintf(stderr, "%s::%d::next = %d (0x%x)\n", __FUNCTION__, __LINE__, pImageDirectory->table_stream_1_block.next, pImageDirectory->table_stream_1_block.next);
-                fprintf(stderr, "%s::%d::child = %d (0x%x)\n", __FUNCTION__, __LINE__, pImageDirectory->table_stream_1_block.child, pImageDirectory->table_stream_1_block.child);
-
             }
         } else if (0 == ole2_cmp_name(prop_block[idx].name, prop_block[idx].name_size, "0Table")) {
             if (pImageDirectory) {
@@ -2938,6 +2926,7 @@ cl_error_t cli_ole2_extract(const char *dirname, cli_ctx *ctx, struct uniq **fil
     int32_t bat_array[109] __attribute__((packed));                 //DIFAT
 
 #endif
+#if 0
     {
         size_t andy;
     fprintf(stderr, "%s::%d::minor_version = %d (0x%x)\n", __FUNCTION__, __LINE__, hdr.minor_version, hdr.minor_version);
@@ -2979,6 +2968,7 @@ cl_error_t cli_ole2_extract(const char *dirname, cli_ctx *ctx, struct uniq **fil
 
 
     }
+#endif
 
 
 
