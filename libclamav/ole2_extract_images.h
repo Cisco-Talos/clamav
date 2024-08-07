@@ -685,7 +685,7 @@ done:
 
 }
 #else
-static void saveImageFile( cli_ctx * ctx, ole2_pointer_t * ole2Ptr, size_t size){
+static void saveImageFile( cli_ctx * ctx, ole2_header_t * ole2Hdr, ole2_pointer_t * ole2Ptr, size_t size){
 
     char *tempfile = NULL;
     int out_fd = -1;
@@ -693,6 +693,7 @@ static void saveImageFile( cli_ctx * ctx, ole2_pointer_t * ole2Ptr, size_t size)
     size_t bytesWritten = 0;
     FILE * fp = NULL;
     static json_object * ary = NULL;
+    size_t i = 0;
 
     if ((ret = cli_gentempfd_with_prefix(ctx->sub_tmpdir, "ole2_images", &tempfile, &out_fd)) != CL_SUCCESS) {
         cli_dbgmsg("[ole2_process_image_directory] Failed to open output file descriptor\n");
@@ -708,6 +709,13 @@ static void saveImageFile( cli_ctx * ctx, ole2_pointer_t * ole2Ptr, size_t size)
 
     fprintf(stderr, "%s::%d::Image should be at %lx\n", __FUNCTION__, __LINE__, 0x1400 + (ole2Ptr->ptr - ole2Ptr->base_ptr));
 
+    for (i = 0; i < NUM_DIFAT_ENTRIES; i++) {
+        if (-1 == ole2Hdr->bat_array[i]) {
+            break;
+        }
+        fprintf(stderr, "%s::%d::difat[%ld] = %d (0x%x)\n", __FUNCTION__, __LINE__, i, ole2Hdr->bat_array[i], ole2Hdr->bat_array[i]);
+        fprintf(stderr, "%s::%d::RESERVED BLOCK::%x\n", __FUNCTION__, __LINE__, ((ole2Hdr->bat_array[i]+1) << ole2Hdr->log2_big_block_size));
+    }
 
 
 
@@ -758,7 +766,7 @@ done:
  * https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-odraw/7af7d17e-6ae1-4c43-a3d6-691e6b3b4a45 
  *
  */
-static void processOfficeArtBlipGeneric(cli_ctx * ctx, OfficeArtRecordHeader * rh, ole2_pointer_t * ole2Ptr,
+static void processOfficeArtBlipGeneric(cli_ctx * ctx, ole2_header_t * ole2Hdr, OfficeArtRecordHeader * rh, ole2_pointer_t * ole2Ptr,
         uint16_t riSingleUID, uint16_t riDoubleUID, uint32_t bytesAfterUIDs) {
     size_t offset = 16; /* Size of rh*/
 
@@ -773,26 +781,26 @@ static void processOfficeArtBlipGeneric(cli_ctx * ctx, OfficeArtRecordHeader * r
     offset += bytesAfterUIDs; /*metafile header*/
 
     ole2Ptr->ptr = &(ole2Ptr->ptr[offset]);
-    saveImageFile(ctx, ole2Ptr, rh->recLen - offset);
+    saveImageFile(ctx, ole2Hdr, ole2Ptr, rh->recLen - offset);
 }
 
 /* https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-odraw/2c09e2c4-0513-419f-b5f9-4feb0a71ef32 */
-static void processOfficeArtBlipEMF(cli_ctx * ctx, OfficeArtRecordHeader * rh, ole2_pointer_t * ole2Ptr) {
-    processOfficeArtBlipGeneric(ctx, rh, ole2Ptr, 0x3d4, 0x3d5, 34) ;
+static void processOfficeArtBlipEMF(cli_ctx * ctx, ole2_header_t * ole2Hdr, OfficeArtRecordHeader * rh, ole2_pointer_t * ole2Ptr) {
+    processOfficeArtBlipGeneric(ctx, ole2Hdr, rh, ole2Ptr, 0x3d4, 0x3d5, 34) ;
 }
 
 /* https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-odraw/ee892f04-f001-4531-a34b-67aab3426dcb */
-static void processOfficeArtBlipWMF(cli_ctx * ctx, OfficeArtRecordHeader * rh, ole2_pointer_t * ole2Ptr){
-    processOfficeArtBlipGeneric(ctx, rh, ole2Ptr, 0x216, 0x217, 34) ;
+static void processOfficeArtBlipWMF(cli_ctx * ctx, ole2_header_t * ole2Hdr, OfficeArtRecordHeader * rh, ole2_pointer_t * ole2Ptr){
+    processOfficeArtBlipGeneric(ctx, ole2Hdr, rh, ole2Ptr, 0x216, 0x217, 34) ;
 }
 
 /* https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-odraw/4b6c5fc5-98cc-445a-8ec7-12b2f2c05b9f */
-static void processOfficeArtBlipPICT(cli_ctx* ctx, OfficeArtRecordHeader * rh, ole2_pointer_t * ole2Ptr ){
-    processOfficeArtBlipGeneric(ctx, rh, ole2Ptr, 0x542, 0x543, 34) ;
+static void processOfficeArtBlipPICT(cli_ctx* ctx, ole2_header_t * ole2Hdr, OfficeArtRecordHeader * rh, ole2_pointer_t * ole2Ptr ){
+    processOfficeArtBlipGeneric(ctx, ole2Hdr, rh, ole2Ptr, 0x542, 0x543, 34) ;
 }
 
 /*https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-odraw/704b3ec5-3e3f-425f-b2f7-a090cc68e624*/
-static void processOfficeArtBlipJPEG(cli_ctx * ctx, OfficeArtRecordHeader * rh, ole2_pointer_t * ole2Ptr){
+static void processOfficeArtBlipJPEG(cli_ctx * ctx, ole2_header_t * ole2Hdr, OfficeArtRecordHeader * rh, ole2_pointer_t * ole2Ptr){
     fprintf(stderr, "%s::%d::Entering\n", __FUNCTION__, __LINE__);
     size_t offset = 16; /* Size of rh*/
     uint16_t recInst = getRecInst(rh);
@@ -809,27 +817,27 @@ fprintf(stderr, "%s::%d::ADDTO::SHOULDBEIT::offset = %ld (0x%lx)\n", __FUNCTION_
 fprintf(stderr, "%s::%d::ADDTO::SHOULDBEIT::size = %ld\n", __FUNCTION__, __LINE__, rh->recLen - offset);
 fprintf(stderr, "%s::%d::ADDTO::SHOULDBEIT::rh->recLen = %d\n", __FUNCTION__, __LINE__, rh->recLen);
     ole2Ptr->ptr = &(ole2Ptr->ptr[offset]);
-    saveImageFile(ctx, ole2Ptr, rh->recLen - offset);
+    saveImageFile(ctx, ole2Hdr, ole2Ptr, rh->recLen - offset);
 }
 
 /* https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-odraw/7af7d17e-6ae1-4c43-a3d6-691e6b3b4a45 */
-static void processOfficeArtBlipPNG(cli_ctx * ctx, OfficeArtRecordHeader * rh, ole2_pointer_t * ole2Ptr){
-    processOfficeArtBlipGeneric(ctx, rh, ole2Ptr, 0x6e0, 0x6e1, 1) ;
+static void processOfficeArtBlipPNG(cli_ctx * ctx, ole2_header_t * ole2Hdr, OfficeArtRecordHeader * rh, ole2_pointer_t * ole2Ptr){
+    processOfficeArtBlipGeneric(ctx, ole2Hdr, rh, ole2Ptr, 0x6e0, 0x6e1, 1) ;
 }
 
 /* https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-odraw/1393bf5e-6fa0-4665-b3ec-68199b555656 */
-static void processOfficeArtBlipDIB(cli_ctx * ctx, OfficeArtRecordHeader * rh, ole2_pointer_t * ole2Ptr){
-    processOfficeArtBlipGeneric(ctx, rh, ole2Ptr, 0x7a8, 0x7a9, 1) ;
+static void processOfficeArtBlipDIB(cli_ctx * ctx, ole2_header_t * ole2Hdr, OfficeArtRecordHeader * rh, ole2_pointer_t * ole2Ptr){
+    processOfficeArtBlipGeneric(ctx, ole2Hdr, rh, ole2Ptr, 0x7a8, 0x7a9, 1) ;
 }
 
-static void processOfficeArtBlipTIFF(cli_ctx * ctx, OfficeArtRecordHeader * rh, ole2_pointer_t * ole2Ptr){
-    processOfficeArtBlipGeneric(ctx, rh, ole2Ptr, 0x6e4, 0x6e5, 1) ;
+static void processOfficeArtBlipTIFF(cli_ctx * ctx, ole2_header_t * ole2Hdr, OfficeArtRecordHeader * rh, ole2_pointer_t * ole2Ptr){
+    processOfficeArtBlipGeneric(ctx, ole2Hdr, rh, ole2Ptr, 0x6e4, 0x6e5, 1) ;
 }
 
 #if 0
 static size_t processOfficeArtBlip(cli_ctx * ctx, const uint8_t * const ptr){
 #else
-static size_t processOfficeArtBlip(cli_ctx * ctx, ole2_pointer_t * ole2Ptr){
+static size_t processOfficeArtBlip(cli_ctx * ctx, ole2_header_t * ole2Hdr, ole2_pointer_t * ole2Ptr){
 #endif
 
     size_t offset = 0;
@@ -855,27 +863,27 @@ static size_t processOfficeArtBlip(cli_ctx * ctx, ole2_pointer_t * ole2Ptr){
     ole2Ptr->ptr = &(ole2Ptr->ptr[offset]);
     switch (rh.recType) {
         case RECTYPE_OFFICE_ART_BLIP_EMF:
-            processOfficeArtBlipEMF(ctx, &rh, ole2Ptr);
+            processOfficeArtBlipEMF(ctx, ole2Hdr, &rh, ole2Ptr);
             break;
         case RECTYPE_OFFICE_ART_BLIP_WMF :
-            processOfficeArtBlipWMF(ctx, &rh, ole2Ptr);
+            processOfficeArtBlipWMF(ctx, ole2Hdr, &rh, ole2Ptr);
             break;
         case RECTYPE_OFFICE_ART_BLIP_PICT:
-            processOfficeArtBlipPICT(ctx, &rh, ole2Ptr);
+            processOfficeArtBlipPICT(ctx, ole2Hdr, &rh, ole2Ptr);
             break;
         case RECTYPE_OFFICE_ART_BLIP_JPEG:
             /* fallthrough */
         case RECTYPE_OFFICE_ART_BLIP_JPEG2:
-            processOfficeArtBlipJPEG(ctx, &rh, ole2Ptr);
+            processOfficeArtBlipJPEG(ctx, ole2Hdr, &rh, ole2Ptr);
             break;
         case RECTYPE_OFFICE_ART_BLIP_PNG:
-            processOfficeArtBlipPNG(ctx, &rh, ole2Ptr);
+            processOfficeArtBlipPNG(ctx, ole2Hdr, &rh, ole2Ptr);
             break;
         case RECTYPE_OFFICE_ART_BLIP_DIB:
-            processOfficeArtBlipDIB(ctx, &rh, ole2Ptr);
+            processOfficeArtBlipDIB(ctx, ole2Hdr, &rh, ole2Ptr);
             break;
         case RECTYPE_OFFICE_ART_BLIP_TIFF:
-            processOfficeArtBlipTIFF(ctx, &rh, ole2Ptr);
+            processOfficeArtBlipTIFF(ctx, ole2Hdr, &rh, ole2Ptr);
             break;
         default:
             cli_dbgmsg("ERROR Invalid recType 0x%x\n", rh.recType);
@@ -916,7 +924,7 @@ static size_t processOfficeArtFBSE(cli_ctx * ctx, ole2_header_t *hdr, OfficeArtR
         /* The BLIP is embedded in this record*/ 
 fprintf(stderr, "%s::%d::ADDTO::offset = %d (0x%x)\n", __FUNCTION__, __LINE__, offset, offset);
         //processOfficeArtBlip(ctx, &(ole2Ptr->ptr[offset]));
-        processOfficeArtBlip(ctx, ole2Ptr);
+        processOfficeArtBlip(ctx, hdr, ole2Ptr);
         ole2Ptr->ptr = &(ole2Ptr->ptr[fbse.size]);
         offset += fbse.size;
     } else {
@@ -937,8 +945,9 @@ fprintf(stderr, "%s::%d::added offset = %d (0x%x)\n", __FUNCTION__, __LINE__, of
             exit(11);
         }
         wordStreamPtr.ptr = &(wordStreamPtr.base_ptr[fbse.foDelay]);
-        wordStreamPtr.start_block = wordDocBlock->start_block;
-        processOfficeArtBlip(ctx, &wordStreamPtr);
+        //wordStreamPtr.start_block = wordDocBlock->start_block;
+        wordStreamPtr.start_block = get_stream_data_offset(hdr, wordDocBlock, wordDocBlock->start_block);
+        processOfficeArtBlip(ctx, hdr, &wordStreamPtr);
 #endif
         /* I don't need to add anything to the offset here, because the actual data is not here.
          * The data is in a different stream
@@ -976,7 +985,8 @@ static void ole2_extract_images(cli_ctx * ctx, ole2_header_t * ole2Hdr, ole2_ima
         cli_dbgmsg("ERROR: Invalid tableStreamOffset for File Information Block %ld (0x%lx)\n", tableStreamOffset, tableStreamOffset);
         goto done;
     }
-    ole2Ptr.start_block = tableStream->start_block;
+    //ole2Ptr.start_block = tableStream->start_block;
+    ole2Ptr.start_block = (uint32_t) tableStreamOffset;
     ole2Ptr.base_ptr = ole2Ptr.ptr;
 #endif
 
@@ -1119,7 +1129,7 @@ static void ole2_extract_images(cli_ctx * ctx, ole2_header_t * ole2Hdr, ole2_ima
         } else {
 fprintf(stderr, "%s::%d::SHOULD NOT BE HERE FOR MY TEST\n", __FUNCTION__, __LINE__); exit(1);
             //bytesProcessed += processOfficeArtBlip(ctx, &(ole2Ptr.ptr[off]));
-            bytesProcessed += processOfficeArtBlip(ctx, &ole2Ptr);
+            bytesProcessed += processOfficeArtBlip(ctx, ole2Hdr, &ole2Ptr);
         }
     }
 
