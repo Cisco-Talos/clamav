@@ -406,6 +406,17 @@ typedef struct {
     bool table_stream_1_initialized;
 } ole2_image_directory_t;
 
+typedef struct __attribute__((packed)) {
+
+    uint32_t start_block;
+
+    const uint8_t * base_ptr;
+
+    const uint8_t * ptr;
+
+//    size_t offset;
+
+} ole2_pointer_t;
 
 /* https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-odraw/5dc1b9ed-818c-436f-8a4f-905a7ebb1ba9 */
 typedef struct __attribute__((packed)) {
@@ -858,17 +869,23 @@ static void ole2_extract_images(cli_ctx * ctx, ole2_header_t * ole2Hdr, FibRgFcL
 static void ole2_extract_images(cli_ctx * ctx, ole2_header_t * ole2Hdr, ole2_image_directory_t * directory, property_t * tableStream) {
     FibRgFcLcb97 * header = &(directory->fibRgFcLcb97Header);
     property_t * wordDocBlock = &(directory->word_block);
+#if 0
     const uint8_t * ptr = NULL;
+#else
+    ole2_pointer_t ole2Ptr = {0};
+#endif
 
     /*This offset is an actual offset of the table stream in the file.*/
     size_t tableStreamOffset = get_stream_data_offset(ole2Hdr, tableStream, tableStream->start_block);
 
     //ptr = fmap_need_off_once(ole2Hdr->map, tableStreamOffset, 4096);
-    ptr = fmap_need_off_once(ole2Hdr->map, tableStreamOffset, get_block_size(ole2Hdr));
-    if (NULL == ptr) {
+    ole2Ptr.ptr = fmap_need_off_once(ole2Hdr->map, tableStreamOffset, get_block_size(ole2Hdr));
+    if (NULL == ole2Ptr.ptr) {
         cli_dbgmsg("ERROR: Invalid tableStreamOffset for File Information Block %ld (0x%lx)\n", tableStreamOffset, tableStreamOffset);
         goto done;
     }
+    ole2Ptr.start_block = tableStream->start_block;
+    ole2Ptr.base_ptr = ole2Ptr.ptr;
 #endif
 
     size_t offset = header->fcDggInfo;
@@ -880,7 +897,7 @@ static void ole2_extract_images(cli_ctx * ctx, ole2_header_t * ole2Hdr, ole2_ima
      * https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-odraw/dd7133b6-ed10-4bcb-be29-67b0544f884f
      */
     OfficeArtRecordHeader oadc_recordHeader; //OfficeArtDggContainer
-    copy_OfficeArtRecordHeader (&oadc_recordHeader, &(ptr[offset]));
+    copy_OfficeArtRecordHeader (&oadc_recordHeader, &(ole2Ptr.ptr[offset]));
 
     if (0xf != oadc_recordHeader.recVer_recInstance){
         cli_dbgmsg("ERROR: Invalid record version (%x)\n", oadc_recordHeader.recVer_recInstance);
@@ -896,12 +913,12 @@ static void ole2_extract_images(cli_ctx * ctx, ole2_header_t * ole2Hdr, ole2_ima
      * Going to just skip this record for now.
      * */
     OfficeArtRecordHeader hdr;
-    copy_OfficeArtRecordHeader(&hdr,  &(ptr[offset]));
+    copy_OfficeArtRecordHeader(&hdr,  &(ole2Ptr.ptr[offset]));
 
     offset += sizeof(OfficeArtRecordHeader);
 
     OfficeArtFDGG fdgg;
-    copy_OfficeArtFDGG(&fdgg, &(ptr[offset]));
+    copy_OfficeArtFDGG(&fdgg, &(ole2Ptr.ptr[offset]));
     offset += sizeof(OfficeArtFDGG);
 
     /* OfficeArtIDCL is not used in parsing images, only drawings.  If details are needed, they are
@@ -916,7 +933,7 @@ static void ole2_extract_images(cli_ctx * ctx, ole2_header_t * ole2Hdr, ole2_ima
      *
      */
     OfficeArtRecordHeader blipStoreRecordHeader;
-    copy_OfficeArtRecordHeader(&blipStoreRecordHeader,  &(ptr[offset]));
+    copy_OfficeArtRecordHeader(&blipStoreRecordHeader,  &(ole2Ptr.ptr[offset]));
 
     fprintf(stderr, "%s::%d::total needed = %lu\n", __FUNCTION__, __LINE__, offset + blipStoreRecordHeader.recLen);
 
@@ -961,8 +978,8 @@ static void ole2_extract_images(cli_ctx * ctx, ole2_header_t * ole2Hdr, ole2_ima
 
     }
 
-    ptr = fmap_need_off_once(ole2Hdr->map, tableStreamOffset, total_needed);
-    if (NULL == ptr) {
+    ole2Ptr.ptr = fmap_need_off_once(ole2Hdr->map, tableStreamOffset, total_needed);
+    if (NULL == ole2Ptr.ptr) {
         cli_dbgmsg("ERROR: Invalid offset for OfficeArtRecordHeader%ld (0x%lx)\n", total_needed, total_needed);
         goto done;
     }
@@ -991,16 +1008,16 @@ static void ole2_extract_images(cli_ctx * ctx, ole2_header_t * ole2Hdr, ole2_ima
     {
         size_t off = offset + bytesProcessed;
         OfficeArtRecordHeader imageHeader;
-        copy_OfficeArtRecordHeader(&imageHeader,  &(ptr[off]));
+        copy_OfficeArtRecordHeader(&imageHeader,  &(ole2Ptr.ptr[off]));
         uint8_t recVer = getRecVer(&imageHeader);
 
         if (OFFICE_ART_FBSE_REC_TYPE == recVer){
             /* OfficeArtFBSE 
              * https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-odraw/2f2d7f5e-d5c4-4cb7-b230-59b3fe8f10d6
              */
-            bytesProcessed += processOfficeArtFBSE(ctx, ole2Hdr, &imageHeader, &(ptr[off]), wordDocBlock);
+            bytesProcessed += processOfficeArtFBSE(ctx, ole2Hdr, &imageHeader, &(ole2Ptr.ptr[off]), wordDocBlock);
         } else {
-            bytesProcessed += processOfficeArtBlip(ctx, &(ptr[off]));
+            bytesProcessed += processOfficeArtBlip(ctx, &(ole2Ptr.ptr[off]));
         }
     }
 
