@@ -679,7 +679,6 @@ static void saveImageFile( cli_ctx * ctx, ole2_header_t * ole2Hdr, ole2_pointer_
             if (ret > 0) {
                 loopWritten += ret;
             } else {
-    fprintf(stderr, "%s::%d::What happened here, exiting!!!!\n", __FUNCTION__, __LINE__); exit(11);
                 break;
             }
         }
@@ -876,10 +875,9 @@ static size_t processOfficeArtFBSE(cli_ctx * ctx, ole2_header_t *hdr, OfficeArtR
         size_t size = fbse.size;
         ole2_pointer_t wordStreamPtr = {0};
         wordStreamPtr.base_ptr = load_pointer_to_stream_from_fmap(hdr, wordDocBlock, 0, fbse.foDelay + size);
-
         if (NULL == wordStreamPtr.base_ptr){
-            fprintf(stderr, "%s::%d::Handle this\n", __FUNCTION__, __LINE__);
-            exit(11);
+            cli_dbgmsg("ERROR: Unable to get fmap for wordBlock\n");
+            goto done;
         }
         wordStreamPtr.ptr = &(wordStreamPtr.base_ptr[fbse.foDelay]);
         wordStreamPtr.stream_file_offset = get_stream_data_offset(hdr, wordDocBlock, wordDocBlock->start_block);
@@ -889,6 +887,7 @@ static size_t processOfficeArtFBSE(cli_ctx * ctx, ole2_header_t *hdr, OfficeArtR
          */
     }
 
+done:
     return offset;
 }
 
