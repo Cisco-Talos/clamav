@@ -1165,10 +1165,7 @@ static void ole2_extract_images(cli_ctx * ctx, ole2_header_t * ole2Hdr, ole2_ima
     ole2Ptr.ptr = &(ole2Ptr.ptr[offset]);
     while (bytesProcessed < blipStoreRecordHeader.recLen)
     {
-        //size_t off = offset + bytesProcessed;
-        //size_t off = bytesProcessed;
         OfficeArtRecordHeader imageHeader;
-        //copy_OfficeArtRecordHeader(&imageHeader,  &(ole2Ptr.ptr[off]));
         copy_OfficeArtRecordHeader(&imageHeader,  ole2Ptr.ptr);
         uint8_t recVer = getRecVer(&imageHeader);
 
@@ -1176,15 +1173,8 @@ static void ole2_extract_images(cli_ctx * ctx, ole2_header_t * ole2Hdr, ole2_ima
             /* OfficeArtFBSE 
              * https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-odraw/2f2d7f5e-d5c4-4cb7-b230-59b3fe8f10d6
              */
-#if 0
-            bytesProcessed += processOfficeArtFBSE(ctx, ole2Hdr, &imageHeader, &(ole2Ptr.ptr[off]), wordDocBlock);
-#else
-//            ole2Ptr.ptr = &(ole2Ptr.ptr[off]);
             bytesProcessed += processOfficeArtFBSE(ctx, ole2Hdr, &imageHeader, &ole2Ptr, wordDocBlock);
-#endif
         } else {
-fprintf(stderr, "%s::%d::SHOULD NOT BE HERE FOR MY TEST\n", __FUNCTION__, __LINE__); exit(1);
-            //bytesProcessed += processOfficeArtBlip(ctx, &(ole2Ptr.ptr[off]));
             bytesProcessed += processOfficeArtBlip(ctx, ole2Hdr, &ole2Ptr);
         }
     }
@@ -1234,30 +1224,7 @@ void ole2_process_image_directory( cli_ctx * ctx, ole2_header_t * hdr, ole2_imag
             }
         }
 
-#if 0
-        /*Call Extract */
-        /*This offset is an actual offset of the table stream in the file.*/
-        size_t offset = get_stream_data_offset(hdr, tableStream, tableStream->start_block);
-fprintf(stderr, "\n%s::%d::ADDTO::offset (start block of table stream)= %ld (0x%lx)\n", __FUNCTION__, __LINE__, offset, offset);
-        /*TODO: Fix hardcoded 4k.  Change it to read 512 bytes (block size) at a time, and continue reading.
-         */
-        ptr = fmap_need_off_once(hdr->map, offset, 4096);
-fprintf(stderr, "%s::%d::tableStream->size = %d (0x%x)\n", __FUNCTION__, __LINE__, tableStream->size, tableStream->size);
-fprintf(stderr, "%s::%d::tableStream->user_flags = %d (0x%x)\n", __FUNCTION__, __LINE__, tableStream->user_flags, tableStream->user_flags);
-fprintf(stderr, "%s::%d::tableStream->type = %d (0x%x)\n", __FUNCTION__, __LINE__, tableStream->type, tableStream->type);
-fprintf(stderr, "%s::%d::tableStream->next = %d (0x%x)\n", __FUNCTION__, __LINE__, tableStream->next, tableStream->next);
-fprintf(stderr, "%s::%d::Fix hardcoded 4k, probably with tableStream->size or block size\n", __FUNCTION__, __LINE__);
-        if (NULL == ptr) {
-            cli_dbgmsg("ERROR: Invalid offset for File Information Block %ld (0x%lx)\n", offset, offset);
-            goto done;
-        }
-        dump_some(__FUNCTION__, __LINE__, ptr, 25);
-
-        ole2_extract_images(ctx, hdr, &(directory->fibRgFcLcb97Header), ptr, &(directory->word_block));
-#else
         ole2_extract_images(ctx, hdr, directory, tableStream);
-
-#endif
     }
 done:
     return ;
