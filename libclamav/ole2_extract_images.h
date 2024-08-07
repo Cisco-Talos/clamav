@@ -693,6 +693,7 @@ static void saveImageFile( cli_ctx * ctx, ole2_header_t * ole2Hdr, ole2_pointer_
     size_t bytesWritten = 0;
     FILE * fp = NULL;
     static json_object * ary = NULL;
+    size_t totalIncrement = 0;
     //size_t i = 0;
 
     size_t blockSize = 1 << ole2Hdr->log2_big_block_size;
@@ -735,6 +736,7 @@ static void saveImageFile( cli_ctx * ctx, ole2_header_t * ole2Hdr, ole2_pointer_
                     //toWrite = reserveBlock - lastWritten;
                     toWrite = reserveBlock - fileOffset;
                     increment = blockSize;
+                    totalIncrement += increment;
                     fprintf(stderr, "%s::%d::FOUND ONE at idx %ld\n", __FUNCTION__, __LINE__, difatIter);
 
 
@@ -798,7 +800,7 @@ static void saveImageFile( cli_ctx * ctx, ole2_header_t * ole2Hdr, ole2_pointer_
     }
 
 done:
-    ole2Ptr->ptr = &(ole2Ptr->ptr[size]);
+    ole2Ptr->ptr = &(ole2Ptr->ptr[size + totalIncrement]);
 
     fprintf(stderr, "%s::%d::TODO: increment pointer by the blocks skipped also!!!!\n", __FUNCTION__, __LINE__);
 
