@@ -862,7 +862,7 @@ static void ole2_extract_images(cli_ctx * ctx, ole2_header_t * ole2Hdr, ole2_ima
 
     /*This offset is an actual offset of the table stream in the file.*/
     size_t tableStreamOffset = get_stream_data_offset(ole2Hdr, tableStream, tableStream->start_block);
-    /*TODO: Fix hardcoded 4k.  Change it to read 512 bytes (block size) at a time, and continue reading.  */
+
     //ptr = fmap_need_off_once(ole2Hdr->map, tableStreamOffset, 4096);
     ptr = fmap_need_off_once(ole2Hdr->map, tableStreamOffset, get_block_size(ole2Hdr));
     if (NULL == ptr) {
@@ -872,8 +872,6 @@ static void ole2_extract_images(cli_ctx * ctx, ole2_header_t * ole2Hdr, ole2_ima
 #endif
 
     size_t offset = header->fcDggInfo;
-    fprintf(stderr, "%s::%d::blahblah::offset = %ld (0x%lx)\n", __FUNCTION__, __LINE__, offset, offset);
-//    PUT IN CODE TO ONLY FMAP 1 BLOCK AT A TIME, MAYBE TRACK BLOCK SIZE INSTEAD OF OFFSET;
 
     /*
      * Start of OfficeArtContent
@@ -897,9 +895,8 @@ static void ole2_extract_images(cli_ctx * ctx, ole2_header_t * ole2Hdr, ole2_ima
      * We shouldn't have to care about that, since it's for drawings and not actual file images.
      * Going to just skip this record for now.
      * */
-    OfficeArtRecordHeader hdr; //OfficeArtFDGGBlock
+    OfficeArtRecordHeader hdr;
     copy_OfficeArtRecordHeader(&hdr,  &(ptr[offset]));
-    //offset += hdr.recLen; not right, doesn't *always* seem to be a size.
 
     offset += sizeof(OfficeArtRecordHeader);
 
@@ -922,12 +919,18 @@ static void ole2_extract_images(cli_ctx * ctx, ole2_header_t * ole2Hdr, ole2_ima
     copy_OfficeArtRecordHeader(&blipStoreRecordHeader,  &(ptr[offset]));
 
     fprintf(stderr, "%s::%d::total needed = %lu\n", __FUNCTION__, __LINE__, offset + blipStoreRecordHeader.recLen);
+
     /*Allocate the full number of bytes needed for headers.*/
     size_t total_needed = 0;
     while (total_needed < (offset + blipStoreRecordHeader.recLen)) {
         total_needed += get_block_size(ole2Hdr);
     }
-    fprintf(stderr, "%s::%d::total_needed = %ld (0x%lx)\n", __FUNCTION__, __LINE__, total_needed, total_needed);
+
+    fprintf(stderr, "%s::%d::TODO: Verify that total_needed + tableStreamOffset does not cross into a FAT block\n", __FUNCTION__, __LINE__);
+    fprintf(stderr, "%s::%d::Needs to be a while bytes_processed < ...\n", __FUNCTION__, __LINE__);
+
+fprintf(stderr, "%s::%d::total_needed = %ld (0x%lx)\n", __FUNCTION__, __LINE__, total_needed, total_needed);
+
     ptr = fmap_need_off_once(ole2Hdr->map, tableStreamOffset, total_needed);
     if (NULL == ptr) {
         cli_dbgmsg("ERROR: Invalid offset for OfficeArtRecordHeader%ld (0x%lx)\n", total_needed, total_needed);
@@ -944,19 +947,13 @@ static void ole2_extract_images(cli_ctx * ctx, ole2_header_t * ole2Hdr, ole2_ima
         return;
     }
 
-    fprintf(stderr, "%s::%d::record len = %d, sizeof = %ld\n", __FUNCTION__, __LINE__, blipStoreRecordHeader.recLen, sizeof(OfficeArtFBSEKnown));
     /*
      * imageCnt needs to be determined based on the number of records here, not the 'imageCnt' inside the blipStoreRecordHeader
      */
 
     uint32_t imageCnt = getRecInst (&blipStoreRecordHeader);
 
-    //    imageCnt = blipStoreRecordHeader.recLen/(sizeof(OfficeArtFBSEKnown) + sizeof(OfficeArtRecordHeader));
-    //    fprintf(stderr, "%s::%d::IMAGE_CNT = %d\n", __FUNCTION__, __LINE__, imageCnt);
-
-
     offset += sizeof(OfficeArtRecordHeader);
-fprintf(stderr, "%s::%d::ADDTO::offset = %ld (0x%lx)\n", __FUNCTION__, __LINE__, offset, offset);
 
     /*Rec types taken from 
      * https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-odraw/a7d7d967-6bff-489c-a267-3ec30448344a
@@ -965,15 +962,10 @@ fprintf(stderr, "%s::%d::ADDTO::offset = %ld (0x%lx)\n", __FUNCTION__, __LINE__,
      *
      * */
 #define OFFICE_ART_FBSE_REC_TYPE 0x2
-    fprintf(stderr, "%s::%d::imageCnt = %d\n", __FUNCTION__, __LINE__, imageCnt);
-    //for (i = 0; i < imageCnt; i++) {
     size_t bytesProcessed = 0;
     while (bytesProcessed < blipStoreRecordHeader.recLen)
     {
         size_t off = offset + bytesProcessed;
-        fprintf(stderr, "%s::%d::bytesProcessed  = %ld\n", __FUNCTION__, __LINE__, bytesProcessed);
-        fprintf(stderr, "%s::%d::blipStoreRecordHeader.recLen= %d\n", __FUNCTION__, __LINE__, blipStoreRecordHeader.recLen);
-        fprintf(stderr, "%s::%d::off = %ld (0x%lx)\n", __FUNCTION__, __LINE__, off, off);
         OfficeArtRecordHeader imageHeader;
         copy_OfficeArtRecordHeader(&imageHeader,  &(ptr[off]));
         uint8_t recVer = getRecVer(&imageHeader);
@@ -982,15 +974,11 @@ fprintf(stderr, "%s::%d::ADDTO::offset = %ld (0x%lx)\n", __FUNCTION__, __LINE__,
             /* OfficeArtFBSE 
              * https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-odraw/2f2d7f5e-d5c4-4cb7-b230-59b3fe8f10d6
              */
-            fprintf(stderr, "%s::%d::FBSE\n", __FUNCTION__, __LINE__);
             bytesProcessed += processOfficeArtFBSE(ctx, ole2Hdr, &imageHeader, &(ptr[off]), wordDocBlock);
         } else {
-            fprintf(stderr, "%s::%d::Blip\n", __FUNCTION__, __LINE__);
             bytesProcessed += processOfficeArtBlip(ctx, &(ptr[off]));
         }
     }
-
-    //here;
 
 done:
     return;
