@@ -638,6 +638,7 @@ static void copy_OfficeArtFBSEKnown (OfficeArtFBSEKnown * dst, const uint8_t * c
     dst->foDelay = ole2_endian_convert_32(dst->foDelay);
 }
 
+#if 0
 static void saveImageFile( cli_ctx * ctx, const uint8_t * const ptr, size_t size){
 
     char *tempfile = NULL;
@@ -683,6 +684,57 @@ done:
     CLI_FREE_AND_SET_NULL(tempfile);
 
 }
+#else
+static void saveImageFile( cli_ctx * ctx, ole2_pointer_t * ole2Ptr, size_t size){
+
+    char *tempfile = NULL;
+    int out_fd = -1;
+    cl_error_t ret ;
+    size_t bytesWritten = 0;
+    FILE * fp = NULL;
+    static json_object * ary = NULL;
+
+    if ((ret = cli_gentempfd_with_prefix(ctx->sub_tmpdir, "ole2_images", &tempfile, &out_fd)) != CL_SUCCESS) {
+        cli_dbgmsg("[ole2_process_image_directory] Failed to open output file descriptor\n");
+        goto done;
+    }
+
+    fp = fdopen(out_fd, "wb");
+    while (bytesWritten < size) {
+        int ret = fwrite(&(ole2Ptr->ptr[bytesWritten]), 1, size - bytesWritten, fp);
+        if (ret > 0) {
+            bytesWritten += ret;
+        } else {
+            break;
+        }
+    }
+
+    if (bytesWritten != size) {
+        cli_dbgmsg("ERROR unable to write to '%s'\n", tempfile);
+    }
+
+    if (SCAN_COLLECT_METADATA && ctx->wrkproperty != NULL){
+        if (NULL == ary) {
+#define OLE2_EXTRACTED_IMAGES_JSON_KEY "OLE2_IMAGES"
+            ary = cli_jsonarray(ctx->wrkproperty, OLE2_EXTRACTED_IMAGES_JSON_KEY);
+        }
+        if (ary) {
+            cli_jsonstr(ary, NULL, tempfile);
+        }
+    }
+
+done:
+    ole2Ptr->ptr = &(ole2Ptr->ptr[size]);
+
+    fprintf(stderr, "%s::%d::TODO: increment pointer by the blocks skipped also!!!!\n", __FUNCTION__, __LINE__);
+
+    if (tempfile && !ctx->engine->keeptmp) {
+        remove(tempfile);
+    }
+    CLI_FREE_AND_SET_NULL(tempfile);
+
+}
+#endif
 
 
 /*All these structures (except JPEG) are exactly the same, with the exception of the recInst values for 1 or 2 UIDs, 
@@ -694,7 +746,7 @@ done:
  * https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-odraw/7af7d17e-6ae1-4c43-a3d6-691e6b3b4a45 
  *
  */
-static void processOfficeArtBlipGeneric(cli_ctx * ctx, OfficeArtRecordHeader * rh, const uint8_t * const ptr,
+static void processOfficeArtBlipGeneric(cli_ctx * ctx, OfficeArtRecordHeader * rh, ole2_pointer_t * ole2Ptr,
         uint16_t riSingleUID, uint16_t riDoubleUID, uint32_t bytesAfterUIDs) {
     size_t offset = 16; /* Size of rh*/
 
@@ -708,22 +760,23 @@ static void processOfficeArtBlipGeneric(cli_ctx * ctx, OfficeArtRecordHeader * r
     }
     offset += bytesAfterUIDs; /*metafile header*/
 
-    saveImageFile(ctx, &(ptr[offset]), rh->recLen - offset);
+    ole2Ptr->ptr = &(ole2Ptr->ptr[offset]);
+    saveImageFile(ctx, ole2Ptr, rh->recLen - offset);
 }
 
 /* https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-odraw/2c09e2c4-0513-419f-b5f9-4feb0a71ef32 */
 static void processOfficeArtBlipEMF(cli_ctx * ctx, OfficeArtRecordHeader * rh, ole2_pointer_t * ole2Ptr) {
-    processOfficeArtBlipGeneric(ctx, rh, ole2Ptr->ptr, 0x3d4, 0x3d5, 34) ;
+    processOfficeArtBlipGeneric(ctx, rh, ole2Ptr, 0x3d4, 0x3d5, 34) ;
 }
 
 /* https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-odraw/ee892f04-f001-4531-a34b-67aab3426dcb */
 static void processOfficeArtBlipWMF(cli_ctx * ctx, OfficeArtRecordHeader * rh, ole2_pointer_t * ole2Ptr){
-    processOfficeArtBlipGeneric(ctx, rh, ole2Ptr->ptr, 0x216, 0x217, 34) ;
+    processOfficeArtBlipGeneric(ctx, rh, ole2Ptr, 0x216, 0x217, 34) ;
 }
 
 /* https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-odraw/4b6c5fc5-98cc-445a-8ec7-12b2f2c05b9f */
 static void processOfficeArtBlipPICT(cli_ctx* ctx, OfficeArtRecordHeader * rh, ole2_pointer_t * ole2Ptr ){
-    processOfficeArtBlipGeneric(ctx, rh, ole2Ptr->ptr, 0x542, 0x543, 34) ;
+    processOfficeArtBlipGeneric(ctx, rh, ole2Ptr, 0x542, 0x543, 34) ;
 }
 
 /*https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-odraw/704b3ec5-3e3f-425f-b2f7-a090cc68e624*/
@@ -743,21 +796,22 @@ static void processOfficeArtBlipJPEG(cli_ctx * ctx, OfficeArtRecordHeader * rh, 
 fprintf(stderr, "%s::%d::ADDTO::SHOULDBEIT::offset = %ld (0x%lx)\n", __FUNCTION__, __LINE__, offset, offset);
 fprintf(stderr, "%s::%d::ADDTO::SHOULDBEIT::size = %ld\n", __FUNCTION__, __LINE__, rh->recLen - offset);
 fprintf(stderr, "%s::%d::ADDTO::SHOULDBEIT::rh->recLen = %d\n", __FUNCTION__, __LINE__, rh->recLen);
-    saveImageFile(ctx, &(ole2Ptr->ptr[offset]), rh->recLen - offset);
+    ole2Ptr->ptr = &(ole2Ptr->ptr[offset]);
+    saveImageFile(ctx, ole2Ptr, rh->recLen - offset);
 }
 
 /* https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-odraw/7af7d17e-6ae1-4c43-a3d6-691e6b3b4a45 */
 static void processOfficeArtBlipPNG(cli_ctx * ctx, OfficeArtRecordHeader * rh, ole2_pointer_t * ole2Ptr){
-    processOfficeArtBlipGeneric(ctx, rh, ole2Ptr->ptr, 0x6e0, 0x6e1, 1) ;
+    processOfficeArtBlipGeneric(ctx, rh, ole2Ptr, 0x6e0, 0x6e1, 1) ;
 }
 
 /* https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-odraw/1393bf5e-6fa0-4665-b3ec-68199b555656 */
 static void processOfficeArtBlipDIB(cli_ctx * ctx, OfficeArtRecordHeader * rh, ole2_pointer_t * ole2Ptr){
-    processOfficeArtBlipGeneric(ctx, rh, ole2Ptr->ptr, 0x7a8, 0x7a9, 1) ;
+    processOfficeArtBlipGeneric(ctx, rh, ole2Ptr, 0x7a8, 0x7a9, 1) ;
 }
 
 static void processOfficeArtBlipTIFF(cli_ctx * ctx, OfficeArtRecordHeader * rh, ole2_pointer_t * ole2Ptr){
-    processOfficeArtBlipGeneric(ctx, rh, ole2Ptr->ptr, 0x6e4, 0x6e5, 1) ;
+    processOfficeArtBlipGeneric(ctx, rh, ole2Ptr, 0x6e4, 0x6e5, 1) ;
 }
 
 #if 0
