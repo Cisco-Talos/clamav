@@ -2,16 +2,6 @@
 #define OLE2_EXTRACT_IMAGES_H_
 
 
-void dump_some(const char * const func, const size_t line, const uint8_t * const ptr, size_t cnt) {
-    size_t i;
-    fprintf(stderr, "%s::%ld::", func, line);
-    for (i = 0; i < cnt; i++){
-        fprintf(stderr, "%02x ", ptr[i]);
-    }
-    fprintf(stderr, "\n");
-}
-
-
 /* https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-doc/0c9df81f-98d0-454e-ad84-b612cd05b1a4   */
 typedef struct __attribute__((packed)) {
     uint32_t fcStshfOrig;
@@ -414,8 +404,6 @@ typedef struct __attribute__((packed)) {
 
     const uint8_t * ptr;
 
-//    size_t offset;
-
 } ole2_pointer_t;
 
 /* https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-odraw/5dc1b9ed-818c-436f-8a4f-905a7ebb1ba9 */
@@ -446,10 +434,7 @@ static const uint8_t* load_pointer_to_stream_from_fmap(ole2_header_t * hdr, cons
     const uint8_t * ptr = NULL;
 
     uint32_t offset = get_stream_data_offset(hdr, block, block->start_block);
-    fprintf(stderr, "%s::%d::ADDTO::SHOULDBEIT (second time only)::start of worddocument stream offset = %d (0x%x)\n", __FUNCTION__, __LINE__, offset, offset);
     offset += delay;
-    fprintf(stderr, "%s::%d::ADDTO::SHOULDBEIT (second time only)::offset + delay = %d (0x%x)\n", __FUNCTION__, __LINE__, offset, offset);
-    fprintf(stderr, "%s::%d::ADDTO::SHOULDBEIT (second time only)::size = %ld (0x%lx)\n", __FUNCTION__, __LINE__, size, size);
     if ((size_t)(hdr->m_length) < (size_t)(offset + sizeof(fib_base_t))) {
         cli_dbgmsg("ERROR: Invalid offset for stream %d (0x%x)\n", offset, offset);
         goto done;
@@ -461,7 +446,6 @@ static const uint8_t* load_pointer_to_stream_from_fmap(ole2_header_t * hdr, cons
         cli_dbgmsg("ERROR: Invalid offset for File Information Block %d (0x%x)\n", offset, offset);
         goto done;
     }
-    dump_some(__FUNCTION__, __LINE__, ptr, 25);
 
 done:
     return ptr;
@@ -586,8 +570,6 @@ done:
 }
 
 
-
-
 typedef struct __attribute__((packed)) {
     uint32_t spidMax;
     uint32_t cidcl;
@@ -638,53 +620,6 @@ static void copy_OfficeArtFBSEKnown (OfficeArtFBSEKnown * dst, const uint8_t * c
     dst->foDelay = ole2_endian_convert_32(dst->foDelay);
 }
 
-#if 0
-static void saveImageFile( cli_ctx * ctx, const uint8_t * const ptr, size_t size){
-
-    char *tempfile = NULL;
-    int out_fd = -1;
-    cl_error_t ret ;
-    size_t bytesWritten = 0;
-    FILE * fp = NULL;
-    static json_object * ary = NULL;
-
-    if ((ret = cli_gentempfd_with_prefix(ctx->sub_tmpdir, "ole2_images", &tempfile, &out_fd)) != CL_SUCCESS) {
-        cli_dbgmsg("[ole2_process_image_directory] Failed to open output file descriptor\n");
-        goto done;
-    }
-
-    fp = fdopen(out_fd, "wb");
-    while (bytesWritten < size) {
-        int ret = fwrite(&(ptr[bytesWritten]), 1, size - bytesWritten, fp);
-        if (ret > 0) {
-            bytesWritten += ret;
-        } else {
-            break;
-        }
-    }
-
-    if (bytesWritten != size) {
-        cli_dbgmsg("ERROR unable to write to '%s'\n", tempfile);
-    }
-
-    if (SCAN_COLLECT_METADATA && ctx->wrkproperty != NULL){
-        if (NULL == ary) {
-#define OLE2_EXTRACTED_IMAGES_JSON_KEY "OLE2_IMAGES"
-            ary = cli_jsonarray(ctx->wrkproperty, OLE2_EXTRACTED_IMAGES_JSON_KEY);
-        }
-        if (ary) {
-            cli_jsonstr(ary, NULL, tempfile);
-        }
-    }
-
-done:
-    if (tempfile && !ctx->engine->keeptmp) {
-        remove(tempfile);
-    }
-    CLI_FREE_AND_SET_NULL(tempfile);
-
-}
-#else
 static void saveImageFile( cli_ctx * ctx, ole2_header_t * ole2Hdr, ole2_pointer_t * ole2Ptr, size_t size){
 
     char *tempfile = NULL;
@@ -694,7 +629,6 @@ static void saveImageFile( cli_ctx * ctx, ole2_header_t * ole2Hdr, ole2_pointer_
     FILE * fp = NULL;
     static json_object * ary = NULL;
     size_t totalIncrement = 0;
-    //size_t i = 0;
 
     size_t blockSize = 1 << ole2Hdr->log2_big_block_size;
 
@@ -703,20 +637,10 @@ static void saveImageFile( cli_ctx * ctx, ole2_header_t * ole2Hdr, ole2_pointer_
         goto done;
     }
 
-
-    fprintf(stderr, "%s::%d::ole2Ptr->start_block       = %lu (0x%lx)\n", __FUNCTION__, __LINE__, ole2Ptr->stream_file_offset, ole2Ptr->stream_file_offset);
-    fprintf(stderr, "%s::%d::ole2Ptr->base_ptr          = %p\n", __FUNCTION__, __LINE__, ole2Ptr->base_ptr);
-    fprintf(stderr, "%s::%d::ole2Ptr->ptr               = %p\n", __FUNCTION__, __LINE__, ole2Ptr->ptr);
-    fprintf(stderr, "%s::%d::size                       = %lu\n", __FUNCTION__, __LINE__, size);
-
-
     size_t fileOffset = ole2Ptr->stream_file_offset /*The offset of the document stream in the ole2 file.*/
         + (ole2Ptr->ptr - ole2Ptr->base_ptr);       /*The offset of the file data from the start of the document stream */
 
-    fprintf(stderr, "%s::%d::Image should be at %lx\n", __FUNCTION__, __LINE__, fileOffset);
-
     fp = fdopen(out_fd, "wb");
-
 
     size_t lastWritten = 0;
     size_t difatIter = 0;
@@ -727,18 +651,13 @@ static void saveImageFile( cli_ctx * ctx, ole2_header_t * ole2Hdr, ole2_pointer_
         size_t increment = 0;
         for (; difatIter < NUM_DIFAT_ENTRIES; difatIter++) {
             if (-1 != ole2Hdr->bat_array[difatIter]) {
-
                 size_t block = (ole2Hdr->bat_array[difatIter]+1) << ole2Hdr->log2_big_block_size;
-
                 if ((block >= fileOffset) && (block <= (fileOffset + size))){
                     difatIdx = difatIter;
                     reserveBlock = block;
-                    //toWrite = reserveBlock - lastWritten;
                     toWrite = reserveBlock - fileOffset;
                     increment = blockSize;
                     totalIncrement += increment;
-                    fprintf(stderr, "%s::%d::FOUND ONE at idx %ld\n", __FUNCTION__, __LINE__, difatIter);
-
 
                     /*Get more space from the fmap to account for the extra block*/
                     const uint8_t * ptr = fmap_need_off_once(ole2Hdr->map, ole2Ptr->stream_file_offset, (ole2Ptr->ptr - ole2Ptr->base_ptr) + increment + size);
@@ -748,19 +667,14 @@ static void saveImageFile( cli_ctx * ctx, ole2_header_t * ole2Hdr, ole2_pointer_
                     }
                 }
             }
-            //ole2Hdr->bat_array[i] = -1;
             if (-1 != difatIdx) {
                 difatIter++;
                 break;
             }
         }
-        //fprintf(stderr, "%s::%d::difatIdx = %d\n", __FUNCTION__, __LINE__, difatIdx);
-        fprintf(stderr, "%s::%d::Write %lu (0x%lx) bytes starting at %lu (0x%lx)\n", __FUNCTION__, __LINE__, toWrite, toWrite, lastWritten, lastWritten );
 
         size_t loopWritten = 0;
         while (loopWritten < toWrite) {
-            fprintf(stderr, "%s::%d::FTT::%lu (0x%lx)\n", __FUNCTION__, __LINE__, lastWritten + loopWritten, lastWritten + loopWritten);
-            dump_some(__FUNCTION__, __LINE__, &(ole2Ptr->ptr[lastWritten + loopWritten]), 25);
             int ret = fwrite(&(ole2Ptr->ptr[lastWritten + loopWritten]), 1, toWrite - loopWritten, fp);
             if (ret > 0) {
                 loopWritten += ret;
@@ -772,18 +686,6 @@ static void saveImageFile( cli_ctx * ctx, ole2_header_t * ole2Hdr, ole2_pointer_
         bytesWritten += toWrite;
         lastWritten += toWrite + increment;
     }
-
-#if 0
-    bytesWritten = 0;
-    while (bytesWritten < size) {
-        int ret = fwrite(&(ole2Ptr->ptr[bytesWritten]), 1, size - bytesWritten, fp);
-        if (ret > 0) {
-            bytesWritten += ret;
-        } else {
-            break;
-        }
-    }
-#endif
 
     if (bytesWritten != size) {
         cli_dbgmsg("ERROR unable to write to '%s'\n", tempfile);
@@ -802,15 +704,12 @@ static void saveImageFile( cli_ctx * ctx, ole2_header_t * ole2Hdr, ole2_pointer_
 done:
     ole2Ptr->ptr = &(ole2Ptr->ptr[size + totalIncrement]);
 
-    fprintf(stderr, "%s::%d::TODO: increment pointer by the blocks skipped also!!!!\n", __FUNCTION__, __LINE__);
-
     if (tempfile && !ctx->engine->keeptmp) {
         remove(tempfile);
     }
     CLI_FREE_AND_SET_NULL(tempfile);
 
 }
-#endif
 
 
 /*All these structures (except JPEG) are exactly the same, with the exception of the recInst values for 1 or 2 UIDs, 
@@ -857,7 +756,6 @@ static void processOfficeArtBlipPICT(cli_ctx* ctx, ole2_header_t * ole2Hdr, Offi
 
 /*https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-odraw/704b3ec5-3e3f-425f-b2f7-a090cc68e624*/
 static void processOfficeArtBlipJPEG(cli_ctx * ctx, ole2_header_t * ole2Hdr, OfficeArtRecordHeader * rh, ole2_pointer_t * ole2Ptr){
-    fprintf(stderr, "%s::%d::Entering\n", __FUNCTION__, __LINE__);
     size_t offset = 16; /* Size of rh*/
     uint16_t recInst = getRecInst(rh);
 
@@ -869,9 +767,6 @@ static void processOfficeArtBlipJPEG(cli_ctx * ctx, ole2_header_t * ole2Hdr, Off
     }
     offset += 1; /*metafile header*/
 
-fprintf(stderr, "%s::%d::ADDTO::SHOULDBEIT::offset = %ld (0x%lx)\n", __FUNCTION__, __LINE__, offset, offset);
-fprintf(stderr, "%s::%d::ADDTO::SHOULDBEIT::size = %ld\n", __FUNCTION__, __LINE__, rh->recLen - offset);
-fprintf(stderr, "%s::%d::ADDTO::SHOULDBEIT::rh->recLen = %d\n", __FUNCTION__, __LINE__, rh->recLen);
     ole2Ptr->ptr = &(ole2Ptr->ptr[offset]);
     saveImageFile(ctx, ole2Hdr, ole2Ptr, rh->recLen - offset);
 }
@@ -890,11 +785,7 @@ static void processOfficeArtBlipTIFF(cli_ctx * ctx, ole2_header_t * ole2Hdr, Off
     processOfficeArtBlipGeneric(ctx, ole2Hdr, rh, ole2Ptr, 0x6e4, 0x6e5, 1) ;
 }
 
-#if 0
-static size_t processOfficeArtBlip(cli_ctx * ctx, const uint8_t * const ptr){
-#else
 static size_t processOfficeArtBlip(cli_ctx * ctx, ole2_header_t * ole2Hdr, ole2_pointer_t * ole2Ptr){
-#endif
 
     size_t offset = 0;
     OfficeArtRecordHeader rh;
@@ -954,7 +845,6 @@ done:
 /*
  * https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-odraw/2f2d7f5e-d5c4-4cb7-b230-59b3fe8f10d6
  */
-//static size_t processOfficeArtFBSE(cli_ctx * ctx, ole2_header_t *hdr, OfficeArtRecordHeader * imageHeader, const uint8_t * const ptr, property_t * wordDocBlock) {
 static size_t processOfficeArtFBSE(cli_ctx * ctx, ole2_header_t *hdr, OfficeArtRecordHeader * imageHeader, ole2_pointer_t * ole2Ptr, property_t * wordDocBlock) {
     OfficeArtFBSEKnown fbse;
 
@@ -978,33 +868,22 @@ static size_t processOfficeArtFBSE(cli_ctx * ctx, ole2_header_t *hdr, OfficeArtR
     ole2Ptr->ptr = &(ole2Ptr->ptr[offset]);
     if (imageHeader->recLen == (sizeof(OfficeArtFBSEKnown) + fbse.cbName + fbse.size)) {
         /* The BLIP is embedded in this record*/ 
-fprintf(stderr, "%s::%d::ADDTO::offset = %d (0x%x)\n", __FUNCTION__, __LINE__, offset, offset);
-        //processOfficeArtBlip(ctx, &(ole2Ptr->ptr[offset]));
         processOfficeArtBlip(ctx, hdr, ole2Ptr);
         ole2Ptr->ptr = &(ole2Ptr->ptr[fbse.size]);
         offset += fbse.size;
     } else {
         /* The BLIP is in the 'WordDocument' stream. */
         size_t size = fbse.size;
-fprintf(stderr, "%s::%d::ADDTO::fbse.foDelay = %d (0x%x)\n", __FUNCTION__, __LINE__, fbse.foDelay, fbse.foDelay);
-fprintf(stderr, "%s::%d::added offset = %d (0x%x)\n", __FUNCTION__, __LINE__, offset, offset);
-#if 0
-        const uint8_t * const ptr = load_pointer_to_stream_from_fmap(hdr, wordDocBlock, fbse.foDelay, size);
-        processOfficeArtBlip(ctx, ptr);
-#else
         ole2_pointer_t wordStreamPtr = {0};
         wordStreamPtr.base_ptr = load_pointer_to_stream_from_fmap(hdr, wordDocBlock, 0, fbse.foDelay + size);
 
-        //wordStreamPtr.ptr = load_pointer_to_stream_from_fmap(hdr, wordDocBlock, fbse.foDelay, size);
         if (NULL == wordStreamPtr.base_ptr){
             fprintf(stderr, "%s::%d::Handle this\n", __FUNCTION__, __LINE__);
             exit(11);
         }
         wordStreamPtr.ptr = &(wordStreamPtr.base_ptr[fbse.foDelay]);
-        //wordStreamPtr.start_block = wordDocBlock->start_block;
         wordStreamPtr.stream_file_offset = get_stream_data_offset(hdr, wordDocBlock, wordDocBlock->start_block);
         processOfficeArtBlip(ctx, hdr, &wordStreamPtr);
-#endif
         /* I don't need to add anything to the offset here, because the actual data is not here.
          * The data is in a different stream
          */
@@ -1019,18 +898,10 @@ size_t get_block_size(ole2_header_t * ole2Hdr) {
     return 1 << ole2Hdr->log2_big_block_size;
 }
 
-//ptr is a pointer to the head of the table stream.
-#if 0
-static void ole2_extract_images(cli_ctx * ctx, ole2_header_t * ole2Hdr, FibRgFcLcb97 * header, const uint8_t * ptr, property_t * wordDocBlock) {
-#else
 static void ole2_extract_images(cli_ctx * ctx, ole2_header_t * ole2Hdr, ole2_image_directory_t * directory, property_t * tableStream) {
     FibRgFcLcb97 * header = &(directory->fibRgFcLcb97Header);
     property_t * wordDocBlock = &(directory->word_block);
-#if 0
-    const uint8_t * ptr = NULL;
-#else
     ole2_pointer_t ole2Ptr = {0};
-#endif
 
     /*This offset is an actual offset of the table stream in the file.*/
     size_t tableStreamOffset = get_stream_data_offset(ole2Hdr, tableStream, tableStream->start_block);
@@ -1044,7 +915,6 @@ static void ole2_extract_images(cli_ctx * ctx, ole2_header_t * ole2Hdr, ole2_ima
     //ole2Ptr.start_block = tableStream->start_block;
     ole2Ptr.stream_file_offset = tableStreamOffset;
     ole2Ptr.base_ptr = ole2Ptr.ptr;
-#endif
 
     size_t offset = header->fcDggInfo;
 
@@ -1093,14 +963,13 @@ static void ole2_extract_images(cli_ctx * ctx, ole2_header_t * ole2Hdr, ole2_ima
     OfficeArtRecordHeader blipStoreRecordHeader;
     copy_OfficeArtRecordHeader(&blipStoreRecordHeader,  &(ole2Ptr.ptr[offset]));
 
-    fprintf(stderr, "%s::%d::total needed = %lu\n", __FUNCTION__, __LINE__, offset + blipStoreRecordHeader.recLen);
-
     /*Allocate the full number of bytes needed for headers.*/
     size_t total_needed = 0;
     while (total_needed < (offset + blipStoreRecordHeader.recLen)) {
         total_needed += get_block_size(ole2Hdr);
     }
 
+#if 0
     size_t idx;
     for (idx = 0; idx < NUM_DIFAT_ENTRIES; idx++) {
         if (-1 == ole2Hdr->bat_array[idx]) {
@@ -1135,6 +1004,7 @@ static void ole2_extract_images(cli_ctx * ctx, ole2_header_t * ole2Hdr, ole2_ima
         }
 
     }
+#endif
 
     ole2Ptr.ptr = fmap_need_off_once(ole2Hdr->map, tableStreamOffset, total_needed);
     if (NULL == ole2Ptr.ptr) {
