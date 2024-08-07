@@ -86,21 +86,9 @@ typedef struct __attribute__((packed)) ole2_header_tag {
     int16_t byte_order __attribute__((packed)); /* -2=intel */
 
     uint16_t log2_big_block_size __attribute__((packed));   /* usually 9 (2^9 = 512) */ //sector shift
-#if 0
-    uint32_t log2_small_block_size __attribute__((packed)); /* usually 6 (2^6 = 64) */
-    /*
-     * This is technically incorrect.  log2_small_block_size should be a uint16_t, and reserved should
-     * be 6 bytes.  This makes everything line up, but could potentially cause issues when switching byte order
-     * for log2_small_block_size.  Consider changing.
-     */
-
-    int32_t reserved[2] __attribute__((packed));
-#else
-
     uint16_t log2_small_block_size __attribute__((packed)); /* usually 6 (2^6 = 64) */ //mini sector shift
     uint8_t reserved[6];
 
-#endif
     uint32_t num_directory_sectors __attribute__((packed));         //If dll_version is 3, this must be 0
     int32_t bat_count __attribute__((packed));                      //num fat sectors
     int32_t prop_start __attribute__((packed));                     //first directory sector location
