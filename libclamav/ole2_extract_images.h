@@ -693,7 +693,9 @@ static void saveImageFile( cli_ctx * ctx, ole2_header_t * ole2Hdr, ole2_pointer_
     size_t bytesWritten = 0;
     FILE * fp = NULL;
     static json_object * ary = NULL;
-    size_t i = 0;
+    //size_t i = 0;
+
+    size_t blockSize = 1 << ole2Hdr->log2_big_block_size;
 
     if ((ret = cli_gentempfd_with_prefix(ctx->sub_tmpdir, "ole2_images", &tempfile, &out_fd)) != CL_SUCCESS) {
         cli_dbgmsg("[ole2_process_image_directory] Failed to open output file descriptor\n");
@@ -701,25 +703,94 @@ static void saveImageFile( cli_ctx * ctx, ole2_header_t * ole2Hdr, ole2_pointer_
     }
 
 
-    fprintf(stderr, "%s::%d::NEED TO ADD                  0X1400\n", __FUNCTION__, __LINE__);
     fprintf(stderr, "%s::%d::ole2Ptr->start_block       = %lu (0x%lx)\n", __FUNCTION__, __LINE__, ole2Ptr->stream_file_offset, ole2Ptr->stream_file_offset);
     fprintf(stderr, "%s::%d::ole2Ptr->base_ptr          = %p\n", __FUNCTION__, __LINE__, ole2Ptr->base_ptr);
     fprintf(stderr, "%s::%d::ole2Ptr->ptr               = %p\n", __FUNCTION__, __LINE__, ole2Ptr->ptr);
     fprintf(stderr, "%s::%d::size                       = %lu\n", __FUNCTION__, __LINE__, size);
 
-    fprintf(stderr, "%s::%d::Image should be at %lx\n", __FUNCTION__, __LINE__, 0x1400 + (ole2Ptr->ptr - ole2Ptr->base_ptr));
 
+    size_t fileOffset = ole2Ptr->stream_file_offset /*The offset of the document stream in the ole2 file.*/
+        + (ole2Ptr->ptr - ole2Ptr->base_ptr);       /*The offset of the file data from the start of the document stream */
+
+    fprintf(stderr, "%s::%d::Image should be at %lx\n", __FUNCTION__, __LINE__, fileOffset);
+
+    fp = fdopen(out_fd, "wb");
+
+
+    size_t lastWritten = 0;
+    size_t difatIter = 0;
+    while (bytesWritten < size) {
+        int difatIdx = -1;
+        size_t reserveBlock = 0;
+        size_t toWrite = size - bytesWritten;
+        size_t increment = 0;
+        for (; difatIter < NUM_DIFAT_ENTRIES; difatIter++) {
+            //fprintf(stderr, "%s::%d\n", __FUNCTION__, __LINE__);
+            if (-1 != ole2Hdr->bat_array[difatIter]) {
+                size_t block = (ole2Hdr->bat_array[difatIter]+1) << ole2Hdr->log2_big_block_size;
+                //fprintf(stderr, "%s::%d::i = %ld, block = %lx\n", __FUNCTION__, __LINE__, difatIter, block);
+                //fprintf(stderr, "%s::%d::i = %ld, fileOffset = %lx\n", __FUNCTION__, __LINE__, difatIter, fileOffset);
+                //fprintf(stderr, "%s::%d::i = %ld, size = %lx\n", __FUNCTION__, __LINE__, difatIter, size);
+                if ((block >= fileOffset) && (block <= (fileOffset + size))){
+                //fprintf(stderr, "%s::%d\n", __FUNCTION__, __LINE__);
+                    difatIdx = difatIter;
+                    reserveBlock = block;
+                    toWrite = reserveBlock - lastWritten;
+                    increment = blockSize;
+                    fprintf(stderr, "%s::%d::FOUND ONE at idx %ld\n", __FUNCTION__, __LINE__, difatIter);
+                }
+            }
+            //ole2Hdr->bat_array[i] = -1;
+            if (-1 != difatIdx) {
+                difatIter++;
+                break;
+            }
+        }
+        fprintf(stderr, "%s::%d::difatIdx = %d\n", __FUNCTION__, __LINE__, difatIdx);
+        fprintf(stderr, "%s::%d::Write %lu (0x%lx) bytes starting at %lu (0x%lx)\n", __FUNCTION__, __LINE__, toWrite, toWrite, lastWritten, lastWritten );
+        bytesWritten += toWrite;
+        lastWritten += toWrite + increment;
+    }
+
+#if 0
+    size_t processed = 0;
+    size_t toWrite = size;
     for (i = 0; i < NUM_DIFAT_ENTRIES; i++) {
         if (-1 == ole2Hdr->bat_array[i]) {
             break;
         }
         fprintf(stderr, "%s::%d::difat[%ld] = %d (0x%x)\n", __FUNCTION__, __LINE__, i, ole2Hdr->bat_array[i], ole2Hdr->bat_array[i]);
         fprintf(stderr, "%s::%d::RESERVED BLOCK::%x\n", __FUNCTION__, __LINE__, ((ole2Hdr->bat_array[i]+1) << ole2Hdr->log2_big_block_size));
+
+        size_t reserveBlock = (ole2Hdr->bat_array[i]+1) << ole2Hdr->log2_big_block_size;
+        if ((reserveBlock >= fileOffset) && (reserveBlock <= (fileOffset + size))){
+            fprintf(stderr, "%s::%d::FOUND OUR PROBLEM BLOCK!!!!!\n", __FUNCTION__, __LINE__);
+            fprintf(stderr, "%s::%d::write %ld bytes\n", __FUNCTION__, __LINE__, reserveBlock - fileOffset);
+            fprintf(stderr, "%s::%d::Need to also allocate more fmap\n", __FUNCTION__, __LINE__);
+            toWrite = reserveBlock - fileOffset;
+        }
+
+        while (bytesWritten < toWrite) {
+            int ret = fwrite(&(ole2Ptr->ptr[bytesWritten + processed]), 1, toWrite - bytesWritten, fp);
+            if (ret > 0) {
+                bytesWritten += ret;
+            } else {
+                break;
+            }
+        }
+
+        if (toWrite != size) {
+            processed += blockSize;
+            //toWrite 
+        }
+
     }
+#endif
 
 
 
-    fp = fdopen(out_fd, "wb");
+#if 1
+    bytesWritten = 0;
     while (bytesWritten < size) {
         int ret = fwrite(&(ole2Ptr->ptr[bytesWritten]), 1, size - bytesWritten, fp);
         if (ret > 0) {
@@ -728,6 +799,7 @@ static void saveImageFile( cli_ctx * ctx, ole2_header_t * ole2Hdr, ole2_pointer_
             break;
         }
     }
+#endif
 
     if (bytesWritten != size) {
         cli_dbgmsg("ERROR unable to write to '%s'\n", tempfile);
