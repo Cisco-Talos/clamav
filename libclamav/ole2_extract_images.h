@@ -926,10 +926,20 @@ static void ole2_extract_images(cli_ctx * ctx, ole2_header_t * ole2Hdr, ole2_ima
         total_needed += get_block_size(ole2Hdr);
     }
 
-    fprintf(stderr, "%s::%d::TODO: Verify that total_needed + tableStreamOffset does not cross into a FAT block\n", __FUNCTION__, __LINE__);
-    fprintf(stderr, "%s::%d::Needs to be a while bytes_processed < ...\n", __FUNCTION__, __LINE__);
+    size_t idx;
+    for (idx = 0; idx < NUM_DIFAT_ENTRIES; idx++) {
+        if (-1 == ole2Hdr->bat_array[idx]) {
+            break;
+        }
 
-fprintf(stderr, "%s::%d::total_needed = %ld (0x%lx)\n", __FUNCTION__, __LINE__, total_needed, total_needed);
+        uint32_t reserved = (ole2Hdr->bat_array[idx]+1) << ole2Hdr->log2_big_block_size;
+        if ((reserved >= tableStreamOffset) && (reserved <= tableStreamOffset + total_needed)){
+            fprintf(stderr, "%s::%d::total_needed crosses over a FAT block that must be skipped!!!!!\n", __FUNCTION__, __LINE__);
+            fprintf(stderr, "%s::%d::This is not currently handled!!!!!\n", __FUNCTION__, __LINE__);
+            exit(11);
+        }
+
+    }
 
     ptr = fmap_need_off_once(ole2Hdr->map, tableStreamOffset, total_needed);
     if (NULL == ptr) {
@@ -946,12 +956,6 @@ fprintf(stderr, "%s::%d::total_needed = %ld (0x%lx)\n", __FUNCTION__, __LINE__, 
         cli_dbgmsg("ERROR Invalid recType 0x%x\n", getRecVer(&blipStoreRecordHeader));
         return;
     }
-
-    /*
-     * imageCnt needs to be determined based on the number of records here, not the 'imageCnt' inside the blipStoreRecordHeader
-     */
-
-    uint32_t imageCnt = getRecInst (&blipStoreRecordHeader);
 
     offset += sizeof(OfficeArtRecordHeader);
 

@@ -76,6 +76,7 @@
 #pragma pack 1
 #endif
 
+#define NUM_DIFAT_ENTRIES 109
 // https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-cfb/05060311-bfce-4b12-874d-71fd4ce63aea
 typedef struct __attribute__((packed)) ole2_header_tag {
     unsigned char magic[8]; /* should be: 0xd0cf11e0a1b11ae1 */
@@ -114,7 +115,7 @@ typedef struct __attribute__((packed)) ole2_header_tag {
     int32_t sbat_block_count __attribute__((packed));               //number of minifat sectors
     int32_t xbat_start __attribute__((packed));                     //first DIFAT sector location
     int32_t xbat_count __attribute__((packed));                     //number of difat sectors
-    int32_t bat_array[109] __attribute__((packed));                 //DIFAT
+    int32_t bat_array[NUM_DIFAT_ENTRIES] __attribute__((packed));                 //DIFAT
 
     /*
      * The following is not part of the ole2 header, but stuff we need in
@@ -2965,7 +2966,7 @@ cl_error_t cli_ole2_extract(const char *dirname, cli_ctx *ctx, struct uniq **fil
      * The random block that we *don't* want that is stuffed in the middel is in the DIFAT.
      * Need to skip it (1 << log2_big_block_size) and keep going.
      */
-    for (andy = 0; andy < 109; andy++) {
+    for (andy = 0; andy < NUM_DIFAT_ENTRIES; andy++) {
         if (-1 == hdr.bat_array[andy]) {
             break;
         }
