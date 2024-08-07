@@ -936,9 +936,6 @@ static void ole2_extract_images(cli_ctx * ctx, ole2_header_t * ole2Hdr, ole2_ima
         if ((reserved >= tableStreamOffset) && (reserved <= tableStreamOffset + total_needed)){
             fprintf(stderr, "%s::%d::total_needed crosses over a FAT block that must be skipped!!!!!\n", __FUNCTION__, __LINE__);
             fprintf(stderr, "%s::%d::This is not currently handled!!!!!\n", __FUNCTION__, __LINE__);
-            Looks like the easiest thing to do is pass the pointer and the offset everywhere, and compare them
-                everywhere;
-                
             //TODO::HANDLE THIS CASE!!!!!
             //TODO::HANDLE THIS CASE!!!!!
             //TODO::HANDLE THIS CASE!!!!!
