@@ -408,7 +408,7 @@ typedef struct {
 
 typedef struct __attribute__((packed)) {
 
-    uint32_t start_block;
+    size_t stream_file_offset;
 
     const uint8_t * base_ptr;
 
@@ -702,7 +702,7 @@ static void saveImageFile( cli_ctx * ctx, ole2_header_t * ole2Hdr, ole2_pointer_
 
 
     fprintf(stderr, "%s::%d::NEED TO ADD                  0X1400\n", __FUNCTION__, __LINE__);
-    fprintf(stderr, "%s::%d::ole2Ptr->start_block       = %u\n", __FUNCTION__, __LINE__, ole2Ptr->start_block);
+    fprintf(stderr, "%s::%d::ole2Ptr->start_block       = %lu (0x%lx)\n", __FUNCTION__, __LINE__, ole2Ptr->stream_file_offset, ole2Ptr->stream_file_offset);
     fprintf(stderr, "%s::%d::ole2Ptr->base_ptr          = %p\n", __FUNCTION__, __LINE__, ole2Ptr->base_ptr);
     fprintf(stderr, "%s::%d::ole2Ptr->ptr               = %p\n", __FUNCTION__, __LINE__, ole2Ptr->ptr);
     fprintf(stderr, "%s::%d::size                       = %lu\n", __FUNCTION__, __LINE__, size);
@@ -946,7 +946,7 @@ fprintf(stderr, "%s::%d::added offset = %d (0x%x)\n", __FUNCTION__, __LINE__, of
         }
         wordStreamPtr.ptr = &(wordStreamPtr.base_ptr[fbse.foDelay]);
         //wordStreamPtr.start_block = wordDocBlock->start_block;
-        wordStreamPtr.start_block = get_stream_data_offset(hdr, wordDocBlock, wordDocBlock->start_block);
+        wordStreamPtr.stream_file_offset = get_stream_data_offset(hdr, wordDocBlock, wordDocBlock->start_block);
         processOfficeArtBlip(ctx, hdr, &wordStreamPtr);
 #endif
         /* I don't need to add anything to the offset here, because the actual data is not here.
@@ -986,7 +986,7 @@ static void ole2_extract_images(cli_ctx * ctx, ole2_header_t * ole2Hdr, ole2_ima
         goto done;
     }
     //ole2Ptr.start_block = tableStream->start_block;
-    ole2Ptr.start_block = (uint32_t) tableStreamOffset;
+    ole2Ptr.stream_file_offset = tableStreamOffset;
     ole2Ptr.base_ptr = ole2Ptr.ptr;
 #endif
 
