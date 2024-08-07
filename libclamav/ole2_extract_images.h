@@ -889,8 +889,6 @@ static size_t processOfficeArtFBSE(cli_ctx * ctx, ole2_header_t *hdr, OfficeArtR
          */
     }
 
-    fprintf(stderr, "%s::%d::Incrementing by offset = %d\n", __FUNCTION__, __LINE__, offset);
-//    ole2Ptr->ptr = &(ole2Ptr->ptr[offset]);
     return offset;
 }
 
