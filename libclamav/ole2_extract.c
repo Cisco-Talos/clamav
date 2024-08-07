@@ -900,15 +900,6 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
     cl_error_t ret;
     char *name;
     int toval = 0;
-#if 0
-    FibRgFcLcb97 fibRgFcLcb97Header = {0};
-    bool bFibRgFcLcb97HeaderInitialized = false;
-    property_t wordDocumentBlock = {0};
-    property_t TableStream1 = {0};
-    property_t TableStream0 = {0};
-    bool TableStream1Initialized = false;
-    bool TableStream0Initialized = false;
-#endif
 
     ole2_listmsg("ole2_walk_property_tree() called\n");
     ole2_list_init(&node_list);
