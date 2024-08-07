@@ -836,6 +836,7 @@ fprintf(stderr, "%s::%d::ADDTO::offset = %d (0x%x)\n", __FUNCTION__, __LINE__, o
         /* The BLIP is in the 'WordDocument' stream. */
         size_t size = fbse.size;
 fprintf(stderr, "%s::%d::ADDTO::fbse.foDelay = %d (0x%x)\n", __FUNCTION__, __LINE__, fbse.foDelay, fbse.foDelay);
+fprintf(stderr, "%s::%d::added offset = %d (0x%x)\n", __FUNCTION__, __LINE__, offset, offset);
         const uint8_t * const ptr = load_pointer_to_stream_from_fmap(hdr, wordDocBlock, fbse.foDelay, size);
         processOfficeArtBlip(ctx, ptr);
         /* I don't need to add anything to the offset here, because the actual data is not here.
@@ -844,6 +845,10 @@ fprintf(stderr, "%s::%d::ADDTO::fbse.foDelay = %d (0x%x)\n", __FUNCTION__, __LIN
     }
 
     return offset;
+}
+
+size_t get_block_size(ole2_header_t * ole2Hdr) {
+    return 1 << ole2Hdr->log2_big_block_size;
 }
 
 //ptr is a pointer to the head of the table stream.
@@ -858,7 +863,8 @@ static void ole2_extract_images(cli_ctx * ctx, ole2_header_t * ole2Hdr, ole2_ima
     /*This offset is an actual offset of the table stream in the file.*/
     size_t tableStreamOffset = get_stream_data_offset(ole2Hdr, tableStream, tableStream->start_block);
     /*TODO: Fix hardcoded 4k.  Change it to read 512 bytes (block size) at a time, and continue reading.  */
-    ptr = fmap_need_off_once(ole2Hdr->map, tableStreamOffset, 4096);
+    //ptr = fmap_need_off_once(ole2Hdr->map, tableStreamOffset, 4096);
+    ptr = fmap_need_off_once(ole2Hdr->map, tableStreamOffset, get_block_size(ole2Hdr));
     if (NULL == ptr) {
         cli_dbgmsg("ERROR: Invalid tableStreamOffset for File Information Block %ld (0x%lx)\n", tableStreamOffset, tableStreamOffset);
         goto done;
@@ -867,7 +873,7 @@ static void ole2_extract_images(cli_ctx * ctx, ole2_header_t * ole2Hdr, ole2_ima
 
     size_t offset = header->fcDggInfo;
     fprintf(stderr, "%s::%d::blahblah::offset = %ld (0x%lx)\n", __FUNCTION__, __LINE__, offset, offset);
-    PUT IN CODE TO ONLY FMAP 1 BLOCK AT A TIME, MAYBE TRACK BLOCK SIZE INSTEAD OF OFFSET;
+//    PUT IN CODE TO ONLY FMAP 1 BLOCK AT A TIME, MAYBE TRACK BLOCK SIZE INSTEAD OF OFFSET;
 
     /*
      * Start of OfficeArtContent
@@ -915,6 +921,19 @@ static void ole2_extract_images(cli_ctx * ctx, ole2_header_t * ole2Hdr, ole2_ima
     OfficeArtRecordHeader blipStoreRecordHeader;
     copy_OfficeArtRecordHeader(&blipStoreRecordHeader,  &(ptr[offset]));
 
+    fprintf(stderr, "%s::%d::total needed = %lu\n", __FUNCTION__, __LINE__, offset + blipStoreRecordHeader.recLen);
+    /*Allocate the full number of bytes needed for headers.*/
+    size_t total_needed = 0;
+    while (total_needed < (offset + blipStoreRecordHeader.recLen)) {
+        total_needed += get_block_size(ole2Hdr);
+    }
+    fprintf(stderr, "%s::%d::total_needed = %ld (0x%lx)\n", __FUNCTION__, __LINE__, total_needed, total_needed);
+    ptr = fmap_need_off_once(ole2Hdr->map, tableStreamOffset, total_needed);
+    if (NULL == ptr) {
+        cli_dbgmsg("ERROR: Invalid offset for OfficeArtRecordHeader%ld (0x%lx)\n", total_needed, total_needed);
+        goto done;
+    }
+
     if (0xf != getRecVer(&blipStoreRecordHeader)) {
         cli_dbgmsg("ERROR Invalid recVer 0x%x\n", getRecVer(&blipStoreRecordHeader));
         return;
@@ -954,6 +973,7 @@ fprintf(stderr, "%s::%d::ADDTO::offset = %ld (0x%lx)\n", __FUNCTION__, __LINE__,
         size_t off = offset + bytesProcessed;
         fprintf(stderr, "%s::%d::bytesProcessed  = %ld\n", __FUNCTION__, __LINE__, bytesProcessed);
         fprintf(stderr, "%s::%d::blipStoreRecordHeader.recLen= %d\n", __FUNCTION__, __LINE__, blipStoreRecordHeader.recLen);
+        fprintf(stderr, "%s::%d::off = %ld (0x%lx)\n", __FUNCTION__, __LINE__, off, off);
         OfficeArtRecordHeader imageHeader;
         copy_OfficeArtRecordHeader(&imageHeader,  &(ptr[off]));
         uint8_t recVer = getRecVer(&imageHeader);
@@ -962,8 +982,10 @@ fprintf(stderr, "%s::%d::ADDTO::offset = %ld (0x%lx)\n", __FUNCTION__, __LINE__,
             /* OfficeArtFBSE 
              * https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-odraw/2f2d7f5e-d5c4-4cb7-b230-59b3fe8f10d6
              */
+            fprintf(stderr, "%s::%d::FBSE\n", __FUNCTION__, __LINE__);
             bytesProcessed += processOfficeArtFBSE(ctx, ole2Hdr, &imageHeader, &(ptr[off]), wordDocBlock);
         } else {
+            fprintf(stderr, "%s::%d::Blip\n", __FUNCTION__, __LINE__);
             bytesProcessed += processOfficeArtBlip(ctx, &(ptr[off]));
         }
     }
