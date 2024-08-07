@@ -969,43 +969,6 @@ static void ole2_extract_images(cli_ctx * ctx, ole2_header_t * ole2Hdr, ole2_ima
         total_needed += get_block_size(ole2Hdr);
     }
 
-#if 0
-    size_t idx;
-    for (idx = 0; idx < NUM_DIFAT_ENTRIES; idx++) {
-        if (-1 == ole2Hdr->bat_array[idx]) {
-            break;
-        }
-
-        uint32_t reserved = (ole2Hdr->bat_array[idx]+1) << ole2Hdr->log2_big_block_size;
-        if ((reserved >= tableStreamOffset) && (reserved <= tableStreamOffset + total_needed)){
-            fprintf(stderr, "%s::%d::total_needed crosses over a FAT block that must be skipped!!!!!\n", __FUNCTION__, __LINE__);
-            fprintf(stderr, "%s::%d::This is not currently handled!!!!!\n", __FUNCTION__, __LINE__);
-            //TODO::HANDLE THIS CASE!!!!!
-            //TODO::HANDLE THIS CASE!!!!!
-            //TODO::HANDLE THIS CASE!!!!!
-            //TODO::HANDLE THIS CASE!!!!!
-            //TODO::HANDLE THIS CASE!!!!!
-            //TODO::HANDLE THIS CASE!!!!!
-            //TODO::HANDLE THIS CASE!!!!!
-            //TODO::HANDLE THIS CASE!!!!!
-            //TODO::HANDLE THIS CASE!!!!!
-            //TODO::HANDLE THIS CASE!!!!!
-            //TODO::HANDLE THIS CASE!!!!!
-            //TODO::HANDLE THIS CASE!!!!!
-            //TODO::HANDLE THIS CASE!!!!!
-            //TODO::HANDLE THIS CASE!!!!!
-            //TODO::HANDLE THIS CASE!!!!!
-            //TODO::HANDLE THIS CASE!!!!!
-            //TODO::HANDLE THIS CASE!!!!!
-            //TODO::HANDLE THIS CASE!!!!!
-            //TODO::HANDLE THIS CASE!!!!!
-            //TODO::HANDLE THIS CASE!!!!!
-            exit(11);
-        }
-
-    }
-#endif
-
     ole2Ptr.ptr = fmap_need_off_once(ole2Hdr->map, tableStreamOffset, total_needed);
     if (NULL == ole2Ptr.ptr) {
         cli_dbgmsg("ERROR: Invalid offset for OfficeArtRecordHeader%ld (0x%lx)\n", total_needed, total_needed);
