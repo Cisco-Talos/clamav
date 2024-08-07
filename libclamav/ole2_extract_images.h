@@ -699,6 +699,18 @@ static void saveImageFile( cli_ctx * ctx, ole2_pointer_t * ole2Ptr, size_t size)
         goto done;
     }
 
+
+    fprintf(stderr, "%s::%d::NEED TO ADD                  0X1400\n", __FUNCTION__, __LINE__);
+    fprintf(stderr, "%s::%d::ole2Ptr->start_block       = %u\n", __FUNCTION__, __LINE__, ole2Ptr->start_block);
+    fprintf(stderr, "%s::%d::ole2Ptr->base_ptr          = %p\n", __FUNCTION__, __LINE__, ole2Ptr->base_ptr);
+    fprintf(stderr, "%s::%d::ole2Ptr->ptr               = %p\n", __FUNCTION__, __LINE__, ole2Ptr->ptr);
+    fprintf(stderr, "%s::%d::size                       = %lu\n", __FUNCTION__, __LINE__, size);
+
+    fprintf(stderr, "%s::%d::Image should be at %lx\n", __FUNCTION__, __LINE__, 0x1400 + (ole2Ptr->ptr - ole2Ptr->base_ptr));
+
+
+
+
     fp = fdopen(out_fd, "wb");
     while (bytesWritten < size) {
         int ret = fwrite(&(ole2Ptr->ptr[bytesWritten]), 1, size - bytesWritten, fp);
@@ -917,12 +929,14 @@ fprintf(stderr, "%s::%d::added offset = %d (0x%x)\n", __FUNCTION__, __LINE__, of
         processOfficeArtBlip(ctx, ptr);
 #else
         ole2_pointer_t wordStreamPtr = {0};
-        wordStreamPtr.ptr = load_pointer_to_stream_from_fmap(hdr, wordDocBlock, fbse.foDelay, size);
-        if (NULL == wordStreamPtr.ptr){
+        wordStreamPtr.base_ptr = load_pointer_to_stream_from_fmap(hdr, wordDocBlock, 0, fbse.foDelay + size);
+
+        //wordStreamPtr.ptr = load_pointer_to_stream_from_fmap(hdr, wordDocBlock, fbse.foDelay, size);
+        if (NULL == wordStreamPtr.base_ptr){
             fprintf(stderr, "%s::%d::Handle this\n", __FUNCTION__, __LINE__);
             exit(11);
         }
-        wordStreamPtr.base_ptr = wordStreamPtr.ptr;
+        wordStreamPtr.ptr = &(wordStreamPtr.base_ptr[fbse.foDelay]);
         wordStreamPtr.start_block = wordDocBlock->start_block;
         processOfficeArtBlip(ctx, &wordStreamPtr);
 #endif
@@ -1086,7 +1100,7 @@ static void ole2_extract_images(cli_ctx * ctx, ole2_header_t * ole2Hdr, ole2_ima
     while (bytesProcessed < blipStoreRecordHeader.recLen)
     {
         //size_t off = offset + bytesProcessed;
-        size_t off = bytesProcessed;
+        //size_t off = bytesProcessed;
         OfficeArtRecordHeader imageHeader;
         //copy_OfficeArtRecordHeader(&imageHeader,  &(ole2Ptr.ptr[off]));
         copy_OfficeArtRecordHeader(&imageHeader,  ole2Ptr.ptr);
