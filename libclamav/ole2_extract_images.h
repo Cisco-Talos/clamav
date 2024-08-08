@@ -400,6 +400,9 @@ typedef struct {
  * This structure is used to keep track of a poiner's offset, to determine if it will cross
  * a block that is used by the DIFAT
  * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-cfb/05060311-bfce-4b12-874d-71fd4ce63aea
+ * The strategy is to keep updating ptr to point to the data structure that is currently being read,
+ * and compare the base pointer to determine where in the stream we are, so that we can avoid the DIFAT
+ * blocks.
  *
  * The structures that describe where images are stored don't specify that there may be
  * DIFAT blocks in the middle.
