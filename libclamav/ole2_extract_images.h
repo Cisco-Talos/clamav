@@ -694,11 +694,7 @@ static void saveImageFile( cli_ctx * ctx, ole2_header_t * ole2Hdr, ole2_pointer_
                     /*Get more space from the fmap to account for the extra block*/
                     const uint8_t * ptr = fmap_need_off_once(ole2Hdr->map, ole2Ptr->stream_file_offset, (ole2Ptr->ptr - ole2Ptr->base_ptr) + increment + size);
                     if (ptr != ole2Ptr->base_ptr) {
-#if 0
-                        ole2Ptr->ptr = &(ptr[ole2Ptr->ptr - ole2Ptr->base_ptr]);
-#else
                         update_pointer(ole2Ptr, ole2Ptr->ptr - ole2Ptr->base_ptr);
-#endif
                         ole2Ptr->base_ptr = ptr;
                     }
                 }
@@ -737,11 +733,7 @@ static void saveImageFile( cli_ctx * ctx, ole2_header_t * ole2Hdr, ole2_pointer_
     }
 
 done:
-#if 0
-    ole2Ptr->ptr = &(ole2Ptr->ptr[size + totalIncrement]);
-#else
     update_pointer(ole2Ptr, size + totalIncrement);
-#endif
 
     if (tempfile && !ctx->engine->keeptmp) {
         remove(tempfile);
@@ -774,11 +766,7 @@ static void processOfficeArtBlipGeneric(cli_ctx * ctx, ole2_header_t * ole2Hdr, 
     }
     offset += bytesAfterUIDs; /*metafile header*/
 
-#if 0
-    ole2Ptr->ptr = &(ole2Ptr->ptr[offset]);
-#else
     update_pointer(ole2Ptr, offset);
-#endif
     saveImageFile(ctx, ole2Hdr, ole2Ptr, rh->recLen - offset);
 }
 
@@ -810,11 +798,7 @@ static void processOfficeArtBlipJPEG(cli_ctx * ctx, ole2_header_t * ole2Hdr, Off
     }
     offset += 1; /*metafile header*/
 
-#if 0
-    ole2Ptr->ptr = &(ole2Ptr->ptr[offset]);
-#else
     update_pointer(ole2Ptr, offset);
-#endif
     saveImageFile(ctx, ole2Hdr, ole2Ptr, rh->recLen - offset);
 }
 
@@ -854,11 +838,7 @@ static size_t processOfficeArtBlip(cli_ctx * ctx, ole2_header_t * ole2Hdr, ole2_
 #define RECTYPE_OFFICE_ART_BLIP_TIFF 0xf029
 #define RECTYPE_OFFICE_ART_BLIP_JPEG2 0xf02a
 
-#if 0
-    ole2Ptr->ptr = &(ole2Ptr->ptr[offset]);
-#else
     update_pointer(ole2Ptr, offset);
-#endif
     switch (rh.recType) {
         case RECTYPE_OFFICE_ART_BLIP_EMF:
             processOfficeArtBlipEMF(ctx, ole2Hdr, &rh, ole2Ptr);
@@ -889,11 +869,7 @@ static size_t processOfficeArtBlip(cli_ctx * ctx, ole2_header_t * ole2Hdr, ole2_
     }
 
 done:
-#if 0
-    ole2Ptr->ptr = &(ole2Ptr->ptr[sizeof(rh) + rh.recLen]);
-#else
     update_pointer(ole2Ptr, sizeof(rh) + rh.recLen);
-#endif
     return (sizeof(rh) + rh.recLen);
 }
 
@@ -920,19 +896,11 @@ static size_t processOfficeArtFBSE(cli_ctx * ctx, ole2_header_t *hdr, OfficeArtR
 
     offset += fbse.cbName;
 
-#if 0
-    ole2Ptr->ptr = &(ole2Ptr->ptr[offset]);
-#else
     update_pointer(ole2Ptr, offset);
-#endif
     if (imageHeader->recLen == (sizeof(OfficeArtFBSEKnown) + fbse.cbName + fbse.size)) {
         /* The BLIP is embedded in this record*/ 
         processOfficeArtBlip(ctx, hdr, ole2Ptr);
-#if 0
-        ole2Ptr->ptr = &(ole2Ptr->ptr[fbse.size]);
-#else
     update_pointer(ole2Ptr, fbse.size);
-#endif
         offset += fbse.size;
     } else {
         /* The BLIP is in the 'WordDocument' stream. */
