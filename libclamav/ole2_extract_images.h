@@ -396,6 +396,24 @@ typedef struct {
     bool table_stream_1_initialized;
 } ole2_image_directory_t;
 
+/*
+ * This structure is used to keep track of a poiner's offset, to determine if it will cross
+ * a block that is used by the DIFAT
+ * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-cfb/05060311-bfce-4b12-874d-71fd4ce63aea
+ *
+ * The structures that describe where images are stored don't specify that there may be
+ * DIFAT blocks in the middle.
+ *
+ * stream_file_offset is the offset of the Stream in the file.  For example, the WordDocument, 0Table, etc.
+ *
+ * base_ptr is the beginning of the Stream pointer in the fmap
+ *
+ * ptr is the offset of where the actual data is.
+ *
+ * To calculate an actual location in the file, it use
+ *
+ * stream_file_offset + (ptr - base_ptr)
+ */
 typedef struct __attribute__((packed)) {
 
     size_t stream_file_offset;
@@ -620,6 +638,13 @@ static void copy_OfficeArtFBSEKnown (OfficeArtFBSEKnown * dst, const uint8_t * c
     dst->foDelay = ole2_endian_convert_32(dst->foDelay);
 }
 
+/*
+ * The OfficeArtBlip data structures don't specify that there could be DIFAT blocks in the middle
+ * of the image data, so this function skips over the DIFAT records to make sure to save
+ * the correct file data.
+ *
+ * See the definition of ole_poiter_t for more information.
+ */
 static void saveImageFile( cli_ctx * ctx, ole2_header_t * ole2Hdr, ole2_pointer_t * ole2Ptr, size_t size){
 
     char *tempfile = NULL;
