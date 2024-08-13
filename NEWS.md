@@ -7,6 +7,22 @@ differ slightly from third-party binary packages.
 
 ClamAV 1.0.7 is a patch release with the following fixes:
 
+- Fix unit test caused by expiring signing certificate.
+  - Backport of [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1305)
+
+- Fixed a build issue on Windows with newer versions of Rust.
+  Also upgraded GitHub Actions imports to fix CI failures.
+  Fixes courtesy of liushuyu.
+  - Backport of [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1307)
+
+- Fixed an unaligned pointer dereference issue on select architectures.
+  Fix courtesy of Sebastian Andrzej Siewior.
+  - Backport of [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1293)
+
+- Fixes to Jenkins CI pipeline.
+
+For details, see [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1331)
+
 ## 1.0.6
 
 ClamAV 1.0.6 is a critical patch release with the following fixes:
