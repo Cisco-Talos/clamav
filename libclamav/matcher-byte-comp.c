@@ -36,7 +36,7 @@
 #include "str.h"
 
 /* DEBUGGING */
-//#define MATCHER_BCOMP_DEBUG
+// #define MATCHER_BCOMP_DEBUG
 #ifdef MATCHER_BCOMP_DEBUG
 #define bcm_dbgmsg(...) cli_dbgmsg(__VA_ARGS__)
 #else

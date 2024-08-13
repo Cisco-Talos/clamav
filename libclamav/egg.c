@@ -99,7 +99,7 @@ typedef uint16_t WCHAR;
  * general defines
  */
 #define EOFARC 0x08E28222 /* Signals end of each header, or end of archive. */
-//#define EOFAR_ 0x2282E208
+// #define EOFAR_ 0x2282E208
 /*
  * egg_header
  */
