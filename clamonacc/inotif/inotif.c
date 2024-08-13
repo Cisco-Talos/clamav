@@ -154,7 +154,7 @@ int onas_ddd_init(uint64_t nwatches, size_t ht_size)
     if (ret < 0) return CL_EREAD;
 
     tmp = strtol(nwatch_str, &p, 10);
-    if (tmp < 0 || tmp == LONG_MAX){
+    if (tmp < 0 || tmp == LONG_MAX) {
         /*Seems like a sane value (also the value on my ubuntu system)*/
         nwatches = 0x10000;
     } else {

@@ -358,7 +358,7 @@ struct IS_CABSTUFF {
         unsigned int cabno;
         off_t off;
         size_t sz;
-    } * cabs;
+    } *cabs;
     off_t hdr;
     size_t hdrsz;
     unsigned int cabcnt;

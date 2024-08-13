@@ -1882,7 +1882,7 @@ static bool cli_html_normalise(cli_ctx *ctx, int fd, m_area_t *m_area, const cha
     }
 
     if (style_buff != NULL) {
-        // Found contents of <style> ... </style> block. 
+        // Found contents of <style> ... </style> block.
         // Search it for images embedded in the CSS.
         cl_error_t ret = html_style_block_handler(ctx, (const char *)style_buff);
         if (CL_SUCCESS != ret) {

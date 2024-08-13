@@ -106,7 +106,7 @@ void LLVMInitializePowerPCAsmPrinter();
 
 #include "llvm/IR/Dominators.h"
 
-//#define TIMING
+// #define TIMING
 #undef TIMING
 
 #include "llvm/Config/llvm-config.h"

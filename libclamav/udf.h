@@ -66,10 +66,9 @@ typedef struct __attribute__((packed)) {
 
 } lb_addr;
 
-
 // Long allocation descriptor
 typedef struct __attribute__((packed)) {
-    uint32_t length; //4/14.14.1.1
+    uint32_t length; // 4/14.14.1.1
     /*30 least significant bits are length in bytes.
      *
      * 2 most significant bits are described in figure 4/42
@@ -80,7 +79,7 @@ typedef struct __attribute__((packed)) {
      * 3 the extent is the next extent of allocation descriptors.
      * */
 
-    lb_addr extentLocation; //logical block number.  (CAN be zero)
+    lb_addr extentLocation; // logical block number.  (CAN be zero)
 
     uint8_t implementationUse[6];
 
@@ -158,8 +157,8 @@ typedef struct __attribute__((packed)) {
     uint16_t partitionReferenceNumber;
 } LBAddr;
 
-//https://www.ecma-international.org/wp-content/uploads/ECMA-167_3rd_edition_june_1997.pdf
-//section 4/23
+// https://www.ecma-international.org/wp-content/uploads/ECMA-167_3rd_edition_june_1997.pdf
+// section 4/23
 typedef struct __attribute__((packed)) {
     uint32_t priorRecordedNumberOfDirectEntries;
     uint16_t strategyType;
@@ -211,10 +210,7 @@ static uint32_t getFileIdentifierDescriptorPaddingLength(const FileIdentifierDes
 
 static inline size_t getFileIdentifierDescriptorSize(const FileIdentifierDescriptor* fid)
 {
-    return FILE_IDENTIFIER_DESCRIPTOR_SIZE_KNOWN
-        + le16_to_host(fid->implementationLength)
-        + fid->fileIdentifierLength
-        + getFileIdentifierDescriptorPaddingLength(fid);
+    return FILE_IDENTIFIER_DESCRIPTOR_SIZE_KNOWN + le16_to_host(fid->implementationLength) + fid->fileIdentifierLength + getFileIdentifierDescriptorPaddingLength(fid);
 }
 
 typedef struct __attribute__((packed)) {
@@ -258,7 +254,7 @@ typedef struct __attribute__((packed)) {
     uint32_t allocationDescLen;
 
     /* Variable length stuff here, need to handle;
-    */
+     */
     uint8_t rest[1];
 
 } FileEntryDescriptor;
@@ -290,7 +286,7 @@ typedef struct __attribute__((packed)) {
 
     uint64_t infoLength;
 
-    uint64_t objectSize; //different
+    uint64_t objectSize; // different
 
     uint64_t logicalBlocksRecorded;
 
@@ -298,17 +294,17 @@ typedef struct __attribute__((packed)) {
 
     timestamp modificationDateTime;
 
-    timestamp creationDateTime; //different
+    timestamp creationDateTime; // different
 
     timestamp attributeDateTime;
 
     uint32_t checkpoint;
 
-    uint32_t reserved; //different
+    uint32_t reserved; // different
 
     long_ad extendedAttrICB;
 
-    long_ad streamDirectoryICB; //different
+    long_ad streamDirectoryICB; // different
 
     regid implementationId;
 
@@ -319,7 +315,7 @@ typedef struct __attribute__((packed)) {
     uint32_t allocationDescLen;
 
     /* Variable length stuff here, need to handle;
-    */
+     */
 
 } ExtendedFileEntryDescriptor;
 
@@ -469,7 +465,7 @@ typedef struct __attribute__((packed)) {
 
     charspec descriptorCharSet;
 
-    uint8_t logicalVolumeIdentifier[128]; //TODO: handle dstring
+    uint8_t logicalVolumeIdentifier[128]; // TODO: handle dstring
 
     uint32_t logicalBlockSize;
 
@@ -487,7 +483,7 @@ typedef struct __attribute__((packed)) {
 
     ext_ad integritySequenceExtent;
 
-    uint8_t partitionMaps[1]; //actual length of mapTableLength above;
+    uint8_t partitionMaps[1]; // actual length of mapTableLength above;
 
 } LogicalVolumeDescriptor;
 
@@ -521,7 +517,7 @@ typedef struct __attribute__((packed)) {
 
 } FileSetDescriptor;
 
-typedef struct  __attribute__((packed)) {
+typedef struct __attribute__((packed)) {
     uint8_t structType;
     char standardIdentifier[5];
     uint8_t structVersion;

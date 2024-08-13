@@ -22,11 +22,11 @@
 #include <errno.h>
 
 #include <Windows.h>
-//#include "clamav.h"
-//#include "others.h"
+// #include "clamav.h"
+// #include "others.h"
 #include "dirent.h"
 #include "w32_stat.h"
-//#include "misc.h"
+// #include "misc.h"
 
 DIR *opendir(const char *name)
 {
