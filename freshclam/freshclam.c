@@ -993,7 +993,6 @@ static fc_error_t initialize(struct optstruct *opts)
     }
 #endif /* HAVE_PWD_H */
 
-
     /*
      * Set libfreshclam callback functions.
      */

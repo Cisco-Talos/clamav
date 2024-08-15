@@ -126,49 +126,48 @@ const char *fc_strerror(fc_error_t fcerror)
 int fc_upsert_logg_file(fc_config *fcConfig)
 {
     int ret = 0;
-    char* current_dir = "/";
-    char* file_path = strdup(fcConfig->logFile);
-    char* log_file = fcConfig->logFile;
-    char* token = strtok(file_path, "/");
-    FILE *logg_fp = NULL;
-    struct passwd *current_user = getpwuid(getuid());
-    struct passwd *db_owner = getpwnam(fcConfig->dbOwner);
-    current_dir = (char*)malloc(2);
-    strcpy(current_dir, "/");
+    char *current_path, *file_path = strdup(fcConfig->logFile), *token;
+    FILE *logg_fp               = NULL;
+    token                       = strtok(file_path, PATHSEP);
+    struct passwd *current_user = getpwuid(getuid()), *db_owner = getpwnam(fcConfig->dbOwner);
+    current_path = (char *)malloc(2);
+    strcpy(current_path, PATHSEP);
     STATBUF sb;
 
     while (token != NULL) {
-        current_dir = (char*)realloc(current_dir, strlen(current_dir) + strlen(token) + 2);
-        strcat(current_dir, token);
-        token = strtok(NULL, "/");
-        if(token == NULL) {
+        current_path = (char *)realloc(current_path, strlen(current_path) + strlen(token) + 2);
+        strcat(current_path, token);
+        token = strtok(NULL, PATHSEP);
+        if (token == NULL) {
             break;
         }
-        if(LSTAT(current_dir, &sb) == -1) {
-            if(mkdir(current_dir, 0755) == -1) {
-                printf("ERROR: Failed to create required directory %s. Will continue without writing in %s.\n", current_dir, log_file);
+        if (LSTAT(current_path, &sb) == -1) {
+            if (mkdir(current_path, 0755) == -1) {
+                printf("ERROR: Failed to create required directory %s. Will continue without writing in %s.\n", current_path, fcConfig->logFile);
                 ret = -1;
                 goto cleanup;
             }
-            if(chown(current_dir, db_owner->pw_uid, db_owner->pw_gid) == -1) {
-                printf("ERROR: Failed to change owner of %s to %s. Will continue without writing in %s.\n", current_dir, fcConfig->dbOwner, log_file);
-                ret = -1;
-                goto cleanup;
+            if (current_user->pw_uid != db_owner->pw_uid) {
+                if (chown(current_path, db_owner->pw_uid, db_owner->pw_gid) == -1) {
+                    printf("ERROR: Failed to change owner of %s to %s. Will continue without writing in %s.\n", current_path, fcConfig->dbOwner, fcConfig->logFile);
+                    ret = -1;
+                    goto cleanup;
+                }
             }
         }
-        strcat(current_dir, "/");
+        strcat(current_path, PATHSEP);
     }
-    if ((logg_fp = fopen(log_file, "at")) == NULL) {
-        printf("ERROR: Can't open %s in append mode (check permissions!).\n", log_file);
+    if ((logg_fp = fopen(fcConfig->logFile, "at")) == NULL) {
+        printf("ERROR: Can't open %s in append mode (check permissions!).\n", fcConfig->logFile);
         ret = -1;
         goto cleanup;
     }
-    lchown(log_file, db_owner->pw_uid, db_owner->pw_gid);
+    lchown(fcConfig->logFile, db_owner->pw_uid, db_owner->pw_gid);
 
 cleanup:
-    free(current_dir);
+    free(current_path);
     free(file_path);
-    if(logg_fp != NULL) {
+    if (logg_fp != NULL) {
         fclose(logg_fp);
     }
 
