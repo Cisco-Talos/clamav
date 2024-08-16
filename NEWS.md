@@ -3,6 +3,10 @@
 Note: This file refers to the source tarball. Things described here may differ
  slightly from the binary packages.
 
+## 0.103.12
+
+ClamAV 0.103.12 is a patch release with the following fixes:
+
 ## 0.103.11
 
 ClamAV 0.103.11 is a patch release with the following fixes:
