@@ -194,9 +194,6 @@ void messageReset(message *m)
         free(m->encodingTypes);
     }
 
-    if (m->jobj)
-        cli_json_delobj(m->jobj);
-
     memset(m, '\0', sizeof(message));
     m->mimeType = NOMIME;
 }
@@ -2666,16 +2663,4 @@ int isuuencodebegin(const char *line)
     return (strncasecmp(line, "begin ", 6) == 0) &&
            isdigit(line[6]) && isdigit(line[7]) &&
            isdigit(line[8]) && (line[9] == ' ');
-}
-
-json_object *messageGetJObj(message *m)
-{
-    if (m == NULL) {
-        return NULL;
-    }
-
-    if (m->jobj == NULL)
-        m->jobj = cli_jsonobj(NULL, NULL);
-
-    return m->jobj;
 }

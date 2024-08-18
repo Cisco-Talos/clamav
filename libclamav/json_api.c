@@ -352,45 +352,6 @@ json_object *cli_jsonobj(json_object *obj, const char *key)
     return newobj;
 }
 
-/* adding an object does NOT increment reference count */
-cl_error_t cli_json_addowner(json_object *owner, json_object *child, const char *key, int idx)
-{
-    json_type objty;
-    if (NULL == owner) {
-        cli_dbgmsg("json: no owner object specified to cli_json_addowner\n");
-        return CL_ENULLARG;
-    }
-
-    if (NULL == child) {
-        cli_dbgmsg("json: no child object specified to cli_json_addowner\n");
-        return CL_ENULLARG;
-    }
-    objty = json_object_get_type(owner);
-
-    if (objty == json_type_object) {
-        if (NULL == key) {
-            cli_dbgmsg("json: null string specified as key to cli_addowner\n");
-            return CL_ENULLARG;
-        }
-        json_object_object_add(owner, key, child);
-    } else if (objty == json_type_array) {
-        if (idx < 0 || NULL == json_object_array_get_idx(owner, idx))
-            json_object_array_add(owner, child);
-        else if (0 != json_object_array_put_idx(owner, idx, child)) {
-            /* this shouldn't be possible */
-            cli_dbgmsg("json: cannot delete idx %d of owner array\n", idx);
-            return CL_BREAK;
-        }
-    } else {
-        cli_dbgmsg("json: no owner object cannot hold ownership\n");
-        return CL_EARG;
-    }
-
-    /* increment reference count */
-    json_object_get(child);
-    return CL_SUCCESS;
-}
-
 /* deleting an object DOES decrement reference count */
 cl_error_t cli_json_delowner(json_object *owner, const char *key, int idx)
 {

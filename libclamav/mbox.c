@@ -4228,10 +4228,10 @@ do_multipart(message *mainMessage, message **messages, int i, mbox_status *rc, m
         json_object *multiobj = cli_jsonarray(mctx->wrkobj, "Multipart");
         if (multiobj == NULL) {
             cli_errmsg("Cannot get multipart preclass array\n");
-        } else if (NULL == (thisobj = messageGetJObj(aMessage))) {
-            cli_dbgmsg("Cannot get message preclass object\n");
-        } else if (CL_SUCCESS != cli_json_addowner(multiobj, thisobj, NULL, -1)) {
-            cli_errmsg("Cannot assign message preclass object to multipart preclass array\n");
+        } else if (NULL == (thisobj = cli_jsonobj(NULL, NULL))) {
+            cli_dbgmsg("Cannot allocate new json object for message part.\n");
+        } else {
+            json_object_array_add(multiobj, thisobj);
         }
     }
 
