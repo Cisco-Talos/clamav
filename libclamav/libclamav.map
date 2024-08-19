@@ -302,6 +302,9 @@ CLAMAV_PRIVATE {
     cli_magic_scan_buff;
     cli_checklimits;
     cli_matchmeta;
+    cli_setup_fips_configuration;
+    cli_fips_mode;
+    cli_get_fips_mode;
 
     __cli_strcasestr;
     __cli_strndup;

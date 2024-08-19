@@ -31,6 +31,7 @@
 
 cl_error_t cli_versig(const char *md5, const char *dsig);
 int cli_versig2(const unsigned char *sha256, const char *dsig_str, const char *n_str, const char *e_str);
+cl_error_t cli_sigver_external(const char *file);
 
 /**
  * @brief Connect to a signing server, send the data to be signed, and return the digital signature.

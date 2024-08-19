@@ -34,6 +34,7 @@
 
 #include "clamav.h"
 #include "others.h"
+#include "crypto.h"
 #include "dsig.h"
 #include "str.h"
 
@@ -423,4 +424,220 @@ done:
     BN_free(n);
     BN_free(e);
     return ret;
+}
+
+int cli_hex2bin(const char *hex, unsigned char *bin, int len)
+{
+    // Use tricks to do this fast and without memory violations
+    unsigned char *in = (unsigned char *)hex;
+    unsigned char *out = bin;
+    int retlen = len/2;
+
+    while (len--) {
+        *out = 0;
+        if (*in >= '0' && *in <= '9')
+            *out = *in - '0';
+        else if (*in >= 'A' && *in <= 'F')
+            *out = *in - 'A' + 10;
+        else if (*in >= 'a' && *in <= 'f')
+            *out = *in - 'a' + 10;
+        else
+            return -1;
+        in++;
+        *out <<= 4;
+        if (*in >= '0' && *in <= '9')
+            *out |= *in - '0';
+        else if (*in >= 'A' && *in <= 'F')
+            *out |= *in - 'A' + 10;
+        else if (*in >= 'a' && *in <= 'f')
+            *out |= *in - 'a' + 10;
+        else
+            return -1;
+        in++;
+        out++;
+    }
+    return retlen;
+}
+
+cl_error_t cli_sigver_external(const char *file)
+{
+    cl_error_t result = CL_ERROR;
+    unsigned char sha256_bin[SHA256_DIGEST_LENGTH];
+    char *sha256 = NULL;
+    unsigned char *sig_bin = NULL;
+
+    // Use the built-in method to hash the CVD file.
+    FILE *fs = fopen(file, "rb");
+    if (fs == NULL) {
+        cli_errmsg("cli_cvd_ext_sig_verify: Can't open file %s\n", file);
+        return CL_EOPEN;
+    }
+    fseek(fs, 512, SEEK_SET);
+    sha256 = cli_hashstream(fs, NULL, 3);
+    fclose(fs);
+    if (sha256 == NULL) {
+        cli_errmsg("cli_cvd_ext_sig_verify: Can't generate SHA256 hash\n");
+        result = CL_EMEM;
+        goto done;
+    }
+    cli_dbgmsg("SHA256(.tar.gz) = %s\n", sha256);
+
+    // Build the RSA key from the exponent and modulus
+#if OPENSSL_VERSION_MAJOR == 1
+    RSA *rsa = cli_build_ext_signing_key();
+    if (rsa == NULL) {
+        cli_errmsg("cli_cvd_ext_sig_verify: Can't create RSA key from public key\n");
+        result = CL_EVERIFY;
+        goto done;
+    }
+#elif OPENSSL_VERSION_MAJOR == 3
+    EVP_PKEY *rsa = cli_build_ext_signing_key();
+    if (rsa == NULL) {
+        cli_errmsg("cli_cvd_ext_sig_verify: Can't create RSA key from public key\n");
+        result = CL_EVERIFY;
+        goto done;
+    }
+#else
+    #error "Unsupported OpenSSL version"
+#endif
+
+    // Convert the sha256 hash to binary
+    if (cli_hex2bin(sha256, sha256_bin, SHA256_DIGEST_LENGTH) == -1) {
+        cli_errmsg("cli_cvd_ext_sig_verify: Can't convert sha256 hash to binary\n");
+        result = CL_EVERIFY;
+        goto done;
+    }
+
+    //
+    // External Signature processing
+    //
+
+    // Load the external signature file
+    char *sigfile = strdup(file);
+    if (sigfile == NULL) {
+        cli_errmsg("cli_cvd_ext_sig_verify: Can't allocate memory for signature file name\n");
+        result = CL_EMEM;
+        goto done;
+    }
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wstringop-truncation"
+    strncpy(sigfile + strlen(sigfile) - 4, ".sig", 4);
+    #pragma GCC diagnostic pop
+    fs = fopen(sigfile, "rb");
+    if (fs == NULL) {
+        cli_errmsg("cli_cvd_ext_sig_verify: Can't open signature file %s\n", sigfile);
+        result = CL_EOPEN;
+        goto done;
+    }
+
+    // Read the signature file
+    fseek(fs, 0, SEEK_END);
+    size_t siglen = (size_t) ftell(fs);
+    fseek(fs, 0, SEEK_SET);
+    char *sig = (char *)malloc(siglen+1);
+    if (sig == NULL) {
+        cli_errmsg("cli_cvd_ext_sig_verify: Can't allocate memory for signature\n");
+        fclose(fs);
+        result = CL_EMEM;
+        goto done;
+    }
+
+    if (fread(sig, 1, siglen, fs) != siglen) {
+        cli_errmsg("cli_cvd_ext_sig_verify: Can't read signature from file\n");
+        fclose(fs);
+        result = CL_EVERIFY;
+        goto done;
+    }
+    sig[siglen] = 0;
+    fclose(fs);
+
+    // Extract the parts of the signature file
+    // it's kept in a format like: "SHA256 hash hex:RSA signature hex"
+    char *sig_seperator = strchr(sig, ':');
+    if (sig_seperator == NULL) {
+        cli_errmsg("cli_cvd_ext_sig_verify: Can't find signature in external database signature file\n");
+        result = CL_EVERIFY;
+        goto done;
+    }
+    *sig_seperator = 0;
+    sig_seperator++;
+    siglen = strlen(sig_seperator)/2;
+    sig_bin = (unsigned char *)malloc(siglen);
+    if (sig_bin == NULL) {
+        cli_errmsg("cli_cvd_ext_sig_verify: Can't allocate memory for signature binary\n");
+        result = CL_EMEM;
+        goto done;
+    }
+
+    // convert the signature to binary
+    if (cli_hex2bin(sig_seperator, sig_bin, siglen) == -1) {
+        cli_errmsg("cli_cvd_ext_sig_verify: Can't convert signature to binary\n");
+        result = CL_EVERIFY;
+    }
+
+    // If we are using a verson of openssl less than 3.0.0, we need to use the RSA_verify function
+#if OPENSSL_VERSION_MAJOR == 1
+    // verify the signature
+    //int sig_verify = RSA_verify(NID_sha256, sha256, strlen(sha256), sig_bin, siglen, rsa);
+    int sig_verify = RSA_verify(NID_sha256, sha256_bin, SHA256_DIGEST_LENGTH, sig_bin, siglen, rsa);
+    if (sig_verify != 1) {
+        cli_errmsg("cli_cvd_ext_sig_verify: RSA signature verification failed for external database signature\n");
+        result = CL_EVERIFY;
+        goto done;
+    }
+    else {
+        cli_dbgmsg("cli_cvd_ext_sig_verify: RSA signature verification successful for external database signature\n");
+        result = CL_SUCCESS;
+    }
+#elif OPENSSL_VERSION_MAJOR == 3
+    // verify the signature
+    EVP_PKEY_CTX *pctx = NULL;
+    
+    pctx = EVP_PKEY_CTX_new(rsa, NULL);
+    if (pctx == NULL) {
+        cli_errmsg("cli_cvd_ext_sig_verify: Can't create EVP_PKEY_CTX\n");
+        result = CL_EVERIFY;
+        goto done;
+    }
+
+    if (EVP_PKEY_verify_init(pctx) != 1) {
+        cli_errmsg("cli_cvd_ext_sig_verify: Can't initialize EVP_PKEY_verify_init\n");
+        result = CL_EVERIFY;
+        goto done;
+    }
+
+    if (EVP_PKEY_CTX_set_signature_md(pctx, EVP_sha256()) != 1) {
+        cli_errmsg("cli_cvd_ext_sig_verify: Can't set signature MD\n");
+        result = CL_EVERIFY;
+        goto done;
+    }
+
+    if (EVP_PKEY_verify(pctx, sig_bin, siglen, sha256_bin, SHA256_DIGEST_LENGTH) != 1) {
+        cli_errmsg("cli_cvd_ext_sig_verify: RSA signature verification failed for external database signature\n");
+        result = CL_EVERIFY;
+        goto done;
+    }
+    else {
+        cli_dbgmsg("cli_cvd_ext_sig_verify: RSA signature verification successful for external database signature\n");
+        result = CL_SUCCESS;
+    }
+
+     if(pctx) EVP_PKEY_CTX_free(pctx);
+#else
+    #error "Unsupported OpenSSL version"
+#endif
+
+done:
+    // Clean up
+    if (sig)        free(sig);
+    if (sigfile)    free(sigfile);
+    if (sha256)     free(sha256);
+    if (sig_bin)    free(sig_bin);
+#if OPENSSL_VERSION_NUMBER < 0x30000000L
+    if (rsa)        RSA_free(rsa);
+#else
+    if (rsa)        EVP_PKEY_free(rsa);
+#endif
+
+    return result;
 }

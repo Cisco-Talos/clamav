@@ -52,6 +52,17 @@
 #include <fcntl.h>
 
 #include <openssl/evp.h>
+#include <openssl/crypto.h>
+#include <openssl/provider.h>
+#include <openssl/opensslv.h>
+#include <openssl/param_build.h>
+#include <openssl/err.h>
+
+// These are the public key components for the external signature
+// Ideally these should be packaged in a way that allows individual entites
+// to use their own keys if they should so desire.
+#define CLI_NSTR_EXT_SIG "E32B3AC1D501EE975296A45BA65DD699100DADD340FF3BBD1F1030C66D6BB16DBFBD53DF4D97BBD42EF8FC777E7C114A6074A87DD8095A5C08B3DD7B85817713047647EF396C58358C5C22B5C3ADF85CE8D0ABC429F89E936EC917B64DD00E02A712E6666FAE1A71591092BCEE59E3141758C4719B4B08589117B0FF7CDBDBB261F8486A193E2E720AE0B16D40DD5E56E97346CBD8010DC81B35332F41C9E93E61490802DDCDFC823D581BA6888588968C68A3C95B93949AF411682E73323F7469473F668B0958F6966849FF03BDE808866D127A2C058B16F17C741A9EE50812A5C7841224E55BF7ADDB5AEAE8EB5476F9BC8740178AB35926D5DC375583C641"
+#define CLI_ESTR_EXT_SIG "010001"
 
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
 #define X509_CRL_get0_nextUpdate X509_CRL_get_nextUpdate
@@ -126,6 +137,74 @@ time_t timegm(struct tm *t)
 #endif
 
 /**
+ * This variable determines if we are operating in FIPS mode, default to no.
+  */
+int cli_fips_mode = 0;
+
+/**
+ * @brief This function determines if we are running in FIPS mode and sets the cl_fips_mode variable
+ * 
+ * This function is called by cl_init() and does not need to be called by the user
+ * 
+ * @return int Returns 1 if we are running in FIPS mode, 0 otherwise
+ * 
+ */
+
+void cli_setup_fips_configuration(void)
+{
+    #if OPENSSL_VERSION_MAJOR == 1
+    // OpenSSL 1.x (1.0 or 1.1)
+    #ifdef OPENSSL_FIPS
+        if (FIPS_mode()) {
+            cli_infomsg_simple("cl_setup_fips_configuration: FIPS mode provider found.\n");
+            cl_fips_mode = 1;
+        } else {
+            cli_infomsg_simple("cl_setup_fips_configuration: FIPS mode provider was not found.\n");
+            cl_fips_mode = 0;
+        }
+    #else
+        cl_fips_mode = 0;
+    #endif
+
+    #elif OPENSSL_VERSION_MAJOR == 3
+        // OpenSSL 3.0.x
+        OSSL_LIB_CTX *libctx = OSSL_LIB_CTX_new();
+        if (libctx == NULL) {
+            cli_warnmsg("cl_setup_fips_configuration: Failed to create libctx.\n");
+            cli_fips_mode = 0;
+            return;
+        }
+
+        OSSL_PROVIDER *fips = OSSL_PROVIDER_load(libctx, "fips");
+        if (fips != NULL) {
+            cli_infomsg_simple("cl_setup_fips_configuration: FIPS mode provider found.\n");
+            cli_fips_mode = 1;
+            OSSL_PROVIDER_unload(fips);
+            OSSL_LIB_CTX_free(libctx);
+        } else {
+            cli_infomsg_simple("cl_setup_fips_configuration: FIPS mode provider was not found.\n");
+            cli_fips_mode = 0;
+            OSSL_LIB_CTX_free(libctx);
+        }
+    #else
+        #error "Unsupported OpenSSL version"
+    #endif
+}
+
+/**
+ * @brief Return the status of our FIPS condition.  
+ * 
+ * This function allows users of the library to determine if the library is running in FIPS mode.
+ * 
+ * @return int Returns 1 if we are running in FIPS mode, 0 otherwise
+ */
+
+int cli_get_fips_mode(void)
+{
+    return cli_fips_mode;
+}
+
+/**
  * @brief This function initializes the openssl crypto system
  *
  * Called by cl_init() and does not need to be cleaned up as de-init
@@ -144,6 +223,8 @@ int cl_initialize_crypto(void)
     OpenSSL_add_all_ciphers();
     ERR_load_crypto_strings();
 #endif
+
+    cli_setup_fips_configuration();
 
     return 0;
 }
@@ -170,7 +251,12 @@ unsigned char *cl_hash_data(const char *alg, const void *buf, size_t len, unsign
     size_t cur;
     int winres = 0;
 
-    md = EVP_get_digestbyname(alg);
+    // If OpenSSL is running in FIPS mode, we need to use the FIPS-compliant md5 lookup of the algorithm
+    if (cli_fips_mode && !strncasecmp(alg, "md5", 3))
+        md = EVP_MD_fetch(NULL, alg, "-fips");
+    else
+        md = EVP_get_digestbyname(alg);
+
     if (!(md))
         return NULL;
 
@@ -260,7 +346,12 @@ unsigned char *cl_hash_file_fd(int fd, const char *alg, unsigned int *olen)
     const EVP_MD *md;
     unsigned char *res;
 
-    md = EVP_get_digestbyname(alg);
+    // If OpenSSL is running in FIPS mode, we need to use the FIPS-compliant md5 lookup of the algorithm
+    if (cli_fips_mode && !strncasecmp(alg, "md5", 3))
+        md = EVP_MD_fetch(NULL, alg, "-fips");
+    else
+        md = EVP_get_digestbyname(alg);
+
     if (!(md))
         return NULL;
 
@@ -392,7 +483,12 @@ int cl_verify_signature_hash(EVP_PKEY *pkey, const char *alg, unsigned char *sig
     const EVP_MD *md;
     size_t mdsz;
 
-    md = EVP_get_digestbyname(alg);
+    // If OpenSSL is running in FIPS mode, we need to use the FIPS-compliant md5 lookup of the algorithm
+    if (cli_fips_mode && !strncasecmp(alg, "md5", 3))
+        md = EVP_MD_fetch(NULL, alg, "-fips");
+    else
+        md = EVP_get_digestbyname(alg);
+
     if (!(md))
         return -1;
 
@@ -437,7 +533,12 @@ int cl_verify_signature_fd(EVP_PKEY *pkey, const char *alg, unsigned char *sig, 
     if (!(digest))
         return -1;
 
-    md = EVP_get_digestbyname(alg);
+    // If OpenSSL is running in FIPS mode, we need to use the FIPS-compliant md5 lookup of the algorithm
+    if (cli_fips_mode && !strncasecmp(alg, "md5", 3))
+        md = EVP_MD_fetch(NULL, alg, "-fips");
+    else
+        md = EVP_get_digestbyname(alg);
+
     if (!(md)) {
         free(digest);
         return -1;
@@ -506,7 +607,12 @@ int cl_verify_signature(EVP_PKEY *pkey, const char *alg, unsigned char *sig, uns
         return -1;
     }
 
-    md = EVP_get_digestbyname(alg);
+    // If OpenSSL is running in FIPS mode, we need to use the FIPS-compliant md5 lookup of the algorithm
+    if (cli_fips_mode && !strncasecmp(alg, "md5", 3))
+        md = EVP_MD_fetch(NULL, alg, "-fips");
+    else
+        md = EVP_get_digestbyname(alg);
+
     if (!(md)) {
         free(digest);
         if (decode)
@@ -725,7 +831,12 @@ unsigned char *cl_sign_data(EVP_PKEY *pkey, const char *alg, unsigned char *hash
     unsigned int siglen;
     unsigned char *sig;
 
-    md = EVP_get_digestbyname(alg);
+    // If OpenSSL is running in FIPS mode, we need to use the FIPS-compliant md5 lookup of the algorithm
+    if (cli_fips_mode && !strncasecmp(alg, "md5", 3))
+        md = EVP_MD_fetch(NULL, alg, "-fips");
+    else
+        md = EVP_get_digestbyname(alg);
+
     if (!(md))
         return NULL;
 
@@ -1148,7 +1259,12 @@ void *cl_hash_init(const char *alg)
     EVP_MD_CTX *ctx;
     const EVP_MD *md;
 
-    md = EVP_get_digestbyname(alg);
+    // If OpenSSL is running in FIPS mode, we need to use the FIPS-compliant md5 lookup of the algorithm
+    if (cli_fips_mode && !strncasecmp(alg, "md5", 3))
+        md = EVP_MD_fetch(NULL, alg, "-fips");
+    else
+        md = EVP_get_digestbyname(alg);
+
     if (!(md))
         return NULL;
 
@@ -1210,3 +1326,125 @@ void cl_hash_destroy(void *ctx)
 
     EVP_MD_CTX_destroy((EVP_MD_CTX *)ctx);
 }
+
+#if OPENSSL_VERSION_MAJOR == 1
+RSA *cli_build_ext_signing_key(void)
+{
+    RSA *rsa = RSA_new();
+    BIGNUM *n = BN_new();
+    BIGNUM *e = BN_new();
+
+    if (!rsa || !n || !e) {
+        RSA_free(rsa);
+        BN_free(n);
+        BN_free(e);
+        return NULL;
+    }
+
+    if (!BN_hex2bn(&n, CLI_NSTR_EXT_SIG) || !BN_hex2bn(&e, CLI_ESTR_EXT_SIG)) {
+        RSA_free(rsa);
+        BN_free(n);
+        BN_free(e);
+        return NULL;
+    }
+    rsa->n = n;
+    rsa->e = e;
+
+    return rsa;
+}
+#elif OPENSSL_VERSION_MAJOR == 3
+// Do this the OpenSSL 3 way, avoiding deprecation warnings
+EVP_PKEY *cli_build_ext_signing_key(void)
+{
+    EVP_PKEY *pkey = EVP_PKEY_new();
+    BIGNUM *n = BN_new();
+    BIGNUM *e = BN_new();
+    OSSL_PARAM_BLD *bld = OSSL_PARAM_BLD_new();
+    OSSL_PARAM *params = NULL;
+    int result = 0;
+
+    // Check bld and params
+    if (!pkey || !n || !e || !bld) {
+        EVP_PKEY_free(pkey);
+        BN_free(n);
+        BN_free(e);
+        OSSL_PARAM_BLD_free(bld);
+        return NULL;
+    }
+
+    // Set the public key components
+    if (!BN_hex2bn(&n, CLI_NSTR_EXT_SIG) || !BN_hex2bn(&e, CLI_ESTR_EXT_SIG)) {
+        EVP_PKEY_free(pkey);
+        BN_free(n);
+        BN_free(e);
+        OSSL_PARAM_BLD_free(bld);
+        return NULL;
+    }
+
+    result = OSSL_PARAM_BLD_push_BN(bld, "n", n);
+    if (!result) {
+        EVP_PKEY_free(pkey);
+        BN_free(n);
+        BN_free(e);
+        OSSL_PARAM_BLD_free(bld);
+        return NULL;
+    }
+
+    result = OSSL_PARAM_BLD_push_BN(bld, "e", e);
+    if (!result) {
+        EVP_PKEY_free(pkey);
+        BN_free(n);
+        BN_free(e);
+        OSSL_PARAM_BLD_free(bld);
+        return NULL;
+    }
+
+    result = OSSL_PARAM_BLD_push_BN(bld, "d", NULL);
+    if (!result) {
+        EVP_PKEY_free(pkey);
+        BN_free(n);
+        BN_free(e);
+        OSSL_PARAM_BLD_free(bld);
+        return NULL;
+    }
+
+    params = OSSL_PARAM_BLD_to_param(bld);
+    if (!params) {
+        EVP_PKEY_free(pkey);
+        BN_free(n);
+        BN_free(e);
+        OSSL_PARAM_BLD_free(bld);
+        return NULL;
+    }
+
+    OSSL_PARAM_BLD_free(bld);
+    BN_free(n);
+    BN_free(e);
+
+    EVP_PKEY_CTX *ctx = EVP_PKEY_CTX_new_from_name(NULL, "RSA", NULL);
+    if (!ctx) {
+        EVP_PKEY_free(pkey);
+        return NULL;
+    }
+
+    if (EVP_PKEY_fromdata_init(ctx) <= 0) {
+        EVP_PKEY_free(pkey);
+        return NULL;
+    }
+
+    if (EVP_PKEY_fromdata(ctx, &pkey, EVP_PKEY_PUBLIC_KEY, params) <= 0) {
+        EVP_PKEY_free(pkey);
+        return NULL;
+    }
+
+    if (params)
+        OSSL_PARAM_free(params);
+    
+    if (ctx)
+        EVP_PKEY_CTX_free(ctx);
+
+    return pkey;
+}
+#else
+#error "Unsupported OpenSSL version"
+#endif

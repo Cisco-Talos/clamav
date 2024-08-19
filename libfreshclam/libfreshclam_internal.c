@@ -74,6 +74,7 @@
 #include "clamav.h"
 #include "others.h"
 #include "str.h"
+#include "crypto.h"
 #include "cvd.h"
 #include "regex_list.h"
 
@@ -88,6 +89,7 @@
 #include "libfreshclam.h"
 #include "libfreshclam_internal.h"
 #include "dns.h"
+#include "clamav.h"
 
 #define DB_FILENAME_MAX 60
 #define CVD_HEADER_SIZE 512
@@ -1478,6 +1480,67 @@ static fc_error_t getcvd(
         goto done;
     }
 
+    //
+    // If we are in FIPS mode, download the external signature file
+    //
+    char *sigfile = NULL;
+    char *extSigTmpFile = NULL;
+    char *extSigUrl = NULL;
+    if (cli_get_fips_mode())
+    {
+
+        // The external signature file is the same as the CVD file, but with a different extension.
+        sigfile = strdup(cvdfile);
+        if (!sigfile) {
+            logg(LOGG_ERROR, "Can't allocate memory for external signature file name!\n");
+            status = FC_EMEM;
+            goto done;
+        }
+
+        // Change the extension to .sig
+        #pragma GCC diagnostic push
+        #pragma GCC diagnostic ignored "-Wstringop-truncation"
+        strncpy(sigfile + strlen(sigfile) - 4, ".sig", 4);
+        #pragma GCC diagnostic pop
+
+        urlLen = strlen(server) + strlen("/") + strlen(sigfile);
+        extSigUrl = malloc(urlLen + 1);
+        if (!extSigUrl) {
+            logg(LOGG_ERROR, "Can't allocate memory for external signature file URL!\n");
+            status = FC_EMEM;
+            goto done;
+        }
+
+        // Create a temporary file for the external signature (same name as tmpFile but with an .sig extension instead of .tmp)
+        extSigTmpFile = strdup(tmpfile);
+        if (!extSigTmpFile) {
+            logg(LOGG_ERROR, "Can't allocate memory for external signature temp file name!\n");
+            status = FC_EMEM;
+            goto done;
+        }
+        #pragma GCC diagnostic push
+        #pragma GCC diagnostic ignored "-Wstringop-truncation"
+        strncpy(extSigTmpFile + strlen(extSigTmpFile) - 4, ".sig", 4);
+        #pragma GCC diagnostic pop
+
+        // Construct the URL
+        snprintf(extSigUrl, urlLen + 1, "%s/%s", server, sigfile);
+
+        printf("Downloading external signature file %s from %s\n", sigfile, extSigUrl);
+
+        // Download the external signature file
+        ret = downloadFile(extSigUrl, extSigTmpFile, 1, logerr, ifModifiedSince);
+        if (ret == FC_UPTODATE) {
+            logg(LOGG_INFO, "%s is up-to-date.\n", sigfile);
+            status = ret;
+            goto done;
+        } else if (ret > FC_UPTODATE) {
+            logg(logerr ? LOGG_ERROR : LOGG_WARNING, "Can't download %s from %s\n", sigfile, extSigUrl);
+            status = ret;
+            goto done;
+        }
+    }
+
     /* Temporarily rename file to correct extension for verification. */
     tmpfile_with_extension = strdup(tmpfile);
     if (!tmpfile_with_extension) {
@@ -1490,6 +1553,28 @@ static fc_error_t getcvd(
         logg(LOGG_ERROR, "Can't rename %s to %s: %s\n", tmpfile, tmpfile_with_extension, strerror(errno));
         status = FC_EDBDIRACCESS;
         goto done;
+    }   
+
+    // If we're in FIPS mode, temporarily rename the external signature file to the expected path:
+    // The database file will be something like: /share/SAP/clam.d/tmp.b2b103a70a/clamav-3bbac78e36cbf974e1060de6dbbbfea3.tmp-daily.cld
+    // The expected external signature will be: /share/SAP/clam.d/tmp.b2b103a70a/clamav-3bbac78e36cbf974e1060de6dbbbfea3.tmp-daily.sig
+    char *extSigTmpFileWithExtension = NULL;
+    if (cli_get_fips_mode())
+    {
+        // Temprorarily rename the the sig file to the expected path
+        extSigTmpFileWithExtension = strdup(tmpfile_with_extension);
+        if (!extSigTmpFileWithExtension) {
+            logg(LOGG_ERROR, "Can't allocate memory for external signature temp file with extension!\n");
+            status = FC_EMEM;
+            goto done;
+        }
+        strncpy(extSigTmpFileWithExtension + strlen(extSigTmpFileWithExtension) - 4, sigfile + strlen(sigfile) - 4, 4);
+        printf("RENAMING %s to %s\n", extSigTmpFile, extSigTmpFileWithExtension);
+        if (rename(extSigTmpFile, extSigTmpFileWithExtension) == -1) {
+            logg(LOGG_ERROR, "Can't rename %s to %s: %s\n", extSigTmpFile, extSigTmpFileWithExtension, strerror(errno));
+            status = FC_EDBDIRACCESS;
+            goto done;
+        }
     }
 
     if (CL_SUCCESS != (cl_ret = cl_cvdverify(tmpfile_with_extension))) {
@@ -1511,6 +1596,17 @@ static fc_error_t getcvd(
         goto done;
     }
 
+    // Rename the .sig file if we are in FIPS mode
+    if (cli_get_fips_mode())
+    {
+        if (rename(extSigTmpFileWithExtension, extSigTmpFile) == -1) {
+            logg(LOGG_ERROR, "Can't rename %s to %s: %s\n", extSigTmpFileWithExtension, extSigTmpFile, strerror(errno));
+            status = FC_EDBDIRACCESS;
+            goto done;
+        }
+        
+    }
+
     if (cvd->version < remoteVersion) {
         logg(LOGG_DEBUG, "The %s database downloaded from %s is older than the version advertised in the DNS TXT record.\n",
              cvdfile,
@@ -1522,6 +1618,22 @@ static fc_error_t getcvd(
     status = FC_SUCCESS;
 
 done:
+    if (cli_get_fips_mode())
+    {
+        if (NULL != extSigTmpFileWithExtension) {
+            free(extSigTmpFileWithExtension);
+        }
+        if (NULL != extSigTmpFile) {
+            free(extSigTmpFile);
+        }
+        if (NULL != sigfile) {
+            free(sigfile);
+        }
+        if (NULL != extSigUrl) {
+            free(extSigUrl);
+        }
+    }
+
     if (NULL != cvd) {
         cl_cvdfree(cvd);
     }
@@ -2475,6 +2587,29 @@ fc_error_t updatedb(
             status = FC_EDBDIRACCESS;
             goto done;
         }
+
+        // // If we are running in FIPS mode, we need to move the .sig file in, as well.
+        if (cli_get_fips_mode()) {
+            // just copy tmpfile into tmpsigfile and replace the .tmp with .sig
+            char *tmpsigfile = strdup(tmpfile);
+            strcpy(tmpsigfile + strlen(tmpsigfile) - 4, ".sig");
+
+            // do the same for tmpfile_with_extension
+            char *tmpsigfile_with_extension = strdup(tmpfile_with_extension);
+            strcpy(tmpsigfile_with_extension + strlen(tmpsigfile_with_extension) - 4, ".sig");
+
+            // do the rename
+            if (rename(tmpsigfile, tmpsigfile_with_extension) == -1) {
+                logg(LOGG_ERROR, "(line %d) updatedb: Can't rename %s to %s: %s\n", __LINE__, tmpsigfile, tmpsigfile_with_extension, strerror(errno));
+                status = FC_EDBDIRACCESS;
+                free(tmpsigfile);
+                free(tmpsigfile_with_extension);
+                goto done;
+            }
+            free(tmpsigfile);
+            free(tmpsigfile_with_extension);
+        }
+
         free(tmpfile);
         tmpfile                = tmpfile_with_extension;
         tmpfile_with_extension = NULL;
@@ -2502,6 +2637,29 @@ fc_error_t updatedb(
         logg(LOGG_ERROR, "updatedb: Can't rename %s to %s: %s\n", tmpfile, newLocalFilename, strerror(errno));
         status = FC_EDBDIRACCESS;
         goto done;
+    }
+
+    // If we are running in FIPS mode, we need to move the .sig file in, as well.
+    if (cli_get_fips_mode())
+    {
+        // just duplicate the newLocalFileName buffer and replace the .cld with .sig
+        char *newLocalSigFilename = strdup(newLocalFilename);
+        strcpy(newLocalSigFilename + strlen(newLocalSigFilename) - 4, ".sig");
+
+        // do the same for tmpfile
+        char *tmpsigfile = strdup(tmpfile);
+        strcpy(tmpsigfile + strlen(tmpsigfile) - 4, ".sig");
+
+        // do the rename
+        if (rename(tmpsigfile, newLocalSigFilename) == -1) {
+            logg(LOGG_ERROR, "(line %d) updatedb: Can't rename %s to %s: %s\n", __LINE__, tmpsigfile, newLocalSigFilename, strerror(errno));
+            status = FC_EDBDIRACCESS;
+            free(tmpsigfile);
+            free(newLocalSigFilename);
+            goto done;
+        }
+        free(tmpsigfile);
+        free(newLocalSigFilename);
     }
 
     /* If we just updated from a CVD to a CLD, delete the old CVD */
