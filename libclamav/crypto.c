@@ -138,64 +138,64 @@ time_t timegm(struct tm *t)
 
 /**
  * This variable determines if we are operating in FIPS mode, default to no.
-  */
+ */
 int cli_fips_mode = 0;
 
 /**
  * @brief This function determines if we are running in FIPS mode and sets the cl_fips_mode variable
- * 
+ *
  * This function is called by cl_init() and does not need to be called by the user
- * 
+ *
  * @return int Returns 1 if we are running in FIPS mode, 0 otherwise
- * 
+ *
  */
 
 void cli_setup_fips_configuration(void)
 {
-    #if OPENSSL_VERSION_MAJOR == 1
-    // OpenSSL 1.x (1.0 or 1.1)
-    #ifdef OPENSSL_FIPS
-        if (FIPS_mode()) {
-            cli_infomsg_simple("cl_setup_fips_configuration: FIPS mode provider found.\n");
-            cl_fips_mode = 1;
-        } else {
-            cli_infomsg_simple("cl_setup_fips_configuration: FIPS mode provider was not found.\n");
-            cl_fips_mode = 0;
-        }
-    #else
+#if OPENSSL_VERSION_MAJOR == 1
+// OpenSSL 1.x (1.0 or 1.1)
+#ifdef OPENSSL_FIPS
+    if (FIPS_mode()) {
+        cli_infomsg_simple("cl_setup_fips_configuration: FIPS mode provider found.\n");
+        cl_fips_mode = 1;
+    } else {
+        cli_infomsg_simple("cl_setup_fips_configuration: FIPS mode provider was not found.\n");
         cl_fips_mode = 0;
-    #endif
+    }
+#else
+    cl_fips_mode = 0;
+#endif
 
-    #elif OPENSSL_VERSION_MAJOR == 3
-        // OpenSSL 3.0.x
-        OSSL_LIB_CTX *libctx = OSSL_LIB_CTX_new();
-        if (libctx == NULL) {
-            cli_warnmsg("cl_setup_fips_configuration: Failed to create libctx.\n");
-            cli_fips_mode = 0;
-            return;
-        }
+#elif OPENSSL_VERSION_MAJOR == 3
+    // OpenSSL 3.0.x
+    OSSL_LIB_CTX *libctx = OSSL_LIB_CTX_new();
+    if (libctx == NULL) {
+        cli_warnmsg("cl_setup_fips_configuration: Failed to create libctx.\n");
+        cli_fips_mode = 0;
+        return;
+    }
 
-        OSSL_PROVIDER *fips = OSSL_PROVIDER_load(libctx, "fips");
-        if (fips != NULL) {
-            cli_infomsg_simple("cl_setup_fips_configuration: FIPS mode provider found.\n");
-            cli_fips_mode = 1;
-            OSSL_PROVIDER_unload(fips);
-            OSSL_LIB_CTX_free(libctx);
-        } else {
-            cli_infomsg_simple("cl_setup_fips_configuration: FIPS mode provider was not found.\n");
-            cli_fips_mode = 0;
-            OSSL_LIB_CTX_free(libctx);
-        }
-    #else
-        #error "Unsupported OpenSSL version"
-    #endif
+    OSSL_PROVIDER *fips = OSSL_PROVIDER_load(libctx, "fips");
+    if (fips != NULL) {
+        cli_infomsg_simple("cl_setup_fips_configuration: FIPS mode provider found.\n");
+        cli_fips_mode = 1;
+        OSSL_PROVIDER_unload(fips);
+        OSSL_LIB_CTX_free(libctx);
+    } else {
+        cli_infomsg_simple("cl_setup_fips_configuration: FIPS mode provider was not found.\n");
+        cli_fips_mode = 0;
+        OSSL_LIB_CTX_free(libctx);
+    }
+#else
+#error "Unsupported OpenSSL version"
+#endif
 }
 
 /**
- * @brief Return the status of our FIPS condition.  
- * 
+ * @brief Return the status of our FIPS condition.
+ *
  * This function allows users of the library to determine if the library is running in FIPS mode.
- * 
+ *
  * @return int Returns 1 if we are running in FIPS mode, 0 otherwise
  */
 
@@ -1330,7 +1330,7 @@ void cl_hash_destroy(void *ctx)
 #if OPENSSL_VERSION_MAJOR == 1
 RSA *cli_build_ext_signing_key(void)
 {
-    RSA *rsa = RSA_new();
+    RSA *rsa  = RSA_new();
     BIGNUM *n = BN_new();
     BIGNUM *e = BN_new();
 
@@ -1356,12 +1356,12 @@ RSA *cli_build_ext_signing_key(void)
 // Do this the OpenSSL 3 way, avoiding deprecation warnings
 EVP_PKEY *cli_build_ext_signing_key(void)
 {
-    EVP_PKEY *pkey = EVP_PKEY_new();
-    BIGNUM *n = BN_new();
-    BIGNUM *e = BN_new();
+    EVP_PKEY *pkey      = EVP_PKEY_new();
+    BIGNUM *n           = BN_new();
+    BIGNUM *e           = BN_new();
     OSSL_PARAM_BLD *bld = OSSL_PARAM_BLD_new();
-    OSSL_PARAM *params = NULL;
-    int result = 0;
+    OSSL_PARAM *params  = NULL;
+    int result          = 0;
 
     // Check bld and params
     if (!pkey || !n || !e || !bld) {
@@ -1439,7 +1439,7 @@ EVP_PKEY *cli_build_ext_signing_key(void)
 
     if (params)
         OSSL_PARAM_free(params);
-    
+
     if (ctx)
         EVP_PKEY_CTX_free(ctx);
 

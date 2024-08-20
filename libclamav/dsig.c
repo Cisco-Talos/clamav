@@ -429,9 +429,9 @@ done:
 int cli_hex2bin(const char *hex, unsigned char *bin, int len)
 {
     // Use tricks to do this fast and without memory violations
-    unsigned char *in = (unsigned char *)hex;
+    unsigned char *in  = (unsigned char *)hex;
     unsigned char *out = bin;
-    int retlen = len/2;
+    int retlen         = len / 2;
 
     while (len--) {
         *out = 0;
@@ -463,7 +463,7 @@ cl_error_t cli_sigver_external(const char *file)
 {
     cl_error_t result = CL_ERROR;
     unsigned char sha256_bin[SHA256_DIGEST_LENGTH];
-    char *sha256 = NULL;
+    char *sha256           = NULL;
     unsigned char *sig_bin = NULL;
 
     // Use the built-in method to hash the CVD file.
@@ -498,7 +498,7 @@ cl_error_t cli_sigver_external(const char *file)
         goto done;
     }
 #else
-    #error "Unsupported OpenSSL version"
+#error "Unsupported OpenSSL version"
 #endif
 
     // Convert the sha256 hash to binary
@@ -519,10 +519,10 @@ cl_error_t cli_sigver_external(const char *file)
         result = CL_EMEM;
         goto done;
     }
-    #pragma GCC diagnostic push
-    #pragma GCC diagnostic ignored "-Wstringop-truncation"
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstringop-truncation"
     strncpy(sigfile + strlen(sigfile) - 4, ".sig", 4);
-    #pragma GCC diagnostic pop
+#pragma GCC diagnostic pop
     fs = fopen(sigfile, "rb");
     if (fs == NULL) {
         cli_errmsg("cli_cvd_ext_sig_verify: Can't open signature file %s\n", sigfile);
@@ -532,9 +532,9 @@ cl_error_t cli_sigver_external(const char *file)
 
     // Read the signature file
     fseek(fs, 0, SEEK_END);
-    size_t siglen = (size_t) ftell(fs);
+    size_t siglen = (size_t)ftell(fs);
     fseek(fs, 0, SEEK_SET);
-    char *sig = (char *)malloc(siglen+1);
+    char *sig = (char *)malloc(siglen + 1);
     if (sig == NULL) {
         cli_errmsg("cli_cvd_ext_sig_verify: Can't allocate memory for signature\n");
         fclose(fs);
@@ -561,7 +561,7 @@ cl_error_t cli_sigver_external(const char *file)
     }
     *sig_seperator = 0;
     sig_seperator++;
-    siglen = strlen(sig_seperator)/2;
+    siglen  = strlen(sig_seperator) / 2;
     sig_bin = (unsigned char *)malloc(siglen);
     if (sig_bin == NULL) {
         cli_errmsg("cli_cvd_ext_sig_verify: Can't allocate memory for signature binary\n");
@@ -578,21 +578,20 @@ cl_error_t cli_sigver_external(const char *file)
     // If we are using a verson of openssl less than 3.0.0, we need to use the RSA_verify function
 #if OPENSSL_VERSION_MAJOR == 1
     // verify the signature
-    //int sig_verify = RSA_verify(NID_sha256, sha256, strlen(sha256), sig_bin, siglen, rsa);
+    // int sig_verify = RSA_verify(NID_sha256, sha256, strlen(sha256), sig_bin, siglen, rsa);
     int sig_verify = RSA_verify(NID_sha256, sha256_bin, SHA256_DIGEST_LENGTH, sig_bin, siglen, rsa);
     if (sig_verify != 1) {
         cli_errmsg("cli_cvd_ext_sig_verify: RSA signature verification failed for external database signature\n");
         result = CL_EVERIFY;
         goto done;
-    }
-    else {
+    } else {
         cli_dbgmsg("cli_cvd_ext_sig_verify: RSA signature verification successful for external database signature\n");
         result = CL_SUCCESS;
     }
 #elif OPENSSL_VERSION_MAJOR == 3
     // verify the signature
     EVP_PKEY_CTX *pctx = NULL;
-    
+
     pctx = EVP_PKEY_CTX_new(rsa, NULL);
     if (pctx == NULL) {
         cli_errmsg("cli_cvd_ext_sig_verify: Can't create EVP_PKEY_CTX\n");
@@ -616,27 +615,26 @@ cl_error_t cli_sigver_external(const char *file)
         cli_errmsg("cli_cvd_ext_sig_verify: RSA signature verification failed for external database signature\n");
         result = CL_EVERIFY;
         goto done;
-    }
-    else {
+    } else {
         cli_dbgmsg("cli_cvd_ext_sig_verify: RSA signature verification successful for external database signature\n");
         result = CL_SUCCESS;
     }
 
-     if(pctx) EVP_PKEY_CTX_free(pctx);
+    if (pctx) EVP_PKEY_CTX_free(pctx);
 #else
-    #error "Unsupported OpenSSL version"
+#error "Unsupported OpenSSL version"
 #endif
 
 done:
     // Clean up
-    if (sig)        free(sig);
-    if (sigfile)    free(sigfile);
-    if (sha256)     free(sha256);
-    if (sig_bin)    free(sig_bin);
+    if (sig) free(sig);
+    if (sigfile) free(sigfile);
+    if (sha256) free(sha256);
+    if (sig_bin) free(sig_bin);
 #if OPENSSL_VERSION_NUMBER < 0x30000000L
-    if (rsa)        RSA_free(rsa);
+    if (rsa) RSA_free(rsa);
 #else
-    if (rsa)        EVP_PKEY_free(rsa);
+    if (rsa) EVP_PKEY_free(rsa);
 #endif
 
     return result;

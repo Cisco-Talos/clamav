@@ -22,6 +22,7 @@
 #ifndef __CRYPTO_H
 #define __CRYPTO_H
 #include <openssl/opensslv.h>
+#include <openssl/evp.h>
 
 void cli_setup_fips_configuration(void);
 int cli_get_fips_mode(void);

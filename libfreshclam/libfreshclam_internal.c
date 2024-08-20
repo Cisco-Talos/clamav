@@ -1483,11 +1483,10 @@ static fc_error_t getcvd(
     //
     // If we are in FIPS mode, download the external signature file
     //
-    char *sigfile = NULL;
+    char *sigfile       = NULL;
     char *extSigTmpFile = NULL;
-    char *extSigUrl = NULL;
-    if (cli_get_fips_mode())
-    {
+    char *extSigUrl     = NULL;
+    if (cli_get_fips_mode()) {
 
         // The external signature file is the same as the CVD file, but with a different extension.
         sigfile = strdup(cvdfile);
@@ -1497,13 +1496,13 @@ static fc_error_t getcvd(
             goto done;
         }
 
-        // Change the extension to .sig
-        #pragma GCC diagnostic push
-        #pragma GCC diagnostic ignored "-Wstringop-truncation"
+// Change the extension to .sig
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstringop-truncation"
         strncpy(sigfile + strlen(sigfile) - 4, ".sig", 4);
-        #pragma GCC diagnostic pop
+#pragma GCC diagnostic pop
 
-        urlLen = strlen(server) + strlen("/") + strlen(sigfile);
+        urlLen    = strlen(server) + strlen("/") + strlen(sigfile);
         extSigUrl = malloc(urlLen + 1);
         if (!extSigUrl) {
             logg(LOGG_ERROR, "Can't allocate memory for external signature file URL!\n");
@@ -1518,10 +1517,10 @@ static fc_error_t getcvd(
             status = FC_EMEM;
             goto done;
         }
-        #pragma GCC diagnostic push
-        #pragma GCC diagnostic ignored "-Wstringop-truncation"
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstringop-truncation"
         strncpy(extSigTmpFile + strlen(extSigTmpFile) - 4, ".sig", 4);
-        #pragma GCC diagnostic pop
+#pragma GCC diagnostic pop
 
         // Construct the URL
         snprintf(extSigUrl, urlLen + 1, "%s/%s", server, sigfile);
@@ -1553,14 +1552,13 @@ static fc_error_t getcvd(
         logg(LOGG_ERROR, "Can't rename %s to %s: %s\n", tmpfile, tmpfile_with_extension, strerror(errno));
         status = FC_EDBDIRACCESS;
         goto done;
-    }   
+    }
 
     // If we're in FIPS mode, temporarily rename the external signature file to the expected path:
     // The database file will be something like: /share/SAP/clam.d/tmp.b2b103a70a/clamav-3bbac78e36cbf974e1060de6dbbbfea3.tmp-daily.cld
     // The expected external signature will be: /share/SAP/clam.d/tmp.b2b103a70a/clamav-3bbac78e36cbf974e1060de6dbbbfea3.tmp-daily.sig
     char *extSigTmpFileWithExtension = NULL;
-    if (cli_get_fips_mode())
-    {
+    if (cli_get_fips_mode()) {
         // Temprorarily rename the the sig file to the expected path
         extSigTmpFileWithExtension = strdup(tmpfile_with_extension);
         if (!extSigTmpFileWithExtension) {
@@ -1597,14 +1595,12 @@ static fc_error_t getcvd(
     }
 
     // Rename the .sig file if we are in FIPS mode
-    if (cli_get_fips_mode())
-    {
+    if (cli_get_fips_mode()) {
         if (rename(extSigTmpFileWithExtension, extSigTmpFile) == -1) {
             logg(LOGG_ERROR, "Can't rename %s to %s: %s\n", extSigTmpFileWithExtension, extSigTmpFile, strerror(errno));
             status = FC_EDBDIRACCESS;
             goto done;
         }
-        
     }
 
     if (cvd->version < remoteVersion) {
@@ -1618,8 +1614,7 @@ static fc_error_t getcvd(
     status = FC_SUCCESS;
 
 done:
-    if (cli_get_fips_mode())
-    {
+    if (cli_get_fips_mode()) {
         if (NULL != extSigTmpFileWithExtension) {
             free(extSigTmpFileWithExtension);
         }
@@ -2640,8 +2635,7 @@ fc_error_t updatedb(
     }
 
     // If we are running in FIPS mode, we need to move the .sig file in, as well.
-    if (cli_get_fips_mode())
-    {
+    if (cli_get_fips_mode()) {
         // just duplicate the newLocalFileName buffer and replace the .cld with .sig
         char *newLocalSigFilename = strdup(newLocalFilename);
         strcpy(newLocalSigFilename + strlen(newLocalSigFilename) - 4, ".sig");
