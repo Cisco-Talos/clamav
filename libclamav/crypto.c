@@ -64,6 +64,8 @@
 #define CLI_NSTR_EXT_SIG "E32B3AC1D501EE975296A45BA65DD699100DADD340FF3BBD1F1030C66D6BB16DBFBD53DF4D97BBD42EF8FC777E7C114A6074A87DD8095A5C08B3DD7B85817713047647EF396C58358C5C22B5C3ADF85CE8D0ABC429F89E936EC917B64DD00E02A712E6666FAE1A71591092BCEE59E3141758C4719B4B08589117B0FF7CDBDBB261F8486A193E2E720AE0B16D40DD5E56E97346CBD8010DC81B35332F41C9E93E61490802DDCDFC823D581BA6888588968C68A3C95B93949AF411682E73323F7469473F668B0958F6966849FF03BDE808866D127A2C058B16F17C741A9EE50812A5C7841224E55BF7ADDB5AEAE8EB5476F9BC8740178AB35926D5DC375583C641"
 #define CLI_ESTR_EXT_SIG "010001"
 
+#define CLI_DI2_EXT_SIG "43b6cb0fc62b2d4e03432505300f7258cdd0be4b2de837cb8f0c394359b0b6d2810056525f178a623fbe5e6eb19eef42ae806583a7ae7bdfaa57d3aaf3d88311bf72538ae4b6843f6a10005bfada7c92b57fb6725d3ccbc9c7de0e91f89920a0eb1f8e039641730c8e7d8450d3a62d349624cec8dd5a4199a2ce6942c058fdc6ac8b5e566067c5f0a5667c86dd1e832327e4de6f8f169e6e20a0f5e08496897bd90797506d9669477eaa13b02862078d0c2cf9db1c70408f4f31eeabcd9603386450fa1781d4a3eaa9163fe5aae9d7c4791153a504334c8840ab8b1f85b3f5e62912c3e2c0a7bb74a7801edb21b30921cc422bd1aa15fa4a6d56fdf05703c156c1937930b86767ad4fd5cbbfc579650bba2e94971f885f020da8fc4a71241526c2a99615aff786184583a7d189c582dc3073dacf6e84eaf9c14f19315c08ad3812cc5acbfb8f42fe0e6b127b5b8df75078231620052c16076e6964fda5471c139d0573637065f8489ff1582c0bef13e5cc46421bc18eeca91fb88cd95e84548bf1b00257b626d9f99e2a3f0887e181ec7f41e1c01d1e55c440dd3f07fdc77005f5669a9475278cd0e9c04e953f538d0101dd14ea37c9d76a3d38bcda2659137f6540b4d5ca43dc3cbfe327b079d1dc449f99f68bdecb54548243165363443c9ec3c28b7e58ee1105d066d1f6fb35e86904592008102ef2045a33defefa8c7ad217c1786fa34dd8315d31032328e36ddcfe4542a655f8b5c099695890159ae00bb6bcfcc8c8c4a2a8b85ba41aa9ae1d067caaeac8b27dcb3c0bc490dff360d7d07b42d0372ed8fee4aac3ecf9bcbcb1c6d137b00fd13385af2dcd936debdd8760922c1bd5e6af5893d0f6a51529d1af42bc05266632c70dae56b3c800163b25ad12e53d20723f3517c3394790c49f8e48fb75310174e0448aa628b68a3f0d0a18756575d211b0551740d29ba7db06fb7d6b6ff0200531bc7a879d705e485470f45cdc78588883132211aae5506bfb523451e177896a84018fd996bc26cf845501d3f19fd948fd5ad7d9d13db578bee40f317092b96aa07acaada37ba2ba79d156bdd7f68f61e8cca0a357a054683df31961ce9913cec9a92de0135c63fa574111aab5baf093b121afb92511bd4b8e0b3fce609d27891b69466246b9cf6eced970142009b172d8c73d2ae25f8c86b3579b75fc7754932afc7aefc0c0255be40c1b67e2d94fe9ae103f807f37a05ab3ee1ff141d221c5942df34f61c9c7287fbc173b6caa1c19523cdf09d22c0b9b3fca5ef49144718c3d79ee9657ec69d5dc78fbde1cce4a5395c96af2f9172fe6c884bfc5335b89b192147c6ed6d9587db80c3c3d373447012eee4fc389b34807d068512815e1d45f7f26294fe6b4e3e52b282c4b57fa7ca39f9d27362925120bd9ec3e2f03e879405f1ba2dc9378244782ef384f244526eb8f81f91f3810a0bb55d228ae54f4a646f56e27cdd8bcb4eba316c7023e66b1cd37c11a7d793e88e93d274ed972a79e220b741ada013067e157211d403a09e7ed8136326ffec72a6638e6d12a64f45277375e620792e5ecfbb10251826251d0cbfca7fb48f0279a3699a0605b813f58f037d18e6aec14e460571fd01acacf65e27b384b2c3aac05fd82065fd287b61e3e4b8f84aa326dd7f6b86eab04352e02719e34655360786bc4236e5d962961e37c523cc03def7ad71e7bb3c2b5aca307559833571b87b486de9d8c3a4aac5ee9435643c62b1d80f41c10a1a08260dca5cbf309ce3eb5b680b7a0b867d6be0963923be21d068d5de36e42d3d86cf4dc8ee0ec48895a8b2f8597ada44e9f01da75864dc4feda2cca1e2ed5ac75"
+
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
 #define X509_CRL_get0_nextUpdate X509_CRL_get_nextUpdate
 #endif
@@ -1354,7 +1356,7 @@ RSA *cli_build_ext_signing_key(void)
 }
 #elif OPENSSL_VERSION_MAJOR == 3
 // Do this the OpenSSL 3 way, avoiding deprecation warnings
-EVP_PKEY *cli_build_ext_signing_key(void)
+EVP_PKEY *cli_build_ext_signing_key_RSA(void)
 {
     EVP_PKEY *pkey      = EVP_PKEY_new();
     BIGNUM *n           = BN_new();
@@ -1445,6 +1447,112 @@ EVP_PKEY *cli_build_ext_signing_key(void)
 
     return pkey;
 }
+
+EVP_PKEY *cli_build_ext_signing_key_Dilithium2(void)
+{
+    EVP_PKEY *pkey = EVP_PKEY_new();
+    int result     = 0;
+    OSSL_PARAM params[2];
+
+    // Check bld and params
+    if (!pkey) {
+        EVP_PKEY_free(pkey);
+        return NULL;
+    }
+
+    // Create a context for the public key
+    EVP_PKEY_CTX *ctx = EVP_PKEY_CTX_new_from_name(NULL, "dilithium2", NULL);
+    if (!ctx) {
+        EVP_PKEY_free(pkey);
+        return NULL;
+    }
+
+    // Initialize key generation from data
+    if (EVP_PKEY_fromdata_init(ctx) <= 0) {
+        EVP_PKEY_free(pkey);
+        return NULL;
+    }
+
+    // Setup for binary conversion of the public key string
+    unsigned char *pubkey = NULL;
+    size_t key_hex_strlen = strlen(CLI_DI2_EXT_SIG);
+    size_t pubkey_len     = key_hex_strlen / 2;
+
+    pubkey = malloc(pubkey_len);
+    if (!pubkey) {
+        EVP_PKEY_free(pkey);
+        return NULL;
+    }
+
+    // Convert the hex string to binary
+    result = OPENSSL_hexstr2buf_ex(pubkey, pubkey_len, NULL, CLI_DI2_EXT_SIG, 0);
+    if (!result) {
+        free(pubkey);
+        EVP_PKEY_free(pkey);
+        return NULL;
+    }
+
+    // Build the parameters
+    params[0] = OSSL_PARAM_construct_octet_string("pub", pubkey, pubkey_len);
+    params[1] = OSSL_PARAM_construct_end();
+
+    if (!params[0].data) {
+        free(pubkey);
+        EVP_PKEY_free(pkey);
+        return NULL;
+    }
+
+    // Construct the public key
+    int ret_code = EVP_PKEY_fromdata(ctx, &pkey, EVP_PKEY_PUBLIC_KEY, params);
+    if (ret_code <= 0) {
+        // Actaully dump the errors here, as post quantum stuff is likely to change
+        // and knowing why it failed will be helpful to whomever has to debug this later.
+        cli_errmsg("cli_build_ext_signing_key_Dilithium2: failed to construct public key.\n");
+        // Dump all the specific information OpenSSL has about this error.
+        const char *file;
+        int line;
+        const char *function;
+        const char *data;
+        int flags;
+        unsigned long error_code = ERR_peek_last_error_all(&file, &line, &function, &data, &flags);
+        cli_errmsg("cli_build_ext_signing_key_Dilithium2: OpenSSL error code: %lu (file: %s, line: %d, function: %s, data: %s, flags: %d)\n", error_code, file, line, function, data, flags);
+
+        free(pubkey);
+        EVP_PKEY_free(pkey);
+        return NULL;
+    }
+
+    // Cleanup
+    // DO NOT free params[0].data, it poitns to pubkey.
+    // OSSL_PARAM_free(params[0].data);
+
+    // Free the public key
+    free(pubkey);
+
+    // Free the context
+    if (ctx)
+        EVP_PKEY_CTX_free(ctx);
+
+    return pkey;
+}
+
+EVP_PKEY *cli_build_ext_signing_key(unsigned int keytype)
+{
+    switch (keytype) {
+        case 1:
+            cli_dbgmsg("cli_build_ext_signing_key: building RSA external signing key\n");
+            return cli_build_ext_signing_key_RSA();
+            break;
+        case 2:
+            cli_dbgmsg("cli_build_ext_signing_key: building Dilithium2 external signing key\n");
+            return cli_build_ext_signing_key_Dilithium2();
+            break;
+        default:
+            return NULL;
+            break;
+    }
+}
+
 #else
 #error "Unsupported OpenSSL version"
 #endif

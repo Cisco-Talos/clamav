@@ -28,9 +28,9 @@ void cli_setup_fips_configuration(void);
 int cli_get_fips_mode(void);
 
 #if OPENSSL_VERSION_MAJOR == 1
-RSA *cli_build_ext_signing_key(void);
+RSA *cli_build_ext_signing_key(unsigned int keytype);
 #elif OPENSSL_VERSION_MAJOR == 3
-EVP_PKEY *cli_build_ext_signing_key(void);
+EVP_PKEY *cli_build_ext_signing_key(unsigned int keytype);
 #else
 #error "Unsupported OpenSSL version"
 #endif
