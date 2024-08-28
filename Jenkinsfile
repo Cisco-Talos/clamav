@@ -89,7 +89,7 @@ pipeline {
 
                 dir(path: 'docs/html') {
                     sh """# Move the clamav-documentation here.
-//                        cp -r ../../clamav_documentation/* .
+                        cp -r ../../clamav_documentation/* .
                         # Clean-up
                         rm -rf ../../clamav_documentation
                         rm -rf .git .nojekyll CNAME Placeholder || true
