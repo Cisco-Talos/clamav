@@ -53,7 +53,7 @@ properties(
     ]
 )
 
-node('default') {
+node('docker') {
     stage('Generate Tarball') {
         cleanWs()
 
@@ -72,13 +72,24 @@ node('default') {
                 '''
         }
 
-        dir(path: 'build') {
-            sh """# Make Dist
-                if [ -f '../autogen.sh' ] ; then /bin/chmod +x ../autogen.sh && ../autogen.sh ; fi
-                ../configure --enable-milter --disable-clamav --disable-silent-rules --enable-llvm --with-system-llvm=no
-                make distcheck
-                mv clamav-${params.VERSION}*.tar.gz clamav-${params.VERSION}.tar.gz || true"""
-            archiveArtifacts(artifacts: "clamav-${params.VERSION}.tar.gz", onlyIfSuccessful: true)
+        // start up docker image
+        def dockerImage = docker.build("autoconf", "./Jenkins")
+
+        try {
+            dockerImage.inside { c ->
+                dir(path: "build") {
+                    sh """# Make Dist
+                        if [ -f '../autogen.sh' ] ; then /bin/chmod +x ../autogen.sh && ../autogen.sh ; fi
+                        ../configure --enable-milter --disable-clamav --disable-silent-rules --enable-llvm --with-system-llvm=no
+                        make distcheck
+                        mv clamav-${params.VERSION}*.tar.gz clamav-${params.VERSION}.tar.gz || true"""
+                    archiveArtifacts(artifacts: "clamav-${params.VERSION}.tar.gz", onlyIfSuccessful: true)
+                }
+            }
+        }
+        catch(IOException err) {
+            cleanWs()
+            throw err
         }
 
         cleanWs()
