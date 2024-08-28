@@ -3,6 +3,10 @@
 Note: This file refers to the official packages. Things described here may
 differ slightly from third-party binary packages.
 
+## 1.4.1
+
+ClamAV 1.4.1 is a critical patch release with the following fixes:
+
 ## 1.4.0
 
 ClamAV 1.4.0 includes the following improvements and changes:
