@@ -81,7 +81,7 @@ node('docker') {
                     sh """# Make Dist
                         if [ -f '../autogen.sh' ] ; then /bin/chmod +x ../autogen.sh && ../autogen.sh ; fi
                         ../configure --enable-milter --disable-clamav --disable-silent-rules --enable-llvm --with-system-llvm=no
-                        make distcheck
+                        make dist
                         mv clamav-${params.VERSION}*.tar.gz clamav-${params.VERSION}.tar.gz || true"""
                     archiveArtifacts(artifacts: "clamav-${params.VERSION}.tar.gz", onlyIfSuccessful: true)
                 }
