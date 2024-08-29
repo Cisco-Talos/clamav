@@ -190,6 +190,8 @@ enum FunctionalityLevels {
     FUNC_LEVEL_1_3_1 = 201, /**< LibClamAV release 1.3.1 */
 
     FUNC_LEVEL_1_4 = 210, /**< LibClamAV release 1.4.0 */
+
+    FUNC_LEVEL_1_5 = 220, /**< LibClamAV release 1.5.0 */
 };
 
 /**
