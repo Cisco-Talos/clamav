@@ -150,6 +150,7 @@ int fc_upsert_logg_file(fc_config *fcConfig)
                 ret = -1;
                 goto cleanup;
             }
+#ifndef _WIN32
             if (current_user->pw_uid != db_owner->pw_uid) {
                 if (lchown(current_path, db_owner->pw_uid, db_owner->pw_gid) == -1) {
                     printf("ERROR: Failed to change owner of %s to %s. Will continue without writing in %s.\n", current_path, fcConfig->dbOwner, fcConfig->logFile);
@@ -157,6 +158,7 @@ int fc_upsert_logg_file(fc_config *fcConfig)
                     goto cleanup;
                 }
             }
+#endif /* _WIN32 */
         }
         strcat(current_path, PATHSEP);
     }
@@ -165,7 +167,9 @@ int fc_upsert_logg_file(fc_config *fcConfig)
         ret = -1;
         goto cleanup;
     }
+#ifndef _WIN32
     lchown(fcConfig->logFile, db_owner->pw_uid, db_owner->pw_gid);
+#endif /* _WIN32 */
 
 cleanup:
     if (token != NULL) {
