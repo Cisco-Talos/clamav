@@ -998,7 +998,7 @@ fc_error_t get_official_database_lists(
     uint32_t i;
 
     const char *hardcodedStandardDatabaseList[] = {"daily", "main", "bytecode"};
-    const char *hardcodedOptionalDatabaseList[] = {"safebrowsing", "test"};
+    const char *hardcodedOptionalDatabaseList[] = {"safebrowsing", "test", "valhalla"};
 
     if ((NULL == standardDatabases) || (NULL == nStandardDatabases) || (NULL == optionalDatabases) || (NULL == nOptionalDatabases)) {
         mprintf("!get_official_database_lists: Invalid arguments.\n");
@@ -1424,6 +1424,10 @@ fc_error_t perform_database_update(
     uint32_t nUpdated      = 0;
     uint32_t nTotalUpdated = 0;
 
+    uint32_t i;
+    char **doNotPruneDatabaseList = NULL;
+    uint32_t nDoNotPruneDatabases = 0;
+
     STATBUF statbuf;
 
     if (NULL == serverList) {
@@ -1444,7 +1448,38 @@ fc_error_t perform_database_update(
          * Prune database directory of official databases
          * that are no longer available or no longer desired.
          */
-        (void)fc_prune_database_directory(databaseList, nDatabases);
+
+        // include the URL databases in the prune process
+        doNotPruneDatabaseList = (char **)malloc(sizeof(char *) * (nDatabases + nUrlDatabases));
+        if (NULL == doNotPruneDatabaseList) {
+            logg("!perform_database_update: Can't allocate memory for doNotPruneDatabaseList\n");
+            status = FC_EMEM;
+            goto done;
+        }
+
+        for (i = 0; i < nDatabases; i++) {
+            doNotPruneDatabaseList[i] = strdup(databaseList[i]);
+            if (doNotPruneDatabaseList[i] == NULL) {
+                logg("!perform_database_update: Can't allocate memory for database name in doNotPruneDatabaseList\n");
+                status = FC_EMEM;
+                goto done;
+            }
+        }
+        nDoNotPruneDatabases = nDatabases;
+
+        for (i = 0; i < nUrlDatabases; i++) {
+            // Only append the URL databases that end with '.cvd'
+            if (strlen(urlDatabaseList[i]) > 4 && 0 == strcasecmp(urlDatabaseList[i] + strlen(urlDatabaseList[i]) - 4, ".cvd")) {
+                const char *startOfFilename = strrchr(urlDatabaseList[i], '/') + 1;
+                if (NULL != startOfFilename) {
+                    // Add the base database name to the do-not-prune list, excluding the '.cvd' extension.
+                    doNotPruneDatabaseList[nDatabases + i] = CLI_STRNDUP(startOfFilename, strlen(startOfFilename) - strlen(".cvd"));
+                    nDoNotPruneDatabases++;
+                }
+            }
+        }
+
+        (void)fc_prune_database_directory(doNotPruneDatabaseList, nDoNotPruneDatabases);
     }
 
     /*
@@ -1514,6 +1549,16 @@ fc_error_t perform_database_update(
     status = FC_SUCCESS;
 
 done:
+
+    // Free up the database list
+    if (NULL != doNotPruneDatabaseList) {
+        for (i = 0; i < nDoNotPruneDatabases; i++) {
+            free(doNotPruneDatabaseList[i]);
+            doNotPruneDatabaseList[i] = NULL;
+        }
+        free(doNotPruneDatabaseList);
+        doNotPruneDatabaseList = NULL;
+    }
 
     if (LSTAT(g_freshclamTempDirectory, &statbuf) != -1) {
         /* Remove temp directory */

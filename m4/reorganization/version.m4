@@ -3,7 +3,7 @@ dnl During active development, set: VERSION="<version>-devel-`date +%Y%m%d`"
 dnl For beta,                  set: VERSION="<version>-beta"
 dnl For release candidate,     set: VERSION="<version>-rc"
 dnl For release,               set: VERSION="<version>"
-VERSION="0.103.11"
+VERSION="0.103.12"
 
 major=`echo $PACKAGE_VERSION |cut -d. -f1 | sed -e "s/[^0-9]//g"`
 minor=`echo $PACKAGE_VERSION |cut -d. -f2 | sed -e "s/[^0-9]//g"`
