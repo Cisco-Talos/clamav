@@ -125,19 +125,19 @@ const char *fc_strerror(fc_error_t fcerror)
 
 int fc_upsert_logg_file(fc_config *fcConfig)
 {
-    int ret = 0;
-    char *current_path, *file_path = strdup(fcConfig->logFile), *token;
+    int ret = 0, field_no          = 1;
+    char *current_path, *file_path = cli_safer_strdup(fcConfig->logFile), *token;
     FILE *logg_fp               = NULL;
-    token                       = strtok(file_path, PATHSEP);
+    token                       = cli_strtok(file_path, field_no++, PATHSEP);
     struct passwd *current_user = getpwuid(getuid()), *db_owner = getpwnam(fcConfig->dbOwner);
     current_path = (char *)malloc(2);
     strcpy(current_path, PATHSEP);
     STATBUF sb;
-
     while (token != NULL) {
         current_path = (char *)realloc(current_path, strlen(current_path) + strlen(token) + 2);
         strcat(current_path, token);
-        token = strtok(NULL, PATHSEP);
+        free(token);
+        token = cli_strtok(file_path, field_no++, PATHSEP);
         if (token == NULL) {
             break;
         }
@@ -148,7 +148,7 @@ int fc_upsert_logg_file(fc_config *fcConfig)
                 goto cleanup;
             }
             if (current_user->pw_uid != db_owner->pw_uid) {
-                if (chown(current_path, db_owner->pw_uid, db_owner->pw_gid) == -1) {
+                if (lchown(current_path, db_owner->pw_uid, db_owner->pw_gid) == -1) {
                     printf("ERROR: Failed to change owner of %s to %s. Will continue without writing in %s.\n", current_path, fcConfig->dbOwner, fcConfig->logFile);
                     ret = -1;
                     goto cleanup;
@@ -165,6 +165,9 @@ int fc_upsert_logg_file(fc_config *fcConfig)
     lchown(fcConfig->logFile, db_owner->pw_uid, db_owner->pw_gid);
 
 cleanup:
+    if (token != NULL) {
+        free(token);
+    }
     free(current_path);
     free(file_path);
     if (logg_fp != NULL) {
