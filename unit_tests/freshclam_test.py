@@ -10,14 +10,10 @@ import os
 from pathlib import Path
 import platform
 import shutil
-import subprocess
-import sys
-import time
 import unittest
 from functools import partial
 
 from http.server import HTTPServer, BaseHTTPRequestHandler
-import cgi
 
 import testcase
 

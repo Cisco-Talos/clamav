@@ -3458,8 +3458,8 @@ static int cli_loadcrt(FILE *fs, struct cl_engine *engine, struct cli_dbio *dbio
             ca.name = NULL;
 
         if (strlen(tokens[9]))
-            ca.not_before = atoi(tokens[8]);
-        ca.not_after = (-1U) >> 1;
+            ca.not_before = atoi(tokens[9]);
+        ca.not_after = (-1ULL) >> 1;
 
         ca.hashtype = CLI_HASHTYPE_ANY;
         crtmgr_add(&(engine->cmgr), &ca);

@@ -66,8 +66,8 @@ typedef struct cli_crt_t {
     fp_int n;
     fp_int e;
     fp_int sig;
-    time_t not_before;
-    time_t not_after;
+    int64_t not_before;
+    int64_t not_after;
     cli_crt_hashtype hashtype;
     int certSign;
     int codeSign;

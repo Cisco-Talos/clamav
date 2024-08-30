@@ -1271,9 +1271,9 @@ static cl_error_t cli_scanbzip(cli_ctx *ctx)
     char buf[FILEBUFF];
 
     memset(&strm, 0, sizeof(strm));
-    strm.next_out = buf;
+    strm.next_out  = buf;
     strm.avail_out = sizeof(buf);
-    rc = BZ2_bzDecompressInit(&strm, 0, 0);
+    rc             = BZ2_bzDecompressInit(&strm, 0, 0);
     if (BZ_OK != rc) {
         cli_dbgmsg("Bzip: DecompressInit failed: %d\n", rc);
         return CL_EOPEN;
@@ -1287,7 +1287,7 @@ static cl_error_t cli_scanbzip(cli_ctx *ctx)
 
     do {
         if (!strm.avail_in) {
-            strm.next_in = (void *)fmap_need_off_once_len(ctx->fmap, off, FILEBUFF, &avail);
+            strm.next_in  = (void *)fmap_need_off_once_len(ctx->fmap, off, FILEBUFF, &avail);
             strm.avail_in = avail;
             off += avail;
             if (!strm.avail_in) {
@@ -1323,7 +1323,7 @@ static cl_error_t cli_scanbzip(cli_ctx *ctx)
             if (cli_checklimits("Bzip", ctx, size, 0, 0) != CL_CLEAN)
                 break;
 
-            strm.next_out = buf;
+            strm.next_out  = buf;
             strm.avail_out = sizeof(buf);
         }
     } while (BZ_STREAM_END != rc);

@@ -41,8 +41,8 @@
 #include "scanners.h"
 #include "dconf.h"
 
-//#define DEBUG_GPT_PARSE
-//#define DEBUG_GPT_PRINT
+// #define DEBUG_GPT_PARSE
+// #define DEBUG_GPT_PRINT
 
 #ifdef DEBUG_GPT_PARSE
 #define gpt_parsemsg(...) cli_dbgmsg(__VA_ARGS__)
