@@ -130,9 +130,13 @@ int fc_upsert_logg_file(fc_config *fcConfig)
     }
     int ret = 0, field_no          = 1;
     char *current_path, *file_path = cli_safer_strdup(fcConfig->logFile), *token;
-    FILE *logg_fp               = NULL;
-    token                       = cli_strtok(file_path, field_no++, PATHSEP);
-    struct passwd *current_user = getpwuid(getuid()), *db_owner = getpwnam(fcConfig->dbOwner);
+    FILE *logg_fp = NULL;
+    token         = cli_strtok(file_path, field_no++, PATHSEP);
+    struct passwd *current_user, *db_owner;
+#ifndef _WIN32
+    current_user = getpwuid(getuid());
+    db_owner     = getpwnam(fcConfig->dbOwner);
+#endif /* _WIN32 */
     current_path = (char *)malloc(2);
     strcpy(current_path, PATHSEP);
     STATBUF sb;
