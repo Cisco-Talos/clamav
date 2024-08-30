@@ -125,6 +125,9 @@ const char *fc_strerror(fc_error_t fcerror)
 
 int fc_upsert_logg_file(fc_config *fcConfig)
 {
+    if (fcConfig->logFile == NULL) {
+        return 0;
+    }
     int ret = 0, field_no          = 1;
     char *current_path, *file_path = cli_safer_strdup(fcConfig->logFile), *token;
     FILE *logg_fp               = NULL;
