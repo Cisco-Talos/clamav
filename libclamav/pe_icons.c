@@ -188,7 +188,7 @@ int cli_groupiconscan(struct ICON_ENV *icon_env, uint32_t rva)
                 uint16_t depth;
                 uint32_t sz;
                 uint16_t id;
-            } * dir;
+            } *dir;
 
             raddr = cli_rawaddr(cli_readint32(grp), peinfo->sections, peinfo->nsections, (unsigned int *)(&err), map->len, peinfo->hdr_size);
             cli_dbgmsg("cli_scanicon: icon group @%x\n", raddr);

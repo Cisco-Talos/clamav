@@ -162,7 +162,7 @@ typedef enum {
  * Slows things down a lot and only catches unencoded copies
  * of EICAR within bounces, which don't matter
  */
-//#define    SCAN_UNENCODED_BOUNCES
+// #define    SCAN_UNENCODED_BOUNCES
 
 typedef struct mbox_ctx {
     const char *dir;
@@ -265,7 +265,7 @@ static bool haveTooManyMIMEArguments(size_t argCnt, cli_ctx *ctx, bool *heuristi
                          * protocol="application/pgp-encrypted"   \
                          */
 #define X_BFILE RELATED /*                                             \
-                         * BeOS, expert two parts: the file and its   \
+                         * BeOS, expert two parts: the file and its    \
                          * attributes. The attributes part comes as    \
                          *    Content-Type: application/x-be_attribute \
                          *        name="foo"                           \

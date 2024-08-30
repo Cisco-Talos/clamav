@@ -46,7 +46,7 @@
 #endif
 
 /* DEBUGGING */
-//#define MATCHER_PCRE_DEBUG
+// #define MATCHER_PCRE_DEBUG
 #ifdef MATCHER_PCRE_DEBUG
 #define pm_dbgmsg(...) cli_dbgmsg(__VA_ARGS__)
 #else

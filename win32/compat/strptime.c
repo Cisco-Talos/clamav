@@ -19,7 +19,7 @@
 
 #define strncasecmp _strnicmp
 #ifndef _LIBC
-//# include <config.h>
+// # include <config.h>
 #endif
 
 #include <time.h>
@@ -31,7 +31,7 @@
 #endif
 #include <limits.h>
 #include <string.h>
-//#include <stdbool.h>
+// #include <stdbool.h>
 
 #ifdef _LIBC
 #include "../locale/localeinfo.h"

@@ -235,8 +235,8 @@ cl_error_t regex_list_match(struct regex_matcher *matcher, char *real_url, const
         free(buffer);
         free(bufrev);
         /* filter says this suffix doesn't match.
-        * The filter has false positives, but no false
-        * negatives */
+         * The filter has false positives, but no false
+         * negatives */
         return CL_SUCCESS;
     }
 

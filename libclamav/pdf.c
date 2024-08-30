@@ -3032,7 +3032,8 @@ static void check_user_password(struct pdf_struct *pdf, int R, const char *O,
         case 3:
         case 4: {
             unsigned char *d;
-            size_t sz = 68 + pdf->fileIDlen + (R >= 4 && !EM ? 4 : 0);            d         = calloc(1, sz);
+            size_t sz = 68 + pdf->fileIDlen + (R >= 4 && !EM ? 4 : 0);
+            d         = calloc(1, sz);
 
             if (!(d))
                 goto done;

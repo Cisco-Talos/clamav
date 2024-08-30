@@ -67,7 +67,7 @@ typedef struct scanner {
     size_t lastpos;
     enum tokenizer_state state;
     enum tokenizer_state last_state;
-} * yyscan_t;
+} *yyscan_t;
 
 static int yylex(YYSTYPE *lvalp, yyscan_t);
 static void yy_scan_bytes(const char *, size_t, yyscan_t scanner);
