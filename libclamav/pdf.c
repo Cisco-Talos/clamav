@@ -1009,8 +1009,26 @@ static size_t find_length(struct pdf_struct *pdf, struct pdf_obj *obj, const cha
                 return 0;
             }
 
-            indirect_obj_start = pdf->map + obj->start;
-            bytes_remaining    = pdf->size - obj->start;
+            if (NULL == obj->objstm) {
+                indirect_obj_start = (const char *)(obj->start + pdf->map);
+
+                if (!CLI_ISCONTAINED(pdf->map, pdf->size, indirect_obj_start, obj->size)) {
+                    cli_dbgmsg("find_length: indirect object found, but not contained in PDF\n");
+                    return 0;
+                }
+
+                bytes_remaining = pdf->size - obj->start;
+
+            } else {
+                indirect_obj_start = (const char *)(obj->start + obj->objstm->streambuf);
+
+                if (!CLI_ISCONTAINED(obj->objstm->streambuf, obj->objstm->streambuf_len, indirect_obj_start, obj->size)) {
+                    cli_dbgmsg("find_length: indirect object found, but not contained in PDF streambuf\n");
+                    return 0;
+                }
+
+                bytes_remaining = obj->objstm->streambuf_len - obj->start;
+            }
 
             /* Ok so we found the indirect object, lets read the value. */
             index = pdf_nextobject(indirect_obj_start, bytes_remaining);
@@ -3104,15 +3122,30 @@ void pdf_handle_enc(struct pdf_struct *pdf)
 
     obj = find_obj(pdf, pdf->objs[0], pdf->enc_objid);
     if (!obj) {
-        cli_dbgmsg("pdf_handle_enc: can't find encrypted object %d %d\n", pdf->enc_objid >> 8, pdf->enc_objid & 0xff);
-        noisy_warnmsg("pdf_handle_enc: can't find encrypted object %d %d\n", pdf->enc_objid >> 8, pdf->enc_objid & 0xff);
+        cli_dbgmsg("pdf_handle_enc: can't find encryption object %d %d\n", pdf->enc_objid >> 8, pdf->enc_objid & 0xff);
+        noisy_warnmsg("pdf_handle_enc: can't find encryption object %d %d\n", pdf->enc_objid >> 8, pdf->enc_objid & 0xff);
         return;
     }
 
     len = obj->size;
 
-    q = (obj->objstm) ? (const char *)(obj->start + obj->objstm->streambuf)
-                      : (const char *)(obj->start + pdf->map);
+    if (NULL == obj->objstm) {
+        q = (const char *)(obj->start + pdf->map);
+
+        if (!CLI_ISCONTAINED(pdf->map, pdf->size, q, len)) {
+            cli_dbgmsg("pdf_handle_enc: encryption object found, but not contained in PDF\n");
+            noisy_warnmsg("pdf_handle_enc: encryption object found, but not contained in PDF\n");
+            return;
+        }
+    } else {
+        q = (const char *)(obj->start + obj->objstm->streambuf);
+
+        if (!CLI_ISCONTAINED(obj->objstm->streambuf, obj->objstm->streambuf_len, q, len)) {
+            cli_dbgmsg("pdf_handle_enc: encryption object found, but not contained in PDF streambuf\n");
+            noisy_warnmsg("pdf_handle_enc: encryption object found, but not contained in PDF streambuf\n");
+            return;
+        }
+    }
 
     O = U = UE = StmF = StrF = EFF = NULL;
     do {
