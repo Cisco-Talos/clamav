@@ -58,6 +58,12 @@
 
 #include "output.h"
 
+// Define O_NOFOLLOW for systems that don't have it.
+// Notably, Windows doesn't have O_NOFOLLOW.
+#ifndef O_NOFOLLOW
+#define O_NOFOLLOW 0
+#endif
+
 #ifdef CL_THREAD_SAFE
 #include <pthread.h>
 pthread_mutex_t logg_mutex     = PTHREAD_MUTEX_INITIALIZER;
@@ -323,7 +329,6 @@ int logg(const char *str, ...)
     char buffer[1025], *abuffer = NULL, *buff;
     time_t currtime;
     size_t len;
-    mode_t old_umask;
 #ifdef F_WRLCK
     struct flock fl;
 #endif
@@ -357,18 +362,36 @@ int logg(const char *str, ...)
     logg_open();
 
     if (!logg_fp && logg_file) {
-        old_umask = umask(0037);
-        if ((logg_fp = fopen(logg_file, "at")) == NULL) {
-            umask(old_umask);
+        int logg_file_fd = -1;
+
+        logg_file_fd = open(logg_file, O_WRONLY | O_CREAT | O_APPEND | O_NOFOLLOW, 0640);
+        if (-1 == logg_file_fd) {
+            char errbuf[128];
+            cli_strerror(errno, errbuf, sizeof(errbuf));
+            printf("ERROR: Failed to open log file %s: %s\n", logg_file, errbuf);
+
 #ifdef CL_THREAD_SAFE
             pthread_mutex_unlock(&logg_mutex);
 #endif
-            printf("ERROR: Can't open %s in append mode (check permissions!).\n", logg_file);
-            if (len > sizeof(buffer))
+            if (abuffer)
                 free(abuffer);
             return -1;
-        } else
-            umask(old_umask);
+        }
+
+        logg_fp = fdopen(logg_file_fd, "at");
+        if (NULL == logg_fp) {
+            char errbuf[128];
+            cli_strerror(errno, errbuf, sizeof(errbuf));
+            printf("ERROR: Failed to convert the open log file descriptor for %s to a FILE* handle: %s\n", logg_file, errbuf);
+
+            close(logg_file_fd);
+#ifdef CL_THREAD_SAFE
+            pthread_mutex_unlock(&logg_mutex);
+#endif
+            if (abuffer)
+                free(abuffer);
+            return -1;
+        }
 
 #ifdef F_WRLCK
         if (logg_lock) {
@@ -381,11 +404,16 @@ int logg(const char *str, ...)
                 else
 #endif
                 {
+                    char errbuf[128];
+                    cli_strerror(errno, errbuf, sizeof(errbuf));
+                    printf("ERROR: Failed to lock the log file %s: %s\n", logg_file, errbuf);
+
 #ifdef CL_THREAD_SAFE
                     pthread_mutex_unlock(&logg_mutex);
 #endif
-                    printf("ERROR: %s is locked by another process\n", logg_file);
-                    if (len > sizeof(buffer))
+                    fclose(logg_fp);
+                    logg_fp = NULL;
+                    if (abuffer)
                         free(abuffer);
                     return -1;
                 }
@@ -462,8 +490,9 @@ int logg(const char *str, ...)
     pthread_mutex_unlock(&logg_mutex);
 #endif
 
-    if (len > sizeof(buffer))
+    if (abuffer)
         free(abuffer);
+
     return 0;
 }
 
