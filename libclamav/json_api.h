@@ -47,7 +47,6 @@ cl_error_t cli_jsondouble(json_object *obj, const char *key, double d);
 json_object *cli_jsonarray(json_object *obj, const char *key);
 cl_error_t cli_jsonint_array(json_object *obj, int32_t val);
 json_object *cli_jsonobj(json_object *obj, const char *key);
-cl_error_t cli_json_addowner(json_object *owner, json_object *child, const char *key, int idx);
 cl_error_t cli_json_delowner(json_object *owner, const char *key, int idx);
 #define cli_json_delobj(obj) json_object_put(obj)
 

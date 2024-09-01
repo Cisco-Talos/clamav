@@ -50,8 +50,6 @@ typedef struct message {
     char base64_1, base64_2, base64_3;
     unsigned int isInfected : 1;
     unsigned int isTruncated : 1;
-
-    json_object *jobj;
 } message;
 
 message *messageCreate(void);
@@ -87,6 +85,5 @@ int isuuencodebegin(const char *line);
 void messageSetCTX(message *m, cli_ctx *ctx);
 int messageContainsVirus(const message *m);
 int messageSavePartial(message *m, const char *dir, const char *id, unsigned part);
-json_object *messageGetJObj(message *m);
 
 #endif /*_MESSAGE_H*/
