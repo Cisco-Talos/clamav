@@ -675,6 +675,11 @@ and:
   -D CURSES_LIBRARY="_filepath of curses library_"
 ```
 
+and, if tinfo is separate from ncurses:
+```sh
+  -D TINFO_LIBRARY="_filepath of tinfo library_"
+```
+
 ### Bytecode Runtime
 
 Bytecode signatures are a type of executable plugin that provide extra
