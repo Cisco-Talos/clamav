@@ -7,6 +7,44 @@ Note: This file refers to the source tarball. Things described here may differ
 
 ClamAV 0.103.12 is a patch release with the following fixes:
 
+- [CVE-2024-20506](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2024-20506):
+  Changed the logging module to disable following symlinks on Linux and Unix
+  systems so as to prevent an attacker with existing access to the 'clamd' or
+  'freshclam' services from using a symlink to corrupt system files.
+
+  This issue affects all currently supported versions. It will be fixed in:
+  - 1.4.1
+  - 1.3.2
+  - 1.0.7
+  - 0.103.12
+
+  Thank you to Detlef for identifying this issue.
+
+- [CVE-2024-20505](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2024-20505):
+  Fixed a possible out-of-bounds read bug in the PDF file parser that could
+  cause a denial-of-service (DoS) condition.
+
+  This issue affects all currently supported versions. It will be fixed in:
+  - 1.4.1
+  - 1.3.2
+  - 1.0.7
+  - 0.103.12
+
+  Thank you to OSS-Fuzz for identifying this issue.
+
+- ClamOnAcc: Fixed an infinite loop when a watched directory does not exist.
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1198)
+
+- Fixed a bug causing CVDs downloaded by the `DatabaseCustomURL` Freshclam
+  config option to be pruned and then re-downloaded with every update.
+  Also added the new 'valhalla' database name to the list of optional databases
+  in preparation for future work.
+  - Backport of [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1233)
+
+- Fixed an unaligned pointer dereference issue on select architectures.
+  Fix courtesy of Sebastian Andrzej Siewior.
+  - Backport of [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1293)
+
 ## 0.103.11
 
 ClamAV 0.103.11 is a patch release with the following fixes:
