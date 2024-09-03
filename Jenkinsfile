@@ -48,9 +48,6 @@ properties(
                 string(name: 'FUZZ_CORPUS_BRANCH',
                        defaultValue: '1.0',
                        description: 'private-fuzz-corpus branch'),
-                string(name: 'APPCHECK_PIPELINE',
-                       defaultValue: 'appcheck-1.0',
-                       description: 'test-pipelines branch for appcheck'),
                 string(name: 'SHARED_LIB_BRANCH',
                        defaultValue: 'master',
                        description: 'tests-jenkins-shared-libraries branch')
@@ -209,23 +206,6 @@ node('default') {
                     ]
                 )
                 echo "${params.TEST_PIPELINES_PATH}/${params.FUZZ_PIPELINE} #${fuzzResult.number} succeeded."
-            }
-        }
-
-        tasks["appcheck"] = {
-            stage("AppCheck") {
-                final appcheckResult = build(job: "test-pipelines/${params.APPCHECK_PIPELINE}",
-                    propagate: true,
-                    wait: true,
-                    parameters: [
-                        [$class: 'StringParameterValue', name: 'CLAMAV_JOB_NAME', value: "${JOB_NAME}"],
-                        [$class: 'StringParameterValue', name: 'CLAMAV_JOB_NUMBER', value: "${BUILD_NUMBER}"],
-                        [$class: 'StringParameterValue', name: 'BUILD_JOB_NAME', value: "test-pipelines/${params.BUILD_PIPELINE}"],
-                        [$class: 'StringParameterValue', name: 'BUILD_JOB_NUMBER', value: "${buildResult.number}"],
-                        [$class: 'StringParameterValue', name: 'VERSION', value: "${params.VERSION}"]
-                    ]
-                )
-                echo "test-pipelines/${params.APPCHECK_PIPELINE} #${appcheckResult.number} succeeded."
             }
         }
 
