@@ -3,6 +3,38 @@
 Note: This file refers to the official packages. Things described here may
 differ slightly from third-party binary packages.
 
+## 1.4.1
+
+ClamAV 1.4.1 is a critical patch release with the following fixes:
+
+- [CVE-2024-20506](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2024-20506):
+  Changed the logging module to disable following symlinks on Linux and Unix
+  systems so as to prevent an attacker with existing access to the 'clamd' or
+  'freshclam' services from using a symlink to corrupt system files.
+
+  This issue affects all currently supported versions. It will be fixed in:
+  - 1.4.1
+  - 1.3.2
+  - 1.0.7
+  - 0.103.12
+
+  Thank you to Detlef for identifying this issue.
+
+- [CVE-2024-20505](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2024-20505):
+  Fixed a possible out-of-bounds read bug in the PDF file parser that could
+  cause a denial-of-service (DoS) condition.
+
+  This issue affects all currently supported versions. It will be fixed in:
+  - 1.4.1
+  - 1.3.2
+  - 1.0.7
+  - 0.103.12
+
+  Thank you to OSS-Fuzz for identifying this issue.
+
+- Removed unused Python modules from freshclam tests including deprecated
+  'cgi' module that is expected to cause test failures in Python 3.13.
+
 ## 1.4.0
 
 ClamAV 1.4.0 includes the following improvements and changes:
