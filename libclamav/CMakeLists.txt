@@ -311,6 +311,7 @@ set(LIBCLAMAV_SOURCES
     msxml_parser.c      msxml_parser.h
     msxml.c             msxml.h
     ole2_extract.c      ole2_extract.h
+    ole2_extract_images.c ole2_extract_images.h
     xlm_extract.c       xlm_extract.h
     ooxml.c             ooxml.h
     rtf.c               rtf.h

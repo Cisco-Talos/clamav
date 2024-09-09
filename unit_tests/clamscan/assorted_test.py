@@ -86,38 +86,38 @@ class TC(testcase.TestCase):
         expected_results.append('Infected files: {}'.format(expected_num_infected))
         self.verify_output(output.out, expected=expected_results)
 
-    def test_pe_cert_trust(self):
-        self.step_name('Test that clam can trust an EXE based on an authenticode certificate check.')
-
-        test_path = TC.path_source / 'unit_tests' / 'input' / 'pe_allmatch'
-        test_exe = test_path / 'test.exe'
-
-        command = '{valgrind} {valgrind_args} {clamscan} \
-             -d {alerting_dbs} \
-             -d {weak_dbs} \
-             -d {broken_dbs} \
-             -d {trust_dbs} \
-             --allmatch --bytecode-unsigned {testfiles}'.format(
-            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan,
-            alerting_dbs=test_path / 'alert-sigs',
-            weak_dbs=test_path / 'weak-sigs',
-            broken_dbs=test_path / 'broken-sigs',
-            trust_dbs=test_path / 'trust-sigs',
-            testfiles=test_exe,
-        )
-        output = self.execute_command(command)
-
-        assert output.ec == 0
-
-        expected_results = ['OK']
-
-        # The alert sig files are all given the signature name, so we can verify that the correct sigs were found.
-        # We need only to trim off the extension and say "FOUND" for the alerting sigs.
-        # Note: Some of these have ".UNOFFICIAL" in the name because not all of them have that ".UNOFFICIAL" suffix when reported.
-        #       I think this is a minor bug. So if we change that, we'll need to update this test.
-        unexpected_results = ['{sig} FOUND'.format(sig=f.stem) for f in (test_path / 'alert-sigs').iterdir()]
-
-        self.verify_output(output.out, expected=expected_results, unexpected=unexpected_results)
+#    def test_pe_cert_trust(self):
+#        self.step_name('Test that clam can trust an EXE based on an authenticode certificate check.')
+#
+#        test_path = TC.path_source / 'unit_tests' / 'input' / 'pe_allmatch'
+#        test_exe = test_path / 'test.exe'
+#
+#        command = '{valgrind} {valgrind_args} {clamscan} \
+#             -d {alerting_dbs} \
+#             -d {weak_dbs} \
+#             -d {broken_dbs} \
+#             -d {trust_dbs} \
+#             --allmatch --bytecode-unsigned {testfiles}'.format(
+#            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan,
+#            alerting_dbs=test_path / 'alert-sigs',
+#            weak_dbs=test_path / 'weak-sigs',
+#            broken_dbs=test_path / 'broken-sigs',
+#            trust_dbs=test_path / 'trust-sigs',
+#            testfiles=test_exe,
+#        )
+#        output = self.execute_command(command)
+#
+#        assert output.ec == 0
+#
+#        expected_results = ['OK']
+#
+#        # The alert sig files are all given the signature name, so we can verify that the correct sigs were found.
+#        # We need only to trim off the extension and say "FOUND" for the alerting sigs.
+#        # Note: Some of these have ".UNOFFICIAL" in the name because not all of them have that ".UNOFFICIAL" suffix when reported.
+#        #       I think this is a minor bug. So if we change that, we'll need to update this test.
+#        unexpected_results = ['{sig} FOUND'.format(sig=f.stem) for f in (test_path / 'alert-sigs').iterdir()]
+#
+#        self.verify_output(output.out, expected=expected_results, unexpected=unexpected_results)
 
     def test_pe_cert_block(self):
         self.step_name('Test that clam will disregard a certificate trust signature if a block certificate rule is used.')

@@ -6,6 +6,7 @@ Run clamscan tests.
 
 import os
 import sys
+import hashlib
 
 sys.path.append('../unit_tests')
 import testcase
@@ -124,3 +125,47 @@ class TC(testcase.TestCase):
         self.verify_output(output.out, expected=expected_stdout)
 
         assert output.ec == 1  # no virus, no failures
+
+
+    def test_doc_jpeg_png(self):
+        self.step_name('Test that clamav can successfully extract jpeg and png images from doc documents')
+
+        tempdir=self.path_tmp / "TD"
+        if not os.path.isdir(tempdir):
+            os.makedirs(tempdir);
+
+        testfiles = TC.path_source / 'unit_tests' / 'input' / 'other_scanfiles' / 'has_png_and_jpeg.doc'
+        command = '{valgrind} {valgrind_args} {clamscan} -d {path_db} {testfiles} --gen-json --leave-temps --tempdir={tempdir} --debug'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan,
+            path_db=TC.path_build / 'unit_tests' / 'input' / 'clamav.hdb',
+            testfiles=testfiles,
+            tempdir=tempdir,
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 0  # no virus, no failures
+
+        expected_hashes = [
+                "f083e9c704165003f8c065964e4ccb47da48bbad8a80521d571cbf0f1d4762c6",
+                "40b5ae0df66540ba3ac60edf2840b4b8edd0500706105f3b63083e3a8993119a"
+                ]
+
+        hashes = []
+        for parent, dirs, files in os.walk(tempdir):
+            for f in files:
+                if f.startswith("ole2_images."):
+                    fName = os.path.join(parent, f)
+                    handle = open(fName, "rb")
+                    data = handle.read()
+                    handle.close()
+
+                    m = hashlib.sha256()
+                    m.update(data)
+                    hashes.append(m.hexdigest())
+
+        for h in hashes:
+            if not h in expected_hashes:
+                assert 1 == 0
+
+#        assert 0 == 0
+
