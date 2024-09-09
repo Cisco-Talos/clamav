@@ -4212,9 +4212,9 @@ done:
 
 cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
 {
-    cl_error_t ret = CL_CLEAN;
+    cl_error_t ret                = CL_CLEAN;
     cl_error_t cache_check_result = CL_VIRUS;
-    bool cache_enabled = true;
+    bool cache_enabled            = true;
     cl_error_t verdict_at_this_level;
     cli_file_t dettype              = 0;
     uint8_t typercg                 = 1;

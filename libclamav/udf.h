@@ -66,7 +66,6 @@ typedef struct __attribute__((packed)) {
 
 } lb_addr;
 
-
 // Long allocation descriptor
 typedef struct __attribute__((packed)) {
     uint32_t length; // 4/14.14.1.1
@@ -211,10 +210,7 @@ static uint32_t getFileIdentifierDescriptorPaddingLength(const FileIdentifierDes
 
 static inline size_t getFileIdentifierDescriptorSize(const FileIdentifierDescriptor* fid)
 {
-    return FILE_IDENTIFIER_DESCRIPTOR_SIZE_KNOWN
-        + le16_to_host(fid->implementationLength)
-        + fid->fileIdentifierLength
-        + getFileIdentifierDescriptorPaddingLength(fid);
+    return FILE_IDENTIFIER_DESCRIPTOR_SIZE_KNOWN + le16_to_host(fid->implementationLength) + fid->fileIdentifierLength + getFileIdentifierDescriptorPaddingLength(fid);
 }
 
 typedef struct __attribute__((packed)) {
@@ -521,7 +517,7 @@ typedef struct __attribute__((packed)) {
 
 } FileSetDescriptor;
 
-typedef struct  __attribute__((packed)) {
+typedef struct __attribute__((packed)) {
     uint8_t structType;
     char standardIdentifier[5];
     uint8_t structVersion;

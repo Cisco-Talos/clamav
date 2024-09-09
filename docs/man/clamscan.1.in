@@ -232,7 +232,7 @@ Extract and scan at most #n bytes from each archive. The size the archive plus t
 Extract at most #n files from each scanned file (when this is an archive, a document or another kind of container). This option protects your system against DoS attacks (default: 10000)
 .TP
 \fB\-\-max\-recursion=#n\fR
-Set archive recursion level limit. This option protects your system against DoS attacks (default: 17).
+Set archive recursion level limit. This option protects your system against DoS attacks (default: 17) (maximum: 100).
 .TP
 \fB\-\-max\-dir\-recursion=#n\fR
 Maximum depth directories are scanned at (default: 15).

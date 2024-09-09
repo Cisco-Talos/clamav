@@ -81,9 +81,9 @@ struct cli_matcher;
         cli_strbcasestr(ext, ".ign") ||  \
         cli_strbcasestr(ext, ".ign2") || \
         cli_strbcasestr(ext, ".imp"))
-#define CLI_DBEXT_SIGNATURE(ext)         \
-    (                                    \
-        cli_strbcasestr(ext, ".cvd") ||  \
+#define CLI_DBEXT_SIGNATURE(ext)        \
+    (                                   \
+        cli_strbcasestr(ext, ".cvd") || \
         cli_strbcasestr(ext, ".cld"))
 #else
 #define CLI_DBEXT(ext)                   \
@@ -124,9 +124,9 @@ struct cli_matcher;
         cli_strbcasestr(ext, ".ign") ||  \
         cli_strbcasestr(ext, ".ign2") || \
         cli_strbcasestr(ext, ".imp"))
-#define CLI_DBEXT_SIGNATURE(ext)         \
-    (                                    \
-        cli_strbcasestr(ext, ".cvd") ||  \
+#define CLI_DBEXT_SIGNATURE(ext)        \
+    (                                   \
+        cli_strbcasestr(ext, ".cvd") || \
         cli_strbcasestr(ext, ".cld"))
 #endif
 

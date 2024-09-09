@@ -72,7 +72,7 @@ int cli_check_mydoom_log(cli_ctx *ctx)
     while (blocks) { /* This wasn't probably intended but that's what the current code does anyway */
         const uint32_t marker_ff = 0xffffffff;
 
-	if (!memcmp(&ptr[--blocks], &marker_ff, sizeof(uint32_t)))
+        if (!memcmp(&ptr[--blocks], &marker_ff, sizeof(uint32_t)))
             return CL_CLEAN;
     }
 
