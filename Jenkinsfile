@@ -147,6 +147,7 @@ pipeline {
         }
 
         stage('Tests') {
+            failFast false
             parallel {
                 stage('Pipeline') {
                     stages{
@@ -154,19 +155,21 @@ pipeline {
                         stage("Package") {
                             steps {
                                 script{
-                                    regularResult = build(job: "${params.TEST_PIPELINES_PATH}/${params.PACKAGE_PIPELINE}",
+                                    packageResult = build(job: "${params.TEST_PIPELINES_PATH}/${params.PACKAGE_PIPELINE}",
                                         propagate: true,
                                         wait: true,
                                         parameters: [
                                             [$class: 'StringParameterValue', name: 'CLAMAV_JOB_NAME', value: "${JOB_NAME}"],
                                             [$class: 'StringParameterValue', name: 'CLAMAV_JOB_NUMBER', value: "${BUILD_NUMBER}"],
                                             [$class: 'StringParameterValue', name: 'TESTS_BRANCH', value: "${params.TESTS_BRANCH}"],
+                                            [$class: 'StringParameterValue', name: 'BUILD_JOB_NAME', value: "${params.BUILD_PIPELINES_PATH}/${params.BUILD_PIPELINE}"],
+                                            [$class: 'StringParameterValue', name: 'BUILD_JOB_NUMBER', value: "${buildResult.number}"],
                                             [$class: 'StringParameterValue', name: 'FRAMEWORK_BRANCH', value: "${params.FRAMEWORK_BRANCH}"],
                                             [$class: 'StringParameterValue', name: 'VERSION', value: "${params.VERSION}"],
                                             [$class: 'StringParameterValue', name: 'SHARED_LIB_BRANCH', value: "${params.SHARED_LIB_BRANCH}"]
                                         ]
                                     )
-                                    echo "${params.TEST_PIPELINES_PATH}/${params.PACKAGE_PIPELINE} #${regularResult.number} succeeded."
+                                    echo "${params.TEST_PIPELINES_PATH}/${params.PACKAGE_PIPELINE} #${packageResult.number} succeeded."
                                 }
                             }
                         }
