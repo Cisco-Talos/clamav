@@ -89,7 +89,7 @@ pipeline {
 
                 dir(path: 'docs/html') {
                     sh """# Move the clamav-documentation here.
-                        cp -r ../../clamav_documentation/* .
+                        cp -r ../../clamav_documentation/ .
                         # Clean-up
                         rm -rf ../../clamav_documentation
                         rm -rf .git .nojekyll CNAME Placeholder || true
@@ -154,7 +154,8 @@ pipeline {
                         // Regular and custom tests run sequentially on same infra
                         stage("Package") {
                             steps {
-                                script{
+                                catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+                                    script{
                                     packageResult = build(job: "${params.TEST_PIPELINES_PATH}/${params.PACKAGE_PIPELINE}",
                                         propagate: true,
                                         wait: true,
@@ -171,12 +172,14 @@ pipeline {
                                     )
                                     echo "${params.TEST_PIPELINES_PATH}/${params.PACKAGE_PIPELINE} #${packageResult.number} succeeded."
                                 }
+                                }
                             }
                         }
 
                         stage("Regular From-Source") {
                             steps {
-                                script{
+                                catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+                                    script{
                                     regularResult = build(job: "${params.TEST_PIPELINES_PATH}/${params.REGULAR_PIPELINE}",
                                         propagate: true,
                                         wait: true,
@@ -190,6 +193,7 @@ pipeline {
                                         ]
                                     )
                                     echo "${params.TEST_PIPELINES_PATH}/${params.REGULAR_PIPELINE} #${regularResult.number} succeeded."
+                                }
                                 }
                             }
                         }
