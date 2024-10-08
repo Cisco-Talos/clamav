@@ -61,6 +61,8 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     set(C_LINUX 1)
 elseif(APPLE OR CMAKE_SYSTEM_NAME MATCHES "BSD")
     set(C_BSD 1)
+elseif(CMAKE_SYSTEM_NAME MATCHES "AIX")
+    set(AIX TRUE)
 endif()
 
 # Git optionally used to add commit info into build to differentiate in bug reports.
