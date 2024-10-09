@@ -97,7 +97,7 @@ if(ENABLE_SHARED_LIB)
 
     if(WIN32)
         set_target_properties(clamunrar PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
-    elseif(UNIX AND NOT APPLE)
+    elseif(UNIX AND NOT APPLE AND NOT AIX)
         target_link_options(clamunrar PRIVATE "-Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/libclamunrar.map")
     endif()
 

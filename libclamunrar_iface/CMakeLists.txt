@@ -64,7 +64,7 @@ if(ENABLE_UNRAR)
 
         if(WIN32)
             set_target_properties(clamunrar_iface PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
-        elseif(UNIX AND NOT APPLE)
+        elseif(UNIX AND NOT APPLE AND NOT AIX)
             target_link_options(clamunrar_iface PRIVATE "-Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/libclamunrar_iface.map")
         endif()
 
