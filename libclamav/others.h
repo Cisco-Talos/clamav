@@ -1027,6 +1027,7 @@ char *cli_safer_strdup(const char *s);
 
 int cli_rmdirs(const char *dirname);
 char *cli_hashstream(FILE *fs, unsigned char *digcpy, int type);
+char *cli_hashstream_ex(FILE *fs, unsigned char *digcpy, int type, unsigned int *hash_len);
 char *cli_hashfile(const char *filename, int type);
 
 /**
