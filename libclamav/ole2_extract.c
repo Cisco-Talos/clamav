@@ -2130,7 +2130,7 @@ static cl_error_t handler_otf_encrypted(ole2_header_t *hdr, property_t *prop, co
             }
             bytesRead += blockSize;
 
-            for (; writeIdx <= (leftover + bytesToWrite) - 16; writeIdx += 16, decryptDstIdx += 16) {
+            for (; writeIdx + 16 <= leftover + bytesToWrite; writeIdx += 16, decryptDstIdx += 16) {
                 rijndaelDecrypt(rk, nrounds, &(buff[writeIdx]), &(decryptDst[decryptDstIdx]));
             }
 
