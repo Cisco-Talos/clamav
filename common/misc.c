@@ -479,7 +479,15 @@ unsigned int countlines(const char *filename)
         return 0;
 
     while (fgets(buff, sizeof(buff), fh)) {
+        // ignore comments
         if (buff[0] == '#') continue;
+
+        // ignore empty lines in CR/LF format
+        if (buff[0] == '\r' && buff[1] == '\n') continue;
+
+        // ignore empty lines in LF format
+        if (buff[0] == '\n') continue;
+
         lines++;
     }
 
