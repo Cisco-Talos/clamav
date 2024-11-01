@@ -89,7 +89,7 @@ pipeline {
 
                 dir(path: 'docs/html') {
                     sh """# Move the clamav-documentation here.
-                        cp -r ../../clamav_documentation/ .
+                        cp -r ../../clamav_documentation/* .
                         # Clean-up
                         rm -rf ../../clamav_documentation
                         rm -rf .git .nojekyll CNAME Placeholder || true
@@ -122,6 +122,13 @@ pipeline {
                         cpack --config CPackSourceConfig.cmake
                     """
                     archiveArtifacts(artifacts: "clamav-${params.VERSION}*.tar.gz", onlyIfSuccessful: true)
+
+                    sh """
+                        jq -s 'map(. + {package_version: input_filename | split("/") | .[-2]})' $HOME/.cargo/registry/src/*/*/.cargo_vcs_info.json > clamav_cargo_vcs_info.json
+                    """
+
+                    archiveArtifacts(artifacts: "clamav_cargo_vcs_info.json", onlyIfSuccessful: true)
+
                 }
                 cleanWs()
             }
