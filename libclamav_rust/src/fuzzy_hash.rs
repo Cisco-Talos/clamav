@@ -181,7 +181,7 @@ pub unsafe extern "C" fn _fuzzy_hash_load_subsignature(
     subsig_id: u32,
     err: *mut *mut FFIError,
 ) -> bool {
-    let hexsig = validate_str_param!(hexsig);
+    let hexsig = validate_str_param!(hexsig, err=err);
 
     let mut hashmap = ManuallyDrop::new(Box::from_raw(fuzzy_hashmap as *mut FuzzyHashMap));
 
