@@ -1504,7 +1504,7 @@ fc_error_t perform_database_update(
                 const char *startOfFilename = strrchr(urlDatabaseList[i], '/') + 1;
                 if (NULL != startOfFilename) {
                     // Add the base database name to the do-not-prune list, excluding the '.cvd' extension.
-                    doNotPruneDatabaseList[nDatabases + i] = CLI_STRNDUP(startOfFilename, strlen(startOfFilename) - strlen(".cvd"));
+                    doNotPruneDatabaseList[nDoNotPruneDatabases] = CLI_STRNDUP(startOfFilename, strlen(startOfFilename) - strlen(".cvd"));
                     nDoNotPruneDatabases++;
                 }
             }
