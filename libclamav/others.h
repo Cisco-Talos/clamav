@@ -188,6 +188,7 @@ typedef struct recursion_level_tag {
 
 typedef void *evidence_t;
 typedef void *onedump_t;
+typedef void *cvd_t;
 
 /* internal clamav context */
 typedef struct cli_ctx_tag {
@@ -320,6 +321,7 @@ struct cl_engine {
     uint32_t ac_mindepth;
     uint32_t ac_maxdepth;
     char *tmpdir;
+    char *certs_directory;
     uint32_t keeptmp;
     uint64_t engine_options;
     uint32_t cache_size;

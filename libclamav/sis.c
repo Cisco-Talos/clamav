@@ -506,7 +506,7 @@ static cl_error_t real_scansis(cli_ctx *ctx, const char *tmpd)
                         snprintf(ofn, 1024, "%s" PATHSEP "sis%02d", tmpd, umped);
                         ofn[1023] = '\0';
                         if ((fd = open(ofn, O_RDWR | O_CREAT | O_TRUNC | O_BINARY, 0600)) == -1) {
-                            cli_errmsg("SIS: unable to create output file %s - aborting.", ofn);
+                            cli_errmsg("SIS: unable to create output file %s - aborting.\n", ofn);
                             status = CL_ECREAT;
                             goto done;
                         }
@@ -832,7 +832,7 @@ static cl_error_t real_scansis9x(cli_ctx *ctx, const char *tmpd)
                                 uusize = s->fsize[s->level];
                             }
                             if ((fd = open(tempf, O_RDWR | O_CREAT | O_TRUNC | O_BINARY, 0600)) == -1) {
-                                cli_errmsg("SIS: unable to create output file %s - aborting.", tempf);
+                                cli_errmsg("SIS: unable to create output file %s - aborting.\n", tempf);
                                 free(dst);
                                 break;
                             }

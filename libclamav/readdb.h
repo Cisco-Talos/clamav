@@ -205,7 +205,7 @@ cl_error_t readdb_parse_ldb_subsignature(struct cli_matcher *root, const char *v
                                          const char *offset, const uint32_t *lsigid, unsigned int options,
                                          int current_subsig_index, int num_subsigs, struct cli_lsig_tdb *tdb);
 
-cl_error_t cli_load(const char *filename, struct cl_engine *engine, unsigned int *signo, unsigned int options, struct cli_dbio *dbio);
+cl_error_t cli_load(const char *filename, struct cl_engine *engine, unsigned int *signo, unsigned int options, struct cli_dbio *dbio, void *sign_verifier);
 
 char *cli_dbgets(char *buff, unsigned int size, FILE *fs, struct cli_dbio *dbio);
 

@@ -59,23 +59,16 @@ CLAMAV_PUBLIC {
     cl_hash_destroy;
     cl_engine_stats_enable;
     lsig_sub_matched;
-};
-CLAMAV_0.104.0 {
-  global:
     cl_engine_set_clcb_engine_compile_progress;
     cl_engine_set_clcb_engine_free_progress;
     cl_engine_set_clcb_sigload_progress;
-} CLAMAV_PUBLIC;
-CLAMAV_1.0.0 {
-  global:
     cl_cvdunpack;
     cl_engine_set_clcb_file_inspection;
-} CLAMAV_0.104.0;
-CLAMAV_1.1.0 {
-  global:
     cl_cvdgetage;
     cl_engine_set_clcb_vba;
-} CLAMAV_1.0.0;
+    cl_cvdunpack_ex;
+    cl_cvdverify_ex;
+};
 CLAMAV_PRIVATE {
   global:
     cli_sigperf_print;
@@ -302,6 +295,7 @@ CLAMAV_PRIVATE {
     cli_magic_scan_buff;
     cli_checklimits;
     cli_matchmeta;
+    cli_cvdunpack_and_verify;
 
     __cli_strcasestr;
     __cli_strndup;

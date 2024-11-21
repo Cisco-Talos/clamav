@@ -43,17 +43,30 @@
 #define CLOPT_TYPE_SIZE64   5    /* 64-bit number possibly followed by modifiers (K/k, M/m or G/g) */
 
 #ifdef _WIN32
-extern char _DATADIR[MAX_PATH];
-extern char _CONFDIR[MAX_PATH];
-extern char _CONFDIR_CLAMD[MAX_PATH];
-extern char _CONFDIR_FRESHCLAM[MAX_PATH];
-extern char _CONFDIR_MILTER[MAX_PATH];
 
-#define DATADIR           _DATADIR
-#define CONFDIR           _CONFDIR
-#define CONFDIR_CLAMD     _CONFDIR_CLAMD
-#define CONFDIR_FRESHCLAM _CONFDIR_FRESHCLAM
-#define CONFDIR_MILTER    _CONFDIR_MILTER
+    extern char _DATADIR[MAX_PATH];
+    extern char _CONFDIR[MAX_PATH];
+    extern char _CERTSDIR[MAX_PATH];
+    extern char _CONFDIR_CLAMD[MAX_PATH];
+    extern char _CONFDIR_FRESHCLAM[MAX_PATH];
+    extern char _CONFDIR_MILTER[MAX_PATH];
+
+    #define OPT_DATADIR           _DATADIR
+    #define OPT_CONFDIR           _CONFDIR
+    #define OPT_CERTSDIR          _CERTSDIR
+    #define OPT_CONFDIR_CLAMD     _CONFDIR_CLAMD
+    #define OPT_CONFDIR_FRESHCLAM _CONFDIR_FRESHCLAM
+    #define OPT_CONFDIR_MILTER    _CONFDIR_MILTER
+
+#else /* !_WIN32 */
+
+    #define OPT_DATADIR           DATADIR
+    #define OPT_CONFDIR           CONFDIR
+    #define OPT_CERTSDIR          CERTSDIR
+    #define OPT_CONFDIR_CLAMD     CONFDIR PATHSEP "clamd.conf"
+    #define OPT_CONFDIR_FRESHCLAM CONFDIR PATHSEP "freshclam.conf"
+    #define OPT_CONFDIR_MILTER    CONFDIR PATHSEP "clamav-milter.conf"
+
 #endif
 // clang-format on
 

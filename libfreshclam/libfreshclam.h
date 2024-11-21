@@ -60,6 +60,7 @@ typedef struct fc_config_ {
     const char *proxyPassword;       /**< (optional) Password for proxy server authentication. */
     const char *databaseDirectory;   /**< Filepath of database directory. */
     const char *tempDirectory;       /**< Filepath to store temp files. */
+    const char *certsDirectory;      /**< Filepath of clamav ca certificates directory to verify database external digital signatures. */
 } fc_config;
 
 typedef enum fc_error_tag {

@@ -157,3 +157,64 @@ class TC(testcase.TestCase):
             'LibClamAV Error',
         ]
         self.verify_output(output.err, expected=expected_results)
+
+    def test_sigtool_03_sign_and_verify(self):
+        self.step_name('sigtool test for --sign and --verify')
+        # Verify that you can sign and verify any file.
+
+        # Create a file to sign.
+        (TC.path_tmp / 'file_to_sign').write_text('This is a file to sign.')
+
+        self.log.warning('VG: {}'.format(os.getenv("VG")))
+
+        command = '{valgrind} {valgrind_args} {sigtool} --sign {input} --key {key} --cert {cert}'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, sigtool=TC.sigtool,
+            input=TC.path_tmp / 'file_to_sign',
+            key=TC.path_build / 'unit_tests' / 'input' / 'signing' / 'private' / 'signing-test.key',
+            cert=TC.path_source / 'unit_tests' / 'input' / 'signing' / 'private' / 'signing-test.crt'
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 0  # success
+
+        # Verify the signed file (should pass)
+
+        command = '{valgrind} {valgrind_args} {sigtool} --verify {input} --cvdcertsdir {cvdcertsdir}'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, sigtool=TC.sigtool,
+            input=TC.path_tmp / 'file_to_sign',
+            cvdcertsdir=TC.path_source / 'unit_tests' / 'input' / 'signing' / 'public'
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 0  # success
+
+        expected_results = [
+            'Successfully verified file',
+            "signed by 'ClamAV TEST CVD Signing Cert'",
+        ]
+        self.verify_output(output.out, expected=expected_results)
+
+        # Modify the signed file
+
+        (TC.path_tmp / 'file_to_sign').write_text(' Modified.')
+
+        # verify the signed file (should fail now)
+
+        command = '{valgrind} {valgrind_args} {sigtool} --verify {input} --cvdcertsdir {cvdcertsdir}'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, sigtool=TC.sigtool,
+            input=TC.path_tmp / 'file_to_sign',
+            cvdcertsdir=TC.path_source / 'unit_tests' / 'input' / 'signing' / 'public'
+        )
+        output = self.execute_command(command)
+
+        assert output.ec != 0  # not success
+
+        expected_results = [
+            'Failed to verify file',
+        ]
+        unexpected_results = [
+            'Successfully verified file',
+            "signed by 'ClamAV TEST CVD Signing Cert'",
+        ]
+        self.verify_output(output.err, expected=expected_results, )
+        self.verify_output(output.out, unexpected=unexpected_results)

@@ -273,12 +273,19 @@ Maximum size file to perform PCRE subsig matching (default: 100 MB).
 .TP
 \fB\-\-disable\-cache\fR
 Disable caching and cache checks for hash sums of scanned files.
+.TP
+\fB\-\-cvdcertsdir=DIR\fR
+Specify a directory containing the root CA cert needed to verify detached CVD digital signatures. If not provided, then clamscan will look in the default directory.
 
 .SH "ENVIRONMENT VARIABLES"
 .LP
 clamscan uses the following environment variables:
 .TP
-LD_LIBRARY_PATH - May be used on startup to find the libclamunrar_iface shared library module to enable RAR archive support.
+\fBLD_LIBRARY_PATH\fR
+May be used on startup to find the libclamunrar_iface shared library module to enable RAR archive support.
+.TP
+\fBCVD_CERTS_DIR\fR
+Specify a directory containing the root CA cert needed to verify detached CVD digital signatures. If not provided, then clamscan will look in the default directory.
 
 .SH "EXAMPLES"
 .LP

@@ -214,6 +214,11 @@ git = \"https://github.com/Cisco-Talos/onenote.rs.git\"
 branch = \"CLAM-2329-new-from-slice\"
 replace-with = \"vendored-sources\"
 
+[source.\"git+https://github.com/Cisco-Talos/clamav-signature-util.git?tag=1.2.0\"]
+git = \"https://github.com/Cisco-Talos/clamav-signature-util.git\"
+tag = \"1.2.0\"
+replace-with = \"vendored-sources\"
+
 [source.vendored-sources]
 directory = \".cargo/vendor\"
 "
@@ -224,6 +229,7 @@ endfunction()
 function(add_rust_executable)
     set(options)
     set(oneValueArgs TARGET SOURCE_DIRECTORY BINARY_DIRECTORY)
+    set(multiValueArgs ENVIRONMENT)
     cmake_parse_arguments(ARGS "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
     if(WIN32)
@@ -238,13 +244,15 @@ function(add_rust_executable)
     list(APPEND MY_CARGO_ARGS "--target-dir" ${ARGS_BINARY_DIRECTORY})
     list(JOIN MY_CARGO_ARGS " " MY_CARGO_ARGS_STRING)
 
+    list(APPEND ARGS_ENVIRONMENT "CARGO_TARGET_DIR=${ARGS_BINARY_DIRECTORY}" "CARGO_INCLUDE_DIRECTORIES=\"${ARGS_INCLUDE_DIRECTORIES}\"")
+
     # Build the executable.
     add_custom_command(
         OUTPUT "${OUTPUT}"
-        COMMAND ${CMAKE_COMMAND} -E env "CARGO_TARGET_DIR=${ARGS_BINARY_DIRECTORY}" "CARGO_INCLUDE_DIRECTORIES=\"${ARGS_INCLUDE_DIRECTORIES}\"" ${cargo_EXECUTABLE} ${MY_CARGO_ARGS}
+        COMMAND ${CMAKE_COMMAND} -E env ${ARGS_ENVIRONMENT} ${cargo_EXECUTABLE} ${MY_CARGO_ARGS}
         WORKING_DIRECTORY "${ARGS_SOURCE_DIRECTORY}"
         DEPENDS ${EXE_SOURCES}
-        COMMENT "Building ${ARGS_TARGET} in ${ARGS_BINARY_DIRECTORY} with:\n\t ${cargo_EXECUTABLE} ${MY_CARGO_ARGS_STRING}")
+        COMMENT "Building ${ARGS_TARGET} in ${ARGS_BINARY_DIRECTORY} with:\n\t ${cargo_EXECUTABLE} ${MY_CARGO_ARGS_STRING}\n  Environment:  ${ARGS_ENVIRONMENT}")
 
     # Create a target from the build output
     add_custom_target(${ARGS_TARGET}_target
@@ -271,6 +279,7 @@ endfunction()
 function(add_rust_library)
     set(options)
     set(oneValueArgs TARGET SOURCE_DIRECTORY BINARY_DIRECTORY PRECOMPILE_TESTS INCLUDE_DIRECTORIES)
+    set(multiValueArgs ENVIRONMENT)
     cmake_parse_arguments(ARGS "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
     if(WIN32)
@@ -288,39 +297,41 @@ function(add_rust_library)
     list(APPEND MY_CARGO_ARGS "--target-dir" ${ARGS_BINARY_DIRECTORY})
     list(JOIN MY_CARGO_ARGS " " MY_CARGO_ARGS_STRING)
 
+    list(APPEND ARGS_ENVIRONMENT "CARGO_CMD=build" "CARGO_TARGET_DIR=${ARGS_BINARY_DIRECTORY}" "MAINTAINER_MODE=${MAINTAINER_MODE}" "CARGO_INCLUDE_DIRECTORIES=\"${ARGS_INCLUDE_DIRECTORIES}\"" "RUSTFLAGS=${RUSTFLAGS}")
+
     # Build the library and generate the c-binding
     if("${CMAKE_OSX_ARCHITECTURES}" MATCHES "^(arm64;x86_64|x86_64;arm64)$")
         add_custom_command(
             OUTPUT "${OUTPUT}"
-            COMMAND ${CMAKE_COMMAND} -E env "CARGO_CMD=build" "CARGO_TARGET_DIR=${ARGS_BINARY_DIRECTORY}" "MAINTAINER_MODE=${MAINTAINER_MODE}" "CARGO_INCLUDE_DIRECTORIES=\"${ARGS_INCLUDE_DIRECTORIES}\"" "RUSTFLAGS=${RUSTFLAGS}" ${cargo_EXECUTABLE} ${MY_CARGO_ARGS} --target=x86_64-apple-darwin
-            COMMAND ${CMAKE_COMMAND} -E env "CARGO_CMD=build" "CARGO_TARGET_DIR=${ARGS_BINARY_DIRECTORY}" "MAINTAINER_MODE=${MAINTAINER_MODE}" "CARGO_INCLUDE_DIRECTORIES=\"${ARGS_INCLUDE_DIRECTORIES}\"" "RUSTFLAGS=${RUSTFLAGS}" ${cargo_EXECUTABLE} ${MY_CARGO_ARGS} --target=aarch64-apple-darwin
+            COMMAND ${CMAKE_COMMAND} -E env ${ARGS_ENVIRONMENT} ${cargo_EXECUTABLE} ${MY_CARGO_ARGS} --target=x86_64-apple-darwin
+            COMMAND ${CMAKE_COMMAND} -E env ${ARGS_ENVIRONMENT} ${cargo_EXECUTABLE} ${MY_CARGO_ARGS} --target=aarch64-apple-darwin
             COMMAND ${CMAKE_COMMAND} -E make_directory "${ARGS_BINARY_DIRECTORY}/${RUST_COMPILER_TARGET}/${CARGO_BUILD_TYPE}"
             COMMAND lipo -create ${ARGS_BINARY_DIRECTORY}/x86_64-apple-darwin/${CARGO_BUILD_TYPE}/lib${ARGS_TARGET}.a ${ARGS_BINARY_DIRECTORY}/aarch64-apple-darwin/${CARGO_BUILD_TYPE}/lib${ARGS_TARGET}.a -output "${OUTPUT}"
             WORKING_DIRECTORY "${ARGS_SOURCE_DIRECTORY}"
             DEPENDS ${LIB_SOURCES}
-            COMMENT "Building ${ARGS_TARGET} in ${ARGS_BINARY_DIRECTORY} with:  ${cargo_EXECUTABLE} ${MY_CARGO_ARGS_STRING}")
+            COMMENT "Building ${ARGS_TARGET} in ${ARGS_BINARY_DIRECTORY} with:  ${cargo_EXECUTABLE} ${MY_CARGO_ARGS_STRING}\n  Environment:  ${ARGS_ENVIRONMENT}")
     elseif("${CMAKE_OSX_ARCHITECTURES}" MATCHES "^(arm64)$")
         add_custom_command(
             OUTPUT "${OUTPUT}"
-            COMMAND ${CMAKE_COMMAND} -E env "CARGO_CMD=build" "CARGO_TARGET_DIR=${ARGS_BINARY_DIRECTORY}" "MAINTAINER_MODE=${MAINTAINER_MODE}" "CARGO_INCLUDE_DIRECTORIES=\"${ARGS_INCLUDE_DIRECTORIES}\"" "RUSTFLAGS=${RUSTFLAGS}" ${cargo_EXECUTABLE} ${MY_CARGO_ARGS} --target=aarch64-apple-darwin
+            COMMAND ${CMAKE_COMMAND} -E env ${ARGS_ENVIRONMENT} ${cargo_EXECUTABLE} ${MY_CARGO_ARGS} --target=aarch64-apple-darwin
             WORKING_DIRECTORY "${ARGS_SOURCE_DIRECTORY}"
             DEPENDS ${LIB_SOURCES}
-            COMMENT "Building ${ARGS_TARGET} in ${ARGS_BINARY_DIRECTORY} with:  ${cargo_EXECUTABLE} ${MY_CARGO_ARGS_STRING}")
-    elseif("${CMAKE_OSX_ARCHITECTURES}" MATCHES "^(x86_64)$")
+            COMMENT "Building ${ARGS_TARGET} in ${ARGS_BINARY_DIRECTORY} with:  ${cargo_EXECUTABLE} ${MY_CARGO_ARGS_STRING}\n  Environment:  ${ARGS_ENVIRONMENT}")
+            elseif("${CMAKE_OSX_ARCHITECTURES}" MATCHES "^(x86_64)$")
         add_custom_command(
             OUTPUT "${OUTPUT}"
-            COMMAND ${CMAKE_COMMAND} -E env "CARGO_CMD=build" "CARGO_TARGET_DIR=${ARGS_BINARY_DIRECTORY}" "MAINTAINER_MODE=${MAINTAINER_MODE}" "CARGO_INCLUDE_DIRECTORIES=\"${ARGS_INCLUDE_DIRECTORIES}\"" "RUSTFLAGS=${RUSTFLAGS}" ${cargo_EXECUTABLE} ${MY_CARGO_ARGS} --target=x86_64-apple-darwin
+            COMMAND ${CMAKE_COMMAND} -E env ${ARGS_ENVIRONMENT} ${cargo_EXECUTABLE} ${MY_CARGO_ARGS} --target=x86_64-apple-darwin
             COMMAND ${CMAKE_COMMAND} -E make_directory "${ARGS_BINARY_DIRECTORY}/${RUST_COMPILER_TARGET}/${CARGO_BUILD_TYPE}"
             WORKING_DIRECTORY "${ARGS_SOURCE_DIRECTORY}"
             DEPENDS ${LIB_SOURCES}
-            COMMENT "Building ${ARGS_TARGET} in ${ARGS_BINARY_DIRECTORY} with:  ${cargo_EXECUTABLE} ${MY_CARGO_ARGS_STRING}")
+            COMMENT "Building ${ARGS_TARGET} in ${ARGS_BINARY_DIRECTORY} with:  ${cargo_EXECUTABLE} ${MY_CARGO_ARGS_STRING}\n  Environment:  ${ARGS_ENVIRONMENT}")
     else()
         add_custom_command(
             OUTPUT "${OUTPUT}"
-            COMMAND ${CMAKE_COMMAND} -E env "CARGO_CMD=build" "CARGO_TARGET_DIR=${ARGS_BINARY_DIRECTORY}" "MAINTAINER_MODE=${MAINTAINER_MODE}" "CARGO_INCLUDE_DIRECTORIES=\"${ARGS_INCLUDE_DIRECTORIES}\"" "RUSTFLAGS=${RUSTFLAGS}" ${cargo_EXECUTABLE} ${MY_CARGO_ARGS}
+            COMMAND ${CMAKE_COMMAND} -E env ${ARGS_ENVIRONMENT} ${cargo_EXECUTABLE} ${MY_CARGO_ARGS}
             WORKING_DIRECTORY "${ARGS_SOURCE_DIRECTORY}"
             DEPENDS ${LIB_SOURCES}
-            COMMENT "Building ${ARGS_TARGET} in ${ARGS_BINARY_DIRECTORY} with:  ${cargo_EXECUTABLE} ${MY_CARGO_ARGS_STRING}")
+            COMMENT "Building ${ARGS_TARGET} in ${ARGS_BINARY_DIRECTORY} with:  ${cargo_EXECUTABLE} ${MY_CARGO_ARGS_STRING}\n  Environment:  ${ARGS_ENVIRONMENT}")
     endif()
 
     # Create a target from the build output

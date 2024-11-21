@@ -7,6 +7,9 @@ if(WIN32)
     set(DATABASE_DIRECTORY
         "database" CACHE STRING
         "Database directory.")
+    set(CVD_CERTS_DIRECTORY
+        "certs" CACHE STRING
+        "ClamAV CA certificates directory.")
 else()
     set(APP_CONFIG_DIRECTORY
         "etc" CACHE STRING
@@ -14,6 +17,9 @@ else()
     set(DATABASE_DIRECTORY
         "share/clamav" CACHE STRING
         "Database directory.")
+    set(CVD_CERTS_DIRECTORY
+        "${APP_CONFIG_DIRECTORY}/certs" CACHE STRING
+        "ClamAV CA certificates directory.")
 endif()
 
 set(CLAMAV_USER "clamav" CACHE STRING "ClamAV User")

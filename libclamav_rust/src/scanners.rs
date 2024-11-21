@@ -45,7 +45,11 @@ use crate::{
 
 /// Rust wrapper of libclamav's cli_magic_scan_buff() function.
 /// Use magic sigs to identify the file type and then scan it.
-pub fn magic_scan(ctx: *mut cli_ctx, buf: &[u8], name: Option<String>) -> cl_error_t {
+///
+/// # Safety
+///
+/// The ctx pointer must be valid.
+pub unsafe fn magic_scan(ctx: *mut cli_ctx, buf: &[u8], name: Option<String>) -> cl_error_t {
     let ptr = buf.as_ptr();
     let len = buf.len();
 
@@ -59,10 +63,7 @@ pub fn magic_scan(ctx: *mut cli_ctx, buf: &[u8], name: Option<String>) -> cl_err
     }
 
     // Convert name to a C string.
-    let name = match name {
-        Some(name) => name,
-        None => String::from(""),
-    };
+    let name = name.unwrap_or_default();
 
     let name_ptr: *mut c_char = match CString::new(name) {
         Ok(name_cstr) => {
@@ -234,49 +235,46 @@ pub unsafe extern "C" fn scan_lha_lzh(ctx: *mut cli_ctx) -> cl_error_t {
                     != cl_error_t_CL_SUCCESS
                 {
                     debug!("Extracted file '{filename}' would exceed size limits. Skipping.");
+                } else if !decoder.is_decoder_supported() {
+                    debug!("err: unsupported compression method");
                 } else {
-                    if !decoder.is_decoder_supported() {
-                        debug!("err: unsupported compression method");
-                    } else {
-                        // Read the file into a buffer.
-                        let mut file_data: Vec<u8> = Vec::<u8>::new();
+                    // Read the file into a buffer.
+                    let mut file_data: Vec<u8> = Vec::<u8>::new();
 
-                        match decoder.read_to_end(&mut file_data) {
-                            Ok(bytes_read) => {
-                                if bytes_read > 0 {
-                                    debug!(
+                    match decoder.read_to_end(&mut file_data) {
+                        Ok(bytes_read) => {
+                            if bytes_read > 0 {
+                                debug!(
                                         "Read {bytes_read} bytes from file {filename} in the LHA archive."
                                     );
 
-                                    // Verify the CRC check *after* reading the file.
-                                    match decoder.crc_check() {
-                                        Ok(crc) => {
-                                            // CRC is valid.  Very likely this is an LHA or LZH archive.
-                                            debug!("CRC check passed.  Very likely this is an LHA or LZH archive.  CRC: {crc}");
-                                        }
-                                        Err(err) => {
-                                            // Error checking CRC.
-                                            debug!("An error occurred when checking the CRC of this LHA or LZH archive: {err}");
-
-                                            // Allow the scan to continue even with a CRC error, for now.
-                                            // break;
-                                        }
+                                // Verify the CRC check *after* reading the file.
+                                match decoder.crc_check() {
+                                    Ok(crc) => {
+                                        // CRC is valid.  Very likely this is an LHA or LZH archive.
+                                        debug!("CRC check passed.  Very likely this is an LHA or LZH archive.  CRC: {crc}");
                                     }
+                                    Err(err) => {
+                                        // Error checking CRC.
+                                        debug!("An error occurred when checking the CRC of this LHA or LZH archive: {err}");
 
-                                    // Scan the file.
-                                    let ret =
-                                        magic_scan(ctx, &file_data, Some(filename.to_string()));
-                                    if ret != cl_error_t_CL_SUCCESS {
-                                        debug!("cl_scandesc_magic returned error: {}", ret);
-                                        return ret;
+                                        // Allow the scan to continue even with a CRC error, for now.
+                                        // break;
                                     }
-                                } else {
-                                    debug!("Read zero-byte file.");
                                 }
+
+                                // Scan the file.
+                                let ret = magic_scan(ctx, &file_data, Some(filename.to_string()));
+                                if ret != cl_error_t_CL_SUCCESS {
+                                    debug!("cl_scandesc_magic returned error: {}", ret);
+                                    return ret;
+                                }
+                            } else {
+                                debug!("Read zero-byte file.");
                             }
-                            err => {
-                                debug!("Error reading file {err:?}");
-                            }
+                        }
+                        err => {
+                            debug!("Error reading file {err:?}");
                         }
                     }
                 }

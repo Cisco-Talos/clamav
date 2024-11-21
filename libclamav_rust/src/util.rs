@@ -20,11 +20,21 @@
  *  MA 02110-1301, USA.
  */
 
-use std::{ffi::CStr, fs::File};
+use std::{ffi::CStr, fs::File, os::raw::c_char};
 
-use log::error;
+use glob::glob;
+use log::{debug, error, warn};
 
-use crate::sys;
+use crate::{ffi_error, ffi_util::FFIError, sys, validate_str_param};
+
+#[derive(Debug, thiserror::Error)]
+pub enum Error {
+    #[error("Glob error: {0}")]
+    GlobError(#[from] glob::GlobError),
+
+    #[error("IO error: {0}")]
+    IoError(#[from] std::io::Error),
+}
 
 /// Obtain a std::fs::File from an i32 in a platform-independent manner.
 ///
@@ -127,4 +137,31 @@ pub unsafe fn scan_archive_metadata(
             res1,
         )
     }
+}
+
+/// C interface to delete files using a glob pattern.
+///
+/// # Safety
+///
+/// No parameters may be NULL.
+#[export_name = "glob_rm"]
+pub unsafe extern "C" fn glob_rm(glob_str: *const c_char, err: *mut *mut FFIError) -> bool {
+    let glob_str = validate_str_param!(glob_str);
+
+    for entry in glob(glob_str).expect("Failed to read glob pattern") {
+        match entry {
+            Ok(path) => {
+                debug!("Deleting: {path:?}");
+                if let Err(e) = std::fs::remove_file(&path) {
+                    warn!("Failed to delete file: {path:?}");
+                    return ffi_error!(err = err, Error::IoError(e));
+                }
+            }
+            Err(e) => {
+                return ffi_error!(err = err, Error::GlobError(e));
+            }
+        }
+    }
+
+    true
 }

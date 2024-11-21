@@ -71,7 +71,9 @@ int main(int argc, char **argv)
             return CL_EARG;
     }
 
-    ret = cl_cvdunpack(filename, destination_directory, dont_verify);
+    // Note: using NULL for certs_directory will disable external digital signature verification.
+
+    ret = cl_cvdunpack_ex(filename, destination_directory, dont_verify, NULL);
     if (ret != CL_SUCCESS) {
         printf("ERROR: %s\n", cl_strerror(ret));
     }
