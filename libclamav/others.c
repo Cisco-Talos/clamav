@@ -77,6 +77,7 @@
 #include "readdb.h"
 #include "stats.h"
 #include "json_api.h"
+#include "mpool.h"
 
 #include "clamav_rust.h"
 
@@ -447,6 +448,7 @@ struct cl_engine *cl_engine_new(void)
 {
     struct cl_engine *new;
     cli_intel_t *intel;
+    char *cvdcertsdir = NULL;
 
     new = (struct cl_engine *)calloc(1, sizeof(struct cl_engine));
     if (!new) {
@@ -597,6 +599,14 @@ struct cl_engine *cl_engine_new(void)
     }
 
 #endif
+
+    // Check if the CVD_CERTS_DIR environment variable is set
+    cvdcertsdir = getenv("CVD_CERTS_DIR");
+    if (NULL != cvdcertsdir) {
+        new->certs_directory = CLI_MPOOL_STRDUP(new->mempool, cvdcertsdir);
+    } else {
+        new->certs_directory = CLI_MPOOL_STRDUP(new->mempool, CERTSDIR);
+    }
 
     cli_dbgmsg("Initialized %s engine\n", cl_retver());
     return new;
@@ -907,6 +917,15 @@ cl_error_t cl_engine_set_str(struct cl_engine *engine, enum cl_engine_field fiel
             if (NULL == engine->tmpdir)
                 return CL_EMEM;
             break;
+        case CL_ENGINE_CVDCERTSDIR:
+            if (NULL != engine->certs_directory) {
+                MPOOL_FREE(engine->mempool, engine->certs_directory);
+                engine->certs_directory = NULL;
+            }
+            engine->certs_directory = CLI_MPOOL_STRDUP(engine->mempool, str);
+            if (NULL == engine->certs_directory)
+                return CL_EMEM;
+            break;
         default:
             cli_errmsg("cl_engine_set_num: Incorrect field number\n");
             return CL_EARG;
@@ -932,6 +951,8 @@ const char *cl_engine_get_str(const struct cl_engine *engine, enum cl_engine_fie
             return engine->pua_cats;
         case CL_ENGINE_TMPDIR:
             return engine->tmpdir;
+        case CL_ENGINE_CVDCERTSDIR:
+            return engine->certs_directory;
         default:
             cli_errmsg("cl_engine_get: Incorrect field number\n");
             if (err)

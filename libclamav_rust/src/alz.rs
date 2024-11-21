@@ -358,7 +358,7 @@ impl AlzLocalFileHeader {
             data: buffer.to_vec(),
         };
 
-        if 0 != extracted_file.data.len() {
+        if !extracted_file.data.is_empty() {
             files.push(extracted_file);
         }
     }
