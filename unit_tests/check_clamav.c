@@ -451,7 +451,7 @@ START_TEST(test_cl_cvdverify)
     // Can't verify a cvd that doesn't exist
     testfile = SRCDIR "/input/freshclam_testfiles/test-na.cvd";
     ret      = cl_cvdverify(testfile);
-    ck_assert_msg(CL_EOPEN == ret, "cl_cvdverify should have failed for: %s -- %s", testfile, cl_strerror(ret));
+    ck_assert_msg(CL_ECVD == ret, "cl_cvdverify should have failed for: %s -- %s", testfile, cl_strerror(ret));
 
     // A cdiff is not a cvd. Cannot verify with cl_cvdverify!
     testfile = SRCDIR "/input/freshclam_testfiles/test-2.cdiff";
@@ -485,8 +485,8 @@ START_TEST(test_cl_cvdverify)
 }
 END_TEST
 
-/* cl_error_t cl_cvdunpack(const char *file, const char *dir, bool dont_verify) */
-START_TEST(test_cl_cvdunpack)
+/* cl_error_t cl_cvdunpack_ex(const char *file, const char *dir, bool dont_verify, const char* certs_directory) */
+START_TEST(test_cl_cvdunpack_ex)
 {
     cl_error_t ret;
     char *utf8       = NULL;
@@ -494,13 +494,13 @@ START_TEST(test_cl_cvdunpack)
     const char *testfile;
 
     testfile = SRCDIR "/input/freshclam_testfiles/test-1.cvd";
-    ret      = cl_cvdunpack(testfile, tmpdir, true);
-    ck_assert_msg(CL_SUCCESS == ret, "cl_cvdunpack: failed for: %s -- %s", testfile, cl_strerror(ret));
+    ret      = cl_cvdunpack_ex(testfile, tmpdir, true, NULL);
+    ck_assert_msg(CL_SUCCESS == ret, "cl_cvdunpack_ex: failed for: %s -- %s", testfile, cl_strerror(ret));
 
     // Can't unpack a cdiff
     testfile = SRCDIR "/input/freshclam_testfiles/test-2.cdiff";
-    ret      = cl_cvdunpack(testfile, tmpdir, true);
-    ck_assert_msg(CL_ECVD == ret, "cl_cvdunpack: should have failed for: %s -- %s", testfile, cl_strerror(ret));
+    ret      = cl_cvdunpack_ex(testfile, tmpdir, true, NULL);
+    ck_assert_msg(CL_ECVD == ret, "cl_cvdunpack_ex: should have failed for: %s -- %s", testfile, cl_strerror(ret));
 }
 END_TEST
 

@@ -4736,13 +4736,13 @@ cl_error_t cli_load(const char *filename, struct cl_engine *engine, unsigned int
         ret = cli_loaddb(fs, engine, signo, options, dbio, dbname);
 
     } else if (cli_strbcasestr(dbname, ".cvd")) {
-        ret = cli_cvdload(fs, engine, signo, options, 0, filename, 0);
+        ret = cli_cvdload(engine, signo, options, CVD_TYPE_CVD, filename, 0);
 
     } else if (cli_strbcasestr(dbname, ".cld")) {
-        ret = cli_cvdload(fs, engine, signo, options, 1, filename, 0);
+        ret = cli_cvdload(engine, signo, options, CVD_TYPE_CLD, filename, 0);
 
     } else if (cli_strbcasestr(dbname, ".cud")) {
-        ret = cli_cvdload(fs, engine, signo, options, 2, filename, 0);
+        ret = cli_cvdload(engine, signo, options, CVD_TYPE_CUD, filename, 0);
 
     } else if (cli_strbcasestr(dbname, ".crb")) {
         ret = cli_loadcrt(fs, engine, dbio);
@@ -5758,7 +5758,7 @@ cl_error_t cl_engine_free(struct cl_engine *engine)
         MPOOL_FREE(engine->mempool, pt->name);
         MPOOL_FREE(engine->mempool, pt->hash);
         if (pt->cvd)
-            cl_cvdfree(pt->cvd);
+            cvd_free(pt->cvd);
         MPOOL_FREE(engine->mempool, pt);
     }
     TASK_COMPLETE();
