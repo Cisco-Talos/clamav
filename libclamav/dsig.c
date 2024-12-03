@@ -88,7 +88,7 @@ static unsigned char *cli_decodesig(const char *sig, unsigned int plen, BIGNUM *
     BIGNUM *r = NULL, *p = NULL, *c = NULL;
     BN_CTX *bn_ctx = NULL;
     unsigned int bn_bytes;
-    ;
+    unsigned char *plain_offset = NULL;
 
     r = BN_new();
     if (!r) {
@@ -144,9 +144,12 @@ static unsigned char *cli_decodesig(const char *sig, unsigned int plen, BIGNUM *
         cli_errmsg("cli_decodesig: Can't allocate memory for 'plain'\n");
         goto done;
     }
-    if (!BN_bn2bin(p, plain)) {
-        goto done;
-    }
+
+    // If bn_bytes is smaller than plen, we need to offset the plain buffer.
+    // If we didn't, then a hash that should start with 00 would end with 00 instead.
+    plain_offset = plain + plen - bn_bytes;
+
+    BN_bn2bin(p, plain_offset);
 
     ret_sig = plain;
     plain   = NULL;
