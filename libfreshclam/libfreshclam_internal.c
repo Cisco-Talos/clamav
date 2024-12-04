@@ -1555,8 +1555,8 @@ static fc_error_t getcvd(
     }
 
     // If we're in FIPS mode, temporarily rename the external signature file to the expected path:
-    // The database file will be something like: /share/SAP/clam.d/tmp.b2b103a70a/clamav-3bbac78e36cbf974e1060de6dbbbfea3.tmp-daily.cld
-    // The expected external signature will be: /share/SAP/clam.d/tmp.b2b103a70a/clamav-3bbac78e36cbf974e1060de6dbbbfea3.tmp-daily.sig
+    // The database file will be something like: /tmp/clam.d/tmp.b2b103a70a/clamav-3bbac78e36cbf974e1060de6dbbbfea3.tmp-daily.cld
+    // The expected external signature will be: /tmp/clam.d/clam.d/tmp.b2b103a70a/clamav-3bbac78e36cbf974e1060de6dbbbfea3.tmp-daily.sig
     char *extSigTmpFileWithExtension = NULL;
     if (cli_get_fips_mode()) {
         // Temprorarily rename the the sig file to the expected path
