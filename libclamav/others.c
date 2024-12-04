@@ -1233,17 +1233,18 @@ done:
     return ret;
 }
 
-/*
- * Type: 1 = MD5, 2 = SHA1, 3 = SHA256
- */
-char *cli_hashstream(FILE *fs, unsigned char *digcpy, int type)
+// Not publicly exported, used for internal purposes to allow for hash length to be returned
+char *cli_hashstream_ex(FILE *fs, unsigned char *digcpy, int type, unsigned int *hash_len)
 {
-    unsigned char digest[32];
+    unsigned char *digest;
     char buff[FILEBUFF];
     char *hashstr, *pt;
     const char *alg = NULL;
-    int i, bytes, size;
+    int i, bytes, size = 0;
     void *ctx;
+
+    if (!fs)
+        return NULL;
 
     switch (type) {
         case 1:
@@ -1254,23 +1255,38 @@ char *cli_hashstream(FILE *fs, unsigned char *digcpy, int type)
             alg  = "sha1";
             size = 20;
             break;
+        case 3:
+            alg  = "sha256";
+            size = 32;
+            break;
+        case 4:
+            alg  = "sha3-512";
+            size = 64;
+            break;
         default:
             alg  = "sha256";
             size = 32;
             break;
     }
 
-    ctx = cl_hash_init(alg);
-    if (!(ctx))
+    if (!(digest = (unsigned char *)calloc(size, sizeof(unsigned char))))
         return NULL;
+
+    ctx = cl_hash_init(alg);
+    if (!(ctx)) {
+        free(digest);
+        return NULL;
+    }
 
     while ((bytes = fread(buff, 1, FILEBUFF, fs)))
         cl_update_hash(ctx, buff, bytes);
 
     cl_finish_hash(ctx, digest);
 
-    if (!(hashstr = (char *)calloc(size * 2 + 1, sizeof(char))))
+    if (!(hashstr = (char *)calloc(size * 2 + 1, sizeof(unsigned char)))) {
+        free(digest);
         return NULL;
+    }
 
     pt = hashstr;
     for (i = 0; i < size; i++) {
@@ -1281,7 +1297,20 @@ char *cli_hashstream(FILE *fs, unsigned char *digcpy, int type)
     if (digcpy)
         memcpy(digcpy, digest, size);
 
+    if (hash_len != NULL) {
+        *hash_len = size;
+    }
+
+    free(digest);
     return hashstr;
+}
+
+/*
+ * Type: 1 = MD5, 2 = SHA1, 3 = SHA256, 4 = SHA3-512
+ */
+char *cli_hashstream(FILE *fs, unsigned char *digcpy, int type)
+{
+    return cli_hashstream_ex(fs, digcpy, type, 0);
 }
 
 char *cli_hashfile(const char *filename, int type)

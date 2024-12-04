@@ -46,9 +46,12 @@
 #include "others.h"
 #include "dsig.h"
 #include "str.h"
+#include "crypto.h"
 #include "cvd.h"
 #include "readdb.h"
 #include "default.h"
+
+#include <openssl/rsa.h>
 
 #define TAR_BLOCKSIZE 512
 
@@ -626,6 +629,14 @@ cl_error_t cli_cvdload(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
     dbio.hashctx = NULL;
 
     cli_dbgmsg("in cli_cvdload()\n");
+
+    // FIPS verification MUST preclude other verification if in FIPS mode.
+    if (cli_get_fips_mode()) {
+        ret = cli_sigver_external(filename);
+        if (ret != CL_SUCCESS) {
+            return ret;
+        }
+    }
 
     /* verify */
     if ((ret = cli_cvdverify(fs, &cvd, dbtype)))
