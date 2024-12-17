@@ -1155,6 +1155,20 @@ static int build(const struct optstruct *opts)
         free(tarfile);
         return -1;
     }
+
+    // Check if the MD5 starts with 00. If it does, we'll return CL_ELAST_ERROR. The caller may try again for better luck.
+    // This is to avoid a bug in hash verification with ClamAV 1.1 -> 1.4. The bug was fixed in 1.5.0.
+    // TODO: Remove this workaround when no one is using those versions.
+    if (pt[0] == '0' && pt[1] == '0') {
+        // print out the pt hash
+        mprintf(LOGG_INFO, "The tar.gz MD5 starts with 00, which will fail to verify in ClamAV 1.1 -> 1.4: %s\n", pt);
+        fclose(fh);
+        unlink(tarfile);
+        free(tarfile);
+        free(pt);
+        return CL_ELAST_ERROR;
+    }
+
     rewind(fh);
     sprintf(header + strlen(header), "%s:", pt);
     free(pt);
@@ -3768,9 +3782,15 @@ int main(int argc, char **argv)
         ret = asciinorm(opts);
     else if (optget(opts, "utf16-decode")->enabled)
         ret = utf16decode(opts);
-    else if (optget(opts, "build")->enabled)
+    else if (optget(opts, "build")->enabled) {
         ret = build(opts);
-    else if (optget(opts, "unpack")->enabled)
+        if (ret == CL_ELAST_ERROR) {
+            // build() returns CL_ELAST_ERROR the hash starts with 00. This will fail to verify with ClamAV 1.1 -> 1.4.
+            // Retry the build again to get new hashes.
+            mprintf(LOGG_WARNING, "Retrying the build for a chance at a better hash.\n");
+            ret = build(opts);
+        }
+    } else if (optget(opts, "unpack")->enabled)
         ret = unpack(opts);
     else if (optget(opts, "unpack-current")->enabled)
         ret = unpack(opts);
