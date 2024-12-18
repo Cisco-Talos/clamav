@@ -75,7 +75,7 @@ static void cli_tgzload_cleanup(int comp, struct cli_dbio *dbio, int fdd)
     }
 }
 
-static int cli_tgzload(cvd_t *cvd, struct cl_engine *engine, unsigned int *signo, unsigned int options, struct cli_dbio *dbio, struct cli_dbinfo *dbinfo)
+static int cli_tgzload(cvd_t *cvd, struct cl_engine *engine, unsigned int *signo, unsigned int options, struct cli_dbio *dbio, struct cli_dbinfo *dbinfo, void *sign_verifier)
 {
     char osize[13], name[101];
     char block[TAR_BLOCKSIZE];
@@ -210,7 +210,7 @@ static int cli_tgzload(cvd_t *cvd, struct cl_engine *engine, unsigned int *signo
             off = ftell(dbio->fs);
 
         if ((!dbinfo && cli_strbcasestr(name, ".info")) || (dbinfo && CLI_DBEXT(name))) {
-            ret = cli_load(name, engine, signo, options, dbio);
+            ret = cli_load(name, engine, signo, options, dbio, sign_verifier);
             if (ret) {
                 cli_errmsg("cli_tgzload: Can't load %s\n", name);
                 cli_tgzload_cleanup(compr, dbio, fdd);
@@ -394,9 +394,11 @@ cl_error_t cl_cvdverify(const char *file)
 
 cl_error_t cl_cvdverify_ex(const char *file, const char *certs_directory)
 {
-    struct cl_engine *engine;
+    struct cl_engine *engine = NULL;
     cl_error_t ret;
-    cvd_type dbtype = CVD_TYPE_UNKNOWN;
+    cvd_type dbtype              = CVD_TYPE_UNKNOWN;
+    void *verifier               = NULL;
+    FFIError *new_verifier_error = NULL;
 
     if (!(engine = cl_engine_new())) {
         cli_errmsg("cl_cvdverify: Can't create new engine\n");
@@ -425,15 +427,29 @@ cl_error_t cl_cvdverify_ex(const char *file, const char *certs_directory)
         goto done;
     }
 
-    ret = cli_cvdload(engine, NULL, CL_DB_STDOPT | CL_DB_PUA, dbtype, file, 1);
+    if (!codesign_verifier_new(engine->certs_directory, &verifier, &new_verifier_error)) {
+        cli_errmsg("cl_cvdverify: Failed to create a new code-signature verifier: %s\n", ffierror_fmt(new_verifier_error));
+        ret = CL_ECVD;
+        goto done;
+    }
+
+    ret = cli_cvdload(engine, NULL, CL_DB_STDOPT | CL_DB_PUA, dbtype, file, verifier, 1);
 
 done:
-    cl_engine_free(engine);
+    if (NULL != engine) {
+        cl_engine_free(engine);
+    }
+    if (NULL != verifier) {
+        codesign_verifier_free(verifier);
+    }
+    if (NULL != new_verifier_error) {
+        ffierror_free(new_verifier_error);
+    }
 
     return ret;
 }
 
-cl_error_t cli_cvdload(struct cl_engine *engine, unsigned int *signo, unsigned int options, cvd_type dbtype, const char *filename, unsigned int chkonly)
+cl_error_t cli_cvdload(struct cl_engine *engine, unsigned int *signo, unsigned int options, cvd_type dbtype, const char *filename, void *sign_verifier, unsigned int chkonly)
 {
     cl_error_t status = CL_ECVD;
     cl_error_t ret;
@@ -462,7 +478,7 @@ cl_error_t cli_cvdload(struct cl_engine *engine, unsigned int *signo, unsigned i
     if (dbtype == CVD_TYPE_CVD) {
         if (!cvd_verify(
                 cvd,
-                engine->certs_directory,
+                sign_verifier,
                 false,
                 &signer_name,
                 &cvd_verify_error)) {
@@ -534,9 +550,9 @@ cl_error_t cli_cvdload(struct cl_engine *engine, unsigned int *signo, unsigned i
 
     dbio.chkonly = 0;
     if (dbtype == CVD_TYPE_CUD) {
-        ret = cli_tgzload(cvd, engine, signo, options | CL_DB_UNSIGNED, &dbio, NULL);
+        ret = cli_tgzload(cvd, engine, signo, options | CL_DB_UNSIGNED, &dbio, NULL, sign_verifier);
     } else {
-        ret = cli_tgzload(cvd, engine, signo, options | CL_DB_OFFICIAL, &dbio, NULL);
+        ret = cli_tgzload(cvd, engine, signo, options | CL_DB_OFFICIAL, &dbio, NULL, sign_verifier);
     }
     if (ret != CL_SUCCESS) {
         status = ret;
@@ -569,7 +585,7 @@ cl_error_t cli_cvdload(struct cl_engine *engine, unsigned int *signo, unsigned i
         options |= CL_DB_SIGNED | CL_DB_OFFICIAL;
     }
 
-    status = cli_tgzload(cvd, engine, signo, options, &dbio, dbinfo);
+    status = cli_tgzload(cvd, engine, signo, options, &dbio, dbinfo, sign_verifier);
 
 done:
 
@@ -603,7 +619,7 @@ done:
     return status;
 }
 
-cl_error_t cl_cvdunpack(const char *file, const char *dir, bool dont_verify)
+cl_error_t cli_cvdunpack_and_verify(const char *file, const char *dir, bool dont_verify, void *verifier)
 {
     cl_error_t status          = CL_SUCCESS;
     cvd_t *cvd                 = NULL;
@@ -619,7 +635,7 @@ cl_error_t cl_cvdunpack(const char *file, const char *dir, bool dont_verify)
     }
 
     if (!dont_verify) {
-        if (!cvd_verify(cvd, NULL, false, &signer_name, &cvd_verify_error)) {
+        if (!cvd_verify(cvd, verifier, false, &signer_name, &cvd_verify_error)) {
             cli_errmsg("CVD verification failed: %s\n", ffierror_fmt(cvd_verify_error));
             status = CL_EVERIFY;
             goto done;
@@ -655,6 +671,65 @@ done:
 
 cl_error_t cl_cvdunpack_ex(const char *file, const char *dir, bool dont_verify, const char *certs_directory)
 {
+    cl_error_t status            = CL_SUCCESS;
+    cvd_t *cvd                   = NULL;
+    FFIError *cvd_open_error     = NULL;
+    FFIError *new_verifier_error = NULL;
+    FFIError *cvd_unpack_error   = NULL;
+    char *signer_name            = NULL;
+    void *verifier               = NULL;
+
+    cvd = cvd_open(file, &cvd_open_error);
+    if (!cvd) {
+        cli_errmsg("Can't open CVD file %s: %s\n", file, ffierror_fmt(cvd_open_error));
+        return CL_EOPEN;
+    }
+
+    if (!dont_verify) {
+        if (!codesign_verifier_new(certs_directory, &verifier, &new_verifier_error)) {
+            cli_errmsg("Failed to create a new code-signature verifier: %s\n", ffierror_fmt(new_verifier_error));
+            status = CL_EUNPACK;
+            goto done;
+        }
+
+        status = cli_cvdunpack_and_verify(file, dir, dont_verify, verifier);
+        if (status != CL_SUCCESS) {
+            goto done;
+        }
+    }
+
+    if (!cvd_unpack(cvd, dir, &cvd_unpack_error)) {
+        cli_errmsg("CVD unpacking failed: %s\n", ffierror_fmt(cvd_unpack_error));
+        status = CL_EUNPACK;
+        goto done;
+    }
+
+done:
+
+    if (NULL != signer_name) {
+        ffi_cstring_free(signer_name);
+    }
+    if (NULL != cvd) {
+        cvd_free(cvd);
+    }
+    if (NULL != cvd_open_error) {
+        ffierror_free(cvd_open_error);
+    }
+    if (NULL != new_verifier_error) {
+        ffierror_free(new_verifier_error);
+    }
+    if (NULL != cvd_unpack_error) {
+        ffierror_free(cvd_unpack_error);
+    }
+    if (NULL != verifier) {
+        codesign_verifier_free(verifier);
+    }
+
+    return status;
+}
+
+cl_error_t cl_cvdunpack(const char *file, const char *dir, bool dont_verify)
+{
     cl_error_t status          = CL_SUCCESS;
     cvd_t *cvd                 = NULL;
     FFIError *cvd_open_error   = NULL;
@@ -669,7 +744,7 @@ cl_error_t cl_cvdunpack_ex(const char *file, const char *dir, bool dont_verify, 
     }
 
     if (!dont_verify) {
-        if (!cvd_verify(cvd, certs_directory, false, &signer_name, &cvd_verify_error)) {
+        if (!cvd_verify(cvd, NULL, false, &signer_name, &cvd_verify_error)) {
             cli_errmsg("CVD verification failed: %s\n", ffierror_fmt(cvd_verify_error));
             status = CL_EVERIFY;
             goto done;

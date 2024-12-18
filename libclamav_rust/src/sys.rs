@@ -432,7 +432,6 @@ pub struct cli_ftype {
 pub struct json_object {
     _unused: [u8; 0],
 }
-pub type cvd_t = *mut ::std::os::raw::c_void;
 pub type mpool_t = ::std::os::raw::c_void;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -631,6 +630,7 @@ pub struct recursion_level_tag {
 pub type recursion_level_t = recursion_level_tag;
 pub type evidence_t = *mut ::std::os::raw::c_void;
 pub type onedump_t = *mut ::std::os::raw::c_void;
+pub type cvd_t = *mut ::std::os::raw::c_void;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct cli_ctx_tag {

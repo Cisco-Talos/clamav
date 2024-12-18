@@ -109,7 +109,7 @@ char *g_proxyPassword = NULL;
 
 char *g_tempDirectory     = NULL;
 char *g_databaseDirectory = NULL;
-char *g_certsDirectory    = NULL;
+void *g_signVerifier      = NULL;
 
 uint32_t g_maxAttempts    = 0;
 uint32_t g_connectTimeout = 0;
@@ -1651,7 +1651,7 @@ static fc_error_t mkdir_and_chdir_for_cdiff_tmp(const char *database, const char
         /*
          * 3) Unpack the existing CVD/CLD database to this directory.
          */
-        if (CL_SUCCESS != cl_cvdunpack_ex(cvdfile, tmpdir, is_cld == true, g_certsDirectory)) {
+        if (CL_SUCCESS != cli_cvdunpack_and_verify(cvdfile, tmpdir, is_cld == true, g_signVerifier)) {
             logg(LOGG_ERROR, "mkdir_and_chdir_for_cdiff_tmp: Can't unpack %s into %s\n", cvdfile, tmpdir);
             cli_rmdirs(tmpdir);
             goto done;
@@ -1755,7 +1755,7 @@ static fc_error_t downloadPatchAndApply(
      */
     if (!cdiff_apply(
             patch,
-            g_certsDirectory,
+            g_signVerifier,
             1,
             &cdiff_apply_error)) {
         logg(LOGG_ERROR, "downloadPatchAndApply: Can't apply '%s': %s\n",

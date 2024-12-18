@@ -966,11 +966,10 @@ static int sign(const struct optstruct *opts)
     char *target         = NULL;
     char *sign_file_name = NULL;
 
-    char *signing_key  = NULL;
-    char *signing_cert = NULL;
+    char *signing_key = NULL;
 
-    char **intermediate_certs       = NULL;
-    size_t intermediate_certs_count = 0;
+    char **certs       = NULL;
+    size_t certs_count = 0;
 
     bool sign_result          = false;
     FFIError *sign_file_error = NULL;
@@ -1015,22 +1014,15 @@ static int sign(const struct optstruct *opts)
             goto done;
         }
 
-        // The first --cert option is the signing certificate
-        if (NULL == signing_cert) {
-            signing_cert = opt->strarg;
-            continue;
-        }
+        certs_count += 1;
 
-        // All other --cert options are intermediate certificates
-        intermediate_certs_count += 1;
-
-        intermediate_certs = realloc(intermediate_certs, intermediate_certs_count * sizeof(char *));
-        if (NULL == intermediate_certs) {
+        certs = realloc(certs, certs_count * sizeof(char *));
+        if (NULL == certs) {
             mprintf(LOGG_ERROR, "sign: Memory allocation error.\n");
             goto done;
         }
 
-        intermediate_certs[intermediate_certs_count - 1] = opt->strarg;
+        certs[certs_count - 1] = opt->strarg;
 
         opt = opt->nextarg;
     }
@@ -1043,9 +1035,8 @@ static int sign(const struct optstruct *opts)
         target,
         sign_file_name,
         signing_key,
-        signing_cert,
-        (const char **)intermediate_certs,
-        intermediate_certs_count,
+        (const char **)certs,
+        certs_count,
         append,
         &sign_file_error);
 
@@ -1062,8 +1053,8 @@ done:
     if (NULL != sign_file_name) {
         free(sign_file_name);
     }
-    if (NULL != intermediate_certs) {
-        free(intermediate_certs);
+    if (NULL != certs) {
+        free(certs);
     }
     if (NULL != sign_file_error) {
         ffierror_free(sign_file_error);
@@ -1079,11 +1070,13 @@ static int verify(const struct optstruct *opts)
     char *sign_file_name = NULL;
 
     char *cvdcertsdir = NULL;
-    STATBUF statbuf;
 
     char *signer_name           = NULL;
     bool verify_result          = false;
     FFIError *verify_file_error = NULL;
+
+    void *verifier               = NULL;
+    FFIError *new_verifier_error = NULL;
 
     target = optget(opts, "verify")->strarg;
     if (NULL == target) {
@@ -1110,18 +1103,15 @@ static int verify(const struct optstruct *opts)
         }
     }
 
-    if (LSTAT(cvdcertsdir, &statbuf) == -1) {
-        logg(LOGG_ERROR,
-             "ClamAV CA certificates directory is missing: %s\n"
-             "It should have been provided as a part of installation.",
-             cvdcertsdir);
+    if (!codesign_verifier_new(cvdcertsdir, &verifier, &new_verifier_error)) {
+        mprintf(LOGG_ERROR, "verify: Failed to create verifier: %s\n", ffierror_fmt(new_verifier_error));
         goto done;
     }
 
     verify_result = codesign_verify_file(
         target,
         sign_file_name,
-        cvdcertsdir,
+        verifier,
         &signer_name,
         &verify_file_error);
     if (!verify_result) {
@@ -1142,6 +1132,12 @@ done:
     }
     if (NULL != verify_file_error) {
         ffierror_free(verify_file_error);
+    }
+    if (NULL != verifier) {
+        codesign_verifier_free(verifier);
+    }
+    if (NULL != new_verifier_error) {
+        ffierror_free(new_verifier_error);
     }
 
     return ret;
@@ -2249,9 +2245,10 @@ static int rundiff(const struct optstruct *opts)
     int ret;
     unsigned short mode;
     const char *diff;
-    FFIError *cdiff_apply_error = NULL;
-    char *cvdcertsdir           = NULL;
-    STATBUF statbuf;
+    FFIError *cdiff_apply_error  = NULL;
+    char *cvdcertsdir            = NULL;
+    void *verifier               = NULL;
+    FFIError *new_verifier_error = NULL;
 
     diff = optget(opts, "run-cdiff")->strarg;
     if (strstr(diff, ".cdiff")) {
@@ -2274,27 +2271,35 @@ static int rundiff(const struct optstruct *opts)
         }
     }
 
-    if (LSTAT(cvdcertsdir, &statbuf) == -1) {
-        mprintf(LOGG_ERROR,
-                "ClamAV CA certificates directory is missing: %s\n"
-                "It should have been provided as a part of installation.",
-                cvdcertsdir);
-        return -1;
+    if (!codesign_verifier_new(cvdcertsdir, &verifier, &new_verifier_error)) {
+        cli_errmsg("rundiff: Failed to create a new code-signature verifier: %s\n", ffierror_fmt(new_verifier_error));
+        ret = -1;
+        goto done;
     }
 
     if (!cdiff_apply(
             diff,
-            cvdcertsdir,
+            verifier,
             mode,
             &cdiff_apply_error)) {
+
         mprintf(LOGG_ERROR, "rundiff: Error applying '%s': %s\n",
                 diff, ffierror_fmt(cdiff_apply_error));
         ret = -1;
-    } else {
-        // success. compare the SHA256 checksums of the files
-        ret = comparesha(diff);
+        goto done;
     }
 
+    // success. compare the SHA256 checksums of the files
+    ret = comparesha(diff);
+
+done:
+
+    if (NULL != verifier) {
+        codesign_verifier_free(verifier);
+    }
+    if (NULL != new_verifier_error) {
+        ffierror_free(new_verifier_error);
+    }
     if (NULL != cdiff_apply_error) {
         ffierror_free(cdiff_apply_error);
     }

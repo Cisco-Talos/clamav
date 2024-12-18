@@ -52,6 +52,7 @@ typedef enum cvd_type {
     CVD_TYPE_CUD,
 } cvd_type;
 
-cl_error_t cli_cvdload(struct cl_engine *engine, unsigned int *signo, unsigned int options, cvd_type dbtype, const char *filename, unsigned int chkonly);
+cl_error_t cli_cvdload(struct cl_engine *engine, unsigned int *signo, unsigned int options, cvd_type dbtype, const char *filename, void *sign_verifier, unsigned int chkonly);
+cl_error_t cli_cvdunpack_and_verify(const char *file, const char *dir, bool dont_verify, void *verifier);
 
 #endif

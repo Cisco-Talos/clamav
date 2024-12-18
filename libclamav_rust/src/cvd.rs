@@ -32,14 +32,15 @@ use std::{
     time::{Duration, SystemTime},
 };
 
+use crate::codesign::Verifier;
 use flate2::read::GzDecoder;
 use hex;
 use log::{debug, error, warn};
 use tar::Archive;
 
 use crate::{
-    codesign, ffi_error, ffi_error_null, ffi_util::FFIError, sys, validate_optional_str_param,
-    validate_str_param, validate_str_param_null,
+    codesign, ffi_error, ffi_error_null, ffi_util::FFIError, sys, validate_str_param,
+    validate_str_param_null,
 };
 
 #[derive(Debug, thiserror::Error)]
@@ -385,7 +386,7 @@ impl CVD {
         Ok(())
     }
 
-    pub fn verify_external_sign_file(&mut self, certs_directory: &Path) -> Result<String, Error> {
+    pub fn verify_external_sign_file(&mut self, verifier: &Verifier) -> Result<String, Error> {
         let database_directory = self.path.parent().ok_or_else(|| {
             Error::Parse("Failed to get database directory from CVD file path".to_string())
         })?;
@@ -408,7 +409,7 @@ impl CVD {
         let signature_file_name = format!("{}-{}.cvd.sign", database_name, self.version);
         let signature_file_path = database_directory.join(signature_file_name);
 
-        match codesign::verify_signed_file(&self.path, &signature_file_path, certs_directory) {
+        match codesign::verify_signed_file(&self.path, &signature_file_path, verifier) {
             Ok(signer) => {
                 debug!("Successfully verified {:?} signed by {}", self.path, signer);
                 Ok(signer)
@@ -432,13 +433,13 @@ impl CVD {
 
     pub fn verify(
         &mut self,
-        certs_directory: Option<PathBuf>,
+        verifier: Option<&Verifier>,
         disable_md5: bool,
     ) -> Result<String, Error> {
         // First try to verify the CVD with the detached signature file.
         // If that fails, fall back to verifying with the MD5-based attached RSA digital signature.
-        if let Some(certs_directory) = certs_directory {
-            match self.verify_external_sign_file(&certs_directory) {
+        if let Some(verifier) = verifier {
+            match self.verify_external_sign_file(verifier) {
                 Ok(signer) => {
                     debug!("CVD verified successfully with detached signature file");
                     return Ok(signer);
@@ -519,6 +520,13 @@ pub unsafe extern "C" fn cvd_check(
         }
     };
 
+    let verifier = match Verifier::new(&certs_directory) {
+        Ok(v) => v,
+        Err(e) => {
+            return ffi_error!(err = err, e);
+        }
+    };
+
     match CVD::from_file(&cvd_file_path) {
         Ok(mut cvd) => {
             if skip_sign_verify {
@@ -526,7 +534,7 @@ pub unsafe extern "C" fn cvd_check(
                 return true;
             }
 
-            match cvd.verify(Some(certs_directory), disable_md5) {
+            match cvd.verify(Some(&verifier), disable_md5) {
                 Ok(signer) => {
                     let signer_cstr = std::ffi::CString::new(signer).unwrap();
                     *signer_name = signer_cstr.into_raw();
@@ -632,31 +640,16 @@ pub unsafe extern "C" fn cvd_open(
 #[export_name = "cvd_verify"]
 pub unsafe extern "C" fn cvd_verify(
     cvd: *const c_void,
-    certs_directory_str: *const c_char,
+    verifier_ptr: *const c_void,
     disable_md5: bool,
     signer_name: *mut *mut c_char,
     err: *mut *mut FFIError,
 ) -> bool {
     let mut cvd = ManuallyDrop::new(Box::from_raw(cvd as *mut CVD));
 
-    let certs_directory_str = validate_optional_str_param!(certs_directory_str);
-    let certs_directory = match certs_directory_str {
-        Some(c) => match PathBuf::from_str(c) {
-            Ok(p) => Some(p),
-            Err(e) => {
-                return ffi_error!(
-                    err = err,
-                    Error::CannotVerify(format!(
-                        "Invalid certs directory path {:?}: {}",
-                        certs_directory_str, e
-                    ))
-                );
-            }
-        },
-        None => None,
-    };
+    let verifier = ManuallyDrop::new(Box::from_raw(verifier_ptr as *mut Verifier));
 
-    match cvd.verify(certs_directory, disable_md5) {
+    match cvd.verify(Some(&verifier), disable_md5) {
         Ok(signer) => {
             let signer_cstr = std::ffi::CString::new(signer).unwrap();
             *signer_name = signer_cstr.into_raw();

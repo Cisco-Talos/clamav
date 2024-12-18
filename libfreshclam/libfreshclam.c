@@ -127,6 +127,8 @@ fc_error_t fc_initialize(fc_config *fcConfig)
 {
     fc_error_t status = FC_EARG;
     STATBUF statbuf;
+    char *certsDirectory         = NULL;
+    FFIError *new_verifier_error = NULL;
 
     if (NULL == fcConfig) {
         printf("fc_initialize: Invalid arguments.\n");
@@ -255,25 +257,19 @@ fc_error_t fc_initialize(fc_config *fcConfig)
 #else
     if (fcConfig->certsDirectory[strlen(fcConfig->certsDirectory) - 1] != '/') {
 #endif
-        g_certsDirectory = malloc(strlen(fcConfig->certsDirectory) + strlen(PATHSEP) + 1);
+        certsDirectory = malloc(strlen(fcConfig->certsDirectory) + strlen(PATHSEP) + 1);
         snprintf(
-            g_certsDirectory,
+            certsDirectory,
             strlen(fcConfig->certsDirectory) + strlen(PATHSEP) + 1,
             "%s" PATHSEP,
             fcConfig->certsDirectory);
     } else {
-        g_certsDirectory = cli_safer_strdup(fcConfig->certsDirectory);
+        certsDirectory = cli_safer_strdup(fcConfig->certsDirectory);
     }
 
-    /* Validate that the database directory exists, and store it. */
-    if (LSTAT(g_certsDirectory, &statbuf) == -1) {
-        logg(LOGG_ERROR, "ClamAV CA certificates directory does not exist: %s\n", g_certsDirectory);
-        status = FC_EDIRECTORY;
-        goto done;
-    }
-    if (!S_ISDIR(statbuf.st_mode)) {
-        logg(LOGG_ERROR, "ClamAV CA certificates directory is not a directory: %s\n", g_certsDirectory);
-        status = FC_EDIRECTORY;
+    if (!codesign_verifier_new(certsDirectory, &g_signVerifier, &new_verifier_error)) {
+        logg(LOGG_ERROR, "Failed to create a new code-signature verifier: %s\n", ffierror_fmt(new_verifier_error));
+        status = FC_EINIT;
         goto done;
     }
 
@@ -301,6 +297,12 @@ fc_error_t fc_initialize(fc_config *fcConfig)
 done:
     if (FC_SUCCESS != status) {
         fc_cleanup();
+    }
+    if (NULL != certsDirectory) {
+        free(certsDirectory);
+    }
+    if (NULL != new_verifier_error) {
+        ffierror_free(new_verifier_error);
     }
 
     return status;
@@ -347,6 +349,9 @@ void fc_cleanup(void)
         free(g_freshclamDat);
         g_freshclamDat = NULL;
     }
+    if (NULL != g_signVerifier) {
+        codesign_verifier_free(g_signVerifier);
+    }
 }
 
 fc_error_t fc_prune_database_directory(char **databaseList, uint32_t nDatabases)
@@ -382,7 +387,7 @@ fc_error_t fc_prune_database_directory(char **databaseList, uint32_t nDatabases)
                 // Use this to determine the database name.
                 // We need this so we can ALSO prune the .sign files for unwanted databases.
                 // Will also be useful in case the database filename includes a hyphenated version number.
-                const char * first_dash_or_dot = strchr(dent->d_name, '-');
+                const char *first_dash_or_dot = strchr(dent->d_name, '-');
                 if (NULL == first_dash_or_dot) {
                     first_dash_or_dot = extension;
                 }

@@ -19,17 +19,15 @@
  */
 
 use std::{
-    collections::BTreeMap,
-    ffi::{CStr, CString},
-    fs::{self, File, OpenOptions},
-    io::{prelude::*, BufReader, BufWriter, Read, Seek, SeekFrom, Write},
-    iter::*,
-    os::raw::c_char,
-    path::{Path, PathBuf},
-    str::{self, FromStr},
+    collections::BTreeMap, ffi::{c_void, CStr, CString}, fs::{self, File, OpenOptions}, io::{prelude::*, BufReader, BufWriter, Read, Seek, SeekFrom, Write}, iter::*, mem::ManuallyDrop, os::raw::c_char, path::{Path, PathBuf}, str::{self, FromStr}
 };
 
-use crate::{codesign, ffi_error, ffi_util::FFIError, sys, validate_str_param};
+use crate::{
+    codesign::{self, Verifier},
+    ffi_error,
+    ffi_util::FFIError,
+    sys, validate_str_param,
+};
 
 use flate2::{read::GzDecoder, write::GzEncoder, Compression};
 use log::{debug, error, warn};
@@ -585,7 +583,7 @@ pub fn script2cdiff(script_file_name: &str, builder: &str, server: &str) -> Resu
 #[export_name = "cdiff_apply"]
 pub unsafe extern "C" fn _cdiff_apply(
     cdiff_file_path_str: *const c_char,
-    certs_directory_str: *const c_char,
+    verifier_ptr: *const c_void,
     mode: u16,
     err: *mut *mut FFIError,
 ) -> bool {
@@ -600,16 +598,7 @@ pub unsafe extern "C" fn _cdiff_apply(
         }
     };
 
-    let certs_directory_str = validate_str_param!(certs_directory_str);
-    let certs_directory = match PathBuf::from_str(certs_directory_str) {
-        Ok(p) => p,
-        Err(e) => {
-            return ffi_error!(
-                err = err,
-                Error::CannotVerify(format!("Invalid certs directory path: {}", e))
-            );
-        }
-    };
+    let verifier = ManuallyDrop::new(Box::from_raw(verifier_ptr as *mut Verifier));
 
     let mode = if mode == 1 {
         ApplyMode::Cdiff
@@ -617,7 +606,7 @@ pub unsafe extern "C" fn _cdiff_apply(
         ApplyMode::Script
     };
 
-    if let Err(e) = cdiff_apply(&cdiff_file_path, &certs_directory, mode) {
+    if let Err(e) = cdiff_apply(&cdiff_file_path, &verifier, mode) {
         error!("Failed to apply {:?}: {}", cdiff_file_path, e);
         ffi_error!(err = err, e)
     } else {
@@ -640,7 +629,7 @@ pub unsafe extern "C" fn _cdiff_apply(
 /// ':' character to the left of EOF.
 pub fn cdiff_apply(
     cdiff_file_path: &Path,
-    certs_directory: &Path,
+    verifier: &Verifier,
     mode: ApplyMode,
 ) -> Result<(), Error> {
     let path = std::env::current_dir().unwrap();
@@ -661,7 +650,7 @@ pub fn cdiff_apply(
             // The filename would be the same as the cdiff file with an extra .sign extension
             let sign_file_path = cdiff_file_path.with_extension("cdiff.sign");
             let verify_result =
-                codesign::verify_signed_file(cdiff_file_path, &sign_file_path, certs_directory);
+                codesign::verify_signed_file(cdiff_file_path, &sign_file_path, verifier);
             let verified = match verify_result {
                 Ok(signer) => {
                     debug!(
