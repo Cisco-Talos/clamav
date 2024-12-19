@@ -416,12 +416,19 @@ START_TEST(test_cl_load)
     struct cl_engine *engine;
     unsigned int sigs = 0;
     const char *testfile;
+    const char* cvdcertsdir;
 
     ret = cl_init(CL_INIT_DEFAULT);
     ck_assert_msg(ret == CL_SUCCESS, "cl_init failed: %s", cl_strerror(ret));
 
     engine = cl_engine_new();
     ck_assert_msg(engine != NULL, "cl_engine_new failed");
+
+    cvdcertsdir = getenv("CVD_CERTS_DIR");
+    ck_assert_msg(cvdcertsdir != NULL, "CVD_CERTS_DIR not set");
+
+    ret = cl_engine_set_str(engine, CL_ENGINE_CVDCERTSDIR, cvdcertsdir);
+    ck_assert_msg(ret == CL_SUCCESS, "cl_engine_set_str failed: %s", cl_strerror(ret));
 
     /* load test cvd */
     testfile = SRCDIR PATHSEP "input" PATHSEP "freshclam_testfiles" PATHSEP "test-5.cvd";
@@ -442,26 +449,30 @@ START_TEST(test_cl_cvdverify)
     FILE *orig_fs;
     FILE *new_fs;
     char cvd_bytes[5000];
+    const char* cvdcertsdir;
+
+    cvdcertsdir = getenv("CVD_CERTS_DIR");
+    ck_assert_msg(cvdcertsdir != NULL, "CVD_CERTS_DIR not set");
 
     // Should be able to verify this cvd
     testfile = SRCDIR "/input/freshclam_testfiles/test-1.cvd";
-    ret      = cl_cvdverify(testfile);
-    ck_assert_msg(CL_SUCCESS == ret, "cl_cvdverify failed for: %s -- %s", testfile, cl_strerror(ret));
+    ret      = cl_cvdverify_ex(testfile, cvdcertsdir);
+    ck_assert_msg(CL_SUCCESS == ret, "cl_cvdverify_ex failed for: %s -- %s", testfile, cl_strerror(ret));
 
     // Can't verify a cvd that doesn't exist
     testfile = SRCDIR "/input/freshclam_testfiles/test-na.cvd";
-    ret      = cl_cvdverify(testfile);
-    ck_assert_msg(CL_ECVD == ret, "cl_cvdverify should have failed for: %s -- %s", testfile, cl_strerror(ret));
+    ret      = cl_cvdverify_ex(testfile, cvdcertsdir);
+    ck_assert_msg(CL_ECVD == ret, "cl_cvdverify_ex should have failed for: %s -- %s", testfile, cl_strerror(ret));
 
-    // A cdiff is not a cvd. Cannot verify with cl_cvdverify!
+    // A cdiff is not a cvd. Cannot verify with cl_cvdverify_ex!
     testfile = SRCDIR "/input/freshclam_testfiles/test-2.cdiff";
-    ret      = cl_cvdverify(testfile);
-    ck_assert_msg(CL_ECVD == ret, "cl_cvdverify should have failed for: %s -- %s", testfile, cl_strerror(ret));
+    ret      = cl_cvdverify_ex(testfile, cvdcertsdir);
+    ck_assert_msg(CL_ECVD == ret, "cl_cvdverify_ex should have failed for: %s -- %s", testfile, cl_strerror(ret));
 
     // Can't verify an hdb file
     testfile = SRCDIR "/input/clamav.hdb";
-    ret      = cl_cvdverify(testfile);
-    ck_assert_msg(CL_ECVD == ret, "cl_cvdverify should have failed for: %s -- %s", testfile, cl_strerror(ret));
+    ret      = cl_cvdverify_ex(testfile, cvdcertsdir);
+    ck_assert_msg(CL_ECVD == ret, "cl_cvdverify_ex should have failed for: %s -- %s", testfile, cl_strerror(ret));
 
     // Modify the cvd to make it invalid
     sprintf(newtestfile, "%s/modified.cvd", tmpdir);

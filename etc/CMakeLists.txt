@@ -34,7 +34,7 @@ endif()
 install(DIRECTORY DESTINATION ${CVD_CERTS_DIRECTORY} COMPONENT programs)
 install(
     FILES
-        ${CMAKE_CURRENT_SOURCE_DIR}/certs/ca.crt
+        ${CMAKE_CURRENT_SOURCE_DIR}/certs/clamav.crt
     DESTINATION
         ${CVD_CERTS_DIRECTORY}
     COMPONENT programs)

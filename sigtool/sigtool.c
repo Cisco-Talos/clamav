@@ -1614,10 +1614,16 @@ static int unpack(const struct optstruct *opts)
         name[sizeof(name) - 1] = '\0';
     }
 
-    if (optget(opts, "cvdcertsdir")->active)
-        certs_directory = optget(opts, "cvdcertsdir")->strarg;
-    else
-        certs_directory = CERTSDIR;
+    certs_directory = optget(opts, "cvdcertsdir")->strarg;
+    if (NULL == certs_directory) {
+        // Check if the CVD_CERTS_DIR environment variable is set
+        certs_directory = getenv("CVD_CERTS_DIR");
+
+        // If not, use the default value
+        if (NULL == certs_directory) {
+            certs_directory = CERTSDIR;
+        }
+    }
 
     if (cl_cvdverify_ex(name, certs_directory) != CL_SUCCESS) {
         mprintf(LOGG_ERROR, "unpack: %s is not a valid CVD\n", name);
