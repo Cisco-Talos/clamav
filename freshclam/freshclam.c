@@ -200,26 +200,32 @@ static void help(void)
     printf("    --on-error-execute=COMMAND           Execute COMMAND if errors occurred\n");
     printf("    --on-outdated-execute=COMMAND        Execute COMMAND when software is outdated\n");
     printf("    --update-db=DBNAME                   Only update database DBNAME\n");
+    printf("    --cvdcertsdir=DIRECTORY              Specify a directory containing the root\n");
+    printf("                                         CA cert needed to verify detached CVD digital signatures.\n");
+    printf("                                         If not provided, then clamscan will look in:\n");
+    printf("                                         " CERTSDIR "\n");
     printf("\n");
     printf("Environment Variables:\n");
     printf("\n");
 #if !defined(C_DARWIN) && !defined(_WIN32)
-    printf("  CURL_CA_BUNDLE                         May be set to the path of a file (bundle)\n");
+    printf("    CURL_CA_BUNDLE                       May be set to the path of a file (bundle)\n");
     printf("                                         containing one or more CA certificates.\n");
     printf("                                         This will override the default openssl\n");
     printf("                                         certificate path.\n");
-    printf("\n");
 #endif
-    printf("  FRESHCLAM_CLIENT_CERT                  May be set to the path of a file (PEM)\n");
+    printf("    FRESHCLAM_CLIENT_CERT                May be set to the path of a file (PEM)\n");
     printf("                                         containing the client certificate.\n");
     printf("                                         This may be used for client authentication\n");
     printf("                                         to a private mirror.\n");
-    printf("  FRESHCLAM_CLIENT_KEY                   May be set to the path of a file (PEM)\n");
+    printf("    FRESHCLAM_CLIENT_KEY                 May be set to the path of a file (PEM)\n");
     printf("                                         containing the client private key.\n");
     printf("                                         This is required if FRESHCLAM_CLIENT_CERT is set.\n");
-    printf("  FRESHCLAM_CLIENT_KEY_PASSWD            May be set to a password for the client key PEM file.\n");
+    printf("    FRESHCLAM_CLIENT_KEY_PASSWD          May be set to a password for the client key PEM file.\n");
     printf("                                         This is required if FRESHCLAM_CLIENT_KEY is\n");
     printf("                                         set and the PEM file is password protected.\n");
+    printf("    CVD_CERTS_DIR                        Specify a directory containing the root CA cert needed\n");
+    printf("                                         to verify detached CVD digital signatures.\n");
+    printf("                                         If not provided, then clamd will look in the default directory.\n");
     printf("\n");
 }
 
@@ -809,6 +815,31 @@ static fc_error_t initialize(struct optstruct *opts)
             logg(LOGG_INFO, "Assigned ownership of database directory to user \"%s\".\n", optget(opts, "DatabaseOwner")->strarg);
         }
 #endif
+    }
+
+    /*
+     * Verify that the clamav ca certificates directory exists.
+     * Create certs directory if missing.
+     */
+    fcConfig.certsDirectory = optget(opts, "cvdcertsdir")->strarg;
+    if (NULL == fcConfig.certsDirectory) {
+        // Check if the CVD_CERTS_DIR environment variable is set
+        fcConfig.certsDirectory = getenv("CVD_CERTS_DIR");
+
+        // If not, use the default value
+        if (NULL == fcConfig.certsDirectory) {
+            fcConfig.certsDirectory = CERTSDIR;
+        }
+    }
+
+    if (LSTAT(fcConfig.certsDirectory, &statbuf) == -1) {
+        logg(LOGG_ERROR,
+             "ClamAV CA certificates directory is missing: %s\n"
+             "It should have been provided as a part of installation.",
+             fcConfig.certsDirectory);
+
+        status = FC_EDIRECTORY;
+        goto done;
     }
 
 #ifdef HAVE_PWD_H
