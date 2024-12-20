@@ -127,6 +127,8 @@ fc_error_t fc_initialize(fc_config *fcConfig)
 {
     fc_error_t status = FC_EARG;
     STATBUF statbuf;
+    char *certsDirectory         = NULL;
+    FFIError *new_verifier_error = NULL;
 
     if (NULL == fcConfig) {
         printf("fc_initialize: Invalid arguments.\n");
@@ -249,6 +251,28 @@ fc_error_t fc_initialize(fc_config *fcConfig)
         goto done;
     }
 
+#ifdef _WIN32
+    if ((fcConfig->certsDirectory[strlen(fcConfig->certsDirectory) - 1] != '/') &&
+        ((fcConfig->certsDirectory[strlen(fcConfig->certsDirectory) - 1] != '\\'))) {
+#else
+    if (fcConfig->certsDirectory[strlen(fcConfig->certsDirectory) - 1] != '/') {
+#endif
+        certsDirectory = malloc(strlen(fcConfig->certsDirectory) + strlen(PATHSEP) + 1);
+        snprintf(
+            certsDirectory,
+            strlen(fcConfig->certsDirectory) + strlen(PATHSEP) + 1,
+            "%s" PATHSEP,
+            fcConfig->certsDirectory);
+    } else {
+        certsDirectory = cli_safer_strdup(fcConfig->certsDirectory);
+    }
+
+    if (!codesign_verifier_new(certsDirectory, &g_signVerifier, &new_verifier_error)) {
+        logg(LOGG_ERROR, "Failed to create a new code-signature verifier: %s\n", ffierror_fmt(new_verifier_error));
+        status = FC_EINIT;
+        goto done;
+    }
+
     g_tempDirectory = cli_safer_strdup(fcConfig->tempDirectory);
 
     g_maxAttempts    = fcConfig->maxAttempts;
@@ -273,6 +297,12 @@ fc_error_t fc_initialize(fc_config *fcConfig)
 done:
     if (FC_SUCCESS != status) {
         fc_cleanup();
+    }
+    if (NULL != certsDirectory) {
+        free(certsDirectory);
+    }
+    if (NULL != new_verifier_error) {
+        ffierror_free(new_verifier_error);
     }
 
     return status;
@@ -319,6 +349,9 @@ void fc_cleanup(void)
         free(g_freshclamDat);
         g_freshclamDat = NULL;
     }
+    if (NULL != g_signVerifier) {
+        codesign_verifier_free(g_signVerifier);
+    }
 }
 
 fc_error_t fc_prune_database_directory(char **databaseList, uint32_t nDatabases)
@@ -346,13 +379,24 @@ fc_error_t fc_prune_database_directory(char **databaseList, uint32_t nDatabases)
 
     while ((dent = readdir(dir))) {
         if (dent->d_ino) {
+            // prune any CVD/CLD files that are not in the database list
             if ((NULL != (extension = strstr(dent->d_name, ".cld"))) ||
                 (NULL != (extension = strstr(dent->d_name, ".cvd")))) {
+
+                // find the first '-' or '.' in the filename
+                // Use this to determine the database name.
+                // We need this so we can ALSO prune the .sign files for unwanted databases.
+                // Will also be useful in case the database filename includes a hyphenated version number.
+                const char *first_dash_or_dot = strchr(dent->d_name, '-');
+                if (NULL == first_dash_or_dot) {
+                    first_dash_or_dot = extension;
+                }
 
                 uint32_t i;
                 int bFound = 0;
                 for (i = 0; i < nDatabases; i++) {
-                    if (0 == strncmp(databaseList[i], dent->d_name, extension - dent->d_name)) {
+                    // check that the database name is in the database list
+                    if (0 == strncmp(databaseList[i], dent->d_name, first_dash_or_dot - dent->d_name)) {
                         bFound = 1;
                     }
                 }
