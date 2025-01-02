@@ -4,8 +4,8 @@ contact_links:
     url: https://docs.clamav.net/Introduction.html#mailing-lists-and-chat
     about: Questions should go to the mailing list.
   - name: Report Undetected Malware
-    url: https://clamav.net/reports/malware
+    url: https://www.clamav.net/reports/malware
     about: Report malware that was not detected by ClamAV.
   - name: Report a False Positive Malware Detection
-    url: https://clamav.net/reports/fp
+    url: https://www.clamav.net/reports/fp
     about: Report an invalid malware detection. This is for reporting files that were detected by ClamAV but are not malware.
