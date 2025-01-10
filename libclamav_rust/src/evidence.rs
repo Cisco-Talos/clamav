@@ -209,7 +209,7 @@ pub unsafe extern "C" fn _evidence_add_indicator(
     indicator_type: IndicatorType,
     err: *mut *mut FFIError,
 ) -> bool {
-    let name_str = validate_str_param!(name);
+    let name_str = validate_str_param!(name, err = err);
 
     let mut evidence = ManuallyDrop::new(Box::from_raw(evidence as *mut Evidence));
 

@@ -288,6 +288,13 @@ mod tests {
 ///    let blah = validate_str_param!(blah);
 /// # }
 /// ```
+/// ```edition2018
+/// use util::validate_str_param;
+///
+/// # pub extern "C" fn _my_c_interface(blah: *const c_char) -> sys::cl_error_t {
+///    let blah = validate_str_param!(blah, err = err);
+/// # }
+/// ```
 #[macro_export]
 macro_rules! validate_str_param {
     ($ptr:ident) => {
@@ -299,6 +306,27 @@ macro_rules! validate_str_param {
             match unsafe { CStr::from_ptr($ptr) }.to_str() {
                 Err(e) => {
                     warn!("{} is not valid unicode: {}", stringify!($ptr), e);
+                    return false;
+                }
+                Ok(s) => s,
+            }
+        }
+    };
+
+    ($ptr:ident, err=$err:ident) => {
+        if $err.is_null() {
+            warn!("{} is NULL", stringify!($err));
+            return false;
+        } else if $ptr.is_null() {
+            warn!("{} is NULL", stringify!($ptr));
+            return false;
+        } else {
+            #[allow(unused_unsafe)]
+            match unsafe { CStr::from_ptr($ptr) }.to_str() {
+                Err(e) => {
+                    warn!("{} is not valid unicode: {}", stringify!($ptr), e);
+
+                    *$err = Box::into_raw(Box::new(e.into()));
                     return false;
                 }
                 Ok(s) => s,
