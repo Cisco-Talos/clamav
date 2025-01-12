@@ -318,6 +318,7 @@ enum cl_engine_field {
     CL_ENGINE_PCRE_MAX_FILESIZE,   /* uint64_t */
     CL_ENGINE_DISABLE_PE_CERTS,    /* uint32_t */
     CL_ENGINE_PE_DUMPCERTS,        /* uint32_t */
+    CL_ENGINE_CVDCERTSDIR,         /* (char *) */
 };
 
 enum bytecode_security {
@@ -1134,10 +1135,21 @@ extern struct cl_cvd *cl_cvdparse(const char *head);
 /**
  * @brief Verify a CVD file by loading and unloading it.
  *
+ * This function is deprecated. Use cl_cvdverify_ex() instead.
+ *
  * @param file          Filepath of CVD file.
  * @return cl_error_t   CL_SUCCESS if success, else a CL_E* error code.
  */
 extern cl_error_t cl_cvdverify(const char *file);
+
+/**
+ * @brief Verify a CVD file by loading and unloading it.
+ *
+ * @param file          Filepath of CVD file.
+ * @param file          Directory containing CA certificates required to verify the CVD digital signature.
+ * @return cl_error_t   CL_SUCCESS if success, else a CL_E* error code.
+ */
+extern cl_error_t cl_cvdverify_ex(const char *file, const char *certs_directory);
 
 /**
  * @brief Free a CVD header struct.
@@ -1147,9 +1159,11 @@ extern cl_error_t cl_cvdverify(const char *file);
 extern void cl_cvdfree(struct cl_cvd *cvd);
 
 /**
- * @brief Unpack a CVD file.
+ * @brief Unpack a CVD file. (deprecated)
  *
  * Will verify the CVD is correctly signed unless the `dont_verify` parameter is true.
+ *
+ * This function is deprecated. Use cl_cvdunpack_ex() instead.
  *
  * @param file          Filepath of CVD file.
  * @param dir           Destination directory.
@@ -1157,6 +1171,19 @@ extern void cl_cvdfree(struct cl_cvd *cvd);
  * @return cl_error_t   CL_SUCCESS if success, else a CL_E* error code.
  */
 extern cl_error_t cl_cvdunpack(const char *file, const char *dir, bool dont_verify);
+
+/**
+ * @brief Unpack a CVD file.
+ *
+ * Will verify the CVD is correctly signed unless the `dont_verify` parameter is true.
+ *
+ * @param file              Filepath of CVD file.
+ * @param dir               Destination directory.
+ * @param dont_verify       If true, don't verify the CVD.
+ * @param certs_directory   Path where ClamAV public certs are located, needed to verify external digital signatures.
+ * @return cl_error_t       CL_SUCCESS if success, else a CL_E* error code.
+ */
+extern cl_error_t cl_cvdunpack_ex(const char *file, const char *dir, bool dont_verify, const char *certs_directory);
 
 /**
  * @brief Retrieve the age of CVD disk data.

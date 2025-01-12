@@ -25,8 +25,10 @@ pub mod sys;
 
 pub mod alz;
 pub mod cdiff;
+pub mod codesign;
 pub mod css_image_extract;
 pub mod ctx;
+pub mod cvd;
 pub mod evidence;
 pub mod ffi_util;
 pub mod fmap;

@@ -1,6 +1,6 @@
 [package]
 authors = ["The ClamAV Team <clamav-bugs@external.cisco.com>"]
-edition = "2018"
+edition = "2021"
 name = "clamav_rust"
 version = "0.0.1"
 
@@ -26,6 +26,14 @@ inflate = "0.4"
 bzip2-rs = "0.1"
 byteorder = "1.5"
 delharc = "0.6"
+clam-sigutil = { git = "https://github.com/Cisco-Talos/clamav-signature-util", tag = "1.2.0" }
+tar = "0.4.43"
+md5 = "0.7.0"
+openssl = "0.10.68"
+glob = "0.3.1"
+
+[features]
+not_ready = []
 
 [lib]
 crate-type = ["staticlib"]
