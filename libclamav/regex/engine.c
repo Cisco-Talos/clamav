@@ -223,7 +223,7 @@ matcher(struct re_guts *g, const char *string, size_t nmatch,
 			dp = dissect(m, m->coldp, endp, gf, gl);
 		} else {
 			if (g->nplus > 0 && m->lastpos == NULL)
-				m->lastpos = (char **)cli_max_malloc((g->nplus+1) *
+				m->lastpos = (const char **)cli_max_malloc((g->nplus+1) *
 							sizeof(char *));
 			if (g->nplus > 0 && m->lastpos == NULL) {
 				free(m->pmatch);
