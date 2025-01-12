@@ -157,12 +157,14 @@ set(CMAKE_SYSROOT           /opt/aarch64-wrs-linux-sysroot)
 #set(PCRE2_INCLUDE_DIR       "/usr/include/")
 #set(PCRE2_LIBRARY           "/usr/lib64/libpcre2-8.so")
 
-#set(CURSES_INCLUDE_DIR      "/usr/include/")
-#set(CURSES_LIBRARY          "/usr/lib/aarch64-linux-gnu/libncurses.a;/usr/lib/aarch64-linux-gnu/libtinfo.a")
-# Tip: You may not need to also link with libtinfo.a, depending on what your distribution provides:
-#set(CURSES_LIBRARY          "/usr/lib/aarch64-linux-gnu/libncurses.a")
-# Tip: Alternatively, you could link with the shared library:
+set(NCURSES_INCLUDE_DIR      "/usr/include/")
+set(CURSES_LIBRARY          "/usr/lib/aarch64-linux-gnu/libncurses.a")
+set(TINFO_LIBRARY           "/usr/lib/aarch64-linux-gnu/libtinfo.a")
+# Tip: You may not need to also link with libtinfo.a, depending on what your distribution provides.
+
+# Tip 2: Alternatively, you could link with the shared libraries:
 #set(CURSES_LIBRARY          "/usr/lib/aarch64-linux-gnu/libncurses.so")
+#set(TINFO_LIBRARY          "/usr/lib/aarch64-linux-gnu/libtinfo.so")
 
 #set(ZLIB_INCLUDE_DIR        "/usr/include/")
 #set(ZLIB_LIBRARY            "/usr/lib64/libz.so")
@@ -225,12 +227,14 @@ set(LIBXML2_LIBRARY         "/usr/lib/aarch64-linux-gnu/libxml2.so")
 set(PCRE2_INCLUDE_DIR       "/usr/include/")
 set(PCRE2_LIBRARY           "/usr/lib/aarch64-linux-gnu/libpcre2-8.so")
 
-set(CURSES_INCLUDE_DIR      "/usr/include/")
-set(CURSES_LIBRARY          "/usr/lib/aarch64-linux-gnu/libncurses.a;/usr/lib/aarch64-linux-gnu/libtinfo.a")
-# Tip: You may not need to also link with libtinfo.a, depending on what your distribution provides:
-#set(CURSES_LIBRARY          "/usr/lib/aarch64-linux-gnu/libncurses.a")
-# Tip: Alternatively, you could link with the shared library:
+set(NCURSES_INCLUDE_DIR      "/usr/include/")
+set(CURSES_LIBRARY          "/usr/lib/aarch64-linux-gnu/libncurses.a")
+set(TINFO_LIBRARY           "/usr/lib/aarch64-linux-gnu/libtinfo.a")
+# Tip: You may not need to also link with libtinfo.a, depending on what your distribution provides.
+
+# Tip 2: Alternatively, you could link with the shared libraries:
 #set(CURSES_LIBRARY          "/usr/lib/aarch64-linux-gnu/libncurses.so")
+#set(TINFO_LIBRARY          "/usr/lib/aarch64-linux-gnu/libtinfo.so")
 
 set(ZLIB_INCLUDE_DIR        "/usr/include/")
 set(ZLIB_LIBRARY            "/usr/lib/aarch64-linux-gnu/libz.so")
