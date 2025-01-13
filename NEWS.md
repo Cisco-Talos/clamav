@@ -3,6 +3,25 @@
 Note: This file refers to the official packages. Things described here may
 differ slightly from third-party binary packages.
 
+## 1.0.8
+
+ClamAV 1.0.8 is a patch release with the following fixes:
+
+- [CVE-2025-20128](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2025-20128):
+  Fixed a possible buffer overflow read bug in the OLE2 file parser that could
+  cause a denial-of-service (DoS) condition.
+
+  This issue was introduced in version 1.0.0 and affects all currently
+  supported versions. It will be fixed in:
+  - 1.4.2
+  - 1.0.8
+
+  Thank you to OSS-Fuzz for identifying this issue.
+
+- ClamOnAcc: Fixed an infinite loop when a watched directory does not exist.
+  This is a backport of a fix from ClamAV 1.3.0.
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1426)
+
 ## 1.0.7
 
 ClamAV 1.0.7 is a patch release with the following fixes:
