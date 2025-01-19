@@ -72,6 +72,11 @@ Example
 # Default: hardcoded (depends on installation options)
 #DatabaseDirectory "C:\Program Files\ClamAV\database"
 
+# Path to the ClamAV CA certificates directory for verifying CVD signature
+# archive digital signatures.
+# Default: "certs"
+#CVDCertsDirectory "C:\Program Files\ClamAV\certs"
+
 # Only load the official signatures published by the ClamAV project.
 # Default: no
 #OfficialDatabaseOnly no
