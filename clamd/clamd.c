@@ -19,6 +19,7 @@
  *  MA 02110-1301, USA.
  */
 
+#include "thrmgr.h"
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
 #endif
@@ -143,7 +144,7 @@ int main(int argc, char **argv)
     struct rlimit rlim;
 #endif
     time_t currtime;
-    const char *dbdir, *cfgfile;
+    const char *dbdir, *cfgfile, *local_scan_file;
     char *pua_cats = NULL, *pt;
     int ret, tcpsock = 0, localsock = 0, min_port, max_port;
     unsigned int sigs      = 0;
@@ -154,6 +155,12 @@ int main(int argc, char **argv)
     int j;
     int num_fd;
     pid_t parentPid = getpid();
+
+    /* AEScan Variables */
+    int do_local_scan = 0;
+    threadpool_t *thr_pool;
+    int idletimeout;
+    int max_threads, max_queue = 0;
 #ifdef C_LINUX
     STATBUF sb;
 #endif
@@ -195,6 +202,13 @@ int main(int argc, char **argv)
         debug_mode = 1;
     }
 
+    /* AE Scan Option */
+    if (optget(opts, "LocalScanningFile")->enabled) {
+        local_scan_file = optget(opts, "LocalScanningFile")->strarg;
+        do_local_scan = 1;
+        fprintf(stderr, "LocalScanningFile: %s\n", local_scan_file);
+    }
+
     /* check foreground option from command line to override config file */
     for (j = 0; j < argc; j += 1) {
         if ((memcmp(argv[j], "--foreground", 12) == 0) || (memcmp(argv[j], "-F", 2) == 0)) {
@@ -209,6 +223,10 @@ int main(int argc, char **argv)
         } else {
             foreground = 0;
         }
+    }
+
+    for (j = 0; j < argc; j += 1) {
+
     }
 
     num_fd = sd_listen_fds(0);
@@ -418,8 +436,8 @@ int main(int argc, char **argv)
 
         logg(LOGG_INFO_NF, "Received %d file descriptor(s) from systemd.\n", num_fd);
 
-        if (!tcpsock && !localsock && num_fd == 0) {
-            logg(LOGG_ERROR, "Please define server type (local and/or TCP).\n");
+        if (!tcpsock && !localsock && num_fd == 0 && do_local_scan == 0) {
+            logg(LOGG_ERROR, "Please define server type (local and/or TCP), or pass a file for local scanning.\n");
             ret = 1;
             break;
         }
@@ -737,6 +755,52 @@ int main(int argc, char **argv)
             }
         }
 #ifndef _WIN32
+        if (do_local_scan) {
+            /*logg(LOGG_ERROR, "Going to do a local scan!!\n");*/
+            max_threads = optget(opts, "MaxThreads")->numarg;
+            max_queue   = optget(opts, "MaxQueue")->numarg;
+            idletimeout = optget(opts, "IdleTimeout")->numarg;
+
+            if ((thr_pool = thrmgr_new(max_threads, idletimeout, max_queue, scanner_thread)) == NULL) {
+                /*logg(LOGG_ERROR, "thrmgr_new failed\n");*/
+                exit(-1);
+            } else {
+                /*logg(LOGG_ERROR, "thrmgr_new success\n");*/
+            }
+
+            client_conn_t conn;
+            /*const char *cmd = NULL;*/
+            /*int rc;*/
+            struct cl_scan_options options;
+            memset(&options, 0, sizeof(struct cl_scan_options));
+            /* New data available to read on socket. */
+
+            options.general |= AE_SCAN_LOCAL_SCAN;
+            options.general |= CL_SCAN_GENERAL_COLLECT_METADATA;
+
+            memset(&conn, 0, sizeof(conn));
+            /*conn.scanfd   = buf->recvfd;*/
+            /*buf->recvfd   = -1;*/
+            /*conn.sd       = buf->fd;*/
+            conn.options  = &options;
+            conn.opts     = opts;
+            conn.thrpool  = thr_pool;
+            conn.engine   = engine;
+            /*conn.group    = buf->group;*/
+            /*conn.id       = buf->id;*/
+            /*conn.quota    = buf->quota;*/
+            /*conn.filename = buf->dumpname;*/
+            /*conn.mode     = buf->mode;*/
+            /*conn.term     = buf->term;*/
+            execute_or_dispatch_command(&conn, COMMAND_MULTISCAN, local_scan_file);
+            /*logg(LOGG_INFO, "Dispatch done, now waiting for threads to finish.\n");*/
+            thrmgr_wait_for_threads(thr_pool);
+            logg(LOGG_INFO, "Threads finished!\n");
+            thrmgr_destroy(thr_pool);
+            logg(LOGG_INFO, "killed pool\n");
+        }
+
+
         if (localsock && num_fd == 0) {
             int *t;
             mode_t sock_mode, umsk = umask(0777); /* socket is created with 000 to avoid races */
@@ -845,17 +909,21 @@ int main(int argc, char **argv)
         }
 #endif
 
-        if (nlsockets == 0) {
+        if (nlsockets == 0 && do_local_scan == 0) {
             logg(LOGG_ERROR, "Not listening on any interfaces\n");
             ret = 1;
             break;
         }
 
-        ret = recvloop(lsockets, nlsockets, engine, dboptions, opts);
+        if (do_local_scan == 0) {
+            ret = recvloop(lsockets, nlsockets, engine, dboptions, opts);
+        } else {
+            /* wait for threadpool to be done? */
+        }
 
     } while (0);
 
-    if (num_fd == 0) {
+    if (num_fd == 0 && do_local_scan == 0) {
         logg(LOGG_DEBUG, "Closing the main socket%s.\n", (nlsockets > 1) ? "s" : "");
 
         for (i = 0; i < nlsockets; i++) {
@@ -873,7 +941,9 @@ int main(int argc, char **argv)
 #endif
     }
 
-    free(lsockets);
+    if (do_local_scan == 0) {
+        free(lsockets);
+    }
 
     logg_close();
     optfree(opts);

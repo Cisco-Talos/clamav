@@ -237,6 +237,7 @@ int command(client_conn_t *conn, int *virus)
             break;
         case COMMAND_MULTISCAN: {
             int multiscan, max, alive;
+            /*logg(LOGG_ERROR, "MULTISCAN command\n");*/
 
             /* use MULTISCAN only for directories (bb #1869) */
             if (CLAMSTAT(conn->filename, &sb) == 0 &&
@@ -283,6 +284,7 @@ int command(client_conn_t *conn, int *virus)
             scandata.type     = TYPE_SCAN;
             scandata.thr_pool = NULL;
             /* TODO: check ret value */
+            /*logg(LOGG_ERROR, "MULTISCANFILE command\n");*/
             ret            = scan_callback(NULL, conn->filename, conn->filename, visit_file, &data); /* callback freed it */
             conn->filename = NULL;
             *virus         = scandata.infected;
@@ -439,6 +441,9 @@ static int dispatch_command(client_conn_t *conn, enum commands cmd, const char *
         case COMMAND_CONTSCAN:
         case COMMAND_MULTISCAN:
         case COMMAND_ALLMATCHSCAN:
+            /*logg(LOGG_ERROR, "testing the argument\n");*/
+            /*logg(LOGG_ERROR, argument);*/
+            /*logg(LOGG_ERROR, "argument: %s\n", argument);*/
             dup_conn->filename = cli_strdup_to_utf8(argument);
             if (!dup_conn->filename) {
                 logg(LOGG_ERROR, "Failed to allocate memory for filename\n");
@@ -461,11 +466,14 @@ static int dispatch_command(client_conn_t *conn, enum commands cmd, const char *
     }
     if (!dup_conn->group)
         bulk = 0;
+    /*logg(LOGG_ERROR, "made it to the group dispatch\n");*/
     if (!ret && !thrmgr_group_dispatch(dup_conn->thrpool, dup_conn->group, dup_conn, bulk)) {
         logg(LOGG_ERROR, "thread dispatch failed\n");
         ret = -2;
     }
+    /*logg(LOGG_ERROR, "exited dispatch\n");*/
     if (ret) {
+        /*logg(LOGG_ERROR, "freeing engine\n");*/
         cl_engine_free(dup_conn->engine);
         free(dup_conn);
     }

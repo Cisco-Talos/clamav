@@ -1,3 +1,7 @@
+# AE-Scan changes
+- added a flag "--local-scanning-file" to `clamd` to select which directoryto scan 
+- this will disable the socket functionality and run the scan without a daemon
+
 # ClamAV
 
 <p align="center">

@@ -667,6 +667,11 @@ const struct clam_option __clam_options[] = {
     {"TCPSocket", NULL, 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, -1, NULL, 0, OPT_MILTER | OPT_DEPRECATED, "", ""},
     {"TemporaryDirectory", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_MILTER | OPT_DEPRECATED, "", ""},
 
+    /* AEScan Specific Options */ 
+    /* name, longopt, sopt, argtype, regex, num, str, flags, owner, description, suggested */
+    /*{"DoLocalScan", "do-localscan", 'do-local-scan', CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM, "Enable Local Scan", "no"},*/
+    {"LocalScanningFile", "local-scanning-file", 'local-scanning-file', CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM, "Scan files directly without using a daemon. File path for scanning.", "/home/"},
+
     {NULL, NULL, 0, 0, NULL, 0, NULL, 0, 0, NULL, NULL}};
 const struct clam_option *clam_options = __clam_options;
 

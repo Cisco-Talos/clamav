@@ -48,6 +48,9 @@ void sighandler(int sig);
 void sighandler_th(int sig);
 void sigsegv(int sig);
 
+/* added for AEScan */
+void scanner_thread(void *arg);
+
 extern pthread_mutex_t exit_mutex, reload_mutex;
 extern int progexit, reload;
 

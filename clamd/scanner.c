@@ -145,7 +145,9 @@ cl_error_t scan_callback(STATBUF *sb, char *filename, const char *msg, enum cli_
     struct cb_context context;
     char *real_filename = NULL;
 
+
     if (NULL != filename) {
+        /*logg(LOGG_ERROR, "scanning a file!\n");*/
         if (CL_SUCCESS != cli_realpath((const char *)filename, &real_filename)) {
             conn_reply_errno(scandata->conn, msg, "File path check failure:");
             logg(LOGG_WARNING, "File path check failure for: %s\n", filename);
@@ -157,8 +159,10 @@ cl_error_t scan_callback(STATBUF *sb, char *filename, const char *msg, enum cli_
     }
 
     /* detect disconnected socket,
-     * this should NOT detect half-shutdown sockets (SHUT_WR) */
-    if (send(scandata->conn->sd, &ret, 0, 0) == -1 && errno != EINTR) {
+     * this should NOT detect half-shutdown sockets (SHUT_WR) 
+     * skip if we are doing a local scan */
+    int still_check_send = !(scandata->conn->options->general & AE_SCAN_LOCAL_SCAN);
+    if (still_check_send && send(scandata->conn->sd, &ret, 0, 0) == -1 && errno != EINTR) {
         logg(LOGG_DEBUG_NV, "Client disconnected while command was active!\n");
         thrmgr_group_terminate(scandata->conn->group);
         if (reason == visit_file)
@@ -190,7 +194,7 @@ cl_error_t scan_callback(STATBUF *sb, char *filename, const char *msg, enum cli_
             free(filename);
             return CL_SUCCESS;
         case warning_skipped_dir:
-            logg(LOGG_WARNING, "Directory recursion limit reached, skipping %s\n", msg);
+            /*logg(LOGG_WARNING, "Directory recursion limit reached, skipping %s\n", msg);*/
             free(filename);
             return CL_SUCCESS;
         case warning_skipped_link:
@@ -227,11 +231,12 @@ cl_error_t scan_callback(STATBUF *sb, char *filename, const char *msg, enum cli_
 
     if (type == TYPE_MULTISCAN) {
         client_conn_t *client_conn = (client_conn_t *)calloc(1, sizeof(struct client_conn_tag));
+        /*logg(LOGG_ERROR, "multiscanning a file!\n");*/
         if (client_conn) {
             client_conn->scanfd   = -1;
             client_conn->sd       = scandata->odesc;
             client_conn->filename = filename;
-            client_conn->cmdtype  = COMMAND_MULTISCANFILE;
+            client_conn->cmdtype  = COMMAND_MULTISCANFILE; // NOTE new command - multiscanfile instead of multiscan
             client_conn->term     = scandata->conn->term;
             client_conn->options  = scandata->options;
             client_conn->opts     = scandata->opts;
@@ -272,12 +277,12 @@ cl_error_t scan_callback(STATBUF *sb, char *filename, const char *msg, enum cli_
 
     if (thrmgr_group_need_terminate(scandata->conn->group)) {
         free(filename);
-        logg(LOGG_DEBUG, "Client disconnected while scanjob was active\n");
+        logg(LOGG_ERROR, "Client disconnected while scanjob was active\n");
         return ret == CL_ETIMEOUT ? ret : CL_BREAK;
     }
 
     if ((ret == CL_VIRUS) && (virname == NULL)) {
-        logg(LOGG_DEBUG, "%s: reported CL_VIRUS but no virname returned!\n", filename);
+        logg(LOGG_ERROR, "%s: reported CL_VIRUS but no virname returned!\n", filename);
         ret = CL_EMEM;
     }
 
@@ -302,7 +307,8 @@ cl_error_t scan_callback(STATBUF *sb, char *filename, const char *msg, enum cli_
         } else {
             scandata->infected++;
             virusaction(filename, virname, scandata->opts);
-            if (conn_reply_virus(scandata->conn, filename, virname) == -1) {
+            int still_check_send = !(scandata->conn->options->general & AE_SCAN_LOCAL_SCAN);
+            if (still_check_send && conn_reply_virus(scandata->conn, filename, virname) == -1) {
                 free(filename);
                 return CL_ETIMEOUT;
             }

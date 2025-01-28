@@ -99,7 +99,8 @@ static struct cl_stat dbstat;
 void *event_wake_recv   = NULL;
 void *event_wake_accept = NULL;
 
-static void scanner_thread(void *arg)
+/*static void scanner_thread(void *arg)*/
+void scanner_thread(void *arg)
 {
     client_conn_t *conn = (client_conn_t *)arg;
 #ifndef _WIN32
@@ -123,6 +124,7 @@ static void scanner_thread(void *arg)
     sigdelset(&sigset, SIGCONT);
     pthread_sigmask(SIG_SETMASK, &sigset, NULL);
 #endif
+    /*logg(LOGG_ERROR, "in scanthread, trying to handle command\n");*/
 
     ret = command(conn, &virus);
     if (ret == -1) {
@@ -1385,8 +1387,10 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
 #endif
 
     /* JSON check to prevent engine loading if specified without libjson-c */
-    if (optget(opts, "GenerateMetadataJson")->enabled)
+    if (optget(opts, "GenerateMetadataJson")->enabled) {
         options.general |= CL_SCAN_GENERAL_COLLECT_METADATA;
+        logg(LOGG_INFO, "Metadata collection enabled.\n");
+    }
 
     selfchk = optget(opts, "SelfCheck")->numarg;
     if (!selfchk) {

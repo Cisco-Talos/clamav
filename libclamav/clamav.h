@@ -170,6 +170,9 @@ struct cl_scan_options {
 #define CL_SCAN_GENERAL_UNPRIVILEGED                0x10 /* scanner will not have read access to files. */
 #define CL_SCAN_GENERAL_STORE_HTML_URLS             0x20 /* Store urls found in html <a and <form tags when recording JSON metadata */
 
+/* AEScan options */
+#define AE_SCAN_LOCAL_SCAN                          0x40 /* scan local files only */
+
 /* parsing capabilities options */
 #define CL_SCAN_PARSE_ARCHIVE                       0x1
 #define CL_SCAN_PARSE_ELF                           0x2

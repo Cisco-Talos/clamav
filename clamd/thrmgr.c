@@ -667,6 +667,7 @@ static void *thrmgr_worker(void *arg)
 
     /* loop looking for work */
     for (;;) {
+        /*logg(LOGG_ERROR, "looking for work\n");*/
         if (pthread_mutex_lock(&(threadpool->pool_mutex)) != 0) {
             logg(LOGG_ERROR, "Fatal: mutex lock failed\n");
             exit(-2);
@@ -687,6 +688,7 @@ static void *thrmgr_worker(void *arg)
                                             &(threadpool->pool_mutex), &timeout);
             if (retval == ETIMEDOUT) {
                 must_exit = TRUE;
+                logg(LOGG_ERROR, "timeout: exiting\n");
                 break;
             }
         }
@@ -767,6 +769,7 @@ static int thrmgr_dispatch_internal(threadpool_t *threadpool, void *user_data, i
             ret = FALSE;
             break;
         }
+        /*logg(LOGG_ERROR, "added to queue\n");*/
 
         items = threadpool->single_queue->item_count + threadpool->bulk_queue->item_count;
         if ((threadpool->thr_idle < items) &&
@@ -777,6 +780,7 @@ static int thrmgr_dispatch_internal(threadpool_t *threadpool, void *user_data, i
                 logg(LOGG_ERROR, "pthread_create failed\n");
             } else {
                 threadpool->thr_alive++;
+                /*logg(LOGG_ERROR, "made a thread\n");*/
             }
         }
         pthread_cond_signal(&(threadpool->pool_cond));
@@ -804,6 +808,9 @@ int thrmgr_group_dispatch(threadpool_t *threadpool, jobgroup_t *group, void *use
         logg(LOGG_DEBUG_NV, "THRMGR: active jobs for %p: %d\n", group, group->jobs);
         pthread_mutex_unlock(&group->mutex);
     }
+    /*} else {*/
+    /*    logg(LOGG_ERROR, "group is null thrmgr:807\n");*/
+    /*}*/
     if (!(ret = thrmgr_dispatch_internal(threadpool, user_data, bulk)) && group) {
         pthread_mutex_lock(&group->mutex);
         group->jobs--;
