@@ -1899,7 +1899,7 @@ void errmsg_expected(void)
 int open_testfile(const char *name, int flags)
 {
     int fd;
-    const char *srcdir = getenv("srcdir");
+    const char *srcdir = getenv("SRCDIR");
     char *str;
 
     if (!srcdir) {
