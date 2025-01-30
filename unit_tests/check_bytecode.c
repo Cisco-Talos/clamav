@@ -501,7 +501,7 @@ END_TEST
 
 static void runload(const char *dbname, struct cl_engine *engine, unsigned signoexp)
 {
-    const char *srcdir = getenv("srcdir");
+    const char *srcdir = getenv("SRCDIR");
     char *str;
     unsigned signo = 0;
     int rc;
