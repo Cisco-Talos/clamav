@@ -1,6 +1,7 @@
 # AE-Scan changes
 - added a flag "--local-scanning-file" to `clamd` to select which directoryto scan 
 - this will disable the socket functionality and run the scan without a daemon
+- in order to run: `clamd --local-scanning-file <folder/file to scan> --datadir=<directory with signature files>`
 
 # ClamAV
 
