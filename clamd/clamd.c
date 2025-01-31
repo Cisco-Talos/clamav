@@ -778,6 +778,20 @@ int main(int argc, char **argv)
             options.general |= AE_SCAN_LOCAL_SCAN;
             options.general |= CL_SCAN_GENERAL_COLLECT_METADATA;
 
+            options.parse |= CL_SCAN_PARSE_ARCHIVE;
+            options.parse |= CL_SCAN_PARSE_ELF;
+            options.parse |= CL_SCAN_PARSE_PDF;
+            options.parse |= CL_SCAN_PARSE_SWF;
+            options.parse |= CL_SCAN_PARSE_HWP3;
+            options.parse |= CL_SCAN_PARSE_XMLDOCS;
+            options.parse |= CL_SCAN_PARSE_MAIL;
+            options.parse |= CL_SCAN_PARSE_OLE2;
+            options.parse |= CL_SCAN_PARSE_HTML;
+            options.parse |= CL_SCAN_PARSE_PE;
+            options.parse |= CL_SCAN_PARSE_ONENOTE;
+            options.parse |= CL_SCAN_PARSE_IMAGE;
+
+
             memset(&conn, 0, sizeof(conn));
             /*conn.scanfd   = buf->recvfd;*/
             /*buf->recvfd   = -1;*/
