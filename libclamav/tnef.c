@@ -171,7 +171,7 @@ int cli_tnef(const char *dir, cli_ctx *ctx)
                         cli_warnmsg("Saving dump to %s:  refer to https://docs.clamav.net/manual/Installing.html\n", filename);
 
                         pos = 0;
-                        while ((count = fmap_readn(ctx->fmap, buffer, pos, sizeof(buffer))) != (size_t)-1) {
+                        while ((count = fmap_readn(ctx->fmap, buffer, pos, sizeof(buffer))) != (size_t)-1 && count != 0) {
                             pos += count;
                             cli_writen(fout, buffer, count);
                         }
