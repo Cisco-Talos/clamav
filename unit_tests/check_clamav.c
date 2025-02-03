@@ -538,11 +538,6 @@ static unsigned skip_files(void)
     unsigned skipped = 0;
 
     /* skip .rar files if unrar is disabled */
-    const char *s = getenv("unrar_disabled");
-    if (s && !strcmp(s, "1")) {
-        skipped += 2;
-    }
-
 #if HAVE_UNRAR
 #else
     skipped += 2;
@@ -1899,17 +1894,11 @@ void errmsg_expected(void)
 int open_testfile(const char *name, int flags)
 {
     int fd;
-    const char *srcdir = getenv("srcdir");
     char *str;
 
-    if (!srcdir) {
-        /* when run from automake srcdir is set, but if run manually then not */
-        srcdir = SRCDIR;
-    }
-
-    str = malloc(strlen(name) + strlen(srcdir) + 2);
+    str = malloc(strlen(name) + strlen(SRCDIR) + 2);
     ck_assert_msg(!!str, "malloc");
-    sprintf(str, "%s" PATHSEP "%s", srcdir, name);
+    sprintf(str, "%s" PATHSEP "%s", SRCDIR, name);
 
     fd = open(str, flags);
     ck_assert_msg(fd >= 0, "open() failed: %s", str);
