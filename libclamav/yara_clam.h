@@ -1,7 +1,7 @@
 /*
  * Main YARA header file for ClamAV
  *
- * Copyright (C) 2014-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ * Copyright (C) 2014-2025 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *
  * Authors: Steven Morgan
  *

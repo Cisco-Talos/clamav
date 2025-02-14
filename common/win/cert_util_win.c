@@ -1,7 +1,7 @@
 /*
  *  OpenSSL certificate verification for Windows.
  *
- *  Copyright (C) 2019-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2019-2025 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *
  *  Authors: Micah Snyder
  *

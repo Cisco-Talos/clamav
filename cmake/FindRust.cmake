@@ -1,7 +1,7 @@
 # Find the Rust toolchain and add the `add_rust_library()` API to build Rust
 # libraries.
 #
-# Copyright (C) 2021-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+# Copyright (C) 2021-2025 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
 #
 # Author: Micah Snyder
 # To see this in a sample project, visit: https://github.com/micahsnyder/cmake-rust-demo

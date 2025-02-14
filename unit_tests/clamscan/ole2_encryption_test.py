@@ -1,4 +1,4 @@
-# Copyright (C) 2020-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+# Copyright (C) 2020-2025 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
 
 """
 Run clamscan tests.
@@ -580,8 +580,3 @@ class TC(testcase.TestCase):
 
         expected_strings = [ '"Encrypted":"ENCRYPTION_TYPE_UNKNOWN"' ]
         self.verify_metadata_json(tempdir, expected_strings)
-
-
-
-
-

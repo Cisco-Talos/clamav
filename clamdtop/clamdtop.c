@@ -1,7 +1,7 @@
 /*
  *  ClamdTOP
  *
- *  Copyright (C) 2013-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2025 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2008-2013 Sourcefire, Inc.
  *
  *  Authors: Török Edvin
@@ -1348,7 +1348,7 @@ static void help(void)
     printf("\n");
     printf("                       Clam AntiVirus: Monitoring Tool %s\n", get_version());
     printf("           By The ClamAV Team: https://www.clamav.net/about.html#credits\n");
-    printf("           (C) 2024 Cisco Systems, Inc.\n");
+    printf("           (C) 2025 Cisco Systems, Inc.\n");
     printf("\n");
     printf("    clamdtop [-hVc] [host[:port] /path/to/clamd.sock ...]\n");
     printf("\n");
