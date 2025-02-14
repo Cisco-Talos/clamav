@@ -76,6 +76,8 @@ if(ENABLE_SHARED_LIB)
                     $<TARGET_FILE_DIR:CURL::libcurl>
                     $<TARGET_FILE_DIR:OpenSSL::SSL>
                     $<TARGET_FILE_DIR:OpenSSL::Crypto>
+                POST_EXCLUDE_REGEXES
+                   "[cC]:[\\/][wW][iI][nN][dD][oO][wW][sS]"
             )
             foreach(_file ${_r_deps})
                 string(TOLOWER ${_file} _file_lower)
