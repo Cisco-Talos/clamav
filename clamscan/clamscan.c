@@ -342,6 +342,10 @@ void help(void)
     mprintf(LOGG_INFO, "    --pcre-recmatch-limit=#n             Maximum recursive calls to the PCRE match function.\n");
     mprintf(LOGG_INFO, "    --pcre-max-filesize=#n               Maximum size file to perform PCRE subsig matching.\n");
     mprintf(LOGG_INFO, "    --disable-cache                      Disable caching and cache checks for hash sums of scanned files.\n");
+    mprintf(LOGG_INFO, "    --cvdcertsdir=DIRECTORY              Specify a directory containing the root\n");
+    mprintf(LOGG_INFO, "                                         CA cert needed to verify detached CVD digital signatures.\n");
+    mprintf(LOGG_INFO, "                                         If not provided, then clamscan will look in:\n");
+    mprintf(LOGG_INFO, "                                         " CERTSDIR "\n");
     mprintf(LOGG_INFO, "\n");
     mprintf(LOGG_INFO, "Pass in - as the filename for stdin.\n");
     mprintf(LOGG_INFO, "\n");
