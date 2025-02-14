@@ -668,6 +668,11 @@ and:
   -D CURSES_LIBRARY="_filepath of curses library_"
 ```
 
+and, if tinfo is separate from ncurses:
+```sh
+  -D TINFO_LIBRARY="_filepath of tinfo library_"
+```
+
 ### Bytecode Runtime
 
 Bytecode signatures are a type of executable plugin that provide extra
@@ -688,7 +693,7 @@ ClamAV has two bytecode runtimes:
    execution should be faster. Not all scans will run bytecode signatures, so
    performance testing will depend heavily depending on what files are tested.
 
-   We can work with LLVM 8.0 to 13.x. 
+   We can work with LLVM 8.0 to 13.x.
 
 #### Interpreter Bytecode Runtime
 
