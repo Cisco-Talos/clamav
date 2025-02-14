@@ -166,7 +166,11 @@ static void *load_module(const char *name, const char *featurename)
      * We don't do this for Windows because Windows doesn't have an equivalent to LD_LIBRARY_PATH
      * and because LoadLibraryA() will search the executable's folder, which works for the unit tests.
      */
+#ifdef _AIX
+    ld_library_path = getenv("LIBPATH");
+#else
     ld_library_path = getenv("LD_LIBRARY_PATH");
+#endif
     if (NULL != ld_library_path && strlen(ld_library_path) > 0) {
 #define MAX_LIBRARY_PATHS 10
         size_t token_index;
@@ -184,8 +188,15 @@ static void *load_module(const char *name, const char *featurename)
             cli_dbgmsg("searching for %s, LD_LIBRARY_PATH: %s\n", featurename, tokens[token_index]);
 
             for (i = 0; i < sizeof(suffixes) / sizeof(suffixes[0]); i++) {
-                snprintf(modulename, sizeof(modulename), "%s" PATHSEP "%s%s", tokens[token_index], name, suffixes[i]);
-
+#ifdef _AIX
+                snprintf(modulename, sizeof(modulename),
+                         "%s%s(%s%s.%d)",
+                         name, ".a", name, LT_MODULE_EXT, LIBCLAMAV_MAJORVER);
+#else
+                snprintf(modulename, sizeof(modulename),
+                         "%s" PATHSEP "%s%s",
+                         tokens[token_index], name, suffixes[i]);
+#endif
                 rhandle = dlopen(modulename, RTLD_NOW);
                 if (NULL != rhandle) {
                     cli_dbgmsg("%s support loaded from %s\n", featurename, modulename);
@@ -203,8 +214,15 @@ static void *load_module(const char *name, const char *featurename)
     cli_dbgmsg("searching for %s, user-searchpath: %s\n", featurename, SEARCH_LIBDIR);
 
     for (i = 0; i < sizeof(suffixes) / sizeof(suffixes[0]); i++) {
-        snprintf(modulename, sizeof(modulename), "%s" PATHSEP "%s%s", SEARCH_LIBDIR, name, suffixes[i]);
-
+#ifdef _AIX
+        snprintf(modulename, sizeof(modulename),
+                 "%s%s(%s%s.%d)",
+                 name,".a",name,LT_MODULE_EXT,LIBCLAMAV_MAJORVER);
+#else
+        snprintf(modulename, sizeof(modulename),
+                 "%s" PATHSEP "%s%s",
+                 SEARCH_LIBDIR, name, suffixes[i]);
+#endif
         rhandle = dlopen(modulename, RTLD_NOW);
         if (NULL != rhandle) {
             cli_dbgmsg("%s support loaded from %s\n", featurename, modulename);
