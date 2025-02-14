@@ -495,6 +495,8 @@ if(ENABLE_SHARED_LIB)
                     $<TARGET_FILE_DIR:PCRE2::pcre2>
                     $<TARGET_FILE_DIR:LibXml2::LibXml2>
                     $<TARGET_FILE_DIR:JSONC::jsonc>
+                POST_EXCLUDE_REGEXES
+                    "[cC]:[\\/][wW][iI][nN][dD][oO][wW][sS]"
             )
             foreach(_file ${_r_deps})
                 string(TOLOWER ${_file} _file_lower)

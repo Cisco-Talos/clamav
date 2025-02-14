@@ -47,6 +47,8 @@ if(WIN32)
             UNRESOLVED_DEPENDENCIES_VAR _u_deps
             DIRECTORIES
                 $<TARGET_FILE_DIR:Curses::curses>
+            POST_EXCLUDE_REGEXES
+                "[cC]:[\\/][wW][iI][nN][dD][oO][wW][sS]"
         )
         foreach(_file ${_r_deps})
             string(TOLOWER ${_file} _file_lower)
