@@ -1,4 +1,4 @@
-# Copyright (C) 2020-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+# Copyright (C) 2020-2025 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
 
 """
 Run clamscan tests.
@@ -115,7 +115,3 @@ class TC(testcase.TestCase):
             'ALZ_TEST_FILE_EXECUTABLE.UNOFFICIAL FOUND',
         ]
         self.verify_output(output.out, expected=expected_results)
-
-
-
-

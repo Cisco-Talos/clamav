@@ -1,4 +1,4 @@
-# Copyright (C) 2020-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+# Copyright (C) 2020-2025 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
 
 """
 Run clamscan tests.
@@ -57,6 +57,3 @@ class TC(testcase.TestCase):
                 , '"http://www.google.com"'
                 ]
         self.verify_metadata_json(tempdir, expected_strings)
-
-
-

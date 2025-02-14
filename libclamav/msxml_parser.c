@@ -1,7 +1,7 @@
 /*
  * Extract component parts of various MS XML files (e.g. MS Office 2003 XML Documents)
  *
- * Copyright (C) 2013-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ * Copyright (C) 2013-2025 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  * Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  * Authors: Kevin Lin

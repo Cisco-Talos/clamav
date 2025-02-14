@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (C) 2018-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+# Copyright (C) 2018-2025 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
 
 '''
 This script is a convenience tool to run a standalone fuzz target against each

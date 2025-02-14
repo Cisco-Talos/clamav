@@ -1,7 +1,7 @@
 /*
  *  Extract images from CSS stylesheets.
  *
- *  Copyright (C) 2023-2024 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2023-2025 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *
  *  Authors: Micah Snyder
  *
