@@ -111,12 +111,6 @@ typedef unsigned int in_addr_t;
 #define PATHSEP "/"
 #endif
 
-#ifndef _WIN32
-#define CONFDIR_CLAMD CONFDIR PATHSEP "clamd.conf"
-#define CONFDIR_FRESHCLAM CONFDIR PATHSEP "freshclam.conf"
-#define CONFDIR_MILTER CONFDIR PATHSEP "clamav-milter.conf"
-#endif
-
 #ifndef WORDS_BIGENDIAN
 #define WORDS_BIGENDIAN 0
 #endif

@@ -663,12 +663,11 @@ static inline bool is_encrypted(const fib_base_t *const pFib)
     return pFib->ABCDEFGHIJKLM & (1 << 8);
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-function"
-static void dump_fib_base(fib_base_t *pFib)
-{
-    fprintf(stderr, "%s::%d::%x\n", __FUNCTION__, __LINE__, pFib->wIdent);
-}
+// /* Debugging function */
+// static void dump_fib_base(fib_base_t *pFib)
+// {
+//     fprintf(stderr, "%s::%d::%x\n", __FUNCTION__, __LINE__, pFib->wIdent);
+// }
 
 /*
  * This is currently unused, but I am leaving it in in case it can be useful in the future.  See
@@ -681,7 +680,6 @@ static inline bool is_obfuscated(const fib_base_t *const pFib)
 {
     return pFib->ABCDEFGHIJKLM & (1 << 15);
 }
-#pragma GCC diagnostic pop
 
 typedef struct {
     bool velvet_sweatshop;

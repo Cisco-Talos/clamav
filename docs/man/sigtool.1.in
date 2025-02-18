@@ -1,16 +1,19 @@
 .TH "sigtool" "1" "February 12, 2007" "ClamAV @VERSION@" "Clam AntiVirus"
+
 .SH "NAME"
 .LP
 sigtool \- signature and database management tool
+
 .SH "SYNOPSIS"
 .LP
 sigtool [options]
+
 .SH "DESCRIPTION"
 .LP
 sigtool can be used to generate MD5 checksums, convert data into hexadecimal format, list virus signatures and build/unpack/test/verify CVD databases and update scripts.
-.SH "OPTIONS"
-.LP
 
+.SH "COMMON OPTIONS"
+.LP
 .TP
 \fB\-h, \-\-help\fR
 Output help information and exit.
@@ -19,13 +22,40 @@ Output help information and exit.
 Print version number and exit.
 .TP
 \fB\-\-quiet\fR
-Be quiet \- output only error messages.
+Be quiet, output only error messages.
+.TP
+\fB\-\-debug\fR
+Enable debug messages
 .TP
 \fB\-\-stdout\fR
 Write all messages to stdout.
 .TP
-\fB\-\-hex\-dump\fR
-Read data from stdin and write hex string to stdout.
+\fB\-\-tempdir=DIRECTORY\fR
+Create temporary files in DIRECTORY. Directory must be writable for the user running sigtool.
+.TP
+\fB\-\-leave\-temps\fR
+Do not remove temporary files.
+.TP
+\fB\-\-datadir=DIR\fR
+Use DIR as the default database directory for all operations.
+
+.SH "COMMANDS FOR WORKING WITH SIGNATURES"
+.LP
+.TP
+\fB\-l[FILE], \-\-list\-sigs[=FILE]\fR
+List all signature names from the local database directory (default) or from FILE.
+.TP
+\fB\-fREGEX, \-\-find\-sigs=REGEX\fR
+Find and display signatures from the local database directory which match the given REGEX. The whole signature body (name, hex string, etc.) is checked.
+.TP
+\fB\-\-decode\-sigs=REGEX\fR
+Decode signatures read from the standard input (eg. piped from \-\-find\-sigs)
+.TP
+\fB\-\-test\-sigs=DATABASE TARGET_FILE\fR
+Test all signatures from DATABASE against TARGET_FILE. This option will only give valid results if the target file is the final one (after unpacking, normalization, etc.) for which the signatures were created.
+
+.SH "COMMANDS TO GENERATE SIGNATURES"
+.LP
 .TP
 \fB\-\-md5 [FILES]\fR
 Generate MD5 checksum from stdin or MD5 sigs for FILES.
@@ -37,13 +67,28 @@ Generate SHA1 checksum from stdin or SHA1 sigs for FILES.
 Generate SHA256 checksum from stdin or SHA256 sigs for FILES.
 .TP
 \fB\-\-mdb [FILES]\fR
-Generate .mdb signatures for FILES.
+Generate .mdb (PE section hash) signatures for FILES.
+.TP
+\fB\-\-imp [FILES]\fR
+Generate .imp (PE import address table hash) signatures for FILES.
+.TP
+\fB\-\-fuzzy\-img [FILES]\fR
+Generate image fuzzy hash for each file.
+
+.SH "COMMANDS TO NORMALIZE FILES"
+.LP
 .TP
 \fB\-\-html\-normalise=FILE\fR
 Create normalised HTML files comment.html, nocomment.html, and script.html in current working directory.
 .TP
+\fB\-\-ascii\-normalise=FILE\fR
+Create normalised text file from ascii source.
+.TP
 \fB\-\-utf16\-decode=FILE\fR
 Decode UTF16 encoded data.
+
+.SH "COMMANDS FOR FILE ANALYSIS"
+.LP
 .TP
 \fB\-\-vba=FILE\fR
 Extract VBA/Word6 macros from given MS Office document.
@@ -51,8 +96,18 @@ Extract VBA/Word6 macros from given MS Office document.
 \fB\-\-vba\-hex=FILE\fR
 Extract Word6 macros from given MS Office document and display the corresponding hex values.
 .TP
+\fB\-\-print\-certs=FILE\fR
+Print Authenticode details from a PE file.
+.TP
+\fB\-\-hex\-dump\fR
+Read data from stdin and write hex string to stdout.
+
+.SH "COMMANDS FOR WORKING WITH CVDS"
+.LP
+.TP
 \fB\-i, \-\-info\fR
 Print a CVD information and verify MD5 and a digital signature.
+.TP
 .TP
 \fB\-\-build=FILE, \-b FILE\fR
 Build a CVD file. \-s, \-\-server is required for signed virus databases(.cvd), or, \-\-unsigned for unsigned(.cud).
@@ -73,20 +128,25 @@ NOTE: If a CVD is found in the \-\-datadir its version+1 is used and this value 
 \fB\-\-no\-cdiff\fR
 Don't create a .cdiff file when building a new database file.
 .TP
+\fB\-\-hybrid\fR
+Create a hybrid (standard and bytecode) database file.
+.TP
 \fB\-\-unsigned\fR
 Create a database file without digital signatures (.cud).
 .TP
-\fB\-\-server\fR
+\fB\-\-server=ADDR\fR
 ClamAV Signing Service address (for virus database maintainers only).
 .TP
-\fB\-\-datadir=DIR\fR
-Use DIR as the default database directory for all operations.
 .TP
 \fB\-\-unpack=FILE, \-u FILE\fR
 Unpack FILE (CVD) to a current directory.
 .TP
+.TP
 \fB\-\-unpack\-current\fR
 Unpack a local CVD file (main or daily) to current directory.
+
+.SH "COMMANDS FOR WORKING WITH CDIFF PATCH FILES"
+.LP
 .TP
 \fB\-\-diff=OLD NEW, \-d OLD NEW\fR
 Create a diff file for OLD and NEW CVDs/INCDIRs.
@@ -99,35 +159,46 @@ Execute update script FILE in current directory.
 .TP
 \fB\-\-verify\-cdiff=FILE, \-r FILE\fR
 Verify DIFF against CVD/INCDIR.
+
+.SH "COMMANDS FOR CREATING AND VERIFYING DETACHED DIGITAL SIGNATURES"
+.LP
 .TP
-\fB\-l[FILE], \-\-list\-sigs[=FILE]\fR
-List all signature names from the local database directory (default) or from FILE.
+\fB\-\-sign\fR
+Sign a file. The resulting .sign file name will be in the form: dbname\-version.cvd.sign
+or FILE.sign for non\-CVD targets. It will be created next to the target file.
+If a .sign file already exists, then the new signature will be appended to file.
 .TP
-\fB\-fREGEX, \-\-find\-sigs=REGEX\fR
-Find and display signatures from the local database directory which match the given REGEX. The whole signature body (name, hex string, etc.) is checked.
+\fB\-\-key=FILE\fR
+Specify a signing key.
 .TP
-\fB\-\-decode\-sigs=REGEX\fR
-Decode signatures read from the standard input (eg. piped from \-\-find\-sigs)
+\fB\-\-cert=FILE\fR
+Specify a signing cert. May be used more than once to add intermediate and root certificates.
 .TP
-\fB\-\-test\-sigs=DATABASE TARGET_FILE\fR
-Test all signatures from DATABASE against TARGET_FILE. This option will only give valid results if the target file is the final one (after unpacking, normalization, etc.) for which the signatures were created.
+\fB\-\-append\fR
+Use to add a signature line to an existing .sign file. Otherwise an existing .sign file will be overwritten.
 .TP
-\fB\-\-print\-certs=FILE\fR
-Print Authenticode details from a PE file.
 .TP
-\fB\-\-tempdir=DIRECTORY\fR
-Create temporary files in DIRECTORY. Directory must be writable for the user running sigtool.
+\fB\-\-verify\fR
+Find and verify a detached digital signature for the given file.
+The digital signature file name must be in the form: dbname\-version.cvd.sign  or FILE.sign for non-CVD targets.
+It must be found next to the target file.
 .TP
-\fB\-\-leave\-temps\fR
-Do not remove temporary files.
+\fB\-\-cvdcertsdir=DIR\fR
+Specify a directory containing the root CA cert needed to verify the signature.
+If not provided, then sigtool will look in the default certs directory.
 
 .SH "ENVIRONMENT VARIABLES"
 .LP
 Sigtool uses the following environment variables:
 .TP
-SIGNDUSER - The username to authenticate with the signing server when building a signed CVD database.
+\fBSIGNDUSER\fR
+The username to authenticate with the signing server when building a signed CVD database.
 .TP
-SIGNDPASS - The password to authenticate with the signing server when building a signed CVD database.
+\fBSIGNDPASS\fR
+The password to authenticate with the signing server when building a signed CVD database.
+.TP
+\fBCVD_CERTS_DIR\fR
+Specify a directory containing the root CA cert needed to verify detached CVD digital signatures. If not provided, then sigtool will look in the default directory.
 
 .SH "EXAMPLES"
 .LP
