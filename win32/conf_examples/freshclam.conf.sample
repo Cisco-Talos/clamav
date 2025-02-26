@@ -14,6 +14,14 @@ Example
 # Default: hardcoded (depends on installation options)
 #DatabaseDirectory "C:\Program Files\ClamAV\database"
 
+# Path to the ClamAV CA certificates directory for verifying CVD signature
+# archive digital signatures.
+# WARNING: It must match clamd.conf's directive!
+# WARNING: It must already exist, be an absolute path, be readable by
+# freshclam, clamd, clamscan and sigtool.
+# Default: "certs"
+#CVDCertsDirectory "C:\Program Files\ClamAV\certs"
+
 # Path to the log file (make sure it has proper permissions)
 # Default: disabled
 #UpdateLogFile "C:\Program Files\ClamAV\freshclam.log"

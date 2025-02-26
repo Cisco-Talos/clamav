@@ -26,6 +26,14 @@ use std::{
     os::raw::c_char,
 };
 
+use log::warn;
+
+#[derive(Debug, thiserror::Error)]
+pub enum Error {
+    #[error("Null Parameter: {0}")]
+    NullParameter(String),
+}
+
 /// Wraps a call to a "result-returning function", allowing it to specify an
 /// error receiver and (optionally) result receiver.
 ///
@@ -57,7 +65,7 @@ use std::{
 ///    result: *mut i64,
 ///    err: *mut *mut FFIError,
 /// ) -> bool {
-///    frs_call!(out = result, err = err, checked_div(numerator, denominator))
+///    rrf_call!(out = result, err = err, checked_div(numerator, denominator))
 /// }
 /// ```
 ///
@@ -206,6 +214,24 @@ macro_rules! ffi_error {
     };
 }
 
+/// Consume the specified error and update an output variable, returning null.
+///
+/// The given error must implement `std::error::Error`.
+///
+/// This macro is best used when specifically returning an error encountered
+/// outside of wrapping a Result-returning function (such as input validation).
+#[macro_export]
+macro_rules! ffi_error_null {
+    (err=$err_out:ident, $err:expr) => {
+        if $err_out.is_null() {
+            panic!("{} is NULL", stringify!($err));
+        } else {
+            *$err_out = Box::into_raw(Box::new($err.into()));
+            std::ptr::null_mut()
+        }
+    };
+}
+
 /// A generic container for any error that implements `Into<std::error::Error>`
 pub struct FFIError {
     /// The contained error
@@ -314,11 +340,12 @@ macro_rules! validate_str_param {
     };
 
     ($ptr:ident, err=$err:ident) => {
-        if $err.is_null() {
-            warn!("{} is NULL", stringify!($err));
-            return false;
-        } else if $ptr.is_null() {
+        if $ptr.is_null() {
             warn!("{} is NULL", stringify!($ptr));
+
+            *$err = Box::into_raw(Box::new(
+                crate::ffi_util::Error::NullParameter(stringify!($ptr).to_string()).into(),
+            ));
             return false;
         } else {
             #[allow(unused_unsafe)]
@@ -333,4 +360,84 @@ macro_rules! validate_str_param {
             }
         }
     };
+}
+
+/// Verify that the given parameter is not NULL, and valid UTF-8,
+/// returns a &str if successful else returns sys::cl_error_t_CL_EARG
+///
+/// # Examples
+///
+/// ```edition2018
+/// use util::validate_optional_str_param;
+///
+/// # pub extern "C" fn _my_c_interface(blah: *const c_char) -> sys::cl_error_t {
+///    let blah = validate_optional_str_param!(blah);
+/// # }
+/// ```
+#[macro_export]
+macro_rules! validate_optional_str_param {
+    ($ptr:ident) => {
+        if $ptr.is_null() {
+            None
+        } else {
+            #[allow(unused_unsafe)]
+            match unsafe { CStr::from_ptr($ptr) }.to_str() {
+                Err(e) => {
+                    warn!("{} is not valid unicode: {}", stringify!($ptr), e);
+                    return false;
+                }
+                Ok(s) => Some(s),
+            }
+        }
+    };
+}
+
+/// Verify that the given parameter is not NULL, and valid UTF-8,
+/// returns a &str if successful else returns sys::cl_error_t_CL_EARG
+///
+/// This variant is for use in functions that return *mut c_void success value.
+///
+/// # Examples
+///
+/// ```edition2018
+/// use util::validate_str_param;
+///
+/// # pub extern "C" fn _my_c_interface(blah: *const c_char) -> sys::cl_error_t {
+///    let blah = validate_str_param!(blah);
+/// # }
+/// ```
+#[macro_export]
+macro_rules! validate_str_param_null {
+    ($ptr:ident) => {
+        if $ptr.is_null() {
+            warn!("{} is NULL", stringify!($ptr));
+            return std::ptr::null_mut();
+        } else {
+            #[allow(unused_unsafe)]
+            match unsafe { CStr::from_ptr($ptr) }.to_str() {
+                Err(e) => {
+                    warn!("{} is not valid unicode: {}", stringify!($ptr), e);
+                    return std::ptr::null_mut();
+                }
+                Ok(s) => s,
+            }
+        }
+    };
+}
+
+/// C interface to free a CString.
+/// Handles all the unsafe ffi stuff.
+/// Frees the CString.
+///
+/// # Safety
+///
+/// The CString pointer must be valid
+/// The CString pointer must not be used after calling this function
+#[export_name = "ffi_cstring_free"]
+pub unsafe extern "C" fn ffi_cstring_free(cstring: *mut c_char) {
+    if cstring.is_null() {
+        warn!("Attempted to free a NULL CString pointer. Please report this at:: https://github.com/Cisco-Talos/clamav/issues");
+    } else {
+        let _ = unsafe { CString::from_raw(cstring) };
+    }
 }

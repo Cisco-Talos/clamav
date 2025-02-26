@@ -720,7 +720,7 @@ class TC(testcase.TestCase):
         #
         # Now run the update for the first set up updates.
         #
-        command = '{valgrind} {valgrind_args} {freshclam} --no-dns --config-file={freshclam_config} --update-db=test'.format(
+        command = '{valgrind} {valgrind_args} {freshclam} --no-dns --debug --config-file={freshclam_config} --update-db=test'.format(
             valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, freshclam=TC.freshclam, freshclam_config=TC.freshclam_config
         )
         output = self.execute_command(command)
@@ -751,7 +751,7 @@ class TC(testcase.TestCase):
         #
         # Now re-run the update for more updates.
         #
-        command = '{valgrind} {valgrind_args} {freshclam} --no-dns --config-file={freshclam_config} --update-db=test'.format(
+        command = '{valgrind} {valgrind_args} {freshclam} --no-dns --debug --config-file={freshclam_config} --update-db=test'.format(
             valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, freshclam=TC.freshclam, freshclam_config=TC.freshclam_config
         )
         output = self.execute_command(command)
