@@ -262,6 +262,10 @@ int main(int argc, char *argv[])
     int fd = -1;
     unsigned tracelevel;
 
+#ifdef _WIN32
+    SetConsoleOutputCP(CP_UTF8);
+#endif
+
     if (check_flevel())
         exit(1);
 
