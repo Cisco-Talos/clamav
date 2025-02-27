@@ -522,7 +522,7 @@ void mprintf(loglevel_t loglevel, const char *str, ...)
             free(tmpw);
             break;
         }
-        if (!WideCharToMultiByte(CP_OEMCP, 0, tmpw, -1, nubuff, tmplen, NULL, NULL)) {
+        if (!WideCharToMultiByte(CP_ACP, 0, tmpw, -1, nubuff, tmplen, NULL, NULL)) {
             free(nubuff);
             free(tmpw);
             break;
