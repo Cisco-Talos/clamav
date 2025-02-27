@@ -4132,6 +4132,10 @@ int main(int argc, char **argv)
     const char *cvdcertsdir = NULL;
     STATBUF statbuf;
 
+#ifdef _WIN32
+    SetConsoleOutputCP(CP_UTF8);
+#endif
+
     if (check_flevel())
         exit(1);
 
