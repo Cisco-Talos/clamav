@@ -778,6 +778,8 @@ include(CheckFTS)
 include(CheckUnamePosix)
 # Check support for file descriptor passing
 include(CheckFDPassing)
+# Check support for mallinfo memory stats
+include(CheckMallinfo)
 
 # Check if big-endian
 include(TestBigEndian)
