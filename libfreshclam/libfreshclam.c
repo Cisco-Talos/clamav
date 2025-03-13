@@ -123,6 +123,71 @@ const char *fc_strerror(fc_error_t fcerror)
     }
 }
 
+int fc_upsert_logg_file(fc_config *fcConfig)
+{
+    if (fcConfig->logFile == NULL) {
+        return 0;
+    }
+    int ret = 0, field_no          = 1;
+    char *current_path, *file_path = cli_safer_strdup(fcConfig->logFile), *token;
+    FILE *logg_fp = NULL;
+    token         = cli_strtok(file_path, field_no++, PATHSEP);
+    struct passwd *current_user, *db_owner;
+#ifndef _WIN32
+    current_user = getpwuid(getuid());
+    db_owner     = getpwnam(fcConfig->dbOwner);
+#endif /* _WIN32 */
+    current_path = (char *)malloc(2);
+    strcpy(current_path, PATHSEP);
+    STATBUF sb;
+    while (token != NULL) {
+        current_path = (char *)realloc(current_path, strlen(current_path) + strlen(token) + 2);
+        strcat(current_path, token);
+        free(token);
+        token = cli_strtok(file_path, field_no++, PATHSEP);
+        if (token == NULL) {
+            break;
+        }
+        if (LSTAT(current_path, &sb) == -1) {
+            if (mkdir(current_path, 0755) == -1) {
+                printf("ERROR: Failed to create required directory %s. Will continue without writing in %s.\n", current_path, fcConfig->logFile);
+                ret = -1;
+                goto cleanup;
+            }
+#ifndef _WIN32
+            if (current_user->pw_uid != db_owner->pw_uid) {
+                if (lchown(current_path, db_owner->pw_uid, db_owner->pw_gid) == -1) {
+                    printf("ERROR: Failed to change owner of %s to %s. Will continue without writing in %s.\n", current_path, fcConfig->dbOwner, fcConfig->logFile);
+                    ret = -1;
+                    goto cleanup;
+                }
+            }
+#endif /* _WIN32 */
+        }
+        strcat(current_path, PATHSEP);
+    }
+    if ((logg_fp = fopen(fcConfig->logFile, "at")) == NULL) {
+        printf("ERROR: Can't open %s in append mode (check permissions!).\n", fcConfig->logFile);
+        ret = -1;
+        goto cleanup;
+    }
+#ifndef _WIN32
+    lchown(fcConfig->logFile, db_owner->pw_uid, db_owner->pw_gid);
+#endif /* _WIN32 */
+
+cleanup:
+    if (token != NULL) {
+        free(token);
+    }
+    free(current_path);
+    free(file_path);
+    if (logg_fp != NULL) {
+        fclose(logg_fp);
+    }
+
+    return ret;
+}
+
 fc_error_t fc_initialize(fc_config *fcConfig)
 {
     fc_error_t status = FC_EARG;
@@ -157,6 +222,8 @@ fc_error_t fc_initialize(fc_config *fcConfig)
     logg_rotate  = (fcConfig->logFlags & FC_CONFIG_LOG_ROTATE) ? 1 : 0;
     logg_size    = fcConfig->maxLogSize;
     /* Set a log file if requested, and is not already set */
+    fc_upsert_logg_file(fcConfig);
+
     if ((NULL == logg_file) && (NULL != fcConfig->logFile)) {
         logg_file = cli_safer_strdup(fcConfig->logFile);
         if (0 != logg(LOGG_INFO_NF, "--------------------------------------\n")) {
