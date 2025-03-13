@@ -438,7 +438,7 @@ int client(const struct optstruct *opts, int *infected, int *err)
         int sockd, ret;
         STATBUF sb;
         if (FSTAT(0, &sb) < 0) {
-            logg(LOGG_INFO, "client.c: fstat failed for file name \"%s\", with %s\n.",
+            logg(LOGG_INFO, "client.c: fstat failed for file name \"%s\", with %s\n",
                  opts->filename[0], strerror(errno));
             return 2;
         }

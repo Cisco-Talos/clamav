@@ -109,6 +109,7 @@ char *g_proxyPassword = NULL;
 
 char *g_tempDirectory     = NULL;
 char *g_databaseDirectory = NULL;
+void *g_signVerifier      = NULL;
 
 uint32_t g_maxAttempts    = 0;
 uint32_t g_connectTimeout = 0;
@@ -1165,11 +1166,23 @@ done:
     return status;
 }
 
+/**
+ * @brief Download a file from a remote server.
+ *
+ * @param url               URL of file to download.
+ * @param destfile          Local file to save downloaded file to.
+ * @param bAllowRedirect    Allow redirects.
+ * @param logerr            Log a failure as an error instead of a warning.
+ * @param quiet             Don't warn if we get a 404. Just a debug message.
+ * @param ifModifiedSince   If-Modified-Since time to use in request.
+ * @return fc_error_t       FC_SUCCESS if download successful.
+ */
 static fc_error_t downloadFile(
     const char *url,
     const char *destfile,
     int bAllowRedirect,
     int logerr,
+    int quiet,
     time_t ifModifiedSince)
 {
     fc_error_t ret;
@@ -1397,9 +1410,9 @@ static fc_error_t downloadFile(
         }
         case 404: {
             if (g_proxyServer)
-                logg(LOGG_WARNING, "downloadFile: file not found: %s (Proxy: %s:%u)\n", url, g_proxyServer, g_proxyPort);
+                logg(quiet ? LOGG_DEBUG : LOGG_WARNING, "downloadFile: file not found: %s (Proxy: %s:%u)\n", url, g_proxyServer, g_proxyPort);
             else
-                logg(LOGG_WARNING, "downloadFile: file not found: %s\n", url);
+                logg(quiet ? LOGG_DEBUG : LOGG_WARNING, "downloadFile: file not found: %s\n", url);
             status = FC_EFAILEDGET;
             break;
         }
@@ -1442,32 +1455,47 @@ done:
 }
 
 static fc_error_t getcvd(
+    const char *database,
     const char *cvdfile,
     const char *tmpfile,
     char *server,
     uint32_t ifModifiedSince,
-    unsigned int remoteVersion,
+    uint32_t remoteVersion,
+    char **sign_file,
+    uint32_t *downloadedVersion,
     int logerr)
 {
     fc_error_t ret;
     cl_error_t cl_ret;
     fc_error_t status = FC_EARG;
 
-    struct cl_cvd *cvd           = NULL;
-    char *tmpfile_with_extension = NULL;
-    char *url                    = NULL;
-    size_t urlLen                = 0;
+    struct cl_cvd *cvd = NULL;
+    char extension[5]  = {0};
+
+    char *tmpsignfile     = NULL;
+    size_t tmpsignfileLen = 0;
+    char *url             = NULL;
+    size_t urlLen         = 0;
+
+    char *sign_filename     = NULL;
+    size_t sign_filenameLen = 0;
+    char *sign_file_url     = NULL;
+    size_t sign_file_urlLen = 0;
 
     if ((NULL == cvdfile) || (NULL == tmpfile) || (NULL == server)) {
         logg(LOGG_ERROR, "getcvd: Invalid arguments.\n");
         goto done;
     }
 
+    if (NULL != sign_file) {
+        *sign_file = NULL;
+    }
+
     urlLen = strlen(server) + strlen("/") + strlen(cvdfile);
     url    = malloc(urlLen + 1);
     snprintf(url, urlLen + 1, "%s/%s", server, cvdfile);
 
-    ret = downloadFile(url, tmpfile, 1, logerr, ifModifiedSince);
+    ret = downloadFile(url, tmpfile, 1, logerr, 0, ifModifiedSince);
     if (ret == FC_UPTODATE) {
         logg(LOGG_INFO, "%s is up-to-date.\n", cvdfile);
         status = ret;
@@ -1478,36 +1506,53 @@ static fc_error_t getcvd(
         goto done;
     }
 
-    /* Temporarily rename file to correct extension for verification. */
-    tmpfile_with_extension = strdup(tmpfile);
-    if (!tmpfile_with_extension) {
-        logg(LOGG_ERROR, "Can't allocate memory for temp file with extension!\n");
-        status = FC_EMEM;
-        goto done;
-    }
-    strncpy(tmpfile_with_extension + strlen(tmpfile_with_extension) - 4, cvdfile + strlen(cvdfile) - 4, 4);
-    if (rename(tmpfile, tmpfile_with_extension) == -1) {
-        logg(LOGG_ERROR, "Can't rename %s to %s: %s\n", tmpfile, tmpfile_with_extension, strerror(errno));
-        status = FC_EDBDIRACCESS;
-        goto done;
-    }
+    // grab the extension from the cvdfile
+    strncpy(extension, cvdfile + strlen(cvdfile) - 4, 4);
 
-    if (CL_SUCCESS != (cl_ret = cl_cvdverify(tmpfile_with_extension))) {
-        logg(LOGG_ERROR, "Verification: %s\n", cl_strerror(cl_ret));
-        status = FC_EBADCVD;
-        goto done;
-    }
-
-    if (NULL == (cvd = cl_cvdhead(tmpfile_with_extension))) {
+    if (NULL == (cvd = cl_cvdhead(tmpfile))) {
         logg(LOGG_ERROR, "Can't read CVD header of new %s database.\n", cvdfile);
         status = FC_EBADCVD;
         goto done;
     }
 
-    /* Rename the file back to the original, since verification passed. */
-    if (rename(tmpfile_with_extension, tmpfile) == -1) {
-        logg(LOGG_ERROR, "Can't rename %s to %s: %s\n", tmpfile_with_extension, tmpfile, strerror(errno));
-        status = FC_EDBDIRACCESS;
+    // try to get the sign file before verifying the cvd
+    // use the cvd name + version to get the signature file
+    // sign-file = database + "-" + version + ".sign"
+    sign_filenameLen = strlen(database) + strlen("-") + 10 + strlen(".cvd") + strlen(".sign");
+    sign_filename    = malloc(sign_filenameLen + 1);
+    snprintf(sign_filename, sign_filenameLen + 1, "%s-%u%s.sign", database, cvd->version, extension);
+
+    // sign-file-url = server + "/" + sign_filename
+    sign_file_urlLen = strlen(server) + strlen("/") + strlen(sign_filename);
+    sign_file_url    = malloc(sign_file_urlLen + 1);
+    snprintf(sign_file_url, sign_file_urlLen + 1, "%s/%s", server, sign_filename);
+
+    // sign-file-tempfilename = g_tempDirectory + sign_filename
+    tmpsignfileLen = strlen(g_tempDirectory) + strlen(PATHSEP) + strlen(sign_filename);
+    tmpsignfile    = malloc(tmpsignfileLen + 1);
+    snprintf(tmpsignfile, tmpsignfileLen + 1, "%s" PATHSEP "%s", g_tempDirectory, sign_filename);
+
+    ret = downloadFile(sign_file_url, tmpsignfile, 1, logerr, 1, 0);
+    if (ret != FC_SUCCESS) {
+        logg(LOGG_DEBUG, "No external .sign digital signature file for %s-%u\n", database, cvd->version);
+        // It's not an error if the .sign file doesn't exist.
+        // Just continue with the cvd verification and hope we can use the legacy md5-based rsa method.
+    } else {
+        // Set the output variable to the sign file name so we can move it later.
+        logg(LOGG_DEBUG, "Downloaded digital signature file: %s\n", tmpsignfile);
+        if (NULL != sign_file) {
+            CLI_SAFER_STRDUP_OR_GOTO_DONE(
+                tmpsignfile,
+                *sign_file,
+                logg(LOGG_ERROR, "getcvd: Failed to duplicate sign file name.\n");
+                status = FC_EMEM);
+        }
+    }
+
+    // Now that we have the cvd and the sign file, we can verify the cvd.
+    if (CL_SUCCESS != (cl_ret = cl_cvdverify(tmpfile))) {
+        logg(LOGG_ERROR, "Verification: %s\n", cl_strerror(cl_ret));
+        status = FC_EBADCVD;
         goto done;
     }
 
@@ -1519,15 +1564,14 @@ static fc_error_t getcvd(
         goto done;
     }
 
+    if (NULL != downloadedVersion) {
+        *downloadedVersion = cvd->version;
+    }
     status = FC_SUCCESS;
 
 done:
     if (NULL != cvd) {
         cl_cvdfree(cvd);
-    }
-    if (NULL != tmpfile_with_extension) {
-        unlink(tmpfile_with_extension);
-        free(tmpfile_with_extension);
     }
     if (NULL != url) {
         free(url);
@@ -1539,6 +1583,15 @@ done:
         if (NULL != tmpfile) {
             unlink(tmpfile);
         }
+    }
+    if (NULL != sign_filename) {
+        free(sign_filename);
+    }
+    if (NULL != sign_file_url) {
+        free(sign_file_url);
+    }
+    if (NULL != tmpsignfile) {
+        free(tmpsignfile);
     }
 
     return status;
@@ -1570,8 +1623,7 @@ static fc_error_t mkdir_and_chdir_for_cdiff_tmp(const char *database, const char
 
     if (-1 == access(tmpdir, R_OK | W_OK)) {
         /*
-         * Temp directory for incremental update (cdiff download) does not
-         * yet exist.
+         * Temp directory for incremental update (cdiff download) does not yet exist.
          */
         int ret;
         bool is_cld = false;
@@ -1611,7 +1663,7 @@ static fc_error_t mkdir_and_chdir_for_cdiff_tmp(const char *database, const char
         /*
          * 3) Unpack the existing CVD/CLD database to this directory.
          */
-        if (CL_SUCCESS != cl_cvdunpack(cvdfile, tmpdir, is_cld == true)) {
+        if (CL_SUCCESS != cli_cvdunpack_and_verify(cvdfile, tmpdir, is_cld == true, g_signVerifier)) {
             logg(LOGG_ERROR, "mkdir_and_chdir_for_cdiff_tmp: Can't unpack %s into %s\n", cvdfile, tmpdir);
             cli_rmdirs(tmpdir);
             goto done;
@@ -1630,7 +1682,7 @@ done:
     return status;
 }
 
-static fc_error_t downloadPatch(
+static fc_error_t downloadPatchAndApply(
     const char *database,
     const char *tmpdir,
     int version,
@@ -1640,61 +1692,86 @@ static fc_error_t downloadPatch(
     fc_error_t ret;
     fc_error_t status = FC_EARG;
 
-    char *tempname = NULL;
     char patch[DB_FILENAME_MAX];
+    char patch_sign_file[DB_FILENAME_MAX + 5];
     char olddir[PATH_MAX];
 
     char *url     = NULL;
     size_t urlLen = 0;
 
-    int fd = -1;
+    char *sign_url     = NULL;
+    size_t sign_urlLen = 0;
+
+    FFIError *cdiff_apply_error = NULL;
 
     olddir[0] = '\0';
 
     if ((NULL == database) || (NULL == tmpdir) || (NULL == server) || (0 == version)) {
-        logg(LOGG_ERROR, "downloadPatch: Invalid arguments.\n");
+        logg(LOGG_ERROR, "downloadPatchAndApply: Invalid arguments.\n");
         goto done;
     }
 
     if (NULL == getcwd(olddir, sizeof(olddir))) {
-        logg(LOGG_ERROR, "downloadPatch: Can't get path of current working directory\n");
+        logg(LOGG_ERROR, "downloadPatchAndApply: Can't get path of current working directory\n");
         status = FC_EDIRECTORY;
         goto done;
     }
 
+    /*
+     * Unpack the database into a new temp directory where we'll apply the patch, and chdir to it.
+     * If the directory already exists, we'll just chdir to it.
+     */
     if (FC_SUCCESS != mkdir_and_chdir_for_cdiff_tmp(database, tmpdir)) {
         status = FC_EDIRECTORY;
         goto done;
     }
 
-    if (NULL == (tempname = cli_gentemp("."))) {
-        status = FC_EMEM;
-        goto done;
-    }
-
+    /*
+     * Download the patch.
+     */
     snprintf(patch, sizeof(patch), "%s-%d.cdiff", database, version);
+
     urlLen = strlen(server) + strlen("/") + strlen(patch);
     url    = malloc(urlLen + 1);
     snprintf(url, urlLen + 1, "%s/%s", server, patch);
 
-    if (FC_SUCCESS != (ret = downloadFile(url, tempname, 1, logerr, 0))) {
+    if (FC_SUCCESS != (ret = downloadFile(url, patch, 1, logerr, 0, 0))) {
         if (ret == FC_EEMPTYFILE) {
             logg(LOGG_INFO, "Empty script %s, need to download entire database\n", patch);
         } else {
-            logg(logerr ? LOGG_ERROR : LOGG_WARNING, "downloadPatch: Can't download %s from %s\n", patch, url);
+            logg(logerr ? LOGG_ERROR : LOGG_WARNING, "downloadPatchAndApply: Can't download %s from %s\n", patch, url);
         }
         status = ret;
         goto done;
     }
 
-    if (-1 == (fd = open(tempname, O_RDONLY | O_BINARY))) {
-        logg(LOGG_ERROR, "downloadPatch: Can't open %s for reading\n", tempname);
-        status = FC_EFILE;
-        goto done;
+    /*
+     * Download the patch sign file.
+     */
+    snprintf(patch_sign_file, sizeof(patch_sign_file), "%s.sign", patch);
+
+    sign_urlLen = strlen(server) + strlen("/") + strlen(patch_sign_file);
+    sign_url    = malloc(sign_urlLen + 1);
+    snprintf(sign_url, sign_urlLen + 1, "%s/%s", server, patch_sign_file);
+
+    if (FC_SUCCESS != (ret = downloadFile(sign_url, patch_sign_file, 1, logerr, 1, 0))) {
+        // No sign file is not an error.
+        // Just means we'll have to fall back to the legacy sha256-based rsa method for verifying CDIFFs.
+        logg(LOGG_DEBUG, "No external .sign digital signature file for %s\n", patch);
+    } else {
+        logg(LOGG_DEBUG, "Downloaded digital signature file: %s\n", patch_sign_file);
     }
 
-    if (-1 == cdiff_apply(fd, 1)) {
-        logg(LOGG_ERROR, "downloadPatch: Can't apply patch\n");
+    /*
+     * Apply the patch.
+     */
+    if (!cdiff_apply(
+            patch,
+            g_signVerifier,
+            1,
+            &cdiff_apply_error)) {
+        logg(LOGG_ERROR, "downloadPatchAndApply: Can't apply '%s': %s\n",
+             patch, ffierror_fmt(cdiff_apply_error));
         status = FC_EFAILEDUPDATE;
         goto done;
     }
@@ -1707,18 +1784,20 @@ done:
         free(url);
     }
 
-    if (-1 != fd) {
-        close(fd);
+    if (NULL != sign_url) {
+        free(sign_url);
     }
 
-    if (NULL != tempname) {
-        unlink(tempname);
-        free(tempname);
+    if (NULL != cdiff_apply_error) {
+        ffierror_free(cdiff_apply_error);
     }
 
+    /*
+     * Change back to the original directory.
+     */
     if ('\0' != olddir[0]) {
         if (-1 == chdir(olddir)) {
-            logg(LOGG_ERROR, "downloadPatch: Can't chdir to %s\n", olddir);
+            logg(LOGG_ERROR, "downloadPatchAndApply: Can't chdir to %s\n", olddir);
             status = FC_EDIRECTORY;
         }
     }
@@ -1780,6 +1859,7 @@ static fc_error_t buildcld(
 
     char olddir[PATH_MAX] = {0};
     char info[DB_FILENAME_MAX];
+    char cfg[DB_FILENAME_MAX];
     char buff[CVD_HEADER_SIZE + 1];
     char *pt;
 
@@ -1871,9 +1951,11 @@ static fc_error_t buildcld(
         }
     }
 
-    if (-1 != access("daily.cfg", R_OK)) {
-        if (-1 == tar_addfile(fd, gzs, "daily.cfg")) {
-            logg(LOGG_ERROR, "buildcld: Can't add daily.cfg to new %s.cld - please check if there is enough disk space available\n", database);
+    snprintf(cfg, sizeof(cfg), "%s.cfg", database);
+    cfg[sizeof(cfg) - 1] = 0;
+    if (-1 != access(cfg, R_OK)) {
+        if (-1 == tar_addfile(fd, gzs, cfg)) {
+            logg(LOGG_ERROR, "buildcld: Can't add %s to new %s.cld - please check if there is enough disk space available\n", cfg, database);
             status = FC_EFAILEDUPDATE;
             goto done;
         }
@@ -1887,7 +1969,7 @@ static fc_error_t buildcld(
 
     while (NULL != (dent = readdir(dir))) {
         if (dent->d_ino) {
-            if (!strcmp(dent->d_name, ".") || !strcmp(dent->d_name, "..") || !strcmp(dent->d_name, "COPYING") || !strcmp(dent->d_name, "daily.cfg") || !strcmp(dent->d_name, info))
+            if (!strcmp(dent->d_name, ".") || !strcmp(dent->d_name, "..") || !strcmp(dent->d_name, "COPYING") || !strcmp(dent->d_name, cfg) || !strcmp(dent->d_name, info))
                 continue;
 
             if (tar_addfile(fd, gzs, dent->d_name) == -1) {
@@ -2272,8 +2354,12 @@ fc_error_t updatedb(
     char *remoteFilename    = NULL;
     char *newLocalFilename  = NULL;
 
-    char *tmpdir  = NULL;
-    char *tmpfile = NULL;
+    char *cld_build_dir = NULL;
+    char *tmpfile       = NULL;
+
+    char *signfile             = NULL;
+    uint32_t downloadedVersion = 0;
+    FFIError *glob_rm_error    = NULL;
 
     unsigned int flevel;
 
@@ -2312,18 +2398,24 @@ fc_error_t updatedb(
         goto up_to_date;
     }
 
-    /* Download CVD or CLD to temp file */
-    tmpfile = cli_gentemp(g_tempDirectory);
+    /*
+     * Download CVD or CLD to a file in the temp directory.
+     */
+
+    // Create a temp file for the new database.
+    tmpfile = calloc(1, strlen(g_tempDirectory) + strlen(PATHSEP) + strlen(remoteFilename) + 1);
     if (!tmpfile) {
         status = FC_EMEM;
         goto done;
     }
+    snprintf(tmpfile, strlen(g_tempDirectory) + strlen(PATHSEP) + strlen(remoteFilename) + 1,
+             "%s" PATHSEP "%s", g_tempDirectory, remoteFilename);
 
     if ((localVersion == 0) || (!bScriptedUpdates)) {
         /*
          * Download entire file.
          */
-        ret = getcvd(remoteFilename, tmpfile, server, localTimestamp, remoteVersion, logerr);
+        ret = getcvd(database, remoteFilename, tmpfile, server, localTimestamp, remoteVersion, &signfile, &downloadedVersion, logerr);
         if (FC_UPTODATE == ret) {
             logg(LOGG_WARNING, "Expected newer version of %s database but the server's copy is not newer than our local file (version %d).\n", database, localVersion);
             if (NULL != localFilename) {
@@ -2342,6 +2434,8 @@ fc_error_t updatedb(
             goto done;
         }
 
+        // The file name won't change for a simple download.
+        // It will only change if we're doing a scripted update.
         newLocalFilename = cli_safer_strdup(remoteFilename);
     } else {
         /*
@@ -2350,8 +2444,9 @@ fc_error_t updatedb(
         ret                         = FC_SUCCESS;
         uint32_t numPatchesReceived = 0;
 
-        tmpdir = cli_gentemp(g_tempDirectory);
-        if (!tmpdir) {
+        // Create a temp directory where we'll build the new CLD.
+        cld_build_dir = cli_gentemp_with_prefix(g_tempDirectory, "cld");
+        if (!cld_build_dir) {
             status = FC_EMEM;
             goto done;
         }
@@ -2382,7 +2477,10 @@ fc_error_t updatedb(
                 {
                     mprintf(LOGG_INFO, "Downloading database patch # %u...\n", i);
                 }
-                ret = downloadPatch(database, tmpdir, i, server, llogerr);
+
+                // If the build directory doesn't exist, we'll create it and unpack the database into it.
+                // Then we download and apply the patch.
+                ret = downloadPatchAndApply(database, cld_build_dir, i, server, llogerr);
                 if (ret == FC_ECONNECTION || ret == FC_EFAILEDGET) {
                     continue;
                 } else {
@@ -2412,7 +2510,7 @@ fc_error_t updatedb(
                 logg(LOGG_WARNING, "Incremental update failed, trying to download %s\n", remoteFilename);
             }
 
-            ret = getcvd(remoteFilename, tmpfile, server, localTimestamp, remoteVersion, logerr);
+            ret = getcvd(database, remoteFilename, tmpfile, server, localTimestamp, remoteVersion, &signfile, &downloadedVersion, logerr);
             if (FC_SUCCESS != ret) {
                 if (FC_EMIRRORNOTSYNC == ret) {
                     /* Note: We can't retry with CDIFF's if FC_EMIRRORNOTSYNC happened here.
@@ -2427,6 +2525,8 @@ fc_error_t updatedb(
                 }
             }
 
+            // We gave up on patching, so it's back to a simple file download.
+            // The file name won't change for a simple download.
             newLocalFilename = cli_safer_strdup(remoteFilename);
         } else if (0 == numPatchesReceived) {
             logg(LOGG_INFO, "The database server doesn't have the latest patch for the %s database (version %u). The server will likely have updated if you check again in a few hours.\n", database, remoteVersion);
@@ -2434,23 +2534,33 @@ fc_error_t updatedb(
             goto up_to_date;
         } else {
             /*
-             * CDIFFs downloaded; Use CDIFFs to turn old CVD/CLD into new updated CLD.
+             * CDIFFs downloaded and applied; Use CDIFFs to turn old CVD/CLD into new updated CLD.
              */
             if (numPatchesReceived < remoteVersion - localVersion) {
                 logg(LOGG_INFO, "Downloaded %u patches for %s, which is fewer than the %u expected patches.\n", numPatchesReceived, database, remoteVersion - localVersion);
                 logg(LOGG_INFO, "We'll settle for this partial-update, at least for now.\n");
             }
 
-            size_t newLocalFilenameLen = 0;
-            if (FC_SUCCESS != buildcld(tmpdir, database, tmpfile, g_bCompressLocalDatabase)) {
+            // For a scripted update, the new database will have
+            // a .cld extension.
+            // Overwrite the tmpfile's .cvd extension with a .cld extension
+            sprintf(tmpfile + strlen(tmpfile) - 3, "cld");
+
+            // And set the new filename that we'll used to copy to the DB directory
+            size_t newLocalFilenameLen = strlen(database) + strlen(".cld");
+            newLocalFilename           = malloc(newLocalFilenameLen + 1);
+            snprintf(newLocalFilename, newLocalFilenameLen + 1, "%s.cld", database);
+
+            if (FC_SUCCESS != buildcld(cld_build_dir, database, tmpfile, g_bCompressLocalDatabase)) {
                 logg(LOGG_ERROR, "updatedb: Incremental update failed. Failed to build CLD.\n");
                 status = FC_EBADCVD;
                 goto done;
             }
 
-            newLocalFilenameLen = strlen(database) + strlen(".cld");
-            newLocalFilename    = malloc(newLocalFilenameLen + 1);
-            snprintf(newLocalFilename, newLocalFilenameLen + 1, "%s.cld", database);
+            // CLD's can't be signed, so we don't need to worry about the signature file.
+            // It's in the tmp directory so we don't need to manually delete it.
+            // Just free up the filename and we won't copy it into the DB directory later.
+            CLI_FREE_AND_SET_NULL(signfile);
         }
     }
 
@@ -2459,26 +2569,6 @@ fc_error_t updatedb(
      * Test database before replacing original database with new database.
      */
     if (NULL != g_cb_download_complete) {
-        char *tmpfile_with_extension      = NULL;
-        size_t tmpfile_with_extension_len = strlen(tmpfile) + 1 + strlen(newLocalFilename);
-
-        /* Suffix tmpfile with real database name & extension so it can be loaded. */
-        tmpfile_with_extension = malloc(tmpfile_with_extension_len + 1);
-        if (!tmpfile_with_extension) {
-            status = FC_ETESTFAIL;
-            goto done;
-        }
-        snprintf(tmpfile_with_extension, tmpfile_with_extension_len + 1, "%s-%s", tmpfile, newLocalFilename);
-        if (rename(tmpfile, tmpfile_with_extension) == -1) {
-            logg(LOGG_ERROR, "updatedb: Can't rename %s to %s: %s\n", tmpfile, tmpfile_with_extension, strerror(errno));
-            free(tmpfile_with_extension);
-            status = FC_EDBDIRACCESS;
-            goto done;
-        }
-        free(tmpfile);
-        tmpfile                = tmpfile_with_extension;
-        tmpfile_with_extension = NULL;
-
         /* Run callback to test it. */
         logg(LOGG_DEBUG, "updatedb: Running g_cb_download_complete callback...\n");
         if (FC_SUCCESS != (ret = g_cb_download_complete(tmpfile, context))) {
@@ -2491,6 +2581,8 @@ fc_error_t updatedb(
     /*
      * Replace original database with new database.
      */
+    logg(LOGG_DEBUG, "updatedb: Moving %s to %s" PATHSEP "%s\n", tmpfile, g_databaseDirectory, newLocalFilename);
+
 #ifdef _WIN32
     if (!access(newLocalFilename, R_OK) && unlink(newLocalFilename)) {
         logg(LOGG_ERROR, "Update failed. Can't delete the old database %s to replace it with a new database. Please fix the problem manually and try again.\n", newLocalFilename);
@@ -2504,10 +2596,51 @@ fc_error_t updatedb(
         goto done;
     }
 
+    // If there are any old signature files for this database in the DB directory, delete them.
+    // We'll use a glob pattern to match the signature files
+    char *pattern = calloc(1, strlen(database) + strlen("-*.sign") + 1);
+    if (!pattern) {
+        logg(LOGG_ERROR, "updatedb: Failed to allocate memory for signature file pattern.\n");
+        status = FC_EMEM;
+        goto done;
+    }
+    sprintf(pattern, "%s-*.sign", database);
+
+    if (!glob_rm(pattern, &glob_rm_error)) {
+        cli_errmsg("updatedb: Failed to glob-delete old .sign files with pattern '%s': %s\n",
+                   pattern, ffierror_fmt(glob_rm_error));
+        ffierror_free(glob_rm_error);
+        free(pattern);
+        status = FC_ERROR;
+        goto done;
+    }
+    free(pattern);
+
+    // If we have a signature file, move it from the temp directory to the database directory
+    if (NULL != signfile) {
+        char *newSignFilename = NULL;
+
+        logg(LOGG_DEBUG, "updatedb: Moving signature file %s to database directory\n", signfile);
+
+        // get the basename of the signfile
+        if (CL_SUCCESS != cli_basename(signfile, strlen(signfile), &newSignFilename)) {
+            logg(LOGG_ERROR, "updatedb: Failed to get basename of '%s'\n", signfile);
+            goto done;
+        }
+
+        if (rename(signfile, newSignFilename) == -1) {
+            logg(LOGG_ERROR, "updatedb: Can't rename %s to %s: %s\n", signfile, newSignFilename, strerror(errno));
+            free(newSignFilename);
+            status = FC_EDBDIRACCESS;
+            goto done;
+        }
+        free(newSignFilename);
+    }
+
     /* If we just updated from a CVD to a CLD, delete the old CVD */
-    if ((NULL != localFilename) && !access(localFilename, R_OK) && strcmp(newLocalFilename, localFilename))
-        if (unlink(localFilename))
-            logg(LOGG_WARNING, "updatedb: Can't delete the old database file %s. Please remove it manually.\n", localFilename);
+    if ((NULL != localFilename) && strcmp(newLocalFilename, localFilename)) {
+        (void)unlink(localFilename);
+    }
 
     /* Parse header to record number of sigs. */
     if (NULL == (cvd = cl_cvdhead(newLocalFilename))) {
@@ -2561,9 +2694,12 @@ done:
         unlink(tmpfile);
         free(tmpfile);
     }
-    if (NULL != tmpdir) {
-        cli_rmdirs(tmpdir);
-        free(tmpdir);
+    if (NULL != cld_build_dir) {
+        cli_rmdirs(cld_build_dir);
+        free(cld_build_dir);
+    }
+    if (NULL != signfile) {
+        free(signfile);
     }
 
     return status;
@@ -2653,7 +2789,7 @@ fc_error_t updatecustomdb(
 
         dbtime = (CLAMSTAT(databaseName, &statbuf) != -1) ? statbuf.st_mtime : 0;
 
-        ret = downloadFile(url, tmpfile, 1, logerr, dbtime);
+        ret = downloadFile(url, tmpfile, 1, logerr, 0, dbtime);
         if (ret == FC_UPTODATE) {
             logg(LOGG_INFO, "%s is up-to-date (version: custom database)\n", databaseName);
             goto up_to_date;

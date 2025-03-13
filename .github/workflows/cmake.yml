@@ -47,7 +47,7 @@ jobs:
         uses: lukka/run-vcpkg@v7.4
         id: runvcpkg
         with:
-          vcpkgArguments: "curl[openssl] json-c libxml2 pcre2 check pthreads zlib pdcurses bzip2"
+          vcpkgArguments: "curl[openssl] openssl:x64-windows-static-md json-c libxml2 pcre2 check pthreads zlib pdcurses bzip2"
           vcpkgGitCommitId: "${{ env.VCPKG_GIT_REF }}"
           vcpkgTriplet: "x64-windows"
 

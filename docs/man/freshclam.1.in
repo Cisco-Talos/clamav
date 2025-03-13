@@ -96,6 +96,9 @@ May be set to the path of a file (PEM) containing the client private key. This i
 .TP
 \fBFRESHCLAM_CLIENT_KEY_PASSWD\fR
 May be set to a password for the client key PEM file. This is required if FRESHCLAM_CLIENT_KEY is set and the PEM file is password protected.
+.TP
+\fBCVD_CERTS_DIR\fR
+Specify a directory containing the root CA cert needed to verify detached CVD digital signatures. If not provided, then freshclam will look in the default directory.
 
 .TP
 Note that the CURL_CA_BUNDLE environment variable is also used by the curl command line tool for the same purpose.
