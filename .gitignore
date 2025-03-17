@@ -46,6 +46,7 @@ __pycache__/
 *.dll
 *.so
 *.so.*
+!libAePredict.so
 *.dylib
 
 # C Executables

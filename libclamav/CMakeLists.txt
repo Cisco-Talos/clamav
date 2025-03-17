@@ -406,6 +406,10 @@ if(ENABLE_SHARED_LIB)
         VERSION ${LIBCLAMAV_VERSION}
         SOVERSION ${LIBCLAMAV_SOVERSION}
         LINK_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/libclamav.map)
+
+    set(CSHARP_LIB_DIR "${CMAKE_CURRENT_SOURCE_DIR}/csharp_libs")
+    target_link_directories(clamav PUBLIC ${CSHARP_LIB_DIR})
+
     target_sources( clamav
         PRIVATE
             ${LIBCLAMAV_SOURCES}
@@ -435,7 +439,8 @@ if(ENABLE_SHARED_LIB)
             BZip2::BZip2
             PCRE2::pcre2
             LibXml2::LibXml2
-            JSONC::jsonc )
+            JSONC::jsonc
+            AePredict )
 
     if(WIN32)
         target_link_libraries( clamav
@@ -459,7 +464,7 @@ if(ENABLE_SHARED_LIB)
     endif()
 
     set_target_properties( clamav PROPERTIES
-        COMPILE_FLAGS "${WARNCFLAGS}"
+        COMPILE_FLAGS "${WARNCFLAGS}"#" -fPIC"
         VERSION ${LIBCLAMAV_VERSION} SOVERSION ${LIBCLAMAV_SOVERSION} )
 
     if (APPLE AND CLAMAV_SIGN_FILE)
@@ -538,6 +543,9 @@ if(ENABLE_STATIC_LIB)
         PRIVATE   ${CMAKE_BINARY_DIR} ${JSONC_INCLUDE_DIRS}
         PUBLIC    ${CMAKE_CURRENT_SOURCE_DIR}
         INTERFACE ${CMAKE_BINARY_DIR} )
+
+    # set(CSHARP_LIB_DIR "${CMAKE_CURRENT_SOURCE_DIR}/csharp_libs")
+    # target_link_directories(clamav_static PUBLIC ${CSHARP_LIB_DIR})
 
     target_link_libraries( clamav_static
         PUBLIC

@@ -3,6 +3,26 @@
 - this will disable the socket functionality and run the scan without a daemon
 - in order to run: `clamd --local-scanning-file <folder/file to scan> --datadir=<directory with signature files>`
 
+## Build Instructions
+#### For Dev on Linux
+```
+mkdir build
+cd build
+cmake .. -G Ninja                   \
+    -D CMAKE_BUILD_TYPE="Debug"     \
+    -D OPTIMIZE=OFF                 \
+    -D CMAKE_INSTALL_PREFIX=install \
+    -D ENABLE_MILTER=ON             \
+    -D ENABLE_EXAMPLES=ON           \
+    -D ENABLE_STATIC_LIB=ON         \
+    -D ENABLE_SYSTEMD=OFF
+
+ninja
+ninja install
+```
+
+Then, go to `build/install/etc/`, and copy `clamd.conf.sample` into `clamd.conf`. Then remove the word "Example" in that file.      
+
 # ClamAV
 
 <p align="center">

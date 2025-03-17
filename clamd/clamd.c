@@ -585,6 +585,8 @@ int main(int argc, char **argv)
                 logg(LOGG_ERROR, "cli_engine_set_str(CL_ENGINE_TMPDIR) failed: %s\n", cl_strerror(ret));
                 ret = 1;
                 break;
+            } else {
+                logg(LOGG_ERROR, "TemporaryDirectory set to %s\n", opt->strarg);
             }
 
             STATBUF sb;
@@ -593,6 +595,8 @@ int main(int argc, char **argv)
                 ret = 1;
                 break;
             }
+        } else {
+            logg(LOGG_ERROR, "TemporaryDirectory not set\n");
         }
 
         cl_engine_set_clcb_hash(engine, hash_callback);
@@ -778,6 +782,7 @@ int main(int argc, char **argv)
             options.general |= AE_SCAN_LOCAL_SCAN;
             options.general |= CL_SCAN_GENERAL_COLLECT_METADATA;
 
+            // default scanning options from clamdscan - parsing more types of files
             options.parse |= CL_SCAN_PARSE_ARCHIVE;
             options.parse |= CL_SCAN_PARSE_ELF;
             options.parse |= CL_SCAN_PARSE_PDF;
@@ -790,6 +795,7 @@ int main(int argc, char **argv)
             options.parse |= CL_SCAN_PARSE_PE;
             options.parse |= CL_SCAN_PARSE_ONENOTE;
             options.parse |= CL_SCAN_PARSE_IMAGE;
+            options.parse |= CL_SCAN_PARSE_IMAGE_FUZZY_HASH;
 
 
             memset(&conn, 0, sizeof(conn));

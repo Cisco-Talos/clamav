@@ -56,6 +56,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <dlfcn.h>
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
@@ -309,6 +310,56 @@ static int versioninfo_cb(void *opaque, uint32_t type, uint32_t name, uint32_t l
     if (++vlist->count == sizeof(vlist->rvas) / sizeof(vlist->rvas[0]))
         return 1;
     return 0;
+}
+
+// rewrite the above struct in C
+typedef struct PredictionResult_t {
+    char** keys; // Pointer to an array of strings
+    double* values; // Pointer to an array of doubles
+    int count; // Number of items
+    char* verdict; // pointer to a string for the verdict
+    bool shouldcheck; // true if we should flag this file for checking (deceptorheavy)
+    int confidence; // how confident we are with this verdit (H/M/L)
+} PredictionResult;
+
+typedef PredictionResult* (*Predict_t)(int fd);
+typedef void (*DisposePredictionResult_t)(PredictionResult* result);
+
+uint32_t call_csharp(cli_ctx *ctx/*, char* virname*/) {
+    char* filename = ctx->target_filepath;
+    void* aepredict_handle = dlopen("libAePredict.so", RTLD_LAZY);
+    if (!aepredict_handle) {
+        cli_errmsg("dlopen failed: %s\n", dlerror());
+        return 1;
+    }
+    Predict_t Predict = (Predict_t) dlsym(aepredict_handle, "AePredict");
+    DisposePredictionResult_t DisposePredictionResult = (DisposePredictionResult_t) dlsym(aepredict_handle, "DisposePredictionResult");
+
+    int fd = open(filename, O_RDONLY);
+
+    if (fd < 0) {
+        cli_errmsg("open failed: %s\n", strerror(errno));
+        return 1;
+    }
+    // TODO clean up the logging and print formatted json outside of this file
+    cli_errmsg("--------File: %s\n", filename);
+    PredictionResult* result = Predict(fd);
+    int class_index;
+    for (class_index = 0; class_index < result->count; class_index++) {
+        cli_errmsg("--------%s: %f\n", result->keys[class_index], result->values[class_index]);
+    }
+    cli_errmsg("--------Verdict: %s\n", result->verdict);
+    cli_errmsg("--------Confidence: %c\n", result->confidence);
+    cli_errmsg("--------Should Check: %d\n", result->shouldcheck);
+
+    DisposePredictionResult(result);
+    close(fd);
+
+    // TODO properly add the virname with cli_append_virus
+    if (result->shouldcheck) {
+        return CL_VIRUS;
+    }
+    return CL_SUCCESS;
 }
 
 /* Given an RVA (relative to the ImageBase), return the file offset of the
@@ -4396,7 +4447,9 @@ int cli_scanpe(cli_ctx *ctx)
     if (cli_json_timeout_cycle_check(ctx, &toval) != CL_SUCCESS)
         return CL_ETIMEOUT;
 
-    return CL_SUCCESS;
+    return call_csharp(ctx);
+
+    /*return CL_SUCCESS;*/
 }
 
 cl_error_t cli_pe_targetinfo(cli_ctx *ctx, struct cli_exe_info *peinfo)
