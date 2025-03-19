@@ -344,7 +344,7 @@ static int traverse_to(const char *directory, bool want_directory_handle, HANDLE
                 /* Change createfile options for our target file instead of an intermediate directory. */
                 desiredAccess  = FILE_GENERIC_READ | DELETE;
                 fileAttributes = FILE_ATTRIBUTE_NORMAL;
-                createOptions  = FILE_NON_DIRECTORY_FILE;
+                createOptions  = FILE_NON_DIRECTORY_FILE | FILE_OPEN_REPARSE_POINT;
                 shareAccess    = FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE;
             }
         }
