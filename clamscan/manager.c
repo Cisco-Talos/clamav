@@ -1051,6 +1051,9 @@ int scanmanager(const struct optstruct *opts)
     struct engine_free_progress engine_free_progress_ctx = {0};
 #endif
 
+    char *cvdcertsdir = NULL;
+    STATBUF statbuf;
+
     /* Initialize scan options struct */
     memset(&options, 0, sizeof(struct cl_scan_options));
 
@@ -1244,6 +1247,26 @@ int scanmanager(const struct optstruct *opts)
         if ((ret = cl_engine_set_str(engine, CL_ENGINE_TMPDIR, opt->strarg))) {
             logg(LOGG_ERROR, "cli_engine_set_str(CL_ENGINE_TMPDIR) failed: %s\n", cl_strerror(ret));
 
+            ret = 2;
+            goto done;
+        }
+    }
+
+    cvdcertsdir = optget(opts, "cvdcertsdir")->strarg;
+    if (NULL != cvdcertsdir) {
+        // Command line option must override the engine defaults
+        // (which would've used the env var or hardcoded path)
+        if (LSTAT(cvdcertsdir, &statbuf) == -1) {
+            logg(LOGG_ERROR,
+                 "ClamAV CA certificates directory is missing: %s"
+                 " - It should have been provided as a part of installation.\n",
+                 cvdcertsdir);
+            ret = 2;
+            goto done;
+        }
+
+        if ((ret = cl_engine_set_str(engine, CL_ENGINE_CVDCERTSDIR, cvdcertsdir))) {
+            logg(LOGG_ERROR, "cli_engine_set_str(CL_ENGINE_CVDCERTSDIR) failed: %s\n", cl_strerror(ret));
             ret = 2;
             goto done;
         }

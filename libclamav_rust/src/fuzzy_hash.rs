@@ -181,7 +181,7 @@ pub unsafe extern "C" fn _fuzzy_hash_load_subsignature(
     subsig_id: u32,
     err: *mut *mut FFIError,
 ) -> bool {
-    let hexsig = validate_str_param!(hexsig, err=err);
+    let hexsig = validate_str_param!(hexsig, err = err);
 
     let mut hashmap = ManuallyDrop::new(Box::from_raw(fuzzy_hashmap as *mut FuzzyHashMap));
 
@@ -359,8 +359,8 @@ impl FuzzyHashMap {
 /// of the mean -- this change is required.
 ///
 /// 2) scipy.fftpack.dct behaves differently on twodimensional arrays than
-/// single-dimensional arrays.
-/// See https://docs.scipy.org/doc/scipy/reference/generated/scipy.fftpack.dct.html:
+///    single-dimensional arrays.
+///    See https://docs.scipy.org/doc/scipy/reference/generated/scipy.fftpack.dct.html:
 ///
 ///     Note the optional "axis" argument:
 ///         Axis along which the dct is computed; the default is over the last axis
@@ -368,17 +368,17 @@ impl FuzzyHashMap {
 ///
 /// For the Python `imagehash` package:
 /// - The `phash_simple()` function is doing a DCT-2 transform on a 2-dimensional
-/// 32x32 array which means, just on the 2nd axis (just the rows).
+///   32x32 array which means, just on the 2nd axis (just the rows).
 /// - The `phash()` function is doing a 2D DCT-2 transform, by running the DCT-2 on
-/// both X and Y axis, which is the same as transposing before or after each
-/// DCT-2 call.
+///   both X and Y axis, which is the same as transposing before or after each
+///   DCT-2 call.
 ///
 /// 3) I observed that the DCT2 results from Python are consistently 2x greater
-/// than those from Rust. If I multiply every value by 2 after running the DCT,
-/// then the results are the same.
+///    than those from Rust. If I multiply every value by 2 after running the DCT,
+///    then the results are the same.
 ///
 /// 4) We need to get a subset of the 2-D array representing the lower
-/// frequencies of the image, the same way the Python implementation does it.
+///    frequencies of the image, the same way the Python implementation does it.
 ///
 /// The way the python implementation does this is with this line:
 /// ```python

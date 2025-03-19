@@ -4690,9 +4690,9 @@ static int cli_loadpwdb(FILE *fs, struct cl_engine *engine, unsigned int options
     return CL_SUCCESS;
 }
 
-static cl_error_t cli_loaddbdir(const char *dirname, struct cl_engine *engine, unsigned int *signo, unsigned int options);
+static cl_error_t cli_loaddbdir(const char *dirname, struct cl_engine *engine, unsigned int *signo, unsigned int options, void *sign_verifier);
 
-cl_error_t cli_load(const char *filename, struct cl_engine *engine, unsigned int *signo, unsigned int options, struct cli_dbio *dbio)
+cl_error_t cli_load(const char *filename, struct cl_engine *engine, unsigned int *signo, unsigned int options, struct cli_dbio *dbio, void *sign_verifier)
 {
     cl_error_t ret = CL_SUCCESS;
 
@@ -4736,13 +4736,13 @@ cl_error_t cli_load(const char *filename, struct cl_engine *engine, unsigned int
         ret = cli_loaddb(fs, engine, signo, options, dbio, dbname);
 
     } else if (cli_strbcasestr(dbname, ".cvd")) {
-        ret = cli_cvdload(fs, engine, signo, options, 0, filename, 0);
+        ret = cli_cvdload(engine, signo, options, CVD_TYPE_CVD, filename, sign_verifier, 0);
 
     } else if (cli_strbcasestr(dbname, ".cld")) {
-        ret = cli_cvdload(fs, engine, signo, options, 1, filename, 0);
+        ret = cli_cvdload(engine, signo, options, CVD_TYPE_CLD, filename, sign_verifier, 0);
 
     } else if (cli_strbcasestr(dbname, ".cud")) {
-        ret = cli_cvdload(fs, engine, signo, options, 2, filename, 0);
+        ret = cli_cvdload(engine, signo, options, CVD_TYPE_CUD, filename, sign_verifier, 0);
 
     } else if (cli_strbcasestr(dbname, ".crb")) {
         ret = cli_loadcrt(fs, engine, dbio);
@@ -5017,7 +5017,7 @@ done:
     return num_signatures;
 }
 
-static cl_error_t cli_loaddbdir(const char *dirname, struct cl_engine *engine, unsigned int *signo, unsigned int options)
+static cl_error_t cli_loaddbdir(const char *dirname, struct cl_engine *engine, unsigned int *signo, unsigned int options, void *sign_verifier)
 {
     cl_error_t ret = CL_EOPEN;
 
@@ -5200,7 +5200,7 @@ static cl_error_t cli_loaddbdir(const char *dirname, struct cl_engine *engine, u
             }
         }
 
-        ret = cli_load(iter->path, engine, signo, options, NULL);
+        ret = cli_load(iter->path, engine, signo, options, NULL, sign_verifier);
         if (ret) {
             cli_errmsg("cli_loaddbdir: error loading database %s\n", iter->path);
             goto done;
@@ -5239,7 +5239,9 @@ done:
 cl_error_t cl_load(const char *path, struct cl_engine *engine, unsigned int *signo, unsigned int dboptions)
 {
     STATBUF sb;
-    int ret;
+    cl_error_t ret;
+    void *sign_verifier          = NULL;
+    FFIError *new_verifier_error = NULL;
 
     if (!engine) {
         cli_errmsg("cl_load: engine == NULL\n");
@@ -5301,22 +5303,37 @@ cl_error_t cl_load(const char *path, struct cl_engine *engine, unsigned int *sig
 
     engine->dboptions |= dboptions;
 
+    if (NULL != engine->certs_directory) {
+        if (!codesign_verifier_new(engine->certs_directory, &sign_verifier, &new_verifier_error)) {
+            cli_errmsg("Failed to create a new code-signature verifier: %s\n", ffierror_fmt(new_verifier_error));
+            ffierror_free(new_verifier_error);
+            ret = CL_ECVD;
+            return ret;
+        }
+    }
+
     switch (sb.st_mode & S_IFMT) {
         case S_IFREG:
             /* Count # of sigs in the database now */
             engine->num_total_signatures += count_signatures(path, engine, dboptions);
-
-            ret = cli_load(path, engine, signo, dboptions, NULL);
+            ret = cli_load(path, engine, signo, dboptions, NULL, sign_verifier);
             break;
 
         case S_IFDIR:
             /* Count # of signatures inside cli_loaddbdir(), before loading */
-            ret = cli_loaddbdir(path, engine, signo, dboptions | CL_DB_DIRECTORY);
+            ret = cli_loaddbdir(path, engine, signo, dboptions | CL_DB_DIRECTORY, sign_verifier);
             break;
 
         default:
             cli_errmsg("cl_load(%s): Not supported database file type\n", path);
+            if (sign_verifier) {
+                codesign_verifier_free(sign_verifier);
+            }
             return CL_EOPEN;
+    }
+
+    if (sign_verifier) {
+        codesign_verifier_free(sign_verifier);
     }
 
     if (engine->cb_sigload_progress) {
@@ -5758,7 +5775,7 @@ cl_error_t cl_engine_free(struct cl_engine *engine)
         MPOOL_FREE(engine->mempool, pt->name);
         MPOOL_FREE(engine->mempool, pt->hash);
         if (pt->cvd)
-            cl_cvdfree(pt->cvd);
+            cvd_free(pt->cvd);
         MPOOL_FREE(engine->mempool, pt);
     }
     TASK_COMPLETE();
