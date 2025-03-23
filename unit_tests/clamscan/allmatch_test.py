@@ -7,6 +7,7 @@ Run clamscan tests.
 import os
 from zipfile import ZIP_DEFLATED, ZipFile
 import sys
+import hashlib
 
 sys.path.append('../unit_tests')
 import testcase
@@ -271,6 +272,192 @@ class TC(testcase.TestCase):
         expected_results = [
             'Test.NDB.UNOFFICIAL FOUND',
             'NDB.Clamav-Unit-Test-Signature.UNOFFICIAL FOUND',
+        ]
+        self.verify_output(output.out, expected=expected_results)
+
+    def test_zip_plus_zip(self):
+        self.step_name('Test that clam will the clam.zip and also another zip concatenated to the end.')
+
+        # Build a file that is the clam.zip archive with a zip concatenated on that contains the not_eicar test string file.
+        clam_zip = TC.path_build / 'unit_tests' / 'input' / 'clamav_hdb_scanfiles' / 'clam.zip'
+
+        not_eicar_zip = TC.path_tmp / 'not-eicar.zip'
+        with ZipFile(str(not_eicar_zip), 'w', ZIP_DEFLATED) as zf:
+            zf.writestr('not-eicar.txt', b"CLAMAV-TEST-STRING-NOT-EICAR")
+
+        testfile = TC.path_tmp / 'clam.zip.not_eicar.zipsfx'
+        testfile.write_bytes(clam_zip.read_bytes() + not_eicar_zip.read_bytes())
+
+        command = '{valgrind} {valgrind_args} {clamscan} -d {clam_exe_db} -d {not_eicar_db} --allmatch {testfiles}'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan,
+            # We can't use the hash sig for this clam.exe program because the hash goes out the window when we concatenate on the zip.
+            clam_exe_db=TC.path_db / 'clam.ndb',
+            not_eicar_db=TC.path_source / 'unit_tests' / 'input' / 'other_sigs' / 'Clamav-Unit-Test-Signature.ndb',
+            testfiles=testfile,
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 1  # virus
+
+        expected_results = [
+            'Test.NDB.UNOFFICIAL FOUND',
+            'NDB.Clamav-Unit-Test-Signature.UNOFFICIAL FOUND',
+        ]
+        self.verify_output(output.out, expected=expected_results)
+
+    def test_zip_all_files(self):
+        self.step_name('Test that clam will extract all files from a zip.')
+
+        testfile = TC.path_tmp / 'multi-file.zip'
+        with ZipFile(str(testfile), 'w', ZIP_DEFLATED) as zf:
+            zf.writestr('file-0.txt', b"Test file 0")
+            zf.writestr('file-1.txt', b"Test file 1")
+            zf.writestr('file-2.txt', b"Test file 2")
+            zf.writestr('file-3.txt', b"Test file 3")
+
+        # Calculate sha256 and len for all files
+        sha256s = {}
+        with ZipFile(str(testfile), 'r') as zf:
+            for name in zf.namelist():
+                data = zf.read(name)
+                sha256s[name] = ( hashlib.sha256(data).hexdigest(), len(data) )
+
+        # Make sha256 signatures for all files
+        with open(TC.path_db / 'missing_entries.hsb', 'w') as f:
+            for name, data in sha256s.items():
+                f.write(f"{data[0]}:{data[1]}:{name}.NDB:73\n")
+
+        command = '{valgrind} {valgrind_args} {clamscan} -d {missing_entries_db} --allmatch {testfiles}'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan,
+            # We can't use the hash sig for this clam.exe program because the hash goes out the window when we concatenate on the zip.
+            missing_entries_db=TC.path_db / 'missing_entries.hsb',
+            testfiles=testfile,
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 1  # virus
+
+        expected_results = [
+            'file-0.txt.NDB.UNOFFICIAL FOUND',
+            'file-1.txt.NDB.UNOFFICIAL FOUND',
+            'file-2.txt.NDB.UNOFFICIAL FOUND',
+            'file-3.txt.NDB.UNOFFICIAL FOUND',
+        ]
+        self.verify_output(output.out, expected=expected_results)
+
+    def test_zip_no_central_directory(self):
+        self.step_name('Test that clam will extract files from a zip with no central directory.')
+
+        testfile = TC.path_tmp / 'multi-file-no-central.zip'
+        with ZipFile(str(testfile), 'w', ZIP_DEFLATED) as zf:
+            zf.writestr('file-0.txt', b"Test file 0")
+            zf.writestr('file-1.txt', b"Test file 1")
+            zf.writestr('file-2.txt', b"Test file 2")
+            zf.writestr('file-3.txt', b"Test file 3")
+
+        # Calculate sha256 and len for all files
+        sha256s = {}
+        with ZipFile(str(testfile), 'r') as zf:
+            for name in zf.namelist():
+                data = zf.read(name)
+                sha256s[name] = ( hashlib.sha256(data).hexdigest(), len(data) )
+
+        # Make sha256 signatures for all files
+        with open(TC.path_db / 'missing_entries.hsb', 'w') as f:
+            for name, data in sha256s.items():
+                f.write(f"{data[0]}:{data[1]}:{name}.NDB:73\n")
+
+        # Remove the central directory
+        with open(str(testfile), 'r+b') as f:
+            # find the start of the central directory, which has a 4-byte signature 'PK\x05\x06'
+            while f.read(4) != b'PK\x01\x02':
+                pass
+            # rewind 4 bytes
+            f.seek(-4, os.SEEK_CUR)
+            # truncate the central directory
+            f.truncate()
+
+        command = '{valgrind} {valgrind_args} {clamscan} -d {missing_entries_db} --allmatch {testfiles}'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan,
+            # We can't use the hash sig for this clam.exe program because the hash goes out the window when we concatenate on the zip.
+            missing_entries_db=TC.path_db / 'missing_entries.hsb',
+            testfiles=testfile,
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 1  # virus
+
+        expected_results = [
+            'file-0.txt.NDB.UNOFFICIAL FOUND',
+            'file-1.txt.NDB.UNOFFICIAL FOUND',
+            'file-2.txt.NDB.UNOFFICIAL FOUND',
+            'file-3.txt.NDB.UNOFFICIAL FOUND',
+        ]
+        self.verify_output(output.out, expected=expected_results)
+
+    def test_zip_missing_centrals(self):
+        self.step_name('Test that clam will detect files omitted from zip central directory.')
+
+        testfile = TC.path_tmp / 'multi-file-missing-centrals.zip'
+        with ZipFile(str(testfile), 'w', ZIP_DEFLATED) as zf:
+            zf.writestr('file-0.txt', b"Test file 0")
+            zf.writestr('file-1.txt', b"Test file 1")
+            zf.writestr('file-2.txt', b"Test file 2")
+            zf.writestr('file-3.txt', b"Test file 3")
+
+        # Calculate sha256 and len for all files
+        sha256s = {}
+        with ZipFile(str(testfile), 'r') as zf:
+            for name in zf.namelist():
+                data = zf.read(name)
+                sha256s[name] = ( hashlib.sha256(data).hexdigest(), len(data) )
+
+        # Make sha256 signatures for all files
+        with open(TC.path_db / 'missing_entries.hsb', 'w') as f:
+            for name, data in sha256s.items():
+                f.write(f"{data[0]}:{data[1]}:{name}.NDB:73\n")
+
+        # Remove the central directory entries for file-2.txt and file-4.txt
+        with open(str(testfile), 'r+b') as f:
+            # find the first central directory record. Each will have a 4-byte signature 'PK\x01\x02'
+            while f.read(4) != b'PK\x01\x02':
+                # rewind 3 bytes, because it might not be aligned
+                f.seek(-3, os.SEEK_CUR)
+
+            # get the offset
+            central_dir_offset = f.tell()
+
+            # read the central directory
+            central_dir = f.read()
+
+            # truncate the central directory
+            f.truncate(central_dir_offset)
+
+            # seek to the end of the file
+            f.seek(0, os.SEEK_END)
+
+            # write just the central directory entries for file-1.txt and file-3.txt
+            split_central_dir = central_dir.split(b'PK\x01\x02')
+            #f.write(split_central_dir[0])
+            f.write(split_central_dir[1])
+            #f.write(split_central_dir[2])
+            f.write(split_central_dir[3]) # note the last one also has the end of central directory record. That's fine.
+
+        command = '{valgrind} {valgrind_args} {clamscan} -d {missing_entries_db} --allmatch {testfiles}'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan,
+            # We can't use the hash sig for this clam.exe program because the hash goes out the window when we concatenate on the zip.
+            missing_entries_db=TC.path_db / 'missing_entries.hsb',
+            testfiles=testfile,
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 1  # virus
+
+        expected_results = [
+            'file-0.txt.NDB.UNOFFICIAL FOUND',
+            'file-1.txt.NDB.UNOFFICIAL FOUND',
+            'file-2.txt.NDB.UNOFFICIAL FOUND',
+            'file-3.txt.NDB.UNOFFICIAL FOUND',
         ]
         self.verify_output(output.out, expected=expected_results)
 
