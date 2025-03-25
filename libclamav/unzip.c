@@ -1069,7 +1069,7 @@ cl_error_t index_the_central_directory(
             num_record_blocks++;
             /* zero out the memory for the new records */
             memset(&(zip_catalogue[records_count]), 0,
-                   sizeof(struct zip_record) * (ZIP_RECORDS_CHECK_BLOCKSIZE * (num_record_blocks - records_count)));
+                   sizeof(struct zip_record) * (ZIP_RECORDS_CHECK_BLOCKSIZE * num_record_blocks - records_count));
         }
     } while (1);
 
@@ -1315,7 +1315,7 @@ cl_error_t index_local_file_headers_within_bounds(
 
                 num_record_blocks++;
                 /* zero out the memory for the new records */
-                memset(&(zip_catalogue[index]), 0, sizeof(struct zip_record) * (ZIP_RECORDS_CHECK_BLOCKSIZE * (num_record_blocks - index)));
+                memset(&(zip_catalogue[index]), 0, sizeof(struct zip_record) * (ZIP_RECORDS_CHECK_BLOCKSIZE * num_record_blocks - index));
             }
         }
     }
@@ -1393,7 +1393,7 @@ cl_error_t index_local_file_headers(
     bool exceeded_max_files               = false;
 
     if (NULL == catalogue || NULL == num_records || NULL == *catalogue) {
-        cli_errmsg("index_local_file_headers: Invalid NULL arguments\n");
+        cli_dbgmsg("index_local_file_headers: Invalid NULL arguments\n");
         goto done;
     }
 
@@ -1443,7 +1443,7 @@ cl_error_t index_local_file_headers(
             end_offset = fsize;
         } else {
             next_record = &((*catalogue)[i + 1]);
-            end_offset  = next_record->local_header_offset + next_record->local_header_size + next_record->compressed_size;
+            end_offset  = next_record->local_header_offset;
         }
 
         ret = index_local_file_headers_within_bounds(
