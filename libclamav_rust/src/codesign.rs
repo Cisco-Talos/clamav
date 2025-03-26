@@ -327,7 +327,7 @@ pub unsafe extern "C" fn codesign_verifier_new(
     verifier: *mut *mut c_void,
     err: *mut *mut FFIError,
 ) -> bool {
-    let certs_directory_str = validate_str_param!(certs_directory_str, err=err);
+    let certs_directory_str = validate_str_param!(certs_directory_str, err = err);
     let certs_directory = match Path::new(certs_directory_str).canonicalize() {
         Ok(p) => p,
         Err(e) => {

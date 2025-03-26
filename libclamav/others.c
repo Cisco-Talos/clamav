@@ -222,7 +222,7 @@ static void *load_module(const char *name, const char *featurename)
 #ifdef _AIX
         snprintf(modulename, sizeof(modulename),
                  "%s%s(%s%s.%d)",
-                 name,".a",name,LT_MODULE_EXT,LIBCLAMAV_MAJORVER);
+                 name, ".a", name, LT_MODULE_EXT, LIBCLAMAV_MAJORVER);
 #else
         snprintf(modulename, sizeof(modulename),
                  "%s" PATHSEP "%s%s",
