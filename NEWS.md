@@ -9,14 +9,129 @@ ClamAV 1.5.0 includes the following improvements and changes:
 
 ### Major changes
 
+- Added checks to determine if an OLE2-based Microsoft Office document is
+  encrypted.
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1295)
+
+- Added the ability to record URLs found in HTML if the generate-JSON-metadata
+  feature is enabled.
+  Also adds an option to disable this in case you want the JSON metadata
+  feature but don't want to record HTML URLs.
+  The ClamScan command-line option is `--json-store-html-urls=no`.
+  The `clamd.conf` config option is `JsonStoreHTMLUrls no`.
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1281)
+
+- Added regex support for the `clamd.conf` `OnAccessExcludePath` config option.
+  This change courtesy of GitHub user b1tg.
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1314)
+
+- Added FIPS-compliant CVD signing/verification with external `.sign` files.
+
+  Freshclam will now attempt to download external signature files to accompany
+  existing `.cvd` databases and `.cdiff` patch files. Sigtool now has commands
+  to sign and verify using the external signatures.
+
+  ClamAV now installs a 'certs' directory in the app config directory
+  (e.g. `<prefix>/etc/certs`). The install path is configurable.
+  The CMake option to configure the CVD certs directory is:
+  `-D CVD_CERTS_DIRECTORY=PATH`
+
+  New options to set an alternative CVD certs directory:
+  - The command-line option for Freshclam, ClamD, ClamScan, and Sigtool is:
+    `--cvdcertsdir PATH`
+  - The environment variable for Freshclam, ClamD, ClamScan, and Sigtool is:
+    `CVD_CERTS_DIR`
+  - The config option for Freshclam and ClamD is:
+    `CVDCertsDirectory PATH`
+
+  Added two new APIs to the public clamav.h header:
+    ```c
+    extern cl_error_t cl_cvdverify_ex(const char *file,
+                                      const char *certs_directory);
+
+    extern cl_error_t cl_cvdunpack_ex(const char *file,
+                                      const char *dir,
+                                      bool dont_verify,
+                                      const char *certs_directory);
+    ```
+    The original `cl_cvdverify` and `cl_cvdunpack` are deprecated.
+
+  Added a `cl_engine_field` enum option `CL_ENGINE_CVDCERTSDIR`.
+  You may set this option with `cl_engine_set_str` and get it with
+  `cl_engine_get_str`, to override the compiled in default CVD certs directory.
+
+  Thank you to Mark Carey at SAP for inspiring work on this feature with an
+  initial proof of concept for external-signature FIPS compliant CVD signing.
+
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1417)
+
 ### Other improvements
 
+- Set a limit on the max-recursion config option. Users will no longer be
+  able to set max-recursion higher than 100.
+  This change prevents errors on start up or possible crashes if encountering
+  a file with that many layers of recursion.
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1264)
+
+- Build system: CMake improvements to support compiling for the AIX platform.
+  This change is courtesy of GitHub user KamathForAIX.
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1387)
+
+- Improve support for extracting malformed zip archives.
+  This change is courtesy of Frederick Sell.
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1460)
+
+- Windows: Code quality improvement for the ClamScan and ClamDScan `--move`
+  and `--remove` options.
+  This change is courtesy of Maxim Suhanov.
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1470)
+
+- Added file type recognition for some kinds of AI model files.
+
+  The file type appears as a string parameter for these callback functions:
+  - `clcb_pre_cache`
+  - `clcb_pre_scan`
+  - `clcb_file_inspection`
+
+  When scanning these files, the `type` parameter will now show
+  "CL_TYPE_AI_MODEL" instead of "CL_TYPE_BINARY_DATA".
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1476)
+
 ### Bug fixes
+
+- Technical debt: Reduced email multipart message parser complexity.
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1347)
+
+- Fixed possible undefined behavior in inflate64 module.
+  The inflate64 module is a modified version of the zlib library, taken from
+  version 1.2.3 with some customization and with some cherry-picked fixes.
+  This adds one additional fix from zlib 1.2.9.
+  Thank you to TITAN Team for reporting this issue.
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1469)
+
+- Fixed a bug in ClamD that broke reporting of memory usage on Linux.
+  The STATS command can be used to monitor ClamD directly or through ClamDTOP.
+  The memory stats feature does not work on all platforms (e.g. Windows).
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1465)
+
+- Windows: Fix a build issue when the same library dependency is found in
+  two different locations.
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1453)
+
+- Fix an infinite loop when scanning some email files in debug-mode.
+  This fix is courtesy of Yoann Lecuyer
+  - [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1445)
 
 ### Acknowledgments
 
 Special thanks to the following people for code contributions and bug reports:
-
+- b1tg
+- Frederick Sell
+- KamathForAIX
+- Mark Carey at SAP
+- Maxim Suhanov
+- TITAN Team
+- Yoann Lecuyer
 
 ## 1.4.0
 
