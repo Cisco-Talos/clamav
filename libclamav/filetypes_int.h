@@ -302,5 +302,27 @@ static const char *ftypes_int[] = {
     "1:2:2d6c7a(73|34|35)2d:LHA archive using .LZS extension:CL_TYPE_ANY:CL_TYPE_LHA_LZH:210",
     "1:2:2d706d302d:LHA archive using PMarc (.PMA) extension:CL_TYPE_ANY:CL_TYPE_LHA_LZH:210",
     "0:0:414c5a01:ALZ:CL_TYPE_ANY:CL_TYPE_ALZ:210",
+    // GGML GGUF models
+    "0:0:4747554601000000:GGUF AI Model File:CL_TYPE_ANY:CL_TYPE_AI_MODEL:220",
+    "0:0:4747554602000000:GGUF AI Model File:CL_TYPE_ANY:CL_TYPE_AI_MODEL:220",
+    "0:0:4747554603000000:GGUF AI Model File:CL_TYPE_ANY:CL_TYPE_AI_MODEL:220",
+    // ONNX AI model detection, looking for: onnx_tool or onnx-tool
+    "1:0:08??12??6f6e6e78(2d|5f)746f6f6c:ONNX AI Model File:CL_TYPE_ANY:CL_TYPE_AI_MODEL:220",
+    // ONNX AI model detection, looking for: tf2onnx
+    "1:0:08??12??7466326f6e6e78:ONNX AI Model File:CL_TYPE_ANY:CL_TYPE_AI_MODEL:220",
+    // ONNX AI model detection, looking for: pytorch
+    "1:0:08??12??7079746f726368:ONNX AI Model File:CL_TYPE_ANY:CL_TYPE_AI_MODEL:220",
+    // ONNX AI model detection, looking for: caffe:
+    "1:0:08??12??63616666653a:ONNX AI Model File:CL_TYPE_ANY:CL_TYPE_AI_MODEL:220",
+    // ONNX AI model detection, looking for: OnnxMLTools:
+    "1:0:08??12??4f6e6e784d4c546f6f6c73:ONNX AI Model File:CL_TYPE_ANY:CL_TYPE_AI_MODEL:220",
+    // ONNX AI model detection, looking for: CNTK
+    "1:0:08??12??434e544b:ONNX AI Model File:CL_TYPE_ANY:CL_TYPE_AI_MODEL:220",
+    // ONNX AI model detection, looking for: onnx-caffe2:
+    "1:0:08??12??6f6e6e782d636166666532:ONNX AI Model File:CL_TYPE_ANY:CL_TYPE_AI_MODEL:220",
+    // ONNX AI model detection, looking for: onnx-caffe2:
+    "1:0:08??12??6f6e6e782d636166666532:ONNX AI Model File:CL_TYPE_ANY:CL_TYPE_AI_MODEL:220",
+    // tflite model detection
+    "0:4:54464c33:TensorFlow Lite Model File:CL_TYPE_ANY:CL_TYPE_AI_MODEL:220",
     NULL};
 #endif
