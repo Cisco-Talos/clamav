@@ -82,7 +82,7 @@ char *freshdbdir(void)
 
     /* try to find the most up-to-date db directory */
     dbdir = cl_retdbdir();
-    if ((opts = optparse(CONFDIR_FRESHCLAM, 0, NULL, 0, OPT_FRESHCLAM, 0, NULL))) {
+    if ((opts = optparse(OPT_CONFDIR_FRESHCLAM, 0, NULL, 0, OPT_FRESHCLAM, 0, NULL))) {
         if ((opt = optget(opts, "DatabaseDirectory"))->enabled) {
             if (strcmp(dbdir, opt->strarg)) {
                 char *daily = (char *)malloc(strlen(opt->strarg) + strlen(dbdir) + 30);

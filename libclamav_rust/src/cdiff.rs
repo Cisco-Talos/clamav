@@ -20,18 +20,22 @@
 
 use std::{
     collections::BTreeMap,
-    ffi::{CStr, CString},
+    ffi::{c_void, CStr, CString},
     fs::{self, File, OpenOptions},
     io::{prelude::*, BufReader, BufWriter, Read, Seek, SeekFrom, Write},
     iter::*,
+    mem::ManuallyDrop,
     os::raw::c_char,
     path::{Path, PathBuf},
     str::{self, FromStr},
 };
 
-use crate::sys;
-use crate::util;
-use crate::validate_str_param;
+use crate::{
+    codesign::{self, Verifier},
+    ffi_error,
+    ffi_util::FFIError,
+    sys, validate_str_param,
+};
 
 use flate2::{read::GzDecoder, write::GzEncoder, Compression};
 use log::{debug, error, warn};
@@ -146,6 +150,9 @@ pub enum Error {
 
     #[error("NUL found within CString")]
     CstringNulError(#[from] std::ffi::NulError),
+
+    #[error("Can't verify: {0}")]
+    CannotVerify(String),
 }
 
 /// Errors particular to input handling (i.e., syntax, or side effects from
@@ -187,8 +194,12 @@ pub enum InputError {
     LineNotUnicode(#[from] std::str::Utf8Error),
 
     /// Errors encountered while executing a command
-    #[error("processing: {0}")]
+    #[error("Processing: {0}")]
     Processing(#[from] ProcessingError),
+
+    /// Errors encountered while executing a command
+    #[error("Processing: {0}")]
+    ProcessingString(String),
 
     #[error("no final newline")]
     MissingNL,
@@ -465,7 +476,7 @@ pub fn script2cdiff(script_file_name: &str, builder: &str, server: &str) -> Resu
     // Make a copy of the script file name to use for the cdiff file
     let cdiff_file_name_string = script_file_name.to_string();
     let mut cdiff_file_name = cdiff_file_name_string.as_str();
-    debug!("script2cdiff() - script file name: {:?}", cdiff_file_name);
+    debug!("script2cdiff: script file name: {:?}", cdiff_file_name);
 
     // Remove the "".script" suffix
     if let Some(file_name) = cdiff_file_name.strip_suffix(".script") {
@@ -490,7 +501,7 @@ pub fn script2cdiff(script_file_name: &str, builder: &str, server: &str) -> Resu
 
     // Add .cdiff suffix
     let cdiff_file_name = format!("{}.{}", cdiff_file_name, "cdiff");
-    debug!("script2cdiff() - writing to: {:?}", &cdiff_file_name);
+    debug!("script2cdiff: writing to: {:?}", &cdiff_file_name);
 
     // Open cdiff_file_name for writing
     let mut cdiff_file: File = File::create(&cdiff_file_name)
@@ -528,7 +539,7 @@ pub fn script2cdiff(script_file_name: &str, builder: &str, server: &str) -> Resu
         .map_err(|e| Error::FileMeta(cdiff_file_name.to_owned(), e))?
         .len();
     debug!(
-        "script2cdiff() - wrote {} bytes to {}",
+        "script2cdiff: wrote {} bytes to {}",
         cdiff_file_len, cdiff_file_name
     );
 
@@ -571,13 +582,31 @@ pub fn script2cdiff(script_file_name: &str, builder: &str, server: &str) -> Resu
     Ok(())
 }
 
-/// This function is only meant to be called from sigtool.c
+/// C interface for cdiff_apply() (below).
+/// This function is for use in sigtool.c and libfreshclam_internal.c
+///
+/// # Safety
+///
+/// No parameters may be NULL.
 #[export_name = "cdiff_apply"]
-pub extern "C" fn _cdiff_apply(fd: i32, mode: u16) -> i32 {
-    debug!(
-        "cdiff_apply() - called with file_descriptor={}, mode={}",
-        fd, mode
-    );
+pub unsafe extern "C" fn _cdiff_apply(
+    cdiff_file_path_str: *const c_char,
+    verifier_ptr: *const c_void,
+    mode: u16,
+    err: *mut *mut FFIError,
+) -> bool {
+    let cdiff_file_path_str = validate_str_param!(cdiff_file_path_str);
+    let cdiff_file_path = match Path::new(cdiff_file_path_str).canonicalize() {
+        Ok(p) => p,
+        Err(e) => {
+            return ffi_error!(
+                err = err,
+                Error::CannotVerify(format!("Invalid cdiff file path: {}", e))
+            );
+        }
+    };
+
+    let verifier = ManuallyDrop::new(Box::from_raw(verifier_ptr as *mut Verifier));
 
     let mode = if mode == 1 {
         ApplyMode::Cdiff
@@ -585,13 +614,11 @@ pub extern "C" fn _cdiff_apply(fd: i32, mode: u16) -> i32 {
         ApplyMode::Script
     };
 
-    let mut file = util::file_from_fd_or_handle(fd);
-
-    if let Err(e) = cdiff_apply(&mut file, mode) {
-        error!("{}", e);
-        -1
+    if let Err(e) = cdiff_apply(&cdiff_file_path, &verifier, mode) {
+        error!("Failed to apply {:?}: {}", cdiff_file_path, e);
+        ffi_error!(err = err, e)
     } else {
-        0
+        true
     }
 }
 
@@ -608,58 +635,96 @@ pub extern "C" fn _cdiff_apply(fd: i32, mode: u16) -> i32 {
 /// A cdiff file contains a footer that is the signed signature of the sha256
 /// file contains of the header and the body. The footer begins after the first
 /// ':' character to the left of EOF.
-pub fn cdiff_apply(file: &mut File, mode: ApplyMode) -> Result<(), Error> {
+pub fn cdiff_apply(
+    cdiff_file_path: &Path,
+    verifier: &Verifier,
+    mode: ApplyMode,
+) -> Result<(), Error> {
     let path = std::env::current_dir().unwrap();
-    debug!("cdiff_apply() - current directory is {}", path.display());
+    debug!("cdiff_apply: applying {}", cdiff_file_path.display());
+    debug!("cdiff_apply: current directory is {}", path.display());
+
+    // Open cdiff file for reading
+    let mut file = File::open(cdiff_file_path).map_err(Error::IoError)?;
 
     // Only read dsig, header, etc. if this is a cdiff file
     let header_length = match mode {
         ApplyMode::Script => 0,
         ApplyMode::Cdiff => {
-            let dsig = read_dsig(file)?;
-            debug!("cdiff_apply() - final dsig length is {}", dsig.len());
-            if is_debug_enabled() {
-                print_file_data(dsig.clone(), dsig.len());
-            }
-
             // Get file length
             let file_len = file.metadata()?.len() as usize;
-            let footer_offset = file_len - dsig.len() - 1;
 
-            // The SHA is calculated from the contents of the beginning of the file
-            // up until the ':' before the dsig at the end of the file.
-            let sha256 = get_hash(file, footer_offset)?;
+            // Check if there is an external digital signature
+            // The filename would be the same as the cdiff file with an extra .sign extension
+            let sign_file_path = cdiff_file_path.with_extension("cdiff.sign");
+            let verify_result =
+                codesign::verify_signed_file(cdiff_file_path, &sign_file_path, verifier);
+            let verified = match verify_result {
+                Ok(signer) => {
+                    debug!(
+                        "cdiff_apply: external signature verified. Signed by: {}",
+                        signer
+                    );
+                    true
+                }
+                Err(codesign::Error::InvalidDigitalSignature(m)) => {
+                    debug!("cdiff_apply: invalid external signature: {}", m);
+                    return Err(Error::InvalidDigitalSignature);
+                }
+                Err(e) => {
+                    debug!("cdiff_apply: error validating external signature: {:?}", e);
 
-            debug!("cdiff_apply() - sha256: {}", hex::encode(sha256));
-
-            // cli_versig2 will expect dsig to be a null-terminated string
-            let dsig_cstring = CString::new(dsig)?;
-
-            // Verify cdiff
-            let n = CString::new(PUBLIC_KEY_MODULUS).unwrap();
-            let e = CString::new(PUBLIC_KEY_EXPONENT).unwrap();
-            let versig_result = unsafe {
-                sys::cli_versig2(
-                    sha256.to_vec().as_ptr(),
-                    dsig_cstring.as_ptr(),
-                    n.as_ptr() as *const c_char,
-                    e.as_ptr() as *const c_char,
-                )
+                    // If the external signature could not be validated (e.g. does not exist)
+                    // then continue on and try to validate the internal signature.
+                    false
+                }
             };
-            debug!("cdiff_apply() - cli_versig2() result = {}", versig_result);
-            if versig_result != 0 {
-                return Err(Error::InvalidDigitalSignature);
+
+            if !verified {
+                // try to verify the internal (legacy) digital signature
+                let dsig = read_dsig(&mut file)?;
+                debug!("cdiff_apply: final dsig length is {}", dsig.len());
+                if is_debug_enabled() {
+                    print_file_data(dsig.clone(), dsig.len());
+                }
+
+                let footer_offset = file_len - dsig.len() - 1;
+
+                // The SHA is calculated from the contents of the beginning of the file
+                // up until the ':' before the dsig at the end of the file.
+                let sha256 = get_hash(&mut file, footer_offset)?;
+
+                debug!("cdiff_apply: sha256: {}", hex::encode(sha256));
+
+                // cli_versig2 will expect dsig to be a null-terminated string
+                let dsig_cstring = CString::new(dsig)?;
+
+                // Verify cdiff
+                let n = CString::new(PUBLIC_KEY_MODULUS).unwrap();
+                let e = CString::new(PUBLIC_KEY_EXPONENT).unwrap();
+                let versig_result = unsafe {
+                    sys::cli_versig2(
+                        sha256.to_vec().as_ptr(),
+                        dsig_cstring.as_ptr(),
+                        n.as_ptr() as *const c_char,
+                        e.as_ptr() as *const c_char,
+                    )
+                };
+                debug!("cdiff_apply: cli_versig2() result = {}", versig_result);
+                if versig_result != 0 {
+                    return Err(Error::InvalidDigitalSignature);
+                }
             }
 
             // Read file length from header
-            let (header_len, header_offset) = read_size(file)?;
+            let (header_len, header_offset) = read_size(&mut file)?;
             debug!(
-                "cdiff_apply() - header len = {}, file len = {}, header offset = {}",
+                "cdiff_apply: header len = {}, file len = {}, header offset = {}",
                 header_len, file_len, header_offset
             );
 
             let current_pos = file.seek(SeekFrom::Start(header_offset as u64))?;
-            debug!("cdiff_apply() - current file offset = {}", current_pos);
+            debug!("cdiff_apply: current file offset = {}", current_pos);
             header_len as usize
         }
     };
@@ -781,17 +846,33 @@ fn cmd_move(ctx: &mut Context, move_op: MoveOp) -> Result<(), InputError> {
     let mut dst_file = OpenOptions::new()
         .append(true)
         .open(&move_op.dst)
-        .map_err(|e| InputError::Processing(e.into()))?;
+        .map_err(|e| {
+            InputError::ProcessingString(format!(
+                "Failed to open destination file {:?} for MOVE command: {}",
+                &move_op.dst, e
+            ))
+        })?;
 
     // Create tmp file and open for writing
     let tmp_named_file = tempfile::Builder::new()
         .prefix("_tmp_move_file")
         .tempfile_in("./")
-        .map_err(|e| InputError::Processing(e.into()))?;
+        .map_err(|e| {
+            InputError::ProcessingString(format!(
+                "Failed to create temp file in current directory {:?} for MOVE command: {}",
+                std::env::current_dir(),
+                e
+            ))
+        })?;
     let mut tmp_file = tmp_named_file.as_file();
 
     // Open src in read-only mode
-    let mut src_reader = BufReader::new(File::open(&move_op.src).map_err(ProcessingError::from)?);
+    let mut src_reader = BufReader::new(File::open(&move_op.src).map_err(|e| {
+        InputError::ProcessingString(format!(
+            "Failed to open source file {:?}: {} for MOVE command",
+            &move_op.src, e
+        ))
+    })?);
 
     let mut line = vec![];
     let mut line_no = 0;
@@ -799,9 +880,12 @@ fn cmd_move(ctx: &mut Context, move_op: MoveOp) -> Result<(), InputError> {
         // cdiff files start at line 1
         line_no += 1;
         line.clear();
-        let n_read = src_reader
-            .read_until(b'\n', &mut line)
-            .map_err(ProcessingError::from)?;
+        let n_read = src_reader.read_until(b'\n', &mut line).map_err(|e| {
+            InputError::ProcessingString(format!(
+                "Failed to read from source file {:?} for MOVE command: {}",
+                &move_op.src, e
+            ))
+        })?;
         if n_read == 0 {
             break;
         }
@@ -830,7 +914,13 @@ fn cmd_move(ctx: &mut Context, move_op: MoveOp) -> Result<(), InputError> {
         }
         // Write everything outside of start and end to tmp
         else {
-            tmp_file.write_all(&line).map_err(ProcessingError::from)?;
+            tmp_file.write_all(&line).map_err(|e| {
+                InputError::ProcessingString(format!(
+                    "Failed to write line to temp file {:?} for MOVE command: {}",
+                    tmp_named_file.path(),
+                    e
+                ))
+            })?;
         }
     }
 
@@ -845,8 +935,20 @@ fn cmd_move(ctx: &mut Context, move_op: MoveOp) -> Result<(), InputError> {
 
     // Delete src and replace it with tmp
     #[cfg(windows)]
-    fs::remove_file(&move_op.src).map_err(ProcessingError::from)?;
-    fs::rename(tmp_named_file.path(), &move_op.src).map_err(ProcessingError::from)?;
+    fs::remove_file(&move_op.src).map_err(|e| {
+        InputError::ProcessingString(format!(
+            "Failed to remove original source file {:?} for MOVE command: {}",
+            &move_op.src, e
+        ))
+    })?;
+    fs::rename(tmp_named_file.path(), &move_op.src).map_err(|e| {
+        InputError::ProcessingString(format!(
+            "Failed to rename temp file {:?} to {:?} for MOVE command: {}",
+            tmp_named_file.path(),
+            &move_op.src,
+            e
+        ))
+    })?;
 
     Ok(())
 }
@@ -863,22 +965,37 @@ fn cmd_close(ctx: &mut Context) -> Result<(), InputError> {
 
     if next_edit.is_some() {
         // Open src in read-only mode
-        let mut src_reader = BufReader::new(File::open(&open_db).map_err(ProcessingError::from)?);
+        let mut src_reader = BufReader::new(File::open(&open_db).map_err(|e| {
+            InputError::ProcessingString(format!(
+                "Failed to open db file {:?} for CLOSE command: {}",
+                &open_db, e
+            ))
+        })?);
 
         // Create tmp file and open for writing
         let tmp_named_file = tempfile::Builder::new()
             .prefix("_tmp_move_file")
             .tempfile_in("./")
-            .map_err(ProcessingError::from)?;
+            .map_err(|e| {
+                InputError::ProcessingString(format!(
+                    "Failed to create temp file in current directory {:?} for CLOSE command: {}",
+                    std::env::current_dir(),
+                    e
+                ))
+            })?;
         let tmp_file = tmp_named_file.as_file();
         let mut tmp_file = BufWriter::new(tmp_file);
 
         let mut linebuf = Vec::new();
         for line_no in 1.. {
             linebuf.clear();
-            let n_read = src_reader
-                .read_until(b'\n', &mut linebuf)
-                .map_err(ProcessingError::from)?;
+            let n_read = src_reader.read_until(b'\n', &mut linebuf).map_err(|e| {
+                InputError::ProcessingString(format!(
+                    "Failed to read temp file {:?} for CLOSE command: {}",
+                    tmp_named_file.path(),
+                    e
+                ))
+            })?;
             if n_read == 0 {
                 // No more input
                 break;
@@ -924,10 +1041,20 @@ fn cmd_close(ctx: &mut Context) -> Result<(), InputError> {
 
             // Anything to output?
             if let Some(new_line) = new_line {
-                tmp_file
-                    .write_all(new_line)
-                    .map_err(ProcessingError::from)?;
-                tmp_file.write_all(b"\n").map_err(ProcessingError::from)?;
+                tmp_file.write_all(new_line).map_err(|e| {
+                    InputError::ProcessingString(format!(
+                        "Failed to write line to temp file {:?} for CLOSE command: {}",
+                        tmp_named_file.path(),
+                        e
+                    ))
+                })?;
+                tmp_file.write_all(b"\n").map_err(|e| {
+                    InputError::ProcessingString(format!(
+                        "Failed to write new line to temp file {:?} for CLOSE command: {}",
+                        tmp_named_file.path(),
+                        e
+                    ))
+                })?;
             }
         }
 
@@ -961,12 +1088,29 @@ fn cmd_close(ctx: &mut Context) -> Result<(), InputError> {
         #[cfg(windows)]
         if let Err(e) = fs::remove_file(&open_db) {
             // Try to remove the tempfile, since we failed to remove the original
-            fs::remove_file(tmpfile_path).map_err(ProcessingError::from)?;
-            return Err(ProcessingError::from(e).into());
+            fs::remove_file(&tmpfile_path).map_err(|e| {
+                InputError::ProcessingString(format!(
+                    "Failed to remove the temp file file {:?} for CLOSE command: {}",
+                    tmpfile_path, e
+                ))
+            })?;
+            return Err(InputError::ProcessingString(format!(
+                "Failed to remove open db file {:?} for CLOSE command: {}",
+                &open_db, e
+            ))
+            .into());
         }
         if let Err(e) = fs::rename(&tmpfile_path, &open_db) {
-            fs::remove_file(&tmpfile_path).map_err(ProcessingError::from)?;
-            return Err(ProcessingError::from(e).into());
+            fs::remove_file(&tmpfile_path).map_err(|e| {
+                InputError::ProcessingString(format!(
+                    "Failed to remove temp file {:?}: {} for CLOSE command",
+                    &tmpfile_path, e
+                ))
+            })?;
+            return Err(InputError::ProcessingString(format!(
+                "Failed to rename temp file {:?} to {:?} for CLOSE command: {}",
+                tmpfile_path, &open_db, e
+            )));
         }
     }
 
@@ -976,14 +1120,22 @@ fn cmd_close(ctx: &mut Context) -> Result<(), InputError> {
             .create(true)
             .append(true)
             .open(&open_db)
-            .map_err(ProcessingError::from)?;
-        db_file
-            .write_all(&ctx.additions)
-            .map_err(ProcessingError::from)?;
+            .map_err(|e| {
+                InputError::ProcessingString(format!(
+                    "Failed to open db file {:?} for CLOSE command: {}",
+                    open_db, e
+                ))
+            })?;
+        db_file.write_all(&ctx.additions).map_err(|e| {
+            InputError::ProcessingString(format!(
+                "Failed to write add lines to db {:?} for CLOSE command: {}",
+                open_db, e
+            ))
+        })?;
         ctx.additions.clear();
     }
 
-    debug!("cmd_close() - finished");
+    debug!("cmd_close: finished");
 
     Ok(())
 }
@@ -997,7 +1149,12 @@ fn cmd_unlink(ctx: &mut Context, unlink_op: UnlinkOp) -> Result<(), InputError> 
     // We checked that the db_name doesn't have any '/' or '\\' in it before
     // adding to the UnlinkOp struct, so it's safe to say the path is just a local file and
     // won't accidentally delete something in a different directory.
-    fs::remove_file(unlink_op.db_name).map_err(ProcessingError::from)?;
+    fs::remove_file(unlink_op.db_name).map_err(|e| {
+        InputError::ProcessingString(format!(
+            "Failed to remove db file {:?} for UNLINK command: {}",
+            unlink_op.db_name, e
+        ))
+    })?;
 
     Ok(())
 }
@@ -1007,7 +1164,7 @@ fn process_line(ctx: &mut Context, line: &[u8]) -> Result<(), InputError> {
     let mut tokens = line.splitn(2, |b| *b == b' ' || *b == b'\n');
     let cmd = tokens.next().ok_or(InputError::MissingCommand)?;
     let remainder_with_nl = tokens.next();
-    let remainder = remainder_with_nl.and_then(|s| s.strip_suffix(&[b'\n']));
+    let remainder = remainder_with_nl.and_then(|s| s.strip_suffix(b"\n"));
 
     // Call the appropriate command function
     match cmd {
@@ -1087,7 +1244,7 @@ fn read_dsig(file: &mut File) -> Result<Vec<u8>, SignatureError> {
     // Read from dsig_offset to EOF
     let mut dsig: Vec<u8> = vec![];
     file.read_to_end(&mut dsig)?;
-    debug!("read_dsig() - dsig length is {}", dsig.len());
+    debug!("read_dsig: dsig length is {}", dsig.len());
 
     // Find the signature
     let offset: usize = SIG_SIZE + 1;

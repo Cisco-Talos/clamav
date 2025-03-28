@@ -109,6 +109,17 @@ static void help(void)
     printf("    --fail-if-cvd-older-than=days           Return with a nonzero error code if virus database outdated\n");
     printf("    --datadir=DIRECTORY                     Load signatures from DIRECTORY\n");
     printf("    --pid=FILE               -p FILE        Write the daemon's pid to FILE\n");
+    printf("    --cvdcertsdir=DIRECTORY                 Specify a directory containing the root\n");
+    printf("                                            CA cert needed to verify detached CVD digital signatures.\n");
+    printf("                                            If not provided, then clamd will look in the default directory.\n");
+    printf("\n");
+    printf("Environment Variables:\n");
+    printf("\n");
+    printf("    LD_LIBRARY_PATH                         May be used on startup to find the libclamunrar_iface\n");
+    printf("                                            shared library module to enable RAR archive support.\n");
+    printf("    CVD_CERTS_DIR                           Specify a directory containing the root CA cert needed\n");
+    printf("                                            to verify detached CVD digital signatures.\n");
+    printf("                                            If not provided, then clamd will look in the default directory.\n");
     printf("\n");
     printf("Pass in - as the filename for stdin.\n");
     printf("\n");
@@ -160,6 +171,8 @@ int main(int argc, char **argv)
     pid_t mainpid         = 0;
     mode_t old_umask      = 0;
     const char *user_name = NULL;
+    char *cvdcertsdir     = NULL;
+    STATBUF statbuf;
 
     if (check_flevel())
         exit(1);
@@ -572,6 +585,26 @@ int main(int argc, char **argv)
             STATBUF sb;
             if (CLAMSTAT(opt->strarg, &sb) != 0 && !S_ISDIR(sb.st_mode)) {
                 logg(LOGG_ERROR, "Current configuration of TemporaryDirectory: %s does not exist, or is not valid \n", opt->strarg);
+                ret = 1;
+                break;
+            }
+        }
+
+        cvdcertsdir = optget(opts, "cvdcertsdir")->strarg;
+        if (NULL != cvdcertsdir) {
+            // Config option must override the engine defaults
+            // (which would've used the env var or hardcoded path)
+            if (LSTAT(cvdcertsdir, &statbuf) == -1) {
+                logg(LOGG_ERROR,
+                     "ClamAV CA certificates directory is missing: %s"
+                     " - It should have been provided as a part of installation.\n",
+                     cvdcertsdir);
+                ret = 1;
+                break;
+            }
+
+            if ((ret = cl_engine_set_str(engine, CL_ENGINE_CVDCERTSDIR, cvdcertsdir))) {
+                logg(LOGG_ERROR, "cli_engine_set_str(CL_ENGINE_CVDCERTSDIR) failed: %s\n", cl_strerror(ret));
                 ret = 1;
                 break;
             }

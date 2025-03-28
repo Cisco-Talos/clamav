@@ -78,6 +78,9 @@
 
 /* where to look for the config file */
 #define CONFDIR "@CONFDIR@"
+
+/* where to look for the CA certificate file(s) */
+#define CERTSDIR "@CERTSDIR@"
 #endif
 
 /* Have sys/fanotify.h */

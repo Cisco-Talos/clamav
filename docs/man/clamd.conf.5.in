@@ -97,6 +97,11 @@ This option allows you to change the default database directory. If you enable i
 .br
 Default: defined at configuration (/usr/local/share/clamav)
 .TP
+\fBCVDCertsDirectory STRING\fR
+Path to a directory containing ClamAV CA certificate files used to verify signed database archives (e.g. CVD files).  This directory must already exist, be an absolute path, be readable by freshclam, clamd, clamscan, and sigtool.
+.br
+Default: @CERTSDIR@
+.TP
 \fBOfficialDatabaseOnly BOOL\fR
 Only load the official signatures published by the ClamAV project.
 .br

@@ -242,7 +242,7 @@ static int nsis_unpack_next(struct nsis_st *n, cli_ctx *ctx)
             return CL_EREAD;
         }
         if ((n->ofd = open(n->ofn, O_RDWR | O_CREAT | O_TRUNC | O_BINARY, 0600)) == -1) {
-            cli_errmsg("NSIS: unable to create output file %s - aborting.", n->ofn);
+            cli_errmsg("NSIS: unable to create output file %s - aborting.\n", n->ofn);
             return CL_ECREAT;
         }
         n->opened = 1;
@@ -377,7 +377,7 @@ static int nsis_unpack_next(struct nsis_st *n, cli_ctx *ctx)
         loops             = 0;
 
         if ((n->ofd = open(n->ofn, O_RDWR | O_CREAT | O_TRUNC | O_BINARY, 0600)) == -1) {
-            cli_errmsg("NSIS: unable to create output file %s - aborting.", n->ofn);
+            cli_errmsg("NSIS: unable to create output file %s - aborting.\n", n->ofn);
             return CL_ECREAT;
         }
         n->opened = 1;

@@ -272,6 +272,7 @@ Use the following variables to customize the install paths:
 - `CMAKE_INSTALL_PREFIX`: Customize the install prefix.
 - `APP_CONFIG_DIRECTORY`: Customize the config directory, may be relative.
 - `DATABASE_DIRECTORY`: Customize the database directory, may be relative.
+- `CVD_CERTS_DIRECTORY`: Customize the ClamAV CA certificates directory, may be relative.
 - `SYSTEMD_UNIT_DIR`: Install SystemD service files to a specific directory.
 
 This example configuration should be familiar if you've used the ClamAV
@@ -283,6 +284,7 @@ cmake .. \
     -D CMAKE_INSTALL_PREFIX=/usr \
     -D CMAKE_INSTALL_LIBDIR=/usr/lib \
     -D APP_CONFIG_DIRECTORY=/etc/clamav \
+    -D CVD_CERTS_DIRECTORY=/etc/clamav/certs \
     -D DATABASE_DIRECTORY=/var/lib/clamav \
     -D ENABLE_JSON_SHARED=OFF # require libjson-c to be static
 # Build
@@ -371,6 +373,11 @@ The following is a complete list of CMake options unique to configuring ClamAV:
   Relative to the `CMAKE_INSTALL_PREFIX` unless an absolute path is given.
 
   _Default: Windows: `database`, POSIX: `share/clamav`_
+
+- `CVD_CERTS_DIRECTORY`: ClamAV CA certificates directory.
+  Relative to the `CMAKE_INSTALL_PREFIX` unless an absolute path is given.
+
+  _Default: Windows: `certs`, POSIX: `etc/certs`_
 
 - `CLAMAV_USER`: ClamAV User (POSIX-only).
 
@@ -688,7 +695,7 @@ ClamAV has two bytecode runtimes:
    execution should be faster. Not all scans will run bytecode signatures, so
    performance testing will depend heavily depending on what files are tested.
 
-   We can work with LLVM 8.0 to 13.x. 
+   We can work with LLVM 8.0 to 13.x.
 
 #### Interpreter Bytecode Runtime
 

@@ -84,6 +84,11 @@ Example
 # Default: hardcoded (depends on installation options)
 #DatabaseDirectory /var/lib/clamav
 
+# Path to the ClamAV CA certificates directory for verifying CVD signature
+# archive digital signatures.
+# Default: hardcoded (depends on installation options)
+#CVDCertsDirectory /etc/clamav/certs
+
 # Only load the official signatures published by the ClamAV project.
 # Default: no
 #OfficialDatabaseOnly no

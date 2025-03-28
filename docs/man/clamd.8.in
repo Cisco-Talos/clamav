@@ -121,12 +121,19 @@ Load signatures from DIRECTORY.
 .TP
 \fB\-p FILE, \-\-pid=FILE\fR
 Write the daemon's pid to FILE.
+.TP
+\fB\-\-cvdcertsdir=DIR\fR
+Specify a directory containing the root CA cert needed to verify detached CVD digital signatures. If not provided, then clamd will look in the default directory.
 
 .SH "ENVIRONMENT VARIABLES"
 .LP
 clamd uses the following environment variables:
 .TP
-LD_LIBRARY_PATH - May be used on startup to find the libclamunrar_iface shared library module to enable RAR archive support.
+\fBLD_LIBRARY_PATH\fR
+May be used on startup to find the libclamunrar_iface shared library module to enable RAR archive support.
+.TP
+\fBCVD_CERTS_DIR\fR
+Specify a directory containing the root CA cert needed to verify detached CVD digital signatures. If not provided, then clamd will look in the default directory.
 
 .SH "SIGNALS"
 .LP

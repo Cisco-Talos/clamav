@@ -42,6 +42,7 @@ const WINDOWS_TRIM_LOCAL_LIB: &[&str] = &["libclamav", "libclammspack"];
 
 // Generate bindings for these functions:
 const BINDGEN_FUNCTIONS: &[&str] = &[
+    "cl_retflevel",
     "cli_ctx",
     "cli_warnmsg",
     "cli_dbgmsg_no_inline",
@@ -49,6 +50,7 @@ const BINDGEN_FUNCTIONS: &[&str] = &[
     "cli_errmsg",
     "cli_append_virus",
     "lsig_increment_subsig_match",
+    "cli_versig",
     "cli_versig2",
     "cli_getdsig",
     "cli_get_debug_flag",
@@ -58,7 +60,13 @@ const BINDGEN_FUNCTIONS: &[&str] = &[
 ];
 
 // Generate bindings for these types (structs, enums):
-const BINDGEN_TYPES: &[&str] = &["cli_matcher", "cli_ac_data", "cli_ac_result", "onedump_t"];
+const BINDGEN_TYPES: &[&str] = &[
+    "cli_matcher",
+    "cli_ac_data",
+    "cli_ac_result",
+    "onedump_t",
+    "cvd_t",
+];
 
 // Find the required functions and types in these headers:
 const BINDGEN_HEADERS: &[&str] = &[

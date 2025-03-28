@@ -472,7 +472,7 @@ int main(int argc, char **argv)
             strncpy(dbdir, pt, sizeof(dbdir));
             free(pt);
         } else {
-            strncpy(dbdir, DATADIR, sizeof(dbdir));
+            strncpy(dbdir, OPT_DATADIR, sizeof(dbdir));
         }
         dbdir[sizeof(dbdir) - 1] = 0;
     }

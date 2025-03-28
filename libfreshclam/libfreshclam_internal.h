@@ -59,6 +59,7 @@ extern char *g_proxyPassword;
 
 extern char *g_tempDirectory;
 extern char *g_databaseDirectory;
+extern void *g_signVerifier;
 
 extern uint32_t g_maxAttempts;
 extern uint32_t g_connectTimeout;

@@ -72,33 +72,41 @@
 #define FLAG_REG_CASE 8 /* case-sensitive regex matching */
 
 #ifdef _WIN32
-static bool is_initialized = false;
 
-#ifndef BACKUP_DATADIR
-#define BACKUP_DATADIR "C:\\ClamAV\\database"
-#endif
-#ifndef BACKUP_CONFDIR
-#define BACKUP_CONFDIR "C:\\ClamAV"
-#endif
-char _DATADIR[MAX_PATH]           = BACKUP_DATADIR;
-char _CONFDIR[MAX_PATH]           = BACKUP_CONFDIR;
-char _CONFDIR_CLAMD[MAX_PATH]     = BACKUP_CONFDIR "\\clamd.conf";
-char _CONFDIR_FRESHCLAM[MAX_PATH] = BACKUP_CONFDIR "\\freshclam.conf";
-char _CONFDIR_MILTER[MAX_PATH]    = BACKUP_CONFDIR "\\clamav-milter.conf";
+    static bool is_initialized = false;
 
-#define CONST_DATADIR _DATADIR
-#define CONST_CONFDIR _CONFDIR
-#define CONST_CONFDIR_CLAMD _CONFDIR_CLAMD
-#define CONST_CONFDIR_FRESHCLAM _CONFDIR_FRESHCLAM
-#define CONST_CONFDIR_MILTER _CONFDIR_MILTER
+    #ifndef BACKUP_DATADIR
+    #define BACKUP_DATADIR "C:\\ClamAV\\database"
+    #endif
+    #ifndef BACKUP_CONFDIR
+    #define BACKUP_CONFDIR "C:\\ClamAV"
+    #endif
+    #ifndef BACKUP_CERTSDIR
+    #define BACKUP_CERTSDIR "C:\\ClamAV\\certs"
+    #endif
+
+    char _DATADIR[MAX_PATH]           = BACKUP_DATADIR;
+    char _CONFDIR[MAX_PATH]           = BACKUP_CONFDIR;
+    char _CERTSDIR[MAX_PATH]          = BACKUP_CERTSDIR;
+    char _CONFDIR_CLAMD[MAX_PATH]     = BACKUP_CONFDIR "\\clamd.conf";
+    char _CONFDIR_FRESHCLAM[MAX_PATH] = BACKUP_CONFDIR "\\freshclam.conf";
+    char _CONFDIR_MILTER[MAX_PATH]    = BACKUP_CONFDIR "\\clamav-milter.conf";
+
+    #define CONST_DATADIR           _DATADIR
+    #define CONST_CONFDIR           _CONFDIR
+    #define CONST_CERTSDIR          _CERTSDIR
+    #define CONST_CONFDIR_CLAMD     _CONFDIR_CLAMD
+    #define CONST_CONFDIR_FRESHCLAM _CONFDIR_FRESHCLAM
+    #define CONST_CONFDIR_MILTER    _CONFDIR_MILTER
 
 #else
 
-#define CONST_DATADIR DATADIR
-#define CONST_CONFDIR CONFDIR
-#define CONST_CONFDIR_CLAMD CONFDIR_CLAMD
-#define CONST_CONFDIR_FRESHCLAM CONFDIR_FRESHCLAM
-#define CONST_CONFDIR_MILTER CONFDIR_MILTER
+    #define CONST_DATADIR           OPT_DATADIR
+    #define CONST_CONFDIR           OPT_CONFDIR
+    #define CONST_CERTSDIR          OPT_CERTSDIR
+    #define CONST_CONFDIR_CLAMD     OPT_CONFDIR_CLAMD
+    #define CONST_CONFDIR_FRESHCLAM OPT_CONFDIR_FRESHCLAM
+    #define CONST_CONFDIR_MILTER    OPT_CONFDIR_MILTER
 
 #endif
 
@@ -164,6 +172,11 @@ const struct clam_option __clam_options[] = {
     {NULL, "ascii-normalise", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_SIGTOOL, "", ""},
     {NULL, "utf16-decode", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_SIGTOOL, "", ""},
     {NULL, "build", 'b', CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_SIGTOOL, "", ""},
+    {NULL, "sign", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_SIGTOOL, "", ""},
+    {NULL, "verify", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_SIGTOOL, "", ""},
+    {NULL, "key", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_SIGTOOL, "", ""},
+    {NULL, "cert", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_SIGTOOL, "", ""},
+    {NULL, "append", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_SIGTOOL, "", ""},
     {NULL, "max-bad-sigs", 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 3000, NULL, 0, OPT_SIGTOOL, "Maximum number of mismatched signatures when building a CVD. Zero disables this limit.", "3000"},
     {NULL, "flevel", 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, CL_FLEVEL, NULL, 0, OPT_SIGTOOL, "Feature level to put in the CVD", ""},
     {NULL, "cvd-version", 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 0, NULL, 0, OPT_SIGTOOL, "Version number of the CVD to build", ""},
@@ -279,6 +292,8 @@ const struct clam_option __clam_options[] = {
     {"TemporaryDirectory", "tempdir", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMD | OPT_MILTER | OPT_CLAMSCAN | OPT_SIGTOOL, "This option allows you to change the default temporary directory.", "/tmp"},
 
     {"DatabaseDirectory", "datadir", 0, CLOPT_TYPE_STRING, NULL, -1, CONST_DATADIR, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_SIGTOOL, "This option allows you to change the default database directory.\nIf you enable it, please make sure it points to the same directory in\nboth clamd and freshclam.", "/var/lib/clamav"},
+
+    {"CVDCertsDirectory", "cvdcertsdir", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN | OPT_FRESHCLAM | OPT_SIGTOOL, "This option allows you to change the default ClamAV CA certificates directory used to verify database external digital signatures.\nIf you enable it, please make sure it points to the same directory in\nboth clamd and freshclam.", "/etc/clamav/certs"},
 
     {"OfficialDatabaseOnly", "official-db-only", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Only load the official signatures published by the ClamAV project.", "no"},
 
@@ -671,9 +686,23 @@ const struct clam_option __clam_options[] = {
 const struct clam_option *clam_options = __clam_options;
 
 #ifdef _WIN32
-void fix_paths(void)
+/**
+ * @brief For Windows, we support getting the database and configuration directories
+ * from the registry or based on the executable path.
+ *
+ * This function will set the global variables _DATADIR, _CONFDIR, and _CERTSDIR, pointed
+ * to by the macros CONST_DATADIR, CONST_CONFDIR, and CONST_CERTSDIR, respectively.
+ *
+ * Outside of this source file, you can get them with `optget()`, a la:
+ * ```c
+ *     const char *localdbdir = optget(opts, "datadir")->strarg;
+ * ```
+ */
+static void fix_paths(void)
 {
-    int have_ddir = 0, have_cdir = 0;
+    bool have_db_dir    = false;
+    bool have_conf_dir  = false;
+    bool have_certs_dir = false;
     char path[MAX_PATH] = "";
     DWORD sizof;
     HKEY key;
@@ -681,30 +710,42 @@ void fix_paths(void)
     if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, CLAMKEY, 0, KEY_QUERY_VALUE, &key) == ERROR_SUCCESS || RegOpenKeyEx(HKEY_CURRENT_USER, CLAMKEY, 0, KEY_QUERY_VALUE, &key) == ERROR_SUCCESS) {
         sizof = sizeof(path);
         if (RegQueryValueEx(key, "DataDir", 0, NULL, path, &sizof) == ERROR_SUCCESS) {
-            have_ddir = 1;
-            memcpy(_DATADIR, path, sizof);
+            have_db_dir = true;
+            memcpy(_DATADIR, path, MIN(sizof, sizeof(_DATADIR) - 1));
         }
         sizof = sizeof(path);
         if (RegQueryValueEx(key, "ConfDir", 0, NULL, path, &sizof) == ERROR_SUCCESS) {
-            have_cdir = 1;
-            memcpy(_CONFDIR, path, sizof);
+            have_conf_dir = true;
+            memcpy(_CONFDIR, path, MIN(sizof, sizeof(_CONFDIR) - 1));
+        }
+        sizof = sizeof(path);
+        if (RegQueryValueEx(key, "CvdCertsDir", 0, NULL, path, &sizof) == ERROR_SUCCESS) {
+            have_certs_dir = true;
+            memcpy(_CERTSDIR, path, MIN(sizof, sizeof(_CERTSDIR) - 1));
         }
         RegCloseKey(key);
     }
-    if (!(have_ddir | have_cdir) && GetModuleFileName(NULL, path, sizeof(path))) {
+
+    if (!(have_db_dir | have_conf_dir | have_certs_dir) && GetModuleFileName(NULL, path, sizeof(path))) {
         char *dir;
         path[sizeof(path) - 1] = '\0';
         dir                    = dirname(path);
-        if (!have_ddir)
+        if (!have_db_dir) {
             snprintf(_DATADIR, sizeof(_DATADIR), "%s\\database", dir);
-        if (!have_cdir) {
+        }
+        if (!have_conf_dir) {
             strncpy(_CONFDIR, dir, sizeof(_CONFDIR));
-            have_cdir = 1;
+            have_conf_dir = true;
+        }
+        if (!have_certs_dir) {
+            snprintf(_CERTSDIR, sizeof(_CERTSDIR), "%s\\certs", dir);
         }
     }
+
     _DATADIR[sizeof(_DATADIR) - 1] = '\0';
     _CONFDIR[sizeof(_CONFDIR) - 1] = '\0';
-    if (have_cdir) {
+
+    if (have_conf_dir) {
         snprintf(_CONFDIR_CLAMD, sizeof(_CONFDIR_CLAMD), "%s\\%s", _CONFDIR, "clamd.conf");
         snprintf(_CONFDIR_FRESHCLAM, sizeof(_CONFDIR_FRESHCLAM), "%s\\%s", _CONFDIR, "freshclam.conf");
         snprintf(_CONFDIR_MILTER, sizeof(_CONFDIR_MILTER), "%s\\%s", _CONFDIR, "clamav-milter.conf");
