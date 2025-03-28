@@ -811,26 +811,6 @@ static fc_error_t initialize(struct optstruct *opts)
 #endif
     }
 
-#ifdef HAVE_PWD_H
-    /* Drop database privileges here if we are not planning on daemonizing.  If
-     * we are, we should wait until after we create the PidFile to drop
-     * privileges.  That way, it is owned by root (or whoever started freshclam),
-     * and no one can change it.  */
-    if (!optget(opts, "daemon")->enabled) {
-        /*
-         * freshclam shouldn't work with root privileges.
-         * Drop privileges to the DatabaseOwner user, if specified.
-         * Pass NULL for the log file name, because it hasn't been created yet.
-         */
-        ret = drop_privileges(optget(opts, "DatabaseOwner")->strarg, NULL);
-        if (ret) {
-            logg(LOGG_ERROR, "Failed to switch to %s user.\n", optget(opts, "DatabaseOwner")->strarg);
-            status = FC_ECONFIG;
-            goto done;
-        }
-    }
-#endif /* HAVE_PWD_H */
-
     /*
      * Initialize libclamav.
      */
@@ -982,6 +962,7 @@ static fc_error_t initialize(struct optstruct *opts)
     fcConfig.requestTimeout = optget(opts, "ReceiveTimeout")->numarg;
 
     fcConfig.bCompressLocalDatabase = optget(opts, "CompressLocalDatabase")->enabled;
+    fcConfig.dbOwner                = optget(opts, "DatabaseOwner")->strarg;
 
     /*
      * Initialize libfreshclam.
@@ -991,6 +972,26 @@ static fc_error_t initialize(struct optstruct *opts)
         status = ret;
         goto done;
     }
+
+#ifdef HAVE_PWD_H
+    /* Drop database privileges here (cause of log file creation in /var/log) if we are not planning on daemonizing.  If
+     * we are, we should wait until after we create the PidFile to drop
+     * privileges.  That way, it is owned by root (or whoever started freshclam),
+     * and no one can change it. */
+    if (!optget(opts, "daemon")->enabled) {
+        /*
+         * freshclam shouldn't work with root privileges.
+         * Drop privileges to the DatabaseOwner user, if specified.
+         * Pass NULL for the log file name, because it hasn't been created yet.
+         */
+        ret = drop_privileges(optget(opts, "DatabaseOwner")->strarg, NULL);
+        if (ret) {
+            logg(LOGG_ERROR, "Failed to switch to %s user.\n", optget(opts, "DatabaseOwner")->strarg);
+            status = FC_ECONFIG;
+            goto done;
+        }
+    }
+#endif /* HAVE_PWD_H */
 
     /*
      * Set libfreshclam callback functions.
