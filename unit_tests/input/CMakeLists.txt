@@ -57,7 +57,7 @@ set(ENCRYPTED_TESTFILES
     clamav_hdb_scanfiles/clam.exe.2007.one
     clamav_hdb_scanfiles/clam.exe.2010.one
     clamav_hdb_scanfiles/clam.exe.webapp-export.one
-    signing/private/signing-test.key
+    signing/sign/signing-test.key
 )
 
 if(ENABLE_UNRAR)
@@ -69,7 +69,7 @@ endif()
 
 add_custom_target(tgt_build_unit_tests_directories ALL
     COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/clamav_hdb_scanfiles
-    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/signing/private
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/signing/sign
 )
 
 # Decrypt test file
