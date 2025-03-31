@@ -167,11 +167,12 @@ class TC(testcase.TestCase):
 
         self.log.warning('VG: {}'.format(os.getenv("VG")))
 
-        command = '{valgrind} {valgrind_args} {sigtool} --sign {input} --key {key} --cert {cert}'.format(
+        command = '{valgrind} {valgrind_args} {sigtool} --sign {input} --key {signing_key} --cert {signing_cert} --cert {intermediate_cert}'.format(
             valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, sigtool=TC.sigtool,
             input=TC.path_tmp / 'file_to_sign',
-            key=TC.path_build / 'unit_tests' / 'input' / 'signing' / 'private' / 'signing-test.key',
-            cert=TC.path_source / 'unit_tests' / 'input' / 'signing' / 'private' / 'signing-test.crt'
+            signing_key=TC.path_build / 'unit_tests' / 'input' / 'signing' / 'sign' / 'signing-test.key',
+            signing_cert=TC.path_source / 'unit_tests' / 'input' / 'signing' / 'sign' / 'signing-test.crt',
+            intermediate_cert=TC.path_source / 'unit_tests' / 'input' / 'signing' / 'sign' / 'intermediate-test.crt'
         )
         output = self.execute_command(command)
 
@@ -182,7 +183,7 @@ class TC(testcase.TestCase):
         command = '{valgrind} {valgrind_args} {sigtool} --verify {input} --cvdcertsdir {cvdcertsdir}'.format(
             valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, sigtool=TC.sigtool,
             input=TC.path_tmp / 'file_to_sign',
-            cvdcertsdir=TC.path_source / 'unit_tests' / 'input' / 'signing' / 'public'
+            cvdcertsdir=TC.path_source / 'unit_tests' / 'input' / 'signing' / 'verify'
         )
         output = self.execute_command(command)
 
@@ -203,7 +204,7 @@ class TC(testcase.TestCase):
         command = '{valgrind} {valgrind_args} {sigtool} --verify {input} --cvdcertsdir {cvdcertsdir}'.format(
             valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, sigtool=TC.sigtool,
             input=TC.path_tmp / 'file_to_sign',
-            cvdcertsdir=TC.path_source / 'unit_tests' / 'input' / 'signing' / 'public'
+            cvdcertsdir=TC.path_source / 'unit_tests' / 'input' / 'signing' / 'verify'
         )
         output = self.execute_command(command)
 

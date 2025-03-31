@@ -115,42 +115,45 @@ pub unsafe extern "C" fn codesign_sign_file(
     let signature_file_path_str = validate_str_param!(signature_file_path_str);
     let signature_file_path = Path::new(signature_file_path_str);
 
-    let cert_path_strs: &[*const i8] = std::slice::from_raw_parts(cert_paths_str, cert_paths_len);
+    let cert_path_strs: &[*const c_char] =
+        std::slice::from_raw_parts(cert_paths_str, cert_paths_len);
 
     // now convert the cert_path_strs to a Vec<&Path>
-    let cert_paths: Vec<PathBuf> = cert_path_strs
-        .iter()
-        .filter_map(|&path_str| -> Option<PathBuf> {
-            let path_str = if path_str.is_null() {
-                warn!("Intermiediate path string is NULL");
-                return None;
-            } else {
-                #[allow(unused_unsafe)]
-                match unsafe { CStr::from_ptr(path_str) }.to_str() {
-                    Err(e) => {
-                        warn!("Intermediate path string is not valid unicode: {}", e);
-                        return None;
-                    }
-                    Ok(s) => Some(s),
-                }
-            };
+    let mut cert_paths: Vec<PathBuf> = Vec::with_capacity(cert_paths_len);
 
-            if let Some(path_str) = path_str {
-                match Path::new(path_str).canonicalize() {
-                    Ok(path) => Some(path),
-                    Err(e) => {
-                        warn!(
-                            "Invalid intermediate certificate path: '{}' {}",
-                            path_str, e
-                        );
-                        None
-                    }
-                }
-            } else {
-                None
+    for &path_str in cert_path_strs {
+        if path_str.is_null() {
+            return ffi_error!(
+                err = err,
+                Error::SignFailed("Intermediate certificate path is NULL".to_string())
+            );
+        }
+
+        #[allow(unused_unsafe)]
+        let path_str = CStr::from_ptr(path_str)
+            .to_str()
+            .map_err(|e| {
+                warn!("Intermediate path string is not valid unicode: {e}");
+                ffi_error!(
+                    err = err,
+                    Error::SignFailed("Intermediate certificate path is NULL".to_string())
+                )
+            })
+            .unwrap();
+
+        match Path::new(path_str).canonicalize() {
+            Ok(path) => cert_paths.push(path),
+            Err(e) => {
+                warn!("Invalid intermediate certificate path: '{path_str}' {e}",);
+                return ffi_error!(
+                    err = err,
+                    Error::SignFailed(format!(
+                        "Invalid intermediate certificate path: '{path_str}': {e}",
+                    ))
+                );
             }
-        })
-        .collect();
+        }
+    }
 
     let signing_key_path_str = validate_str_param!(signing_key_path_str);
     let signing_key_path = match Path::new(signing_key_path_str).canonicalize() {
@@ -159,8 +162,7 @@ pub unsafe extern "C" fn codesign_sign_file(
             return ffi_error!(
                 err = err,
                 Error::SignFailed(format!(
-                    "Invalid signing key path '{}': {}",
-                    signing_key_path_str, e
+                    "Invalid signing key path '{signing_key_path_str}': {e}",
                 ))
             );
         }
@@ -372,7 +374,6 @@ pub unsafe extern "C" fn codesign_verifier_new(
 #[export_name = "codesign_verifier_free"]
 pub unsafe extern "C" fn codesign_verifier_free(verifier: *mut c_void) {
     if verifier.is_null() {
-        return;
     } else {
         let _ = unsafe { Box::from_raw(verifier as *mut Verifier) };
     }

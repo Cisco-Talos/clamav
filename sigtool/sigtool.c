@@ -980,7 +980,7 @@ static int sign(const struct optstruct *opts)
     if (NULL == target) {
         mprintf(LOGG_ERROR, "sign: No target file specified.\n");
         mprintf(LOGG_ERROR, "To sign a file with sigtool, you must specify a target file and use the --key and --cert options.\n");
-        mprintf(LOGG_ERROR, "For example:  sigtool --sign myfile.cvd --key /path/to/private.key --cert /path/to/public.pem --cert /path/to/intermediate.pem --cert /path/to/root-ca.pem\n");
+        mprintf(LOGG_ERROR, "For example:  sigtool --sign myfile.cvd --key /path/to/private.key --cert /path/to/public.crt --cert /path/to/intermediate.crt --cert /path/to/root-ca.crt\n");
         goto done;
     }
 
@@ -994,7 +994,7 @@ static int sign(const struct optstruct *opts)
     if (NULL == target) {
         mprintf(LOGG_ERROR, "sign: No private key specified.\n");
         mprintf(LOGG_ERROR, "To sign a file with sigtool, you must specify a target file and use the --key and --cert options.\n");
-        mprintf(LOGG_ERROR, "For example:  sigtool --sign myfile.cvd --key /path/to/private.key --cert /path/to/public.pem --cert /path/to/intermediate.pem --cert /path/to/root-ca.pem\n");
+        mprintf(LOGG_ERROR, "For example:  sigtool --sign myfile.cvd --key /path/to/private.key --cert /path/to/public.crt --cert /path/to/intermediate.crt --cert /path/to/root-ca.crt\n");
         goto done;
     }
 
@@ -1002,7 +1002,7 @@ static int sign(const struct optstruct *opts)
     if (NULL == opt) {
         mprintf(LOGG_ERROR, "sign: No signing or intermediate certificates specified.\n");
         mprintf(LOGG_ERROR, "To sign a file with sigtool, you must specify a target file and use the --key and --cert options.\n");
-        mprintf(LOGG_ERROR, "For example:  sigtool --sign myfile.cvd --key /path/to/private.key --cert /path/to/public.pem --cert /path/to/intermediate.pem --cert /path/to/root-ca.pem\n");
+        mprintf(LOGG_ERROR, "For example:  sigtool --sign myfile.cvd --key /path/to/private.key --cert /path/to/public.crt --cert /path/to/intermediate.crt --cert /path/to/root-ca.crt\n");
         goto done;
     }
 
@@ -1010,7 +1010,7 @@ static int sign(const struct optstruct *opts)
         if (!opt->strarg) {
             mprintf(LOGG_ERROR, "sign: The --cert option requires a path value to a signing or intermediate certificate.\n");
             mprintf(LOGG_ERROR, "To sign a file with sigtool, you must specify a target file and use the --key and --cert options.\n");
-            mprintf(LOGG_ERROR, "For example:  sigtool --sign myfile.cvd --key /path/to/private.key --cert /path/to/public.pem --cert /path/to/intermediate.pem --cert /path/to/root-ca.pem\n");
+            mprintf(LOGG_ERROR, "For example:  sigtool --sign myfile.cvd --key /path/to/private.key --cert /path/to/public.crt --cert /path/to/intermediate.crt --cert /path/to/root-ca.crt\n");
             goto done;
         }
 
