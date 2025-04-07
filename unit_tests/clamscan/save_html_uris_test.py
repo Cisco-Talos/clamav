@@ -39,7 +39,7 @@ class TC(testcase.TestCase):
 
         tempdir=self.path_tmp / "TD"
         if not os.path.isdir(tempdir):
-            os.makedirs(tempdir);
+            os.makedirs(tempdir)
 
         testfile = TC.path_source / 'unit_tests' / 'input' / 'other_scanfiles' / 'html' / 'index.html'
         command = '{valgrind} {valgrind_args} {clamscan} -d {path_db} --gen-json --leave-temps --tempdir={tempdir} {testfile}'.format(
@@ -52,8 +52,9 @@ class TC(testcase.TestCase):
 
         assert output.ec == 0  # clean
 
-        expected_strings = [ 'HTMLUrls'
-                , '"https://www.clamav.net/reports/malware"'
-                , '"http://www.google.com"'
-                ]
+        expected_strings = [
+            'URIs',
+            '"https://www.clamav.net/reports/malware"',
+            '"http://www.google.com"'
+        ]
         self.verify_metadata_json(tempdir, expected_strings)

@@ -1574,8 +1574,12 @@ int scanmanager(const struct optstruct *opts)
         options.general |= CL_SCAN_GENERAL_HEURISTICS;
     }
 
-    if (optget(opts, "json-store-html-urls")->enabled) {
-        options.general |= CL_SCAN_GENERAL_STORE_HTML_URLS;
+    if (optget(opts, "json-store-html-uris")->enabled) {
+        options.general |= CL_SCAN_GENERAL_STORE_HTML_URIS;
+    }
+
+    if (optget(opts, "json-store-pdf-uris")->enabled) {
+        options.general |= CL_SCAN_GENERAL_STORE_PDF_URIS;
     }
 
     /* TODO: Remove deprecated option in a future feature release */
