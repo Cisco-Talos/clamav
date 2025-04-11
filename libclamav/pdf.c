@@ -116,6 +116,7 @@ static void Colors_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfnam
 static void RichMedia_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname_action *act);
 static void AcroForm_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname_action *act);
 static void XFA_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname_action *act);
+static void URI_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname_action *act);
 
 /* End PDF statistics callbacks and related */
 
@@ -1893,6 +1894,7 @@ enum objstate {
     STATE_LINEARIZED,
     STATE_LAUNCHACTION,
     STATE_CONTENTS,
+    STATE_URI,
     STATE_ANY /* for actions table below */
 };
 
@@ -1954,21 +1956,33 @@ static struct pdfname_action pdfname_actions[] = {
     {"Colors", OBJ_DICT, STATE_NONE, STATE_NONE, NAMEFLAG_NONE, Colors_cb},
     {"RichMedia", OBJ_DICT, STATE_NONE, STATE_NONE, NAMEFLAG_NONE, RichMedia_cb},
     {"AcroForm", OBJ_DICT, STATE_NONE, STATE_NONE, NAMEFLAG_NONE, AcroForm_cb},
-    {"XFA", OBJ_DICT, STATE_NONE, STATE_NONE, NAMEFLAG_NONE, XFA_cb}};
+    {"XFA", OBJ_DICT, STATE_NONE, STATE_NONE, NAMEFLAG_NONE, XFA_cb},
+    {"URI", OBJ_DICT, STATE_NONE, STATE_URI, NAMEFLAG_NONE, URI_cb}};
 
 #define KNOWN_FILTERS ((1 << OBJ_FILTER_AH) | (1 << OBJ_FILTER_RL) | (1 << OBJ_FILTER_A85) | (1 << OBJ_FILTER_FLATE) | (1 << OBJ_FILTER_LZW) | (1 << OBJ_FILTER_FAX) | (1 << OBJ_FILTER_DCT) | (1 << OBJ_FILTER_JPX) | (1 << OBJ_FILTER_CRYPT))
 
 static void handle_pdfname(struct pdf_struct *pdf, struct pdf_obj *obj, const char *pdfname, int escapes, enum objstate *state)
 {
+    // If we process STATE_S we will get duplicate URIs from the prior STATE_NONE
+    if (!strcmp(pdfname, "URI") && *state == STATE_S) {
+        *state = STATE_NONE;
+        return;
+    }
     struct pdfname_action *act = NULL;
     unsigned j;
 
     obj->statsflags |= OBJ_FLAG_PDFNAME_DONE;
 
-    for (j = 0; j < sizeof(pdfname_actions) / sizeof(pdfname_actions[0]); j++) {
-        if (!strcmp(pdfname, pdfname_actions[j].pdfname)) {
-            act = &pdfname_actions[j];
-            break;
+    // Check to see if this object was observed to be a reference to a URI
+    if (obj->flags & (1 << OBJ_URI)) {
+        act = &(struct pdfname_action){"URI", OBJ_DICT, STATE_ANY, STATE_URI, NAMEFLAG_NONE, URI_cb};
+    }
+    if (!act) {
+        for (j = 0; j < sizeof(pdfname_actions) / sizeof(pdfname_actions[0]); j++) {
+            if (!strcmp(pdfname, pdfname_actions[j].pdfname)) {
+                act = &pdfname_actions[j];
+                break;
+            }
         }
     }
 
@@ -2168,6 +2182,20 @@ void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
             obj->flags |= (1 << OBJ_STREAM);
             obj->stream      = stream;
             obj->stream_size = stream_size;
+        }
+    }
+
+    if (obj->flags & (1 << OBJ_URI)) {
+        int i = 0;
+        int j = bytesleft;
+        for (i; j > 0; i++, j--){
+            if (q[i] == '(')
+                break;
+        }
+        if (j > 0) {
+            q += i;
+            handle_pdfname(pdf, obj, q, 0, &objstate);
+            return;
         }
     }
 
@@ -2382,7 +2410,10 @@ void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
 
         if (objstate == STATE_LAUNCHACTION)
             pdfobj_flag(pdf, obj, HAS_LAUNCHACTION);
-        if (dict_length > 0 && (objstate == STATE_JAVASCRIPT || objstate == STATE_OPENACTION || objstate == STATE_CONTENTS)) {
+        if (dict_length > 0 && (objstate == STATE_JAVASCRIPT ||
+                                objstate == STATE_OPENACTION ||
+                                objstate == STATE_CONTENTS ||
+                                objstate == STATE_URI)) {
             off_t dict_remaining = dict_length;
 
             if (objstate == STATE_OPENACTION)
@@ -2446,6 +2477,9 @@ void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
                                     break;
                                 case STATE_CONTENTS:
                                     flag = OBJ_CONTENTS;
+                                    break;
+                                case STATE_URI:
+                                    flag = OBJ_URI;
                                     break;
                                 default:
                                     cli_dbgmsg("pdf_parseobj: Unexpected object type\n");
@@ -4667,6 +4701,71 @@ static void Colors_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfnam
         return;
 
     cli_jsonint_array(colorsobj, obj->id >> 8);
+}
+
+static void URI_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname_action *act)
+{
+    cli_ctx *ctx = NULL;
+    off_t bytesleft = 0;
+    char *uri_stack = NULL;
+    char *uri_heap = NULL;
+    const char *objstart = (obj->objstm) ? (const char *)(obj->start + obj->objstm->streambuf)
+                                         : (const char *)(obj->start + pdf->map);
+
+    UNUSEDPARAM(act);
+
+    if (!(pdf) || !(pdf->ctx) || !(pdf->ctx->wrkproperty))
+        return;
+
+    ctx = pdf->ctx;
+
+    if (!(SCAN_COLLECT_METADATA) || !(SCAN_STORE_PDF_URIS))
+        return;
+
+    if (obj->size <= 0)
+    return;
+
+    if (obj->objstm) {
+        bytesleft = MIN(obj->size, obj->objstm->streambuf_len - obj->start);
+    } else {
+        bytesleft = MIN(obj->size, pdf->size - obj->start);
+    }
+
+    // Advance forward to the first '(' character
+    int start = 0;
+    while (bytesleft > 0 && objstart[start] != '(') {
+        start++;
+        bytesleft--;
+    }
+    if (bytesleft == 0) {
+        return;
+    }
+    // The first character past '(' is the start of the URI
+    uri_stack = (char *)(objstart + start + 1);
+
+    // Advance forward to the first ')' character
+    int end = 0;
+    while (bytesleft > 0 && uri_stack[end] != ')') {
+        end++;
+        bytesleft--;
+    }
+    if (uri_stack[end] != ')') {
+        return;
+    }
+
+    // Create a new string containing only the URI
+    uri_heap = (char *)malloc(sizeof(char) * (end + 1));
+    if (!uri_heap) {
+        cli_errmsg("cli_pdf: malloc() failed (URI)\n");
+        return;
+    }
+    strncpy(uri_heap, uri_stack, end);
+    *(uri_heap + end) = '\0';
+
+    json_object *uriarr;
+    uriarr = cli_jsonarray(pdf->ctx->wrkproperty, "URIs");
+    cli_jsonstr(uriarr, NULL, uri_heap);
+    free(uri_heap);
 }
 
 static void pdf_free_stats(struct pdf_struct *pdf)

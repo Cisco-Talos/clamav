@@ -52,7 +52,7 @@ class TC(testcase.TestCase):
 
         assert output.ec == 0  # clean
 
-        expected_strings = [ 'HTMLUrls'
+        expected_strings = [ 'URIs'
                 , '"https://www.clamav.net/reports/malware"'
                 , '"http://www.google.com"'
                 ]
