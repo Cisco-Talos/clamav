@@ -274,7 +274,8 @@ static struct node *parse_regex(const uint8_t *p, const size_t pSize, size_t *la
     struct node *right;
     struct node *tmp;
 
-    while (p[*last] != '$' && p[*last] != '\0') {
+    while (*last < pSize && p[*last] != '$' && p[*last] != '\0') {
+        if (*last >= pSize) break;  // Safe guard
         switch (p[*last]) {
             case '|':
                 ++*last;
@@ -356,6 +357,7 @@ static struct node *parse_regex(const uint8_t *p, const size_t pSize, size_t *la
                 ++*last;
                 /* fall-through */
             default:
+                if (*last >= pSize) break;
                 right = make_leaf(p[*last]);
                 v     = make_node(concat, v, right);
                 if (!v) {
