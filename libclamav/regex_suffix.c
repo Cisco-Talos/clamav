@@ -275,7 +275,6 @@ static struct node *parse_regex(const uint8_t *p, const size_t pSize, size_t *la
     struct node *tmp;
 
     while (*last < pSize && p[*last] != '$' && p[*last] != '\0') {
-        if (*last >= pSize) break;  // Safe guard
         switch (p[*last]) {
             case '|':
                 ++*last;
