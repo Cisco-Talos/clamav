@@ -5635,11 +5635,14 @@ cl_error_t cl_engine_free(struct cl_engine *engine)
 
                 tasks_to_do += 1; // pcre table
 
+                tasks_to_do += 1; // fuzzy hashmap
+
                 tasks_to_do += 1; // root mempool
             }
         }
         tasks_to_do += 1; // engine root mempool
     }
+
     tasks_to_do += 7; // hdb, mdb, imp, fp, crtmgr, cdb, dbinfo
 
     if (engine->dconf) {
@@ -5651,7 +5654,8 @@ cl_error_t cl_engine_free(struct cl_engine *engine)
         tasks_to_do += 1; // phishing cleanup
         tasks_to_do += 1; // dconf mempool
     }
-    tasks_to_do += 7; // pwdbs, pua cats, iconcheck, tempdir, cache, engine, ignored
+
+    tasks_to_do += 8; // certs_directory, pwdbs, pua cats, iconcheck, tempdir, cache, engine, ignored
 
     if (engine->test_root) {
         root = engine->test_root;
@@ -5665,8 +5669,6 @@ cl_error_t cl_engine_free(struct cl_engine *engine)
         }
 
         tasks_to_do += 1; // pcre table
-
-        tasks_to_do += 1; // fuzzy hashmap
 
         tasks_to_do += 1; // engine root mempool
     }
@@ -5806,6 +5808,11 @@ cl_error_t cl_engine_free(struct cl_engine *engine)
         MPOOL_FREE(engine->mempool, engine->dconf);
         TASK_COMPLETE();
     }
+
+    if (engine->certs_directory) {
+        MPOOL_FREE(engine->mempool, engine->certs_directory);
+    }
+    TASK_COMPLETE();
 
     if (engine->pwdbs) {
         for (i = 0; i < CLI_PWDB_COUNT; i++)
