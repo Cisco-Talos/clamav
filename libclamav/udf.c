@@ -684,17 +684,21 @@ static cl_error_t findFileIdentifiers(const uint8_t *const input, PointerList *p
     size_t fidDescSize;
 
     while (FILE_IDENTIFIER_DESCRIPTOR == tagId) {
+        /* This is how far into the Volume we already are. */
+        bufUsed     = buffer - input;
+        fidDescSize = getFileIdentifierDescriptorSize((FileIdentifierDescriptor *)buffer);
 
-        /*Check that it's safe to read the header. */
+        /* Check that it's safe to save the file identifier pointer for later use */
+        if (VOLUME_DESCRIPTOR_SIZE < (fidDescSize + bufUsed)) {
+            break;
+        }
+
+        /* Add the buffer to the list of file identifier pointers */
         if (CL_SUCCESS != (ret = insertPointer(pfil, buffer))) {
             goto done;
         }
 
-        /*This is how far into the Volume we already are.*/
-        bufUsed     = buffer - input;
-        fidDescSize = getFileIdentifierDescriptorSize((FileIdentifierDescriptor *)buffer);
-
-        /* Check that it's safe to read the header for the next FileIdentifierDescriptor */
+        /* Check that it's safe to read the TagID from the header of the next FileIdentifierDescriptor (if one exists) */
         if (VOLUME_DESCRIPTOR_SIZE < (fidDescSize + bufUsed + FILE_IDENTIFIER_DESCRIPTOR_SIZE_KNOWN)) {
             break;
         }
@@ -716,15 +720,21 @@ static cl_error_t findFileEntries(const uint8_t *const input, PointerList *pfil)
     size_t fedDescSize;
 
     while (FILE_ENTRY_DESCRIPTOR == tagId) {
+        /* This is how far into the Volume we already are. */
+        bufUsed     = buffer - input;
+        fedDescSize = getFileEntryDescriptorSize((FileEntryDescriptor *)buffer);
+
+        /* Check that it's safe to save the file identifier pointer for later use */
+        if (VOLUME_DESCRIPTOR_SIZE < (fedDescSize + bufUsed)) {
+            break;
+        }
+
+        /* Add the buffer to the list of file entry pointers */
         if (CL_SUCCESS != (ret = insertPointer(pfil, buffer))) {
             goto done;
         }
 
-        /*This is how far into the Volume we already are.*/
-        bufUsed     = buffer - input;
-        fedDescSize = getFileEntryDescriptorSize((FileEntryDescriptor *)buffer);
-
-        /* Check that it's safe to read the header for the next FileEntryDescriptor */
+        /* Check that it's safe to read the TagID from the header of the next FileEntryDescriptor (if one exists) */
         if (VOLUME_DESCRIPTOR_SIZE < (fedDescSize + bufUsed + FILE_ENTRY_DESCRIPTOR_SIZE_KNOWN)) {
             break;
         }
