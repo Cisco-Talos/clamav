@@ -81,4 +81,10 @@ if(WIN32)
     set_target_properties(common PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
 endif()
 
+if(CLANG_TIDY)
+    set_target_properties( common PROPERTIES
+        C_CLANG_TIDY "${CLANG_TIDY_PROPERTY}"
+        C_CLANG_TIDY_EXPORT_FIXES_DIR "${CMAKE_BINARY_DIR}/clang-tidy-fixes" )
+endif()
+
 add_library( ClamAV::common ALIAS common )

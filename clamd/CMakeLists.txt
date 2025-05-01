@@ -41,6 +41,12 @@ target_include_directories( clamd
 )
 set_target_properties( clamd PROPERTIES COMPILE_FLAGS "${WARNCFLAGS}" )
 
+if(CLANG_TIDY)
+    set_target_properties( clamd PROPERTIES
+        C_CLANG_TIDY "${CLANG_TIDY_PROPERTY}"
+        C_CLANG_TIDY_EXPORT_FIXES_DIR "${CMAKE_BINARY_DIR}/clang-tidy-fixes" )
+endif()
+
 if (APPLE AND CLAMAV_SIGN_FILE)
     set_target_properties( clamd PROPERTIES
         XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY ${CODE_SIGN_IDENTITY}
