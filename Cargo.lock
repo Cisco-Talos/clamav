@@ -354,8 +354,8 @@ dependencies = [
 
 [[package]]
 name = "clam-sigutil"
-version = "1.2.3"
-source = "git+https://github.com/Cisco-Talos/clamav-signature-util?tag=1.2.3#5203a565ad9d2d5913fcdcf9f06f982c3ab69d61"
+version = "1.2.4"
+source = "git+https://github.com/Cisco-Talos/clamav-signature-util?tag=1.2.4#7cfeb7f630ce472239f5b0a794b62df7f592acc7"
 dependencies = [
  "anyhow",
  "change-case",

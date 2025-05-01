@@ -214,9 +214,9 @@ git = \"https://github.com/Cisco-Talos/onenote.rs.git\"
 branch = \"CLAM-2329-new-from-slice\"
 replace-with = \"vendored-sources\"
 
-[source.\"git+https://github.com/Cisco-Talos/clamav-signature-util.git?tag=1.2.0\"]
+[source.\"git+https://github.com/Cisco-Talos/clamav-signature-util.git?tag=1.2.4\"]
 git = \"https://github.com/Cisco-Talos/clamav-signature-util.git\"
-tag = \"1.2.0\"
+tag = \"1.2.4\"
 replace-with = \"vendored-sources\"
 
 [source.vendored-sources]
