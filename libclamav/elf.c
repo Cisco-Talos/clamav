@@ -136,8 +136,9 @@ static cl_error_t cli_elf_fileheader(cli_ctx *ctx, fmap_t *map, union elf_file_h
     /* Need to know to endian convert */
     if (file_hdr->hdr64.e_ident[5] == 1) {
 #if WORDS_BIGENDIAN == 0
-        if (ctx)
+        if (ctx) {
             cli_dbgmsg("ELF: File is little-endian - conversion not required\n");
+        }
         conv = 0;
 #else
         if (ctx)
@@ -146,8 +147,9 @@ static cl_error_t cli_elf_fileheader(cli_ctx *ctx, fmap_t *map, union elf_file_h
 #endif
     } else {
 #if WORDS_BIGENDIAN == 0
-        if (ctx)
+        if (ctx) {
             cli_dbgmsg("ELF: File is big-endian - data conversion enabled\n");
+        }
         conv = 1;
 #else
         if (ctx)
@@ -256,8 +258,9 @@ static int cli_elf_ph32(cli_ctx *ctx, fmap_t *map, struct cli_exe_info *elfinfo,
 
         for (i = 0; i < phnum; i++) {
             err = 0;
-            if (fmap_readn(map, &program_hdr[i], phoff, sizeof(struct elf_program_hdr32)) != sizeof(struct elf_program_hdr32))
+            if (fmap_readn(map, &program_hdr[i], phoff, sizeof(struct elf_program_hdr32)) != sizeof(struct elf_program_hdr32)) {
                 err = 1;
+            }
             phoff += sizeof(struct elf_program_hdr32);
 
             if (err) {
@@ -356,8 +359,9 @@ static cl_error_t cli_elf_ph64(cli_ctx *ctx, fmap_t *map, struct cli_exe_info *e
 
         for (i = 0; i < phnum; i++) {
             err = 0;
-            if (fmap_readn(map, &program_hdr[i], phoff, sizeof(struct elf_program_hdr64)) != sizeof(struct elf_program_hdr64))
+            if (fmap_readn(map, &program_hdr[i], phoff, sizeof(struct elf_program_hdr64)) != sizeof(struct elf_program_hdr64)) {
                 err = 1;
+            }
             phoff += sizeof(struct elf_program_hdr64);
 
             if (err) {
@@ -441,8 +445,9 @@ static int cli_elf_sh32(cli_ctx *ctx, fmap_t *map, struct cli_exe_info *elfinfo,
     }
 
     shoff = file_hdr->e_shoff;
-    if (ctx)
+    if (ctx) {
         cli_dbgmsg("ELF: Section header table offset: %d\n", shoff);
+    }
 
     if (elfinfo) {
         elfinfo->sections = (struct cli_exe_section *)cli_max_calloc(shnum, sizeof(struct cli_exe_section));
@@ -540,8 +545,9 @@ static int cli_elf_sh64(cli_ctx *ctx, fmap_t *map, struct cli_exe_info *elfinfo,
     }
 
     shoff = file_hdr->e_shoff;
-    if (ctx)
+    if (ctx) {
         cli_dbgmsg("ELF: Section header table offset: " STDu64 "\n", shoff);
+    }
 
     if (elfinfo) {
         elfinfo->sections = (struct cli_exe_section *)cli_max_calloc(shnum, sizeof(struct cli_exe_section));
@@ -661,14 +667,17 @@ static void cli_elf_sectionlog(uint32_t sh_type, uint32_t sh_flags)
             cli_dbgmsg("ELF: Section type: Unknown\n");
     }
 
-    if (sh_flags & ELF_SHF_WRITE)
+    if (sh_flags & ELF_SHF_WRITE) {
         cli_dbgmsg("ELF: Section contains writable data\n");
+    }
 
-    if (sh_flags & ELF_SHF_ALLOC)
+    if (sh_flags & ELF_SHF_ALLOC) {
         cli_dbgmsg("ELF: Section occupies memory\n");
+    }
 
-    if (sh_flags & ELF_SHF_EXECINSTR)
+    if (sh_flags & ELF_SHF_EXECINSTR) {
         cli_dbgmsg("ELF: Section contains executable code\n");
+    }
 }
 
 /* Scan function for ELF */

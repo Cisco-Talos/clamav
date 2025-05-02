@@ -102,8 +102,9 @@ static int yc_poly_emulator(cli_ctx *ctx, char *base, unsigned int filesize, cha
                     if (yc_bounds_check(ctx, base, filesize, decryptor_offset, j)) {
                         return 2;
                     }
-                    if (!max_jmp_loop)
+                    if (!max_jmp_loop) {
                         return 2;
+                    }
                     max_jmp_loop--;
                     j = j + decryptor_offset[j];
                     break;
@@ -203,8 +204,9 @@ static int yc_poly_emulator(cli_ctx *ctx, char *base, unsigned int filesize, cha
             }
         }
         cl--;
-        if (yc_bounds_check(ctx, base, filesize, code, i))
+        if (yc_bounds_check(ctx, base, filesize, code, i)) {
             return 2;
+        }
         code[i] = al;
     }
     return 0;
@@ -264,7 +266,9 @@ int yc_decrypt(cli_ctx *ctx, char *fbuf, unsigned int filesize, struct cli_exe_s
             name == 0x6164692E ||     /* .ida */
             name == 0x736C742E ||     /* .tls */
             (name & 0xffff) == 0x4379 /* yC */
-            ) continue;
+        ) {
+            continue;
+        }
         cli_dbgmsg("yC: decrypting sect%d\n", i);
         max_emu = filesize - sections[i].raw;
         if (max_emu > filesize) {

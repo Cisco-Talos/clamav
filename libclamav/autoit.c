@@ -507,8 +507,9 @@ static unsigned int u2a(uint8_t *dest, unsigned int len)
     uint8_t *src = dest;
     unsigned int i, j;
 
-    if (len < 2)
+    if (len < 2) {
         return len;
+    }
 
     if (len > 4 && src[0] == 0xff && src[1] == 0xfe && src[2]) {
         len -= 2;
@@ -517,17 +518,20 @@ static unsigned int u2a(uint8_t *dest, unsigned int len)
         unsigned int cnt = 0;
         j                = (len > 20) ? 20 : (len & ~1);
 
-        for (i = 0; i < j; i += 2)
+        for (i = 0; i < j; i += 2) {
             cnt += (src[i] != 0 && src[i + 1] == 0);
+        }
 
-        if (cnt * 4 < j)
+        if (cnt * 4 < j) {
             return len;
+        }
     }
 
     j = len;
     len >>= 1;
-    for (i = 0; i < j; i += 2)
+    for (i = 0; i < j; i += 2) {
         *dest++ = src[i];
+    }
 
     return len;
 }
@@ -553,10 +557,12 @@ static uint8_t MT_getnext(struct MT *MT)
         MT->items = 624;
         MT->next  = mt;
 
-        for (i = 0; i < 227; i++)
+        for (i = 0; i < 227; i++) {
             mt[i] = ((((mt[i] ^ mt[i + 1]) & 0x7ffffffe) ^ mt[i]) >> 1) ^ ((0 - (mt[i + 1] & 1)) & 0x9908b0df) ^ mt[i + 397];
-        for (; i < 623; i++)
+        }
+        for (; i < 623; i++) {
             mt[i] = ((((mt[i] ^ mt[i + 1]) & 0x7ffffffe) ^ mt[i]) >> 1) ^ ((0 - (mt[i + 1] & 1)) & 0x9908b0df) ^ mt[i - 227];
+        }
         mt[623] = ((((mt[623] ^ mt[0]) & 0x7ffffffe) ^ mt[623]) >> 1) ^ ((0 - (mt[0] & 1)) & 0x9908b0df) ^ mt[i - 227];
     }
 
@@ -575,13 +581,15 @@ static void MT_decrypt(uint8_t *buf, unsigned int size, uint32_t seed)
     uint32_t *mt = MT.mt;
 
     *mt = seed;
-    for (i = 1; i < 624; i++)
+    for (i = 1; i < 624; i++) {
         mt[i] = i + 0x6c078965 * ((mt[i - 1] >> 30) ^ mt[i - 1]);
+    }
     MT.items = 1;
     MT.next  = MT.mt;
 
-    while (size--)
+    while (size--) {
         *buf++ ^= MT_getnext(&MT);
+    }
 }
 
 /*********************
@@ -656,8 +664,9 @@ static cl_error_t ea05(cli_ctx *ctx, const uint8_t *base, char *tmpd)
         goto done;
     }
 
-    for (i = 0; i < 16; i++)
+    for (i = 0; i < 16; i++) {
         m4sum += *base++;
+    }
 
     // While we have not exceeded the max files limit or the max time limit...
     while (CL_SUCCESS == (status = cli_checklimits("autoit", ctx, 0, 0, 0))) {
@@ -960,8 +969,12 @@ static double LAME_fpusht(struct LAME *l)
 
     l->grp1[l->c0] = rolled;
 
-    if (!l->c0--) l->c0 = 16;
-    if (!l->c1--) l->c1 = 16;
+    if (!l->c0--) {
+        l->c0 = 16;
+    }
+    if (!l->c1--) {
+        l->c1 = 16;
+    }
 
     /*   if (l->grp1[l->c0] == l->grp2[0]) { */
     /*     if (!memcmp(l->grp1, (uint32_t *)l + 0x24 - l->c0, 0x44)) */
@@ -991,8 +1004,9 @@ static void LAME_srand(struct LAME *l, uint32_t seed)
     l->c0 = 0;
     l->c1 = 10;
 
-    for (i = 0; i < 9; i++)
+    for (i = 0; i < 9; i++) {
         LAME_fpusht(l);
+    }
 }
 
 static uint8_t LAME_getnext(struct LAME *l)
@@ -1002,10 +1016,11 @@ static uint8_t LAME_getnext(struct LAME *l)
 
     LAME_fpusht(l);
     x = LAME_fpusht(l) * 256.0;
-    if ((int32_t)x < 256)
+    if ((int32_t)x < 256) {
         ret = (uint8_t)x;
-    else
+    } else {
         ret = 0xff;
+    }
     return ret;
 }
 
@@ -1015,8 +1030,9 @@ static void LAME_decrypt(uint8_t *cypher, uint32_t size, uint16_t seed)
     /* mt_srand_timewrap(struct srand_struc bufDC); */
 
     LAME_srand(&lame, (uint32_t)seed);
-    while (size--)
+    while (size--) {
         *cypher++ ^= LAME_getnext(&lame);
+    }
 }
 
 /*********************
@@ -1419,7 +1435,7 @@ static int ea06(cli_ctx *ctx, const uint8_t *base, char *tmpd)
 
                         if (fpu_words == FPU_ENDIAN_LITTLE) {
                             snprintf((char *)&buf[UNP.cur_output], 39, "%g ", *(double *)&UNP.outputbuf[UNP.cur_input]);
-                        } else
+                        } else {
                             do {
                                 double x;
                                 uint8_t *j = (uint8_t *)&x;
@@ -1431,6 +1447,7 @@ static int ea06(cli_ctx *ctx, const uint8_t *base, char *tmpd)
 
                                 snprintf((char *)&buf[UNP.cur_output], 39, "%g ", x); /* FIXME: check */
                             } while (0);
+                        }
                         buf[UNP.cur_output + 38] = ' ';
                         buf[UNP.cur_output + 39] = '\0';
                         UNP.cur_output += strlen((char *)&buf[UNP.cur_output]);
@@ -1635,32 +1652,37 @@ cl_error_t cli_scanautoit(cli_ctx *ctx, off_t offset)
 
     cli_dbgmsg("in scanautoit()\n");
 
-    if (!(version = fmap_need_off_once(map, offset, sizeof(*version))))
+    if (!(version = fmap_need_off_once(map, offset, sizeof(*version)))) {
         return CL_EREAD;
+    }
 
-    if (!(tmpd = cli_gentemp_with_prefix(ctx->sub_tmpdir, "autoit-tmp")))
+    if (!(tmpd = cli_gentemp_with_prefix(ctx->sub_tmpdir, "autoit-tmp"))) {
         return CL_ETMPDIR;
+    }
     if (mkdir(tmpd, 0700)) {
         cli_dbgmsg("autoit: Can't create temporary directory %s\n", tmpd);
         free(tmpd);
         return CL_ETMPDIR;
     }
-    if (ctx->engine->keeptmp)
+    if (ctx->engine->keeptmp) {
         cli_dbgmsg("autoit: Extracting files to %s\n", tmpd);
+    }
 
     switch (*version) {
         case 0x35:
             status = ea05(ctx, version + 1, tmpd);
             break;
         case 0x36:
-            if (fpu_words == FPU_ENDIAN_INITME)
+            if (fpu_words == FPU_ENDIAN_INITME) {
                 fpu_words = get_fpu_endian();
+            }
             if (fpu_words == FPU_ENDIAN_UNKNOWN) {
                 cli_dbgmsg("autoit: EA06 support not available"
                            "(cannot extract ea06 doubles, unknown floating double representation).\n");
                 status = CL_CLEAN;
-            } else
+            } else {
                 status = ea06(ctx, version + 1, tmpd);
+            }
             break;
         default:
             /* NOT REACHED */
@@ -1668,8 +1690,9 @@ cl_error_t cli_scanautoit(cli_ctx *ctx, off_t offset)
             status = CL_CLEAN;
     }
 
-    if (!ctx->engine->keeptmp)
+    if (!ctx->engine->keeptmp) {
         cli_rmdirs(tmpd);
+    }
 
     free(tmpd);
     return status;

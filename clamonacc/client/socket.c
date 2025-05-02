@@ -80,9 +80,9 @@ int onas_get_sockd()
 
     int sockd = 0;
     if (onas_sock.written && (sockd = socket(AF_UNIX, SOCK_STREAM, 0)) >= 0) {
-        if (connect(sockd, (struct sockaddr *)&onas_sock.sock, sizeof(onas_sock.sock)) == 0)
+        if (connect(sockd, (struct sockaddr *)&onas_sock.sock, sizeof(onas_sock.sock)) == 0) {
             return sockd;
-        else {
+        } else {
             logg(LOGG_ERROR, "ClamSock: Could not connect to clamd on LocalSocket \n");
             closesocket(sockd);
         }

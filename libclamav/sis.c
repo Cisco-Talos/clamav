@@ -74,15 +74,17 @@ cl_error_t cli_scansis(cli_ctx *ctx)
 
     cli_dbgmsg("in scansis()\n");
 
-    if (!(tmpd = cli_gentemp_with_prefix(ctx->sub_tmpdir, "sis-tmp")))
+    if (!(tmpd = cli_gentemp_with_prefix(ctx->sub_tmpdir, "sis-tmp"))) {
         return CL_ETMPDIR;
+    }
     if (mkdir(tmpd, 0700)) {
         cli_dbgmsg("SIS: Can't create temporary directory %s\n", tmpd);
         free(tmpd);
         return CL_ETMPDIR;
     }
-    if (ctx->engine->keeptmp)
+    if (ctx->engine->keeptmp) {
         cli_dbgmsg("SIS: Extracting files to %s\n", tmpd);
+    }
 
     if (fmap_readn(map, &uid, 0, SIZEOF_HEADER_UUIDS) != SIZEOF_HEADER_UUIDS) {
         cli_dbgmsg("SIS: unable to read UIDs\n");
@@ -101,8 +103,9 @@ cl_error_t cli_scansis(cli_ctx *ctx)
         i = CL_EFORMAT;
     }
 
-    if (!ctx->engine->keeptmp)
+    if (!ctx->engine->keeptmp) {
         cli_rmdirs(tmpd);
+    }
 
     free(tmpd);
     return i;
@@ -188,8 +191,12 @@ static char *getsistring(fmap_t *map, uint32_t ptr, uint32_t len)
     char *name;
     uint32_t i;
 
-    if (!len) return NULL;
-    if (len > 400) len = 400;
+    if (!len) {
+        return NULL;
+    }
+    if (len > 400) {
+        len = 400;
+    }
     name = cli_max_malloc(len + 1);
     if (!name) {
         cli_dbgmsg("SIS: OOM\n");
@@ -200,7 +207,9 @@ static char *getsistring(fmap_t *map, uint32_t ptr, uint32_t len)
         free(name);
         return NULL;
     }
-    for (i = 0; i < len; i += 2) name[i / 2] = name[i];
+    for (i = 0; i < len; i += 2) {
+        name[i / 2] = name[i];
+    }
     name[i / 2] = '\0';
     return name;
 }
@@ -307,8 +316,9 @@ static cl_error_t real_scansis(cli_ctx *ctx, const char *tmpd)
         cli_dbgmsg("SIS: OOM\n");
         goto done;
     }
-    for (i = 0; i < sis.langs; i++)
+    for (i = 0; i < sis.langs; i++) {
         alangs[i] = (size_t)EC16(llangs[i]) < MAXLANG ? sislangs[EC16(llangs[i])] : sislangs[0];
+    }
 
     if (!sis.pnames) {
         cli_dbgmsg("SIS: Application without a name?\n");
@@ -466,7 +476,9 @@ static cl_error_t real_scansis(cli_ctx *ctx, const char *tmpd)
                             continue;
                         }
 
-                        if (cli_checklimits("sis", ctx, lens[j], 0, 0) != CL_CLEAN) continue;
+                        if (cli_checklimits("sis", ctx, lens[j], 0, 0) != CL_CLEAN) {
+                            continue;
+                        }
                         cli_dbgmsg("\tUnpacking lang#%d - ptr:%x compressed size:%x original (decompressed) size:%x\n", j, ptrs[j], lens[j], olens[j]);
 
                         if (!(comp = fmap_need_off_once(map, ptrs[j], lens[j]))) {
@@ -478,11 +490,11 @@ static cl_error_t real_scansis(cli_ctx *ctx, const char *tmpd)
                             /*
                              * The compressed flag was set. Try to decompress it.
                              */
-                            if (olens[j] <= lens[j] * 3 && cli_checklimits("sis", ctx, lens[j] * 3, 0, 0) == CL_CLEAN)
+                            if (olens[j] <= lens[j] * 3 && cli_checklimits("sis", ctx, lens[j] * 3, 0, 0) == CL_CLEAN) {
                                 olen = lens[j] * 3;
-                            else if (cli_checklimits("sis", ctx, olens[j], 0, 0) == CL_CLEAN)
+                            } else if (cli_checklimits("sis", ctx, olens[j], 0, 0) == CL_CLEAN) {
                                 olen = olens[j];
-                            else {
+                            } else {
                                 continue;
                             }
 
@@ -662,7 +674,9 @@ static inline int getd(struct SISTREAM *s, uint32_t *v)
 static inline int getsize(struct SISTREAM *s)
 {
     uint32_t *fsize = &s->fsize[s->level];
-    if (getd(s, fsize) || !*fsize || (*fsize) >> 31 || (s->level && *fsize > s->fsize[s->level - 1] * 2)) return 1;
+    if (getd(s, fsize) || !*fsize || (*fsize) >> 31 || (s->level && *fsize > s->fsize[s->level - 1] * 2)) {
+        return 1;
+    }
     /* To handle crafted archives we allow the content to overflow the container but only up to 2 times the container size */
     s->fnext[s->level] = s->pos - s->sleft + *fsize;
     return 0;
@@ -671,13 +685,15 @@ static inline int getsize(struct SISTREAM *s)
 static inline int getfield(struct SISTREAM *s, uint32_t *field)
 {
     int ret;
-    if (!(ret = getd(s, field)))
+    if (!(ret = getd(s, field))) {
         ret = getsize(s);
+    }
     if (!ret) {
-        if (*field < T_MAXVALUE)
+        if (*field < T_MAXVALUE) {
             cli_dbgmsg("SIS: %d:Got %s(%x) field with size %x\n", s->level, sisfields[*field], *field, s->fsize[s->level]);
-        else
+        } else {
             cli_dbgmsg("SIS: %d:Got invalid(%x) field with size %x\n", s->level, *field, s->fsize[s->level]);
+        }
     }
     return ret;
 }
@@ -686,12 +702,13 @@ static inline int skip(struct SISTREAM *s, uint32_t size)
 {
     long seekto;
     cli_dbgmsg("SIS: skipping %x\n", size);
-    if (s->sleft >= size)
+    if (s->sleft >= size) {
         s->sleft -= size;
-    else {
+    } else {
         seekto = size - s->sleft;
-        if (seekto < 0) /* in case sizeof(long)==sizeof(uint32_t) */
+        if (seekto < 0) { /* in case sizeof(long)==sizeof(uint32_t) */
             return 1;
+        }
         s->pos += seekto;
         /*     s->sleft = s->smax = fread(s->buff,1,BUFSIZ,s->f); */
         s->sleft = s->smax = 0;
@@ -726,43 +743,57 @@ static cl_error_t real_scansis9x(cli_ctx *ctx, const char *tmpd)
     s->sleft = 0;
     s->level = 0;
 
-    if (getfield(s, &field) || field != T_CONTENTS)
+    if (getfield(s, &field) || field != T_CONTENTS) {
         return CL_CLEAN;
+    }
     s->level++;
 
     for (i = 0; i < 3;) {
-        if (getfield(s, &field)) return CL_CLEAN;
+        if (getfield(s, &field)) {
+            return CL_CLEAN;
+        }
         for (; i < 3; i++) {
             if (field == optst[i]) {
-                if (skipthis(s)) return CL_CLEAN;
+                if (skipthis(s)) {
+                    return CL_CLEAN;
+                }
                 i++;
                 break;
             }
         }
     }
-    if (field != T_COMPRESSED) return CL_CLEAN;
+    if (field != T_COMPRESSED) {
+        return CL_CLEAN;
+    }
 
     i = 0;
     while (1) { /* 1DATA */
-        if (getfield(s, &field) || field != T_DATA) break;
+        if (getfield(s, &field) || field != T_DATA) {
+            break;
+        }
 
         s->level++;
         while (1) { /* DATA::ARRAY */
             uint32_t atype;
-            if (getfield(s, &field) || field != T_ARRAY || getd(s, &atype) || atype != T_DATAUNIT || s->fsize[s->level] < 4) break;
+            if (getfield(s, &field) || field != T_ARRAY || getd(s, &atype) || atype != T_DATAUNIT || s->fsize[s->level] < 4) {
+                break;
+            }
             s->fsize[s->level] -= 4;
 
             s->level++;
             while (s->fsize[s->level - 1] && !getsize(s)) { /* FOREACH DATA::ARRAY::DATAUNITs */
                 cli_dbgmsg("SIS: %d:Got dataunit element with size %x\n", s->level, s->fsize[s->level]);
-                if (ALIGN4(s->fsize[s->level]) < s->fsize[s->level - 1])
+                if (ALIGN4(s->fsize[s->level]) < s->fsize[s->level - 1]) {
                     s->fsize[s->level - 1] -= ALIGN4(s->fsize[s->level]);
-                else
+                } else {
                     s->fsize[s->level - 1] = 0;
+                }
 
                 s->level++;
                 while (1) { /* DATA::ARRAY::DATAUNIT[x]::ARRAY */
-                    if (getfield(s, &field) || field != T_ARRAY || getd(s, &atype) || atype != T_FILEDATA || s->fsize[s->level] < 4) break;
+                    if (getfield(s, &field) || field != T_ARRAY || getd(s, &atype) || atype != T_FILEDATA || s->fsize[s->level] < 4) {
+                        break;
+                    }
                     s->fsize[s->level] -= 4;
 
                     s->level++;
@@ -774,14 +805,17 @@ static cl_error_t real_scansis9x(cli_ctx *ctx, const char *tmpd)
                         int fd;
 
                         cli_dbgmsg("SIS: %d:Got filedata element with size %x\n", s->level, s->fsize[s->level]);
-                        if (ALIGN4(s->fsize[s->level]) < s->fsize[s->level - 1])
+                        if (ALIGN4(s->fsize[s->level]) < s->fsize[s->level - 1]) {
                             s->fsize[s->level - 1] -= ALIGN4(s->fsize[s->level]);
-                        else
+                        } else {
                             s->fsize[s->level - 1] = 0;
+                        }
 
                         s->level++;
                         while (1) { /* DATA::ARRAY::DATAUNIT[x]::ARRAY::FILEDATA[x]::COMPRESSED */
-                            if (getfield(s, &field) || field != T_COMPRESSED || getd(s, &field) || getd(s, &usize) || getd(s, &usizeh) || usizeh) break;
+                            if (getfield(s, &field) || field != T_COMPRESSED || getd(s, &field) || getd(s, &usize) || getd(s, &usizeh) || usizeh) {
+                                break;
+                            }
                             s->fsize[s->level] -= 12;
                             cli_dbgmsg("SIS: File is%s compressed - size %x -> %x\n", (field) ? "" : " not", s->fsize[s->level], usize);
                             snprintf(tempf, 1024, "%s" PATHSEP "sis9x%02d", tmpd, i++);
@@ -789,8 +823,12 @@ static cl_error_t real_scansis9x(cli_ctx *ctx, const char *tmpd)
                             s->pos -= (long)s->sleft;
                             s->sleft = s->smax = 0;
 
-                            if (cli_checklimits("sis", ctx, ALIGN4(s->fsize[s->level]), 0, 0) != CL_CLEAN) break;
-                            if (!(src = cli_max_malloc(ALIGN4(s->fsize[s->level])))) break;
+                            if (cli_checklimits("sis", ctx, ALIGN4(s->fsize[s->level]), 0, 0) != CL_CLEAN) {
+                                break;
+                            }
+                            if (!(src = cli_max_malloc(ALIGN4(s->fsize[s->level])))) {
+                                break;
+                            }
 
                             len = ALIGN4(s->fsize[s->level]);
                             if ((uint32_t)fmap_readn(s->map, src, s->pos, len) != len) {
@@ -802,11 +840,11 @@ static cl_error_t real_scansis9x(cli_ctx *ctx, const char *tmpd)
                             if (field) { /* compressed */
                                 int zresult;
 
-                                if (usize <= s->fsize[s->level] * 3 && cli_checklimits("sis", ctx, s->fsize[s->level] * 3, 0, 0) == CL_CLEAN)
+                                if (usize <= s->fsize[s->level] * 3 && cli_checklimits("sis", ctx, s->fsize[s->level] * 3, 0, 0) == CL_CLEAN) {
                                     uusize = s->fsize[s->level] * 3;
-                                else if (cli_checklimits("sis", ctx, usize, 0, 0) == CL_CLEAN)
+                                } else if (cli_checklimits("sis", ctx, usize, 0, 0) == CL_CLEAN) {
                                     uusize = usize;
-                                else {
+                                } else {
                                     free(src);
                                     break;
                                 }
@@ -823,10 +861,11 @@ static cl_error_t real_scansis9x(cli_ctx *ctx, const char *tmpd)
                                     free(dst);
                                     break;
                                 }
-                                if ((uLongf)usize != uusize)
+                                if ((uLongf)usize != uusize) {
                                     cli_dbgmsg("SIS: Warning: expected size %lx but got %lx\n", (uLongf)usize, uusize);
-                                else
+                                } else {
                                     cli_dbgmsg("SIS: File successfully inflated\n");
+                                }
                             } else { /* not compressed */
                                 dst    = src;
                                 uusize = s->fsize[s->level];

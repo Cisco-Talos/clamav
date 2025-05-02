@@ -252,8 +252,9 @@ ole2_list_pop(ole2_list_t *list)
 
 int ole2_list_delete(ole2_list_t *list)
 {
-    while (!ole2_list_is_empty(list))
+    while (!ole2_list_is_empty(list)) {
         ole2_list_pop(list);
+    }
     return CL_SUCCESS;
 }
 
@@ -375,8 +376,9 @@ print_ole2_property(property_t *property)
     buf = get_property_name(property->name, property->name_size);
     snprintf(spam, sizeof(spam), "OLE2: %s ", buf ? buf : "<noname>");
     spam[sizeof(spam) - 1] = '\0';
-    if (buf)
+    if (buf) {
         free(buf);
+    }
     switch (property->type) {
         case 2:
             strncat(spam, " [file] ", sizeof(spam) - 1 - strlen(spam));
@@ -973,8 +975,9 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
         }
 
         ole2_listmsg("printing ole2 property\n");
-        if (dir)
+        if (dir) {
             print_ole2_property(&prop_block[idx]);
+        }
 
         ole2_listmsg("checking bitset\n");
         /* Check we aren't in a loop */
@@ -1091,8 +1094,9 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
                         return CL_BREAK;
                     }
                     cli_dbgmsg("OLE2 dir entry: %s\n", dirname);
-                } else
+                } else {
                     dirname = NULL;
+                }
                 if ((int)(prop_block[idx].child) != -1) {
                     ret = ole2_walk_property_tree(hdr, dirname, prop_block[idx].child, handler, rec_level + 1, file_count, ctx, scansize, handler_ctx, pEncryptionStatus);
                     if (ret != CL_SUCCESS) {
@@ -1559,11 +1563,13 @@ static cl_error_t handler_enum(ole2_header_t *hdr, property_t *prop, const char 
     }
 
     if (!hdr->has_vba) {
-        if (!name)
+        if (!name) {
             name = cli_ole2_get_property_name2(prop->name, prop->name_size);
+        }
         if (name) {
-            if (!strcmp(name, "_vba_project") || !strcmp(name, "powerpoint document") || !strcmp(name, "worddocument") || !strcmp(name, "_1_ole10native"))
+            if (!strcmp(name, "_vba_project") || !strcmp(name, "powerpoint document") || !strcmp(name, "worddocument") || !strcmp(name, "_1_ole10native")) {
                 hdr->has_vba = 1;
+            }
         }
     }
 
@@ -1581,11 +1587,13 @@ static cl_error_t handler_enum(ole2_header_t *hdr, property_t *prop, const char 
 
                 /* reading safety checks; do-while used for breaks */
                 do {
-                    if (prop->size == 0)
+                    if (prop->size == 0) {
                         break;
+                    }
 
-                    if (prop->start_block > hdr->max_block_no)
+                    if (prop->start_block > hdr->max_block_no) {
                         break;
+                    }
 
                     /* read the header block (~256 bytes) */
                     offset = 0;
@@ -1597,8 +1605,9 @@ static cl_error_t handler_enum(ole2_header_t *hdr, property_t *prop, const char 
                                  (prop->start_block % (1 << (hdr->log2_big_block_size - hdr->log2_small_block_size)));
 
                         /* reading safety */
-                        if (offset + 40 >= 1 << hdr->log2_big_block_size)
+                        if (offset + 40 >= 1 << hdr->log2_big_block_size) {
                             break;
+                        }
                     } else {
                         if (!ole2_read_block(hdr, hwp_check, 1 << hdr->log2_big_block_size, prop->start_block)) {
                             break;
@@ -1674,8 +1683,9 @@ likely_mso_stream(int fd)
         return 0;
     }
 
-    if (check[0] == 0x78 && check[1] == 0x9C)
+    if (check[0] == 0x78 && check[1] == 0x9C) {
         return 1;
+    }
 
     return 0;
 }
@@ -1760,8 +1770,9 @@ static cl_error_t scan_mso_stream(int fd, cli_ctx *ctx)
                 ret = CL_EUNPACK;
                 goto mso_end;
             }
-            if (bytes_read == 0)
+            if (bytes_read == 0) {
                 break;
+            }
 
             zstrm.avail_in = bytes_read;
             off_in += bytes_read;
@@ -1769,8 +1780,9 @@ static cl_error_t scan_mso_stream(int fd, cli_ctx *ctx)
         zret  = inflate(&zstrm, Z_SYNC_FLUSH);
         count = FILEBUFF - zstrm.avail_out;
         if (count) {
-            if (cli_checklimits("MSO", ctx, outsize + count, 0, 0) != CL_SUCCESS)
+            if (cli_checklimits("MSO", ctx, outsize + count, 0, 0) != CL_SUCCESS) {
                 break;
+            }
             if (cli_writen(ofd, outbuf, count) != count) {
                 cli_errmsg("scan_mso_stream: Can't write to file %s\n", tmpname);
                 ret = CL_EWRITE;
@@ -1808,12 +1820,15 @@ static cl_error_t scan_mso_stream(int fd, cli_ctx *ctx)
     /* clean-up */
 mso_end:
     zret = inflateEnd(&zstrm);
-    if (zret != Z_OK)
+    if (zret != Z_OK) {
         ret = CL_EUNPACK;
+    }
     close(ofd);
-    if (!ctx->engine->keeptmp)
-        if (cli_unlink(tmpname))
+    if (!ctx->engine->keeptmp) {
+        if (cli_unlink(tmpname)) {
             ret = CL_EUNLINK;
+        }
+    }
     free(tmpname);
     funmap(input);
     return ret;

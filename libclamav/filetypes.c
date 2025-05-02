@@ -151,9 +151,11 @@ cli_file_t cli_ftcode(const char *name)
 {
     unsigned int i;
 
-    for (i = 0; ftmap[i].name; i++)
-        if (!strcmp(ftmap[i].name, name))
+    for (i = 0; ftmap[i].name; i++) {
+        if (!strcmp(ftmap[i].name, name)) {
             return ftmap[i].code;
+        }
+    }
 
     return CL_TYPE_ERROR;
 }
@@ -162,9 +164,11 @@ const char *cli_ftname(cli_file_t code)
 {
     unsigned int i;
 
-    for (i = 0; ftmap[i].name; i++)
-        if (ftmap[i].code == code)
+    for (i = 0; ftmap[i].name; i++) {
+        if (ftmap[i].code == code) {
             return ftmap[i].name;
+        }
+    }
 
     return NULL;
 }
@@ -412,11 +416,13 @@ cli_file_t cli_determine_fmap_type(fmap_t *map, const struct cl_engine *engine, 
          * misidentified as BINARY_DATA by cli_compare_ftm_file()
          */
         root = engine->root[0];
-        if (!root)
+        if (!root) {
             return ret;
+        }
 
-        if (cli_ac_initdata(&mdata, root->ac_partsigs, root->ac_lsigs, root->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN))
+        if (cli_ac_initdata(&mdata, root->ac_partsigs, root->ac_lsigs, root->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN)) {
             return ret;
+        }
 
         scan_ret = (cli_file_t)cli_ac_scanbuff(buff, bread, NULL, NULL, NULL, engine->root[0], &mdata, 0, ret, NULL, AC_SCAN_FT, NULL);
 
@@ -432,15 +438,17 @@ cli_file_t cli_determine_fmap_type(fmap_t *map, const struct cl_engine *engine, 
              (scan_ret != CL_TYPE_7ZSFX))) {
             ret = scan_ret;
         } else {
-            if (cli_ac_initdata(&mdata, root->ac_partsigs, root->ac_lsigs, root->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN))
+            if (cli_ac_initdata(&mdata, root->ac_partsigs, root->ac_lsigs, root->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN)) {
                 return ret;
+            }
 
             decoded = (unsigned char *)cli_utf16toascii((char *)buff, bread);
             if (decoded) {
                 scan_ret = (cli_file_t)cli_ac_scanbuff(decoded, bread / 2, NULL, NULL, NULL, engine->root[0], &mdata, 0, CL_TYPE_TEXT_ASCII, NULL, AC_SCAN_FT, NULL);
                 free(decoded);
-                if (scan_ret == CL_TYPE_HTML)
+                if (scan_ret == CL_TYPE_HTML) {
                     ret = CL_TYPE_HTML_UTF16;
+                }
             }
             cli_ac_freedata(&mdata);
 
@@ -468,8 +476,9 @@ cli_file_t cli_determine_fmap_type(fmap_t *map, const struct cl_engine *engine, 
                      * However when detecting whether a file is HTML or not, we need exact conversion.
                      * (just eliminating zeros and matching would introduce false positives */
                     if (encoding_normalize_toascii(&in_area, encoding, &out_area) >= 0 && out_area.length > 0) {
-                        if (cli_ac_initdata(&mdata, root->ac_partsigs, root->ac_lsigs, root->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN))
+                        if (cli_ac_initdata(&mdata, root->ac_partsigs, root->ac_lsigs, root->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN)) {
                             return ret;
+                        }
 
                         if (out_area.length > 0) {
                             scan_ret = (cli_file_t)cli_ac_scanbuff(decodedbuff, out_area.length, NULL, NULL, NULL, engine->root[0], &mdata, 0, 0, NULL, AC_SCAN_FT, NULL); /* FIXME: can we use CL_TYPE_TEXT_ASCII instead of 0? */

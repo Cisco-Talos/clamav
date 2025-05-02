@@ -152,8 +152,9 @@ int notify(const char *cfgfile)
     char buff[20];
     int sockd, bread;
 
-    if ((sockd = clamd_connect(cfgfile, "NotifyClamd")) < 0)
+    if ((sockd = clamd_connect(cfgfile, "NotifyClamd")) < 0) {
         return 1;
+    }
 
     if (sendln(sockd, "RELOAD", 7) < 0) {
         logg(LOGG_ERROR, "NotifyClamd: Could not write to clamd socket: %s\n", strerror(errno));

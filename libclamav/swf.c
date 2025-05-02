@@ -234,16 +234,18 @@ static cl_error_t scanzws(cli_ctx *ctx, struct swf_file_hdr *hdr)
                 free(tmpname);
                 return CL_EUNPACK;
             }
-            if (0 == n_read)
+            if (0 == n_read) {
                 break;
+            }
             lz.avail_in = n_read;
             offset += n_read;
         }
         lret  = cli_LzmaDecode(&lz);
         count = FILEBUFF - lz.avail_out;
         if (count) {
-            if (cli_checklimits("SWF", ctx, outsize + count, 0, 0) != CL_SUCCESS)
+            if (cli_checklimits("SWF", ctx, outsize + count, 0, 0) != CL_SUCCESS) {
                 break;
+            }
             if (cli_writen(fd, outbuff, count) != count) {
                 cli_errmsg("scanzws: Can't write to file %s\n", tmpname);
                 cli_LzmaShutdown(&lz);
@@ -367,16 +369,18 @@ static cl_error_t scancws(cli_ctx *ctx, struct swf_file_hdr *hdr)
                 free(tmpname);
                 return CL_EUNPACK;
             }
-            if (0 == n_read)
+            if (0 == n_read) {
                 break;
+            }
             stream.avail_in = n_read;
             offset += n_read;
         }
         zret  = inflate(&stream, Z_SYNC_FLUSH);
         count = FILEBUFF - stream.avail_out;
         if (count) {
-            if (cli_checklimits("SWF", ctx, outsize + count, 0, 0) != CL_SUCCESS)
+            if (cli_checklimits("SWF", ctx, outsize + count, 0, 0) != CL_SUCCESS) {
                 break;
+            }
             if (cli_writen(fd, outbuff, count) != count) {
                 cli_errmsg("scancws: Can't write to file %s\n", tmpname);
                 inflateEnd(&stream);
@@ -441,9 +445,11 @@ static const char *tagname(tag_id id)
 {
     unsigned int i;
 
-    for (i = 0; tag_names[i].name; i++)
-        if (tag_names[i].id == id)
+    for (i = 0; tag_names[i].name; i++) {
+        if (tag_names[i].id == id) {
             return tag_names[i].name;
+        }
+    }
     return NULL;
 }
 
@@ -515,8 +521,9 @@ cl_error_t cli_scanswf(cli_ctx *ctx)
     while (offset < map->len) {
         GETWORD(tag_hdr);
         tag_type = tag_hdr >> 6;
-        if (tag_type == 0)
+        if (tag_type == 0) {
             break;
+        }
         tag_len = tag_hdr & 0x3f;
         if (tag_len == 0x3f)
             GETDWORD(tag_len);
@@ -549,20 +556,27 @@ cl_error_t cli_scanswf(cli_ctx *ctx)
             case TAG_FILEATTRIBUTES:
                 GETDWORD(val);
                 cli_dbgmsg("SWF: File attributes:\n");
-                if (val & SWF_ATTR_USENETWORK)
+                if (val & SWF_ATTR_USENETWORK) {
                     cli_dbgmsg("    * Use network\n");
-                if (val & SWF_ATTR_RELATIVEURLS)
+                }
+                if (val & SWF_ATTR_RELATIVEURLS) {
                     cli_dbgmsg("    * Relative URLs\n");
-                if (val & SWF_ATTR_SUPPRESSCROSSDOMAINCACHE)
+                }
+                if (val & SWF_ATTR_SUPPRESSCROSSDOMAINCACHE) {
                     cli_dbgmsg("    * Suppress cross domain cache\n");
-                if (val & SWF_ATTR_ACTIONSCRIPT3)
+                }
+                if (val & SWF_ATTR_ACTIONSCRIPT3) {
                     cli_dbgmsg("    * ActionScript 3.0\n");
-                if (val & SWF_ATTR_HASMETADATA)
+                }
+                if (val & SWF_ATTR_HASMETADATA) {
                     cli_dbgmsg("    * Has metadata\n");
-                if (val & SWF_ATTR_USEDIRECTBLIT)
+                }
+                if (val & SWF_ATTR_USEDIRECTBLIT) {
                     cli_dbgmsg("    * Use hardware acceleration\n");
-                if (val & SWF_ATTR_USEGPU)
+                }
+                if (val & SWF_ATTR_USEGPU) {
                     cli_dbgmsg("    * Use GPU\n");
+                }
                 break;
 
             default:

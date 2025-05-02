@@ -250,8 +250,9 @@ bool crtmgr_add(crtmgr *m, cli_crt *x509)
 
     if (x509->name) {
         i->name = strdup(x509->name);
-        if (!i->name)
+        if (!i->name) {
             goto done;
+        }
     } else {
         i->name = NULL;
     }
@@ -303,15 +304,18 @@ void crtmgr_del(crtmgr *m, cli_crt *x509)
     cli_crt *i;
     for (i = m->crts; i; i = i->next) {
         if (i == x509) {
-            if (i->prev)
+            if (i->prev) {
                 i->prev->next = i->next;
-            else
+            } else {
                 m->crts = i->next;
-            if (i->next)
+            }
+            if (i->next) {
                 i->next->prev = i->prev;
+            }
             cli_crt_clear(x509);
-            if ((x509->name))
+            if ((x509->name)) {
                 free(x509->name);
+            }
             free(x509);
             m->items--;
             return;
@@ -321,8 +325,9 @@ void crtmgr_del(crtmgr *m, cli_crt *x509)
 
 void crtmgr_free(crtmgr *m)
 {
-    while (m->items)
+    while (m->items) {
         crtmgr_del(m, m->crts);
+    }
 }
 
 static cl_error_t _padding_check_PKCS1_type_1(uint8_t **to, int *tlen,
@@ -341,8 +346,9 @@ static cl_error_t _padding_check_PKCS1_type_1(uint8_t **to, int *tlen,
      * D  - data.
      */
 
-    if (num < 11) /* RSA_PKCS1_PADDING_SIZE */
+    if (num < 11) { /* RSA_PKCS1_PADDING_SIZE */
         return CL_EPARSE;
+    }
 
     /* Accept inputs with and without the leading 0-byte. */
     if (num == flen) {
@@ -408,12 +414,14 @@ static cl_error_t crtmgr_get_recov_data(BIGNUM *sig, cli_crt *x509,
 
     keylen = BN_num_bytes(x509->n);
     bnctx  = BN_CTX_new();
-    if (!bnctx)
+    if (!bnctx) {
         goto done;
+    }
 
     x = BN_new();
-    if (!x)
+    if (!x) {
         goto done;
+    }
 
     CLI_MALLOC_OR_GOTO_DONE(d, keylen);
 
@@ -474,8 +482,9 @@ static int crtmgr_rsa_verify(cli_crt *x509, BIGNUM *sig, cli_crt_hashtype hashty
     }
 
     ret = crtmgr_get_recov_data(sig, x509, &buff, &d, &len);
-    if (ret != CL_SUCCESS)
+    if (ret != CL_SUCCESS) {
         return 1;
+    }
 
     do {
         j = 0;
@@ -606,8 +615,9 @@ cli_crt *crtmgr_verify_crt(crtmgr *m, cli_crt *x509)
             !memcmp(i->subject, x509->issuer, sizeof(i->subject)) &&
             !crtmgr_rsa_verify(i, x509->sig, x509->hashtype, x509->tbshash)) {
             int curscore;
-            if ((x509->codeSign & i->codeSign) == x509->codeSign && (x509->timeSign & i->timeSign) == x509->timeSign)
+            if ((x509->codeSign & i->codeSign) == x509->codeSign && (x509->timeSign & i->timeSign) == x509->timeSign) {
                 return i;
+            }
             possible++;
             curscore = (x509->codeSign & i->codeSign) + (x509->timeSign & i->timeSign);
             if (curscore > score) {
@@ -636,16 +646,19 @@ cli_crt *crtmgr_verify_pkcs7(crtmgr *m, const uint8_t *issuer, const uint8_t *se
     }
 
     sig = BN_new();
-    if (!sig)
+    if (!sig) {
         return NULL;
+    }
 
     BN_bin2bn(signature, signature_len, sig);
 
     for (i = m->crts; i; i = i->next) {
-        if (vrfytype == VRFY_CODE && !i->codeSign)
+        if (vrfytype == VRFY_CODE && !i->codeSign) {
             continue;
-        if (vrfytype == VRFY_TIME && !i->timeSign)
+        }
+        if (vrfytype == VRFY_TIME && !i->timeSign) {
             continue;
+        }
         if (!memcmp(i->issuer, issuer, sizeof(i->issuer)) &&
             !memcmp(i->serial, serial, sizeof(i->serial))) {
             if (!crtmgr_rsa_verify(i, sig, hashtype, refhash)) {

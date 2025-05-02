@@ -86,12 +86,18 @@ static inline char get_char_at_pos_with_skip(const struct pre_fixup_info *info, 
     cli_dbgmsg("calc_pos_with_skip: skip:%llu, %llu - %llu \"%s\",\"%s\"\n", (long long unsigned)pos, (long long unsigned)info->host_start,
                (long long unsigned)info->host_end, str, buffer);
     pos += info->host_start;
-    while (str[realpos] && !isalnum(str[realpos])) realpos++;
-    for (; str[realpos] && (pos > 0); pos--) {
-        while (str[realpos] == ' ') realpos++;
+    while (str[realpos] && !isalnum(str[realpos])) {
         realpos++;
     }
-    while (str[realpos] == ' ') realpos++;
+    for (; str[realpos] && (pos > 0); pos--) {
+        while (str[realpos] == ' ') {
+            realpos++;
+        }
+        realpos++;
+    }
+    while (str[realpos] == ' ') {
+        realpos++;
+    }
     cli_dbgmsg("calc_pos_with_skip:%s\n", str + realpos);
     return (pos > 0 && !str[realpos]) ? '\0' : str[realpos > 0 ? realpos - 1 : 0];
 }
@@ -101,8 +107,9 @@ static int validate_subdomain(const struct regex_list *regex, const struct pre_f
     char c;
     size_t match_len;
 
-    if (!regex || !regex->pattern)
+    if (!regex || !regex->pattern) {
         return 0;
+    }
     match_len = strlen(regex->pattern);
     if (((c = get_char_at_pos_with_skip(pre_fixup, buffer, buffer_len + 1)) == ' ' || c == '\0' || c == '/' || c == '?') &&
         (match_len == buffer_len || /* full match */
@@ -110,7 +117,9 @@ static int validate_subdomain(const struct regex_list *regex, const struct pre_f
           ((c = get_char_at_pos_with_skip(pre_fixup, buffer, buffer_len - match_len)) == '.' || (c == ' ')))
          /* subdomain matched*/)) {
         /* we have an extra / at the end */
-        if (match_len > 0) match_len--;
+        if (match_len > 0) {
+            match_len--;
+        }
         cli_dbgmsg("Got a match: %s with %s\n", buffer, regex->pattern);
         cli_dbgmsg("Before inserting .: %s\n", orig_real_url);
         if (real_len >= match_len + 1) {
@@ -191,8 +200,12 @@ cl_error_t regex_list_match(struct regex_matcher *matcher, char *real_url, const
     }
 
     /* skip initial '.' inserted by get_host */
-    if (real_url[0] == '.') real_url++;
-    if (display_url[0] == '.') display_url++;
+    if (real_url[0] == '.') {
+        real_url++;
+    }
+    if (display_url[0] == '.') {
+        display_url++;
+    }
     real_len    = strlen(real_url);
     display_len = strlen(display_url);
     buffer_len  = (hostOnly && !is_allow_list_lookup) ? real_len + 1 : real_len + display_len + 1 + 1;
@@ -221,12 +234,14 @@ cl_error_t regex_list_match(struct regex_matcher *matcher, char *real_url, const
     buffer[buffer_len]     = 0;
     cli_dbgmsg("Looking up in regex_list: %s\n", buffer);
 
-    if (CL_SUCCESS != (rc = cli_ac_initdata(&mdata, 0, 0, 0, CLI_DEFAULT_AC_TRACKLEN)))
+    if (CL_SUCCESS != (rc = cli_ac_initdata(&mdata, 0, 0, 0, CLI_DEFAULT_AC_TRACKLEN))) {
         return rc;
+    }
 
     bufrev = cli_safer_strdup(buffer);
-    if (!bufrev)
+    if (!bufrev) {
         return CL_EMEM;
+    }
 
     reverse_string(bufrev);
 
@@ -263,7 +278,9 @@ cl_error_t regex_list_match(struct regex_matcher *matcher, char *real_url, const
             } else {
                 rc = !cli_regexec(regex->preg, buffer, 0, NULL, 0);
             }
-            if (rc) *info = regex->pattern;
+            if (rc) {
+                *info = regex->pattern;
+            }
             regex = regex->nxt;
         }
         if (res) {
@@ -273,10 +290,11 @@ cl_error_t regex_list_match(struct regex_matcher *matcher, char *real_url, const
         }
     }
     free(buffer);
-    if (!rc)
+    if (!rc) {
         cli_dbgmsg("Lookup result: not in regex list\n");
-    else
+    } else {
         cli_dbgmsg("Lookup result: in regex list\n");
+    }
 done:
     return rc;
 }
@@ -342,37 +360,44 @@ static int functionality_level_check(char *line)
     size_t j;
 
     ptmin = strrchr(line, ':');
-    if (!ptmin)
+    if (!ptmin) {
         return CL_SUCCESS;
+    }
 
     ptmin++;
 
     ptmax = strchr(ptmin, '-');
-    if (!ptmax)
+    if (!ptmax) {
         return CL_SUCCESS; /* there is no functionality level specified, so we're ok */
-    else {
+    } else {
         size_t min, max;
         ptmax++;
-        for (j = 0; j + ptmin + 1 < ptmax; j++)
-            if (!isdigit(ptmin[j]))
+        for (j = 0; j + ptmin + 1 < ptmax; j++) {
+            if (!isdigit(ptmin[j])) {
                 return CL_SUCCESS; /* not numbers, not functionality level */
-        for (j = 0; j < strlen(ptmax); j++)
-            if (!isdigit(ptmax[j]))
+            }
+        }
+        for (j = 0; j < strlen(ptmax); j++) {
+            if (!isdigit(ptmax[j])) {
                 return CL_SUCCESS; /* see above */
+            }
+        }
         ptmax[-1] = '\0';
         min       = atoi(ptmin);
-        if (strlen(ptmax) == 0)
+        if (strlen(ptmax) == 0) {
             max = INT_MAX;
-        else
+        } else {
             max = atoi(ptmax);
+        }
 
         if (min > cl_retflevel()) {
             cli_dbgmsg("regex list line %s not loaded (required f-level: %u)\n", line, (unsigned int)min);
             return CL_EMALFDB;
         }
 
-        if (max < cl_retflevel())
+        if (max < cl_retflevel()) {
             return CL_EMALFDB;
+        }
         ptmin[-1] = '\0';
         return CL_SUCCESS;
     }
@@ -466,8 +491,9 @@ cl_error_t load_regex_matcher(struct cl_engine *engine, struct regex_matcher *ma
         return CL_ENULLARG;
     }
 
-    if (matcher->list_inited == -1)
+    if (matcher->list_inited == -1) {
         return CL_EMALFDB; /* already failed to load */
+    }
     if (!fd && !dbio) {
         cli_errmsg("Unable to load regex list (null file)\n");
         return CL_ENULLARG;
@@ -510,14 +536,17 @@ cl_error_t load_regex_matcher(struct cl_engine *engine, struct regex_matcher *ma
 
         cli_chomp(buffer);
         line++;
-        if (!*buffer)
+        if (!*buffer) {
             continue; /* skip empty lines */
+        }
 
-        if (buffer[0] == '#')
+        if (buffer[0] == '#') {
             continue;
+        }
 
-        if (functionality_level_check(buffer))
+        if (functionality_level_check(buffer)) {
             continue;
+        }
 
         if (engine->cb_sigload && engine->cb_sigload("phishing", buffer, ~options & CL_DB_OFFICIAL, engine->cb_sigload_ctx)) {
             cli_dbgmsg("load_regex_matcher: skipping %s due to callback\n", buffer);
@@ -555,12 +584,14 @@ cl_error_t load_regex_matcher(struct cl_engine *engine, struct regex_matcher *ma
             }
         } else if ((buffer[0] == 'H' && !is_allow_list_lookup) || (buffer[0] == 'M' && is_allow_list_lookup)) {
             /*matches displayed host*/
-            if ((rc = add_static_pattern(matcher, pattern)))
+            if ((rc = add_static_pattern(matcher, pattern))) {
                 return rc == CL_EMEM ? CL_EMEM : CL_EMALFDB;
+            }
         } else if (buffer[0] == 'S' && (!is_allow_list_lookup || pattern[0] == 'W')) {
             pattern[pattern_len] = '\0';
-            if (pattern[0] == 'W')
+            if (pattern[0] == 'W') {
                 flags[0] = 'W';
+            }
             if ((pattern[0] == 'W' || pattern[0] == 'F' || pattern[0] == 'P') && pattern[1] == ':') {
                 pattern += 2;
                 if ((rc = add_hash(matcher, pattern, flags[0], pattern[-2] == 'P'))) {
@@ -576,8 +607,9 @@ cl_error_t load_regex_matcher(struct cl_engine *engine, struct regex_matcher *ma
         }
     }
     matcher->list_loaded = 1;
-    if (signo)
+    if (signo) {
         *signo += entry;
+    }
 
     return CL_SUCCESS;
 }
@@ -586,16 +618,18 @@ cl_error_t load_regex_matcher(struct cl_engine *engine, struct regex_matcher *ma
 cl_error_t cli_build_regex_list(struct regex_matcher *matcher)
 {
     cl_error_t rc;
-    if (!matcher)
+    if (!matcher) {
         return CL_SUCCESS;
+    }
     if (!matcher->list_inited || !matcher->list_loaded) {
         cli_errmsg("Regex list not loaded!\n");
         return -1; /*TODO: better error code */
     }
     cli_dbgmsg("Building regex list\n");
     cli_hashtab_free(&matcher->suffix_hash);
-    if ((rc = cli_ac_buildtrie(&matcher->suffixes)))
+    if ((rc = cli_ac_buildtrie(&matcher->suffixes))) {
         return rc;
+    }
     matcher->list_built = 1;
     cli_hashset_destroy(&matcher->sha256_pfx_set);
 
@@ -699,8 +733,9 @@ static cl_error_t add_newsuffix(struct regex_matcher *matcher, struct regex_list
     new->length[0]  = (uint16_t)len;
 
     new->ch[0] = new->ch[1] |= CLI_MATCH_IGNORE;
-    if (new->length[0] > root->maxpatlen)
+    if (new->length[0] > root->maxpatlen) {
         root->maxpatlen = new->length[0];
+    }
 
     new->pattern = MPOOL_MALLOC(matcher->mempool, sizeof(new->pattern[0]) * len);
     if (!new->pattern) {
@@ -743,8 +778,9 @@ done:
 
 static void list_add_tail(struct regex_list_ht *ht, struct regex_list *regex)
 {
-    if (!ht->head)
+    if (!ht->head) {
         ht->head = regex;
+    }
     if (ht->tail) {
         ht->tail->nxt = regex;
     }
@@ -904,8 +940,9 @@ cl_error_t regex_list_add_pattern(struct regex_matcher *matcher, char *pattern)
     pattern[len] = '\0';
 
     preg = new_preg(matcher);
-    if (!preg)
+    if (!preg) {
         return CL_EMEM;
+    }
 
     rc = cli_regex2suffix(pattern, preg, add_pattern_suffix, (void *)matcher);
     if (rc) {

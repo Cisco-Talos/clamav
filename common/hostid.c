@@ -31,19 +31,24 @@ int is_valid_hostid(void)
 {
     int count, i;
 
-    if (strlen(hostid) != 36)
+    if (strlen(hostid) != 36) {
         return 0;
+    }
 
     count = 0;
-    for (i = 0; i < 36; i++)
-        if (hostid[i] == '-')
+    for (i = 0; i < 36; i++) {
+        if (hostid[i] == '-') {
             count++;
+        }
+    }
 
-    if (count != 4)
+    if (count != 4) {
         return 0;
+    }
 
-    if (hostid[8] != '-' || hostid[13] != '-' || hostid[18] != '-' || hostid[23] != '-')
+    if (hostid[8] != '-' || hostid[13] != '-' || hostid[18] != '-' || hostid[23] != '-') {
         return 0;
+    }
 
     return 1;
 }
@@ -52,11 +57,13 @@ char *get_hostid(void *cbdata)
 {
     UNUSEDPARAM(cbdata);
 
-    if (!strcmp(hostid, "none"))
+    if (!strcmp(hostid, "none")) {
         return NULL;
+    }
 
-    if (!is_valid_hostid())
+    if (!is_valid_hostid()) {
         return strdup(STATS_ANON_UUID);
+    }
 
     logg(LOGG_INFO, "HostID is valid: %s\n", hostid);
 

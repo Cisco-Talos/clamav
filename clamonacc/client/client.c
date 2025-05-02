@@ -253,15 +253,17 @@ int16_t onas_ping_clamd(struct onas_context **ctx)
 
         if (i + 1 < attempts) {
             if (optget((*ctx)->opts, "wait")->enabled) {
-                if (interval == 1)
+                if (interval == 1) {
                     logg(LOGG_DEBUG, "Will try again in %lu second\n", interval);
-                else
+                } else {
                     logg(LOGG_DEBUG, "Will try again in %lu seconds\n", interval);
+                }
             } else {
-                if (interval == 1)
+                if (interval == 1) {
                     logg(LOGG_INFO, "PINGing again in %lu second\n", interval);
-                else
+                } else {
                     logg(LOGG_INFO, "PINGing again in %lu seconds\n", interval);
+                }
             }
             sleep(interval);
         }

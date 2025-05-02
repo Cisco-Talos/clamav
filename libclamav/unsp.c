@@ -128,31 +128,36 @@ uint32_t unspack(const char *start_of_stuff, char *dest, cli_ctx *ctx, uint32_t 
     const char *src = start_of_stuff + 0xd;
     struct cli_exe_section section;
 
-    if (c >= 0xe1) return 1;
+    if (c >= 0xe1) {
+        return 1;
+    }
 
     if (c >= 0x2d) {
         firstbyte = i = c / 0x2d;
         do {
             c += 0xd3;
         } while (--i);
-    } else
+    } else {
         firstbyte = 0;
+    }
 
     if (c >= 9) {
         allocsz = i = c / 9;
         do {
             c += 0xf7;
         } while (--i);
-    } else
+    } else {
         allocsz = 0;
+    }
 
     tre     = c;
     i       = allocsz;
     c       = (tre + i) & 0xff;
     tablesz = ((0x300 << c) + 0x736) * sizeof(uint16_t);
 
-    if (cli_checklimits("nspack", ctx, tablesz, 0, 0) != CL_CLEAN)
+    if (cli_checklimits("nspack", ctx, tablesz, 0, 0) != CL_CLEAN) {
         return 1; /* Should be ~15KB, if it's so big it's prolly just not nspacked */
+    }
 
     cli_dbgmsg("unsp: table size = %d\n", tablesz);
     if (!(table = cli_max_malloc(tablesz))) {
@@ -169,7 +174,9 @@ uint32_t unspack(const char *start_of_stuff, char *dest, cli_ctx *ctx, uint32_t 
 
     tre = very_real_unpack(table, tablesz, tre, allocsz, firstbyte, src, ssize, dst, dsize);
     free(table);
-    if (tre) return 1;
+    if (tre) {
+        return 1;
+    }
 
     section.raw = 0;
     section.rsz = dsize;
@@ -197,10 +204,14 @@ uint32_t very_real_unpack(uint16_t *table, uint32_t tablesz, uint32_t tre, uint3
 
     firstbyte = (1 << (firstbyte & 0xff)) - 1;
 
-    if (tablesz < i * sizeof(uint16_t)) return 2;
+    if (tablesz < i * sizeof(uint16_t)) {
+        return 2;
+    }
 
     /* init table */
-    while (i) table[--i] = 0x400;
+    while (i) {
+        table[--i] = 0x400;
+    }
 
     /* table noinit */
 
@@ -213,8 +224,12 @@ uint32_t very_real_unpack(uint16_t *table, uint32_t tablesz, uint32_t tre, uint3
     read_struct.table    = (char *)table;
     read_struct.tablesz  = tablesz;
 
-    for (i = 0; i < 5; i++) read_struct.oldval = (read_struct.oldval << 8) | get_byte(&read_struct);
-    if (read_struct.error) return 1;
+    for (i = 0; i < 5; i++) {
+        read_struct.oldval = (read_struct.oldval << 8) | get_byte(&read_struct);
+    }
+    if (read_struct.error) {
+        return 1;
+    }
     /* if (!dsize) return 0; - checked in pe.c */
 
     /* very_unpacking_loop */
@@ -224,7 +239,9 @@ uint32_t very_real_unpack(uint16_t *table, uint32_t tablesz, uint32_t tre, uint3
         uint32_t tpos;
         uint32_t temp = damian;
 
-        if (read_struct.error) return 1; /* checked once per mainloop, keeps the code readable and it's still safe */
+        if (read_struct.error) {
+            return 1; /* checked once per mainloop, keeps the code readable and it's still safe */
+        }
 
         if (!getbit_from_table(&table[(damian << 4) + backsize], &read_struct)) { /* no_mainbit */
 
@@ -246,7 +263,9 @@ uint32_t very_real_unpack(uint16_t *table, uint32_t tablesz, uint32_t tre, uint3
 
             /* 44847E */
             if (previous_bit) {
-                if (!CLI_ISCONTAINED(dst, dsize, &dst[unpacked_so_far - backbytes], 1)) return 1;
+                if (!CLI_ISCONTAINED(dst, dsize, &dst[unpacked_so_far - backbytes], 1)) {
+                    return 1;
+                }
                 ssize        = (ssize & 0xffffff00) | (uint8_t)dst[unpacked_so_far - backbytes]; /* FIXME! ssize is not static */
                 bielle       = get_100_bits_from_tablesize(&table[tpos + 0x736], &read_struct, ssize);
                 previous_bit = 0;
@@ -255,10 +274,14 @@ uint32_t very_real_unpack(uint16_t *table, uint32_t tablesz, uint32_t tre, uint3
             }
 
             /* unpack_one_byte - duplicated */
-            if (!CLI_ISCONTAINED(dst, dsize, &dst[unpacked_so_far], 1)) return 1;
+            if (!CLI_ISCONTAINED(dst, dsize, &dst[unpacked_so_far], 1)) {
+                return 1;
+            }
             dst[unpacked_so_far] = bielle;
             unpacked_so_far++;
-            if (unpacked_so_far >= dsize) return 0;
+            if (unpacked_so_far >= dsize) {
+                return 0;
+            }
             continue;
 
         } else { /* got_mainbit */
@@ -271,15 +294,21 @@ uint32_t very_real_unpack(uint16_t *table, uint32_t tablesz, uint32_t tre, uint3
                     tpos <<= 4;
                     tpos += backsize;
                     if (!getbit_from_table(&table[tpos], &read_struct)) {
-                        if (!unpacked_so_far) return bielle; /* FIXME: WTF?! */
+                        if (!unpacked_so_far) {
+                            return bielle; /* FIXME: WTF?! */
+                        }
 
                         damian = 2 * ((int32_t)damian >= 7) + 9; /* signed */
-                        if (!CLI_ISCONTAINED(dst, dsize, &dst[unpacked_so_far - backbytes], 1)) return 1;
+                        if (!CLI_ISCONTAINED(dst, dsize, &dst[unpacked_so_far - backbytes], 1)) {
+                            return 1;
+                        }
                         bielle = (uint8_t)dst[unpacked_so_far - backbytes];
                         /* unpack_one_byte - real */
                         dst[unpacked_so_far] = bielle;
                         unpacked_so_far++;
-                        if (unpacked_so_far >= dsize) return 0;
+                        if (unpacked_so_far >= dsize) {
+                            return 0;
+                        }
                         continue;
 
                     } else { /* gotbit_tre */
@@ -354,8 +383,12 @@ uint32_t very_real_unpack(uint16_t *table, uint32_t tablesz, uint32_t tre, uint3
             } /* gotbit_uno ends */
 
             /* checkloop_and_backcopy */
-            if (!backbytes) return 0;                       /* very_real_unpack_end */
-            if (backbytes > unpacked_so_far) return bielle; /* FIXME: WTF?! */
+            if (!backbytes) {
+                return 0; /* very_real_unpack_end */
+            }
+            if (backbytes > unpacked_so_far) {
+                return bielle; /* FIXME: WTF?! */
+            }
 
             backsize += 2;
 
@@ -371,7 +404,9 @@ uint32_t very_real_unpack(uint16_t *table, uint32_t tablesz, uint32_t tre, uint3
             } while (--backsize && unpacked_so_far < dsize);
             bielle = (uint8_t)dst[unpacked_so_far - 1];
 
-            if (unpacked_so_far >= dsize) return 0;
+            if (unpacked_so_far >= dsize) {
+                return 0;
+            }
 
         } /* got_mainbit ends */
 
@@ -449,8 +484,9 @@ uint32_t get_100_bits_from_tablesize(uint16_t *intable, struct UNSP *read_struct
         count = (count * 2) | tpos;
         if (lpos != tpos) {
             /* second loop */
-            while (count < 0x100)
+            while (count < 0x100) {
                 count = (count * 2) | getbit_from_table(&intable[count], read_struct);
+            }
         }
     }
     return count & 0xff;
@@ -460,8 +496,9 @@ uint32_t get_100_bits_from_table(uint16_t *intable, struct UNSP *read_struct)
 {
     uint32_t count = 1;
 
-    while (count < 0x100)
+    while (count < 0x100) {
         count = (count * 2) | getbit_from_table(&intable[count], read_struct);
+    }
     return count & 0xff;
 }
 
@@ -472,8 +509,9 @@ uint32_t get_n_bits_from_table(uint16_t *intable, uint32_t bits, struct UNSP *re
 
     /*  if (bits) { always set! */
     bitcounter = bits;
-    while (bitcounter--)
+    while (bitcounter--) {
         count = count * 2 + getbit_from_table(&intable[count], read_struct);
+    }
     /*  } */
 
     return count - (1 << (bits & 0xff));
@@ -482,11 +520,13 @@ uint32_t get_n_bits_from_table(uint16_t *intable, uint32_t bits, struct UNSP *re
 uint32_t get_n_bits_from_tablesize(uint16_t *intable, struct UNSP *read_struct, uint32_t backsize)
 {
 
-    if (!getbit_from_table(intable, read_struct))
+    if (!getbit_from_table(intable, read_struct)) {
         return get_n_bits_from_table(&intable[(backsize << 3) + 2], 3, read_struct);
+    }
 
-    if (!getbit_from_table(&intable[1], read_struct))
+    if (!getbit_from_table(&intable[1], read_struct)) {
         return 8 + get_n_bits_from_table(&intable[(backsize << 3) + 0x82], 3, read_struct);
+    }
 
     return 0x10 + get_n_bits_from_table(&intable[0x102], 8, read_struct);
 }
@@ -497,8 +537,9 @@ uint32_t get_bb(uint16_t *intable, uint32_t back, struct UNSP *read_struct)
     uint32_t bb  = 0;
     uint32_t i;
 
-    if ((int32_t)back <= 0) /* signed */
+    if ((int32_t)back <= 0) { /* signed */
         return 0;
+    }
 
     for (i = 0; i < back; i++) {
         uint32_t bit = getbit_from_table(&intable[pos], read_struct);
@@ -512,7 +553,9 @@ uint32_t get_bitmap(struct UNSP *read_struct, uint32_t bits)
 {
     uint32_t retv = 0;
 
-    if ((int32_t)bits <= 0) return 0; /* signed */
+    if ((int32_t)bits <= 0) {
+        return 0; /* signed */
+    }
 
     while (bits--) {
         read_struct->bitmap >>= 1; /* unsigned */

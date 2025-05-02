@@ -99,21 +99,29 @@ struct CLAMFI {
 static void add_x_header(SMFICTX *ctx, char *st, unsigned int scanned, unsigned int status)
 {
     if (addxvirus == 1) { /* Replace/Yes */
-        while (scanned)
-            if (smfi_chgheader(ctx, (char *)"X-Virus-Scanned", scanned--, NULL) != MI_SUCCESS)
+        while (scanned) {
+            if (smfi_chgheader(ctx, (char *)"X-Virus-Scanned", scanned--, NULL) != MI_SUCCESS) {
                 logg(LOGG_WARNING, "Failed to remove existing X-Virus-Scanned header\n");
-        while (status)
-            if (smfi_chgheader(ctx, (char *)"X-Virus-Status", status--, NULL) != MI_SUCCESS)
+            }
+        }
+        while (status) {
+            if (smfi_chgheader(ctx, (char *)"X-Virus-Status", status--, NULL) != MI_SUCCESS) {
                 logg(LOGG_WARNING, "Failed to remove existing X-Virus-Status header\n");
-        if (smfi_addheader(ctx, (char *)"X-Virus-Scanned", xvirushdr) != MI_SUCCESS)
+            }
+        }
+        if (smfi_addheader(ctx, (char *)"X-Virus-Scanned", xvirushdr) != MI_SUCCESS) {
             logg(LOGG_WARNING, "Failed to add X-Virus-Scanned header\n");
-        if (smfi_addheader(ctx, (char *)"X-Virus-Status", st) != MI_SUCCESS)
+        }
+        if (smfi_addheader(ctx, (char *)"X-Virus-Status", st) != MI_SUCCESS) {
             logg(LOGG_WARNING, "Failed to add X-Virus-Status header\n");
+        }
     } else { /* Add */
-        if (smfi_insheader(ctx, 1, (char *)"X-Virus-Scanned", xvirushdr) != MI_SUCCESS)
+        if (smfi_insheader(ctx, 1, (char *)"X-Virus-Scanned", xvirushdr) != MI_SUCCESS) {
             logg(LOGG_WARNING, "Failed to insert X-Virus-Scanned header\n");
-        if (smfi_insheader(ctx, 1, (char *)"X-Virus-Status", st) != MI_SUCCESS)
+        }
+        if (smfi_insheader(ctx, 1, (char *)"X-Virus-Status", st) != MI_SUCCESS) {
             logg(LOGG_WARNING, "Failed to insert X-Virus-Status header\n");
+        }
     }
 }
 
@@ -128,10 +136,13 @@ enum CFWHAT {
 static const char *makesanehdr(char *hdr)
 {
     char *ret = hdr;
-    if (!hdr) return HDR_UNAVAIL;
+    if (!hdr) {
+        return HDR_UNAVAIL;
+    }
     while (*hdr) {
-        if (*hdr == '\'' || *hdr == '\t' || *hdr == '\r' || *hdr == '\n' || !isprint(*hdr))
+        if (*hdr == '\'' || *hdr == '\t' || *hdr == '\r' || *hdr == '\n' || !isprint(*hdr)) {
             *hdr = ' ';
+        }
         hdr++;
     }
     return ret;
@@ -139,13 +150,21 @@ static const char *makesanehdr(char *hdr)
 
 static void nullify(SMFICTX *ctx, struct CLAMFI *cf, enum CFWHAT closewhat)
 {
-    if (closewhat & CF_MAIN || ((closewhat & CF_ANY) && cf->main >= 0))
+    if (closewhat & CF_MAIN || ((closewhat & CF_ANY) && cf->main >= 0)) {
         close(cf->main);
-    if (closewhat & CF_ALT || ((closewhat & CF_ANY) && cf->alt >= 0))
+    }
+    if (closewhat & CF_ALT || ((closewhat & CF_ANY) && cf->alt >= 0)) {
         close(cf->alt);
-    if (cf->msg_subj) free(cf->msg_subj);
-    if (cf->msg_date) free(cf->msg_date);
-    if (cf->msg_id) free(cf->msg_id);
+    }
+    if (cf->msg_subj) {
+        free(cf->msg_subj);
+    }
+    if (cf->msg_date) {
+        free(cf->msg_date);
+    }
+    if (cf->msg_id) {
+        free(cf->msg_id);
+    }
     if (multircpt && cf->nrecipients) {
         while (cf->nrecipients) {
             cf->nrecipients--;
@@ -158,8 +177,9 @@ static void nullify(SMFICTX *ctx, struct CLAMFI *cf, enum CFWHAT closewhat)
 
 static sfsistat sendchunk(struct CLAMFI *cf, unsigned char *bodyp, size_t len, SMFICTX *ctx)
 {
-    if (cf->totsz >= maxfilesize || len == 0)
+    if (cf->totsz >= maxfilesize || len == 0) {
         return SMFIS_CONTINUE;
+    }
 
     if (!cf->totsz) {
         sfsistat ret;
@@ -169,13 +189,15 @@ static sfsistat sendchunk(struct CLAMFI *cf, unsigned char *bodyp, size_t len, S
             return FailAction;
         }
         cf->totsz = 1; /* do not infloop */
-        if ((ret = sendchunk(cf, (unsigned char *)"From clamav-milter\n", 19, ctx)) != SMFIS_CONTINUE)
+        if ((ret = sendchunk(cf, (unsigned char *)"From clamav-milter\n", 19, ctx)) != SMFIS_CONTINUE) {
             return ret;
+        }
         cf->totsz -= 1;
     }
 
-    if (cf->totsz + len > maxfilesize)
+    if (cf->totsz + len > maxfilesize) {
         len = maxfilesize - cf->totsz;
+    }
 
     cf->totsz += len;
     if (cf->local) {
@@ -206,8 +228,9 @@ static sfsistat sendchunk(struct CLAMFI *cf, unsigned char *bodyp, size_t len, S
         } else {
             uint32_t sendmetoo = htonl(len);
             cf->sendme         = htonl(cf->bufsz);
-            if ((cf->bufsz && nc_send(cf->main, &cf->sendme, cf->bufsz + 4)) || nc_send(cf->main, &sendmetoo, 4) || nc_send(cf->main, bodyp, len))
+            if ((cf->bufsz && nc_send(cf->main, &cf->sendme, cf->bufsz + 4)) || nc_send(cf->main, &sendmetoo, 4) || nc_send(cf->main, bodyp, len)) {
                 sendfailed = 1;
+            }
             cf->bufsz = 0;
         }
         if (sendfailed) {
@@ -224,8 +247,9 @@ sfsistat clamfi_header(SMFICTX *ctx, char *headerf, char *headerv)
     struct CLAMFI *cf;
     sfsistat ret;
 
-    if (!(cf = (struct CLAMFI *)smfi_getpriv(ctx)))
+    if (!(cf = (struct CLAMFI *)smfi_getpriv(ctx))) {
         return SMFIS_CONTINUE; /* whatever */
+    }
 
     if (!cf->totsz && cf->all_allowed) {
         logg(LOGG_DEBUG, "Skipping scan (all destinations allowed)\n");
@@ -234,20 +258,29 @@ sfsistat clamfi_header(SMFICTX *ctx, char *headerf, char *headerv)
         return SMFIS_ACCEPT;
     }
 
-    if (!headerf) return SMFIS_CONTINUE; /* just in case */
+    if (!headerf) {
+        return SMFIS_CONTINUE; /* just in case */
+    }
 
     if ((loginfected & (LOGINF_FULL | LOGCLN_FULL)) || viraction) {
-        if (!cf->msg_subj && !strcasecmp(headerf, "Subject"))
+        if (!cf->msg_subj && !strcasecmp(headerf, "Subject")) {
             cf->msg_subj = strdup(headerv ? headerv : "");
-        if (!cf->msg_date && !strcasecmp(headerf, "Date"))
+        }
+        if (!cf->msg_date && !strcasecmp(headerf, "Date")) {
             cf->msg_date = strdup(headerv ? headerv : "");
-        if (!cf->msg_id && !strcasecmp(headerf, "Message-ID"))
+        }
+        if (!cf->msg_id && !strcasecmp(headerf, "Message-ID")) {
             cf->msg_id = strdup(headerv ? headerv : "");
+        }
     }
 
     if (addxvirus == 1) {
-        if (!strcasecmp(headerf, "X-Virus-Scanned")) cf->scanned_count++;
-        if (!strcasecmp(headerf, "X-Virus-Status")) cf->status_count++;
+        if (!strcasecmp(headerf, "X-Virus-Scanned")) {
+            cf->scanned_count++;
+        }
+        if (!strcasecmp(headerf, "X-Virus-Status")) {
+            cf->status_count++;
+        }
     }
 
     if ((ret = sendchunk(cf, (unsigned char *)headerf, strlen(headerf), ctx)) != SMFIS_CONTINUE) {
@@ -263,8 +296,9 @@ sfsistat clamfi_header(SMFICTX *ctx, char *headerf, char *headerv)
         return ret;
     }
     ret = sendchunk(cf, (unsigned char *)"\r\n", 2, ctx);
-    if (ret != SMFIS_CONTINUE)
+    if (ret != SMFIS_CONTINUE) {
         free(cf);
+    }
     return ret;
 }
 
@@ -273,8 +307,9 @@ sfsistat clamfi_body(SMFICTX *ctx, unsigned char *bodyp, size_t len)
     struct CLAMFI *cf;
     sfsistat ret;
 
-    if (!(cf = (struct CLAMFI *)smfi_getpriv(ctx)))
+    if (!(cf = (struct CLAMFI *)smfi_getpriv(ctx))) {
         return SMFIS_CONTINUE; /* whatever */
+    }
 
     if (!cf->gotbody) {
         ret = sendchunk(cf, (unsigned char *)"\r\n", 2, ctx);
@@ -286,8 +321,9 @@ sfsistat clamfi_body(SMFICTX *ctx, unsigned char *bodyp, size_t len)
     }
 
     ret = sendchunk(cf, bodyp, len, ctx);
-    if (ret != SMFIS_CONTINUE)
+    if (ret != SMFIS_CONTINUE) {
         free(cf);
+    }
     return ret;
 }
 
@@ -309,8 +345,9 @@ sfsistat clamfi_eom(SMFICTX *ctx)
     int len, ret;
     unsigned int crcpt;
 
-    if (!(cf = (struct CLAMFI *)smfi_getpriv(ctx)))
+    if (!(cf = (struct CLAMFI *)smfi_getpriv(ctx))) {
         return SMFIS_CONTINUE; /* whatever */
+    }
 
     if (!cf->totsz) {
         /* got no headers and no body */
@@ -343,8 +380,9 @@ sfsistat clamfi_eom(SMFICTX *ctx)
 
     reply = nc_recv(cf->main);
 
-    if (cf->local)
+    if (cf->local) {
         close(cf->alt);
+    }
 
     cf->alt = -1;
 
@@ -357,7 +395,9 @@ sfsistat clamfi_eom(SMFICTX *ctx)
 
     len = strlen(reply);
     if (len > 5 && !strcmp(reply + len - 5, ": OK\n")) {
-        if (addxvirus) add_x_header(ctx, "Clean", cf->scanned_count, cf->status_count);
+        if (addxvirus) {
+            add_x_header(ctx, "Clean", cf->scanned_count, cf->status_count);
+        }
         if (loginfected & LOGCLN_FULL) {
             const char *id       = smfi_getsymval(ctx, "{i}");
             const char *from     = smfi_getsymval(ctx, "{mail_addr}");
@@ -365,8 +405,9 @@ sfsistat clamfi_eom(SMFICTX *ctx)
             const char *msg_date = makesanehdr(cf->msg_date);
             const char *msg_id   = makesanehdr(cf->msg_id);
             if (multircpt && cf->nrecipients) {
-                for (crcpt = 0; crcpt < cf->nrecipients; crcpt++)
+                for (crcpt = 0; crcpt < cf->nrecipients; crcpt++) {
                     logg(LOGG_INFO, "Clean message %s from <%s> to <%s> with subject '%s' message-id '%s' date '%s'\n", id, from, cf->recipients[crcpt], msg_subj, msg_id, msg_date);
+                }
             } else {
                 const char *to = smfi_getsymval(ctx, "{rcpt_addr}");
                 logg(LOGG_INFO, "Clean message %s from <%s> to <%s> with subject '%s' message-id '%s' date '%s'\n", id, from, to ? to : HDR_UNAVAIL, msg_subj, msg_id, msg_date);
@@ -374,8 +415,9 @@ sfsistat clamfi_eom(SMFICTX *ctx)
         } else if (loginfected & LOGCLN_BASIC) {
             const char *from = smfi_getsymval(ctx, "{mail_addr}");
             if (multircpt && cf->nrecipients) {
-                for (crcpt = 0; crcpt < cf->nrecipients; crcpt++)
+                for (crcpt = 0; crcpt < cf->nrecipients; crcpt++) {
                     logg(LOGG_INFO, "Clean message from <%s> to <%s>\n", from, cf->recipients[crcpt]);
+                }
             } else {
                 const char *to = smfi_getsymval(ctx, "{rcpt_addr}");
                 logg(LOGG_INFO, "Clean message from <%s> to <%s>\n", from, to ? to : HDR_UNAVAIL);
@@ -394,8 +436,9 @@ sfsistat clamfi_eom(SMFICTX *ctx)
                 unsigned int lst_rcpt   = (have_multi * (cf->nrecipients - 1)) + 1;
                 vir++;
 
-                if (rejectfmt)
+                if (rejectfmt) {
                     cf->virusname = vir;
+                }
 
                 if (addxvirus) {
                     char msg[255];
@@ -409,18 +452,25 @@ sfsistat clamfi_eom(SMFICTX *ctx)
                         const char *from = smfi_getsymval(ctx, "{mail_addr}");
                         const char *to   = have_multi ? cf->recipients[crcpt] : smfi_getsymval(ctx, "{rcpt_addr}");
 
-                        if (!from) from = HDR_UNAVAIL;
-                        if (!to) to = HDR_UNAVAIL;
+                        if (!from) {
+                            from = HDR_UNAVAIL;
+                        }
+                        if (!to) {
+                            to = HDR_UNAVAIL;
+                        }
                         if ((loginfected & LOGINF_FULL) || viraction) {
                             const char *id       = smfi_getsymval(ctx, "{i}");
                             const char *msg_subj = makesanehdr(cf->msg_subj);
                             const char *msg_date = makesanehdr(cf->msg_date);
                             const char *msg_id   = makesanehdr(cf->msg_id);
 
-                            if (!id) id = HDR_UNAVAIL;
+                            if (!id) {
+                                id = HDR_UNAVAIL;
+                            }
 
-                            if (loginfected & LOGINF_FULL)
+                            if (loginfected & LOGINF_FULL) {
                                 logg(LOGG_INFO, "Message %s from <%s> to <%s> with subject '%s' message-id '%s' date '%s' infected by %s\n", id, from, to, msg_subj, msg_id, msg_date, vir);
+                            }
 
                             if (viraction) {
                                 char er[256];
@@ -451,16 +501,19 @@ sfsistat clamfi_eom(SMFICTX *ctx)
                                 } else if (pid > 0) {
                                     int wret;
                                     pthread_mutex_unlock(&virusaction_lock);
-                                    while ((wret = waitpid(pid, &ret, 0)) == -1 && errno == EINTR) continue;
-                                    if (wret < 0)
+                                    while ((wret = waitpid(pid, &ret, 0)) == -1 && errno == EINTR) {
+                                        continue;
+                                    }
+                                    if (wret < 0) {
                                         logg(LOGG_ERROR, "VirusEvent: waitpid() failed: %s\n", cli_strerror(errno, er, sizeof(er)));
-                                    else {
-                                        if (WIFEXITED(ret))
+                                    } else {
+                                        if (WIFEXITED(ret)) {
                                             logg(LOGG_DEBUG, "VirusEvent: child exited with code %d\n", WEXITSTATUS(ret));
-                                        else if (WIFSIGNALED(ret))
+                                        } else if (WIFSIGNALED(ret)) {
                                             logg(LOGG_DEBUG, "VirusEvent: child killed by signal %d\n", WTERMSIG(ret));
-                                        else
+                                        } else {
                                             logg(LOGG_DEBUG, "VirusEvent: child lost\n");
+                                        }
                                     }
                                 } else {
                                     logg(LOGG_ERROR, "VirusEvent: fork failed: %s\n", cli_strerror(errno, er, sizeof(er)));
@@ -473,8 +526,9 @@ sfsistat clamfi_eom(SMFICTX *ctx)
                                 free(e_msg_id);
                             }
                         }
-                        if (loginfected & LOGINF_BASIC)
+                        if (loginfected & LOGINF_BASIC) {
                             logg(LOGG_INFO, "Message from <%s> to <%s> infected by %s\n", from, to, vir);
+                        }
                     }
                 }
             }
@@ -504,8 +558,9 @@ sfsistat clamfi_connect(_UNUSED_ SMFICTX *ctx, char *hostname, _SOCK_ADDR *hosta
             }
             break;
         }
-        if (!strcasecmp(hostname, "localhost"))
+        if (!strcasecmp(hostname, "localhost")) {
             hostname = NULL;
+        }
         if (islocalnet_name(hostname)) {
             logg(LOGG_DEBUG, "Skipping scan for %s (in LocalNet)\n", hostname ? hostname : "local");
             return SMFIS_ACCEPT;
@@ -517,16 +572,21 @@ sfsistat clamfi_connect(_UNUSED_ SMFICTX *ctx, char *hostname, _SOCK_ADDR *hosta
 
 static int parse_action(char *action)
 {
-    if (!strcasecmp(action, "Accept"))
+    if (!strcasecmp(action, "Accept")) {
         return 0;
-    if (!strcasecmp(action, "Defer"))
+    }
+    if (!strcasecmp(action, "Defer")) {
         return 1;
-    if (!strcasecmp(action, "Reject"))
+    }
+    if (!strcasecmp(action, "Reject")) {
         return 2;
-    if (!strcasecmp(action, "Blackhole"))
+    }
+    if (!strcasecmp(action, "Blackhole")) {
         return 3;
-    if (!strcasecmp(action, "Quarantine"))
+    }
+    if (!strcasecmp(action, "Quarantine")) {
         return 4;
+    }
     logg(LOGG_ERROR, "Unknown action %s\n", action);
     return -1;
 }
@@ -561,8 +621,9 @@ static sfsistat action_reject_msg(SMFICTX *ctx)
     struct CLAMFI *cf;
     char buf[1024];
 
-    if (!rejectfmt || !(cf = (struct CLAMFI *)smfi_getpriv(ctx)))
+    if (!rejectfmt || !(cf = (struct CLAMFI *)smfi_getpriv(ctx))) {
         return SMFIS_REJECT;
+    }
 
     snprintf(buf, sizeof(buf), rejectfmt, cf->virusname);
     buf[sizeof(buf) - 1] = '\0';
@@ -574,30 +635,31 @@ int init_actions(struct optstruct *opts)
 {
     const struct optstruct *opt;
 
-    if (!(opt = optget(opts, "LogInfected"))->enabled || !strcasecmp(opt->strarg, "Off"))
+    if (!(opt = optget(opts, "LogInfected"))->enabled || !strcasecmp(opt->strarg, "Off")) {
         loginfected = LOGINF_NONE;
-    else if (!strcasecmp(opt->strarg, "Basic"))
+    } else if (!strcasecmp(opt->strarg, "Basic")) {
         loginfected = LOGINF_BASIC;
-    else if (!strcasecmp(opt->strarg, "Full"))
+    } else if (!strcasecmp(opt->strarg, "Full")) {
         loginfected = LOGINF_FULL;
-    else {
+    } else {
         logg(LOGG_ERROR, "Invalid setting %s for option LogInfected\n", opt->strarg);
         return 1;
     }
 
     if ((opt = optget(opts, "LogClean"))->enabled) {
-        if (!strcasecmp(opt->strarg, "Basic"))
+        if (!strcasecmp(opt->strarg, "Basic")) {
             loginfected |= LOGCLN_BASIC;
-        else if (!strcasecmp(opt->strarg, "Full"))
+        } else if (!strcasecmp(opt->strarg, "Full")) {
             loginfected |= LOGCLN_FULL;
-        else if (strcasecmp(opt->strarg, "Off")) {
+        } else if (strcasecmp(opt->strarg, "Off")) {
             logg(LOGG_ERROR, "Invalid setting %s for option LogClean\n", opt->strarg);
             return 1;
         }
     }
 
-    if ((opt = optget(opts, "VirusAction"))->enabled)
+    if ((opt = optget(opts, "VirusAction"))->enabled) {
         viraction = strdup(opt->strarg);
+    }
 
     if ((opt = optget(opts, "OnFail"))->enabled) {
         switch (parse_action(opt->strarg)) {
@@ -614,8 +676,9 @@ int init_actions(struct optstruct *opts)
                 logg(LOGG_ERROR, "Invalid action %s for option OnFail\n", opt->strarg);
                 return 1;
         }
-    } else
+    } else {
         FailAction = SMFIS_TEMPFAIL;
+    }
 
     if ((opt = optget(opts, "OnClean"))->enabled) {
         switch (parse_action(opt->strarg)) {
@@ -638,8 +701,9 @@ int init_actions(struct optstruct *opts)
                 logg(LOGG_ERROR, "Invalid action %s for option OnClean\n", opt->strarg);
                 return 1;
         }
-    } else
+    } else {
         CleanAction = action_accept;
+    }
 
     if ((opt = optget(opts, "OnInfected"))->enabled) {
         switch (parse_action(opt->strarg)) {
@@ -697,8 +761,9 @@ int init_actions(struct optstruct *opts)
                 logg(LOGG_ERROR, "Invalid action %s for option OnInfected\n", opt->strarg);
                 return 1;
         }
-    } else
+    } else {
         InfectedAction = action_quarantine;
+    }
     return 0;
 }
 
@@ -744,11 +809,13 @@ sfsistat clamfi_envrcpt(SMFICTX *ctx, char **argv)
 {
     struct CLAMFI *cf;
 
-    if (!(cf = (struct CLAMFI *)smfi_getpriv(ctx)))
+    if (!(cf = (struct CLAMFI *)smfi_getpriv(ctx))) {
         return SMFIS_CONTINUE; /* whatever */
+    }
 
-    if (cf->all_allowed)
+    if (cf->all_allowed) {
         cf->all_allowed &= allowed(argv[0], 0);
+    }
 
     if (multircpt) {
         void *new_rcpt = realloc(cf->recipients, (cf->nrecipients + 1) * sizeof(*(cf->recipients)));

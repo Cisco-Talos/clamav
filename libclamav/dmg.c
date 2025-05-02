@@ -173,8 +173,9 @@ int cli_scandmg(cli_ctx *ctx)
                                           ctx, CL_TYPE_ANY, NULL, LAYER_ATTRIBUTES_NONE);
     if (ret != CL_CLEAN) {
         cli_dbgmsg("cli_scandmg: retcode from scanning TOC xml: %s\n", cl_strerror(ret));
-        if (!ctx->engine->keeptmp)
+        if (!ctx->engine->keeptmp) {
             cli_rmdirs(dirname);
+        }
         free(dirname);
         return ret;
     }
@@ -183,8 +184,9 @@ int cli_scandmg(cli_ctx *ctx)
     outdata = fmap_need_off_once_len(ctx->fmap, hdr.xmlOffset, hdr.xmlLength, &nread);
     if (!outdata || (nread != hdr.xmlLength)) {
         cli_errmsg("cli_scandmg: Failed getting XML from map, len %d\n", (int)hdr.xmlLength);
-        if (!ctx->engine->keeptmp)
+        if (!ctx->engine->keeptmp) {
             cli_rmdirs(dirname);
+        }
         free(dirname);
         return CL_EMAP;
     }
@@ -199,8 +201,9 @@ int cli_scandmg(cli_ctx *ctx)
     reader = xmlReaderForMemory(outdata, (int)hdr.xmlLength, "toc.xml", NULL, DMG_XML_PARSE_OPTS);
     if (!reader) {
         cli_dbgmsg("cli_scandmg: Failed parsing XML!\n");
-        if (!ctx->engine->keeptmp)
+        if (!ctx->engine->keeptmp) {
             cli_rmdirs(dirname);
+        }
         free(dirname);
         return CL_EFORMAT;
     }
@@ -229,8 +232,9 @@ int cli_scandmg(cli_ctx *ctx)
                 break;
             }
             nodeName = xmlTextReaderLocalName(reader);
-            if (!nodeName)
+            if (!nodeName) {
                 continue;
+            }
             dmg_parsemsg("read: name %s depth %d\n", nodeName, depth);
 
             if ((state == DMG_FIND_DATA_MISH) && (depth == stateDepth[state - 1])) {
@@ -440,8 +444,9 @@ int cli_scandmg(cli_ctx *ctx)
         mish_list      = mish_list->next;
         free(mish_list_tail);
     }
-    if (!ctx->engine->keeptmp)
+    if (!ctx->engine->keeptmp) {
         cli_rmdirs(dirname);
+    }
     free(dirname);
     return ret;
 }
@@ -466,8 +471,9 @@ static int dmg_decode_mish(cli_ctx *ctx, unsigned int *mishblocknum, xmlChar *mi
     buff_size = 3 * base64_len / 4 + 4;
     dmg_parsemsg("dmg_decode_mish: buffer for mish block %u is %lu\n", *mishblocknum, (unsigned long)buff_size);
     decoded = cli_max_malloc(buff_size);
-    if (!decoded)
+    if (!decoded) {
         return CL_EMEM;
+    }
 
     if (sf_base64decode((uint8_t *)mish_base64, base64_len, decoded, buff_size - 1, &decoded_len)) {
         cli_dbgmsg("dmg_decode_mish: failed base64 decoding on mish block %u\n", *mishblocknum);
@@ -593,8 +599,9 @@ static int dmg_stripe_zeroes(cli_ctx *ctx, int fd, uint32_t index, struct dmg_mi
     UNUSEDPARAM(ctx);
 
     cli_dbgmsg("dmg_stripe_zeroes: stripe " STDu32 "\n", index);
-    if (len == 0)
+    if (len == 0) {
         return CL_CLEAN;
+    }
 
     memset(obuf, 0, sizeof(obuf));
     while (len > sizeof(obuf)) {
@@ -629,8 +636,9 @@ static int dmg_stripe_store(cli_ctx *ctx, int fd, uint32_t index, struct dmg_mis
     size_t written;
 
     cli_dbgmsg("dmg_stripe_store: stripe " STDu32 "\n", index);
-    if (len == 0)
+    if (len == 0) {
         return CL_CLEAN;
+    }
 
     obuf = (void *)fmap_need_off_once(ctx->fmap, off, len);
     if (!obuf) {
@@ -661,8 +669,9 @@ static int dmg_stripe_adc(cli_ctx *ctx, int fd, uint32_t index, struct dmg_mish_
 
     cli_dbgmsg("dmg_stripe_adc: stripe " STDu32 " initial len " STDu64 " expected len " STDu64 "\n",
                index, (uint64_t)len, (uint64_t)expected_len);
-    if (len == 0)
+    if (len == 0) {
         return CL_CLEAN;
+    }
 
     memset(&strm, 0, sizeof(strm));
     strm.next_in = (uint8_t *)fmap_need_off_once(ctx->fmap, off, len);
@@ -714,8 +723,9 @@ static int dmg_stripe_adc(cli_ctx *ctx, int fd, uint32_t index, struct dmg_mish_
                     strm.next_out  = obuf;
                     strm.avail_out = sizeof(obuf);
                 }
-                if (adcret == ADC_STREAM_END)
+                if (adcret == ADC_STREAM_END) {
                     break;
+                }
                 cli_dbgmsg("dmg_stripe_adc: after writing " STDu64 " bytes, "
                            "got error %d decompressing stripe " STDu32 "\n",
                            size_so_far, adcret, index);
@@ -743,8 +753,9 @@ static int dmg_stripe_inflate(cli_ctx *ctx, int fd, uint32_t index, struct dmg_m
     uint8_t obuf[BUFSIZ];
 
     cli_dbgmsg("dmg_stripe_inflate: stripe " STDu32 "\n", index);
-    if (len == 0)
+    if (len == 0) {
         return CL_CLEAN;
+    }
 
     memset(&strm, 0, sizeof(strm));
     strm.next_in = (void *)fmap_need_off_once(ctx->fmap, off, len);
@@ -795,17 +806,19 @@ static int dmg_stripe_inflate(cli_ctx *ctx, int fd, uint32_t index, struct dmg_m
                     size_so_far += written;
                     strm.next_out  = (Bytef *)obuf;
                     strm.avail_out = sizeof(obuf);
-                    if (zstat == Z_STREAM_END)
+                    if (zstat == Z_STREAM_END) {
                         break;
+                    }
                 }
-                if (strm.msg)
+                if (strm.msg) {
                     cli_dbgmsg("dmg_stripe_inflate: after writing " STDu64 " bytes, "
                                "got error \"%s\" inflating stripe " STDu32 "\n",
                                size_so_far, strm.msg, index);
-                else
+                } else {
                     cli_dbgmsg("dmg_stripe_inflate: after writing " STDu64 " bytes, "
                                "got error %d inflating stripe " STDu32 "\n",
                                size_so_far, zstat, index);
+                }
                 inflateEnd(&strm);
                 return CL_EFORMAT;
         }
@@ -904,8 +917,9 @@ static int dmg_stripe_bzip(cli_ctx *ctx, int fd, uint32_t index, struct dmg_mish
                 strm.next_out  = (char *)obuf;
                 strm.avail_out = sizeof(obuf);
 
-                if (rc == BZ_OK)
+                if (rc == BZ_OK) {
                     rc = BZ2_bzDecompress(&strm);
+                }
                 if ((rc != BZ_OK) && (rc != BZ_STREAM_END)) {
                     cli_dbgmsg("dmg_stripe_bzip: decompress error: %d\n", rc);
                     ret = CL_EFORMAT;
@@ -1052,8 +1066,11 @@ static int dmg_handle_mish(cli_ctx *ctx, unsigned int mishblocknum, char *dir,
     }
 
     close(ofd);
-    if (!ctx->engine->keeptmp)
-        if (cli_unlink(outfile)) return CL_EUNLINK;
+    if (!ctx->engine->keeptmp) {
+        if (cli_unlink(outfile)) {
+            return CL_EUNLINK;
+        }
+    }
 
     return ret;
 }

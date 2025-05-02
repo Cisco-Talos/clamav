@@ -81,8 +81,9 @@ cl_error_t cli_mbr_check(const unsigned char *buff, size_t len, size_t maplen)
     memcpy(&mbr, buff + mbr_base, sizeof(mbr));
     mbr_convert_to_host(&mbr);
 
-    if ((mbr.entries[0].type == MBR_PROTECTIVE) || (mbr.entries[0].type == MBR_HYBRID))
+    if ((mbr.entries[0].type == MBR_PROTECTIVE) || (mbr.entries[0].type == MBR_HYBRID)) {
         return CL_TYPE_GPT;
+    }
 
     return mbr_check_mbr(&mbr, maplen, sectorsize);
 }
@@ -99,8 +100,9 @@ cl_error_t cli_mbr_check2(cli_ctx *ctx, size_t sectorsize)
     }
 
     /* sector size calculation, actual value is OS dependent */
-    if (sectorsize == 0)
+    if (sectorsize == 0) {
         sectorsize = MBR_SECTOR_SIZE;
+    }
 
     mbr_base = sectorsize - sizeof(struct mbr_boot_record);
 
@@ -124,8 +126,9 @@ cl_error_t cli_mbr_check2(cli_ctx *ctx, size_t sectorsize)
     /* convert the little endian to host, include the internal  */
     mbr_convert_to_host(&mbr);
 
-    if ((mbr.entries[0].type == MBR_PROTECTIVE) || (mbr.entries[0].type == MBR_HYBRID))
+    if ((mbr.entries[0].type == MBR_PROTECTIVE) || (mbr.entries[0].type == MBR_HYBRID)) {
         return CL_TYPE_GPT;
+    }
 
     return mbr_check_mbr(&mbr, maplen, sectorsize);
 }
@@ -149,8 +152,9 @@ cl_error_t cli_scanmbr(cli_ctx *ctx, size_t sectorsize)
     }
 
     /* sector size calculation, actual value is OS dependent */
-    if (sectorsize == 0)
+    if (sectorsize == 0) {
         sectorsize = MBR_SECTOR_SIZE;
+    }
 
     mbr_base = sectorsize - sizeof(struct mbr_boot_record);
 

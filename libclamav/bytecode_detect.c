@@ -88,13 +88,15 @@ static int detect_PaX(void)
     char line[128];
     int pax = 0;
     FILE *f = fopen("/proc/self/status", "r");
-    if (!f)
+    if (!f) {
         return 0;
+    }
     while (fgets(line, sizeof(line), f)) {
         if (!memcmp(line, "PaX:", 4)) {
             pax = 1;
-            if (!strchr(line, 'm'))
+            if (!strchr(line, 'm')) {
                 pax = 2;
+            }
             break;
         }
     }
@@ -110,11 +112,13 @@ static int detect_SELinux(void)
     FILE *f     = fopen("/proc/filesystems", "r");
     if (!f) {
         f = fopen("/selinux/enforce", "r");
-        if (!f && errno == EACCES)
+        if (!f && errno == EACCES) {
             return 2;
+        }
         if (f) {
-            if (fscanf(f, "%d", &enforce) == 1)
+            if (fscanf(f, "%d", &enforce) == 1) {
                 selinux = 2;
+            }
             fclose(f);
         }
         return selinux;
@@ -126,16 +130,19 @@ static int detect_SELinux(void)
         }
     }
     fclose(f);
-    if (!selinux)
+    if (!selinux) {
         return 0;
+    }
 
     f = fopen("/selinux/enforce", "r");
     if (f) {
         if (fscanf(f, "%d", &enforce) == 1) {
-            if (enforce == 1)
+            if (enforce == 1) {
                 selinux = 2;
-            if (enforce == -1)
+            }
+            if (enforce == -1) {
                 selinux = 0;
+            }
         }
         fclose(f);
     }
@@ -192,9 +199,18 @@ void cli_detect_environment(struct cli_environment *env)
     /* -- Detect arch -- */
     CHECK_ARCH(i386);
     else CHECK_ARCH(x86_64);
-    else if (!strcmp(TARGET_ARCH_TYPE, "amd64")) env->arch = arch_x86_64;
-    else if (!strcmp(TARGET_ARCH_TYPE, "AMD64")) env->arch = arch_x86_64;
-    else if (!strcmp(TARGET_ARCH_TYPE, "ppc")) env->arch   = arch_ppc32; /* llvm will fix ppc64 */
+    else if (!strcmp(TARGET_ARCH_TYPE, "amd64"))
+    {
+        env->arch = arch_x86_64;
+    }
+    else if (!strcmp(TARGET_ARCH_TYPE, "AMD64"))
+    {
+        env->arch = arch_x86_64;
+    }
+    else if (!strcmp(TARGET_ARCH_TYPE, "ppc"))
+    {
+        env->arch = arch_ppc32; /* llvm will fix ppc64 */
+    }
     else CHECK_ARCH(arm);
     else CHECK_ARCH(sparc);
     else CHECK_ARCH(sparc64);

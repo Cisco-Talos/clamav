@@ -134,10 +134,14 @@ static inline int onas_hash(const char *key, size_t keylen, uint32_t size)
 int onas_ht_init(struct onas_ht **ht, uint32_t size)
 {
 
-    if (size == 0 || (size & (~size + 1)) != size) return CL_EARG;
+    if (size == 0 || (size & (~size + 1)) != size) {
+        return CL_EARG;
+    }
 
     *ht = (struct onas_ht *)malloc(sizeof(struct onas_ht));
-    if (!(*ht)) return CL_EMEM;
+    if (!(*ht)) {
+        return CL_EMEM;
+    }
 
     **ht = (struct onas_ht){
         .htable = NULL,
@@ -158,7 +162,9 @@ int onas_ht_init(struct onas_ht **ht, uint32_t size)
 void onas_free_ht(struct onas_ht *ht)
 {
 
-    if (!ht || ht->size == 0) return;
+    if (!ht || ht->size == 0) {
+        return;
+    }
 
     if (!ht->htable) {
         free(ht);
@@ -183,7 +189,9 @@ static struct onas_bucket *onas_bucket_init()
 {
 
     struct onas_bucket *bckt = (struct onas_bucket *)malloc(sizeof(struct onas_bucket));
-    if (!bckt) return NULL;
+    if (!bckt) {
+        return NULL;
+    }
 
     *bckt = (struct onas_bucket){
         .size = 0,
@@ -196,7 +204,9 @@ static struct onas_bucket *onas_bucket_init()
 static void onas_free_bucket(struct onas_bucket *bckt)
 {
 
-    if (!bckt) return;
+    if (!bckt) {
+        return;
+    }
 
     uint32_t i                = 0;
     struct onas_element *curr = NULL;
@@ -219,7 +229,9 @@ struct onas_element *onas_element_init(struct onas_hnode *value, const char *key
 {
 
     struct onas_element *elem = (struct onas_element *)malloc(sizeof(struct onas_element));
-    if (!elem) return NULL;
+    if (!elem) {
+        return NULL;
+    }
 
     *elem = (struct onas_element){
         .key  = key,
@@ -234,7 +246,9 @@ struct onas_element *onas_element_init(struct onas_hnode *value, const char *key
 void onas_free_element(struct onas_element *elem)
 {
 
-    if (!elem) return;
+    if (!elem) {
+        return;
+    }
 
     onas_free_hashnode(elem->data);
 
@@ -249,7 +263,9 @@ void onas_free_element(struct onas_element *elem)
 int onas_ht_insert(struct onas_ht *ht, struct onas_element *elem)
 {
 
-    if (!ht || !elem || !elem->key) return CL_ENULLARG;
+    if (!ht || !elem || !elem->key) {
+        return CL_ENULLARG;
+    }
 
     int idx                  = onas_hash(elem->key, elem->klen, ht->size);
     struct onas_bucket *bckt = ht->htable[idx];
@@ -278,16 +294,20 @@ int onas_ht_insert(struct onas_ht *ht, struct onas_element *elem)
     bsize = bckt->size;
     ret   = onas_bucket_insert(bckt, elem);
 
-    if (ret == CL_SUCCESS)
-        if (bsize < bckt->size)
+    if (ret == CL_SUCCESS) {
+        if (bsize < bckt->size) {
             ht->nbckts++;
+        }
+    }
 
     return ret;
 }
 
 static int onas_bucket_insert(struct onas_bucket *bckt, struct onas_element *elem)
 {
-    if (!bckt || !elem) return CL_ENULLARG;
+    if (!bckt || !elem) {
+        return CL_ENULLARG;
+    }
 
     if (bckt->size == 0) {
         bckt->head = elem;
@@ -314,13 +334,19 @@ static int onas_bucket_insert(struct onas_bucket *bckt, struct onas_element *ele
 int onas_ht_get(struct onas_ht *ht, const char *key, size_t klen, struct onas_element **elem)
 {
 
-    if (elem) *elem = NULL;
+    if (elem) {
+        *elem = NULL;
+    }
 
-    if (!ht || !key || klen <= 0) return CL_ENULLARG;
+    if (!ht || !key || klen <= 0) {
+        return CL_ENULLARG;
+    }
 
     struct onas_bucket *bckt = ht->htable[onas_hash(key, klen, ht->size)];
 
-    if (!bckt || bckt->size == 0) return CL_EARG;
+    if (!bckt || bckt->size == 0) {
+        return CL_EARG;
+    }
 
     struct onas_element *curr = bckt->head;
 
@@ -328,9 +354,13 @@ int onas_ht_get(struct onas_ht *ht, const char *key, size_t klen, struct onas_el
         curr = curr->next;
     }
 
-    if (!curr) return CL_EARG;
+    if (!curr) {
+        return CL_EARG;
+    }
 
-    if (elem) *elem = curr;
+    if (elem) {
+        *elem = curr;
+    }
 
     return CL_SUCCESS;
 }
@@ -340,27 +370,37 @@ int onas_ht_get(struct onas_ht *ht, const char *key, size_t klen, struct onas_el
  */
 int onas_ht_remove(struct onas_ht *ht, const char *key, size_t klen, struct onas_element **relem)
 {
-    if (!ht || !key || klen <= 0) return CL_ENULLARG;
+    if (!ht || !key || klen <= 0) {
+        return CL_ENULLARG;
+    }
 
     struct onas_bucket *bckt = ht->htable[onas_hash(key, klen, ht->size)];
 
-    if (!bckt) return CL_EARG;
+    if (!bckt) {
+        return CL_EARG;
+    }
 
     struct onas_element *elem = NULL;
     onas_ht_get(ht, key, klen, &elem);
 
-    if (!elem) return CL_EARG;
+    if (!elem) {
+        return CL_EARG;
+    }
 
     int ret = onas_bucket_remove(bckt, elem);
 
-    if (relem) *relem = elem;
+    if (relem) {
+        *relem = elem;
+    }
 
     return ret;
 }
 
 static int onas_bucket_remove(struct onas_bucket *bckt, struct onas_element *elem)
 {
-    if (!bckt || !elem) return CL_ENULLARG;
+    if (!bckt || !elem) {
+        return CL_ENULLARG;
+    }
 
     struct onas_element *curr = bckt->head;
 
@@ -368,16 +408,22 @@ static int onas_bucket_remove(struct onas_bucket *bckt, struct onas_element *ele
         curr = curr->next;
     }
 
-    if (!curr) return CL_EARG;
+    if (!curr) {
+        return CL_EARG;
+    }
 
     if (bckt->head == elem) {
         bckt->head = elem->next;
-        if (bckt->head) bckt->head->prev = NULL;
+        if (bckt->head) {
+            bckt->head->prev = NULL;
+        }
 
         elem->next = NULL;
     } else if (bckt->tail == elem) {
         bckt->tail = elem->prev;
-        if (bckt->tail) bckt->tail->next = NULL;
+        if (bckt->tail) {
+            bckt->tail->next = NULL;
+        }
 
         elem->prev = NULL;
     } else {
@@ -460,7 +506,9 @@ static struct onas_lnode *onas_listnode_init(void)
  */
 void onas_free_hashnode(struct onas_hnode *hnode)
 {
-    if (!hnode) return;
+    if (!hnode) {
+        return;
+    }
 
     onas_free_dirlist(hnode->childhead);
     hnode->childhead = NULL;
@@ -481,7 +529,9 @@ void onas_free_hashnode(struct onas_hnode *hnode)
  */
 void onas_free_dirlist(struct onas_lnode *head)
 {
-    if (!head) return;
+    if (!head) {
+        return;
+    }
     struct onas_lnode *curr = head;
     struct onas_lnode *tmp  = curr;
 
@@ -499,7 +549,9 @@ void onas_free_dirlist(struct onas_lnode *head)
  */
 void onas_free_listnode(struct onas_lnode *lnode)
 {
-    if (!lnode) return;
+    if (!lnode) {
+        return;
+    }
 
     lnode->next = NULL;
     lnode->prev = NULL;
@@ -517,10 +569,14 @@ void onas_free_listnode(struct onas_lnode *lnode)
  */
 static int onas_add_hashnode_child(struct onas_hnode *node, const char *dirname)
 {
-    if (!node || !dirname) return CL_ENULLARG;
+    if (!node || !dirname) {
+        return CL_ENULLARG;
+    }
 
     struct onas_lnode *child = onas_listnode_init();
-    if (!child) return CL_EMEM;
+    if (!child) {
+        return CL_EMEM;
+    }
 
     size_t n       = strlen(dirname);
     child->dirname = CLI_STRNDUP(dirname, n);
@@ -535,7 +591,9 @@ static int onas_add_hashnode_child(struct onas_hnode *node, const char *dirname)
  */
 int onas_add_listnode(struct onas_lnode *tail, struct onas_lnode *node)
 {
-    if (!tail || !node) return CL_ENULLARG;
+    if (!tail || !node) {
+        return CL_ENULLARG;
+    }
 
     struct onas_lnode *tmp = tail->prev;
 
@@ -553,7 +611,9 @@ int onas_add_listnode(struct onas_lnode *tail, struct onas_lnode *node)
  */
 cl_error_t onas_rm_listnode(struct onas_lnode *head, const char *dirname)
 {
-    if (!dirname || !head) return CL_ENULLARG;
+    if (!dirname || !head) {
+        return CL_ENULLARG;
+    }
 
     struct onas_lnode *curr = head;
     size_t n                = strlen(dirname);
@@ -563,10 +623,12 @@ cl_error_t onas_rm_listnode(struct onas_lnode *head, const char *dirname)
             logg(LOGG_DEBUG, "ClamHash: node's directory name is NULL!\n");
             return CL_ERROR;
         } else if (!strncmp(curr->dirname, dirname, n)) {
-            if (curr->next != NULL)
+            if (curr->next != NULL) {
                 curr->next->prev = curr->prev;
-            if (curr->prev != NULL)
+            }
+            if (curr->prev != NULL) {
                 curr->prev->next = curr->next;
+            }
             onas_free_listnode(curr);
 
             return CL_SUCCESS;
@@ -583,7 +645,9 @@ cl_error_t onas_rm_listnode(struct onas_lnode *head, const char *dirname)
  */
 inline static char *onas_get_parent(const char *pathname, size_t len)
 {
-    if (!pathname || len <= 1) return NULL;
+    if (!pathname || len <= 1) {
+        return NULL;
+    }
 
     int idx   = len - 2;
     char *ret = NULL;
@@ -610,7 +674,9 @@ inline static char *onas_get_parent(const char *pathname, size_t len)
  */
 inline static int onas_get_dirname_idx(const char *pathname, size_t len)
 {
-    if (!pathname || len <= 1) return -1;
+    if (!pathname || len <= 1) {
+        return -1;
+    }
 
     int idx = len - 2;
 
@@ -618,8 +684,9 @@ inline static int onas_get_dirname_idx(const char *pathname, size_t len)
         idx--;
     }
 
-    if (pathname[idx] == '/')
+    if (pathname[idx] == '/') {
         return idx + 1;
+    }
 
     return idx;
 }
@@ -636,16 +703,22 @@ inline static int onas_get_dirname_idx(const char *pathname, size_t len)
 int onas_ht_rm_child(struct onas_ht *ht, const char *prntpath, size_t prntlen, const char *childpath, size_t childlen)
 {
 
-    if (!ht || !prntpath || prntlen <= 0 || !childpath || childlen <= 1) return CL_ENULLARG;
+    if (!ht || !prntpath || prntlen <= 0 || !childpath || childlen <= 1) {
+        return CL_ENULLARG;
+    }
 
     struct onas_element *elem = NULL;
     struct onas_hnode *hnode  = NULL;
     int idx                   = onas_get_dirname_idx(childpath, childlen);
     int ret                   = 0;
 
-    if (idx <= 0) return CL_SUCCESS;
+    if (idx <= 0) {
+        return CL_SUCCESS;
+    }
 
-    if (onas_ht_get(ht, prntpath, prntlen, &elem) != CL_SUCCESS) return CL_EARG;
+    if (onas_ht_get(ht, prntpath, prntlen, &elem) != CL_SUCCESS) {
+        return CL_EARG;
+    }
 
     hnode = elem->data;
 
@@ -667,15 +740,21 @@ int onas_ht_rm_child(struct onas_ht *ht, const char *prntpath, size_t prntlen, c
  */
 int onas_ht_add_child(struct onas_ht *ht, const char *prntpath, size_t prntlen, const char *childpath, size_t childlen)
 {
-    if (!ht || !prntpath || prntlen <= 0 || !childpath || childlen <= 1) return CL_ENULLARG;
+    if (!ht || !prntpath || prntlen <= 0 || !childpath || childlen <= 1) {
+        return CL_ENULLARG;
+    }
 
     struct onas_element *elem = NULL;
     struct onas_hnode *hnode  = NULL;
     int idx                   = onas_get_dirname_idx(childpath, childlen);
 
-    if (idx <= 0) return CL_SUCCESS;
+    if (idx <= 0) {
+        return CL_SUCCESS;
+    }
 
-    if (onas_ht_get(ht, prntpath, prntlen, &elem)) return CL_EARG;
+    if (onas_ht_get(ht, prntpath, prntlen, &elem)) {
+        return CL_EARG;
+    }
     hnode = elem->data;
 
     return onas_add_hashnode_child(hnode, &(childpath[idx]));
@@ -688,7 +767,9 @@ int onas_ht_add_child(struct onas_ht *ht, const char *prntpath, size_t prntlen, 
  */
 int onas_ht_add_hierarchy(struct onas_ht *ht, const char *pathname)
 {
-    if (!ht || !pathname) return CL_ENULLARG;
+    if (!ht || !pathname) {
+        return CL_ENULLARG;
+    }
 
     int ret           = 0;
     FTS *ftsp         = NULL;
@@ -698,7 +779,9 @@ int onas_ht_add_hierarchy(struct onas_ht *ht, const char *pathname)
 
     size_t len = strlen(pathname);
     char *prnt = onas_get_parent(pathname, len);
-    if (prnt) onas_ht_add_child(ht, prnt, strlen(prnt), pathname, len);
+    if (prnt) {
+        onas_ht_add_child(ht, prnt, strlen(prnt), pathname, len);
+    }
     free(prnt);
 
     char *const pathargv[] = {(char *)pathname, NULL};
@@ -725,10 +808,11 @@ int onas_ht_add_hierarchy(struct onas_ht *ht, const char *pathname)
                 hnode->pathname = CLI_STRNDUP(curr->fts_path, hnode->pathlen);
 
                 hnode->prnt_pathname = onas_get_parent(hnode->pathname, hnode->pathlen);
-                if (hnode->prnt_pathname)
+                if (hnode->prnt_pathname) {
                     hnode->prnt_pathlen = strlen(hnode->prnt_pathname);
-                else
+                } else {
                     hnode->prnt_pathlen = 0;
+                }
                 break;
             default:
                 continue;
@@ -780,21 +864,27 @@ out:
  */
 int onas_ht_rm_hierarchy(struct onas_ht *ht, const char *pathname, size_t len, int level)
 {
-    if (!ht || !pathname || len <= 0) return CL_ENULLARG;
+    if (!ht || !pathname || len <= 0) {
+        return CL_ENULLARG;
+    }
 
     struct onas_hnode *hnode  = NULL;
     struct onas_element *elem = NULL;
     char *prntname            = NULL;
     size_t prntlen            = 0;
 
-    if (onas_ht_get(ht, pathname, len, &elem)) return CL_EARG;
+    if (onas_ht_get(ht, pathname, len, &elem)) {
+        return CL_EARG;
+    }
 
     hnode = elem->data;
 
     struct onas_lnode *curr = hnode->childhead;
 
     if (level == 0) {
-        if (!(prntname = onas_get_parent(pathname, len))) return CL_EARG;
+        if (!(prntname = onas_get_parent(pathname, len))) {
+            return CL_EARG;
+        }
 
         prntlen = strlen(prntname);
         if (onas_ht_rm_child(ht, prntname, prntlen, pathname, len)) {
@@ -810,12 +900,14 @@ int onas_ht_rm_hierarchy(struct onas_ht *ht, const char *pathname, size_t len, i
 
         size_t size      = len + strlen(curr->dirname) + 2;
         char *child_path = (char *)malloc(size);
-        if (child_path == NULL)
+        if (child_path == NULL) {
             return CL_EMEM;
-        if (hnode->pathname[len - 1] == '/')
+        }
+        if (hnode->pathname[len - 1] == '/') {
             snprintf(child_path, size, "%s%s", hnode->pathname, curr->dirname);
-        else
+        } else {
             snprintf(child_path, size, "%s/%s", hnode->pathname, curr->dirname);
+        }
         onas_ht_rm_hierarchy(ht, child_path, size, level + 1);
         free(child_path);
     }

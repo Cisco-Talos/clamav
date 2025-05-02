@@ -364,8 +364,9 @@ cl_error_t cli_parsejpeg(cli_ctx *ctx)
             }
             marker = (jpeg_marker_t)marker_u8;
 
-            if (prev_marker == JPEG_MARKER_NOT_A_MARKER_0xFF && marker != JPEG_MARKER_NOT_A_MARKER_0xFF)
+            if (prev_marker == JPEG_MARKER_NOT_A_MARKER_0xFF && marker != JPEG_MARKER_NOT_A_MARKER_0xFF) {
                 break;
+            }
             prev_marker = marker;
         }
         if (i == 16) {
@@ -573,8 +574,9 @@ cl_error_t cli_parsejpeg(cli_ctx *ctx)
                     do {
                         old_offset = photoshop_data_offset;
                         status     = jpeg_check_photoshop_8bim(ctx, &photoshop_data_offset);
-                        if (photoshop_data_offset <= old_offset)
+                        if (photoshop_data_offset <= old_offset) {
                             break;
+                        }
                     } while (status == CL_CLEAN);
 
                     if (status == CL_BREAK) {

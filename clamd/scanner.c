@@ -100,8 +100,9 @@ void hash_callback(int fd, unsigned long long size, const unsigned char *md5, co
     UNUSEDPARAM(fd);
     UNUSEDPARAM(virname);
 
-    if (!c)
+    if (!c) {
         return;
+    }
     c->virsize = size;
     strncpy(c->virhash, (const char *)md5, 32);
     c->virhash[32] = '\0';
@@ -115,20 +116,24 @@ void clamd_virus_found_cb(int fd, const char *virname, void *ctx)
 
     UNUSEDPARAM(fd);
 
-    if (d == NULL)
+    if (d == NULL) {
         return;
-    if (!(d->options->general & CL_SCAN_GENERAL_ALLMATCHES) && !(d->options->general & CL_SCAN_GENERAL_HEURISTIC_PRECEDENCE))
+    }
+    if (!(d->options->general & CL_SCAN_GENERAL_ALLMATCHES) && !(d->options->general & CL_SCAN_GENERAL_HEURISTIC_PRECEDENCE)) {
         return;
-    if (virname == NULL)
+    }
+    if (virname == NULL) {
         return;
+    }
 
     fname = (c && c->filename) ? c->filename : "(filename not set)";
 
     if (virname) {
         d->infected++;
         conn_reply_virus(d->conn, fname, virname);
-        if (c->virsize > 0 && optget(d->opts, "ExtendedDetectionInfo")->enabled)
+        if (c->virsize > 0 && optget(d->opts, "ExtendedDetectionInfo")->enabled) {
             logg(LOGG_INFO, "%s: %s(%s:%llu) FOUND\n", fname, virname, c->virhash, c->virsize);
+        }
         logg(LOGG_INFO, "%s: %s FOUND\n", fname, virname);
     }
 
@@ -161,25 +166,28 @@ cl_error_t scan_callback(STATBUF *sb, char *filename, const char *msg, enum cli_
     if (send(scandata->conn->sd, &ret, 0, 0) == -1 && errno != EINTR) {
         logg(LOGG_DEBUG_NV, "Client disconnected while command was active!\n");
         thrmgr_group_terminate(scandata->conn->group);
-        if (reason == visit_file)
+        if (reason == visit_file) {
             free(filename);
+        }
         return CL_BREAK;
     }
 
     if (thrmgr_group_need_terminate(scandata->conn->group)) {
         logg(LOGG_WARNING, "Client disconnected while scanjob was active\n");
-        if (reason == visit_file)
+        if (reason == visit_file) {
             free(filename);
+        }
         return CL_BREAK;
     }
     scandata->total++;
     switch (reason) {
         case error_mem:
-            if (msg)
+            if (msg) {
                 logg(LOGG_ERROR, "Memory allocation failed during cli_ftw() on %s\n",
                      msg);
-            else
+            } else {
                 logg(LOGG_ERROR, "Memory allocation failed during cli_ftw()\n");
+            }
             scandata->errors++;
             free(filename);
             return CL_EMEM;
@@ -198,8 +206,9 @@ cl_error_t scan_callback(STATBUF *sb, char *filename, const char *msg, enum cli_
             free(filename);
             return CL_SUCCESS;
         case warning_skipped_special:
-            if (msg == scandata->toplevel_path)
+            if (msg == scandata->toplevel_path) {
                 conn_reply(scandata->conn, msg, "Not supported file type", "ERROR");
+            }
             logg(LOGG_DEBUG, "Not supported file type: %s\n", msg);
             free(filename);
             return CL_SUCCESS;
@@ -219,8 +228,9 @@ cl_error_t scan_callback(STATBUF *sb, char *filename, const char *msg, enum cli_
 #endif
 
     if (sb && sb->st_size == 0) { /* empty file */
-        if (msg == scandata->toplevel_path)
+        if (msg == scandata->toplevel_path) {
             conn_reply_single(scandata->conn, filename, "Empty file");
+        }
         free(filename);
         return CL_SUCCESS;
     }
@@ -310,10 +320,11 @@ cl_error_t scan_callback(STATBUF *sb, char *filename, const char *msg, enum cli_
                 prelude_logging(filename, virname, context.virhash, context.virsize);
             }
 
-            if (context.virsize && optget(scandata->opts, "ExtendedDetectionInfo")->enabled)
+            if (context.virsize && optget(scandata->opts, "ExtendedDetectionInfo")->enabled) {
                 logg(LOGG_INFO, "%s: %s(%s:%llu) FOUND\n", filename, virname, context.virhash, context.virsize);
-            else
+            } else {
                 logg(LOGG_INFO, "%s: %s FOUND\n", filename, virname);
+            }
         }
     } else if (ret != CL_CLEAN) {
         scandata->errors++;
@@ -328,8 +339,9 @@ cl_error_t scan_callback(STATBUF *sb, char *filename, const char *msg, enum cli_
 
     free(filename);
 
-    if (ret == CL_EMEM) /* stop scanning */
+    if (ret == CL_EMEM) { /* stop scanning */
         return ret;
+    }
 
     if (type == TYPE_SCAN) {
         /* virus -> break */
@@ -349,8 +361,9 @@ int scan_pathchk(const char *path, struct cli_ftw_cbdata *data)
     if ((opt = optget(scandata->opts, "ExcludePath"))->enabled) {
         while (opt) {
             if (match_regex(path, opt->strarg) == 1) {
-                if (scandata->type != TYPE_MULTISCAN)
+                if (scandata->type != TYPE_MULTISCAN) {
                     conn_reply_single(scandata->conn, path, "Excluded");
+                }
                 return 1;
             }
             opt = (const struct optstruct *)opt->nextarg;
@@ -360,8 +373,9 @@ int scan_pathchk(const char *path, struct cli_ftw_cbdata *data)
     if (!optget(scandata->opts, "CrossFilesystems")->enabled) {
         if (CLAMSTAT(path, &statbuf) == 0) {
             if (statbuf.st_dev != scandata->dev) {
-                if (scandata->type != TYPE_MULTISCAN)
+                if (scandata->type != TYPE_MULTISCAN) {
                     conn_reply_single(scandata->conn, path, "Excluded (another filesystem)");
+                }
                 return 1;
             }
         }
@@ -395,10 +409,11 @@ cl_error_t scanfd(
     if (stream) {
         struct sockaddr_in sa;
         socklen_t salen = sizeof(sa);
-        if (getpeername(conn->sd, (struct sockaddr *)&sa, &salen) || salen > sizeof(sa) || sa.sin_family != AF_INET)
+        if (getpeername(conn->sd, (struct sockaddr *)&sa, &salen) || salen > sizeof(sa) || sa.sin_family != AF_INET) {
             strncpy(fdstr, "instream(local)", sizeof(fdstr));
-        else
+        } else {
             snprintf(fdstr, sizeof(fdstr), "instream(%s@%u)", inet_ntoa(sa.sin_addr), ntohs(sa.sin_port));
+        }
         reply_fdstr = "stream";
     } else {
         snprintf(fdstr, sizeof(fdstr), "fd[%d]", fd);
@@ -438,21 +453,26 @@ cl_error_t scanfd(
 
     if (ret == CL_VIRUS) {
         virusaction(log_filename, virname, opts);
-        if (conn_reply_virus(conn, reply_fdstr, virname) == -1)
+        if (conn_reply_virus(conn, reply_fdstr, virname) == -1) {
             ret = CL_ETIMEOUT;
-        if (context.virsize && optget(opts, "ExtendedDetectionInfo")->enabled)
+        }
+        if (context.virsize && optget(opts, "ExtendedDetectionInfo")->enabled) {
             logg(LOGG_INFO, "%s: %s(%s:%llu) FOUND\n", log_filename, virname, context.virhash, context.virsize);
-        else
+        } else {
             logg(LOGG_INFO, "%s: %s FOUND\n", log_filename, virname);
+        }
     } else if (ret != CL_CLEAN) {
-        if (conn_reply(conn, reply_fdstr, cl_strerror(ret), "ERROR") == -1)
+        if (conn_reply(conn, reply_fdstr, cl_strerror(ret), "ERROR") == -1) {
             ret = CL_ETIMEOUT;
+        }
         logg(LOGG_INFO, "%s: %s ERROR\n", log_filename, cl_strerror(ret));
     } else {
-        if (conn_reply_single(conn, reply_fdstr, "OK") == CL_ETIMEOUT)
+        if (conn_reply_single(conn, reply_fdstr, "OK") == CL_ETIMEOUT) {
             ret = CL_ETIMEOUT;
-        if (logok)
+        }
+        if (logok) {
             logg(LOGG_INFO, "%s: OK\n", log_filename);
+        }
     }
 
 done:
@@ -499,12 +519,13 @@ int scanstream(
         server.sin_port        = htons(min_port + port);
         server.sin_addr.s_addr = htonl(INADDR_ANY);
 
-        if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
+        if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
             continue;
+        }
 
-        if (bind(sockfd, (struct sockaddr *)&server, (socklen_t)sizeof(struct sockaddr_in)) == -1)
+        if (bind(sockfd, (struct sockaddr *)&server, (socklen_t)sizeof(struct sockaddr_in)) == -1) {
             closesocket(sockfd);
-        else {
+        } else {
             bound = 1;
             break;
         }
@@ -571,8 +592,9 @@ int scanstream(
             break; /* Scan what we have */
         }
         bread = recv(acceptd, buff, btread, 0);
-        if (bread <= 0)
+        if (bread <= 0) {
             break;
+        }
 
         quota -= bread;
 
@@ -583,8 +605,9 @@ int scanstream(
             mdprintf(odesc, "Temporary file -> write ERROR%c", term);
             logg(LOGG_ERROR, "ScanStream(%s@%u): Can't write to temporary file.\n", peer_addr, port);
             close(tmpd);
-            if (!optget(opts, "LeaveTemporaryFiles")->enabled)
+            if (!optget(opts, "LeaveTemporaryFiles")->enabled) {
                 unlink(tmpname);
+            }
             free(tmpname);
             return -1;
         }
@@ -613,8 +636,9 @@ int scanstream(
         ret = -1;
     }
     close(tmpd);
-    if (!optget(opts, "LeaveTemporaryFiles")->enabled)
+    if (!optget(opts, "LeaveTemporaryFiles")->enabled) {
         unlink(tmpname);
+    }
     free(tmpname);
 
     closesocket(acceptd);
@@ -636,8 +660,9 @@ int scanstream(
         }
     } else {
         mdprintf(odesc, "stream: OK%c", term);
-        if (logok)
+        if (logok) {
             logg(LOGG_INFO, "stream(%s@%u): OK\n", peer_addr, port);
+        }
     }
 
     return ret;

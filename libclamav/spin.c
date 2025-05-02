@@ -107,20 +107,22 @@ static char exec86(uint8_t aelle, uint8_t cielle, char *curremu, int *retval)
                 break;
 
             case 0xfe: /* inc/dec al */
-                if (curremu[len] == '\xc0')
+                if (curremu[len] == '\xc0') {
                     aelle++;
-                else
+                } else {
                     aelle--;
+                }
                 len++;
                 break;
 
             case 0xc0: /* ror/rol al, ?? */
                 support = curremu[len];
                 len++;
-                if (support == 0xc0)
+                if (support == 0xc0) {
                     CLI_ROL(aelle, curremu[len]);
-                else
+                } else {
                     CLI_ROR(aelle, curremu[len]);
+                }
                 len++;
                 break;
 
@@ -208,11 +210,13 @@ int unspin(char *src, int ssize, struct cli_exe_section *sections, int sectcnt, 
         return 1;
     }
 
-    if (ep[0x1e0] != '\xb8')
+    if (ep[0x1e0] != '\xb8') {
         cli_dbgmsg("spin: prolly not spinned, expect failure\n");
+    }
 
-    if ((cli_readint32(ep + 0x1e1) & 0x00200000))
+    if ((cli_readint32(ep + 0x1e1) & 0x00200000)) {
         cli_dbgmsg("spin: password protected, expect failure\n");
+    }
 
     curr = ep + 0x1fe5 + len - 1;
     while (len--) {
@@ -383,8 +387,9 @@ int unspin(char *src, int ssize, struct cli_exe_section *sections, int sectcnt, 
 
         for (j = 0; j < sectcnt; j++) {
             if (bitmap & 1) {
-                if (filesize > ctx->engine->maxfilesize || sections[j].vsz > ctx->engine->maxfilesize - filesize)
+                if (filesize > ctx->engine->maxfilesize || sections[j].vsz > ctx->engine->maxfilesize - filesize) {
                     return 2;
+                }
                 filesize += sections[j].vsz;
             }
             bitmap >>= 1;
@@ -427,8 +432,9 @@ int unspin(char *src, int ssize, struct cli_exe_section *sections, int sectcnt, 
     if (len) {
         int t;
         for (t = 0; t < j; t++) {
-            if (bitman & 1)
+            if (bitman & 1) {
                 free(sects[t]);
+            }
             bitman = bitman >> 1 & 0x7fffffff;
         }
         free(sects);
@@ -440,8 +446,9 @@ int unspin(char *src, int ssize, struct cli_exe_section *sections, int sectcnt, 
         /*    len = cli_readint32(ep+0x2fc8); -- Using vsizes instead */
 
         for (j = 0; j < sectcnt; j++) {
-            if (sections[j].rva <= key32 && key32 - sections[j].rva < sections[j].vsz && CLI_ISCONTAINED(src + sections[j].raw, sections[j].rsz, src + sections[j].raw, key32 - sections[j].rva))
+            if (sections[j].rva <= key32 && key32 - sections[j].rva < sections[j].vsz && CLI_ISCONTAINED(src + sections[j].raw, sections[j].rsz, src + sections[j].raw, key32 - sections[j].rva)) {
                 break;
+            }
         }
 
         if (j != sectcnt && ((bitman & (1 << j)) == 0)) { /* FIXME: not really sure either the res sect is lamed or just compressed, but this'll save some major headaches */
@@ -487,8 +494,9 @@ int unspin(char *src, int ssize, struct cli_exe_section *sections, int sectcnt, 
 
                 memcpy(to, sects[j], rebhlp[j].rsz);
                 to += rebhlp[j].rsz;
-                if (bitmap & 1)
+                if (bitmap & 1) {
                     free(sects[j]);
+                }
                 bitmap = bitmap >> 1;
             }
 
@@ -506,8 +514,9 @@ int unspin(char *src, int ssize, struct cli_exe_section *sections, int sectcnt, 
 
     cli_dbgmsg("spin: free bitmap is %x\n", bitman);
     for (j = 0; j < sectcnt; j++) {
-        if (bitmap & 1)
+        if (bitmap & 1) {
             free(sects[j]);
+        }
         bitman = bitman >> 1 & 0x7fffffff;
     }
     free(sects);

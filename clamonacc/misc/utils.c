@@ -71,8 +71,9 @@ int onas_fan_checkowner(int pid, const struct optstruct *opts)
     opt_uname = optget(opts, "OnAccessExcludeUname");
 
     /* we can return immediately if no uid exclusions were requested */
-    if (!(opt->enabled || opt_root->enabled || opt_uname->enabled))
+    if (!(opt->enabled || opt_root->enabled || opt_uname->enabled)) {
         return CHK_CLEAN;
+    }
 
     /* perform exclusion checks if we can stat OK */
     snprintf(path, sizeof(path), "/proc/%u", pid);
@@ -80,8 +81,9 @@ int onas_fan_checkowner(int pid, const struct optstruct *opts)
         /* check all our non-root UIDs first */
         if (opt->enabled) {
             while (opt) {
-                if (opt->numarg == (long long)sb.st_uid)
+                if (opt->numarg == (long long)sb.st_uid) {
                     return CHK_FOUND;
+                }
                 opt = opt->nextarg;
             }
         }
@@ -132,8 +134,9 @@ int onas_fan_checkowner(int pid, const struct optstruct *opts)
         }
         /* finally check root UID */
         if (opt_root->enabled) {
-            if (0 == (long long)sb.st_uid)
+            if (0 == (long long)sb.st_uid) {
                 return CHK_FOUND;
+            }
         }
     } else if (errno == EACCES) {
         logg(LOGG_DEBUG, "ClamMisc: permission denied to stat /proc/%d to exclude UIDs... perhaps SELinux denial?\n", pid);

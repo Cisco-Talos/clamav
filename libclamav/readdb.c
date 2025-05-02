@@ -102,19 +102,22 @@ char *cli_virname(const char *virname, unsigned int official)
 {
     char *newname, *pt;
 
-    if (!virname)
+    if (!virname) {
         return NULL;
+    }
 
-    if ((pt = strstr(virname, " (Clam)")))
+    if ((pt = strstr(virname, " (Clam)"))) {
         *pt = '\0';
+    }
 
     if (!virname[0]) {
         cli_errmsg("cli_virname: Empty virus name\n");
         return NULL;
     }
 
-    if (official)
+    if (official) {
         return cli_safer_strdup(virname);
+    }
 
     newname = (char *)malloc(strlen(virname) + 11 + 1);
     if (!newname) {
@@ -143,8 +146,9 @@ cl_error_t cli_sigopts_handler(struct cli_matcher *root, const char *virname, co
     }
 
     hexcpy = cli_safer_strdup(hexsig);
-    if (!hexcpy)
+    if (!hexcpy) {
         return CL_EMEM;
+    }
 
     sigopts |= ACPATT_OPTION_ONCE;
 
@@ -261,18 +265,21 @@ cl_error_t cli_sigopts_handler(struct cli_matcher *root, const char *virname, co
                 /* change the '[' and ']' to '{' and '}' since there are now two bytes */
                 hexovr[len++] = '{';
                 ++i;
-                while (i < strlen(hexcpy) && hexcpy[i] != ']')
+                while (i < strlen(hexcpy) && hexcpy[i] != ']') {
                     hexovr[len++] = hexcpy[i++];
+                }
 
                 hexovr[len] = '}';
             } else if (hexcpy[i] == '{') {
-                while (i < hexcpylen && hexcpy[i] != '}')
+                while (i < hexcpylen && hexcpy[i] != '}') {
                     hexovr[len++] = hexcpy[i++];
+                }
 
                 hexovr[len] = '}';
             } else if (hexcpy[i] == '!' || hexcpy[i] == '(') {
-                if (hexcpy[i] == '!')
+                if (hexcpy[i] == '!') {
                     hexovr[len++] = hexcpy[i++];
+                }
 
                 /* copies '(' */
                 hexovr[len] = hexcpy[i];
@@ -405,8 +412,9 @@ static cl_error_t readdb_load_regex_subsignature(struct cli_matcher *root, const
     trigger = hexcpy;
     pattern = start + 1;
     cflags  = end + 1;
-    if (*cflags == '\0') /* get compat-ed */
+    if (*cflags == '\0') { /* get compat-ed */
         cflags = NULL;
+    }
 
     /* normal trigger, get added */
     ret = cli_pcre_addpatt(root, virname, trigger, pattern, cflags, offset, lsigid, options);
@@ -502,8 +510,9 @@ cl_error_t readdb_parse_ldb_subsignature(struct cli_matcher *root, const char *v
 
         if (current_subsig_index > 0) {
             /* allow mapping from lsig back to pattern for macros */
-            if (!tdb->macro_ptids)
+            if (!tdb->macro_ptids) {
                 tdb->macro_ptids = MPOOL_CALLOC(root->mempool, num_subsigs, sizeof(*tdb->macro_ptids));
+            }
             if (!tdb->macro_ptids) {
                 status = CL_EMEM;
                 goto done;
@@ -581,17 +590,19 @@ cl_error_t readdb_parse_ldb_subsignature(struct cli_matcher *root, const char *v
             goto done;
         }
 
-        if ((subtokens_count % 2) == 0)
+        if ((subtokens_count % 2) == 0) {
             offset = subtokens[0];
+        }
 
-        if (subtokens_count == 3)
+        if (subtokens_count == 3) {
             sigopts = subtokens[2];
-        else if (subtokens_count == 4)
+        } else if (subtokens_count == 4) {
             sigopts = subtokens[3];
+        }
 
         if (sigopts) { /* signature modifiers */
             size_t j;
-            for (j = 0; j < strlen(sigopts); j++)
+            for (j = 0; j < strlen(sigopts); j++) {
                 switch (sigopts[j]) {
                     case 'i':
                         subsig_opts |= ACPATT_OPTION_NOCASE;
@@ -610,6 +621,7 @@ cl_error_t readdb_parse_ldb_subsignature(struct cli_matcher *root, const char *v
                         status = CL_EMALFDB;
                         goto done;
                 }
+            }
         }
 
         sig = (subtokens_count % 2) ? subtokens[0] : subtokens[1];
@@ -730,8 +742,9 @@ cl_error_t cli_add_content_match_pattern(struct cli_matcher *root, const char *v
              * Replaces it with:  "??" * n  and then re-parses the modified hexsig with recursion.
              */
             hexcpy = calloc(hexlen + 2 * range, sizeof(char));
-            if (!hexcpy)
+            if (!hexcpy) {
                 return CL_EMEM;
+            }
 
             strncpy(hexcpy, hexsig, wild - hexsig);
             for (i = 0; i < range; i++) {
@@ -795,8 +808,9 @@ cl_error_t cli_add_content_match_pattern(struct cli_matcher *root, const char *v
 
         // Make a copy of the whole pattern so that we can NULL-terminate the hexsig
         // and pass it to cli_ac_addsig() without having to pass the part-length.
-        if (!(hexcpy = cli_safer_strdup(hexsig)))
+        if (!(hexcpy = cli_safer_strdup(hexsig))) {
             return CL_EMEM;
+        }
 
         start = pt = hexcpy;
         for (i = 1; i <= parts; i++) {
@@ -824,8 +838,9 @@ cl_error_t cli_add_content_match_pattern(struct cli_matcher *root, const char *v
                 break;
             }
 
-            if (i == parts)
+            if (i == parts) {
                 break;
+            }
 
             // This time around, we need to parse the integer values from "{n}" or "{min-max}"
             //   to be used when we call `cli_ac_addsig()` for the next part.
@@ -900,11 +915,11 @@ cl_error_t cli_add_content_match_pattern(struct cli_matcher *root, const char *v
 
         nest = 0;
         for (i = 0; i < hexlen; i++) {
-            if (hexsig[i] == '(')
+            if (hexsig[i] == '(') {
                 nest++;
-            else if (hexsig[i] == ')')
+            } else if (hexsig[i] == ')') {
                 nest--;
-            else if (hexsig[i] == '*') {
+            } else if (hexsig[i] == '*') {
                 if (nest) {
                     cli_errmsg("cli_add_content_match_pattern: Alternative match cannot contain unbounded wildcards\n");
                     return CL_EMALFDB;
@@ -942,8 +957,9 @@ cl_error_t cli_add_content_match_pattern(struct cli_matcher *root, const char *v
          * format seems like it can be handled with the Boyer-Moore (BM) pattern matcher.
          */
         bm_new = (struct cli_bm_patt *)MPOOL_CALLOC(root->mempool, 1, sizeof(struct cli_bm_patt));
-        if (!bm_new)
+        if (!bm_new) {
             return CL_EMEM;
+        }
 
         bm_new->pattern = (unsigned char *)CLI_MPOOL_HEX2STR(root->mempool, hexsig);
         if (!bm_new->pattern) {
@@ -960,8 +976,9 @@ cl_error_t cli_add_content_match_pattern(struct cli_matcher *root, const char *v
             return CL_EMEM;
         }
 
-        if (bm_new->length > root->maxpatlen)
+        if (bm_new->length > root->maxpatlen) {
             root->maxpatlen = bm_new->length;
+        }
 
         if (CL_SUCCESS != (ret = cli_bm_addpatt(root, bm_new, offset))) {
             cli_errmsg("cli_add_content_match_pattern: Problem adding signature (4).\n");
@@ -994,8 +1011,9 @@ cl_error_t cli_initroots(struct cl_engine *engine, unsigned int options)
             root->mempool = engine->mempool;
 #endif
             root->type = i;
-            if (cli_mtargets[i].ac_only || engine->ac_only)
+            if (cli_mtargets[i].ac_only || engine->ac_only) {
                 root->ac_only = 1;
+            }
 
             if (CL_SUCCESS != (ret = cli_ac_init(root, engine->ac_mindepth, engine->ac_maxdepth, engine->dconf->other & OTHER_CONF_PREFILTERING))) {
                 /* no need to free previously allocated memory here */
@@ -1019,8 +1037,9 @@ cl_error_t cli_initroots(struct cl_engine *engine, unsigned int options)
 
 char *cli_dbgets(char *buff, unsigned int size, FILE *fs, struct cli_dbio *dbio)
 {
-    if (fs)
+    if (fs) {
         return fgets(buff, size, fs);
+    }
 
     if (dbio->usebuf) {
         int bread;
@@ -1028,8 +1047,9 @@ char *cli_dbgets(char *buff, unsigned int size, FILE *fs, struct cli_dbio *dbio)
 
         while (1) {
             if (!dbio->bufpt) {
-                if (!dbio->size)
+                if (!dbio->size) {
                     return NULL;
+                }
 
                 if (dbio->gzs) {
                     bread = gzread(dbio->gzs, dbio->readpt, dbio->readsize);
@@ -1044,14 +1064,16 @@ char *cli_dbgets(char *buff, unsigned int size, FILE *fs, struct cli_dbio *dbio)
                         return NULL;
                     }
                 }
-                if (!bread)
+                if (!bread) {
                     return NULL;
+                }
                 dbio->readpt[bread] = 0;
                 dbio->bufpt         = dbio->buf;
                 dbio->size -= bread;
                 dbio->bread += bread;
-                if (dbio->hashctx)
+                if (dbio->hashctx) {
                     cl_update_hash(dbio->hashctx, dbio->readpt, bread);
+                }
             }
             if (dbio->chkonly && dbio->bufpt) {
                 dbio->bufpt    = NULL;
@@ -1092,14 +1114,16 @@ char *cli_dbgets(char *buff, unsigned int size, FILE *fs, struct cli_dbio *dbio)
         char *pt;
         unsigned int bs;
 
-        if (!dbio->size)
+        if (!dbio->size) {
             return NULL;
+        }
 
         bs = dbio->size < size ? dbio->size + 1 : size;
-        if (dbio->gzs)
+        if (dbio->gzs) {
             pt = gzgets(dbio->gzs, buff, bs);
-        else
+        } else {
             pt = fgets(buff, bs, dbio->fs);
+        }
 
         if (!pt) {
             cli_errmsg("cli_dbgets: Preliminary end of data\n");
@@ -1108,8 +1132,9 @@ char *cli_dbgets(char *buff, unsigned int size, FILE *fs, struct cli_dbio *dbio)
         bs = strlen(buff);
         dbio->size -= bs;
         dbio->bread += bs;
-        if (dbio->hashctx)
+        if (dbio->hashctx) {
             cl_update_hash(dbio->hashctx, buff, bs);
+        }
         return pt;
     }
 }
@@ -1120,24 +1145,28 @@ static char *cli_signorm(const char *signame)
     size_t pad        = 0;
     size_t nsz;
 
-    if (!signame)
+    if (!signame) {
         return NULL;
+    }
 
     nsz = strlen(signame);
 
     if (nsz > 3 && signame[nsz - 1] == '}') {
         char *pt = strstr(signame, ".{");
-        if (pt) /* strip the ".{ }" clause at the end of signame */
+        if (pt) { /* strip the ".{ }" clause at the end of signame */
             nsz = pt - signame;
-        else
+        } else {
             return NULL;
+        }
     } else if (nsz > 11) {
-        if (!strncmp(signame + nsz - 11, ".UNOFFICIAL", 11))
+        if (!strncmp(signame + nsz - 11, ".UNOFFICIAL", 11)) {
             nsz -= 11;
-        else
+        } else {
             return NULL;
-    } else if (nsz > 2)
+        }
+    } else if (nsz > 2) {
         return NULL;
+    }
 
     if (nsz < 3) {
         pad = 3 - nsz;
@@ -1145,14 +1174,16 @@ static char *cli_signorm(const char *signame)
     }
 
     new_signame = calloc((nsz + 1), sizeof(char));
-    if (!new_signame)
+    if (!new_signame) {
         return NULL;
+    }
 
     memcpy(new_signame, signame, nsz - pad);
     new_signame[nsz] = '\0';
 
-    while (pad > 0)
+    while (pad > 0) {
         new_signame[nsz - pad--] = '\x20';
+    }
 
     return new_signame;
 }
@@ -1165,27 +1196,32 @@ static int cli_chkign(const struct cli_matcher *ignored, const char *signame, co
     unsigned char digest[16];
     int ret = 0;
 
-    if (!ignored || !signame || !entry)
+    if (!ignored || !signame || !entry) {
         return 0;
+    }
 
     norm_signame = cli_signorm(signame);
-    if (norm_signame != NULL)
+    if (norm_signame != NULL) {
         signame = norm_signame;
+    }
 
-    if (cli_bm_scanbuff((const unsigned char *)signame, strlen(signame), &md5_expected, NULL, ignored, 0, NULL, NULL, NULL) == CL_VIRUS)
+    if (cli_bm_scanbuff((const unsigned char *)signame, strlen(signame), &md5_expected, NULL, ignored, 0, NULL, NULL, NULL) == CL_VIRUS) {
         do {
             if (md5_expected) {
                 cl_hash_data("md5", entry, strlen(entry), digest, NULL);
-                if (memcmp(digest, (const unsigned char *)md5_expected, 16))
+                if (memcmp(digest, (const unsigned char *)md5_expected, 16)) {
                     break;
+                }
             }
 
             cli_dbgmsg("Ignoring signature %s\n", signame);
             ret = 1;
         } while (0);
+    }
 
-    if (norm_signame)
+    if (norm_signame) {
         free(norm_signame);
+    }
     return ret;
 }
 
@@ -1231,13 +1267,15 @@ static int cli_chkpua(const char *signame, const char *pua_cats, unsigned int op
     cat_pt = strstr(cat, pua_cats);
     cli_dbgmsg("cli_chkpua:                cat=[%s]\n", cat);
     cli_dbgmsg("cli_chkpua:                sig=[%s]\n", sig);
-    if (options & CL_DB_PUA_INCLUDE)
+    if (options & CL_DB_PUA_INCLUDE) {
         ret = cat_pt ? 0 : 1;
-    else
+    } else {
         ret = cat_pt ? 1 : 0;
+    }
 
-    if (ret)
+    if (ret) {
         cli_dbgmsg("Skipping PUA signature %s - excluded category %s\n", signame, cat);
+    }
     return ret;
 }
 
@@ -1250,24 +1288,28 @@ static cl_error_t cli_loaddb(FILE *fs, struct cl_engine *engine, unsigned int *s
 
     UNUSEDPARAM(dbname);
 
-    if (CL_SUCCESS != (ret = cli_initroots(engine, options)))
+    if (CL_SUCCESS != (ret = cli_initroots(engine, options))) {
         return ret;
+    }
 
     root = engine->root[0];
 
-    if (engine->ignored)
+    if (engine->ignored) {
         if (!(buffer_cpy = malloc(FILEBUFF))) {
             cli_errmsg("cli_loaddb: Can't allocate memory for buffer_cpy\n");
             return CL_EMEM;
         }
+    }
 
     while (cli_dbgets(buffer, FILEBUFF, fs, dbio)) {
         line++;
-        if (buffer[0] == '#')
+        if (buffer[0] == '#') {
             continue;
+        }
         cli_chomp(buffer);
-        if (engine->ignored)
+        if (engine->ignored) {
             strcpy(buffer_cpy, buffer);
+        }
 
         pt = strchr(buffer, '=');
         if (!pt) {
@@ -1279,15 +1321,18 @@ static cl_error_t cli_loaddb(FILE *fs, struct cl_engine *engine, unsigned int *s
         start = buffer;
         *pt++ = 0;
 
-        if (engine->ignored && cli_chkign(engine->ignored, start, buffer_cpy))
+        if (engine->ignored && cli_chkign(engine->ignored, start, buffer_cpy)) {
             continue;
+        }
 
         if (engine->cb_sigload && engine->cb_sigload("db", start, ~options & CL_DB_OFFICIAL, engine->cb_sigload_ctx)) {
             cli_dbgmsg("cli_loaddb: skipping %s due to callback\n", start);
             continue;
         }
 
-        if (*pt == '=') continue;
+        if (*pt == '=') {
+            continue;
+        }
 
         if (CL_SUCCESS != (ret = cli_add_content_match_pattern(root, start, pt, 0, 0, 0, "*", NULL, options))) {
             cli_dbgmsg("cli_loaddb: cli_add_content_match_pattern failed on line %d\n", line);
@@ -1297,8 +1342,9 @@ static cl_error_t cli_loaddb(FILE *fs, struct cl_engine *engine, unsigned int *s
         sigs++;
     }
 
-    if (engine->ignored)
+    if (engine->ignored) {
         free(buffer_cpy);
+    }
 
     if (!line) {
         cli_errmsg("Empty database file\n");
@@ -1310,8 +1356,9 @@ static cl_error_t cli_loaddb(FILE *fs, struct cl_engine *engine, unsigned int *s
         return ret;
     }
 
-    if (signo)
+    if (signo) {
         *signo += sigs;
+    }
 
     return CL_SUCCESS;
 }
@@ -1327,24 +1374,28 @@ static cl_error_t cli_loadidb(FILE *fs, struct cl_engine *engine, unsigned int *
     struct icomtr *metric        = NULL;
     struct icon_matcher *matcher = NULL;
 
-    if (!(matcher = (struct icon_matcher *)MPOOL_CALLOC(engine->mempool, sizeof(*matcher), 1)))
+    if (!(matcher = (struct icon_matcher *)MPOOL_CALLOC(engine->mempool, sizeof(*matcher), 1))) {
         return CL_EMEM;
+    }
 
-    if (engine->ignored)
+    if (engine->ignored) {
         if (!(buffer_cpy = malloc(FILEBUFF))) {
             cli_errmsg("cli_loadidb: Can't allocate memory for buffer_cpy\n");
             MPOOL_FREE(engine->mempool, matcher);
             return CL_EMEM;
         }
+    }
 
     while (cli_dbgets(buffer, FILEBUFF, fs, dbio)) {
         line++;
-        if (buffer[0] == '#')
+        if (buffer[0] == '#') {
             continue;
+        }
 
         cli_chomp(buffer);
-        if (engine->ignored)
+        if (engine->ignored) {
             strcpy(buffer_cpy, buffer);
+        }
 
         tokens_count = cli_strtokenize(buffer, ':', ICO_TOKENS + 1, tokens);
         if (tokens_count != ICO_TOKENS) {
@@ -1359,8 +1410,9 @@ static cl_error_t cli_loadidb(FILE *fs, struct cl_engine *engine, unsigned int *
             break;
         }
 
-        if (engine->ignored && cli_chkign(engine->ignored, tokens[0], buffer_cpy))
+        if (engine->ignored && cli_chkign(engine->ignored, tokens[0], buffer_cpy)) {
             continue;
+        }
 
         if (engine->cb_sigload && engine->cb_sigload("idb", tokens[0], ~options & CL_DB_OFFICIAL, engine->cb_sigload_ctx)) {
             cli_dbgmsg("cli_loadidb: skipping %s due to callback\n", tokens[0]);
@@ -1393,12 +1445,15 @@ static cl_error_t cli_loadidb(FILE *fs, struct cl_engine *engine, unsigned int *
         matcher->icon_counts[enginesize]++;
 
         for (i = 0; i < 3; i++) {
-            if ((metric->color_avg[i] = (hash[0] << 8) | (hash[1] << 4) | hash[2]) > 4072)
+            if ((metric->color_avg[i] = (hash[0] << 8) | (hash[1] << 4) | hash[2]) > 4072) {
                 break;
-            if ((metric->color_x[i] = (hash[3] << 4) | hash[4]) > size - size / 8)
+            }
+            if ((metric->color_x[i] = (hash[3] << 4) | hash[4]) > size - size / 8) {
                 break;
-            if ((metric->color_y[i] = (hash[5] << 4) | hash[6]) > size - size / 8)
+            }
+            if ((metric->color_y[i] = (hash[5] << 4) | hash[6]) > size - size / 8) {
                 break;
+            }
             hash += 7;
         }
         if (i != 3) {
@@ -1408,12 +1463,15 @@ static cl_error_t cli_loadidb(FILE *fs, struct cl_engine *engine, unsigned int *
         }
 
         for (i = 0; i < 3; i++) {
-            if ((metric->gray_avg[i] = (hash[0] << 8) | (hash[1] << 4) | hash[2]) > 4072)
+            if ((metric->gray_avg[i] = (hash[0] << 8) | (hash[1] << 4) | hash[2]) > 4072) {
                 break;
-            if ((metric->gray_x[i] = (hash[3] << 4) | hash[4]) > size - size / 8)
+            }
+            if ((metric->gray_x[i] = (hash[3] << 4) | hash[4]) > size - size / 8) {
                 break;
-            if ((metric->gray_y[i] = (hash[5] << 4) | hash[6]) > size - size / 8)
+            }
+            if ((metric->gray_y[i] = (hash[5] << 4) | hash[6]) > size - size / 8) {
                 break;
+            }
             hash += 7;
         }
         if (i != 3) {
@@ -1424,10 +1482,12 @@ static cl_error_t cli_loadidb(FILE *fs, struct cl_engine *engine, unsigned int *
 
         for (i = 0; i < 3; i++) {
             metric->bright_avg[i] = (hash[0] << 4) | hash[1];
-            if ((metric->bright_x[i] = (hash[2] << 4) | hash[3]) > size - size / 8)
+            if ((metric->bright_x[i] = (hash[2] << 4) | hash[3]) > size - size / 8) {
                 break;
-            if ((metric->bright_y[i] = (hash[4] << 4) | hash[5]) > size - size / 8)
+            }
+            if ((metric->bright_y[i] = (hash[4] << 4) | hash[5]) > size - size / 8) {
                 break;
+            }
             hash += 6;
         }
         if (i != 3) {
@@ -1438,10 +1498,12 @@ static cl_error_t cli_loadidb(FILE *fs, struct cl_engine *engine, unsigned int *
 
         for (i = 0; i < 3; i++) {
             metric->dark_avg[i] = (hash[0] << 4) | hash[1];
-            if ((metric->dark_x[i] = (hash[2] << 4) | hash[3]) > size - size / 8)
+            if ((metric->dark_x[i] = (hash[2] << 4) | hash[3]) > size - size / 8) {
                 break;
-            if ((metric->dark_y[i] = (hash[4] << 4) | hash[5]) > size - size / 8)
+            }
+            if ((metric->dark_y[i] = (hash[4] << 4) | hash[5]) > size - size / 8) {
                 break;
+            }
             hash += 6;
         }
         if (i != 3) {
@@ -1452,10 +1514,12 @@ static cl_error_t cli_loadidb(FILE *fs, struct cl_engine *engine, unsigned int *
 
         for (i = 0; i < 3; i++) {
             metric->edge_avg[i] = (hash[0] << 4) | hash[1];
-            if ((metric->edge_x[i] = (hash[2] << 4) | hash[3]) > size - size / 8)
+            if ((metric->edge_x[i] = (hash[2] << 4) | hash[3]) > size - size / 8) {
                 break;
-            if ((metric->edge_y[i] = (hash[4] << 4) | hash[5]) > size - size / 8)
+            }
+            if ((metric->edge_y[i] = (hash[4] << 4) | hash[5]) > size - size / 8) {
                 break;
+            }
             hash += 6;
         }
         if (i != 3) {
@@ -1466,10 +1530,12 @@ static cl_error_t cli_loadidb(FILE *fs, struct cl_engine *engine, unsigned int *
 
         for (i = 0; i < 3; i++) {
             metric->noedge_avg[i] = (hash[0] << 4) | hash[1];
-            if ((metric->noedge_x[i] = (hash[2] << 4) | hash[3]) > size - size / 8)
+            if ((metric->noedge_x[i] = (hash[2] << 4) | hash[3]) > size - size / 8) {
                 break;
-            if ((metric->noedge_y[i] = (hash[4] << 4) | hash[5]) > size - size / 8)
+            }
+            if ((metric->noedge_y[i] = (hash[4] << 4) | hash[5]) > size - size / 8) {
                 break;
+            }
             hash += 6;
         }
         if (i != 3) {
@@ -1494,8 +1560,9 @@ static cl_error_t cli_loadidb(FILE *fs, struct cl_engine *engine, unsigned int *
         }
 
         for (i = 0; i < matcher->group_counts[0]; i++) {
-            if (!strcmp(tokens[1], matcher->group_names[0][i]))
+            if (!strcmp(tokens[1], matcher->group_names[0][i])) {
                 break;
+            }
         }
         if (i == matcher->group_counts[0]) {
             if (!(matcher->group_names[0] = MPOOL_REALLOC(engine->mempool, matcher->group_names[0], sizeof(char *) * (i + 1))) ||
@@ -1508,8 +1575,9 @@ static cl_error_t cli_loadidb(FILE *fs, struct cl_engine *engine, unsigned int *
         metric->group[0] = i;
 
         for (i = 0; i < matcher->group_counts[1]; i++) {
-            if (!strcmp(tokens[2], matcher->group_names[1][i]))
+            if (!strcmp(tokens[2], matcher->group_names[1][i])) {
                 break;
+            }
         }
         if (i == matcher->group_counts[1]) {
             if (!(matcher->group_names[1] = MPOOL_REALLOC(engine->mempool, matcher->group_names[1], sizeof(char *) * (i + 1))) ||
@@ -1529,8 +1597,9 @@ static cl_error_t cli_loadidb(FILE *fs, struct cl_engine *engine, unsigned int *
 
         sigs++;
     }
-    if (engine->ignored)
+    if (engine->ignored) {
         free(buffer_cpy);
+    }
 
     if (!line) {
         cli_errmsg("cli_loadidb: Empty database file\n");
@@ -1543,8 +1612,9 @@ static cl_error_t cli_loadidb(FILE *fs, struct cl_engine *engine, unsigned int *
         return ret;
     }
 
-    if (signo)
+    if (signo) {
         *signo += sigs;
+    }
 
     engine->iconcheck = matcher;
     return CL_SUCCESS;
@@ -1554,8 +1624,9 @@ static int cli_loadwdb(FILE *fs, struct cl_engine *engine, unsigned int options,
 {
     int ret = 0;
 
-    if (!(engine->dconf->phishing & PHISHING_CONF_ENGINE))
+    if (!(engine->dconf->phishing & PHISHING_CONF_ENGINE)) {
         return CL_SUCCESS;
+    }
 
     if (!engine->allow_list_matcher) {
         if (CL_SUCCESS != (ret = init_allow_list(engine))) {
@@ -1574,8 +1645,9 @@ static int cli_loadpdb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 {
     int ret = 0;
 
-    if (!(engine->dconf->phishing & PHISHING_CONF_ENGINE))
+    if (!(engine->dconf->phishing & PHISHING_CONF_ENGINE)) {
         return CL_SUCCESS;
+    }
 
     if (!engine->domain_list_matcher) {
         if (CL_SUCCESS != (ret = init_domain_list(engine))) {
@@ -1603,27 +1675,33 @@ static int cli_loadndb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 
     UNUSEDPARAM(dbname);
 
-    if (CL_SUCCESS != (ret = cli_initroots(engine, options)))
+    if (CL_SUCCESS != (ret = cli_initroots(engine, options))) {
         return ret;
+    }
 
-    if (engine->ignored)
+    if (engine->ignored) {
         if (!(buffer_cpy = malloc(FILEBUFF))) {
             cli_errmsg("cli_loadndb: Can't allocate memory for buffer_cpy\n");
             return CL_EMEM;
         }
+    }
 
     while (cli_dbgets(buffer, FILEBUFF, fs, dbio)) {
         line++;
-        if (buffer[0] == '#')
+        if (buffer[0] == '#') {
             continue;
+        }
 
-        if (!phish)
-            if (!strncmp(buffer, "HTML.Phishing", 13) || !strncmp(buffer, "Email.Phishing", 14))
+        if (!phish) {
+            if (!strncmp(buffer, "HTML.Phishing", 13) || !strncmp(buffer, "Email.Phishing", 14)) {
                 continue;
+            }
+        }
 
         cli_chomp(buffer);
-        if (engine->ignored)
+        if (engine->ignored) {
             strcpy(buffer_cpy, buffer);
+        }
 
         tokens_count = cli_strtokenize(buffer, ':', NDB_TOKENS + 1, tokens);
         if (tokens_count < 4 || tokens_count > 6) {
@@ -1633,12 +1711,15 @@ static int cli_loadndb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 
         virname = tokens[0];
 
-        if (engine->pua_cats && (options & CL_DB_PUA_MODE) && (options & (CL_DB_PUA_INCLUDE | CL_DB_PUA_EXCLUDE)))
-            if (cli_chkpua(virname, engine->pua_cats, options))
+        if (engine->pua_cats && (options & CL_DB_PUA_MODE) && (options & (CL_DB_PUA_INCLUDE | CL_DB_PUA_EXCLUDE))) {
+            if (cli_chkpua(virname, engine->pua_cats, options)) {
                 continue;
+            }
+        }
 
-        if (engine->ignored && cli_chkign(engine->ignored, virname, buffer_cpy))
+        if (engine->ignored && cli_chkign(engine->ignored, virname, buffer_cpy)) {
             continue;
+        }
 
         if (!sdb && engine->cb_sigload && engine->cb_sigload("ndb", virname, ~options & CL_DB_OFFICIAL, engine->cb_sigload_ctx)) {
             cli_dbgmsg("cli_loadndb: skipping %s due to callback\n", virname);
@@ -1698,8 +1779,9 @@ static int cli_loadndb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
             (void)engine->cb_sigload_progress(engine->num_total_signatures, *signo + sigs, engine->cb_sigload_progress_ctx);
         }
     }
-    if (engine->ignored)
+    if (engine->ignored) {
         free(buffer_cpy);
+    }
 
     if (!line) {
         cli_errmsg("Empty database file\n");
@@ -1711,8 +1793,9 @@ static int cli_loadndb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
         return ret;
     }
 
-    if (signo)
+    if (signo) {
         *signo += sigs;
+    }
 
     if (sdb && sigs && !engine->sdb) {
         engine->sdb = 1;
@@ -1939,8 +2022,9 @@ static int lsigattribs(char *attribs, struct cli_lsig_tdb *tdb)
             }
         }
 
-        if (!apt)
+        if (!apt) {
             continue;
+        }
 
         switch (apt->type) {
             case CLI_TDB_UINT:
@@ -2085,8 +2169,9 @@ static cl_error_t load_oneldb(char *buffer, int chkpua, struct cl_engine *engine
     }
 
     if (engine->ignored && cli_chkign(engine->ignored, virname, buffer_cpy ? buffer_cpy : virname)) {
-        if (skip)
+        if (skip) {
             *skip = 1;
+        }
         cli_dbgmsg("cli_loadldb: Skipping ignored signature %s\n", virname);
         status = CL_BREAK;
         goto done;
@@ -2238,8 +2323,9 @@ static int cli_loadldb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
     unsigned int line = 0, sigs = 0;
     int ret;
 
-    if (CL_SUCCESS != (ret = cli_initroots(engine, options)))
+    if (CL_SUCCESS != (ret = cli_initroots(engine, options))) {
         return ret;
+    }
 
     if (engine->ignored) {
         if (!(buffer_cpy = malloc(sizeof(buffer)))) {
@@ -2250,19 +2336,22 @@ static int cli_loadldb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 
     while (cli_dbgets(buffer, sizeof(buffer), fs, dbio)) {
         line++;
-        if (buffer[0] == '#')
+        if (buffer[0] == '#') {
             continue;
+        }
 
         cli_chomp(buffer);
 
-        if (engine->ignored)
+        if (engine->ignored) {
             strcpy(buffer_cpy, buffer);
+        }
 
         ret = load_oneldb(buffer,
                           engine->pua_cats && (options & CL_DB_PUA_MODE) && (options & (CL_DB_PUA_INCLUDE | CL_DB_PUA_EXCLUDE)),
                           engine, options, dbname, line, &sigs, 0, buffer_cpy, NULL);
-        if (ret)
+        if (ret) {
             break;
+        }
 
         if (engine->cb_sigload_progress && ((*signo + sigs) % 10000 == 0)) {
             /* Let the progress callback function know how we're doing */
@@ -2270,8 +2359,9 @@ static int cli_loadldb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
         }
     }
 
-    if (engine->ignored)
+    if (engine->ignored) {
         free(buffer_cpy);
+    }
 
     if (!line) {
         cli_errmsg("Empty database file\n");
@@ -2283,8 +2373,9 @@ static int cli_loadldb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
         return ret;
     }
 
-    if (signo)
+    if (signo) {
         *signo += sigs;
+    }
 
     return CL_SUCCESS;
 }
@@ -2300,8 +2391,9 @@ static int cli_loadcbc(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
     unsigned i;
 
     /* TODO: virusname have a common prefix, and allow by that */
-    if ((rc = cli_initroots(engine, options)))
+    if ((rc = cli_initroots(engine, options))) {
         return rc;
+    }
 
     if (!(engine->dconf->bytecode & BYTECODE_ENGINE_MASK)) {
         return CL_SUCCESS;
@@ -2351,8 +2443,9 @@ static int cli_loadcbc(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
         return CL_SUCCESS;
     }
     bc->id = bcs->count; /* must set after _load, since load zeroes */
-    if (engine->bytecode_mode == CL_BYTECODE_MODE_TEST)
+    if (engine->bytecode_mode == CL_BYTECODE_MODE_TEST) {
         cli_infomsg(NULL, "bytecode %u -> %s\n", bc->id, dbname);
+    }
     if (bc->kind == BC_LOGICAL || bc->lsig) {
         unsigned oldsigs = sigs;
         if (!bc->lsig) {
@@ -2396,10 +2489,10 @@ static int cli_loadcbc(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
                 return CL_EMEM;
             }
             engine->hooks[hook][cnt - 1] = bcs->count - 1;
-        } else
+        } else {
             switch (bc->kind) {
                 case BC_STARTUP:
-                    for (i = 0; i < bcs->count - 1; i++)
+                    for (i = 0; i < bcs->count - 1; i++) {
                         if (bcs->all_bcs[i].kind == BC_STARTUP) {
                             struct cli_bc *bc0 = &bcs->all_bcs[i];
                             cli_errmsg("Can only load 1 BC_STARTUP bytecode, attempted to load 2nd!\n");
@@ -2411,14 +2504,17 @@ static int cli_loadcbc(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
                                         bc->metadata.sigmaker ? bc->metadata.sigmaker : "N/A");
                             return CL_EMALFDB;
                         }
+                    }
                     break;
                 default:
                     cli_errmsg("Bytecode: unhandled bytecode kind %u\n", bc->kind);
                     return CL_EMALFDB;
             }
+        }
     }
-    if (signo)
+    if (signo) {
         *signo += sigs;
+    }
     return CL_SUCCESS;
 }
 
@@ -2436,21 +2532,25 @@ static int cli_loadftm(FILE *fs, struct cl_engine *engine, unsigned int options,
     int ret;
     int magictype;
 
-    if (CL_SUCCESS != (ret = cli_initroots(engine, options)))
+    if (CL_SUCCESS != (ret = cli_initroots(engine, options))) {
         return ret;
+    }
 
     while (1) {
         if (internal) {
             options |= CL_DB_OFFICIAL;
-            if (!ftypes_int[line])
+            if (!ftypes_int[line]) {
                 break;
+            }
             strncpy(buffer, ftypes_int[line], sizeof(buffer));
             buffer[sizeof(buffer) - 1] = '\0';
         } else {
-            if (!cli_dbgets(buffer, FILEBUFF, fs, dbio))
+            if (!cli_dbgets(buffer, FILEBUFF, fs, dbio)) {
                 break;
-            if (buffer[0] == '#')
+            }
+            if (buffer[0] == '#') {
                 continue;
+            }
             cli_chomp(buffer);
         }
         line++;
@@ -2477,8 +2577,9 @@ static int cli_loadftm(FILE *fs, struct cl_engine *engine, unsigned int options,
                     ret = CL_EMALFDB;
                     break;
                 }
-                if ((unsigned int)atoi(pt) < cl_retflevel())
+                if ((unsigned int)atoi(pt) < cl_retflevel()) {
                     continue;
+                }
             }
         }
 
@@ -2497,8 +2598,9 @@ static int cli_loadftm(FILE *fs, struct cl_engine *engine, unsigned int options,
 
         magictype = atoi(tokens[0]);
         if (magictype == 1) { /* A-C */
-            if (CL_SUCCESS != (ret = cli_add_content_match_pattern(engine->root[0], tokens[3], tokens[2], 0, rtype, type, tokens[1], NULL, options)))
+            if (CL_SUCCESS != (ret = cli_add_content_match_pattern(engine->root[0], tokens[3], tokens[2], 0, rtype, type, tokens[1], NULL, options))) {
                 break;
+            }
 
         } else if ((magictype == 0) || (magictype == 4)) { /* memcmp() */
             if (!cli_isnumber(tokens[1])) {
@@ -2576,8 +2678,9 @@ static int cli_loadinfo(FILE *fs, struct cl_engine *engine, unsigned int options
     }
 
     ctx = cl_hash_init("sha256");
-    if (!(ctx))
+    if (!(ctx)) {
         return CL_EMALFDB;
+    }
 
     while (cli_dbgets(buffer, FILEBUFF, fs, dbio)) {
         line++;
@@ -2691,8 +2794,9 @@ static int cli_loadign(FILE *fs, struct cl_engine *engine, unsigned int options,
 
     if (!engine->ignored) {
         engine->ignored = (struct cli_matcher *)MPOOL_CALLOC(engine->mempool, 1, sizeof(struct cli_matcher));
-        if (!engine->ignored)
+        if (!engine->ignored) {
             return CL_EMEM;
+        }
 #ifdef USE_MPOOL
         engine->ignored->mempool = engine->mempool;
 #endif
@@ -2704,8 +2808,9 @@ static int cli_loadign(FILE *fs, struct cl_engine *engine, unsigned int options,
 
     while (cli_dbgets(buffer, FILEBUFF, fs, dbio)) {
         line++;
-        if (buffer[0] == '#')
+        if (buffer[0] == '#') {
             continue;
+        }
         cli_chomp(buffer);
 
         tokens_count = cli_strtokenize(buffer, ':', IGN_MAX_TOKENS + 1, tokens);
@@ -2735,8 +2840,9 @@ static int cli_loadign(FILE *fs, struct cl_engine *engine, unsigned int options,
                 signame = buffer;
             }
             buffer[3] = '\0';
-            while (pad > 0)
+            while (pad > 0) {
                 buffer[3 - pad--] = '\x20';
+            }
             len = 3;
         }
 
@@ -2764,8 +2870,9 @@ static int cli_loadign(FILE *fs, struct cl_engine *engine, unsigned int options,
         new->boundary |= BM_BOUNDARY_EOL;
 
         if (CL_SUCCESS != (ret = cli_bm_addpatt(engine->ignored, new, "0"))) {
-            if (hash)
+            if (hash) {
                 MPOOL_FREE(engine->mempool, new->virname);
+            }
             MPOOL_FREE(engine->mempool, new->pattern);
             MPOOL_FREE(engine->mempool, new);
             break;
@@ -2801,42 +2908,48 @@ static int cli_loadhash(FILE *fs, struct cl_engine *engine, unsigned int *signo,
         size_field = 0;
         md5_field  = 1;
         db         = engine->hm_mdb;
-    } else if (mode == MD5_HDB)
+    } else if (mode == MD5_HDB) {
         db = engine->hm_hdb;
-    else if (mode == MD5_IMP)
+    } else if (mode == MD5_IMP) {
         db = engine->hm_imp;
-    else
+    } else {
         db = engine->hm_fp;
+    }
 
     if (!db) {
-        if (!(db = MPOOL_CALLOC(engine->mempool, 1, sizeof(*db))))
+        if (!(db = MPOOL_CALLOC(engine->mempool, 1, sizeof(*db)))) {
             return CL_EMEM;
+        }
 #ifdef USE_MPOOL
         db->mempool = engine->mempool;
 #endif
-        if (mode == MD5_HDB)
+        if (mode == MD5_HDB) {
             engine->hm_hdb = db;
-        else if (mode == MD5_MDB)
+        } else if (mode == MD5_MDB) {
             engine->hm_mdb = db;
-        else if (mode == MD5_IMP)
+        } else if (mode == MD5_IMP) {
             engine->hm_imp = db;
-        else
+        } else {
             engine->hm_fp = db;
+        }
     }
 
-    if (engine->ignored)
+    if (engine->ignored) {
         if (!(buffer_cpy = malloc(FILEBUFF))) {
             cli_errmsg("cli_loadhash: Can't allocate memory for buffer_cpy\n");
             return CL_EMEM;
         }
+    }
 
     while (cli_dbgets(buffer, FILEBUFF, fs, dbio)) {
         line++;
-        if (buffer[0] == '#')
+        if (buffer[0] == '#') {
             continue;
+        }
         cli_chomp(buffer);
-        if (engine->ignored)
+        if (engine->ignored) {
             strcpy(buffer_cpy, buffer);
+        }
 
         tokens_count = cli_strtokenize(buffer, ':', MD5_TOKENS + 1, tokens);
         if (tokens_count < 3) {
@@ -2851,12 +2964,14 @@ static int cli_loadhash(FILE *fs, struct cl_engine *engine, unsigned int *signo,
                 break;
             }
 
-            if (cl_retflevel() < req_fl)
+            if (cl_retflevel() < req_fl) {
                 continue;
+            }
             if (tokens_count == MD5_TOKENS) {
                 int max_fl = atoi(tokens[MD5_TOKENS - 1]);
-                if (cl_retflevel() > (unsigned int)max_fl)
+                if (cl_retflevel() > (unsigned int)max_fl) {
                     continue;
+                }
             }
         }
 
@@ -2884,19 +2999,23 @@ static int cli_loadhash(FILE *fs, struct cl_engine *engine, unsigned int *signo,
         }
 
         pt = tokens[2]; /* virname */
-        if (engine->pua_cats && (options & CL_DB_PUA_MODE) && (options & (CL_DB_PUA_INCLUDE | CL_DB_PUA_EXCLUDE)))
-            if (cli_chkpua(pt, engine->pua_cats, options))
+        if (engine->pua_cats && (options & CL_DB_PUA_MODE) && (options & (CL_DB_PUA_INCLUDE | CL_DB_PUA_EXCLUDE))) {
+            if (cli_chkpua(pt, engine->pua_cats, options)) {
                 continue;
+            }
+        }
 
-        if (engine->ignored && cli_chkign(engine->ignored, pt, buffer_cpy))
+        if (engine->ignored && cli_chkign(engine->ignored, pt, buffer_cpy)) {
             continue;
+        }
 
         if (engine->cb_sigload) {
             const char *dot = strchr(dbname, '.');
-            if (!dot)
+            if (!dot) {
                 dot = dbname;
-            else
+            } else {
                 dot++;
+            }
             if (engine->cb_sigload(dot, pt, ~options & CL_DB_OFFICIAL, engine->cb_sigload_ctx)) {
                 cli_dbgmsg("cli_loadhash: skipping %s (%s) due to callback\n", pt, dot);
                 continue;
@@ -2922,8 +3041,9 @@ static int cli_loadhash(FILE *fs, struct cl_engine *engine, unsigned int *signo,
             (void)engine->cb_sigload_progress(engine->num_total_signatures, *signo + sigs, engine->cb_sigload_progress_ctx);
         }
     }
-    if (engine->ignored)
+    if (engine->ignored) {
         free(buffer_cpy);
+    }
 
     if (!line) {
         cli_errmsg("cli_loadhash: Empty database file\n");
@@ -2935,8 +3055,9 @@ static int cli_loadhash(FILE *fs, struct cl_engine *engine, unsigned int *signo,
         return ret;
     }
 
-    if (signo)
+    if (signo) {
         *signo += sigs;
+    }
 
     return CL_SUCCESS;
 }
@@ -2952,20 +3073,23 @@ static int cli_loadmd(FILE *fs, struct cl_engine *engine, unsigned int *signo, i
 
     UNUSEDPARAM(dbname);
 
-    if (engine->ignored)
+    if (engine->ignored) {
         if (!(buffer_cpy = malloc(FILEBUFF))) {
             cli_errmsg("cli_loadmd: Can't allocate memory for buffer_cpy\n");
             return CL_EMEM;
         }
+    }
 
     while (cli_dbgets(buffer, FILEBUFF, fs, dbio)) {
         line++;
-        if (buffer[0] == '#')
+        if (buffer[0] == '#') {
             continue;
+        }
 
         cli_chomp(buffer);
-        if (engine->ignored)
+        if (engine->ignored) {
             strcpy(buffer_cpy, buffer);
+        }
 
         tokens_count = cli_strtokenize(buffer, ':', MD_TOKENS + 1, tokens);
         if (tokens_count != MD_TOKENS) {
@@ -3042,23 +3166,26 @@ static int cli_loadmd(FILE *fs, struct cl_engine *engine, unsigned int *signo, i
         }
         new->csize[0] = new->csize[1] = CLI_OFF_ANY;
 
-        if (!strcmp(tokens[3], "*"))
+        if (!strcmp(tokens[3], "*")) {
             new->fsizer[0] = new->fsizer[1] = CLI_OFF_ANY;
-        else
+        } else {
             new->fsizer[0] = new->fsizer[1] = atoi(tokens[3]);
+        }
 
-        if (!strcmp(tokens[4], "*"))
+        if (!strcmp(tokens[4], "*")) {
             new->fsizec[0] = new->fsizec[1] = CLI_OFF_ANY;
-        else
+        } else {
             new->fsizec[0] = new->fsizec[1] = atoi(tokens[4]);
+        }
 
         if (strcmp(tokens[5], "*")) {
             new->res1 = cli_hex2num(tokens[5]);
             if (new->res1 == -1) {
                 MPOOL_FREE(engine->mempool, new->virname);
                 MPOOL_FREE(engine->mempool, new);
-                if (new->name.re_magic)
+                if (new->name.re_magic) {
                     cli_regfree(&new->name);
+                }
                 ret = CL_EMALFDB;
                 break;
             }
@@ -3074,8 +3201,9 @@ static int cli_loadmd(FILE *fs, struct cl_engine *engine, unsigned int *signo, i
         engine->cdb = new;
         sigs++;
     }
-    if (engine->ignored)
+    if (engine->ignored) {
         free(buffer_cpy);
+    }
 
     if (!line) {
         cli_errmsg("Empty database file\n");
@@ -3087,8 +3215,9 @@ static int cli_loadmd(FILE *fs, struct cl_engine *engine, unsigned int *signo, i
         return ret;
     }
 
-    if (signo)
+    if (signo) {
         *signo += sigs;
+    }
 
     return CL_SUCCESS;
 }
@@ -3106,20 +3235,23 @@ static int cli_loadcdb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
     int ret = CL_SUCCESS;
     struct cli_cdb *new;
 
-    if (engine->ignored)
+    if (engine->ignored) {
         if (!(buffer_cpy = malloc(FILEBUFF))) {
             cli_errmsg("cli_loadcdb: Can't allocate memory for buffer_cpy\n");
             return CL_EMEM;
         }
+    }
 
     while (cli_dbgets(buffer, FILEBUFF, fs, dbio)) {
         line++;
-        if (buffer[0] == '#')
+        if (buffer[0] == '#') {
             continue;
+        }
 
         cli_chomp(buffer);
-        if (engine->ignored)
+        if (engine->ignored) {
             strcpy(buffer_cpy, buffer);
+        }
 
         tokens_count = cli_strtokenize(buffer, ':', CDB_TOKENS + 1, tokens);
         if (tokens_count > CDB_TOKENS || tokens_count < CDB_TOKENS - 2) {
@@ -3141,8 +3273,9 @@ static int cli_loadcdb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
                     ret = CL_EMALFDB;
                     break;
                 }
-                if ((unsigned int)atoi(tokens[11]) < cl_retflevel())
+                if ((unsigned int)atoi(tokens[11]) < cl_retflevel()) {
                     continue;
+                }
             }
         }
 
@@ -3229,8 +3362,9 @@ static int cli_loadcdb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
         } else {
             if (strcmp(tokens[6], "0") && strcmp(tokens[6], "1")) {
                 cli_errmsg("cli_loadcdb: Invalid encryption flag value in signature for %s\n", tokens[0]);
-                if (new->name.re_magic)
+                if (new->name.re_magic) {
                     cli_regfree(&new->name);
+                }
                 MPOOL_FREE(engine->mempool, new->virname);
                 MPOOL_FREE(engine->mempool, new);
                 ret = CL_EMEM;
@@ -3243,8 +3377,9 @@ static int cli_loadcdb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
             new->res2 = CLI_MPOOL_STRDUP(engine->mempool, tokens[9]);
             if (!new->res2) {
                 cli_errmsg("cli_loadcdb: Can't allocate memory for res2 in signature for %s\n", tokens[0]);
-                if (new->name.re_magic)
+                if (new->name.re_magic) {
                     cli_regfree(&new->name);
+                }
                 MPOOL_FREE(engine->mempool, new->virname);
                 MPOOL_FREE(engine->mempool, new);
                 ret = CL_EMEM;
@@ -3256,8 +3391,9 @@ static int cli_loadcdb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
         engine->cdb = new;
         sigs++;
     }
-    if (engine->ignored)
+    if (engine->ignored) {
         free(buffer_cpy);
+    }
 
     if (!line) {
         cli_errmsg("Empty database file\n");
@@ -3269,8 +3405,9 @@ static int cli_loadcdb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
         return ret;
     }
 
-    if (signo)
+    if (signo) {
         *signo += sigs;
+    }
 
     return CL_SUCCESS;
 }
@@ -3335,12 +3472,14 @@ static int cli_loadcrt(FILE *fs, struct cl_engine *engine, struct cli_dbio *dbio
     while (cli_dbgets(buffer, FILEBUFF, fs, dbio)) {
         line++;
 
-        if (buffer[0] == '#')
+        if (buffer[0] == '#') {
             continue;
+        }
 
         cli_chomp(buffer);
-        if (!strlen(buffer))
+        if (!strlen(buffer)) {
             continue;
+        }
 
         tokens_count = cli_strtokenize(buffer, ';', CRT_TOKENS + 1, (const char **)tokens);
         if (tokens_count > CRT_TOKENS || tokens_count < CRT_TOKENS - 2) {
@@ -3457,13 +3596,15 @@ static int cli_loadcrt(FILE *fs, struct cl_engine *engine, struct cli_dbio *dbio
                 goto done;
         }
 
-        if (strlen(tokens[0]))
+        if (strlen(tokens[0])) {
             ca.name = tokens[0];
-        else
+        } else {
             ca.name = NULL;
+        }
 
-        if (strlen(tokens[9]))
+        if (strlen(tokens[9])) {
             ca.not_before = atoi(tokens[9]);
+        }
         ca.not_after = (-1ULL) >> 1;
 
         ca.hashtype = CLI_HASHTYPE_ANY;
@@ -3513,8 +3654,9 @@ static int cli_loadopenioc(FILE *fs, const char *dbname, struct cl_engine *engin
 {
     int rc;
     rc = openioc_parse(dbname, fileno(fs), engine, options);
-    if (rc != CL_SUCCESS)
+    if (rc != CL_SUCCESS) {
         return CL_EMALFDB;
+    }
     return rc;
 }
 
@@ -3536,19 +3678,25 @@ static char *parse_yara_hex_string(YR_STRING *string, int *ret)
     size_t slen, reslen = 0, i, j;
 
     if (!(string) || !(string->string)) {
-        if (ret) *ret = CL_ENULLARG;
+        if (ret) {
+            *ret = CL_ENULLARG;
+        }
         return NULL;
     }
 
     if (!STRING_IS_HEX(string)) {
-        if (ret) *ret = CL_EARG;
+        if (ret) {
+            *ret = CL_EARG;
+        }
         return NULL;
     }
 
     str = (char *)(string->string);
 
     if ((slen = string->length) == 0) {
-        if (ret) *ret = CL_EARG;
+        if (ret) {
+            *ret = CL_EARG;
+        }
         return NULL;
     }
 
@@ -3571,7 +3719,9 @@ static char *parse_yara_hex_string(YR_STRING *string, int *ret)
     reslen++;
     res = calloc(reslen, 1);
     if (!(res)) {
-        if (ret) *ret = CL_EMEM;
+        if (ret) {
+            *ret = CL_EMEM;
+        }
         return NULL;
     }
 
@@ -3638,14 +3788,16 @@ static char *parse_yara_hex_string(YR_STRING *string, int *ret)
         ((ovr = strrchr(res, '}')) && ((res + j - ovr) == 3))) {
         cli_errmsg("parse_yara_hex_string: Single byte subpatterns unsupported in ClamAV\n");
         free(res);
-        if (ret != NULL)
+        if (ret != NULL) {
             *ret = CL_EMALFDB;
+        }
         return NULL;
     }
 #endif
 
-    if (ret)
+    if (ret) {
         *ret = CL_SUCCESS;
+    }
     return res;
 }
 
@@ -3671,13 +3823,15 @@ static cl_error_t ytable_add_attrib(struct cli_ytable *ytable, const char *hexsi
 {
     int32_t lookup;
 
-    if (!ytable || !value)
+    if (!ytable || !value) {
         return CL_ENULLARG;
+    }
 
-    if (!hexsig)
+    if (!hexsig) {
         lookup = ytable->tbl_cnt - 1; /* assuming to attach to current string */
-    else
+    } else {
         lookup = ytable_lookup(hexsig);
+    }
 
     if (lookup < 0) {
         cli_yaramsg("ytable_add_attrib: hexsig cannot be found\n");
@@ -3705,8 +3859,9 @@ static cl_error_t ytable_add_attrib(struct cli_ytable *ytable, const char *hexsi
         }
     } else {
         /* overwrite the previous offset */
-        if (ytable->table[lookup]->offset)
+        if (ytable->table[lookup]->offset) {
             free(ytable->table[lookup]->offset);
+        }
 
         ytable->table[lookup]->offset = cli_safer_strdup(value);
 
@@ -3726,8 +3881,9 @@ static int ytable_add_string(struct cli_ytable *ytable, const char *hexsig)
     struct cli_ytable_entry **newtable;
     int ret;
 
-    if (!ytable || !hexsig)
+    if (!ytable || !hexsig) {
         return CL_ENULLARG;
+    }
 
     new = calloc(1, sizeof(struct cli_ytable_entry));
     if (!new) {
@@ -3769,8 +3925,9 @@ static int ytable_add_string(struct cli_ytable *ytable, const char *hexsig)
 static void ytable_delete(struct cli_ytable *ytable)
 {
     int32_t i;
-    if (!ytable)
+    if (!ytable) {
         return;
+    }
 
     if (ytable->table) {
         for (i = 0; i < ytable->tbl_cnt; ++i) {
@@ -3842,8 +3999,9 @@ static int load_oneyara(YR_RULE *rule, int chkpua, struct cl_engine *engine, uns
     }
 
     /* PUA and IGN checks */
-    if (chkpua && cli_chkpua(rule->identifier, engine->pua_cats, options))
+    if (chkpua && cli_chkpua(rule->identifier, engine->pua_cats, options)) {
         return CL_SUCCESS;
+    }
 
     if (engine->ignored && cli_chkign(engine->ignored, rule->identifier, rule->identifier)) {
         return CL_SUCCESS;
@@ -4214,8 +4372,9 @@ static int load_oneyara(YR_RULE *rule, int chkpua, struct cl_engine *engine, uns
         free(target_str);
         free(newident);
         (*sigs)--;
-        if (ret == CL_BREAK)
+        if (ret == CL_BREAK) {
             return CL_SUCCESS;
+        }
         return ret;
     }
     free(target_str);
@@ -4250,8 +4409,9 @@ static int load_oneyara(YR_RULE *rule, int chkpua, struct cl_engine *engine, uns
     } else {
         if (NULL != (lsig->u.code_start = rule->code_start)) {
             lsig->type = (rule->cl_flags & RULE_OFFSETS) ? CLI_YARA_OFFSET : CLI_YARA_NORMAL;
-            if (RULE_IS_PRIVATE(rule))
+            if (RULE_IS_PRIVATE(rule)) {
                 lsig->flag |= CLI_LSIG_FLAG_PRIVATE;
+            }
         } else {
             cli_errmsg("load_oneyara: code start is NULL\n");
             FREE_TDB(tdb);
@@ -4415,8 +4575,9 @@ static int cli_loadyara(FILE *fs, struct cl_engine *engine, unsigned int *signo,
 
     UNUSEDPARAM(dbio);
 
-    if ((rc = cli_initroots(engine, options)))
+    if ((rc = cli_initroots(engine, options))) {
         return rc;
+    }
 
     memset(&compiler, 0, sizeof(YR_COMPILER));
 
@@ -4425,16 +4586,21 @@ static int cli_loadyara(FILE *fs, struct cl_engine *engine, unsigned int *signo,
     STAILQ_INIT(&compiler.current_rule_string_q);
 
     rc = yr_arena_create(65536, 0, &compiler.sz_arena);
-    if (rc == ERROR_SUCCESS)
+    if (rc == ERROR_SUCCESS) {
         rc = yr_arena_create(65536, 0, &compiler.rules_arena);
-    if (rc == ERROR_SUCCESS)
+    }
+    if (rc == ERROR_SUCCESS) {
         rc = yr_arena_create(65536, 0, &compiler.code_arena);
-    if (rc == ERROR_SUCCESS)
+    }
+    if (rc == ERROR_SUCCESS) {
         rc = yr_arena_create(65536, 0, &compiler.strings_arena);
-    if (rc == ERROR_SUCCESS)
+    }
+    if (rc == ERROR_SUCCESS) {
         rc = yr_arena_create(65536, 0, &compiler.metas_arena);
-    if (rc != ERROR_SUCCESS)
+    }
+    if (rc != ERROR_SUCCESS) {
         return CL_EMEM;
+    }
     compiler.loop_for_of_mem_offset = -1;
     ns.name                         = "default";
     compiler.current_namespace      = &ns;
@@ -4462,8 +4628,9 @@ static int cli_loadyara(FILE *fs, struct cl_engine *engine, unsigned int *signo,
         _yr_compiler_pop_file_name(&compiler);
         return CL_EMALFDB;
 #else
-        if (compiler.last_result == ERROR_INSUFICIENT_MEMORY)
+        if (compiler.last_result == ERROR_INSUFICIENT_MEMORY) {
             return CL_EMEM;
+        }
         rule_errors = rc;
         rc          = CL_SUCCESS;
 #endif
@@ -4485,8 +4652,9 @@ static int cli_loadyara(FILE *fs, struct cl_engine *engine, unsigned int *signo,
         }
     }
 
-    if (0 != rule_errors)
+    if (0 != rule_errors) {
         cli_warnmsg("cli_loadyara: failed to parse or load %u yara rules from file %s, successfully loaded %u rules.\n", rule_errors + rules - sigs, filename, sigs);
+    }
 
     yr_arena_append(engine->yara_global->the_arena, compiler.sz_arena);
     yr_arena_append(engine->yara_global->the_arena, compiler.rules_arena);
@@ -4495,8 +4663,9 @@ static int cli_loadyara(FILE *fs, struct cl_engine *engine, unsigned int *signo,
     yr_arena_destroy(compiler.metas_arena);
     _yr_compiler_pop_file_name(&compiler);
 
-    if (rc)
+    if (rc) {
         return rc;
+    }
 
 #ifdef YARA_FINISHED
     if (!rules) {
@@ -4513,8 +4682,9 @@ static int cli_loadyara(FILE *fs, struct cl_engine *engine, unsigned int *signo,
     /* globals */
     yara_total += rules;
 
-    if (signo)
+    if (signo) {
         *signo += sigs;
+    }
 
     cli_yaramsg("cli_loadyara: loaded %u of %u yara signatures from %s\n", sigs, rules, filename);
 
@@ -4543,10 +4713,12 @@ static int cli_loadpwdb(FILE *fs, struct cl_engine *engine, unsigned int options
             /* TODO - read default passwords */
             return CL_SUCCESS;
         } else {
-            if (!cli_dbgets(buffer, FILEBUFF, fs, dbio))
+            if (!cli_dbgets(buffer, FILEBUFF, fs, dbio)) {
                 break;
-            if (buffer[0] == '#')
+            }
+            if (buffer[0] == '#') {
                 continue;
+            }
             cli_chomp(buffer);
         }
         line++;
@@ -4596,10 +4768,11 @@ static int cli_loadpwdb(FILE *fs, struct cl_engine *engine, unsigned int options
         free(attribs);
         if (ret != CL_SUCCESS) {
             skip++;
-            if (ret == CL_BREAK)
+            if (ret == CL_BREAK) {
                 continue;
-            else
+            } else {
                 break;
+            }
         }
 
         /* check container type */
@@ -4655,10 +4828,11 @@ static int cli_loadpwdb(FILE *fs, struct cl_engine *engine, unsigned int options
             }
             if (!new->passwd) {
                 cli_errmsg("cli_loadpwdb: Can't decode or add new password entry\n");
-                if (pwstype == 0)
+                if (pwstype == 0) {
                     ret = CL_EMEM;
-                else
+                } else {
                     ret = CL_EMALFDB;
+                }
                 MPOOL_FREE(engine->mempool, new->name);
                 MPOOL_FREE(engine->mempool, new);
                 break;
@@ -4702,7 +4876,9 @@ cl_error_t cli_load(const char *filename, struct cl_engine *engine, unsigned int
     char buff[FILEBUFF];
 
     if (dbio && dbio->chkonly) {
-        while (cli_dbgets(buff, FILEBUFF, NULL, dbio)) continue;
+        while (cli_dbgets(buff, FILEBUFF, NULL, dbio)) {
+            continue;
+        }
         return CL_SUCCESS;
     }
 
@@ -4719,17 +4895,19 @@ cl_error_t cli_load(const char *filename, struct cl_engine *engine, unsigned int
         return CL_EOPEN;
     }
 
-    if ((dbname = strrchr(filename, *PATHSEP)))
+    if ((dbname = strrchr(filename, *PATHSEP))) {
         dbname++;
-    else
+    } else {
         dbname = filename;
+    }
 
 #ifdef HAVE_YARA
     if (options & CL_DB_YARA_ONLY) {
-        if (cli_strbcasestr(dbname, ".yar") || cli_strbcasestr(dbname, ".yara"))
+        if (cli_strbcasestr(dbname, ".yar") || cli_strbcasestr(dbname, ".yara")) {
             ret = cli_loadyara(fs, engine, signo, options, dbio, filename);
-        else
+        } else {
             skipped = 1;
+        }
     } else
 #endif
         if (cli_strbcasestr(dbname, ".db")) {
@@ -4750,10 +4928,11 @@ cl_error_t cli_load(const char *filename, struct cl_engine *engine, unsigned int
     } else if (cli_strbcasestr(dbname, ".hdb") || cli_strbcasestr(dbname, ".hsb")) {
         ret = cli_loadhash(fs, engine, signo, MD5_HDB, options, dbio, dbname);
     } else if (cli_strbcasestr(dbname, ".hdu") || cli_strbcasestr(dbname, ".hsu")) {
-        if (options & CL_DB_PUA)
+        if (options & CL_DB_PUA) {
             ret = cli_loadhash(fs, engine, signo, MD5_HDB, options | CL_DB_PUA_MODE, dbio, dbname);
-        else
+        } else {
             skipped = 1;
+        }
 
     } else if (cli_strbcasestr(dbname, ".fp") || cli_strbcasestr(dbname, ".sfp")) {
         ret = cli_loadhash(fs, engine, signo, MD5_FP, options, dbio, dbname);
@@ -4763,33 +4942,37 @@ cl_error_t cli_load(const char *filename, struct cl_engine *engine, unsigned int
         ret = cli_loadhash(fs, engine, signo, MD5_IMP, options, dbio, dbname);
 
     } else if (cli_strbcasestr(dbname, ".mdu") || cli_strbcasestr(dbname, ".msu")) {
-        if (options & CL_DB_PUA)
+        if (options & CL_DB_PUA) {
             ret = cli_loadhash(fs, engine, signo, MD5_MDB, options | CL_DB_PUA_MODE, dbio, dbname);
-        else
+        } else {
             skipped = 1;
+        }
 
     } else if (cli_strbcasestr(dbname, ".ndb")) {
         ret = cli_loadndb(fs, engine, signo, 0, options, dbio, dbname);
 
     } else if (cli_strbcasestr(dbname, ".ndu")) {
-        if (!(options & CL_DB_PUA))
+        if (!(options & CL_DB_PUA)) {
             skipped = 1;
-        else
+        } else {
             ret = cli_loadndb(fs, engine, signo, 0, options | CL_DB_PUA_MODE, dbio, dbname);
+        }
 
     } else if (cli_strbcasestr(filename, ".ldb")) {
         ret = cli_loadldb(fs, engine, signo, options, dbio, dbname);
 
     } else if (cli_strbcasestr(filename, ".ldu")) {
-        if (options & CL_DB_PUA)
+        if (options & CL_DB_PUA) {
             ret = cli_loadldb(fs, engine, signo, options | CL_DB_PUA_MODE, dbio, dbname);
-        else
+        } else {
             skipped = 1;
+        }
     } else if (cli_strbcasestr(filename, ".cbc")) {
-        if (options & CL_DB_BYTECODE)
+        if (options & CL_DB_BYTECODE) {
             ret = cli_loadcbc(fs, engine, signo, options, dbio, dbname);
-        else
+        } else {
             skipped = 1;
+        }
     } else if (cli_strbcasestr(dbname, ".sdb")) {
         ret = cli_loadndb(fs, engine, signo, 1, options, dbio, dbname);
 
@@ -4808,13 +4991,15 @@ cl_error_t cli_load(const char *filename, struct cl_engine *engine, unsigned int
     } else if (cli_strbcasestr(dbname, ".wdb")) {
         if (options & CL_DB_PHISHING_URLS) {
             ret = cli_loadwdb(fs, engine, options, dbio);
-        } else
+        } else {
             skipped = 1;
+        }
     } else if (cli_strbcasestr(dbname, ".pdb") || cli_strbcasestr(dbname, ".gdb")) {
         if (options & CL_DB_PHISHING_URLS) {
             ret = cli_loadpdb(fs, engine, signo, options, dbio);
-        } else
+        } else {
             skipped = 1;
+        }
     } else if (cli_strbcasestr(dbname, ".ftm")) {
         ret = cli_loadftm(fs, engine, options, 0, dbio);
 
@@ -4832,10 +5017,11 @@ cl_error_t cli_load(const char *filename, struct cl_engine *engine, unsigned int
         ret = cli_loadopenioc(fs, dbname, engine, options);
 #ifdef HAVE_YARA
     } else if (cli_strbcasestr(dbname, ".yar") || cli_strbcasestr(dbname, ".yara")) {
-        if (!(options & CL_DB_YARA_EXCLUDE))
+        if (!(options & CL_DB_YARA_EXCLUDE)) {
             ret = cli_loadyara(fs, engine, signo, options, dbio, filename);
-        else
+        } else {
             skipped = 1;
+        }
 #endif
     } else if (cli_strbcasestr(dbname, ".pwdb")) {
         ret = cli_loadpwdb(fs, engine, options, 0, dbio);
@@ -4847,14 +5033,16 @@ cl_error_t cli_load(const char *filename, struct cl_engine *engine, unsigned int
     if (ret) {
         cli_errmsg("Can't load %s: %s\n", filename, cl_strerror(ret));
     } else {
-        if (skipped)
+        if (skipped) {
             cli_dbgmsg("%s skipped\n", filename);
-        else
+        } else {
             cli_dbgmsg("%s loaded\n", filename);
+        }
     }
 
-    if (fs)
+    if (fs) {
         fclose(fs);
+    }
 
     if (CL_SUCCESS == ret) {
         if (engine->cb_sigload_progress) {
@@ -5068,10 +5256,11 @@ static cl_error_t cli_loaddbdir(const char *dirname, struct cl_engine *engine, u
             ret = CL_EMEM;
             goto done;
         }
-        if (ends_with_sep)
+        if (ends_with_sep) {
             sprintf(dbfile, "%s%s", dirname, dent->d_name);
-        else
+        } else {
             sprintf(dbfile, "%s" PATHSEP "%s", dirname, dent->d_name);
+        }
 
 #define DB_LOAD_PRIORITY_IGN 1
 #define DB_LOAD_PRIORITY_DAILY_CLD 2
@@ -5230,8 +5419,9 @@ done:
         cl_cvdfree(daily_cvd);
     }
 
-    if (ret == CL_EOPEN)
+    if (ret == CL_EOPEN) {
         cli_errmsg("cli_loaddbdir: No supported database files found in %s\n", dirname);
+    }
 
     return ret;
 }
@@ -5287,19 +5477,23 @@ cl_error_t cl_load(const char *path, struct cl_engine *engine, unsigned int *sig
         return CL_ESTAT;
     }
 
-    if ((dboptions & CL_DB_PHISHING_URLS) && !engine->phishcheck && (engine->dconf->phishing & PHISHING_CONF_ENGINE))
-        if (CL_SUCCESS != (ret = phishing_init(engine)))
+    if ((dboptions & CL_DB_PHISHING_URLS) && !engine->phishcheck && (engine->dconf->phishing & PHISHING_CONF_ENGINE)) {
+        if (CL_SUCCESS != (ret = phishing_init(engine))) {
             return ret;
+        }
+    }
 
     if ((dboptions & CL_DB_BYTECODE) && !engine->bcs.inited) {
-        if (CL_SUCCESS != (ret = cli_bytecode_init(&engine->bcs)))
+        if (CL_SUCCESS != (ret = cli_bytecode_init(&engine->bcs))) {
             return ret;
+        }
     } else {
         cli_dbgmsg("Bytecode engine disabled\n");
     }
 
-    if (!engine->cache && clean_cache_init(engine))
+    if (!engine->cache && clean_cache_init(engine)) {
         return CL_EMEM;
+    }
 
     engine->dboptions |= dboptions;
 
@@ -5494,7 +5688,7 @@ int cl_statchkdir(const struct cl_stat *dbstat)
                 free(fname);
 
                 found = 0;
-                for (i = 0; i < dbstat->entries; i++)
+                for (i = 0; i < dbstat->entries; i++) {
 #ifdef _WIN32
                     if (!strcmp(dbstat->statdname[i], dent->d_name)) {
 #else
@@ -5506,6 +5700,7 @@ int cl_statchkdir(const struct cl_stat *dbstat)
                             return 1;
                         }
                     }
+                }
 
                 if (!found) {
                     closedir(dd);
@@ -5592,8 +5787,9 @@ cl_error_t cl_engine_free(struct cl_engine *engine)
     pthread_mutex_lock(&cli_ref_mutex);
 #endif
 
-    if (engine->refcount)
+    if (engine->refcount) {
         engine->refcount--;
+    }
 
     if (engine->refcount) {
 #ifdef CL_THREAD_SAFE
@@ -5602,8 +5798,9 @@ cl_error_t cl_engine_free(struct cl_engine *engine)
         return CL_SUCCESS;
     }
 
-    if (engine->cb_stats_submit)
+    if (engine->cb_stats_submit) {
         engine->cb_stats_submit(engine, engine->stats_data);
+    }
 
 #ifdef CL_THREAD_SAFE
     if (engine->stats_data) {
@@ -5615,8 +5812,9 @@ cl_error_t cl_engine_free(struct cl_engine *engine)
     pthread_mutex_unlock(&cli_ref_mutex);
 #endif
 
-    if (engine->stats_data)
+    if (engine->stats_data) {
         free(engine->stats_data);
+    }
 
     /*
      * Pre-calculate number of "major" tasks to complete for the progress callback
@@ -5761,8 +5959,9 @@ cl_error_t cl_engine_free(struct cl_engine *engine)
     while (engine->cdb) {
         struct cli_cdb *pt = engine->cdb;
         engine->cdb        = pt->next;
-        if (pt->name.re_magic)
+        if (pt->name.re_magic) {
             cli_regfree(&pt->name);
+        }
         MPOOL_FREE(engine->mempool, pt->res2);
         MPOOL_FREE(engine->mempool, pt->virname);
         MPOOL_FREE(engine->mempool, pt);
@@ -5774,8 +5973,9 @@ cl_error_t cl_engine_free(struct cl_engine *engine)
         engine->dbinfo        = pt->next;
         MPOOL_FREE(engine->mempool, pt->name);
         MPOOL_FREE(engine->mempool, pt->hash);
-        if (pt->cvd)
+        if (pt->cvd) {
             cvd_free(pt->cvd);
+        }
         MPOOL_FREE(engine->mempool, pt);
     }
     TASK_COMPLETE();
@@ -5808,9 +6008,11 @@ cl_error_t cl_engine_free(struct cl_engine *engine)
     }
 
     if (engine->pwdbs) {
-        for (i = 0; i < CLI_PWDB_COUNT; i++)
-            if (engine->pwdbs[i])
+        for (i = 0; i < CLI_PWDB_COUNT; i++) {
+            if (engine->pwdbs[i]) {
                 cli_pwdb_list_free(engine, engine->pwdbs[i]);
+            }
+        }
         MPOOL_FREE(engine->mempool, engine->pwdbs);
     }
     TASK_COMPLETE();
@@ -5832,13 +6034,15 @@ cl_error_t cl_engine_free(struct cl_engine *engine)
             }
         }
         if (iconcheck->group_names[0]) {
-            for (i = 0; i < iconcheck->group_counts[0]; i++)
+            for (i = 0; i < iconcheck->group_counts[0]; i++) {
                 MPOOL_FREE(engine->mempool, iconcheck->group_names[0][i]);
+            }
             MPOOL_FREE(engine->mempool, iconcheck->group_names[0]);
         }
         if (iconcheck->group_names[1]) {
-            for (i = 0; i < iconcheck->group_counts[1]; i++)
+            for (i = 0; i < iconcheck->group_counts[1]; i++) {
                 MPOOL_FREE(engine->mempool, iconcheck->group_names[1][i]);
+            }
             MPOOL_FREE(engine->mempool, iconcheck->group_names[1]);
         }
         MPOOL_FREE(engine->mempool, iconcheck);
@@ -5895,7 +6099,9 @@ cl_error_t cl_engine_free(struct cl_engine *engine)
     }
 
 #ifdef USE_MPOOL
-    if (engine->mempool) mpool_destroy(engine->mempool);
+    if (engine->mempool) {
+        mpool_destroy(engine->mempool);
+    }
     TASK_COMPLETE();
 #endif
 
@@ -5970,54 +6176,66 @@ cl_error_t cl_engine_compile(struct cl_engine *engine)
 #ifdef HAVE_YARA
     /* Free YARA hash tables - only needed for parse and load */
     if (engine->yara_global != NULL) {
-        if (engine->yara_global->rules_table)
+        if (engine->yara_global->rules_table) {
             yr_hash_table_destroy(engine->yara_global->rules_table, NULL);
-        if (engine->yara_global->objects_table)
+        }
+        if (engine->yara_global->objects_table) {
             yr_hash_table_destroy(engine->yara_global->objects_table, NULL);
+        }
         engine->yara_global->rules_table = engine->yara_global->objects_table = NULL;
     }
     TASK_COMPLETE();
 #endif
 
-    if (!engine->ftypes)
-        if ((ret = cli_loadftm(NULL, engine, 0, 1, NULL)))
+    if (!engine->ftypes) {
+        if ((ret = cli_loadftm(NULL, engine, 0, 1, NULL))) {
             return ret;
+        }
+    }
     TASK_COMPLETE();
 
     /* handle default passwords */
-    if (!engine->pwdbs[0] && !engine->pwdbs[1] && !engine->pwdbs[2])
-        if ((ret = cli_loadpwdb(NULL, engine, 0, 1, NULL)))
+    if (!engine->pwdbs[0] && !engine->pwdbs[1] && !engine->pwdbs[2]) {
+        if ((ret = cli_loadpwdb(NULL, engine, 0, 1, NULL))) {
             return ret;
+        }
+    }
     TASK_COMPLETE();
 
     for (i = 0; i < CLI_MTARGETS; i++) {
         if ((root = engine->root[i])) {
-            if ((ret = cli_ac_buildtrie(root)))
+            if ((ret = cli_ac_buildtrie(root))) {
                 return ret;
+            }
             TASK_COMPLETE();
 
-            if ((ret = cli_pcre_build(root, engine->pcre_match_limit, engine->pcre_recmatch_limit, engine->dconf)))
+            if ((ret = cli_pcre_build(root, engine->pcre_match_limit, engine->pcre_recmatch_limit, engine->dconf))) {
                 return ret;
+            }
             TASK_COMPLETE();
 
             cli_dbgmsg("Matcher[%u]: %s: AC sigs: %u (reloff: %u, absoff: %u) BM sigs: %u (reloff: %u, absoff: %u) PCREs: %u (reloff: %u, absoff: %u) maxpatlen %u %s\n", i, cli_mtargets[i].name, root->ac_patterns, root->ac_reloff_num, root->ac_absoff_num, root->bm_patterns, root->bm_reloff_num, root->bm_absoff_num, root->pcre_metas, root->pcre_reloff_num, root->pcre_absoff_num, root->maxpatlen, root->ac_only ? "(ac_only mode)" : "");
         }
     }
 
-    if (engine->hm_hdb)
+    if (engine->hm_hdb) {
         hm_flush(engine->hm_hdb);
+    }
     TASK_COMPLETE();
 
-    if (engine->hm_mdb)
+    if (engine->hm_mdb) {
         hm_flush(engine->hm_mdb);
+    }
     TASK_COMPLETE();
 
-    if (engine->hm_imp)
+    if (engine->hm_imp) {
         hm_flush(engine->hm_imp);
+    }
     TASK_COMPLETE();
 
-    if (engine->hm_fp)
+    if (engine->hm_fp) {
         hm_flush(engine->hm_fp);
+    }
     TASK_COMPLETE();
 
     if ((ret = cli_build_regex_list(engine->allow_list_matcher))) {
@@ -6039,8 +6257,9 @@ cl_error_t cl_engine_compile(struct cl_engine *engine)
 
     if (engine->test_root) {
         root = engine->test_root;
-        if (!root->ac_only)
+        if (!root->ac_only) {
             cli_bm_free(root);
+        }
         cli_ac_free(root);
         if (root->ac_lsigtable) {
             for (i = 0; i < root->ac_lsigs; i++) {
@@ -6107,8 +6326,9 @@ static int countentries(const char *dbname, unsigned int *sigs)
         return CL_EOPEN;
     }
     while (fgets(buffer, sizeof(buffer), fs)) {
-        if (buffer[0] == '#')
+        if (buffer[0] == '#') {
             continue;
+        }
         entry++;
     }
     fclose(fs);
@@ -6139,8 +6359,9 @@ static int countsigs(const char *dbname, unsigned int options, unsigned int *sig
             cl_cvdfree(cvd);
         }
     } else if (cli_strbcasestr(dbname, ".cbc")) {
-        if (options & CL_COUNTSIGS_UNOFFICIAL)
+        if (options & CL_COUNTSIGS_UNOFFICIAL) {
             (*sigs)++;
+        }
 
     } else if (cli_strbcasestr(dbname, ".wdb") || cli_strbcasestr(dbname, ".fp") || cli_strbcasestr(dbname, ".sfp") || cli_strbcasestr(dbname, ".ign") || cli_strbcasestr(dbname, ".ign2") || cli_strbcasestr(dbname, ".ftm") || cli_strbcasestr(dbname, ".cfg") || cli_strbcasestr(dbname, ".cat")) {
         /* ignore allow list/FP signatures and metadata files */
@@ -6167,8 +6388,9 @@ cl_error_t cl_countsigs(const char *path, unsigned int countoptions, unsigned in
     DIR *dd;
     cl_error_t ret;
 
-    if (!sigs)
+    if (!sigs) {
         return CL_ENULLARG;
+    }
 
     if (CLAMSTAT(path, &sb) == -1) {
         cli_errmsg("cl_countsigs: Can't stat %s\n", path);

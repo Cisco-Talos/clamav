@@ -51,7 +51,9 @@ int unfsg_200(const char *source, char *dest, int ssize, int dsize, uint32_t rva
 {
     struct cli_exe_section section; /* Yup, just one ;) */
 
-    if (cli_unfsg(source, dest, ssize, dsize, NULL, NULL)) return -1;
+    if (cli_unfsg(source, dest, ssize, dsize, NULL, NULL)) {
+        return -1;
+    }
 
     section.raw = 0;
     section.rsz = dsize;
@@ -73,8 +75,9 @@ int unfsg_133(const char *source, char *dest, int ssize, int dsize, struct cli_e
 
     for (i = 0; i <= sectcount; i++) {
         char *startd = tdst;
-        if (cli_unfsg(tsrc, tdst, ssize - (tsrc - source), dsize - (tdst - dest), &tsrc, &tdst) == -1)
+        if (cli_unfsg(tsrc, tdst, ssize - (tsrc - source), dsize - (tdst - dest), &tsrc, &tdst) == -1) {
             return -1;
+        }
 
         /* RVA has been filled already in pe.c */
         sections[i].raw = offs;
@@ -89,8 +92,9 @@ int unfsg_133(const char *source, char *dest, int ssize, int dsize, struct cli_e
         for (i = 0; i < sectcount; i++) {
             uint32_t trva, trsz, traw;
 
-            if (sections[i].rva <= sections[i + 1].rva)
+            if (sections[i].rva <= sections[i + 1].rva) {
                 continue;
+            }
             trva                = sections[i].rva;
             traw                = sections[i].raw;
             trsz                = sections[i].rsz;
@@ -109,8 +113,9 @@ int unfsg_133(const char *source, char *dest, int ssize, int dsize, struct cli_e
         if (i != sectcount) {
             sections[i].vsz = sections[i + 1].rva - sections[i].rva;
             lastsz -= sections[i + 1].rva - sections[i].rva;
-        } else
+        } else {
             sections[i].vsz = lastsz;
+        }
 
         cli_dbgmsg("FSG: .SECT%d RVA:%x VSize:%x ROffset: %x, RSize:%x\n", i, sections[i].rva, sections[i].vsz, sections[i].raw, sections[i].rsz);
     }

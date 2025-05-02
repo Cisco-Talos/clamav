@@ -88,10 +88,12 @@ void blobDestroy(blob *b)
     assert(b->magic == BLOBCLASS);
 #endif
 
-    if (b->name)
+    if (b->name) {
         free(b->name);
-    if (b->data)
+    }
+    if (b->data) {
         free(b->data);
+    }
 #ifdef CL_DEBUG
     b->magic = INVALIDCLASS;
 #endif
@@ -125,10 +127,12 @@ blobToMem(blob *b)
     assert(b->magic == BLOBCLASS);
 #endif
 
-    if (!b->isClosed)
+    if (!b->isClosed) {
         blobClose(b);
-    if (b->name)
+    }
+    if (b->name) {
         free(b->name);
+    }
 #ifdef CL_DEBUG
     b->magic = INVALIDCLASS;
 #endif
@@ -151,13 +155,15 @@ void blobSetFilename(blob *b, const char *dir, const char *filename)
 
     cli_dbgmsg("blobSetFilename: %s\n", filename);
 
-    if (b->name)
+    if (b->name) {
         free(b->name);
+    }
 
     b->name = cli_safer_strdup(filename);
 
-    if (b->name)
+    if (b->name) {
         sanitiseName(b->name);
+    }
 }
 
 static const char *
@@ -187,8 +193,9 @@ int blobAddData(blob *b, const unsigned char *data, size_t len)
 #endif
     assert(data != NULL);
 
-    if (len == 0)
+    if (len == 0) {
         return 0;
+    }
 
     if (b->isClosed) {
         /*
@@ -210,12 +217,14 @@ int blobAddData(blob *b, const unsigned char *data, size_t len)
 #if HAVE_CLI_GETPAGESIZE
     if (pagesize == 0) {
         pagesize = cli_getpagesize();
-        if (pagesize <= 0)
+        if (pagesize <= 0) {
             pagesize = 4096;
+        }
     }
     growth = pagesize;
-    if (len >= (size_t)pagesize)
+    if (len >= (size_t)pagesize) {
         growth = ((len / pagesize) + 1) * pagesize;
+    }
 
     /*cli_dbgmsg("blobGrow: b->size %lu, b->len %lu, len %lu, growth = %u\n",
                 b->size, b->len, len, growth);*/
@@ -233,8 +242,9 @@ int blobAddData(blob *b, const unsigned char *data, size_t len)
     } else if (b->size < b->len + (off_t)len) {
         unsigned char *p = cli_max_realloc(b->data, b->size + growth);
 
-        if (p == NULL)
+        if (p == NULL) {
             return -1;
+        }
 
         b->size += growth;
         b->data = p;
@@ -279,8 +289,9 @@ blobGetData(const blob *b)
     assert(b->magic == BLOBCLASS);
 #endif
 
-    if (b->len == 0)
+    if (b->len == 0) {
         return NULL;
+    }
     return b->data;
 }
 
@@ -345,17 +356,20 @@ int blobcmp(const blob *b1, const blob *b2)
     assert(b1 != NULL);
     assert(b2 != NULL);
 
-    if (b1 == b2)
+    if (b1 == b2) {
         return 0;
+    }
 
     s1 = blobGetDataSize(b1);
     s2 = blobGetDataSize(b2);
 
-    if (s1 != s2)
+    if (s1 != s2) {
         return 1;
+    }
 
-    if ((s1 == 0) && (s2 == 0))
+    if ((s1 == 0) && (s2 == 0)) {
         return 0;
+    }
 
     return memcmp(blobGetData(b1), blobGetData(b2), s1);
 }
@@ -370,8 +384,9 @@ int blobGrow(blob *b, size_t len)
     assert(b->magic == BLOBCLASS);
 #endif
 
-    if (len == 0)
+    if (len == 0) {
         return CL_SUCCESS;
+    }
 
     if (b->isClosed) {
         /*
@@ -386,8 +401,9 @@ int blobGrow(blob *b, size_t len)
         assert(b->size == 0);
 
         b->data = cli_max_malloc(len);
-        if (b->data)
+        if (b->data) {
             b->size = (off_t)len;
+        }
     } else {
         unsigned char *ptr = cli_max_realloc(b->data, b->size + len);
 
@@ -441,8 +457,9 @@ void fileblobDestructiveDestroy(fileblob *fb)
     if (fb->fp && fb->fullname) {
         fclose(fb->fp);
         cli_dbgmsg("fileblobDestructiveDestroy: %s\n", fb->fullname);
-        if (!fb->ctx || !fb->ctx->engine->keeptmp)
+        if (!fb->ctx || !fb->ctx->engine->keeptmp) {
             cli_unlink(fb->fullname);
+        }
         free(fb->fullname);
         fb->fp       = NULL;
         fb->fullname = NULL;
@@ -483,12 +500,14 @@ void fileblobDestroy(fileblob *fb)
             cli_errmsg("fileblobDestroy: %s not saved: report to https://github.com/Cisco-Talos/clamav/issues\n",
                        (fb->fullname) ? fb->fullname : fb->b.name);
             free(fb->b.name);
-        } else
+        } else {
             cli_errmsg("fileblobDestroy: file not saved (%lu bytes): report to https://github.com/Cisco-Talos/clamav/issues\n",
                        (unsigned long)fb->b.len);
+        }
     }
-    if (fb->fullname)
+    if (fb->fullname) {
         free(fb->fullname);
+    }
 #ifdef CL_DEBUG
     fb->b.magic = INVALIDCLASS;
 #endif
@@ -499,8 +518,9 @@ void fileblobPartialSet(fileblob *fb, const char *fullname, const char *arg)
 {
     UNUSEDPARAM(arg);
 
-    if (fb->b.name)
+    if (fb->b.name) {
         return;
+    }
 
     assert(fullname != NULL);
 
@@ -519,13 +539,14 @@ void fileblobPartialSet(fileblob *fb, const char *fullname, const char *arg)
         return;
     }
     blobSetFilename(&fb->b, fb->ctx ? fb->ctx->sub_tmpdir : NULL, fullname);
-    if (fb->b.data)
+    if (fb->b.data) {
         if (fileblobAddData(fb, fb->b.data, fb->b.len) == 0) {
             free(fb->b.data);
             fb->b.data = NULL;
             fb->b.len = fb->b.size = 0;
             fb->isNotEmpty         = 1;
         }
+    }
     fb->fullname = cli_safer_strdup(fullname);
 }
 
@@ -533,8 +554,9 @@ void fileblobSetFilename(fileblob *fb, const char *dir, const char *filename)
 {
     char *fullname;
 
-    if (fb->b.name)
+    if (fb->b.name) {
         return;
+    }
 
     assert(filename != NULL);
     assert(dir != NULL);
@@ -549,7 +571,9 @@ void fileblobSetFilename(fileblob *fb, const char *dir, const char *filename)
 
     assert(filename != NULL);
 
-    if (cli_gentempfd(dir, &fullname, &fb->fd) != CL_SUCCESS) return;
+    if (cli_gentempfd(dir, &fullname, &fb->fd) != CL_SUCCESS) {
+        return;
+    }
 
     cli_dbgmsg("fileblobSetFilename: file %s saved to %s\n", filename, fullname);
 
@@ -561,20 +585,22 @@ void fileblobSetFilename(fileblob *fb, const char *dir, const char *filename)
         free(fullname);
         return;
     }
-    if (fb->b.data)
+    if (fb->b.data) {
         if (fileblobAddData(fb, fb->b.data, fb->b.len) == 0) {
             free(fb->b.data);
             fb->b.data = NULL;
             fb->b.len = fb->b.size = 0;
             fb->isNotEmpty         = 1;
         }
+    }
     fb->fullname = fullname;
 }
 
 int fileblobAddData(fileblob *fb, const unsigned char *data, size_t len)
 {
-    if (len == 0)
+    if (len == 0) {
         return 0;
+    }
 
     assert(data != NULL);
 
@@ -637,8 +663,9 @@ cl_error_t fileblobScan(const fileblob *fb)
     cl_error_t rc;
     STATBUF sb;
 
-    if (fb->isInfected)
+    if (fb->isInfected) {
         return CL_VIRUS;
+    }
     if (fb->fp == NULL || fb->fullname == NULL) {
         /* shouldn't happen, scan called before fileblobSetFilename */
         cli_warnmsg("fileblobScan, fullname == NULL\n");

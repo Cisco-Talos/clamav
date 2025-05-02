@@ -106,8 +106,9 @@ cl_error_t cli_msexpand(cli_ctx *ctx, int ofd)
     unsigned int fsize;
     size_t ret;
 
-    if (!(hdr = fmap_need_off_once(map, 0, sizeof(*hdr))))
+    if (!(hdr = fmap_need_off_once(map, 0, sizeof(*hdr)))) {
         return CL_EREAD;
+    }
 
     if (EC32(hdr->magic1) != MAGIC1 || EC32(hdr->magic2) != MAGIC2 || EC16(hdr->magic3) != MAGIC3) {
         cli_dbgmsg("MSEXPAND: Not supported file format\n");
@@ -117,8 +118,9 @@ cl_error_t cli_msexpand(cli_ctx *ctx, int ofd)
     fsize = EC32(hdr->fsize);
     cli_dbgmsg("MSEXPAND: File size from header: %u\n", fsize);
 
-    if (cli_checklimits("MSEXPAND", ctx, fsize, 0, 0) != CL_CLEAN)
+    if (cli_checklimits("MSEXPAND", ctx, fsize, 0, 0) != CL_CLEAN) {
         return CL_SUCCESS;
+    }
 
     memset(buff, 0, B_SIZE);
     while (1) {

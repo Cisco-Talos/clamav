@@ -163,10 +163,12 @@ typedef struct arj_decode_tag {
 
 static cl_error_t fill_buf(arj_decode_t *decode_data, int n)
 {
-    if (decode_data->status == CL_EFORMAT)
+    if (decode_data->status == CL_EFORMAT) {
         return CL_EFORMAT;
-    if (((uint64_t)decode_data->bit_buf) * (n > 0 ? 2 << (n - 1) : 0) > UINT32_MAX)
+    }
+    if (((uint64_t)decode_data->bit_buf) * (n > 0 ? 2 << (n - 1) : 0) > UINT32_MAX) {
         return CL_EFORMAT;
+    }
     decode_data->bit_buf = (((uint64_t)decode_data->bit_buf) << n) & 0xFFFF;
     while (n > decode_data->bit_count) {
         decode_data->bit_buf |= decode_data->sub_bit_buf << (n -= decode_data->bit_count);
@@ -820,8 +822,9 @@ static int is_arj_archive(arj_metadata_t *metadata)
     const char *mark;
 
     mark = fmap_need_off_once(metadata->map, metadata->offset, 2);
-    if (!mark)
+    if (!mark) {
         return FALSE;
+    }
     metadata->offset += 2;
     if (memcmp(&mark[0], &header_id[0], 2) == 0) {
         return TRUE;
@@ -847,8 +850,9 @@ static int arj_read_main_header(arj_metadata_t *metadata)
     size_t comment_len      = 0;
     size_t orig_offset      = metadata->offset;
 
-    if (fmap_readn(metadata->map, &header_size, metadata->offset, 2) != 2)
+    if (fmap_readn(metadata->map, &header_size, metadata->offset, 2) != 2) {
         return FALSE;
+    }
 
     metadata->offset += 2;
     header_size = le16_to_host(header_size);
@@ -985,8 +989,9 @@ static cl_error_t arj_read_file_header(arj_metadata_t *metadata)
     size_t comment_len      = 0;
     size_t orig_offset      = metadata->offset;
 
-    if (fmap_readn(metadata->map, &header_size, metadata->offset, 2) != 2)
+    if (fmap_readn(metadata->map, &header_size, metadata->offset, 2) != 2) {
         return CL_EFORMAT;
+    }
     header_size = le16_to_host(header_size);
     metadata->offset += 2;
 
@@ -1100,8 +1105,9 @@ static cl_error_t arj_read_file_header(arj_metadata_t *metadata)
     for (;;) {
         const uint16_t *countp = fmap_need_off_once(metadata->map, metadata->offset, 2);
         if (!countp) {
-            if (metadata->filename)
+            if (metadata->filename) {
                 free(metadata->filename);
+            }
             metadata->filename = NULL;
             ret                = CL_EFORMAT;
             goto done;

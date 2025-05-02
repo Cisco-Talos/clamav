@@ -121,13 +121,17 @@ static inline cl_error_t matcher_run(const struct cli_matcher *root,
         if (filter_search_ext(root->filter, buffer, length, &info) == -1) {
             /*  for safety always scan last maxpatlen bytes */
             pos = length - root->maxpatlen - 1;
-            if (pos < 0) pos = 0;
+            if (pos < 0) {
+                pos = 0;
+            }
             perf_log_filter(pos, length, root->type);
         } else {
             /* must not cut buffer for 64[4-4]6161, because we must be able to check
              * 64! */
             pos = info.first_match - root->maxpatlen - 1;
-            if (pos < 0) pos = 0;
+            if (pos < 0) {
+                pos = 0;
+            }
             perf_log_filter(pos, length, root->type);
         }
     } else {
@@ -151,13 +155,15 @@ static inline cl_error_t matcher_run(const struct cli_matcher *root,
             ret = cli_bm_scanbuff(buffer, length, virname, NULL, root, offset, tinfo, offdata, ctx);
         }
         if (ret != CL_SUCCESS) {
-            if (ret != CL_VIRUS)
+            if (ret != CL_VIRUS) {
                 return ret;
+            }
             /* else (ret == CL_VIRUS) */
 
             ret = cli_append_virus(ctx, *virname);
-            if (ret != CL_SUCCESS)
+            if (ret != CL_SUCCESS) {
                 return ret;
+            }
         }
     }
     perf_log_tries(acmode, 0, length);
@@ -165,8 +171,9 @@ static inline cl_error_t matcher_run(const struct cli_matcher *root,
     if (ret != CL_SUCCESS) {
         if (ret == CL_VIRUS) {
             ret = cli_append_virus(ctx, *virname);
-            if (ret != CL_SUCCESS)
+            if (ret != CL_SUCCESS) {
                 return ret;
+            }
         } else if (ret > CL_TYPENO && acmode & AC_SCAN_VIR) {
             saved_ret = ret;
         } else {
@@ -212,8 +219,9 @@ static inline cl_error_t matcher_run(const struct cli_matcher *root,
             if (offset + length >= map->len) {
                 /* check that scanned map does not exceed pcre maxfilesize limit */
                 maxfilesize = (uint64_t)cl_engine_get_num(ctx->engine, CL_ENGINE_PCRE_MAX_FILESIZE, &rc);
-                if (rc != CL_SUCCESS)
+                if (rc != CL_SUCCESS) {
                     return rc;
+                }
                 if (maxfilesize && (map->len > maxfilesize)) {
                     cli_dbgmsg("matcher_run: pcre max filesize (map) exceeded (limit: %llu, needed: %llu)\n",
                                (long long unsigned)maxfilesize, (long long unsigned)map->len);
@@ -223,8 +231,9 @@ static inline cl_error_t matcher_run(const struct cli_matcher *root,
                 cli_dbgmsg("matcher_run: performing regex matching on full map: %u+%u(%u) >= %zu\n", offset, length, offset + length, map->len);
 
                 buffer = fmap_need_off_once(map, 0, map->len);
-                if (!buffer)
+                if (!buffer) {
                     return CL_EMEM;
+                }
 
                 /* scan the full buffer */
                 ret = cli_pcre_scanbuf(buffer, map->len, virname, acres, root, mdata, poffdata, ctx);
@@ -232,8 +241,9 @@ static inline cl_error_t matcher_run(const struct cli_matcher *root,
         } else if (pcremode == PCRE_SCAN_BUFF) {
             /* check that scanned buffer does not exceed pcre maxfilesize limit */
             maxfilesize = (uint64_t)cl_engine_get_num(ctx->engine, CL_ENGINE_PCRE_MAX_FILESIZE, &rc);
-            if (rc != CL_SUCCESS)
+            if (rc != CL_SUCCESS) {
                 return rc;
+            }
             if (maxfilesize && (length > maxfilesize)) {
                 cli_dbgmsg("matcher_run: pcre max filesize (buf) exceeded (limit: %llu, needed: %u)\n", (long long unsigned)maxfilesize, length);
                 return CL_EMAXSIZE;
@@ -249,8 +259,9 @@ static inline cl_error_t matcher_run(const struct cli_matcher *root,
 
     if (ctx && ret == CL_VIRUS) {
         ret = cli_append_virus(ctx, *virname);
-        if (ret != CL_SUCCESS)
+        if (ret != CL_SUCCESS) {
             return ret;
+        }
     }
 
     if (saved_ret && ret == CL_CLEAN) {
@@ -287,7 +298,9 @@ cl_error_t cli_scan_buff(const unsigned char *buffer, uint32_t length, uint32_t 
                     break; // Break out of inner loop
                 }
             }
-            if (target_ac_root) break;
+            if (target_ac_root) {
+                break;
+            }
         }
     }
 
@@ -382,10 +395,11 @@ cl_error_t cli_caloff(const char *offstr, const struct cli_target_info *info, cl
         *offset_max = *offset_min = CLI_OFF_NONE;
 
         if (!strncmp(offcpy, "EP+", 3) || !strncmp(offcpy, "EP-", 3)) {
-            if (offcpy[2] == '+')
+            if (offcpy[2] == '+') {
                 offdata[0] = CLI_OFF_EP_PLUS;
-            else
+            } else {
                 offdata[0] = CLI_OFF_EP_MINUS;
+            }
 
             if (!cli_isnumber(&offcpy[3])) {
                 cli_errmsg("cli_caloff: Invalid offset value\n");
@@ -461,8 +475,9 @@ cl_error_t cli_caloff(const char *offstr, const struct cli_target_info *info, cl
     } else {
         /* calculate relative offsets */
         *offset_min = CLI_OFF_NONE;
-        if (offset_max)
+        if (offset_max) {
             *offset_max = CLI_OFF_NONE;
+        }
         if (info->status == -1) {
             // If the executable headers weren't parsed successfully then we
             // can't process any ndb/ldb EOF-n/EP+n/EP-n/Sx+n/SEx/SL+n subsigs
@@ -487,10 +502,11 @@ cl_error_t cli_caloff(const char *offstr, const struct cli_target_info *info, cl
                 break;
 
             case CLI_OFF_SX_PLUS:
-                if (offdata[3] >= info->exeinfo.nsections)
+                if (offdata[3] >= info->exeinfo.nsections) {
                     *offset_min = CLI_OFF_NONE;
-                else
+                } else {
                     *offset_min = info->exeinfo.sections[offdata[3]].raw + offdata[1];
+                }
                 break;
 
             case CLI_OFF_SE:
@@ -498,8 +514,9 @@ cl_error_t cli_caloff(const char *offstr, const struct cli_target_info *info, cl
                     *offset_min = CLI_OFF_NONE;
                 } else {
                     *offset_min = info->exeinfo.sections[offdata[3]].raw;
-                    if (offset_max)
+                    if (offset_max) {
                         *offset_max = *offset_min + info->exeinfo.sections[offdata[3]].rsz + offdata[2];
+                    }
                     // TODO offdata[2] == MaxShift. Won't this make offset_max
                     // extend beyond the end of the section?  This doesn't seem like
                     // what we want...
@@ -507,16 +524,18 @@ cl_error_t cli_caloff(const char *offstr, const struct cli_target_info *info, cl
                 break;
 
             case CLI_OFF_VERSION:
-                if (offset_max)
+                if (offset_max) {
                     *offset_min = *offset_max = CLI_OFF_ANY;
+                }
                 break;
             default:
                 cli_errmsg("cli_caloff: Not a relative offset (type: %u)\n", offdata[0]);
                 return CL_EARG;
         }
 
-        if (offset_max && *offset_max == CLI_OFF_NONE && *offset_min != CLI_OFF_NONE)
+        if (offset_max && *offset_max == CLI_OFF_NONE && *offset_min != CLI_OFF_NONE) {
             *offset_max = *offset_min + offdata[2];
+        }
     }
 
     return CL_SUCCESS;
@@ -552,10 +571,11 @@ void cli_targetinfo(struct cli_target_info *info, cli_target_t target, cli_ctx *
             return;
     }
 
-    if (CL_SUCCESS != einfo(ctx, &info->exeinfo))
+    if (CL_SUCCESS != einfo(ctx, &info->exeinfo)) {
         info->status = -1;
-    else
+    } else {
         info->status = 1;
+    }
 }
 
 void cli_targetinfo_destroy(struct cli_target_info *info)
@@ -612,8 +632,9 @@ cl_error_t cli_check_fp(cli_ctx *ctx, const char *vname)
             const char *name = ctx->recursion_stack[stack_index].fmap->name;
             const char *type = cli_ftname(ctx->recursion_stack[stack_index].type);
 
-            for (i = 0; i < 16; i++)
+            for (i = 0; i < 16; i++) {
                 sprintf(md5 + i * 2, "%02x", digest[i]);
+            }
             md5[32] = 0;
 
             cli_dbgmsg("FP SIGNATURE: %s:%u:%s  # Name: %s, Type: %s\n",
@@ -691,16 +712,18 @@ cl_error_t cli_check_fp(cli_ctx *ctx, const char *vname)
         }
 #endif
 
-        if (ctx->engine->cb_hash)
+        if (ctx->engine->cb_hash) {
             ctx->engine->cb_hash(fmap_fd(ctx->fmap), size, (const unsigned char *)md5, vname ? vname : "noname", ctx->cb_ctx);
+        }
 
         if (ctx->engine->cb_stats_add_sample) {
             stats_section_t sections;
             memset(&sections, 0x00, sizeof(stats_section_t));
 
             if (!(ctx->engine->engine_options & ENGINE_OPTIONS_DISABLE_PE_STATS) &&
-                !(ctx->engine->dconf->stats & (DCONF_STATS_DISABLED | DCONF_STATS_PE_SECTION_DISABLED)))
+                !(ctx->engine->dconf->stats & (DCONF_STATS_DISABLED | DCONF_STATS_PE_SECTION_DISABLED))) {
                 cli_genhash_pe(ctx, CL_GENHASH_PE_CLASS_SECTION, 1, &sections);
+            }
 
             // TODO We probably only want to call cb_stats_add_sample when
             // sections.section != NULL... leaving as is for now
@@ -726,10 +749,13 @@ static cl_error_t matchicon(cli_ctx *ctx, struct cli_exe_info *exeinfo, const ch
         !ctx->engine->iconcheck ||
         !ctx->engine->iconcheck->group_counts[0] ||
         !ctx->engine->iconcheck->group_counts[1] ||
-        !exeinfo->res_addr) return CL_CLEAN;
-
-    if (!(ctx->dconf->pe & PE_CONF_MATCHICON))
+        !exeinfo->res_addr) {
         return CL_CLEAN;
+    }
+
+    if (!(ctx->dconf->pe & PE_CONF_MATCHICON)) {
+        return CL_CLEAN;
+    }
 
     cli_icongroupset_init(&iconset);
     cli_icongroupset_add(grp1 ? grp1 : "*", &iconset, 0, ctx);
@@ -752,8 +778,9 @@ int32_t cli_bcapi_matchicon(struct cli_bc_ctx *ctx, const uint8_t *grp1, int32_t
         return -1;
     }
     if ((size_t)grp1len > sizeof(group1) - 1 ||
-        (size_t)grp2len > sizeof(group2) - 1)
+        (size_t)grp2len > sizeof(group2) - 1) {
         return -1;
+    }
 
     memcpy(group1, grp1, grp1len);
     memcpy(group2, grp2, grp2len);
@@ -762,12 +789,14 @@ int32_t cli_bcapi_matchicon(struct cli_bc_ctx *ctx, const uint8_t *grp1, int32_t
     memset(&info, 0, sizeof(info));
     if (ctx->bc->kind == BC_PE_UNPACKER || ctx->bc->kind == BC_PE_ALL) {
         if (le16_to_host(ctx->hooks.pedata->file_hdr.Characteristics) & 0x2000 ||
-            !ctx->hooks.pedata->dirs[2].Size)
+            !ctx->hooks.pedata->dirs[2].Size) {
             info.res_addr = 0;
-        else
+        } else {
             info.res_addr = ctx->hooks.pedata->dirs[2].VirtualAddress;
-    } else
+        }
+    } else {
         info.res_addr = ctx->resaddr; /* from target_info */
+    }
     info.sections  = (struct cli_exe_section *)ctx->sections;
     info.nsections = ctx->hooks.pedata->nsections;
     info.hdr_size  = ctx->hooks.pedata->hdr_size;
@@ -818,14 +847,17 @@ static int intermediates_eval(cli_ctx *ctx, struct cli_ac_lsig *ac_lsig)
     // -1 is the deepest layer (the current layer), so we start at -2, which is the first ancestor
     int32_t j = -2;
 
-    if (ctx->recursion_level < icnt)
+    if (ctx->recursion_level < icnt) {
         return 0;
+    }
 
     for (i = icnt; i > 0; i--) {
-        if (ac_lsig->tdb.intermediates[i] == CL_TYPE_ANY)
+        if (ac_lsig->tdb.intermediates[i] == CL_TYPE_ANY) {
             continue;
-        if (ac_lsig->tdb.intermediates[i] != cli_recursion_stack_get_type(ctx, j--))
+        }
+        if (ac_lsig->tdb.intermediates[i] != cli_recursion_stack_get_type(ctx, j--)) {
             return 0;
+        }
     }
     return 1;
 }
@@ -841,8 +873,9 @@ static cl_error_t lsig_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_a
     char *exp_end               = exp + strlen(exp);
 
     status = cli_ac_chkmacro(root, acdata, lsid);
-    if (status != CL_SUCCESS)
+    if (status != CL_SUCCESS) {
         return status;
+    }
 
     if (cli_ac_chklsig(exp, exp_end, acdata->lsigcnt[lsid], &evalcnt, &evalids, 0) != 1) {
         // Logical expression did not match.
@@ -880,12 +913,15 @@ static cl_error_t lsig_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_a
     }
 
     if (ac_lsig->tdb.ep || ac_lsig->tdb.nos) {
-        if (!target_info || target_info->status != 1)
+        if (!target_info || target_info->status != 1) {
             goto done;
-        if (ac_lsig->tdb.ep && (ac_lsig->tdb.ep[0] > target_info->exeinfo.ep || ac_lsig->tdb.ep[1] < target_info->exeinfo.ep))
+        }
+        if (ac_lsig->tdb.ep && (ac_lsig->tdb.ep[0] > target_info->exeinfo.ep || ac_lsig->tdb.ep[1] < target_info->exeinfo.ep)) {
             goto done;
-        if (ac_lsig->tdb.nos && (ac_lsig->tdb.nos[0] > target_info->exeinfo.nsections || ac_lsig->tdb.nos[1] < target_info->exeinfo.nsections))
+        }
+        if (ac_lsig->tdb.nos && (ac_lsig->tdb.nos[0] > target_info->exeinfo.nsections || ac_lsig->tdb.nos[1] < target_info->exeinfo.nsections)) {
             goto done;
+        }
     }
 
     if (ac_lsig->tdb.handlertype) {
@@ -982,8 +1018,9 @@ static cl_error_t yara_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_a
     context.fmap      = ctx->fmap;
     context.file_size = ctx->fmap->len;
     if (target_info != NULL) {
-        if (target_info->status == 1)
+        if (target_info->status == 1) {
             context.entry_point = target_info->exeinfo.ep;
+        }
     }
 
     rc = yr_execute_code(ac_lsig, acdata, &context, 0, 0);
@@ -1108,7 +1145,9 @@ cl_error_t cli_scan_fmap(cli_ctx *ctx, cli_file_t ftype, bool filetype_only, str
                     break; // Break out of inner loop
                 }
             }
-            if (target_ac_root) break;
+            if (target_ac_root) {
+                break;
+            }
         }
     }
 
@@ -1286,10 +1325,12 @@ cl_error_t cli_scan_fmap(cli_ctx *ctx, cli_file_t ftype, bool filetype_only, str
         }
 
         bytes = MIN(ctx->fmap->len - offset, SCANBUFF);
-        if (!(buff = fmap_need_off_once(ctx->fmap, offset, bytes)))
+        if (!(buff = fmap_need_off_once(ctx->fmap, offset, bytes))) {
             break;
-        if (ctx->scanned)
+        }
+        if (ctx->scanned) {
             *ctx->scanned += bytes / CL_COUNT_PRECISION;
+        }
 
         if (target_ac_root) {
             const char *virname = NULL;
@@ -1313,8 +1354,9 @@ cl_error_t cli_scan_fmap(cli_ctx *ctx, cli_file_t ftype, bool filetype_only, str
             if (ret == CL_VIRUS || ret == CL_EMEM) {
                 goto done;
             } else if ((acmode & AC_SCAN_FT) && ((cli_file_t)ret >= CL_TYPENO)) {
-                if (ret > type)
+                if (ret > type) {
                     type = ret;
+                }
             }
 
             /* if (bytes <= (maxpatlen * (offset!=0))), it means the last window finished the file hashing *
@@ -1323,17 +1365,21 @@ cl_error_t cli_scan_fmap(cli_ctx *ctx, cli_file_t ftype, bool filetype_only, str
                 const void *data  = buff + maxpatlen * (offset != 0);
                 uint32_t data_len = bytes - maxpatlen * (offset != 0);
 
-                if (compute_hash[CLI_HASH_MD5])
+                if (compute_hash[CLI_HASH_MD5]) {
                     cl_update_hash(md5ctx, (void *)data, data_len);
-                if (compute_hash[CLI_HASH_SHA1])
+                }
+                if (compute_hash[CLI_HASH_SHA1]) {
                     cl_update_hash(sha1ctx, (void *)data, data_len);
-                if (compute_hash[CLI_HASH_SHA256])
+                }
+                if (compute_hash[CLI_HASH_SHA256]) {
                     cl_update_hash(sha256ctx, (void *)data, data_len);
+                }
             }
         }
 
-        if (bytes < SCANBUFF)
+        if (bytes < SCANBUFF) {
             break;
+        }
 
         offset += bytes - maxpatlen;
     }
@@ -1493,22 +1539,26 @@ cl_error_t cli_matchmeta(cli_ctx *ctx, const char *fname, size_t fsizec, size_t 
     }
 
     do {
-        if (cdb->ctype != CL_TYPE_ANY && cdb->ctype != cli_recursion_stack_get_type(ctx, -1))
+        if (cdb->ctype != CL_TYPE_ANY && cdb->ctype != cli_recursion_stack_get_type(ctx, -1)) {
             continue;
+        }
 
-        if (cdb->encrypted != 2 && cdb->encrypted != encrypted)
+        if (cdb->encrypted != 2 && cdb->encrypted != encrypted) {
             continue;
+        }
 
-        if (cdb->res1 && (cdb->ctype == CL_TYPE_ZIP || cdb->ctype == CL_TYPE_RAR) && cdb->res1 != res1)
+        if (cdb->res1 && (cdb->ctype == CL_TYPE_ZIP || cdb->ctype == CL_TYPE_RAR) && cdb->res1 != res1) {
             continue;
+        }
 
         CDBRANGE(cdb->csize, cli_recursion_stack_get_size(ctx, -1));
         CDBRANGE(cdb->fsizec, fsizec);
         CDBRANGE(cdb->fsizer, fsizer);
         CDBRANGE(cdb->filepos, filepos);
 
-        if (cdb->name.re_magic && (!fname || cli_regexec(&cdb->name, fname, 0, NULL, 0) == REG_NOMATCH))
+        if (cdb->name.re_magic && (!fname || cli_regexec(&cdb->name, fname, 0, NULL, 0) == REG_NOMATCH)) {
             continue;
+        }
 
         ret = cli_append_virus(ctx, cdb->virname);
         if (ret != CL_SUCCESS) {

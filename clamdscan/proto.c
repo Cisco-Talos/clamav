@@ -188,8 +188,9 @@ int serial_client_scan(char *file, int scantype, int *infected, int *err, int ma
     *err += cdata.errors;
 
     if (!cdata.errors && (ftw == CL_SUCCESS || ftw == CL_BREAK)) {
-        if (cdata.printok)
+        if (cdata.printok) {
             logg(LOGG_INFO, "%s: OK\n", file);
+        }
         return 0;
     } else if (!cdata.files) {
         logg(LOGG_INFO, "%s: No files scanned\n", file);
@@ -229,15 +230,23 @@ static int dspresult(struct client_parallel_data *c)
     recvlninit(&rcv, c->sockd);
     do {
         len = recvln(&rcv, &bol, &eol);
-        if (len < 0) return 1;
-        if (!len) return 2;
+        if (len < 0) {
+            return 1;
+        }
+        if (!len) {
+            return 2;
+        }
         if ((rid = atoi(bol))) {
             id = &c->ids;
             while (*id) {
-                if ((*id)->id == rid) break;
+                if ((*id)->id == rid) {
+                    break;
+                }
                 id = &((*id)->next);
             }
-            if (!*id) id = NULL;
+            if (!*id) {
+                id = NULL;
+            }
         }
         if (!id) {
             logg(LOGG_ERROR, "Bogus session id from clamd\n");
@@ -254,7 +263,9 @@ static int dspresult(struct client_parallel_data *c)
                 c->infected++;
                 c->printok = 0;
                 logg(LOGG_INFO, "%s%s\n", filename, colon);
-                if (action) action(filename);
+                if (action) {
+                    action(filename);
+                }
             } else if (!memcmp(eol - 7, " ERROR", 6)) {
                 c->errors++;
                 c->printok = 0;
@@ -338,7 +349,9 @@ static cl_error_t parallel_callback(STATBUF *sb, char *filename, const char *pat
         FD_ZERO(&wfds);
         FD_SET(c->sockd, &wfds);
         if (select(c->sockd + 1, &rfds, &wfds, NULL, NULL) < 0) {
-            if (errno == EINTR) continue;
+            if (errno == EINTR) {
+                continue;
+            }
             logg(LOGG_ERROR, "select() failed during session: %s\n", strerror(errno));
             status = CL_BREAK;
             goto done;
@@ -347,10 +360,13 @@ static cl_error_t parallel_callback(STATBUF *sb, char *filename, const char *pat
             if (dspresult(c)) {
                 status = CL_BREAK;
                 goto done;
-            } else
+            } else {
                 continue;
+            }
         }
-        if (FD_ISSET(c->sockd, &wfds)) break;
+        if (FD_ISSET(c->sockd, &wfds)) {
+            break;
+        }
     }
 
     switch (c->scantype) {
@@ -404,8 +420,9 @@ int parallel_client_scan(char *file, int scantype, int *infected, int *err, int 
     const char zIDSESSION[] = "zIDSESSION";
     const char zEND[]       = "zEND";
 
-    if ((cdata.sockd = dconnect(clamdopts)) < 0)
+    if ((cdata.sockd = dconnect(clamdopts)) < 0) {
         return 1;
+    }
 
     if (sendln(cdata.sockd, zIDSESSION, sizeof(zIDSESSION))) {
         closesocket(cdata.sockd);
@@ -431,7 +448,9 @@ int parallel_client_scan(char *file, int scantype, int *infected, int *err, int 
     }
 
     sendln(cdata.sockd, zEND, sizeof(zEND));
-    while (cdata.ids && !dspresult(&cdata)) continue;
+    while (cdata.ids && !dspresult(&cdata)) {
+        continue;
+    }
     closesocket(cdata.sockd);
 
     *infected += cdata.infected;
@@ -441,13 +460,16 @@ int parallel_client_scan(char *file, int scantype, int *infected, int *err, int 
         logg(LOGG_ERROR, "Clamd closed the connection before scanning all files.\n");
         return 1;
     }
-    if (cdata.errors)
+    if (cdata.errors) {
         return 1;
+    }
 
-    if (!cdata.files)
+    if (!cdata.files) {
         return 0;
+    }
 
-    if (cdata.printok)
+    if (cdata.printok) {
         logg(LOGG_INFO, "%s: OK\n", file);
+    }
     return 0;
 }

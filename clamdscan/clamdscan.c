@@ -93,11 +93,13 @@ int main(int argc, char **argv)
         logg_verbose    = 1;
     }
 
-    if (optget(opts, "quiet")->enabled)
+    if (optget(opts, "quiet")->enabled) {
         mprintf_quiet = 1;
+    }
 
-    if (optget(opts, "stdout")->enabled)
+    if (optget(opts, "stdout")->enabled) {
         mprintf_stdout = 1;
+    }
 
     if (optget(opts, "version")->enabled) {
         print_server_version(opts);
@@ -124,8 +126,9 @@ int main(int argc, char **argv)
         exit(ret);
     }
 
-    if (optget(opts, "infected")->enabled)
+    if (optget(opts, "infected")->enabled) {
         printinfected = 1;
+    }
 
     /* initialize logger */
 
@@ -137,8 +140,9 @@ int main(int argc, char **argv)
             optfree(clamdopts);
             exit(2);
         }
-    } else
+    } else {
         logg_file = NULL;
+    }
 
     if (optget(opts, "reload")->enabled) {
         ret = reload_clamd_database(opts);
@@ -181,8 +185,9 @@ int main(int argc, char **argv)
         dms += (dms < 0) ? (1000000) : (0);
         logg(LOGG_INFO, "\n----------- SCAN SUMMARY -----------\n");
         logg(LOGG_INFO, "Infected files: %d\n", infected);
-        if (err)
+        if (err) {
             logg(LOGG_INFO, "Total errors: %d\n", err);
+        }
         if (notremoved) {
             logg(LOGG_INFO, "Not removed: %d\n", notremoved);
         }

@@ -89,8 +89,9 @@ struct cpio_hdr_newc {
 static void sanitname(char *name)
 {
     while (*name) {
-        if (!isascii(*name) || strchr("%\\\t\n\r", *name))
+        if (!isascii(*name) || strchr("%\\\t\n\r", *name)) {
             *name = '_';
+        }
         name++;
     }
 }
@@ -156,8 +157,9 @@ cl_error_t cli_scancpio_old(cli_ctx *ctx)
         }
         filesize = (uint32_t)((uint32_t)EC16(hdr_old.filesize[0], conv) << 16 | EC16(hdr_old.filesize[1], conv));
         cli_dbgmsg("CPIO: Filesize: %u\n", filesize);
-        if (!filesize)
+        if (!filesize) {
             continue;
+        }
 
         status = cli_matchmeta(ctx, name, filesize, filesize, 0, file, 0);
         if (status != CL_SUCCESS) {

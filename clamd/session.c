@@ -133,12 +133,14 @@ enum commands parse_command(const char *cmd, const char **argument, int oldstyle
 int conn_reply_single(const client_conn_t *conn, const char *path, const char *status)
 {
     if (conn->id) {
-        if (path)
+        if (path) {
             return mdprintf(conn->sd, "%u: %s: %s%c", conn->id, path, status, conn->term);
+        }
         return mdprintf(conn->sd, "%u: %s%c", conn->id, status, conn->term);
     }
-    if (path)
+    if (path) {
         return mdprintf(conn->sd, "%s: %s%c", path, status, conn->term);
+    }
     return mdprintf(conn->sd, "%s%c", status, conn->term);
 }
 
@@ -146,14 +148,16 @@ int conn_reply(const client_conn_t *conn, const char *path,
                const char *msg, const char *status)
 {
     if (conn->id) {
-        if (path)
+        if (path) {
             return mdprintf(conn->sd, "%u: %s: %s %s%c", conn->id, path, msg,
                             status, conn->term);
+        }
         return mdprintf(conn->sd, "%u: %s %s%c", conn->id, msg, status,
                         conn->term);
     }
-    if (path)
+    if (path) {
         return mdprintf(conn->sd, "%s: %s %s%c", path, msg, status, conn->term);
+    }
     return mdprintf(conn->sd, "%s %s%c", msg, status, conn->term);
 }
 
@@ -208,8 +212,9 @@ int command(client_conn_t *conn, int *virus)
 
     if (thrmgr_group_need_terminate(conn->group)) {
         logg(LOGG_DEBUG_NV, "Client disconnected while command was active\n");
-        if (conn->scanfd != -1)
+        if (conn->scanfd != -1) {
             close(conn->scanfd);
+        }
         return 1;
     }
     thrmgr_setactiveengine(engine);
@@ -249,9 +254,9 @@ int command(client_conn_t *conn, int *virus)
             pthread_mutex_lock(&conn->thrpool->pool_mutex);
             multiscan = conn->thrpool->thr_multiscan;
             max       = conn->thrpool->thr_max;
-            if (multiscan + 1 < max)
+            if (multiscan + 1 < max) {
                 conn->thrpool->thr_multiscan = multiscan + 1;
-            else {
+            } else {
                 alive = conn->thrpool->thr_alive;
                 ret   = -1;
             }
@@ -270,10 +275,11 @@ int command(client_conn_t *conn, int *virus)
             type           = TYPE_MULTISCAN;
             scandata.group = group = thrmgr_group_new();
             if (!group) {
-                if (optget(opts, "ExitOnOOM")->enabled)
+                if (optget(opts, "ExitOnOOM")->enabled) {
                     return -1;
-                else
+                } else {
                     return 1;
+                }
             }
             break;
         }
@@ -303,15 +309,17 @@ int command(client_conn_t *conn, int *virus)
                     *virus = 1;
                     ret    = 0;
                 } else if (ret == CL_EMEM) {
-                    if (optget(opts, "ExitOnOOM")->enabled)
+                    if (optget(opts, "ExitOnOOM")->enabled) {
                         ret = -1;
-                    else
+                    } else {
                         ret = 1;
+                    }
                 } else if (ret == CL_ETIMEOUT) {
                     thrmgr_group_terminate(conn->group);
                     ret = 1;
-                } else
+                } else {
                     ret = 0;
+                }
                 logg(LOGG_DEBUG_NV, "Closed fd %d\n", conn->scanfd);
                 close(conn->scanfd);
             }
@@ -323,8 +331,9 @@ int command(client_conn_t *conn, int *virus)
 #endif
         case COMMAND_STATS:
             thrmgr_setactivetask(NULL, "STATS");
-            if (conn->group)
+            if (conn->group) {
                 mdprintf(desc, "%u: ", conn->id);
+            }
             thrmgr_printstats(desc, conn->term);
             return 0;
         case COMMAND_INSTREAMSCAN:
@@ -334,15 +343,17 @@ int command(client_conn_t *conn, int *virus)
                 *virus = 1;
                 ret    = 0;
             } else if (ret == CL_EMEM) {
-                if (optget(opts, "ExitOnOOM")->enabled)
+                if (optget(opts, "ExitOnOOM")->enabled) {
                     ret = -1;
-                else
+                } else {
                     ret = 1;
+                }
             } else if (ret == CL_ETIMEOUT) {
                 thrmgr_group_terminate(conn->group);
                 ret = 1;
-            } else
+            } else {
                 ret = 0;
+            }
             if (ftruncate(conn->scanfd, 0) == -1) {
                 /* not serious, we're going to close it and unlink it anyway */
                 logg(LOGG_DEBUG, "ftruncate failed: %d\n", errno);
@@ -368,21 +379,26 @@ int command(client_conn_t *conn, int *virus)
 
     scandata.type = type;
     maxdirrec     = optget(opts, "MaxDirectoryRecursion")->numarg;
-    if (optget(opts, "FollowDirectorySymlinks")->enabled)
+    if (optget(opts, "FollowDirectorySymlinks")->enabled) {
         flags |= CLI_FTW_FOLLOW_DIR_SYMLINK;
-    if (optget(opts, "FollowFileSymlinks")->enabled)
+    }
+    if (optget(opts, "FollowFileSymlinks")->enabled) {
         flags |= CLI_FTW_FOLLOW_FILE_SYMLINK;
+    }
 
-    if (!optget(opts, "CrossFilesystems")->enabled)
-        if (CLAMSTAT(conn->filename, &sb) == 0)
+    if (!optget(opts, "CrossFilesystems")->enabled) {
+        if (CLAMSTAT(conn->filename, &sb) == 0) {
             scandata.dev = sb.st_dev;
+        }
+    }
 
     ret = cli_ftw(conn->filename, flags, maxdirrec ? maxdirrec : INT_MAX, scan_callback, &data, scan_pathchk);
     if (ret == CL_EMEM) {
-        if (optget(opts, "ExitOnOOM")->enabled)
+        if (optget(opts, "ExitOnOOM")->enabled) {
             return -1;
-        else
+        } else {
             return 1;
+        }
     }
     if (scandata.group && type == TYPE_MULTISCAN) {
         thrmgr_group_waitforall(group, &ok, &error, &total);
@@ -396,13 +412,15 @@ int command(client_conn_t *conn, int *virus)
     }
 
     if (ok + error == total && (error != total)) {
-        if (conn_reply_single(conn, conn->filename, "OK") == -1)
+        if (conn_reply_single(conn, conn->filename, "OK") == -1) {
             ret = CL_ETIMEOUT;
+        }
     }
     *virus = total - (ok + error);
 
-    if (ret == CL_ETIMEOUT)
+    if (ret == CL_ETIMEOUT) {
         thrmgr_group_terminate(conn->group);
+    }
     return error;
 }
 
@@ -459,8 +477,9 @@ static int dispatch_command(client_conn_t *conn, enum commands cmd, const char *
             ret = -2;
             break;
     }
-    if (!dup_conn->group)
+    if (!dup_conn->group) {
         bulk = 0;
+    }
     if (!ret && !thrmgr_group_dispatch(dup_conn->thrpool, dup_conn->group, dup_conn, bulk)) {
         logg(LOGG_ERROR, "thread dispatch failed\n");
         ret = -2;
@@ -564,20 +583,23 @@ int execute_or_dispatch_command(client_conn_t *conn, enum commands cmd, const ch
              * connection */
             return 1;
         case COMMAND_PING:
-            if (conn->group)
+            if (conn->group) {
                 mdprintf(desc, "%u: PONG%c", conn->id, term);
-            else
+            } else {
                 mdprintf(desc, "PONG%c", term);
+            }
             return conn->group ? 0 : 1;
         case COMMAND_VERSION: {
-            if (conn->group)
+            if (conn->group) {
                 mdprintf(desc, "%u: ", conn->id);
+            }
             print_ver(desc, conn->term, engine);
             return conn->group ? 0 : 1;
         }
         case COMMAND_COMMANDS: {
-            if (conn->group)
+            if (conn->group) {
                 mdprintf(desc, "%u: ", conn->id);
+            }
             print_commands(desc, conn->term, engine);
             return conn->group ? 0 : 1;
         }
@@ -608,8 +630,9 @@ int execute_or_dispatch_command(client_conn_t *conn, enum commands cmd, const ch
             return dispatch_command(conn, cmd, argument);
         case COMMAND_IDSESSION:
             conn->group = thrmgr_group_new();
-            if (!conn->group)
+            if (!conn->group) {
                 return CL_EMEM;
+            }
             return 0;
         case COMMAND_END:
             if (!conn->group) {

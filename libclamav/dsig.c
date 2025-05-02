@@ -73,9 +73,11 @@ static char cli_ndecode(unsigned char value)
         '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
         '+', '/'};
 
-    for (i = 0; i < 64; i++)
-        if (ncodec[i] == value)
+    for (i = 0; i < 64; i++) {
+        if (ncodec[i] == value) {
             return i;
+        }
+    }
 
     cli_errmsg("cli_ndecode: value out of range\n");
     return -1;
@@ -230,12 +232,13 @@ char *cli_getdsig(const char *host, const char *user, const unsigned char *data,
     }
     memset(cmd, 0, sizeof(cmd));
 
-    if (mode == 1)
+    if (mode == 1) {
         snprintf(cmd, sizeof(cmd) - datalen, "ClamSign:%s:%s:", user, pass);
-    else if (mode == 2)
+    } else if (mode == 2) {
         snprintf(cmd, sizeof(cmd) - datalen, "ClamSignPSS:%s:%s:", user, pass);
-    else
+    } else {
         snprintf(cmd, sizeof(cmd) - datalen, "ClamSignPSS2:%s:%s:", user, pass);
+    }
 
     len = strlen(cmd);
     pt  = cmd + len;
@@ -285,19 +288,23 @@ cl_error_t cli_versig(const char *md5, const char *dsig)
 
     ret = CL_EMEM;
     n   = BN_new();
-    if (!n)
+    if (!n) {
         goto done;
+    }
 
     e = BN_new();
-    if (!e)
+    if (!e) {
         goto done;
+    }
 
     ret = CL_EVERIFY;
-    if (!BN_dec2bn(&e, CLI_ESTR))
+    if (!BN_dec2bn(&e, CLI_ESTR)) {
         goto done;
+    }
 
-    if (!BN_dec2bn(&n, CLI_NSTR))
+    if (!BN_dec2bn(&n, CLI_NSTR)) {
         goto done;
+    }
 
     if (strlen(md5) != 32 || !isalnum(md5[0])) {
         /* someone is trying to fool us with empty/malformed MD5 ? */
@@ -305,8 +312,9 @@ cl_error_t cli_versig(const char *md5, const char *dsig)
         goto done;
     }
 
-    if (!(pt = (char *)cli_decodesig(dsig, 16, e, n)))
+    if (!(pt = (char *)cli_decodesig(dsig, 16, e, n))) {
         goto done;
+    }
 
     pt2 = cli_str2hex(pt, 16);
 
@@ -351,11 +359,13 @@ int cli_versig2(const unsigned char *sha256, const char *dsig_str, const char *n
     }
 
     ret = CL_EVERIFY;
-    if (!BN_dec2bn(&e, e_str))
+    if (!BN_dec2bn(&e, e_str)) {
         goto done;
+    }
 
-    if (!BN_dec2bn(&n, n_str))
+    if (!BN_dec2bn(&n, n_str)) {
         goto done;
+    }
 
     decoded = cli_decodesig(dsig_str, PAD_LEN, e, n);
     if (!decoded) {
@@ -385,36 +395,42 @@ int cli_versig2(const unsigned char *sha256, const char *dsig_str, const char *n
         c[3] = (unsigned char)i;
 
         ctx = cl_hash_init("sha256");
-        if (!(ctx))
+        if (!(ctx)) {
             return CL_EMEM;
+        }
 
         cl_update_hash(ctx, digest2, HASH_LEN);
         cl_update_hash(ctx, c, 4);
         cl_finish_hash(ctx, digest3);
-        if (i + 1 == rounds)
+        if (i + 1 == rounds) {
             memcpy(&data[i * 32], digest3, BLK_LEN - i * HASH_LEN);
-        else
+        } else {
             memcpy(&data[i * 32], digest3, HASH_LEN);
+        }
     }
 
-    for (i = 0; i < BLK_LEN; i++)
+    for (i = 0; i < BLK_LEN; i++) {
         data[i] ^= mask[i];
+    }
     data[0] &= (0xff >> 1);
 
-    if (!(salt = memchr(data, 0x01, BLK_LEN)))
+    if (!(salt = memchr(data, 0x01, BLK_LEN))) {
         return CL_EVERIFY;
+    }
     salt++;
 
-    if (data + BLK_LEN - salt != SALT_LEN)
+    if (data + BLK_LEN - salt != SALT_LEN) {
         return CL_EVERIFY;
+    }
 
     memset(final, 0, 8);
     memcpy(&final[8], sha256, HASH_LEN);
     memcpy(&final[8 + HASH_LEN], salt, SALT_LEN);
 
     ctx = cl_hash_init("sha256");
-    if (!(ctx))
+    if (!(ctx)) {
         return CL_EMEM;
+    }
 
     cl_update_hash(ctx, final, sizeof(final));
     cl_finish_hash(ctx, digest1);

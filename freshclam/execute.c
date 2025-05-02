@@ -46,8 +46,9 @@ void execute(const char *type, const char *text, int bDaemonized)
             logg(LOGG_DEBUG, "%s: EXIT_%d\n", type, ret);
             exit(ret);
         }
-        if (system(text) == -1)
+        if (system(text) == -1) {
             logg(LOGG_INFO, "%s: system(%s) failed\n", type, text);
+        }
 
         return;
     }

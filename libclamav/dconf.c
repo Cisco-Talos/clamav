@@ -168,43 +168,55 @@ struct cli_dconf *cli_dconf_init(void)
     struct cli_dconf *dconf;
 
     dconf = (struct cli_dconf *)MPOOL_CALLOC(mempool, sizeof(struct cli_dconf), 1);
-    if (!dconf)
+    if (!dconf) {
         return NULL;
+    }
 
     for (i = 0; modules[i].mname; i++) {
         if (!strcmp(modules[i].mname, "PE")) {
-            if (modules[i].state)
+            if (modules[i].state) {
                 dconf->pe |= modules[i].bflag;
+            }
         } else if (!strcmp(modules[i].mname, "ELF")) {
-            if (modules[i].state)
+            if (modules[i].state) {
                 dconf->elf |= modules[i].bflag;
+            }
         } else if (!strcmp(modules[i].mname, "MACHO")) {
-            if (modules[i].state)
+            if (modules[i].state) {
                 dconf->macho |= modules[i].bflag;
+            }
         } else if (!strcmp(modules[i].mname, "ARCHIVE")) {
-            if (modules[i].state)
+            if (modules[i].state) {
                 dconf->archive |= modules[i].bflag;
+            }
         } else if (!strcmp(modules[i].mname, "DOCUMENT")) {
-            if (modules[i].state)
+            if (modules[i].state) {
                 dconf->doc |= modules[i].bflag;
+            }
         } else if (!strcmp(modules[i].mname, "MAIL")) {
-            if (modules[i].state)
+            if (modules[i].state) {
                 dconf->mail |= modules[i].bflag;
+            }
         } else if (!strcmp(modules[i].mname, "OTHER")) {
-            if (modules[i].state)
+            if (modules[i].state) {
                 dconf->other |= modules[i].bflag;
+            }
         } else if (!strcmp(modules[i].mname, "PHISHING")) {
-            if (modules[i].state)
+            if (modules[i].state) {
                 dconf->phishing |= modules[i].bflag;
+            }
         } else if (!strcmp(modules[i].mname, "BYTECODE")) {
-            if (modules[i].state)
+            if (modules[i].state) {
                 dconf->bytecode |= modules[i].bflag;
+            }
         } else if (!strcmp(modules[i].mname, "STATS")) {
-            if (modules[i].state)
+            if (modules[i].state) {
                 dconf->stats |= modules[i].bflag;
+            }
         } else if (!strcmp(modules[i].mname, "PCRE")) {
-            if (modules[i].state)
+            if (modules[i].state) {
                 dconf->pcre |= modules[i].bflag;
+            }
         }
     }
 
@@ -226,10 +238,11 @@ void cli_dconf_print(struct cli_dconf *dconf)
                 pe = 1;
             }
 
-            if (dconf->pe)
+            if (dconf->pe) {
                 cli_dbgmsg("   * Submodule %10s:\t%s\n", modules[i].sname, (dconf->pe & modules[i].bflag) ? "On" : "** Off **");
-            else
+            } else {
                 continue;
+            }
         } else if (!strcmp(modules[i].mname, "ELF")) {
             if (!elf) {
                 cli_dbgmsg("Module ELF: %s\n", dconf->elf ? "On" : "Off");
@@ -246,80 +259,88 @@ void cli_dconf_print(struct cli_dconf *dconf)
                 arch = 1;
             }
 
-            if (dconf->archive)
+            if (dconf->archive) {
                 cli_dbgmsg("   * Submodule %10s:\t%s\n", modules[i].sname, (dconf->archive & modules[i].bflag) ? "On" : "** Off **");
-            else
+            } else {
                 continue;
+            }
         } else if (!strcmp(modules[i].mname, "DOCUMENT")) {
             if (!doc) {
                 cli_dbgmsg("Module DOCUMENT: %s\n", dconf->doc ? "On" : "Off");
                 doc = 1;
             }
 
-            if (dconf->doc)
+            if (dconf->doc) {
                 cli_dbgmsg("   * Submodule %10s:\t%s\n", modules[i].sname, (dconf->doc & modules[i].bflag) ? "On" : "** Off **");
-            else
+            } else {
                 continue;
+            }
         } else if (!strcmp(modules[i].mname, "MAIL")) {
             if (!mail) {
                 cli_dbgmsg("Module MAIL: %s\n", dconf->mail ? "On" : "Off");
                 mail = 1;
             }
 
-            if (dconf->mail)
+            if (dconf->mail) {
                 cli_dbgmsg("   * Submodule %10s:\t%s\n", modules[i].sname, (dconf->mail & modules[i].bflag) ? "On" : "** Off **");
-            else
+            } else {
                 continue;
+            }
         } else if (!strcmp(modules[i].mname, "OTHER")) {
             if (!other) {
                 cli_dbgmsg("Module OTHER: %s\n", dconf->other ? "On" : "Off");
                 other = 1;
             }
 
-            if (dconf->other)
+            if (dconf->other) {
                 cli_dbgmsg("   * Submodule %10s:\t%s\n", modules[i].sname, (dconf->other & modules[i].bflag) ? "On" : "** Off **");
-            else
+            } else {
                 continue;
+            }
         } else if (!strcmp(modules[i].mname, "PHISHING")) {
             if (!phishing) {
                 cli_dbgmsg("Module PHISHING %s\n", dconf->phishing ? "On" : "Off");
                 phishing = 1;
             }
 
-            if (dconf->phishing)
+            if (dconf->phishing) {
                 cli_dbgmsg("   * Submodule %10s:\t%s\n", modules[i].sname, (dconf->phishing & modules[i].bflag) ? "On" : "** Off **");
-            else
+            } else {
                 continue;
+            }
         } else if (!strcmp(modules[i].mname, "BYTECODE")) {
             if (!bytecode) {
                 cli_dbgmsg("Module BYTECODE %s\n", dconf->bytecode ? "On" : "Off");
                 bytecode = 1;
             }
 
-            if (dconf->bytecode)
+            if (dconf->bytecode) {
                 cli_dbgmsg("   * Submodule %10s:\t%s\n", modules[i].sname, (dconf->bytecode & modules[i].bflag) ? "On" : "** Off **");
-            else
+            } else {
                 continue;
+            }
         } else if (!strcmp(modules[i].mname, "STATS")) {
             if (!stats) {
                 cli_dbgmsg("Module STATS %s\n", dconf->stats ? "On" : "Off");
                 stats = 1;
             }
 
-            if (dconf->stats)
+            if (dconf->stats) {
                 cli_dbgmsg("   * Submodule %10s:\t%s\n", modules[i].sname, (dconf->stats & modules[i].bflag) ? "On" : "** Off **");
-            else
+            } else {
                 continue;
+            }
         } else if (!strcmp(modules[i].mname, "PCRE")) {
             if (!pcre) {
                 cli_dbgmsg("Module PCRE %s\n", dconf->pcre ? "On" : "Off");
                 pcre = 1;
             }
 
-            if (dconf->pcre)
+            if (dconf->pcre) {
                 cli_dbgmsg("   * Submodule %10s:\t%s\n", modules[i].sname, (dconf->pcre & modules[i].bflag) ? "On" : "** Off **");
-            else
+            } else {
                 continue;
+            }
         }
     }
 }

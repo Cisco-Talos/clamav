@@ -187,10 +187,11 @@ fc_error_t load_freshclam_dat(void)
     if (-1 == (handle = open("freshclam.dat", O_RDONLY | O_BINARY))) {
         char currdir[PATH_MAX];
 
-        if (getcwd(currdir, sizeof(currdir)))
+        if (getcwd(currdir, sizeof(currdir))) {
             logg(LOGG_DEBUG, "Can't open freshclam.dat in %s\n", currdir);
-        else
+        } else {
             logg(LOGG_DEBUG, "Can't open freshclam.dat in the current directory\n");
+        }
 
         logg(LOGG_DEBUG, "It probably doesn't exist yet. That's ok.\n");
         status = FC_EFILE;
@@ -322,10 +323,11 @@ fc_error_t save_freshclam_dat(void)
     if (-1 == (handle = open("freshclam.dat", O_WRONLY | O_CREAT | O_TRUNC | O_BINARY, 0644))) {
         char currdir[PATH_MAX];
 
-        if (getcwd(currdir, sizeof(currdir)))
+        if (getcwd(currdir, sizeof(currdir))) {
             logg(LOGG_ERROR, "Can't create freshclam.dat in %s\n", currdir);
-        else
+        } else {
             logg(LOGG_ERROR, "Can't create freshclam.dat in the current directory\n");
+        }
 
         logg(LOGG_INFO, "Hint: The database directory must be writable for UID %d or GID %d\n", getuid(), getgid());
         status = FC_EDBDIRACCESS;
@@ -1028,10 +1030,11 @@ static fc_error_t remote_cvdhead(
          */
         size_t len = strlen(errbuf);
         logg(logerr ? LOGG_ERROR : LOGG_WARNING, "remote_cvdhead: Download failed (%d) ", curl_ret);
-        if (len)
+        if (len) {
             logg(logerr ? LOGG_ERROR : LOGG_WARNING, " Message: %s%s", errbuf, ((errbuf[len - 1] != '\n') ? "\n" : ""));
-        else
+        } else {
             logg(logerr ? LOGG_ERROR : LOGG_WARNING, " Message: %s\n", curl_easy_strerror(curl_ret));
+        }
         status = FC_ECONNECTION;
         goto done;
     }
@@ -1083,10 +1086,11 @@ static fc_error_t remote_cvdhead(
             break;
         }
         case 404: {
-            if (g_proxyServer)
+            if (g_proxyServer) {
                 logg(LOGG_WARNING, "remote_cvdhead: file not found: %s (Proxy: %s:%u)\n", url, g_proxyServer, g_proxyPort);
-            else
+            } else {
                 logg(LOGG_WARNING, "remote_cvdhead: file not found: %s\n", url);
+            }
             status = FC_EFAILEDGET;
             goto done;
         }
@@ -1096,12 +1100,13 @@ static fc_error_t remote_cvdhead(
             goto done;
         }
         default: {
-            if (g_proxyServer)
+            if (g_proxyServer) {
                 logg(logerr ? LOGG_ERROR : LOGG_WARNING, "remote_cvdhead: Unexpected response (%li) from %s (Proxy: %s:%u)\n",
                      http_code, server, g_proxyServer, g_proxyPort);
-            else
+            } else {
                 logg(logerr ? LOGG_ERROR : LOGG_WARNING, "remote_cvdhead: Unexpected response (%li) from %s\n",
                      http_code, server);
+            }
             status = FC_EFAILEDGET;
             goto done;
         }
@@ -1308,10 +1313,11 @@ static fc_error_t downloadFile(
     if (-1 == (receivedFile.handle = open(destfile, O_WRONLY | O_CREAT | O_EXCL | O_BINARY, 0644))) {
         char currdir[PATH_MAX];
 
-        if (getcwd(currdir, sizeof(currdir)))
+        if (getcwd(currdir, sizeof(currdir))) {
             logg(LOGG_ERROR, "downloadFile: Can't create new file %s in %s\n", destfile, currdir);
-        else
+        } else {
             logg(LOGG_ERROR, "downloadFile: Can't create new file %s in the current directory\n", destfile);
+        }
 
         logg(LOGG_INFO, "Hint: The database directory must be writable for UID %d or GID %d\n", getuid(), getgid());
         status = FC_EDBDIRACCESS;
@@ -1350,10 +1356,11 @@ static fc_error_t downloadFile(
          */
         size_t len = strlen(errbuf);
         logg(logerr ? LOGG_ERROR : LOGG_WARNING, "Download failed (%d) ", curl_ret);
-        if (len)
+        if (len) {
             logg(logerr ? LOGG_ERROR : LOGG_WARNING, " Message: %s%s", errbuf, ((errbuf[len - 1] != '\n') ? "\n" : ""));
-        else
+        } else {
             logg(logerr ? LOGG_ERROR : LOGG_WARNING, " Message: %s\n", curl_easy_strerror(curl_ret));
+        }
         status = FC_ECONNECTION;
         goto done;
     }
@@ -1409,10 +1416,11 @@ static fc_error_t downloadFile(
             break;
         }
         case 404: {
-            if (g_proxyServer)
+            if (g_proxyServer) {
                 logg(quiet ? LOGG_DEBUG : LOGG_WARNING, "downloadFile: file not found: %s (Proxy: %s:%u)\n", url, g_proxyServer, g_proxyPort);
-            else
+            } else {
                 logg(quiet ? LOGG_DEBUG : LOGG_WARNING, "downloadFile: file not found: %s\n", url);
+            }
             status = FC_EFAILEDGET;
             break;
         }
@@ -1422,12 +1430,13 @@ static fc_error_t downloadFile(
             break;
         }
         default: {
-            if (g_proxyServer)
+            if (g_proxyServer) {
                 logg(logerr ? LOGG_ERROR : LOGG_WARNING, "downloadFile: Unexpected response (%li) from %s (Proxy: %s:%u)\n",
                      http_code, url, g_proxyServer, g_proxyPort);
-            else
+            } else {
                 logg(logerr ? LOGG_ERROR : LOGG_WARNING, "downloadFile: Unexpected response (%li) from %s\n",
                      http_code, url);
+            }
             status = FC_EFAILEDGET;
         }
     }
@@ -1969,8 +1978,9 @@ static fc_error_t buildcld(
 
     while (NULL != (dent = readdir(dir))) {
         if (dent->d_ino) {
-            if (!strcmp(dent->d_name, ".") || !strcmp(dent->d_name, "..") || !strcmp(dent->d_name, "COPYING") || !strcmp(dent->d_name, cfg) || !strcmp(dent->d_name, info))
+            if (!strcmp(dent->d_name, ".") || !strcmp(dent->d_name, "..") || !strcmp(dent->d_name, "COPYING") || !strcmp(dent->d_name, cfg) || !strcmp(dent->d_name, info)) {
                 continue;
+            }
 
             if (tar_addfile(fd, gzs, dent->d_name) == -1) {
                 logg(LOGG_ERROR, "buildcld: Can't add %s to new %s.cld - please check if there is enough disk space available\n", dent->d_name, database);
@@ -2466,8 +2476,9 @@ fc_error_t updatedb(
         for (i = localVersion + 1; i <= remoteVersion; i++) {
             for (j = 1; j <= g_maxAttempts; j++) {
                 int llogerr = logerr;
-                if (logerr)
+                if (logerr) {
                     llogerr = (j == g_maxAttempts);
+                }
 
 #ifdef HAVE_UNISTD_H
                 if (!mprintf_quiet && (mprintf_progress || isatty(fileno(stdout))))

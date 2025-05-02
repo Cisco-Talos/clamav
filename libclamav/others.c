@@ -155,7 +155,7 @@ static void *load_module(const char *name, const char *featurename)
         LT_MODULE_EXT "." LIBCLAMAV_FULLVER,
         PASTE(LT_MODULE_EXT ".", LIBCLAMAV_MAJORVER),
         LT_MODULE_EXT,
-        "." LT_LIBEXT};
+        ".", LT_LIBEXT};
     void *rhandle                = NULL;
     char *tokenized_library_path = NULL;
     char *ld_library_path        = NULL;
@@ -310,10 +310,14 @@ static void rarload(void)
 #endif
 #endif
 
-    if (is_rar_inited) return;
+    if (is_rar_inited) {
+        return;
+    }
     is_rar_inited = 1;
 
-    if (have_rar) return;
+    if (have_rar) {
+        return;
+    }
 
 #ifdef UNRAR_LINKED
     cli_unrar_open             = unrar_open;
@@ -323,8 +327,9 @@ static void rarload(void)
     cli_unrar_close            = unrar_close;
 #else
     rhandle = load_module("libclamunrar_iface", "unrar");
-    if (NULL == rhandle)
+    if (NULL == rhandle) {
         return;
+    }
 
     if ((NULL == (cli_unrar_open = (cl_unrar_error_t(*)(const char *, void **, char **, uint32_t *, uint8_t))get_module_function(rhandle, "libclamunrar_iface_LTX_unrar_open"))) ||
         (NULL == (cli_unrar_peek_file_header = (cl_unrar_error_t(*)(void *, unrar_metadata_t *))get_module_function(rhandle, "libclamunrar_iface_LTX_unrar_peek_file_header"))) ||
@@ -458,8 +463,9 @@ cl_error_t cl_init(unsigned int initoptions)
     gettimeofday(&tv, (struct timezone *)0);
     srand(pid + tv.tv_usec * (pid + 1) + clock());
     rc = bytecode_init();
-    if (rc)
+    if (rc) {
         return rc;
+    }
 
     xmlInitParser();
 
@@ -653,8 +659,9 @@ done:
 
 cl_error_t cl_engine_set_num(struct cl_engine *engine, enum cl_engine_field field, long long num)
 {
-    if (!engine)
+    if (!engine) {
         return CL_ENULLARG;
+    }
 
     /* TODO: consider adding checks and warn/errs when num overflows the
      * destination type
@@ -683,8 +690,9 @@ cl_error_t cl_engine_set_num(struct cl_engine *engine, enum cl_engine_field fiel
             if (!num) {
                 cli_warnmsg("MaxRecursion: the value of 0 is not allowed, using default: %u\n", CLI_DEFAULT_MAXRECLEVEL);
                 engine->max_recursion_level = CLI_DEFAULT_MAXRECLEVEL;
-            } else
+            } else {
                 engine->max_recursion_level = num;
+            }
             break;
         case CL_ENGINE_MAX_FILES:
             engine->maxfiles = num;
@@ -693,36 +701,41 @@ cl_error_t cl_engine_set_num(struct cl_engine *engine, enum cl_engine_field fiel
             if (num < 0) {
                 cli_warnmsg("MaxEmbeddedPE: negative values are not allowed, using default: %u\n", CLI_DEFAULT_MAXEMBEDDEDPE);
                 engine->maxembeddedpe = CLI_DEFAULT_MAXEMBEDDEDPE;
-            } else
+            } else {
                 engine->maxembeddedpe = num;
+            }
             break;
         case CL_ENGINE_MAX_HTMLNORMALIZE:
             if (num < 0) {
                 cli_warnmsg("MaxHTMLNormalize: negative values are not allowed, using default: %u\n", CLI_DEFAULT_MAXHTMLNORMALIZE);
                 engine->maxhtmlnormalize = CLI_DEFAULT_MAXHTMLNORMALIZE;
-            } else
+            } else {
                 engine->maxhtmlnormalize = num;
+            }
             break;
         case CL_ENGINE_MAX_HTMLNOTAGS:
             if (num < 0) {
                 cli_warnmsg("MaxHTMLNoTags: negative values are not allowed, using default: %u\n", CLI_DEFAULT_MAXHTMLNOTAGS);
                 engine->maxhtmlnotags = CLI_DEFAULT_MAXHTMLNOTAGS;
-            } else
+            } else {
                 engine->maxhtmlnotags = num;
+            }
             break;
         case CL_ENGINE_MAX_SCRIPTNORMALIZE:
             if (num < 0) {
                 cli_warnmsg("MaxScriptNormalize: negative values are not allowed, using default: %u\n", CLI_DEFAULT_MAXSCRIPTNORMALIZE);
                 engine->maxscriptnormalize = CLI_DEFAULT_MAXSCRIPTNORMALIZE;
-            } else
+            } else {
                 engine->maxscriptnormalize = num;
+            }
             break;
         case CL_ENGINE_MAX_ZIPTYPERCG:
             if (num < 0) {
                 cli_warnmsg("MaxZipTypeRcg: negative values are not allowed, using default: %u\n", CLI_DEFAULT_MAXZIPTYPERCG);
                 engine->maxziptypercg = CLI_DEFAULT_MAXZIPTYPERCG;
-            } else
+            } else {
                 engine->maxziptypercg = num;
+            }
             break;
         case CL_ENGINE_MIN_CC_COUNT:
             engine->min_cc_count = num;
@@ -748,10 +761,11 @@ cl_error_t cl_engine_set_num(struct cl_engine *engine, enum cl_engine_field fiel
             engine->keeptmp = num;
             break;
         case CL_ENGINE_FORCETODISK:
-            if (num)
+            if (num) {
                 engine->engine_options |= ENGINE_OPTIONS_FORCE_TO_DISK;
-            else
+            } else {
                 engine->engine_options &= ~(ENGINE_OPTIONS_FORCE_TO_DISK);
+            }
             break;
         case CL_ENGINE_BYTECODE_SECURITY:
             if (engine->dboptions & CL_DB_COMPILED) {
@@ -773,16 +787,18 @@ cl_error_t cl_engine_set_num(struct cl_engine *engine, enum cl_engine_field fiel
                 return CL_EARG;
             }
             engine->bytecode_mode = num;
-            if (num == CL_BYTECODE_MODE_TEST)
+            if (num == CL_BYTECODE_MODE_TEST) {
                 cli_infomsg(NULL, "bytecode engine in test mode\n");
+            }
             break;
         case CL_ENGINE_DISABLE_CACHE:
             if (num) {
                 engine->engine_options |= ENGINE_OPTIONS_DISABLE_CACHE;
             } else {
                 engine->engine_options &= ~(ENGINE_OPTIONS_DISABLE_CACHE);
-                if (!(engine->cache))
+                if (!(engine->cache)) {
                     clean_cache_init(engine);
+                }
             }
             break;
         case CL_ENGINE_CACHE_SIZE:
@@ -851,13 +867,15 @@ long long cl_engine_get_num(const struct cl_engine *engine, enum cl_engine_field
 {
     if (!engine) {
         cli_errmsg("cl_engine_get_num: engine == NULL\n");
-        if (err)
+        if (err) {
             *err = CL_ENULLARG;
+        }
         return -1;
     }
 
-    if (err)
+    if (err) {
         *err = CL_SUCCESS;
+    }
 
     switch (field) {
         case CL_ENGINE_DB_OPTIONS:
@@ -926,16 +944,18 @@ long long cl_engine_get_num(const struct cl_engine *engine, enum cl_engine_field
             return engine->pcre_max_filesize;
         default:
             cli_errmsg("cl_engine_get: Incorrect field number\n");
-            if (err)
+            if (err) {
                 *err = CL_EARG;
+            }
             return -1;
     }
 }
 
 cl_error_t cl_engine_set_str(struct cl_engine *engine, enum cl_engine_field field, const char *str)
 {
-    if (!engine)
+    if (!engine) {
         return CL_ENULLARG;
+    }
 
     switch (field) {
         case CL_ENGINE_PUA_CATEGORIES:
@@ -944,8 +964,9 @@ cl_error_t cl_engine_set_str(struct cl_engine *engine, enum cl_engine_field fiel
                 engine->pua_cats = NULL;
             }
             engine->pua_cats = CLI_MPOOL_STRDUP(engine->mempool, str);
-            if (NULL == engine->pua_cats)
+            if (NULL == engine->pua_cats) {
                 return CL_EMEM;
+            }
             break;
         case CL_ENGINE_TMPDIR:
             if (NULL != engine->tmpdir) {
@@ -953,8 +974,9 @@ cl_error_t cl_engine_set_str(struct cl_engine *engine, enum cl_engine_field fiel
                 engine->tmpdir = NULL;
             }
             engine->tmpdir = CLI_MPOOL_STRDUP(engine->mempool, str);
-            if (NULL == engine->tmpdir)
+            if (NULL == engine->tmpdir) {
                 return CL_EMEM;
+            }
             break;
         case CL_ENGINE_CVDCERTSDIR:
             if (NULL != engine->certs_directory) {
@@ -962,8 +984,9 @@ cl_error_t cl_engine_set_str(struct cl_engine *engine, enum cl_engine_field fiel
                 engine->certs_directory = NULL;
             }
             engine->certs_directory = CLI_MPOOL_STRDUP(engine->mempool, str);
-            if (NULL == engine->certs_directory)
+            if (NULL == engine->certs_directory) {
                 return CL_EMEM;
+            }
             break;
         default:
             cli_errmsg("cl_engine_set_num: Incorrect field number\n");
@@ -977,13 +1000,15 @@ const char *cl_engine_get_str(const struct cl_engine *engine, enum cl_engine_fie
 {
     if (!engine) {
         cli_errmsg("cl_engine_get_str: engine == NULL\n");
-        if (err)
+        if (err) {
             *err = CL_ENULLARG;
+        }
         return NULL;
     }
 
-    if (err)
+    if (err) {
         *err = CL_SUCCESS;
+    }
 
     switch (field) {
         case CL_ENGINE_PUA_CATEGORIES:
@@ -994,8 +1019,9 @@ const char *cl_engine_get_str(const struct cl_engine *engine, enum cl_engine_fie
             return engine->certs_directory;
         default:
             cli_errmsg("cl_engine_get: Incorrect field number\n");
-            if (err)
+            if (err) {
                 *err = CL_EARG;
+            }
             return NULL;
     }
 }
@@ -1096,22 +1122,26 @@ cl_error_t cl_engine_settings_apply(struct cl_engine *engine, const struct cl_se
     engine->engine_options      = settings->engine_options;
     engine->cache_size          = settings->cache_size;
 
-    if (engine->tmpdir)
+    if (engine->tmpdir) {
         MPOOL_FREE(engine->mempool, engine->tmpdir);
+    }
     if (settings->tmpdir) {
         engine->tmpdir = CLI_MPOOL_STRDUP(engine->mempool, settings->tmpdir);
-        if (!engine->tmpdir)
+        if (!engine->tmpdir) {
             return CL_EMEM;
+        }
     } else {
         engine->tmpdir = NULL;
     }
 
-    if (engine->pua_cats)
+    if (engine->pua_cats) {
         MPOOL_FREE(engine->mempool, engine->pua_cats);
+    }
     if (settings->pua_cats) {
         engine->pua_cats = CLI_MPOOL_STRDUP(engine->mempool, settings->pua_cats);
-        if (!engine->pua_cats)
+        if (!engine->pua_cats) {
             return CL_EMEM;
+        }
     } else {
         engine->pua_cats = NULL;
     }
@@ -1155,8 +1185,9 @@ cl_error_t cl_engine_settings_apply(struct cl_engine *engine, const struct cl_se
 
 cl_error_t cl_engine_settings_free(struct cl_settings *settings)
 {
-    if (!settings)
+    if (!settings) {
         return CL_ENULLARG;
+    }
 
     free(settings->tmpdir);
     free(settings->pua_cats);
@@ -1250,8 +1281,9 @@ cl_error_t cli_updatelimits(cli_ctx *ctx, size_t needed)
 
     ctx->scannedfiles++;
     ctx->scansize += needed;
-    if (ctx->scansize > ctx->engine->maxscansize)
+    if (ctx->scansize > ctx->engine->maxscansize) {
         ctx->scansize = ctx->engine->maxscansize;
+    }
 
     return CL_SUCCESS;
 }
@@ -1321,16 +1353,19 @@ char *cli_hashstream(FILE *fs, unsigned char *digcpy, int type)
     }
 
     ctx = cl_hash_init(alg);
-    if (!(ctx))
+    if (!(ctx)) {
         return NULL;
+    }
 
-    while ((bytes = fread(buff, 1, FILEBUFF, fs)))
+    while ((bytes = fread(buff, 1, FILEBUFF, fs))) {
         cl_update_hash(ctx, buff, bytes);
+    }
 
     cl_finish_hash(ctx, digest);
 
-    if (!(hashstr = (char *)calloc(size * 2 + 1, sizeof(char))))
+    if (!(hashstr = (char *)calloc(size * 2 + 1, sizeof(char)))) {
         return NULL;
+    }
 
     pt = hashstr;
     for (i = 0; i < size; i++) {
@@ -1338,8 +1373,9 @@ char *cli_hashstream(FILE *fs, unsigned char *digcpy, int type)
         pt += 2;
     }
 
-    if (digcpy)
+    if (digcpy) {
         memcpy(digcpy, digest, size);
+    }
 
     return hashstr;
 }
@@ -1779,7 +1815,9 @@ int cli_rmdirs(const char *dirname)
     chmod(dirname, 0700);
     if ((dd = opendir(dirname)) != NULL) {
         while (CLAMSTAT(dirname, &maind) != -1) {
-            if (!rmdir(dirname)) break;
+            if (!rmdir(dirname)) {
+                break;
+            }
             if (errno != ENOTEMPTY && errno != EEXIST && errno != EBADF) {
                 cli_errmsg("cli_rmdirs: Can't remove temporary directory %s: %s\n", dirname, cli_strerror(errno, err, sizeof(err)));
                 closedir(dd);

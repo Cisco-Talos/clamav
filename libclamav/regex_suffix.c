@@ -71,10 +71,12 @@ static struct node *make_node(enum node_type type, struct node *left, struct nod
 {
     struct node *n;
     if (type == concat) {
-        if (left == NULL)
+        if (left == NULL) {
             return right;
-        if (right == NULL)
+        }
+        if (right == NULL) {
             return left;
+        }
     }
     n = malloc(sizeof(*n));
     if (!n) {
@@ -85,10 +87,12 @@ static struct node *make_node(enum node_type type, struct node *left, struct nod
     n->parent           = NULL;
     n->u.children.left  = left;
     n->u.children.right = right;
-    if (left)
+    if (left) {
         left->parent = n;
-    if (right)
+    }
+    if (right) {
         right->parent = n;
+    }
     return n;
 }
 
@@ -97,8 +101,9 @@ static struct node *dup_node(struct node *p)
     struct node *node_left, *node_right;
     struct node *d;
 
-    if (!p)
+    if (!p) {
         return NULL;
+    }
     d = malloc(sizeof(*d));
     if (!d) {
         cli_errmsg("dup_node: Unable to allocate memory for duplicate node\n");
@@ -124,10 +129,12 @@ static struct node *dup_node(struct node *p)
             node_right          = dup_node(p->u.children.right);
             d->u.children.left  = node_left;
             d->u.children.right = node_right;
-            if (node_left)
+            if (node_left) {
                 node_left->parent = d;
-            if (node_right)
+            }
+            if (node_right) {
                 node_right->parent = d;
+            }
             break;
     }
     return d;
@@ -154,8 +161,9 @@ static struct node *make_charclass(uint8_t *bitmap)
 static struct node *make_leaf(char c)
 {
     struct node *v = malloc(sizeof(*v));
-    if (!v)
+    if (!v) {
         return NULL;
+    }
     v->type        = leaf;
     v->parent      = NULL;
     v->u.leaf_char = c;
@@ -164,8 +172,9 @@ static struct node *make_leaf(char c)
 
 static void destroy_tree(struct node *n)
 {
-    if (!n)
+    if (!n) {
         return;
+    }
     switch (n->type) {
         case concat:
         case alternate:
@@ -174,8 +183,9 @@ static void destroy_tree(struct node *n)
             destroy_tree(n->u.children.right);
             break;
         case leaf_class:
-            if (n->u.leaf_class_bitmap != dot_bitmap)
+            if (n->u.leaf_class_bitmap != dot_bitmap) {
                 CLI_FREE_AND_SET_NULL(n->u.leaf_class_bitmap);
+            }
             break;
         case root:
         case leaf:
@@ -213,8 +223,9 @@ static uint8_t *parse_char_class(const uint8_t *pat, size_t patSize, size_t *pos
     if (pat[*pos] == '^') {
         memset(bitmap, 0xFF, 32); /*match chars not in brackets*/
         INC_POS(pos, patSize);
-    } else
+    } else {
         memset(bitmap, 0x00, 32);
+    }
     do {
         /* literal ] can be first character, so test for it at the end of the loop, for example: []] */
         if (pat[*pos] == '-' && hasprev) {
@@ -227,7 +238,7 @@ static uint8_t *parse_char_class(const uint8_t *pat, size_t patSize, size_t *pos
                 goto done;
             }
             INC_POS(pos, patSize);
-            if (pat[*pos] == '[')
+            if (pat[*pos] == '[') {
                 if (pat[*pos + 1] == '.') {
                     /* collating sequence not handled */
                     CLI_FREE_AND_SET_NULL(bitmap);
@@ -239,12 +250,15 @@ static uint8_t *parse_char_class(const uint8_t *pat, size_t patSize, size_t *pos
                     INC_POS(pos, patSize);
                     while (pat[*pos] != ']') INC_POS(pos, patSize);
                     return dot_bitmap;
-                } else
+                } else {
                     range_end = pat[*pos];
-            else
+                }
+            } else {
                 range_end = pat[*pos];
-            for (c = range_start + 1; c <= range_end; c++)
+            }
+            for (c = range_start + 1; c <= range_end; c++) {
                 bitmap[c >> 3] ^= 1 << (c & 0x7);
+            }
             hasprev = 0;
         } else if (pat[*pos] == '[' && pat[*pos] == ':') {
             /* char class */
@@ -288,8 +302,9 @@ static struct node *parse_regex(const uint8_t *p, const size_t pSize, size_t *la
             case '*':
             case '?':
                 v = make_node(optional, v, NULL);
-                if (!v)
+                if (!v) {
                     return NULL;
+                }
                 ++*last;
                 break;
             case '+':
@@ -332,8 +347,9 @@ static struct node *parse_regex(const uint8_t *p, const size_t pSize, size_t *la
                     return NULL;
                 }
                 v = make_node(concat, v, right);
-                if (!v)
+                if (!v) {
                     return NULL;
+                }
                 ++*last;
                 break;
             case '[':
@@ -356,7 +372,9 @@ static struct node *parse_regex(const uint8_t *p, const size_t pSize, size_t *la
                 ++*last;
                 /* fall-through */
             default:
-                if (*last >= pSize) break;
+                if (*last >= pSize) {
+                    break;
+                }
                 right = make_leaf(p[*last]);
                 v     = make_node(concat, v, right);
                 if (!v) {
@@ -380,8 +398,9 @@ static cl_error_t build_suffixtree_ascend(struct node *n, struct text_buffer *bu
         switch (n->type) {
             case root:
                 textbuffer_putc(buf, '\0');
-                if (cb(cbdata, buf->data, buf->pos - 1, regex) != CL_SUCCESS)
+                if (cb(cbdata, buf->data, buf->pos - 1, regex) != CL_SUCCESS) {
                     return CL_EMEM;
+                }
                 return CL_SUCCESS;
             case leaf:
                 textbuffer_putc(buf, n->u.leaf_char);
@@ -389,13 +408,16 @@ static cl_error_t build_suffixtree_ascend(struct node *n, struct text_buffer *bu
                 break;
             case leaf_class:
                 cnt = 0;
-                for (i = 0; i < 255; i++)
-                    if (BITMAP_HASSET(n->u.leaf_class_bitmap, i))
+                for (i = 0; i < 255; i++) {
+                    if (BITMAP_HASSET(n->u.leaf_class_bitmap, i)) {
                         cnt++;
+                    }
+                }
                 if (cnt > 16) {
                     textbuffer_putc(buf, '\0');
-                    if (cb(cbdata, buf->data, buf->pos - 1, regex) != CL_SUCCESS)
+                    if (cb(cbdata, buf->data, buf->pos - 1, regex) != CL_SUCCESS) {
                         return CL_EMEM;
+                    }
                     return CL_SUCCESS;
                 }
                 /* handle small classes by expanding */
@@ -404,16 +426,18 @@ static cl_error_t build_suffixtree_ascend(struct node *n, struct text_buffer *bu
                         size_t pos;
                         pos = buf->pos;
                         textbuffer_putc(buf, (char)i);
-                        if (build_suffixtree_ascend(n->parent, buf, n, cb, cbdata, regex) != CL_SUCCESS)
+                        if (build_suffixtree_ascend(n->parent, buf, n, cb, cbdata, regex) != CL_SUCCESS) {
                             return CL_EMEM;
+                        }
                         buf->pos = pos;
                     }
                 }
                 return 0;
             case concat:
                 if (prev != n->u.children.left) {
-                    if (build_suffixtree_descend(n->u.children.left, buf, cb, cbdata, regex) != CL_SUCCESS)
+                    if (build_suffixtree_descend(n->u.children.left, buf, cb, cbdata, regex) != CL_SUCCESS) {
                         return CL_EMEM;
+                    }
                     /* we're done here, descend will call
                      * ascend if needed */
                     return CL_SUCCESS;
@@ -426,8 +450,9 @@ static cl_error_t build_suffixtree_ascend(struct node *n, struct text_buffer *bu
                 break;
             case optional:
                 textbuffer_putc(buf, '\0');
-                if (cb(cbdata, buf->data, buf->pos - 1, regex) != CL_SUCCESS)
+                if (cb(cbdata, buf->data, buf->pos - 1, regex) != CL_SUCCESS) {
                     return CL_EMEM;
+                }
                 return CL_SUCCESS;
         }
         prev = q;
@@ -441,30 +466,35 @@ static cl_error_t build_suffixtree_descend(struct node *n, struct text_buffer *b
     while (n && n->type == concat) {
         n = n->u.children.right;
     }
-    if (!n)
+    if (!n) {
         return CL_SUCCESS;
+    }
     /* find out end of the regular expression,
      * if it ends with a static pattern */
     switch (n->type) {
         case alternate:
             /* save pos as restart point */
             pos = buf->pos;
-            if (build_suffixtree_descend(n->u.children.left, buf, cb, cbdata, regex) != CL_SUCCESS)
+            if (build_suffixtree_descend(n->u.children.left, buf, cb, cbdata, regex) != CL_SUCCESS) {
                 return CL_EMEM;
+            }
             buf->pos = pos;
-            if (build_suffixtree_descend(n->u.children.right, buf, cb, cbdata, regex) != CL_SUCCESS)
+            if (build_suffixtree_descend(n->u.children.right, buf, cb, cbdata, regex) != CL_SUCCESS) {
                 return CL_EMEM;
+            }
             buf->pos = pos;
             break;
         case optional:
             textbuffer_putc(buf, '\0');
-            if (cb(cbdata, buf->data, buf->pos - 1, regex) != CL_SUCCESS)
+            if (cb(cbdata, buf->data, buf->pos - 1, regex) != CL_SUCCESS) {
                 return CL_EMEM;
+            }
             return CL_SUCCESS;
         case leaf:
         case leaf_class:
-            if (build_suffixtree_ascend(n, buf, NULL, cb, cbdata, regex) != CL_SUCCESS)
+            if (build_suffixtree_ascend(n, buf, NULL, cb, cbdata, regex) != CL_SUCCESS) {
                 return CL_EMEM;
+            }
             return CL_SUCCESS;
         default:
             break;

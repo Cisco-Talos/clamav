@@ -382,19 +382,27 @@ cl_error_t cli_scanishield(cli_ctx *ctx, off_t off, size_t sz)
 
     while (ret == CL_SUCCESS) {
         fname = fmap_need_offstr(map, coff, 2048);
-        if (!fname) break;
+        if (!fname) {
+            break;
+        }
         coff += strlen(fname) + 1;
 
         path = fmap_need_offstr(map, coff, 2048);
-        if (!path) break;
+        if (!path) {
+            break;
+        }
         coff += strlen(path) + 1;
 
         version = fmap_need_offstr(map, coff, 2048);
-        if (!version) break;
+        if (!version) {
+            break;
+        }
         coff += strlen(version) + 1;
 
         strsz = fmap_need_offstr(map, coff, 2048);
-        if (!strsz) break;
+        if (!strsz) {
+            break;
+        }
         coff += strlen(strsz) + 1;
 
         data = &strsz[strlen(strsz) + 1];
@@ -403,7 +411,9 @@ cl_error_t cli_scanishield(cli_ctx *ctx, off_t off, size_t sz)
         if (fsize < 0 || fsize == LONG_MAX ||
             !*strsz || !eostr || eostr == strsz || *eostr ||
             (unsigned long)fsize >= sz ||
-            (size_t)(data - fname) >= sz - fsize) break;
+            (size_t)(data - fname) >= sz - fsize) {
+            break;
+        }
 
         cli_dbgmsg("ishield: @%lx found file %s (%s) - version %s - size %lu\n", (unsigned long int)coff, fname, path, version, (unsigned long int)fsize);
         if (CL_SUCCESS != cli_matchmeta(ctx, fname, fsize, fsize, 0, fc++, 0)) {
@@ -627,11 +637,13 @@ static cl_error_t is_parse_hdr(cli_ctx *ctx, struct IS_CABSTUFF *c)
             md5str((uint8_t *)hash);
             if (fmap_need_ptr_once(map, &hdr[dir_rel], 4)) {
                 dir_rel = cli_readint32(&hdr[dir_rel]) + h1_data_off + objs_dirs_off;
-                if (fmap_need_str(map, &hdr[dir_rel], c->hdrsz - dir_rel))
+                if (fmap_need_str(map, &hdr[dir_rel], c->hdrsz - dir_rel)) {
                     dir_name = &hdr[dir_rel];
+                }
             }
-            if (fmap_need_str(map, &hdr[file_rel], c->hdrsz - file_rel))
+            if (fmap_need_str(map, &hdr[file_rel], c->hdrsz - file_rel)) {
                 file_name = &hdr[file_rel];
+            }
 
             file_stream_off = le64_to_host(file->stream_off);
             file_size       = le64_to_host(file->size);
@@ -652,9 +664,9 @@ static cl_error_t is_parse_hdr(cli_ctx *ctx, struct IS_CABSTUFF *c)
                                file_name,
                                (long long)file_size, (long long)file_csize, hash, (long long)file_stream_off,
                                cabno, file->unk13, file->unk14, file->unk15);
-                    if (file->flag_has_dup & 1)
+                    if (file->flag_has_dup & 1) {
                         cli_dbgmsg("is_parse_hdr: not scanned (dup)\n");
-                    else {
+                    } else {
                         if (file_size) {
                             unsigned int j;
                             cl_error_t cabret = CL_SUCCESS;
@@ -671,10 +683,12 @@ static cl_error_t is_parse_hdr(cli_ctx *ctx, struct IS_CABSTUFF *c)
                                     scanned++;
                                     if (ctx->engine->maxfiles && scanned >= ctx->engine->maxfiles) {
                                         cli_dbgmsg("is_parse_hdr: File limit reached (max: %u)\n", ctx->engine->maxfiles);
-                                        if (file_name != emptyname)
+                                        if (file_name != emptyname) {
                                             fmap_unneed_ptr(map, (void *)file_name, strlen(file_name) + 1);
-                                        if (dir_name != emptyname)
+                                        }
+                                        if (dir_name != emptyname) {
                                             fmap_unneed_ptr(map, (void *)dir_name, strlen(dir_name) + 1);
+                                        }
                                         return CL_EMAXFILES;
                                     }
                                     cabret = is_extract_cab(ctx, file_stream_off + c->cabs[j].off, file_size, file_csize);
@@ -691,10 +705,12 @@ static cl_error_t is_parse_hdr(cli_ctx *ctx, struct IS_CABSTUFF *c)
                                 cabret = CL_SUCCESS;
                             }
                             if (cabret != CL_SUCCESS) {
-                                if (file_name != emptyname)
+                                if (file_name != emptyname) {
                                     fmap_unneed_ptr(map, (void *)file_name, strlen(file_name) + 1);
-                                if (dir_name != emptyname)
+                                }
+                                if (dir_name != emptyname) {
                                     fmap_unneed_ptr(map, (void *)dir_name, strlen(dir_name) + 1);
+                                }
                                 return cabret;
                             }
                         } else {
@@ -705,10 +721,12 @@ static cl_error_t is_parse_hdr(cli_ctx *ctx, struct IS_CABSTUFF *c)
                 default:
                     cli_dbgmsg("is_parse_hdr: skipped unknown file entry %u\n", i);
             }
-            if (file_name != emptyname)
+            if (file_name != emptyname) {
                 fmap_unneed_ptr(map, (void *)file_name, strlen(file_name) + 1);
-            if (dir_name != emptyname)
+            }
+            if (dir_name != emptyname) {
                 fmap_unneed_ptr(map, (void *)dir_name, strlen(dir_name) + 1);
+            }
             fmap_unneed_ptr(map, file, sizeof(*file));
         } else {
             ret = CL_SUCCESS;
@@ -801,8 +819,9 @@ static cl_error_t is_extract_cab(cli_ctx *ctx, uint64_t off, uint64_t size, uint
             zret        = inflate(&z, 0);
             if (zret == Z_OK || zret == Z_STREAM_END || zret == Z_BUF_ERROR) {
                 unsigned int umpd = IS_CABBUFSZ - z.avail_out;
-                if (cli_writen(ofd, outbuf, umpd) != umpd)
+                if (cli_writen(ofd, outbuf, umpd) != umpd) {
                     break;
+                }
                 outsz += umpd;
                 if (zret == Z_STREAM_END || z.avail_out == IS_CABBUFSZ /* FIXMEISHIELD: is the latter ok? */) {
                     success = 1;
@@ -820,22 +839,29 @@ static cl_error_t is_extract_cab(cli_ctx *ctx, uint64_t off, uint64_t size, uint
             break;
         }
         inflateEnd(&z);
-        if (!success) break;
+        if (!success) {
+            break;
+        }
     }
     free(outbuf);
     if (success) {
-        if (outsz != size)
+        if (outsz != size) {
             cli_dbgmsg("is_extract_cab: extracted %llu bytes to %s, expected %llu, scanning anyway.\n", (long long)outsz, tempfile, (long long)size);
-        else
+        } else {
             cli_dbgmsg("is_extract_cab: extracted to %s\n", tempfile);
-        if (lseek(ofd, 0, SEEK_SET) == -1)
+        }
+        if (lseek(ofd, 0, SEEK_SET) == -1) {
             cli_dbgmsg("is_extract_cab: call to lseek() failed\n");
+        }
         ret = cli_magic_scan_desc(ofd, tempfile, ctx, NULL, LAYER_ATTRIBUTES_NONE);
     }
 
     close(ofd);
-    if (!ctx->engine->keeptmp)
-        if (cli_unlink(tempfile)) ret = CL_EUNLINK;
+    if (!ctx->engine->keeptmp) {
+        if (cli_unlink(tempfile)) {
+            ret = CL_EUNLINK;
+        }
+    }
     free(tempfile);
     return success ? ret : CL_BREAK;
 }

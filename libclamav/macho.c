@@ -246,39 +246,47 @@ cl_error_t cli_scanmacho(cli_ctx *ctx, struct cli_exe_info *fileinfo)
 
     switch (EC32(hdr.cpu_type, conv)) {
         case 7:
-            if (!get_fileinfo)
+            if (!get_fileinfo) {
                 cli_dbgmsg("MACHO: CPU Type: Intel 32-bit\n");
+            }
             arch = 1;
             break;
         case 7 | 0x1000000:
-            if (!get_fileinfo)
+            if (!get_fileinfo) {
                 cli_dbgmsg("MACHO: CPU Type: Intel 64-bit\n");
+            }
             break;
         case 12:
-            if (!get_fileinfo)
+            if (!get_fileinfo) {
                 cli_dbgmsg("MACHO: CPU Type: ARM\n");
+            }
             break;
         case 14:
-            if (!get_fileinfo)
+            if (!get_fileinfo) {
                 cli_dbgmsg("MACHO: CPU Type: SPARC\n");
+            }
             break;
         case 18:
-            if (!get_fileinfo)
+            if (!get_fileinfo) {
                 cli_dbgmsg("MACHO: CPU Type: POWERPC 32-bit\n");
+            }
             arch = 2;
             break;
         case 18 | 0x1000000:
-            if (!get_fileinfo)
+            if (!get_fileinfo) {
                 cli_dbgmsg("MACHO: CPU Type: POWERPC 64-bit\n");
+            }
             arch = 3;
             break;
         default:
-            if (!get_fileinfo)
+            if (!get_fileinfo) {
                 cli_dbgmsg("MACHO: CPU Type: ** UNKNOWN ** (%u)\n", EC32(hdr.cpu_type, conv));
+            }
             break;
     }
 
-    if (!get_fileinfo) switch (EC32(hdr.filetype, conv)) {
+    if (!get_fileinfo) {
+        switch (EC32(hdr.filetype, conv)) {
             case 0x1: /* MH_OBJECT */
                 cli_dbgmsg("MACHO: Filetype: Relocatable object file\n");
                 break;
@@ -309,14 +317,16 @@ cl_error_t cli_scanmacho(cli_ctx *ctx, struct cli_exe_info *fileinfo)
             default:
                 cli_dbgmsg("MACHO: Filetype: ** UNKNOWN ** (0x%x)\n", EC32(hdr.filetype, conv));
         }
+    }
 
     if (!get_fileinfo) {
         cli_dbgmsg("MACHO: Number of load commands: %u\n", EC32(hdr.ncmds, conv));
         cli_dbgmsg("MACHO: Size of load commands: %u\n", EC32(hdr.sizeofcmds, conv));
     }
 
-    if (m64)
+    if (m64) {
         at += 4;
+    }
 
     hdr.ncmds = EC32(hdr.ncmds, conv);
     if (!hdr.ncmds || hdr.ncmds > 1024) {
@@ -371,8 +381,9 @@ cl_error_t cli_scanmacho(cli_ctx *ctx, struct cli_exe_info *fileinfo)
                 RETURN_BROKEN;
             }
             if (!nsects) {
-                if (!get_fileinfo)
+                if (!get_fileinfo) {
                     cli_dbgmsg("MACHO: ------------------\n");
+                }
                 continue;
             }
             sections = (struct cli_exe_section *)cli_max_realloc_or_free(sections, (sect + nsects) * sizeof(struct cli_exe_section));
@@ -422,13 +433,15 @@ cl_error_t cli_scanmacho(cli_ctx *ctx, struct cli_exe_info *fileinfo)
                     cli_dbgmsg("MACHO: Virtual address: 0x%x\n", (unsigned int)sections[sect].rva);
                     cli_dbgmsg("MACHO: Virtual size: %u\n", (unsigned int)sections[sect].vsz);
                     cli_dbgmsg("MACHO: Raw size: %u\n", (unsigned int)sections[sect].rsz);
-                    if (sections[sect].raw)
+                    if (sections[sect].raw) {
                         cli_dbgmsg("MACHO: File offset: %u\n", (unsigned int)sections[sect].raw);
+                    }
                 }
                 sect++;
             }
-            if (!get_fileinfo)
+            if (!get_fileinfo) {
                 cli_dbgmsg("MACHO: ------------------\n");
+            }
 
         } else if (arch && (load_cmd.cmd == 0x4 || load_cmd.cmd == 0x5)) { /* LC_(UNIX)THREAD */
             at += 8;
@@ -479,14 +492,16 @@ cl_error_t cli_scanmacho(cli_ctx *ctx, struct cli_exe_info *fileinfo)
                     return CL_EARG;
             }
         } else {
-            if (EC32(load_cmd.cmdsize, conv) > sizeof(load_cmd))
+            if (EC32(load_cmd.cmdsize, conv) > sizeof(load_cmd)) {
                 at += EC32(load_cmd.cmdsize, conv) - sizeof(load_cmd);
+            }
         }
     }
 
     if (ep) {
-        if (!get_fileinfo)
+        if (!get_fileinfo) {
             cli_dbgmsg("Entry Point: 0x%x\n", ep);
+        }
         if (sections) {
             ep = cli_rawaddr(ep, sections, sect, &err);
             if (err) {
@@ -494,8 +509,9 @@ cl_error_t cli_scanmacho(cli_ctx *ctx, struct cli_exe_info *fileinfo)
                 free(sections);
                 return CL_EFORMAT;
             }
-            if (!get_fileinfo)
+            if (!get_fileinfo) {
                 cli_dbgmsg("Entry Point file offset: %u\n", ep);
+            }
         }
     }
 
@@ -540,8 +556,9 @@ cl_error_t cli_scanmacho_unibin(cli_ctx *ctx)
     }
 
     fat_header.nfats = EC32(fat_header.nfats, conv);
-    if ((fat_header.nfats & 0xffff) >= 39) /* Java Bytecode */
+    if ((fat_header.nfats & 0xffff) >= 39) { /* Java Bytecode */
         return CL_CLEAN;
+    }
 
     if (fat_header.nfats > 32) {
         cli_dbgmsg("cli_scanmacho_unibin: Invalid number of architectures\n");

@@ -61,8 +61,9 @@ int tar_addfile(int fd, gzFile gzs, const char *file)
     unsigned char buff[FILEBUFF], *pt;
     unsigned int i, chksum = 0;
 
-    if ((s = open(file, O_RDONLY | O_BINARY)) == -1)
+    if ((s = open(file, O_RDONLY | O_BINARY)) == -1) {
         return -1;
+    }
 
     if (FSTAT(s, &sb) == -1) {
         close(s);
@@ -74,8 +75,9 @@ int tar_addfile(int fd, gzFile gzs, const char *file)
     hdr.name[99] = '\0';
     snprintf(hdr.size, 12, "%o", (unsigned int)sb.st_size);
     pt = (unsigned char *)&hdr;
-    for (i = 0; i < TARBLK; i++)
+    for (i = 0; i < TARBLK; i++) {
         chksum += *pt++;
+    }
     snprintf(hdr.chksum, 8, "%06o", chksum + 256);
 
     if (gzs) {
@@ -108,11 +110,13 @@ int tar_addfile(int fd, gzFile gzs, const char *file)
     if (sb.st_size % TARBLK) {
         memset(&hdr, 0, TARBLK);
         if (gzs) {
-            if (!gzwrite(gzs, &hdr, TARBLK - (sb.st_size % TARBLK)))
+            if (!gzwrite(gzs, &hdr, TARBLK - (sb.st_size % TARBLK))) {
                 return -1;
+            }
         } else {
-            if (write(fd, &hdr, TARBLK - (sb.st_size % TARBLK)) == -1)
+            if (write(fd, &hdr, TARBLK - (sb.st_size % TARBLK)) == -1) {
                 return -1;
+            }
         }
     }
 

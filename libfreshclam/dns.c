@@ -50,8 +50,9 @@ dnsquery(const char *domain, int qtype, unsigned int *ttl)
     int len, type;
     unsigned int cttl, size, txtlen = 0;
 
-    if (ttl)
+    if (ttl) {
         *ttl = 0;
+    }
     if (res_init() < 0) {
         logg(LOGG_WARNING, "res_init failed\n");
         return NULL;
@@ -81,8 +82,9 @@ dnsquery(const char *domain, int qtype, unsigned int *ttl)
 #endif
     }
     if (qtype != T_TXT && qtype != T_ANY) {
-        if (ttl)
+        if (ttl) {
             *ttl = 2;
+        }
         return NULL;
     }
 
@@ -139,13 +141,15 @@ dnsquery(const char *domain, int qtype, unsigned int *ttl)
         return NULL;
     }
 
-    if (!(txt = (char *)malloc(txtlen + 1)))
+    if (!(txt = (char *)malloc(txtlen + 1))) {
         return NULL;
+    }
 
     memcpy(txt, pt + 1, txtlen);
     txt[txtlen] = 0;
-    if (ttl)
+    if (ttl) {
         *ttl = cttl;
+    }
 
     return txt;
 }

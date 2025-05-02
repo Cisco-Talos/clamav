@@ -66,10 +66,11 @@ static void milter_exit(int sig)
 
 #ifndef _WIN32
     if ((opt = optget(opts, "MilterSocket"))) {
-        if (unlink(opt->strarg) == -1)
+        if (unlink(opt->strarg) == -1) {
             logg(LOGG_ERROR, "Can't unlink the socket file %s\n", opt->strarg);
-        else
+        } else {
             logg(LOGG_INFO, "Socket file removed.\n");
+        }
     }
 #endif
 
@@ -137,8 +138,9 @@ int main(int argc, char **argv)
 
     if (opts->filename) {
         int x;
-        for (x = 0; opts->filename[x]; x++)
+        for (x = 0; opts->filename[x]; x++) {
             mprintf(LOGG_WARNING, "Ignoring option %s\n", opts->filename[x]);
+        }
     }
 
     if (optget(opts, "version")->enabled) {
@@ -233,12 +235,15 @@ int main(int argc, char **argv)
         /* set group ownership and perms on the local socket */
         char *sock_name = my_socket;
         mode_t sock_mode;
-        if (!strncmp(my_socket, "unix:", 5))
+        if (!strncmp(my_socket, "unix:", 5)) {
             sock_name += 5;
-        if (!strncmp(my_socket, "local:", 6))
+        }
+        if (!strncmp(my_socket, "local:", 6)) {
             sock_name += 6;
-        if (*my_socket == ':')
+        }
+        if (*my_socket == ':') {
             sock_name++;
+        }
 
         if (optget(opts, "MilterSocketGroup")->enabled) {
             char *gname    = optget(opts, "MilterSocketGroup")->strarg, *end;
@@ -288,8 +293,9 @@ int main(int argc, char **argv)
                 optfree(opts);
                 return 1;
             }
-        } else
+        } else {
             sock_mode = 0777 & ~umsk;
+        }
 
         if (chmod(sock_name, sock_mode & 0666)) {
             logg(LOGG_ERROR, "Cannot set milter socket permission to %s\n", optget(opts, "MilterSocketMode")->strarg);
@@ -303,8 +309,9 @@ int main(int argc, char **argv)
     logg_time    = optget(opts, "LogTime")->enabled;
     logg_size    = optget(opts, "LogFileMaxSize")->numarg;
     logg_verbose = mprintf_verbose = optget(opts, "LogVerbose")->enabled;
-    if (logg_size)
+    if (logg_size) {
         logg_rotate = optget(opts, "LogRotate")->enabled;
+    }
 
     if ((opt = optget(opts, "LogFile"))->enabled) {
         logg_file = opt->strarg;
@@ -314,8 +321,9 @@ int main(int argc, char **argv)
             optfree(opts);
             return 1;
         }
-    } else
+    } else {
         logg_file = NULL;
+    }
 
 #if defined(USE_SYSLOG) && !defined(C_AIX)
     if (optget(opts, "LogSyslog")->enabled) {
@@ -341,8 +349,9 @@ int main(int argc, char **argv)
         optfree(opts);
         return 1;
     }
-    if ((opt = optget(opts, "TemporaryDirectory"))->enabled)
+    if ((opt = optget(opts, "TemporaryDirectory"))->enabled) {
         tempdir = opt->strarg;
+    }
 
     if (localnets_init(opts) || init_actions(opts)) {
         logg_close();

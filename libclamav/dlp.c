@@ -160,8 +160,9 @@ static const struct iin_map_struct *get_iin(char *digits, int cc_only)
     int i        = 0;
 
     while (iin_map[i].iin_start != 0) {
-        if (iin < iin_map[i].iin_start)
+        if (iin < iin_map[i].iin_start) {
             break;
+        }
         if (iin <= iin_map[i].iin_end && (cc_only == 0 || iin_map[i].is_cc == 1)) {
             cli_dbgmsg("Credit card IIN %s matched range for %s\n", digits, iin_map[i].iin_name);
             return &iin_map[i];
@@ -184,68 +185,81 @@ int dlp_is_valid_cc(const unsigned char *buffer, size_t length, int cc_only)
     size_t pad_allowance = MAX_CC_BREAKS;
     const struct iin_map_struct *iin;
 
-    if (buffer == NULL || length < 13)
+    if (buffer == NULL || length < 13) {
         return 0;
+    }
     /* if the first digit is greater than 6 it isn't one of the major
      * credit cards
      * reference => http://www.beachnet.com/~hstiles/cardtype.html
      */
-    if (!isdigit(buffer[0]) || buffer[0] > '6' || buffer[0] == 2)
+    if (!isdigit(buffer[0]) || buffer[0] > '6' || buffer[0] == 2) {
         return 0;
+    }
 
-    if (length > 19 + pad_allowance) /* max credit card length is 19, with allowance for punctuation */
+    if (length > 19 + pad_allowance) { /* max credit card length is 19, with allowance for punctuation */
         length = 19 + pad_allowance;
+    }
 
     /* Look for possible 6 digit IIN */
     for (i = 0; i < length && digits < IIN_SIZE; i++) {
         if (isdigit(buffer[i]) == 0) {
-            if (buffer[i] == ' ' || buffer[i] == '-')
-                if (pad_allowance-- > 0)
+            if (buffer[i] == ' ' || buffer[i] == '-') {
+                if (pad_allowance-- > 0) {
                     continue;
+                }
+            }
             break;
         }
         cc_digits[digits] = buffer[i];
         digits++;
     }
 
-    if (digits == IIN_SIZE)
+    if (digits == IIN_SIZE) {
         cc_digits[digits] = 0;
-    else
+    } else {
         return 0;
+    }
 
     /* See if it is a valid IIN. */
     iin = get_iin(cc_digits, cc_only);
-    if (iin == NULL)
+    if (iin == NULL) {
         return 0;
+    }
 
     /* Look for the remaining needed digits. */
     for (/*same 'i' from previous for-loop*/; i < length && digits < iin->card_max; i++) {
         if (isdigit(buffer[i]) == 0) {
-            if (buffer[i] == ' ' || buffer[i] == '-')
-                if (pad_allowance-- > 0)
+            if (buffer[i] == ' ' || buffer[i] == '-') {
+                if (pad_allowance-- > 0) {
                     continue;
+                }
+            }
             break;
         }
         cc_digits[digits] = buffer[i];
         digits++;
     }
 
-    if (digits < iin->card_min || (i < length && isdigit(buffer[i])))
+    if (digits < iin->card_min || (i < length && isdigit(buffer[i]))) {
         return 0;
+    }
 
     j = (ssize_t)i;
     // figure out luhn digits
     for (j = digits - 1; j >= 0; j--) {
         val = cc_digits[j] - '0';
         if (mult) {
-            if ((val *= 2) > 9) val -= 9;
+            if ((val *= 2) > 9) {
+                val -= 9;
+            }
         }
         mult = !mult;
         sum += val;
     }
 
-    if (sum % 10)
+    if (sum % 10) {
         return 0;
+    }
 
     cli_dbgmsg("Luhn algorithm successful for %s\n", cc_digits);
 
@@ -268,9 +282,9 @@ static int contains_cc(const unsigned char *buffer, size_t length, int detmode, 
     while (idx < end) {
         if (isdigit(*idx)) {
             if ((idx == buffer || !isdigit(idx[-1])) && dlp_is_valid_cc(idx, length - (idx - buffer), cc_only) == 1) {
-                if (detmode == DETECT_MODE_DETECT)
+                if (detmode == DETECT_MODE_DETECT) {
                     return 1;
-                else {
+                } else {
                     count++;
                     /* if we got a valid match we should increment the idx ptr
                      * to gain a little performance
@@ -304,16 +318,19 @@ int dlp_is_valid_ssn(const unsigned char *buffer, size_t length, int format)
     int retval = 1;
     char numbuf[12];
 
-    if (buffer == NULL)
+    if (buffer == NULL) {
         return 0;
+    }
 
     minlength = (format == SSN_FORMAT_HYPHENS ? 11 : 9);
 
-    if (length < minlength)
+    if (length < minlength) {
         return 0;
+    }
 
-    if ((length > minlength) && isdigit(buffer[minlength]))
+    if ((length > minlength) && isdigit(buffer[minlength])) {
         return 0;
+    }
 
     strncpy(numbuf, (const char *)buffer, minlength);
     numbuf[minlength] = 0;
@@ -321,8 +338,9 @@ int dlp_is_valid_ssn(const unsigned char *buffer, size_t length, int format)
     /* sscanf parses and (basically) validates the string for us */
     switch (format) {
         case SSN_FORMAT_HYPHENS:
-            if (numbuf[3] != '-' || numbuf[6] != '-')
+            if (numbuf[3] != '-' || numbuf[6] != '-') {
                 return 0;
+            }
 
             if (sscanf((const char *)numbuf,
                        "%3d-%2d-%4d",
@@ -333,8 +351,9 @@ int dlp_is_valid_ssn(const unsigned char *buffer, size_t length, int format)
             }
             break;
         case SSN_FORMAT_STRIPPED:
-            if (!cli_isnumber(numbuf))
+            if (!cli_isnumber(numbuf)) {
                 return 0;
+            }
 
             if (sscanf((const char *)numbuf,
                        "%3d%2d%4d",
@@ -359,20 +378,23 @@ int dlp_is_valid_ssn(const unsigned char *buffer, size_t length, int format)
         group_number <= 0 ||
         group_number > 99 ||
         serial_number <= 0 ||
-        serial_number > 9999)
+        serial_number > 9999) {
         retval = 0;
+    }
 
     if (area_number == 987 && group_number == 65) {
-        if (serial_number >= 4320 && serial_number <= 4329)
+        if (serial_number >= 4320 && serial_number <= 4329) {
             retval = 0;
+        }
     }
 
     /*
     if(group_number > ssn_max_group[area_number])
         retval = 0;
     */
-    if (retval)
+    if (retval) {
         cli_dbgmsg("dlp_is_valid_ssn: SSN_%s: %s\n", format == SSN_FORMAT_HYPHENS ? "HYPHENS" : "STRIPPED", numbuf);
+    }
 
     return retval;
 }
@@ -383,8 +405,9 @@ static int contains_ssn(const unsigned char *buffer, size_t length, int format, 
     const unsigned char *end;
     int count = 0;
 
-    if (buffer == NULL || length < 9)
+    if (buffer == NULL || length < 9) {
         return 0;
+    }
 
     end = buffer + length;
     idx = buffer;
@@ -567,14 +590,19 @@ int cdn_ctn_is_valid(const char *buffer, size_t length)
     int i;
     int bank_code = 0; /*  last three digits of Canada RTN/MICR is Bank I.D.   */
 
-    if (buffer == NULL || length < 9) /* if the buffer is empty or  */
-        return 0;                     /* the length is less than 9, it's not valid    */
+    if (buffer == NULL || length < 9) { /* if the buffer is empty or  */
+        return 0;                       /* the length is less than 9, it's not valid    */
+    }
 
-    if (buffer[5] != '-') return 0; /* if the 6th char isn't a '-', not a valid RTN */
+    if (buffer[5] != '-') {
+        return 0; /* if the 6th char isn't a '-', not a valid RTN */
+    }
 
-    for (i = 0; i < 5; i++)
-        if (isdigit(buffer[i]) == 0)
+    for (i = 0; i < 5; i++) {
+        if (isdigit(buffer[i]) == 0) {
             return 0;
+        }
+    }
 
     /*  Check the various branch codes which are listed, but there  */
     /*  may be more valid codes which could be added as well...     */
@@ -582,8 +610,9 @@ int cdn_ctn_is_valid(const char *buffer, size_t length)
     /*  convert last three elements in buffer to a numeric value    */
 
     for (i = 6; i < 9; i++) {
-        if (isdigit(buffer[i]) == 0)
+        if (isdigit(buffer[i]) == 0) {
             return 0;
+        }
         bank_code = (bank_code * 10) + (buffer[i] - '0');
     }
 
@@ -606,25 +635,32 @@ int cdn_eft_is_valid(const char *buffer, size_t length)
     int bank_code = 0;
     int i;
 
-    if (buffer == NULL || length < 9) /* if the buffer is empty or  */
-        return 0;                     /* the length is less than 9, it's not valid    */
+    if (buffer == NULL || length < 9) { /* if the buffer is empty or  */
+        return 0;                       /* the length is less than 9, it's not valid    */
+    }
 
-    if (buffer[0] != '0') return 0; /* if the 1st char isn't a '0', not a valid EFT */
+    if (buffer[0] != '0') {
+        return 0; /* if the 1st char isn't a '0', not a valid EFT */
+    }
 
     for (i = 1; i < 4; i++) {
-        if (isdigit(buffer[i]) == 0)
+        if (isdigit(buffer[i]) == 0) {
             return 0;
+        }
         bank_code = (bank_code * 10) + (buffer[i] - '0');
     }
 
     /*  Check the various branch codes which are listed, but there  */
     /*  may be more valid codes which could be added as well...     */
-    if (!is_bank_code_valid(bank_code))
+    if (!is_bank_code_valid(bank_code)) {
         return 0;
+    }
 
-    for (i = 4; i < 9; i++)
-        if (isdigit(buffer[i]) == 0)
+    for (i = 4; i < 9; i++) {
+        if (isdigit(buffer[i]) == 0) {
             return 0;
+        }
+    }
 
     return 1;
 }
@@ -635,14 +671,16 @@ int us_micr_is_valid(const char *buffer, size_t length)
     int i;
     unsigned char micr_digits[9];
 
-    if (buffer == NULL || length < 9) /* if the buffer is empty or    */
-        return 0;                     /* the length is < 9, it's not valid    */
+    if (buffer == NULL || length < 9) { /* if the buffer is empty or    */
+        return 0;                       /* the length is < 9, it's not valid    */
+    }
 
     /* loop and make sure all the characters are actually digits    */
 
     for (i = 0; i < 9; i++) {
-        if (isdigit(buffer[i]) == 0)
+        if (isdigit(buffer[i]) == 0) {
             return 0;
+        }
         micr_digits[i] = buffer[i];
     }
 
@@ -659,7 +697,8 @@ int us_micr_is_valid(const char *buffer, size_t length)
     sum    = sum1 + sum2 + sum3;
     result = sum % 10;
 
-    if (result == (micr_digits[8] - '0'))
+    if (result == (micr_digits[8] - '0')) {
         return 1; /* last digit of MICR matches result    */
-    return 0;     /* MICR number isn't valid  */
+    }
+    return 0; /* MICR number isn't valid  */
 }

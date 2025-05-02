@@ -76,27 +76,35 @@ int cli_LzmaInit(struct CLI_LZMA *L, uint64_t size_override)
             L->usize = 0;
         }
         L->init = 1;
-    } else if (size_override)
+    } else if (size_override) {
         cli_warnmsg("cli_LzmaInit: ignoring late size override\n");
+    }
 
-    if (L->freeme) return LZMA_RESULT_OK;
+    if (L->freeme) {
+        return LZMA_RESULT_OK;
+    }
 
     while (L->p_cnt) {
         L->header[LZMA_PROPS_SIZE - L->p_cnt] = lzma_getbyte(L, &fail);
-        if (fail) return LZMA_RESULT_OK;
+        if (fail) {
+            return LZMA_RESULT_OK;
+        }
         L->p_cnt--;
     }
 
     while (L->s_cnt) {
         uint64_t c = (uint64_t)lzma_getbyte(L, &fail);
-        if (fail) return LZMA_RESULT_OK;
+        if (fail) {
+            return LZMA_RESULT_OK;
+        }
         L->usize |= c << (8 * (8 - L->s_cnt));
         L->s_cnt--;
     }
 
     LzmaDec_Construct(&L->state);
-    if (LzmaDec_Allocate(&L->state, L->header, LZMA_PROPS_SIZE, &g_Alloc) != SZ_OK)
+    if (LzmaDec_Allocate(&L->state, L->header, LZMA_PROPS_SIZE, &g_Alloc) != SZ_OK) {
         return LZMA_RESULT_DATA_ERROR;
+    }
     LzmaDec_Init(&L->state);
 
     L->freeme = 1;
@@ -105,8 +113,9 @@ int cli_LzmaInit(struct CLI_LZMA *L, uint64_t size_override)
 
 void cli_LzmaShutdown(struct CLI_LZMA *L)
 {
-    if (L->freeme)
+    if (L->freeme) {
         LzmaDec_Free(&L->state, &g_Alloc);
+    }
     return;
 }
 
@@ -117,7 +126,9 @@ int cli_LzmaDecode(struct CLI_LZMA *L)
     ELzmaStatus status;
     ELzmaFinishMode finish;
 
-    if (!L->freeme) return cli_LzmaInit(L, 0);
+    if (!L->freeme) {
+        return cli_LzmaInit(L, 0);
+    }
 
     inbytes = L->avail_in;
     if (~L->usize && L->avail_out > L->usize) {
@@ -132,10 +143,14 @@ int cli_LzmaDecode(struct CLI_LZMA *L)
     L->next_in += inbytes;
     L->avail_out -= outbytes;
     L->next_out += outbytes;
-    if (~L->usize) L->usize -= outbytes;
-    if (res != SZ_OK)
+    if (~L->usize) {
+        L->usize -= outbytes;
+    }
+    if (res != SZ_OK) {
         return LZMA_RESULT_DATA_ERROR;
-    if (!L->usize || status == LZMA_STATUS_FINISHED_WITH_MARK)
+    }
+    if (!L->usize || status == LZMA_STATUS_FINISHED_WITH_MARK) {
         return LZMA_STREAM_END;
+    }
     return LZMA_RESULT_OK;
 }

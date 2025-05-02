@@ -119,7 +119,9 @@ fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty, const cha
         return NULL;
     }
 
-    if (!len) len = st.st_size - offset; /* bound checked later */
+    if (!len) {
+        len = st.st_size - offset; /* bound checked later */
+    }
     if (!len) {
         cli_dbgmsg("fmap: attempted void mapping\n");
         *empty = 1;
@@ -130,8 +132,9 @@ fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty, const cha
         return NULL;
     }
     m = cl_fmap_open_handle((void *)(ssize_t)fd, offset, len, pread_cb, 1);
-    if (!m)
+    if (!m) {
         return NULL;
+    }
     m->mtime = (uint64_t)st.st_mtime;
 
     if (NULL != name) {
@@ -448,7 +451,9 @@ done:
 static void fmap_aging(fmap_t *m)
 {
 #ifdef ANONYMOUS_MAP
-    if (!m->aging) return;
+    if (!m->aging) {
+        return;
+    }
     if (m->paged * m->pgsz > UNPAGE_THRSHLD_HI) { /* we alloc'd too much */
         uint64_t i, avail = 0, freeme[2048], maxavail = MIN(sizeof(freeme) / sizeof(*freeme), m->paged - UNPAGE_THRSHLD_LO / m->pgsz) - 1;
 
@@ -456,7 +461,9 @@ static void fmap_aging(fmap_t *m)
             uint64_t s = fmap_bitmap[i];
             if ((s & (FM_MASK_PAGED | FM_MASK_LOCKED)) == FM_MASK_PAGED) {
                 /* page is paged and not locked: dec age */
-                if (s & FM_MASK_COUNT) fmap_bitmap[i]--;
+                if (s & FM_MASK_COUNT) {
+                    fmap_bitmap[i]--;
+                }
                 /* and make it available for unpaging */
 
                 if (!avail) {
@@ -468,10 +475,14 @@ static void fmap_aging(fmap_t *m)
                     if (avail <= maxavail || (fmap_bitmap[freeme[maxavail]] & FM_MASK_COUNT) > age) {
                         while ((fmap_bitmap[freeme[insert_to]] & FM_MASK_COUNT) > age) {
                             freeme[insert_to + 1] = freeme[insert_to];
-                            if (!insert_to--) break;
+                            if (!insert_to--) {
+                                break;
+                            }
                         }
                         freeme[insert_to + 1] = i;
-                        if (avail <= maxavail) avail++;
+                        if (avail <= maxavail) {
+                            avail++;
+                        }
                     }
                 }
             }
@@ -495,16 +506,18 @@ static void fmap_aging(fmap_t *m)
                     continue;
                 }
                 fmap_lock;
-                if (mmap(firstpage, lastpage - firstpage, PROT_READ | PROT_WRITE, MAP_FIXED | MAP_PRIVATE | ANONYMOUS_MAP, -1, 0) == MAP_FAILED)
+                if (mmap(firstpage, lastpage - firstpage, PROT_READ | PROT_WRITE, MAP_FIXED | MAP_PRIVATE | ANONYMOUS_MAP, -1, 0) == MAP_FAILED) {
                     cli_dbgmsg("fmap_aging: kernel hates you\n");
+                }
                 fmap_unlock;
                 firstpage = pptr;
                 lastpage  = pptr + m->pgsz;
             }
             if (lastpage) {
                 fmap_lock;
-                if (mmap(firstpage, lastpage - firstpage, PROT_READ | PROT_WRITE, MAP_FIXED | MAP_PRIVATE | ANONYMOUS_MAP, -1, 0) == MAP_FAILED)
+                if (mmap(firstpage, lastpage - firstpage, PROT_READ | PROT_WRITE, MAP_FIXED | MAP_PRIVATE | ANONYMOUS_MAP, -1, 0) == MAP_FAILED) {
                     cli_dbgmsg("fmap_aging: kernel hates you\n");
+                }
                 fmap_unlock;
             }
             m->paged -= avail;
@@ -541,11 +554,14 @@ static int fmap_readpage(fmap_t *m, uint64_t first_page, uint64_t count, uint64_
         if (lock_count) {
             lock_count--;
             lock = 1;
-        } else
+        } else {
             lock = 0;
+        }
         if (i == count) {
             /* we count one page too much to flush pending reads */
-            if (!pptr) return 0; /* if we have any */
+            if (!pptr) {
+                return 0; /* if we have any */
+            }
             force_read = 1;
         } else if ((sbitmap = fmap_bitmap[page]) & FM_MASK_PAGED) {
             /* page already paged */
@@ -560,8 +576,9 @@ static int fmap_readpage(fmap_t *m, uint64_t first_page, uint64_t count, uint64_
                     }
                     /* acceptable lock count: inc lock count */
                     fmap_bitmap[page]++;
-                } else /* page not currently locked: set lock count = 1 */
+                } else { /* page not currently locked: set lock count = 1 */
                     fmap_bitmap[page] = 1 | FM_MASK_LOCKED | FM_MASK_PAGED;
+                }
             } else {
                 /* we don't want locking */
                 if (!(sbitmap & FM_MASK_LOCKED)) {
@@ -569,7 +586,9 @@ static int fmap_readpage(fmap_t *m, uint64_t first_page, uint64_t count, uint64_
                     fmap_bitmap[page] = FM_MASK_PAGED | FM_MASK_COUNT;
                 }
             }
-            if (!pptr) continue;
+            if (!pptr) {
+                continue;
+            }
             force_read = 1;
         }
 
@@ -602,8 +621,9 @@ static int fmap_readpage(fmap_t *m, uint64_t first_page, uint64_t count, uint64_
                 uint64_t target_offset = eintr_off + m->offset + (first_page * m->pgsz);
                 got                    = m->pread_cb(m->handle, pptr, readsz, target_offset);
 
-                if (got < 0 && errno == EINTR)
+                if (got < 0 && errno == EINTR) {
                     continue;
+                }
 
                 if (got > 0) {
                     pptr += got;
@@ -633,14 +653,16 @@ static int fmap_readpage(fmap_t *m, uint64_t first_page, uint64_t count, uint64_
             pptr       = (char *)m->data + page * m->pgsz;
             first_page = page;
         }
-        if ((page == m->pages - 1) && (m->real_len % m->pgsz))
+        if ((page == m->pages - 1) && (m->real_len % m->pgsz)) {
             readsz += m->real_len % m->pgsz;
-        else
+        } else {
             readsz += m->pgsz;
-        if (lock) /* lock requested: set paged, lock page and set lock count to 1 */
+        }
+        if (lock) { /* lock requested: set paged, lock page and set lock count to 1 */
             fmap_bitmap[page] = FM_MASK_PAGED | FM_MASK_LOCKED | 1;
-        else /* no locking: set paged and set aging to max */
+        } else { /* no locking: set paged and set aging to max */
             fmap_bitmap[page] = FM_MASK_PAGED | FM_MASK_COUNT;
+        }
         m->paged++;
     }
     return 0;
@@ -651,12 +673,14 @@ static const void *handle_need(fmap_t *m, size_t at, size_t len, int lock)
     uint64_t first_page, last_page, lock_count;
     char *ret;
 
-    if (!len)
+    if (!len) {
         return NULL;
+    }
 
     at += m->nested_offset;
-    if (!CLI_ISCONTAINED(m->nested_offset, m->len, at, len))
+    if (!CLI_ISCONTAINED(m->nested_offset, m->len, at, len)) {
         return NULL;
+    }
 
     fmap_aging(m);
 
@@ -668,8 +692,9 @@ static const void *handle_need(fmap_t *m, size_t at, size_t len, int lock)
     if (last_page >= m->pages) last_page = m->pages - 1;
 #endif
 
-    if (fmap_readpage(m, first_page, last_page - first_page + 1, lock_count))
+    if (fmap_readpage(m, first_page, last_page - first_page + 1, lock_count)) {
         return NULL;
+    }
 
     ret = (char *)m->data + at;
     return (void *)ret;
@@ -682,12 +707,13 @@ static void fmap_unneed_page(fmap_t *m, uint64_t page)
     if ((s & (FM_MASK_PAGED | FM_MASK_LOCKED)) == (FM_MASK_PAGED | FM_MASK_LOCKED)) {
         /* page is paged and locked: check lock count */
         s &= FM_MASK_COUNT;
-        if (s > 1) /* locked more than once: dec lock count */
+        if (s > 1) { /* locked more than once: dec lock count */
             fmap_bitmap[page]--;
-        else if (s == 1) /* only one lock left: unlock and begin aging */
+        } else if (s == 1) { /* only one lock left: unlock and begin aging */
             fmap_bitmap[page] = FM_MASK_COUNT | FM_MASK_PAGED;
-        else
+        } else {
             cli_errmsg("fmap_unneed: inconsistent map state\n");
+        }
         return;
     }
     cli_warnmsg("fmap_unneed: unneed on a unlocked page\n");
@@ -697,7 +723,9 @@ static void fmap_unneed_page(fmap_t *m, uint64_t page)
 static void handle_unneed_off(fmap_t *m, size_t at, size_t len)
 {
     uint64_t i, first_page, last_page;
-    if (!m->aging) return;
+    if (!m->aging) {
+        return;
+    }
     if (!len) {
         cli_warnmsg("fmap_unneed: attempted void unneed\n");
         return;
@@ -722,8 +750,9 @@ static void unmap_mmap(fmap_t *m)
 #ifdef ANONYMOUS_MAP
     size_t len = m->pages * m->pgsz;
     fmap_lock;
-    if (munmap((void *)m->data, len) == -1) /* munmap() failed */
+    if (munmap((void *)m->data, len) == -1) { /* munmap() failed */
         cli_warnmsg("funmap: unable to unmap memory segment at address: %p with length: %zu\n", (void *)m->data, len);
+    }
     fmap_unlock;
 #else
     UNUSEDPARAM(m);
@@ -748,11 +777,13 @@ static const void *handle_need_offstr(fmap_t *m, size_t at, size_t len_hint)
     at += m->nested_offset;
     ptr = (void *)((char *)m->data + at);
 
-    if (!len_hint || len_hint > m->real_len - at)
+    if (!len_hint || len_hint > m->real_len - at) {
         len_hint = m->real_len - at;
+    }
 
-    if (!CLI_ISCONTAINED(m->nested_offset, m->len, at, len_hint))
+    if (!CLI_ISCONTAINED(m->nested_offset, m->len, at, len_hint)) {
         return NULL;
+    }
 
     fmap_aging(m);
 
@@ -775,11 +806,13 @@ static const void *handle_need_offstr(fmap_t *m, size_t at, size_t len_hint)
             scansz = MIN(len_hint, m->pgsz);
         }
         len_hint -= scansz;
-        if (memchr(&thispage[scanat], 0, scansz))
+        if (memchr(&thispage[scanat], 0, scansz)) {
             return ptr;
+        }
     }
-    for (i = first_page; i <= last_page; i++)
+    for (i = first_page; i <= last_page; i++) {
         fmap_unneed_page(m, i);
+    }
     return NULL;
 }
 
@@ -791,8 +824,9 @@ static const void *handle_gets(fmap_t *m, char *dst, size_t *at, size_t max_len)
     size_t len    = MIN(max_len - 1, m->len - *at);
     size_t fullen = len;
 
-    if (!len || !CLI_ISCONTAINED_0_TO(m->len, *at, len))
+    if (!len || !CLI_ISCONTAINED_0_TO(m->len, *at, len)) {
         return NULL;
+    }
 
     fmap_aging(m);
 
@@ -803,8 +837,9 @@ static const void *handle_gets(fmap_t *m, char *dst, size_t *at, size_t max_len)
         char *thispage = (char *)m->data + i * m->pgsz;
         uint64_t scanat, scansz;
 
-        if (fmap_readpage(m, i, 1, 0))
+        if (fmap_readpage(m, i, 1, 0)) {
             return NULL;
+        }
 
         if (i == first_page) {
             scanat = (m->nested_offset + *at) % m->pgsz;
@@ -918,14 +953,17 @@ static const void *mem_need_offstr(fmap_t *m, size_t at, size_t len_hint)
     at += m->nested_offset;
     ptr = (char *)m->data + at;
 
-    if (!len_hint || len_hint > m->real_len - at)
+    if (!len_hint || len_hint > m->real_len - at) {
         len_hint = m->real_len - at;
+    }
 
-    if (!CLI_ISCONTAINED(m->nested_offset, m->len, at, len_hint))
+    if (!CLI_ISCONTAINED(m->nested_offset, m->len, at, len_hint)) {
         return NULL;
+    }
 
-    if (memchr(ptr, 0, len_hint))
+    if (memchr(ptr, 0, len_hint)) {
         return (void *)ptr;
+    }
     return NULL;
 }
 
@@ -935,8 +973,9 @@ static const void *mem_gets(fmap_t *m, char *dst, size_t *at, size_t max_len)
     char *endptr = NULL;
     size_t len   = MIN(max_len - 1, m->len - *at);
 
-    if (!len || !CLI_ISCONTAINED_0_TO(m->len, *at, len))
+    if (!len || !CLI_ISCONTAINED_0_TO(m->len, *at, len)) {
         return NULL;
+    }
 
     if ((endptr = memchr(src, '\n', len))) {
         endptr++;

@@ -411,14 +411,19 @@ static size_t align_to_pagesize(struct MP *mp, size_t size)
 static unsigned int to_bits(size_t size)
 {
     unsigned int i;
-    for (i = 0; i < FRAGSBITS; i++)
-        if (fragsz[i] >= size) return i;
+    for (i = 0; i < FRAGSBITS; i++) {
+        if (fragsz[i] >= size) {
+            return i;
+        }
+    }
     return FRAGSBITS;
 }
 
 static size_t from_bits(unsigned int bits)
 {
-    if (bits >= FRAGSBITS) return 0;
+    if (bits >= FRAGSBITS) {
+        return 0;
+    }
     return fragsz[bits];
 }
 
@@ -471,11 +476,12 @@ struct MP *mpool_create()
         return NULL;
     }
 #ifndef _WIN32
-    if ((mpool_p = (struct MP *)mmap(NULL, sz, PROT_READ | PROT_WRITE, MAP_PRIVATE | ANONYMOUS_MAP, -1, 0)) == MAP_FAILED)
+    if ((mpool_p = (struct MP *)mmap(NULL, sz, PROT_READ | PROT_WRITE, MAP_PRIVATE | ANONYMOUS_MAP, -1, 0)) == MAP_FAILED) {
 #else
     if (!(mpool_p = (struct MP *)VirtualAlloc(NULL, sz, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE)))
 #endif
         return NULL;
+    }
 #ifdef CL_DEBUG
     memset(mpool_p, ALLOCPOISON, sz);
 #endif
@@ -563,11 +569,13 @@ int mpool_getstats(const struct cl_engine *eng, size_t *used, size_t *total)
     const mpool_t *mp;
 
     /* checking refcount is not necessary, but safer */
-    if (!eng || !eng->refcount)
+    if (!eng || !eng->refcount) {
         return -1;
+    }
     mp = eng->mempool;
-    if (!mp)
+    if (!mp) {
         return -1;
+    }
     for (mpm = &mp->u.mpm; mpm; mpm = mpm->next) {
         sum_used += mpm->usize;
         sum_total += mpm->size;
@@ -657,16 +665,18 @@ void *mpool_malloc(struct MP *mp, size_t size)
 
     /* Case 2: We have nuff room available for this frag already */
     while (mpm) {
-        if (mpm->size - mpm->usize >= needed)
+        if (mpm->size - mpm->usize >= needed) {
             return allocate_aligned(mpm, size, align, "hole");
+        }
         mpm = mpm->next;
     }
 
     /* Case 3: We allocate more */
-    if (needed + sizeof(*mpm) > MIN_FRAGSIZE)
+    if (needed + sizeof(*mpm) > MIN_FRAGSIZE) {
         i = align_to_pagesize(mp, needed + sizeof(*mpm));
-    else
+    } else {
         i = align_to_pagesize(mp, MIN_FRAGSIZE);
+    }
 
 #ifndef _WIN32
     if ((mpm = (struct MPMAP *)mmap(NULL, i, PROT_READ | PROT_WRITE, MAP_PRIVATE | ANONYMOUS_MAP, -1, 0)) == MAP_FAILED) {
@@ -699,7 +709,9 @@ void mpool_free(struct MP *mp, void *ptr)
 {
     struct FRAG *f     = NULL;
     unsigned int sbits = 0;
-    if (!ptr) return;
+    if (!ptr) {
+        return;
+    }
     f = (struct FRAG *)((char *)ptr - FRAG_OVERHEAD);
 
 #ifdef CL_DEBUG
@@ -722,9 +734,12 @@ void *mpool_calloc(struct MP *mp, size_t nmemb, size_t size)
     size_t needed = nmemb * size;
     void *ptr;
 
-    if (!needed) return NULL;
-    if ((ptr = mpool_malloc(mp, needed)))
+    if (!needed) {
+        return NULL;
+    }
+    if ((ptr = mpool_malloc(mp, needed))) {
         memset(ptr, 0, needed);
+    }
     return ptr;
 }
 
@@ -733,7 +748,9 @@ void *mpool_realloc(struct MP *mp, void *ptr, size_t size)
     struct FRAG *f = NULL;
     size_t csize   = 0;
     void *new_ptr  = NULL;
-    if (!ptr) return mpool_malloc(mp, size);
+    if (!ptr) {
+        return mpool_malloc(mp, size);
+    }
     f = (struct FRAG *)((char *)ptr - FRAG_OVERHEAD);
 
     if (!size || !(csize = from_bits(f->u.a.sbits))) {
@@ -746,8 +763,9 @@ void *mpool_realloc(struct MP *mp, void *ptr, size_t size)
         spam("malloc @%p size %lu (self) origsize %lu overhead %lu\n", f, (unsigned long)(size + FRAG_OVERHEAD + f->u.a.padding), (unsigned long)size, (unsigned long)(csize - size + FRAG_OVERHEAD + f->u.a.padding));
         return ptr;
     }
-    if (!(new_ptr = mpool_malloc(mp, size)))
+    if (!(new_ptr = mpool_malloc(mp, size))) {
         return NULL;
+    }
     memcpy(new_ptr, ptr, csize <= size ? csize : size);
     mpool_free(mp, ptr);
     return new_ptr;
@@ -756,8 +774,9 @@ void *mpool_realloc(struct MP *mp, void *ptr, size_t size)
 void *mpool_realloc2(struct MP *mp, void *ptr, size_t size)
 {
     void *new_ptr = mpool_realloc(mp, ptr, size);
-    if (new_ptr)
+    if (new_ptr) {
         return new_ptr;
+    }
     mpool_free(mp, ptr);
     return NULL;
 }
@@ -797,10 +816,11 @@ char *cli_mpool_strdup(mpool_t *mp, const char *s)
 
     strsz = strlen(s) + 1;
     alloc = mpool_malloc(mp, strsz);
-    if (!alloc)
+    if (!alloc) {
         cli_errmsg("cli_mpool_strdup(): Can't allocate memory (%lu bytes).\n", (unsigned long)strsz);
-    else
+    } else {
         memcpy(alloc, s, strsz);
+    }
     return alloc;
 }
 
@@ -816,10 +836,11 @@ char *cli_mpool_strndup(mpool_t *mp, const char *s, size_t n)
 
     strsz = CLI_STRNLEN(s, n) + 1;
     alloc = mpool_malloc(mp, strsz);
-    if (!alloc)
+    if (!alloc) {
         cli_errmsg("cli_mpool_strndup(): Can't allocate memory (%lu bytes).\n", (unsigned long)strsz);
-    else
+    } else {
         memcpy(alloc, s, strsz - 1);
+    }
     alloc[strsz - 1] = '\0';
     return alloc;
 }
@@ -832,12 +853,15 @@ char *cli_mpool_virname(mpool_t *mp, const char *virname, unsigned int official)
     char buf[1024];
 #endif
 
-    if (!virname)
+    if (!virname) {
         return NULL;
+    }
 
-    if ((pt = strchr(virname, ' ')))
-        if ((pt = strstr(pt, " (Clam)")))
+    if ((pt = strchr(virname, ' '))) {
+        if ((pt = strstr(pt, " (Clam)"))) {
             *pt = '\0';
+        }
+    }
 
     if (!virname[0]) {
         cli_errmsg("cli_mpool_virname: Empty virus name\n");
@@ -851,8 +875,9 @@ char *cli_mpool_virname(mpool_t *mp, const char *virname, unsigned int official)
         virname              = buf;
     }
 #endif
-    if (official)
+    if (official) {
         return cli_mpool_strdup(mp, virname);
+    }
 
     newname = (char *)mpool_malloc(mp, strlen(virname) + 11 + 1);
     if (!newname) {
@@ -876,11 +901,13 @@ uint16_t *cli_mpool_hex2ui(mpool_t *mp, const char *hex)
     }
 
     str = mpool_calloc(mp, (len / 2) + 1, sizeof(uint16_t));
-    if (!str)
+    if (!str) {
         return NULL;
+    }
 
-    if (cli_realhex2ui(hex, str, len))
+    if (cli_realhex2ui(hex, str, len)) {
         return str;
+    }
 
     mpool_free(mp, str);
     return NULL;

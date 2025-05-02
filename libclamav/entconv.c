@@ -486,20 +486,25 @@ static char* normalize_encoding(const unsigned char* enc)
     char* norm;
     size_t i, len;
 
-    if (!enc)
+    if (!enc) {
         return NULL;
+    }
     len = strlen((const char*)enc);
-    if (len > 32)
+    if (len > 32) {
         return NULL;
+    }
     for (i = 0; i < len; i++) {
-        if (!encname_chars[enc[i]])
+        if (!encname_chars[enc[i]]) {
             return NULL;
+        }
     }
     norm = cli_max_malloc(len + 1);
-    if (!norm)
+    if (!norm) {
         return NULL;
-    for (i = 0; i < len; i++)
+    }
+    for (i = 0; i < len; i++) {
         norm[i] = toupper(enc[i]);
+    }
     norm[len] = '\0';
     return norm;
 }
@@ -747,7 +752,9 @@ static int in_iconv_u16(const m_area_t* in_m_area, iconv_t* iconv_struct, m_area
                                         inleft, outleft, input - (char*)in_m_area->buffer,
                                         out - (char*)out_m_area->buffer);*/
         /* output raw byte, and resume at next byte */
-        if (outleft < 2) break;
+        if (outleft < 2) {
+            break;
+        }
         outleft -= 2;
         *out++ = 0;
         *out++ = *input++;
@@ -858,14 +865,16 @@ cl_error_t cli_codepage_to_utf8(char* in, size_t in_size, uint16_t codepage, cha
 
                 /* locate the start of the last character */
                 for (byte_count = 1; (track != out_utf8); track--, byte_count++) {
-                    if (((uint8_t)*track & 0xC0) != 0x80)
+                    if (((uint8_t)*track & 0xC0) != 0x80) {
                         break;
+                    }
                 }
 
                 /* count number of set (1) significant bits */
                 for (sigbit_count = 0; sigbit_count < (int)(sizeof(uint8_t) * 8); sigbit_count++) {
-                    if (((uint8_t)*track & (0x80 >> sigbit_count)) == 0)
+                    if (((uint8_t)*track & (0x80 >> sigbit_count)) == 0) {
                         break;
+                    }
                 }
 
                 if (byte_count != sigbit_count) {
@@ -1136,11 +1145,13 @@ char* cli_utf16toascii(const char* str, unsigned int length)
         return NULL;
     }
 
-    if (length % 2)
+    if (length % 2) {
         length--;
+    }
 
-    if (!(decoded = cli_max_calloc(length / 2 + 1, sizeof(char))))
+    if (!(decoded = cli_max_calloc(length / 2 + 1, sizeof(char)))) {
         return NULL;
+    }
 
     for (i = 0, j = 0; i < length; i += 2, j++) {
         decoded[j] = ((unsigned char)str[i + 1]) << 4;
@@ -1159,32 +1170,36 @@ char* cli_utf16_to_utf8(const char* utf16, size_t length, encoding_t type)
     size_t needed = length * 3 / 2 + 2;
     char* s2;
 
-    if (length < 2)
+    if (length < 2) {
         return cli_safer_strdup("");
+    }
     if (length % 2) {
         cli_warnmsg("utf16 length is not multiple of two: %lu\n", (long)length);
         length--;
     }
 
     s2 = cli_max_malloc(needed);
-    if (!s2)
+    if (!s2) {
         return NULL;
+    }
 
     i = 0;
 
     if ((utf16[0] == '\xff' && utf16[1] == '\xfe') ||
         (utf16[0] == '\xfe' && utf16[1] == '\xff')) {
         i += 2;
-        if (type == E_UTF16)
+        if (type == E_UTF16) {
             type = (utf16[0] == '\xff') ? E_UTF16_LE : E_UTF16_BE;
+        }
     } else if (type == E_UTF16) {
         type = E_UTF16_BE;
     }
 
     for (j = 0; i < length && j < needed; i += 2) {
         uint16_t c = cli_readint16(&utf16[i]);
-        if (type == E_UTF16_BE)
+        if (type == E_UTF16_BE) {
             c = cbswap16(c);
+        }
         if (c < 0x80) {
             s2[j++] = c;
         } else if (c < 0x800) {
@@ -1216,8 +1231,9 @@ char* cli_utf16_to_utf8(const char* utf16, size_t length, encoding_t type)
             s2[j++] = 0xbd;
         }
     }
-    if (j >= needed)
+    if (j >= needed) {
         j = needed - 1;
+    }
     s2[j] = '\0';
     return s2;
 }
@@ -1254,11 +1270,13 @@ int cli_isutf8(const char* buf, unsigned int len)
             }
 
             for (j = 0; j < following; j++) {
-                if (++i >= len)
+                if (++i >= len) {
                     return 0;
+                }
 
-                if ((buf[i] & 0x80) == 0 || (buf[i] & 0x40))
+                if ((buf[i] & 0x80) == 0 || (buf[i] & 0x40)) {
                     return 0;
+                }
 
                 /* c = (c << 6) + (buf[i] & 0x3f); */
             }

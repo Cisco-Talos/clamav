@@ -223,8 +223,9 @@ static int onas_consume_event(threadpool thpool)
 cl_error_t onas_queue_event(struct onas_scan_event *event_data)
 {
     struct onas_event_queue_node *node = NULL;
-    if (CL_EMEM == onas_new_event_queue_node(&node))
+    if (CL_EMEM == onas_new_event_queue_node(&node)) {
         return CL_EMEM;
+    }
 
     pthread_mutex_lock(&onas_queue_lock);
     node->next                                                            = g_onas_event_queue_tail;

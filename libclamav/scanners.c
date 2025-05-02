@@ -350,8 +350,9 @@ static cl_error_t cli_scanrar_file(const char *filepath, int desc, cli_ctx *ctx)
             }
 
             /* Check if we've already exceeded the scan limit */
-            if (cli_checklimits("RAR", ctx, 0, 0, 0))
+            if (cli_checklimits("RAR", ctx, 0, 0, 0)) {
                 break;
+            }
 
             if (metadata.is_dir) {
                 /* Entry is a directory. Skip. */
@@ -771,8 +772,9 @@ static cl_error_t cli_scanegg(cli_ctx *ctx)
             }
 
             /* Check if we've already exceeded the scan limit */
-            if (cli_checklimits("EGG", ctx, 0, 0, 0))
+            if (cli_checklimits("EGG", ctx, 0, 0, 0)) {
                 break;
+            }
 
             if (metadata.is_dir) {
                 /* Entry is a directory. Skip. */
@@ -980,8 +982,9 @@ static cl_error_t cli_scanarj(cli_ctx *ctx)
     memset(&metadata, 0, sizeof(arj_metadata_t));
 
     /* generate the temporary directory */
-    if (!(dir = cli_gentemp_with_prefix(ctx->sub_tmpdir, "arj-tmp")))
+    if (!(dir = cli_gentemp_with_prefix(ctx->sub_tmpdir, "arj-tmp"))) {
         return CL_EMEM;
+    }
 
     if (mkdir(dir, 0700)) {
         cli_dbgmsg("ARJ: Can't create temporary directory %s\n", dir);
@@ -991,8 +994,9 @@ static cl_error_t cli_scanarj(cli_ctx *ctx)
 
     ret = cli_unarj_open(ctx->fmap, dir, &metadata);
     if (ret != CL_SUCCESS) {
-        if (!ctx->engine->keeptmp)
+        if (!ctx->engine->keeptmp) {
             cli_rmdirs(dir);
+        }
         free(dir);
         cli_dbgmsg("ARJ: Error: %s\n", cl_strerror(ret));
         return ret;
@@ -1017,8 +1021,9 @@ static cl_error_t cli_scanarj(cli_ctx *ctx)
 
         if ((ret = cli_checklimits("ARJ", ctx, metadata.orig_size, metadata.comp_size, 0)) != CL_CLEAN) {
             ret = CL_SUCCESS;
-            if (metadata.filename)
+            if (metadata.filename) {
                 free(metadata.filename);
+            }
             continue;
         }
 
@@ -1078,11 +1083,13 @@ static cl_error_t cli_scangzip_with_zib_from_the_80s(cli_ctx *ctx, unsigned char
     gzFile gz;
 
     ret = fmap_fd(map);
-    if (ret < 0)
+    if (ret < 0) {
         return CL_EDUP;
+    }
     fd = dup(ret);
-    if (fd < 0)
+    if (fd < 0) {
         return CL_EDUP;
+    }
 
     if (!(gz = gzdopen(fd, "rb"))) {
         close(fd);
@@ -1098,8 +1105,9 @@ static cl_error_t cli_scangzip_with_zib_from_the_80s(cli_ctx *ctx, unsigned char
 
     while ((bytes = gzread(gz, buff, FILEBUFF)) > 0) {
         outsize += bytes;
-        if (cli_checklimits("GZip", ctx, outsize, 0, 0) != CL_CLEAN)
+        if (cli_checklimits("GZip", ctx, outsize, 0, 0) != CL_CLEAN) {
             break;
+        }
         if (cli_writen(fd, buff, (size_t)bytes) != (size_t)bytes) {
             close(fd);
             gzclose(gz);
@@ -1226,9 +1234,11 @@ static cl_error_t cli_scangzip(cli_ctx *ctx)
         return ret;
     }
     close(fd);
-    if (!ctx->engine->keeptmp)
-        if (cli_unlink(tmpname))
+    if (!ctx->engine->keeptmp) {
+        if (cli_unlink(tmpname)) {
             ret = CL_EUNLINK;
+        }
+    }
     free(tmpname);
 
     return ret;
@@ -1301,8 +1311,9 @@ static cl_error_t cli_scanbzip(cli_ctx *ctx)
                 return CL_EWRITE;
             }
 
-            if (cli_checklimits("Bzip", ctx, size, 0, 0) != CL_CLEAN)
+            if (cli_checklimits("Bzip", ctx, size, 0, 0) != CL_CLEAN) {
                 break;
+            }
 
             strm.next_out  = buf;
             strm.avail_out = sizeof(buf);
@@ -1323,9 +1334,11 @@ static cl_error_t cli_scanbzip(cli_ctx *ctx)
         return ret;
     }
     close(fd);
-    if (!ctx->engine->keeptmp)
-        if (cli_unlink(tmpname))
+    if (!ctx->engine->keeptmp) {
+        if (cli_unlink(tmpname)) {
             ret = CL_EUNLINK;
+        }
+    }
     free(tmpname);
 
     return ret;
@@ -1449,9 +1462,11 @@ static cl_error_t cli_scanszdd(cli_ctx *ctx)
 
     if (ret != CL_SUCCESS) { /* CL_VIRUS or some error */
         close(ofd);
-        if (!ctx->engine->keeptmp)
-            if (cli_unlink(tmpname))
+        if (!ctx->engine->keeptmp) {
+            if (cli_unlink(tmpname)) {
                 ret = CL_EUNLINK;
+            }
+        }
         free(tmpname);
         return ret;
     }
@@ -1459,9 +1474,11 @@ static cl_error_t cli_scanszdd(cli_ctx *ctx)
     cli_dbgmsg("MSEXPAND: Decompressed into %s\n", tmpname);
     ret = cli_magic_scan_desc(ofd, tmpname, ctx, NULL, LAYER_ATTRIBUTES_NONE);
     close(ofd);
-    if (!ctx->engine->keeptmp)
-        if (cli_unlink(tmpname))
+    if (!ctx->engine->keeptmp) {
+        if (cli_unlink(tmpname)) {
             ret = CL_EUNLINK;
+        }
+    }
     free(tmpname);
 
     return ret;
@@ -1877,8 +1894,9 @@ static cl_error_t cli_ole2_tempdir_scan_vba(const char *dir, cli_ctx *ctx, struc
 
                 if (NULL != data) {
                     /* cli_dbgmsg("Project content:\n%s", data); */
-                    if (ctx->scanned)
+                    if (ctx->scanned) {
                         *ctx->scanned += data_len / CL_COUNT_PRECISION;
+                    }
                     if (ctx->engine->keeptmp) {
                         if (CL_SUCCESS != (status = cli_gentempfd(ctx->sub_tmpdir, &proj_contents_fname, &proj_contents_fd))) {
                             cli_warnmsg("WARNING: VBA project '%s_%u' cannot be dumped to file\n", vba_project->name[i], j);
@@ -2673,8 +2691,9 @@ static cl_error_t cli_scanscript(cli_ctx *ctx)
     uint64_t curr_len;
     struct cli_target_info info;
 
-    if (!ctx || !ctx->engine->root)
+    if (!ctx || !ctx->engine->root) {
         return CL_ENULLARG;
+    }
 
     map             = ctx->fmap;
     curr_len        = map->len;
@@ -2719,8 +2738,9 @@ static cl_error_t cli_scanscript(cli_ctx *ctx)
             cli_dbgmsg("cli_scanscript: Can't generate temporary file/descriptor\n");
             goto done;
         }
-        if (ctx->engine->keeptmp)
+        if (ctx->engine->keeptmp) {
             cli_dbgmsg("cli_scanscript: saving normalized file to %s\n", tmpname);
+        }
     }
 
     mdata[0] = &tmdata;
@@ -2731,8 +2751,9 @@ static cl_error_t cli_scanscript(cli_ctx *ctx)
         size_t map_off = 0;
         while (map_off < map->len) {
             size_t written;
-            if (!(written = text_normalize_map(&state, map, map_off)))
+            if (!(written = text_normalize_map(&state, map, map_off))) {
                 break;
+            }
             map_off += written;
 
             if (write(ofd, state.out, state.out_pos) == -1) {
@@ -2773,8 +2794,9 @@ static cl_error_t cli_scanscript(cli_ctx *ctx)
         if (target_ac_root) {
             cli_targetinfo(&info, 7, ctx);
             ret = cli_ac_caloff(target_ac_root, &tmdata, &info);
-            if (ret)
+            if (ret) {
                 goto done;
+            }
         }
 
         while (1) {
@@ -2795,18 +2817,21 @@ static cl_error_t cli_scanscript(cli_ctx *ctx)
                     goto done;
                 }
 
-                if (ctx->scanned)
+                if (ctx->scanned) {
                     *ctx->scanned += state.out_pos / CL_COUNT_PRECISION;
+                }
                 offset += state.out_pos;
 
                 /* carry over maxpatlen from previous buffer */
-                if (state.out_pos > maxpatlen)
+                if (state.out_pos > maxpatlen) {
                     memmove(state.out, state.out + state.out_pos - maxpatlen, maxpatlen);
+                }
                 text_normalize_reset(&state);
                 state.out_pos = maxpatlen;
             }
-            if (!len)
+            if (!len) {
                 break;
+            }
             if (!buff || text_normalize_buffer(&state, buff, len) != len) {
                 cli_dbgmsg("cli_scanscript: short read during normalizing\n");
             }
@@ -3143,8 +3168,9 @@ static cl_error_t cli_scantar(cli_ctx *ctx, unsigned int posix)
     cli_dbgmsg("in cli_scantar()\n");
 
     /* generate temporary directory */
-    if (!(dir = cli_gentemp_with_prefix(ctx->sub_tmpdir, "tar-tmp")))
+    if (!(dir = cli_gentemp_with_prefix(ctx->sub_tmpdir, "tar-tmp"))) {
         return CL_EMEM;
+    }
 
     if (mkdir(dir, 0700)) {
         cli_errmsg("Tar: Can't create temporary directory %s\n", dir);
@@ -3154,8 +3180,9 @@ static cl_error_t cli_scantar(cli_ctx *ctx, unsigned int posix)
 
     ret = cli_untar(dir, posix, ctx);
 
-    if (!ctx->engine->keeptmp)
+    if (!ctx->engine->keeptmp) {
         cli_rmdirs(dir);
+    }
 
     free(dir);
     return ret;
@@ -3168,8 +3195,9 @@ static cl_error_t cli_scanscrenc(cli_ctx *ctx)
 
     cli_dbgmsg("in cli_scanscrenc()\n");
 
-    if (!(tempname = cli_gentemp_with_prefix(ctx->sub_tmpdir, "screnc-tmp")))
+    if (!(tempname = cli_gentemp_with_prefix(ctx->sub_tmpdir, "screnc-tmp"))) {
         return CL_EMEM;
+    }
 
     if (mkdir(tempname, 0700)) {
         cli_dbgmsg("CHM: Can't create temporary directory %s\n", tempname);
@@ -3177,11 +3205,13 @@ static cl_error_t cli_scanscrenc(cli_ctx *ctx)
         return CL_ETMPDIR;
     }
 
-    if (html_screnc_decode(ctx->fmap, tempname))
+    if (html_screnc_decode(ctx->fmap, tempname)) {
         ret = cli_magic_scan_dir(tempname, ctx, LAYER_ATTRIBUTES_NONE);
+    }
 
-    if (!ctx->engine->keeptmp)
+    if (!ctx->engine->keeptmp) {
         cli_rmdirs(tempname);
+    }
 
     free(tempname);
     return ret;
@@ -3191,8 +3221,9 @@ static cl_error_t cli_scanriff(cli_ctx *ctx)
 {
     cl_error_t ret = CL_CLEAN;
 
-    if (cli_check_riff_exploit(ctx) == 2)
+    if (cli_check_riff_exploit(ctx) == 2) {
         ret = cli_append_potentially_unwanted(ctx, "Heuristics.Exploit.W32.MS05-002");
+    }
 
     return ret;
 }
@@ -3228,8 +3259,9 @@ static cl_error_t cli_scancryptff(cli_ctx *ctx)
     }
 
     for (; (src = fmap_need_off_once_len(ctx->fmap, pos, FILEBUFF, &bread)) && bread; pos += bread) {
-        for (i = 0; i < bread; i++)
+        for (i = 0; i < bread; i++) {
             dest[i] = src[i] ^ (unsigned char)0xff;
+        }
         if (cli_writen(ndesc, dest, bread) == (size_t)-1) {
             cli_dbgmsg("CryptFF: Can't write to descriptor %d\n", ndesc);
             free(dest);
@@ -3264,8 +3296,9 @@ static cl_error_t cli_scanpdf(cli_ctx *ctx, off_t offset)
     cl_error_t ret;
     char *dir = cli_gentemp_with_prefix(ctx->sub_tmpdir, "pdf-tmp");
 
-    if (!dir)
+    if (!dir) {
         return CL_EMEM;
+    }
 
     if (mkdir(dir, 0700)) {
         cli_dbgmsg("Can't create temporary directory for PDF file %s\n", dir);
@@ -3275,8 +3308,9 @@ static cl_error_t cli_scanpdf(cli_ctx *ctx, off_t offset)
 
     ret = cli_pdf(dir, ctx, offset);
 
-    if (!ctx->engine->keeptmp)
+    if (!ctx->engine->keeptmp) {
         cli_rmdirs(dir);
+    }
 
     free(dir);
     return ret;
@@ -3287,8 +3321,9 @@ static cl_error_t cli_scantnef(cli_ctx *ctx)
     cl_error_t ret;
     char *dir = cli_gentemp_with_prefix(ctx->sub_tmpdir, "tnef-tmp");
 
-    if (!dir)
+    if (!dir) {
         return CL_EMEM;
+    }
 
     if (mkdir(dir, 0700)) {
         cli_dbgmsg("Can't create temporary directory for tnef file %s\n", dir);
@@ -3298,11 +3333,13 @@ static cl_error_t cli_scantnef(cli_ctx *ctx)
 
     ret = cli_tnef(dir, ctx);
 
-    if (ret == CL_CLEAN)
+    if (ret == CL_CLEAN) {
         ret = cli_magic_scan_dir(dir, ctx, LAYER_ATTRIBUTES_NONE);
+    }
 
-    if (!ctx->engine->keeptmp)
+    if (!ctx->engine->keeptmp) {
         cli_rmdirs(dir);
+    }
 
     free(dir);
     return ret;
@@ -3313,8 +3350,9 @@ static cl_error_t cli_scanuuencoded(cli_ctx *ctx)
     cl_error_t ret;
     char *dir = cli_gentemp_with_prefix(ctx->sub_tmpdir, "uuencoded-tmp");
 
-    if (!dir)
+    if (!dir) {
         return CL_EMEM;
+    }
 
     if (mkdir(dir, 0700)) {
         cli_dbgmsg("Can't create temporary directory for uuencoded file %s\n", dir);
@@ -3324,11 +3362,13 @@ static cl_error_t cli_scanuuencoded(cli_ctx *ctx)
 
     ret = cli_uuencode(dir, ctx->fmap);
 
-    if (ret == CL_CLEAN)
+    if (ret == CL_CLEAN) {
         ret = cli_magic_scan_dir(dir, ctx, LAYER_ATTRIBUTES_NONE);
+    }
 
-    if (!ctx->engine->keeptmp)
+    if (!ctx->engine->keeptmp) {
         cli_rmdirs(dir);
+    }
 
     free(dir);
     return ret;
@@ -3390,36 +3430,41 @@ static cl_error_t cli_scan_structured(cli_ctx *ctx)
     int (*ccfunc)(const unsigned char *buffer, size_t length, int cc_only);
     int (*ssnfunc)(const unsigned char *buffer, size_t length);
 
-    if (ctx == NULL)
+    if (ctx == NULL) {
         return CL_ENULLARG;
+    }
 
     map = ctx->fmap;
 
-    if (ctx->engine->min_cc_count == 1)
+    if (ctx->engine->min_cc_count == 1) {
         ccfunc = dlp_has_cc;
-    else
+    } else {
         ccfunc = dlp_get_cc_count;
+    }
 
     switch (SCAN_HEURISTIC_STRUCTURED_SSN_NORMAL | SCAN_HEURISTIC_STRUCTURED_SSN_STRIPPED) {
         case (CL_SCAN_HEURISTIC_STRUCTURED_SSN_NORMAL | CL_SCAN_HEURISTIC_STRUCTURED_SSN_STRIPPED):
-            if (ctx->engine->min_ssn_count == 1)
+            if (ctx->engine->min_ssn_count == 1) {
                 ssnfunc = dlp_has_ssn;
-            else
+            } else {
                 ssnfunc = dlp_get_ssn_count;
+            }
             break;
 
         case CL_SCAN_HEURISTIC_STRUCTURED_SSN_NORMAL:
-            if (ctx->engine->min_ssn_count == 1)
+            if (ctx->engine->min_ssn_count == 1) {
                 ssnfunc = dlp_has_normal_ssn;
-            else
+            } else {
                 ssnfunc = dlp_get_normal_ssn_count;
+            }
             break;
 
         case CL_SCAN_HEURISTIC_STRUCTURED_SSN_STRIPPED:
-            if (ctx->engine->min_ssn_count == 1)
+            if (ctx->engine->min_ssn_count == 1) {
                 ssnfunc = dlp_has_stripped_ssn;
-            else
+            } else {
                 ssnfunc = dlp_get_stripped_ssn_count;
+            }
             break;
 
         default:
@@ -3468,8 +3513,9 @@ static cl_error_t cli_scanembpe(cli_ctx *ctx, off_t offset)
     unsigned int corrupted_input;
 
     tmpname = cli_gentemp_with_prefix(ctx->sub_tmpdir, "embedded-pe");
-    if (!tmpname)
+    if (!tmpname) {
         return CL_EMEM;
+    }
 
     if ((fd = open(tmpname, O_RDWR | O_CREAT | O_TRUNC | O_BINARY, S_IRUSR | S_IWUSR)) < 0) {
         cli_errmsg("cli_scanembpe: Can't create file %s\n", tmpname);
@@ -3480,8 +3526,9 @@ static cl_error_t cli_scanembpe(cli_ctx *ctx, off_t offset)
     todo = map->len - offset;
     while (1) {
         bytes = MIN(todo, map->pgsz);
-        if (!bytes)
+        if (!bytes) {
             break;
+        }
 
         if (!(buff = fmap_need_off_once(map, offset + size, bytes))) {
             close(fd);
@@ -3497,8 +3544,9 @@ static cl_error_t cli_scanembpe(cli_ctx *ctx, off_t offset)
         size += bytes;
         todo -= bytes;
 
-        if (cli_checklimits("cli_scanembpe", ctx, size, 0, 0) != CL_CLEAN)
+        if (cli_checklimits("cli_scanembpe", ctx, size, 0, 0) != CL_CLEAN) {
             break;
+        }
 
         if (cli_writen(fd, buff, bytes) != bytes) {
             cli_dbgmsg("cli_scanembpe: Can't write to temporary file\n");
@@ -3602,14 +3650,16 @@ static inline void perf_init(cli_ctx *ctx)
     uint64_t kt, ut;
     unsigned i;
 
-    if (!SCAN_DEV_COLLECT_PERF_INFO)
+    if (!SCAN_DEV_COLLECT_PERF_INFO) {
         return;
+    }
 
     ctx->perf = cli_events_new(PERFT_LAST);
     for (i = 0; i < sizeof(perf_events) / sizeof(perf_events[0]); i++) {
         if (cli_event_define(ctx->perf, perf_events[i].id, perf_events[i].name,
-                             perf_events[i].type, multiple_sum) == -1)
+                             perf_events[i].type, multiple_sum) == -1) {
             continue;
+        }
     }
     cli_event_time_start(ctx->perf, PERFT_SCAN);
     get_thread_times(&kt, &ut);
@@ -3626,8 +3676,9 @@ static inline void perf_done(cli_ctx *ctx)
     char *pend;
     cli_events_t *perf = ctx->perf;
 
-    if (!perf)
+    if (!perf) {
         return;
+    }
 
     p     = timestr;
     pend  = timestr + sizeof(timestr) - 1;
@@ -3643,10 +3694,11 @@ static inline void perf_done(cli_ctx *ctx)
         unsigned count;
 
         cli_event_get(perf, perf_events[i].id, &val, &count);
-        if (p < pend)
+        if (p < pend) {
             p += snprintf(p, pend - p, "%s: %d.%03ums, ", perf_events[i].name,
                           (signed)(val.v_int / 1000),
                           (unsigned)(val.v_int % 1000));
+        }
     }
     *p = 0;
     cli_infomsg(ctx, "performance: %s\n", timestr);
@@ -4970,48 +5022,57 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
             break;
 
         case CL_TYPE_HWP3:
-            if (SCAN_PARSE_HWP3 && (DCONF_DOC & DOC_CONF_HWP))
+            if (SCAN_PARSE_HWP3 && (DCONF_DOC & DOC_CONF_HWP)) {
                 ret = cli_scanhwp3(ctx);
+            }
             break;
 
         case CL_TYPE_HWPOLE2:
-            if (SCAN_PARSE_OLE2 && (DCONF_ARCH & ARCH_CONF_OLE2))
+            if (SCAN_PARSE_OLE2 && (DCONF_ARCH & ARCH_CONF_OLE2)) {
                 ret = cli_scanhwpole2(ctx);
+            }
             break;
 
         case CL_TYPE_XML_WORD:
-            if (SCAN_PARSE_XMLDOCS && (DCONF_DOC & DOC_CONF_MSXML))
+            if (SCAN_PARSE_XMLDOCS && (DCONF_DOC & DOC_CONF_MSXML)) {
                 ret = cli_scanmsxml(ctx);
+            }
             break;
 
         case CL_TYPE_XML_XL:
-            if (SCAN_PARSE_XMLDOCS && (DCONF_DOC & DOC_CONF_MSXML))
+            if (SCAN_PARSE_XMLDOCS && (DCONF_DOC & DOC_CONF_MSXML)) {
                 ret = cli_scanmsxml(ctx);
+            }
             break;
 
         case CL_TYPE_XML_HWP:
-            if (SCAN_PARSE_XMLDOCS && (DCONF_DOC & DOC_CONF_HWP))
+            if (SCAN_PARSE_XMLDOCS && (DCONF_DOC & DOC_CONF_HWP)) {
                 ret = cli_scanhwpml(ctx);
+            }
             break;
 
         case CL_TYPE_XDP:
-            if (SCAN_PARSE_PDF && (DCONF_DOC & DOC_CONF_PDF))
+            if (SCAN_PARSE_PDF && (DCONF_DOC & DOC_CONF_PDF)) {
                 ret = cli_scanxdp(ctx);
+            }
             break;
 
         case CL_TYPE_RAR:
-            if (have_rar && SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_RAR))
+            if (have_rar && SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_RAR)) {
                 ret = cli_scanrar(ctx);
+            }
             break;
 
         case CL_TYPE_EGG:
-            if (SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_EGG))
+            if (SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_EGG)) {
                 ret = cli_scanegg(ctx);
+            }
             break;
 
         case CL_TYPE_ONENOTE:
-            if (SCAN_PARSE_ONENOTE && (DCONF_ARCH & DOC_CONF_ONENOTE))
+            if (SCAN_PARSE_ONENOTE && (DCONF_ARCH & DOC_CONF_ONENOTE)) {
                 ret = scan_onenote(ctx);
+            }
             break;
 
         case CL_TYPE_ALZ:
@@ -5021,8 +5082,9 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
             break;
 
         case CL_TYPE_LHA_LZH:
-            if (SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_LHA_LZH))
+            if (SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_LHA_LZH)) {
                 ret = scan_lha_lzh(ctx);
+            }
             break;
 
         case CL_TYPE_OOXML_WORD:
@@ -5049,163 +5111,195 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
             }
             /* fall-through */
         case CL_TYPE_ZIP:
-            if (SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_ZIP))
+            if (SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_ZIP)) {
                 ret = cli_unzip(ctx);
+            }
             break;
 
         case CL_TYPE_GZ:
-            if (SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_GZ))
+            if (SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_GZ)) {
                 ret = cli_scangzip(ctx);
+            }
             break;
 
         case CL_TYPE_BZ:
-            if (SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_BZ))
+            if (SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_BZ)) {
                 ret = cli_scanbzip(ctx);
+            }
             break;
 
         case CL_TYPE_XZ:
-            if (SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_XZ))
+            if (SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_XZ)) {
                 ret = cli_scanxz(ctx);
+            }
             break;
 
         case CL_TYPE_GPT:
-            if (SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_GPT))
+            if (SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_GPT)) {
                 ret = cli_scangpt(ctx, 0);
+            }
             break;
 
         case CL_TYPE_APM:
-            if (SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_APM))
+            if (SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_APM)) {
                 ret = cli_scanapm(ctx);
+            }
             break;
 
         case CL_TYPE_ARJ:
-            if (SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_ARJ))
+            if (SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_ARJ)) {
                 ret = cli_scanarj(ctx);
+            }
             break;
 
         case CL_TYPE_NULSFT:
-            if (SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_NSIS))
+            if (SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_NSIS)) {
                 ret = cli_scannulsft(ctx, 0);
+            }
             break;
 
         case CL_TYPE_AUTOIT:
-            if (SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_AUTOIT))
+            if (SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_AUTOIT)) {
                 ret = cli_scanautoit(ctx, 23);
+            }
             break;
 
         case CL_TYPE_MSSZDD:
-            if (SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_SZDD))
+            if (SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_SZDD)) {
                 ret = cli_scanszdd(ctx);
+            }
             break;
 
         case CL_TYPE_MSCAB:
-            if (SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_CAB))
+            if (SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_CAB)) {
                 ret = cli_scanmscab(ctx, 0);
+            }
             break;
 
         case CL_TYPE_HTML:
-            if (SCAN_PARSE_HTML && (DCONF_DOC & DOC_CONF_HTML))
+            if (SCAN_PARSE_HTML && (DCONF_DOC & DOC_CONF_HTML)) {
                 ret = cli_scanhtml(ctx);
+            }
             break;
 
         case CL_TYPE_HTML_UTF16:
-            if (SCAN_PARSE_HTML && (DCONF_DOC & DOC_CONF_HTML))
+            if (SCAN_PARSE_HTML && (DCONF_DOC & DOC_CONF_HTML)) {
                 ret = cli_scanhtml_utf16(ctx);
+            }
             break;
 
         case CL_TYPE_SCRIPT:
-            if ((DCONF_DOC & DOC_CONF_SCRIPT) && dettype != CL_TYPE_HTML)
+            if ((DCONF_DOC & DOC_CONF_SCRIPT) && dettype != CL_TYPE_HTML) {
                 ret = cli_scanscript(ctx);
+            }
             break;
 
         case CL_TYPE_SWF:
-            if (SCAN_PARSE_SWF && (DCONF_DOC & DOC_CONF_SWF))
+            if (SCAN_PARSE_SWF && (DCONF_DOC & DOC_CONF_SWF)) {
                 ret = cli_scanswf(ctx);
+            }
             break;
 
         case CL_TYPE_RTF:
-            if (SCAN_PARSE_ARCHIVE && (DCONF_DOC & DOC_CONF_RTF))
+            if (SCAN_PARSE_ARCHIVE && (DCONF_DOC & DOC_CONF_RTF)) {
                 ret = cli_scanrtf(ctx);
+            }
             break;
 
         case CL_TYPE_MAIL:
-            if (SCAN_PARSE_MAIL && (DCONF_MAIL & MAIL_CONF_MBOX))
+            if (SCAN_PARSE_MAIL && (DCONF_MAIL & MAIL_CONF_MBOX)) {
                 ret = cli_scanmail(ctx);
+            }
             break;
 
         case CL_TYPE_MHTML:
-            if (SCAN_PARSE_MAIL && (DCONF_MAIL & MAIL_CONF_MBOX))
+            if (SCAN_PARSE_MAIL && (DCONF_MAIL & MAIL_CONF_MBOX)) {
                 ret = cli_scanmail(ctx);
+            }
             break;
 
         case CL_TYPE_TNEF:
-            if (SCAN_PARSE_MAIL && (DCONF_MAIL & MAIL_CONF_TNEF))
+            if (SCAN_PARSE_MAIL && (DCONF_MAIL & MAIL_CONF_TNEF)) {
                 ret = cli_scantnef(ctx);
+            }
             break;
 
         case CL_TYPE_UUENCODED:
-            if (DCONF_OTHER & OTHER_CONF_UUENC)
+            if (DCONF_OTHER & OTHER_CONF_UUENC) {
                 ret = cli_scanuuencoded(ctx);
+            }
             break;
 
         case CL_TYPE_MSCHM:
-            if (SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_CHM))
+            if (SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_CHM)) {
                 ret = cli_scanmschm(ctx);
+            }
             break;
 
         case CL_TYPE_MSOLE2:
-            if (SCAN_PARSE_OLE2 && (DCONF_ARCH & ARCH_CONF_OLE2))
+            if (SCAN_PARSE_OLE2 && (DCONF_ARCH & ARCH_CONF_OLE2)) {
                 ret = cli_scanole2(ctx);
+            }
             break;
 
         case CL_TYPE_7Z:
-            if (SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_7Z))
+            if (SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_7Z)) {
                 ret = cli_7unz(ctx, 0);
+            }
             break;
 
         case CL_TYPE_POSIX_TAR:
-            if (SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_TAR))
+            if (SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_TAR)) {
                 ret = cli_scantar(ctx, 1);
+            }
             break;
 
         case CL_TYPE_OLD_TAR:
-            if (SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_TAR))
+            if (SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_TAR)) {
                 ret = cli_scantar(ctx, 0);
+            }
             break;
 
         case CL_TYPE_CPIO_OLD:
-            if (SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_CPIO))
+            if (SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_CPIO)) {
                 ret = cli_scancpio_old(ctx);
+            }
             break;
 
         case CL_TYPE_CPIO_ODC:
-            if (SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_CPIO))
+            if (SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_CPIO)) {
                 ret = cli_scancpio_odc(ctx);
+            }
             break;
 
         case CL_TYPE_CPIO_NEWC:
-            if (SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_CPIO))
+            if (SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_CPIO)) {
                 ret = cli_scancpio_newc(ctx, 0);
+            }
             break;
 
         case CL_TYPE_CPIO_CRC:
-            if (SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_CPIO))
+            if (SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_CPIO)) {
                 ret = cli_scancpio_newc(ctx, 1);
+            }
             break;
 
         case CL_TYPE_BINHEX:
-            if (SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_BINHEX))
+            if (SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_BINHEX)) {
                 ret = cli_binhex(ctx);
+            }
             break;
 
         case CL_TYPE_SCRENC:
-            if (DCONF_OTHER & OTHER_CONF_SCRENC)
+            if (DCONF_OTHER & OTHER_CONF_SCRENC) {
                 ret = cli_scanscrenc(ctx);
+            }
             break;
 
         case CL_TYPE_RIFF:
-            if (SCAN_HEURISTICS && (DCONF_OTHER & OTHER_CONF_RIFF))
+            if (SCAN_HEURISTICS && (DCONF_OTHER & OTHER_CONF_RIFF)) {
                 ret = cli_scanriff(ctx);
+            }
             break;
 
         case CL_TYPE_GRAPHICS: {
@@ -5313,53 +5407,62 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
         }
 
         case CL_TYPE_CRYPTFF:
-            if (DCONF_OTHER & OTHER_CONF_CRYPTFF)
+            if (DCONF_OTHER & OTHER_CONF_CRYPTFF) {
                 ret = cli_scancryptff(ctx);
+            }
             break;
 
         case CL_TYPE_ELF:
-            if (SCAN_PARSE_ELF && ctx->dconf->elf)
+            if (SCAN_PARSE_ELF && ctx->dconf->elf) {
                 ret = cli_scanelf(ctx);
+            }
             break;
 
         case CL_TYPE_MACHO:
-            if (ctx->dconf->macho)
+            if (ctx->dconf->macho) {
                 ret = cli_scanmacho(ctx, NULL);
+            }
             break;
 
         case CL_TYPE_MACHO_UNIBIN:
-            if (ctx->dconf->macho)
+            if (ctx->dconf->macho) {
                 ret = cli_scanmacho_unibin(ctx);
+            }
             break;
 
         case CL_TYPE_SIS:
-            if (SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_SIS))
+            if (SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_SIS)) {
                 ret = cli_scansis(ctx);
+            }
             break;
 
         case CL_TYPE_XAR:
-            if (SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_XAR))
+            if (SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_XAR)) {
                 ret = cli_scanxar(ctx);
+            }
             break;
 
         case CL_TYPE_PART_HFSPLUS:
-            if (SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_HFSPLUS))
+            if (SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_HFSPLUS)) {
                 ret = cli_scanhfsplus(ctx);
+            }
             break;
 
         case CL_TYPE_BINARY_DATA:
         case CL_TYPE_TEXT_UTF16BE:
-            if (SCAN_HEURISTICS && (DCONF_OTHER & OTHER_CONF_MYDOOMLOG))
+            if (SCAN_HEURISTICS && (DCONF_OTHER & OTHER_CONF_MYDOOMLOG)) {
                 ret = cli_check_mydoom_log(ctx);
+            }
             break;
 
         case CL_TYPE_TEXT_ASCII:
-            if (SCAN_HEURISTIC_STRUCTURED && (DCONF_OTHER & OTHER_CONF_DLP))
+            if (SCAN_HEURISTIC_STRUCTURED && (DCONF_OTHER & OTHER_CONF_DLP)) {
                 /* TODO: consider calling this from cli_scanscript() for
                  * a normalised text
                  */
 
                 ret = cli_scan_structured(ctx);
+            }
             break;
 
         default:
@@ -5455,8 +5558,9 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
             break;
 
         case CL_TYPE_PDF: /* FIXMELIMITS: pdf should be an archive! */
-            if (SCAN_PARSE_PDF && (DCONF_DOC & DOC_CONF_PDF))
+            if (SCAN_PARSE_PDF && (DCONF_DOC & DOC_CONF_PDF)) {
                 ret = cli_scanpdf(ctx, 0);
+            }
             break;
 
         default:
@@ -5660,8 +5764,9 @@ static cl_error_t magic_scan_nested_fmap_type(cl_fmap_t *map, size_t offset, siz
         goto done;
     }
 
-    if (!length)
+    if (!length) {
         length = map->len - offset;
+    }
 
     if (length > map->len - offset) {
         cli_dbgmsg("magic_scan_nested_fmap_type: Data truncated: %zu -> %zu\n",
@@ -6264,8 +6369,9 @@ cl_error_t cl_scanfile_callback(const char *filename, const char **virname, unsi
     cl_error_t ret;
     const char *fname = cli_to_utf8_maybe_alloc(filename);
 
-    if (!fname)
+    if (!fname) {
         return CL_EARG;
+    }
 
     if ((fd = safe_open(fname, O_RDONLY | O_BINARY)) == -1) {
         if (errno == EACCES) {
@@ -6275,8 +6381,9 @@ cl_error_t cl_scanfile_callback(const char *filename, const char **virname, unsi
         }
     }
 
-    if (fname != filename)
+    if (fname != filename) {
         free((char *)fname);
+    }
 
     ret = cl_scandesc_callback(fd, filename, virname, scanned, engine, scanoptions, context);
     close(fd);

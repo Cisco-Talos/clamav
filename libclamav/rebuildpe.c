@@ -131,24 +131,32 @@ int cli_rebuildpe_align(char *buffer, struct cli_exe_section *sections, int sect
     struct IMAGE_PE_HEADER *fakepe;
     int i, gotghost = (sections[0].rva > PESALIGN(rawbase, 0x1000));
 
-    if (gotghost) rawbase = PESALIGN(0x148 + 0x80 + 0x28 * (sects + 1), 0x200);
+    if (gotghost) {
+        rawbase = PESALIGN(0x148 + 0x80 + 0x28 * (sects + 1), 0x200);
+    }
 
-    if (sects + gotghost > 96)
+    if (sects + gotghost > 96) {
         return 0;
+    }
 
-    if (!align)
-        for (i = 0; i < sects; i++)
+    if (!align) {
+        for (i = 0; i < sects; i++) {
             datasize += PESALIGN(sections[i].rsz, 0x200);
-    else
-        for (i = 0; i < sects; i++)
+        }
+    } else {
+        for (i = 0; i < sects; i++) {
             datasize += PESALIGN(PESALIGN(sections[i].rsz, align), 0x200);
+        }
+    }
 
-    if (datasize > CLI_MAX_ALLOCATION)
+    if (datasize > CLI_MAX_ALLOCATION) {
         return 0;
+    }
 
     pefile = (char *)cli_max_calloc(rawbase + datasize, 1);
-    if (!pefile)
+    if (!pefile) {
         return 0;
+    }
 
     memcpy(pefile, HEADERS, 0x148);
 

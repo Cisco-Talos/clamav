@@ -116,16 +116,18 @@ int cli_tnef(const char *dir, cli_ctx *ctx)
                 alldone = 1;
                 break;
         }
-        if (length == 0)
+        if (length == 0) {
             continue;
+        }
         if (length < 0) {
             cli_warnmsg("Corrupt TNEF header detected - length %d\n",
                         (int)length);
             ret = CL_EFORMAT;
             break;
         }
-        if (alldone)
+        if (alldone) {
             break;
+        }
         switch (part) {
             case LVL_MESSAGE:
                 cli_dbgmsg("TNEF - found message\n");
@@ -162,8 +164,9 @@ int cli_tnef(const char *dir, cli_ctx *ctx)
                     char *filename = cli_gentemp(ctx->sub_tmpdir);
                     char buffer[BUFSIZ];
 
-                    if (filename)
+                    if (filename) {
                         fout = open(filename, O_WRONLY | O_CREAT | O_EXCL | O_TRUNC | O_BINARY, 0600);
+                    }
 
                     if (fout >= 0) {
                         size_t count;
@@ -294,8 +297,9 @@ tnef_attachment(fmap_t *map, off_t *pos, uint16_t type, uint16_t tag, int32_t le
 
     switch (tag) {
         case attATTACHTITLE:
-            if (length <= 0)
+            if (length <= 0) {
                 return -1;
+            }
             string = cli_max_malloc(length + 1);
             if (string == NULL) {
                 cli_errmsg("tnef_attachment: Unable to allocate memory for string\n");
@@ -321,15 +325,17 @@ tnef_attachment(fmap_t *map, off_t *pos, uint16_t type, uint16_t tag, int32_t le
         case attATTACHDATA:
             if (*fbref == NULL) {
                 *fbref = fileblobCreate();
-                if (*fbref == NULL)
+                if (*fbref == NULL) {
                     return -1;
+                }
             }
             todo = length;
             while (todo) {
                 unsigned char buf[BUFSIZ];
                 size_t got = fmap_readn(map, buf, *pos, MIN(sizeof(buf), todo));
-                if (got == 0 || got == (size_t)-1)
+                if (got == 0 || got == (size_t)-1) {
                     break;
+                }
                 (*pos) += (off_t)got;
 
                 fileblobAddData(*fbref, buf, got);
@@ -361,12 +367,14 @@ tnef_header(fmap_t *map, off_t *pos, uint8_t *part, uint16_t *type, uint16_t *ta
     uint32_t i32;
     int rc;
 
-    if (fmap_readn(map, part, *pos, 1) != 1)
+    if (fmap_readn(map, part, *pos, 1) != 1) {
         return 0;
+    }
     (*pos)++;
 
-    if (*part == (uint8_t)0)
+    if (*part == (uint8_t)0) {
         return 0;
+    }
 
     rc = fmap_readn(map, &i32, *pos, sizeof(uint32_t));
     if (rc != sizeof(uint32_t)) {
@@ -387,8 +395,9 @@ tnef_header(fmap_t *map, off_t *pos, uint8_t *part, uint16_t *type, uint16_t *ta
     *tag  = (uint16_t)(i32 & 0xFFFF);
     *type = (uint16_t)((i32 & 0xFFFF0000) >> 16);
 
-    if (fmap_readn(map, &i32, *pos, sizeof(uint32_t)) != sizeof(uint32_t))
+    if (fmap_readn(map, &i32, *pos, sizeof(uint32_t)) != sizeof(uint32_t)) {
         return -1;
+    }
     (*pos) += sizeof(uint32_t);
     *length = (int32_t)host32(i32);
 

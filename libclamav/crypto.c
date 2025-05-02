@@ -171,19 +171,22 @@ unsigned char *cl_hash_data(const char *alg, const void *buf, size_t len, unsign
     int winres = 0;
 
     md = EVP_get_digestbyname(alg);
-    if (!(md))
+    if (!(md)) {
         return NULL;
+    }
 
     mdsz = EVP_MD_size(md);
 
     ret = (obuf != NULL) ? obuf : (unsigned char *)malloc(mdsz);
-    if (!(ret))
+    if (!(ret)) {
         return NULL;
+    }
 
     ctx = EVP_MD_CTX_create();
     if (!(ctx)) {
-        if (!(obuf))
+        if (!(obuf)) {
             free(ret);
+        }
 
         return NULL;
     }
@@ -194,11 +197,13 @@ unsigned char *cl_hash_data(const char *alg, const void *buf, size_t len, unsign
 #endif
 
     if (!EVP_DigestInit_ex(ctx, md, NULL)) {
-        if (!(obuf))
+        if (!(obuf)) {
             free(ret);
+        }
 
-        if ((olen))
+        if ((olen)) {
             *olen = 0;
+        }
 
         EVP_MD_CTX_destroy(ctx);
         return NULL;
@@ -210,11 +215,13 @@ unsigned char *cl_hash_data(const char *alg, const void *buf, size_t len, unsign
 
         EXCEPTION_PREAMBLE
         if (!EVP_DigestUpdate(ctx, (void *)(((unsigned char *)buf) + cur), todo)) {
-            if (!(obuf))
+            if (!(obuf)) {
                 free(ret);
+            }
 
-            if ((olen))
+            if ((olen)) {
                 *olen = 0;
+            }
 
             EVP_MD_CTX_destroy(ctx);
             return NULL;
@@ -222,11 +229,13 @@ unsigned char *cl_hash_data(const char *alg, const void *buf, size_t len, unsign
         EXCEPTION_POSTAMBLE
 
         if (winres) {
-            if (!(obuf))
+            if (!(obuf)) {
                 free(ret);
+            }
 
-            if ((olen))
+            if ((olen)) {
                 *olen = 0;
+            }
 
             EVP_MD_CTX_destroy(ctx);
             return NULL;
@@ -236,11 +245,13 @@ unsigned char *cl_hash_data(const char *alg, const void *buf, size_t len, unsign
     }
 
     if (!EVP_DigestFinal_ex(ctx, ret, &i)) {
-        if (!(obuf))
+        if (!(obuf)) {
             free(ret);
+        }
 
-        if ((olen))
+        if ((olen)) {
             *olen = 0;
+        }
 
         EVP_MD_CTX_destroy(ctx);
         return NULL;
@@ -248,8 +259,9 @@ unsigned char *cl_hash_data(const char *alg, const void *buf, size_t len, unsign
 
     EVP_MD_CTX_destroy(ctx);
 
-    if ((olen))
+    if ((olen)) {
         *olen = i;
+    }
 
     return ret;
 }
@@ -261,12 +273,14 @@ unsigned char *cl_hash_file_fd(int fd, const char *alg, unsigned int *olen)
     unsigned char *res;
 
     md = EVP_get_digestbyname(alg);
-    if (!(md))
+    if (!(md)) {
         return NULL;
+    }
 
     ctx = EVP_MD_CTX_create();
-    if (!(ctx))
+    if (!(ctx)) {
         return NULL;
+    }
 
 #ifdef EVP_MD_CTX_FLAG_NON_FIPS_ALLOW
     /* we will be using MD5, which is not allowed under FIPS */
@@ -353,8 +367,9 @@ unsigned char *cl_hash_file_fd_ctx(EVP_MD_CTX *ctx, int fd, unsigned int *olen)
         return NULL;
     }
 
-    if ((olen))
+    if ((olen)) {
         *olen = hashlen;
+    }
 
     free(buf);
 
@@ -393,12 +408,14 @@ int cl_verify_signature_hash(EVP_PKEY *pkey, const char *alg, unsigned char *sig
     size_t mdsz;
 
     md = EVP_get_digestbyname(alg);
-    if (!(md))
+    if (!(md)) {
         return -1;
+    }
 
     ctx = EVP_MD_CTX_create();
-    if (!(ctx))
+    if (!(ctx)) {
         return -1;
+    }
 
     mdsz = EVP_MD_size(md);
 
@@ -434,8 +451,9 @@ int cl_verify_signature_fd(EVP_PKEY *pkey, const char *alg, unsigned char *sig, 
     unsigned char *digest;
 
     digest = cl_hash_file_fd(fd, alg, NULL);
-    if (!(digest))
+    if (!(digest)) {
         return -1;
+    }
 
     md = EVP_get_digestbyname(alg);
     if (!(md)) {
@@ -491,8 +509,9 @@ int cl_verify_signature(EVP_PKEY *pkey, const char *alg, unsigned char *sig, uns
         size_t newsiglen;
 
         newsig = (unsigned char *)cl_base64_decode((char *)sig, siglen, NULL, &newsiglen, 1);
-        if (!(newsig))
+        if (!(newsig)) {
             return -1;
+        }
 
         sig    = newsig;
         siglen = newsiglen;
@@ -500,8 +519,9 @@ int cl_verify_signature(EVP_PKEY *pkey, const char *alg, unsigned char *sig, uns
 
     digest = cl_hash_data(alg, data, datalen, NULL, NULL);
     if (!(digest)) {
-        if (decode)
+        if (decode) {
             free(sig);
+        }
 
         return -1;
     }
@@ -509,8 +529,9 @@ int cl_verify_signature(EVP_PKEY *pkey, const char *alg, unsigned char *sig, uns
     md = EVP_get_digestbyname(alg);
     if (!(md)) {
         free(digest);
-        if (decode)
+        if (decode) {
             free(sig);
+        }
 
         return -1;
     }
@@ -520,8 +541,9 @@ int cl_verify_signature(EVP_PKEY *pkey, const char *alg, unsigned char *sig, uns
     ctx = EVP_MD_CTX_create();
     if (!(ctx)) {
         free(digest);
-        if (decode)
+        if (decode) {
             free(sig);
+        }
 
         return -1;
     }
@@ -533,8 +555,9 @@ int cl_verify_signature(EVP_PKEY *pkey, const char *alg, unsigned char *sig, uns
 
     if (!EVP_VerifyInit_ex(ctx, md, NULL)) {
         free(digest);
-        if (decode)
+        if (decode) {
             free(sig);
+        }
 
         EVP_MD_CTX_destroy(ctx);
         return -1;
@@ -542,8 +565,9 @@ int cl_verify_signature(EVP_PKEY *pkey, const char *alg, unsigned char *sig, uns
 
     if (!EVP_VerifyUpdate(ctx, digest, mdsz)) {
         free(digest);
-        if (decode)
+        if (decode) {
             free(sig);
+        }
 
         EVP_MD_CTX_destroy(ctx);
         return -1;
@@ -551,15 +575,17 @@ int cl_verify_signature(EVP_PKEY *pkey, const char *alg, unsigned char *sig, uns
 
     if (EVP_VerifyFinal(ctx, sig, siglen, pkey) <= 0) {
         free(digest);
-        if (decode)
+        if (decode) {
             free(sig);
+        }
 
         EVP_MD_CTX_destroy(ctx);
         return -1;
     }
 
-    if (decode)
+    if (decode) {
         free(sig);
+    }
 
     free(digest);
     EVP_MD_CTX_destroy(ctx);
@@ -650,8 +676,9 @@ int cl_verify_signature_hash_x509(X509 *x509, const char *alg, unsigned char *si
     int res;
 
     pkey = X509_get_pubkey(x509);
-    if (!(pkey))
+    if (!(pkey)) {
         return -1;
+    }
 
     res = cl_verify_signature_hash(pkey, alg, sig, siglen, digest);
 
@@ -666,8 +693,9 @@ int cl_verify_signature_fd_x509(X509 *x509, const char *alg, unsigned char *sig,
     int res;
 
     pkey = X509_get_pubkey(x509);
-    if (!(pkey))
+    if (!(pkey)) {
         return -1;
+    }
 
     res = cl_verify_signature_fd(pkey, alg, sig, siglen, fd);
 
@@ -682,8 +710,9 @@ int cl_verify_signature_x509(X509 *x509, const char *alg, unsigned char *sig, un
     int res;
 
     pkey = X509_get_pubkey(x509);
-    if (!(pkey))
+    if (!(pkey)) {
         return -1;
+    }
 
     res = cl_verify_signature(pkey, alg, sig, siglen, data, datalen, decode);
 
@@ -726,12 +755,14 @@ unsigned char *cl_sign_data(EVP_PKEY *pkey, const char *alg, unsigned char *hash
     unsigned char *sig;
 
     md = EVP_get_digestbyname(alg);
-    if (!(md))
+    if (!(md)) {
         return NULL;
+    }
 
     ctx = EVP_MD_CTX_create();
-    if (!(ctx))
+    if (!(ctx)) {
         return NULL;
+    }
 
     sig = (unsigned char *)calloc(1, EVP_PKEY_size(pkey));
     if (!(sig)) {
@@ -807,8 +838,9 @@ EVP_PKEY *cl_get_pkey_file(char *keypath)
     FILE *fp;
 
     fp = fopen(keypath, "r");
-    if (!(fp))
+    if (!(fp)) {
         return NULL;
+    }
 
     if (!(pkey = PEM_read_PrivateKey(fp, NULL, NULL, NULL))) {
         fclose(fp);
@@ -826,8 +858,9 @@ X509 *cl_get_x509_from_mem(void *data, unsigned int len)
     BIO *cbio;
 
     cbio = BIO_new_mem_buf(data, len);
-    if (!(cbio))
+    if (!(cbio)) {
         return NULL;
+    }
 
     cert = PEM_read_bio_X509(cbio, NULL, 0, NULL);
     BIO_free(cbio);
@@ -844,21 +877,25 @@ int cl_validate_certificate_chain_ts_dir(char *tsdir, char *certpath)
     struct dirent *dirent;
 
     dp = opendir(tsdir);
-    if (!(dp))
+    if (!(dp)) {
         return CL_EOPEN;
+    }
 
     while ((dirent = readdir(dp))) {
-        if (dirent->d_name[0] == '.')
+        if (dirent->d_name[0] == '.') {
             continue;
+        }
 
-        if (!cli_strbcasestr(dirent->d_name, ".crt"))
+        if (!cli_strbcasestr(dirent->d_name, ".crt")) {
             continue;
+        }
 
         t = (char **)realloc(authorities, sizeof(char **) * (nauths + 1));
         if (!(t)) {
             if (nauths) {
-                while (nauths > 0)
+                while (nauths > 0) {
                     free(authorities[--nauths]);
+                }
                 free(authorities);
             }
 
@@ -870,8 +907,9 @@ int cl_validate_certificate_chain_ts_dir(char *tsdir, char *certpath)
         authorities[nauths] = (char *)malloc(strlen(tsdir) + strlen(dirent->d_name) + 2);
         if (!authorities[nauths]) {
             if (nauths) {
-                while (nauths > 0)
+                while (nauths > 0) {
                     free(authorities[nauths--]);
+                }
                 free(authorities[0]);
             }
 
@@ -889,8 +927,9 @@ int cl_validate_certificate_chain_ts_dir(char *tsdir, char *certpath)
     t = (char **)realloc(authorities, sizeof(char **) * (nauths + 1));
     if (!(t)) {
         if (nauths) {
-            while (nauths > 0)
+            while (nauths > 0) {
                 free(authorities[--nauths]);
+            }
             free(authorities);
         }
 
@@ -902,8 +941,9 @@ int cl_validate_certificate_chain_ts_dir(char *tsdir, char *certpath)
 
     res = cl_validate_certificate_chain(authorities, NULL, certpath);
 
-    while (nauths > 0)
+    while (nauths > 0) {
         free(authorities[--nauths]);
+    }
 
     free(authorities);
 
@@ -957,10 +997,12 @@ int cl_validate_certificate_chain(char **authorities, char *crlpath, char *certp
     for (i = 0; authorities[i]; i++) {
         if (!X509_LOOKUP_load_file(lookup, authorities[i], X509_FILETYPE_PEM)) {
             X509_STORE_free(store);
-            if ((crl))
+            if ((crl)) {
                 X509_CRL_free(crl);
-            if ((param))
+            }
+            if ((param)) {
                 X509_VERIFY_PARAM_free(param);
+            }
             return -1;
         }
     }
@@ -968,10 +1010,12 @@ int cl_validate_certificate_chain(char **authorities, char *crlpath, char *certp
     lookup = X509_STORE_add_lookup(store, X509_LOOKUP_hash_dir());
     if (!(lookup)) {
         X509_STORE_free(store);
-        if ((crl))
+        if ((crl)) {
             X509_CRL_free(crl);
-        if ((param))
+        }
+        if ((param)) {
             X509_VERIFY_PARAM_free(param);
+        }
         return -1;
     }
 
@@ -980,10 +1024,12 @@ int cl_validate_certificate_chain(char **authorities, char *crlpath, char *certp
     store_ctx = X509_STORE_CTX_new();
     if (!(store_ctx)) {
         X509_STORE_free(store);
-        if ((crl))
+        if ((crl)) {
             X509_CRL_free(crl);
-        if ((param))
+        }
+        if ((param)) {
             X509_VERIFY_PARAM_free(param);
+        }
         return -1;
     }
 
@@ -991,10 +1037,12 @@ int cl_validate_certificate_chain(char **authorities, char *crlpath, char *certp
     if (!(cert)) {
         X509_STORE_CTX_free(store_ctx);
         X509_STORE_free(store);
-        if ((crl))
+        if ((crl)) {
             X509_CRL_free(crl);
-        if ((param))
+        }
+        if ((param)) {
             X509_VERIFY_PARAM_free(param);
+        }
 
         return -1;
     }
@@ -1002,10 +1050,12 @@ int cl_validate_certificate_chain(char **authorities, char *crlpath, char *certp
     if (!X509_STORE_CTX_init(store_ctx, store, cert, NULL)) {
         X509_STORE_CTX_free(store_ctx);
         X509_STORE_free(store);
-        if ((crl))
+        if ((crl)) {
             X509_CRL_free(crl);
-        if ((param))
+        }
+        if ((param)) {
             X509_VERIFY_PARAM_free(param);
+        }
 
         X509_free(cert);
 
@@ -1015,11 +1065,13 @@ int cl_validate_certificate_chain(char **authorities, char *crlpath, char *certp
     res = X509_verify_cert(store_ctx);
 
     X509_STORE_CTX_free(store_ctx);
-    if ((crl))
+    if ((crl)) {
         X509_CRL_free(crl);
+    }
 
-    if ((param))
+    if ((param)) {
         X509_VERIFY_PARAM_free(param);
+    }
 
     X509_STORE_free(store);
 
@@ -1034,8 +1086,9 @@ X509 *cl_load_cert(const char *certpath)
     BIO *bio;
 
     bio = BIO_new(BIO_s_file());
-    if (!(bio))
+    if (!(bio)) {
         return NULL;
+    }
 
     if (BIO_read_filename(bio, certpath) != 1) {
         BIO_free(bio);
@@ -1061,16 +1114,19 @@ struct tm *cl_ASN1_GetTimeT(ASN1_TIME *timeobj)
     struct tm localtm;
 #endif
 
-    if (!(timeobj) || !(timeobj->data))
+    if (!(timeobj) || !(timeobj->data)) {
         return NULL;
+    }
 
     str = (char *)(timeobj->data);
-    if (strlen(str) < 12)
+    if (strlen(str) < 12) {
         return NULL;
+    }
 
     t = (struct tm *)calloc(1, sizeof(struct tm));
-    if (!(t))
+    if (!(t)) {
         return NULL;
+    }
 
     if (timeobj->type == V_ASN1_UTCTIME) {
         /* two digit year */
@@ -1119,12 +1175,14 @@ X509_CRL *cl_load_crl(const char *file)
     X509_CRL *x = NULL;
     FILE *fp;
 
-    if (!(file))
+    if (!(file)) {
         return NULL;
+    }
 
     fp = fopen(file, "r");
-    if (!(fp))
+    if (!(fp)) {
         return NULL;
+    }
 
     x = PEM_read_X509_CRL(fp, NULL, NULL, NULL);
 
@@ -1149,8 +1207,9 @@ void *cl_hash_init(const char *alg)
     const EVP_MD *md;
 
     md = EVP_get_digestbyname(alg);
-    if (!(md))
+    if (!(md)) {
         return NULL;
+    }
 
     ctx = EVP_MD_CTX_create();
     if (!(ctx)) {
@@ -1174,16 +1233,19 @@ int cl_update_hash(void *ctx, const void *data, size_t sz)
 {
     int winres = 0;
 
-    if (!(ctx) || !(data))
+    if (!(ctx) || !(data)) {
         return -1;
+    }
 
     EXCEPTION_PREAMBLE
-    if (!EVP_DigestUpdate((EVP_MD_CTX *)ctx, data, sz))
+    if (!EVP_DigestUpdate((EVP_MD_CTX *)ctx, data, sz)) {
         return -1;
+    }
     EXCEPTION_POSTAMBLE
 
-    if (winres)
+    if (winres) {
         return -1;
+    }
 
     return 0;
 }
@@ -1192,11 +1254,13 @@ int cl_finish_hash(void *ctx, void *buf)
 {
     int res = 0;
 
-    if (!(ctx) || !(buf))
+    if (!(ctx) || !(buf)) {
         return -1;
+    }
 
-    if (!EVP_DigestFinal_ex((EVP_MD_CTX *)ctx, (unsigned char *)buf, NULL))
+    if (!EVP_DigestFinal_ex((EVP_MD_CTX *)ctx, (unsigned char *)buf, NULL)) {
         res = -1;
+    }
 
     EVP_MD_CTX_destroy((EVP_MD_CTX *)ctx);
 
@@ -1205,8 +1269,9 @@ int cl_finish_hash(void *ctx, void *buf)
 
 void cl_hash_destroy(void *ctx)
 {
-    if (!(ctx))
+    if (!(ctx)) {
         return;
+    }
 
     EVP_MD_CTX_destroy((EVP_MD_CTX *)ctx);
 }

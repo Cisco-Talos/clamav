@@ -38,9 +38,13 @@ struct uniq *uniq_init(uint32_t count)
 {
     struct uniq *U;
 
-    if (!count) return NULL;
+    if (!count) {
+        return NULL;
+    }
     U = calloc(1, sizeof(*U));
-    if (!U) return NULL;
+    if (!U) {
+        return NULL;
+    }
 
     U->md5s = cli_max_malloc(count * sizeof(*U->md5s));
     if (!U->md5s) {
@@ -85,9 +89,13 @@ cl_error_t uniq_add(struct uniq *U, const char *item, uint32_t item_len, char **
     }
 
     /* Check for md5 digest match in md5 collection */
-    if (U->items && U->md5s[U->idx[*digest]].md5[0] == *digest)
-        for (m = &U->md5s[U->idx[*digest]]; m; m = m->next)
-            if (!memcmp(&digest[1], &m->md5[1], 15)) break;
+    if (U->items && U->md5s[U->idx[*digest]].md5[0] == *digest) {
+        for (m = &U->md5s[U->idx[*digest]]; m; m = m->next) {
+            if (!memcmp(&digest[1], &m->md5[1], 15)) {
+                break;
+            }
+        }
+    }
 
     if (!m) {
         /* No match. Add new md5 to list */
@@ -96,10 +104,11 @@ cl_error_t uniq_add(struct uniq *U, const char *item, uint32_t item_len, char **
         m        = &U->md5s[U->items];
         m->count = 0;
 
-        if (U->items && U->md5s[U->idx[*digest]].md5[0] == *digest)
+        if (U->items && U->md5s[U->idx[*digest]].md5[0] == *digest) {
             m->next = &U->md5s[U->idx[*digest]];
-        else
+        } else {
             m->next = NULL;
+        }
 
         U->idx[*digest] = U->items;
 
@@ -121,10 +130,14 @@ cl_error_t uniq_add(struct uniq *U, const char *item, uint32_t item_len, char **
     m->count++;
 
     /* Pass back the ascii hash, if requested. */
-    if (rhash) *rhash = m->name;
+    if (rhash) {
+        *rhash = m->name;
+    }
 
     /* Pass back the count, if requested. */
-    if (count) *count = m->count;
+    if (count) {
+        *count = m->count;
+    }
 
     status = CL_SUCCESS;
 
@@ -177,8 +190,9 @@ cl_error_t uniq_get(struct uniq *U, const char *item, uint32_t item_len, char **
              * Pass back the ascii hash value (if requested).
              * Return the count of matching items (will be 1+).
              */
-            if (rhash)
+            if (rhash) {
                 *rhash = m->name;
+            }
             *count = m->count;
             break;
         }

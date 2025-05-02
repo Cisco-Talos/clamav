@@ -91,8 +91,9 @@ extern pthread_t ddd_pid;
 static int onas_ddd_init_ht(uint32_t ht_size)
 {
 
-    if (ht_size <= 0)
+    if (ht_size <= 0) {
         ht_size = ONAS_DEFAULT_HT_SIZE;
+    }
 
     return onas_ht_init(&ddd_ht, ht_size);
 }
@@ -103,10 +104,14 @@ static int onas_ddd_init_ht(uint32_t ht_size)
 static int onas_ddd_init_wdlt(uint64_t nwatches)
 {
 
-    if (nwatches <= 0) return CL_EARG;
+    if (nwatches <= 0) {
+        return CL_EARG;
+    }
 
     wdlt = (char **)calloc(nwatches << 1, sizeof(char *));
-    if (!wdlt) return CL_EMEM;
+    if (!wdlt) {
+        return CL_EMEM;
+    }
 
     wdlt_len = nwatches << 1;
 
@@ -147,11 +152,15 @@ int onas_ddd_init(uint64_t nwatches, size_t ht_size)
     nwatches                           = 0;
 
     nwfd = open(nwatch_file, O_RDONLY);
-    if (nwfd < 0) return CL_EOPEN;
+    if (nwfd < 0) {
+        return CL_EOPEN;
+    }
 
     ret = read(nwfd, nwatch_str, MAX_WATCH_LEN);
     close(nwfd);
-    if (ret < 0) return CL_EREAD;
+    if (ret < 0) {
+        return CL_EREAD;
+    }
 
     tmp = strtol(nwatch_str, &p, 10);
     if (tmp < 0 || tmp == LONG_MAX) {
@@ -162,10 +171,14 @@ int onas_ddd_init(uint64_t nwatches, size_t ht_size)
     }
 
     ret = onas_ddd_init_wdlt(nwatches);
-    if (ret) return ret;
+    if (ret) {
+        return ret;
+    }
 
     ret = onas_ddd_init_ht(ht_size);
-    if (ret) return ret;
+    if (ret) {
+        return ret;
+    }
 
     return CL_SUCCESS;
 }
@@ -175,16 +188,22 @@ int onas_ddd_init(uint64_t nwatches, size_t ht_size)
  */
 static int onas_ddd_watch(const char *pathname, int fan_fd, uint64_t fan_mask, int in_fd, uint64_t in_mask)
 {
-    if (!pathname || fan_fd <= 0 || in_fd <= 0) return CL_ENULLARG;
+    if (!pathname || fan_fd <= 0 || in_fd <= 0) {
+        return CL_ENULLARG;
+    }
 
     int ret    = CL_SUCCESS;
     size_t len = strlen(pathname);
 
     ret = onas_ddd_watch_hierarchy(pathname, len, in_fd, in_mask, ONAS_IN);
-    if (ret) return ret;
+    if (ret) {
+        return ret;
+    }
 
     ret = onas_ddd_watch_hierarchy(pathname, len, fan_fd, fan_mask, ONAS_FAN);
-    if (ret) return ret;
+    if (ret) {
+        return ret;
+    }
 
     return CL_SUCCESS;
 }
@@ -201,9 +220,13 @@ static int onas_ddd_watch(const char *pathname, int fan_fd, uint64_t fan_mask, i
 static int onas_ddd_watch_hierarchy(const char *pathname, size_t len, int fd, uint64_t mask, uint32_t type)
 {
 
-    if (!pathname || fd <= 0 || !type) return CL_ENULLARG;
+    if (!pathname || fd <= 0 || !type) {
+        return CL_ENULLARG;
+    }
 
-    if (type == (ONAS_IN | ONAS_FAN)) return CL_EARG;
+    if (type == (ONAS_IN | ONAS_FAN)) {
+        return CL_EARG;
+    }
 
     struct onas_hnode *hnode  = NULL;
     struct onas_element *elem = NULL;
@@ -256,10 +279,11 @@ static int onas_ddd_watch_hierarchy(const char *pathname, size_t len, int fd, ui
             return CL_EMEM;
         }
 
-        if (hnode->pathname[len - 1] == '/')
+        if (hnode->pathname[len - 1] == '/') {
             snprintf(child_path, --size, "%s%s", hnode->pathname, curr->dirname);
-        else
+        } else {
             snprintf(child_path, size, "%s/%s", hnode->pathname, curr->dirname);
+        }
 
         if (onas_ddd_watch_hierarchy(child_path, strlen(child_path), fd, mask, type)) {
             logg(LOGG_ERROR, "ClamInotif: issue when adding watch for %s\n", child_path);
@@ -276,16 +300,22 @@ static int onas_ddd_watch_hierarchy(const char *pathname, size_t len, int fd, ui
  */
 static int onas_ddd_unwatch(const char *pathname, int fan_fd, int in_fd)
 {
-    if (!pathname || fan_fd <= 0 || in_fd <= 0) return CL_ENULLARG;
+    if (!pathname || fan_fd <= 0 || in_fd <= 0) {
+        return CL_ENULLARG;
+    }
 
     int ret    = CL_SUCCESS;
     size_t len = strlen(pathname);
 
     ret = onas_ddd_unwatch_hierarchy(pathname, len, in_fd, ONAS_IN);
-    if (ret) return ret;
+    if (ret) {
+        return ret;
+    }
 
     ret = onas_ddd_unwatch_hierarchy(pathname, len, fan_fd, ONAS_FAN);
-    if (ret) return ret;
+    if (ret) {
+        return ret;
+    }
 
     return CL_SUCCESS;
 }
@@ -301,22 +331,30 @@ static int onas_ddd_unwatch(const char *pathname, int fan_fd, int in_fd)
 static int onas_ddd_unwatch_hierarchy(const char *pathname, size_t len, int fd, uint32_t type)
 {
 
-    if (!pathname || fd <= 0 || !type) return CL_ENULLARG;
+    if (!pathname || fd <= 0 || !type) {
+        return CL_ENULLARG;
+    }
 
-    if (type == (ONAS_IN | ONAS_FAN)) return CL_EARG;
+    if (type == (ONAS_IN | ONAS_FAN)) {
+        return CL_EARG;
+    }
 
     struct onas_hnode *hnode  = NULL;
     struct onas_element *elem = NULL;
     int wd                    = 0;
 
-    if (onas_ht_get(ddd_ht, pathname, len, &elem)) return CL_EARG;
+    if (onas_ht_get(ddd_ht, pathname, len, &elem)) {
+        return CL_EARG;
+    }
 
     hnode = elem->data;
 
     if (type & ONAS_IN) {
         wd = hnode->wd;
 
-        if (!inotify_rm_watch(fd, wd) && errno != ENOENT) return CL_EARG;
+        if (!inotify_rm_watch(fd, wd) && errno != ENOENT) {
+            return CL_EARG;
+        }
 
         /* Unlink the hash node from the watch descriptor lookup table */
         hnode->wd = 0;
@@ -324,7 +362,9 @@ static int onas_ddd_unwatch_hierarchy(const char *pathname, size_t len, int fd, 
 
         hnode->watched = ONAS_STOPWATCH;
     } else if (type & ONAS_FAN) {
-        if (fanotify_mark(fd, FAN_MARK_REMOVE, 0, AT_FDCWD, hnode->pathname) < 0) return CL_EARG;
+        if (fanotify_mark(fd, FAN_MARK_REMOVE, 0, AT_FDCWD, hnode->pathname) < 0) {
+            return CL_EARG;
+        }
         hnode->watched = ONAS_STOPWATCH;
     } else {
         return CL_EARG;
@@ -338,12 +378,14 @@ static int onas_ddd_unwatch_hierarchy(const char *pathname, size_t len, int fd, 
 
         size_t size      = len + strlen(curr->dirname) + 2;
         char *child_path = (char *)malloc(size);
-        if (child_path == NULL)
+        if (child_path == NULL) {
             return CL_EMEM;
-        if (hnode->pathname[len - 1] == '/')
+        }
+        if (hnode->pathname[len - 1] == '/') {
             snprintf(child_path, --size, "%s%s", hnode->pathname, curr->dirname);
-        else
+        } else {
             snprintf(child_path, size, "%s/%s", hnode->pathname, curr->dirname);
+        }
 
         onas_ddd_unwatch_hierarchy(child_path, strlen(child_path), fd, type);
         free(child_path);
@@ -365,7 +407,9 @@ cl_error_t onas_enable_inotif_ddd(struct onas_context **ctx)
 
     if ((*ctx)->ddd_enabled) {
         do {
-            if (pthread_attr_init(&ddd_attr)) break;
+            if (pthread_attr_init(&ddd_attr)) {
+                break;
+            }
             pthread_attr_setdetachstate(&ddd_attr, PTHREAD_CREATE_JOINABLE);
             thread_started = pthread_create(&ddd_pid, &ddd_attr, onas_ddd_th, *ctx);
         } while (0);
@@ -679,10 +723,11 @@ void *onas_ddd_th(void *arg)
 
                 event = (const struct inotify_event *)p;
                 wd    = event->wd;
-                if (wd >= 0)
+                if (wd >= 0) {
                     path = wdlt[wd];
-                else
+                } else {
                     path = NULL;
+                }
                 child = event->name;
 
                 if (path == NULL) {
@@ -744,8 +789,12 @@ static void onas_ddd_handle_in_delete(struct onas_context *ctx,
 {
 
     struct stat s;
-    if (stat(child_path, &s) == 0 && S_ISREG(s.st_mode)) return;
-    if (!(event->mask & IN_ISDIR)) return;
+    if (stat(child_path, &s) == 0 && S_ISREG(s.st_mode)) {
+        return;
+    }
+    if (!(event->mask & IN_ISDIR)) {
+        return;
+    }
 
     logg(LOGG_DEBUG, "ClamInotif: DELETE - removing %s from %s with wd:%d\n", child_path, path, wd);
     onas_ddd_unwatch(child_path, ctx->fan_fd, onas_in_fd);
@@ -759,8 +808,12 @@ static void onas_ddd_handle_in_moved_from(struct onas_context *ctx,
 {
 
     struct stat s;
-    if (stat(child_path, &s) == 0 && S_ISREG(s.st_mode)) return;
-    if (!(event->mask & IN_ISDIR)) return;
+    if (stat(child_path, &s) == 0 && S_ISREG(s.st_mode)) {
+        return;
+    }
+    if (!(event->mask & IN_ISDIR)) {
+        return;
+    }
 
     logg(LOGG_DEBUG, "ClamInotif: MOVED_FROM - removing %s from %s with wd:%d\n", child_path, path, wd);
     onas_ddd_unwatch(child_path, ctx->fan_fd, onas_in_fd);
@@ -818,8 +871,12 @@ static void onas_ddd_handle_in_moved_to(struct onas_context *ctx,
             onas_ddd_watch(child_path, ctx->fan_fd, ctx->fan_mask, onas_in_fd, in_mask);
         }
     } else {
-        if (stat(child_path, &s) == 0 && S_ISREG(s.st_mode)) return;
-        if (!(event->mask & IN_ISDIR)) return;
+        if (stat(child_path, &s) == 0 && S_ISREG(s.st_mode)) {
+            return;
+        }
+        if (!(event->mask & IN_ISDIR)) {
+            return;
+        }
 
         logg(LOGG_DEBUG, "ClamInotif: MOVED_TO - adding %s to %s with wd:%d\n", child_path, path, wd);
         onas_ht_add_hierarchy(ddd_ht, child_path);

@@ -79,29 +79,33 @@ static char *ole2_convert_utf(summary_ctx_t *sctx, char *begin, size_t sz, const
         size_t bcnt, scnt;
 
         outbuf = cli_max_calloc(1, sz + 1);
-        if (!(outbuf))
+        if (!(outbuf)) {
             return NULL;
+        }
         memcpy(outbuf, begin, sz);
 
         track = outbuf + sz - 1;
         if ((sctx->codepage == CODEPAGE_UTF8) && (*track & 0x80)) { /* UTF-8 with a most significant bit */
             /* locate the start of the last character */
             for (bcnt = 1; (track != outbuf); track--, bcnt++) {
-                if (((uint8_t)*track & 0xC0) != 0x80)
+                if (((uint8_t)*track & 0xC0) != 0x80) {
                     break;
+                }
             }
 
             /* count number of set (1) significant bits */
             for (scnt = 0; scnt < sizeof(uint8_t) * 8; scnt++) {
-                if (((uint8_t)*track & (0x80 >> scnt)) == 0)
+                if (((uint8_t)*track & (0x80 >> scnt)) == 0) {
                     break;
+                }
             }
 
             if (bcnt != scnt) {
                 cli_dbgmsg("ole2_convert_utf: cleaning out %zu bytes from incomplete utf-8 character length %zu\n",
                            bcnt, scnt);
-                for (; bcnt > 0; bcnt--, track++)
+                for (; bcnt > 0; bcnt--, track++) {
                     *track = '\0';
+                }
             }
         }
         return outbuf;
@@ -109,8 +113,9 @@ static char *ole2_convert_utf(summary_ctx_t *sctx, char *begin, size_t sz, const
 
 #if HAVE_ICONV
     p1 = buf = cli_max_calloc(1, sz);
-    if (!(buf))
+    if (!(buf)) {
         return NULL;
+    }
 
     memcpy(buf, begin, sz);
     inlen = sz;
@@ -118,9 +123,9 @@ static char *ole2_convert_utf(summary_ctx_t *sctx, char *begin, size_t sz, const
     /* encoding lookup if not specified */
     if (!encoding) {
         for (i = 0; i < NUMCODEPAGES; ++i) {
-            if (sctx->codepage == codepage_entries[i].codepage)
+            if (sctx->codepage == codepage_entries[i].codepage) {
                 encoding = codepage_entries[i].encoding;
-            else if (sctx->codepage < codepage_entries[i].codepage) {
+            } else if (sctx->codepage < codepage_entries[i].codepage) {
                 /* assuming sorted array */
                 break;
             }
@@ -176,9 +181,10 @@ static char *ole2_convert_utf(summary_ctx_t *sctx, char *begin, size_t sz, const
             // cli_dbgmsg("%u %s\n", inlen, outbuf);
 
             offset = sz2 - outlen;
-            if (attempt < 3)
+            if (attempt < 3) {
                 cli_dbgmsg("ole2_convert_utf: outbuf is too small, resizing %llu -> %llu\n",
                            (long long unsigned)((attempt * 2) * sz), (long long unsigned)(((attempt + 1) * 2) * sz));
+            }
         }
 
         if (errno == E2BIG && nonrev == (size_t)-1) {
@@ -245,8 +251,9 @@ ole2_process_property(summary_ctx_t *sctx, unsigned char *databuf, uint32_t offs
             if (sctx->writecp) {
                 sctx->codepage = (uint16_t)dout;
                 ret            = cli_jsonint(sctx->summary, sctx->propname, sctx->codepage);
-            } else
+            } else {
                 ret = cli_jsonint(sctx->summary, sctx->propname, dout);
+            }
             break;
         }
         case PT_INT32:
@@ -345,8 +352,9 @@ ole2_process_property(summary_ctx_t *sctx, unsigned char *databuf, uint32_t offs
             /* endian conversion */
             dout = sum16_endian_convert(dout);
 
-            if (sctx->writecp)
+            if (sctx->writecp) {
                 sctx->codepage = dout;
+            }
 
             ret = cli_jsonint(sctx->summary, sctx->propname, dout);
             break;
@@ -796,8 +804,9 @@ static int ole2_summary_propset_json(summary_ctx_t *sctx, off_t offset)
 
         if (sctx->propname != NULL) {
             ret = ole2_process_property(sctx, ps, propoff);
-            if (ret != CL_SUCCESS)
+            if (ret != CL_SUCCESS) {
                 return ret;
+            }
         } else {
             /* add unknown propid flag */
         }

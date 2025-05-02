@@ -756,8 +756,9 @@ static void fix_paths(void)
 const struct optstruct *optget(const struct optstruct *opts, const char *name)
 {
     while (opts) {
-        if ((opts->name && !strcmp(opts->name, name)) || (opts->cmd && !strcmp(opts->cmd, name)))
+        if ((opts->name && !strcmp(opts->name, name)) || (opts->cmd && !strcmp(opts->cmd, name))) {
             return opts;
+        }
         opts = opts->next;
     }
     return NULL;
@@ -766,8 +767,9 @@ const struct optstruct *optget(const struct optstruct *opts, const char *name)
 static struct optstruct *optget_i(struct optstruct *opts, const char *name)
 {
     while (opts) {
-        if ((opts->name && !strcmp(opts->name, name)) || (opts->cmd && !strcmp(opts->cmd, name)))
+        if ((opts->name && !strcmp(opts->name, name)) || (opts->cmd && !strcmp(opts->cmd, name))) {
             return opts;
+        }
         opts = opts->next;
     }
     return NULL;
@@ -802,8 +804,9 @@ static int optadd(struct optstruct **opts, struct optstruct **opts_last, const c
 
     newnode = (struct optstruct *)malloc(sizeof(struct optstruct));
 
-    if (!newnode)
+    if (!newnode) {
         return -1;
+    }
 
     if (name) {
         newnode->name = strdup(name);
@@ -840,8 +843,9 @@ static int optadd(struct optstruct **opts, struct optstruct **opts_last, const c
         newnode->enabled = 0;
     }
     newnode->numarg = numarg;
-    if (numarg && numarg != -1)
+    if (numarg && numarg != -1) {
         newnode->enabled = 1;
+    }
     newnode->nextarg  = NULL;
     newnode->next     = NULL;
     newnode->active   = 0;
@@ -896,13 +900,15 @@ static int optaddarg(struct optstruct *opts, const char *name, const char *strar
             }
             new->numarg = numarg;
             h           = pt;
-            while (h->nextarg)
+            while (h->nextarg) {
                 h = h->nextarg;
+            }
             h->nextarg = new;
         }
     } else {
-        if (pt->active)
+        if (pt->active) {
             return 0;
+        }
 
         if (strarg) {
             free(pt->strarg);
@@ -916,10 +922,11 @@ static int optaddarg(struct optstruct *opts, const char *name, const char *strar
     }
 
     pt->active = 1;
-    if (pt->strarg || (pt->numarg && pt->numarg != -1))
+    if (pt->strarg || (pt->numarg && pt->numarg != -1)) {
         pt->enabled = 1;
-    else
+    } else {
         pt->enabled = 0;
+    }
 
     return 0;
 }
@@ -930,8 +937,9 @@ void optfree(struct optstruct *opts)
     int i;
 
     if (opts && opts->filename) {
-        for (i = 0; opts->filename[i]; i++)
+        for (i = 0; opts->filename[i]; i++) {
             free(opts->filename[i]);
+        }
         free(opts->filename);
     }
 
@@ -981,14 +989,16 @@ struct optstruct *optparse(const char *cfgfile, int argc, char **argv, int verbo
     }
 #endif
 
-    if (oldopts)
+    if (oldopts) {
         opts = oldopts;
+    }
 
     shortopts[sc++] = ':';
     for (i = 0;; i++) {
         optentry = &clam_options[i];
-        if (!optentry->name && !optentry->longopt)
+        if (!optentry->name && !optentry->longopt) {
             break;
+        }
 
         if (((optentry->owner & toolmask) && ((optentry->owner & toolmask) != OPT_DEPRECATED)) || (ignore && (optentry->owner & ignore))) {
             if (!oldopts && optadd(&opts, &opts_last, optentry->name, optentry->longopt, optentry->strarg, optentry->numarg, optentry->flags, i) < 0) {
@@ -1005,10 +1015,11 @@ struct optstruct *optparse(const char *cfgfile, int argc, char **argv, int verbo
                         return NULL;
                     }
                     longopts[lc].name = optentry->longopt;
-                    if (!(optentry->flags & FLAG_REQUIRED) && (optentry->argtype == CLOPT_TYPE_BOOL || optentry->strarg))
+                    if (!(optentry->flags & FLAG_REQUIRED) && (optentry->argtype == CLOPT_TYPE_BOOL || optentry->strarg)) {
                         longopts[lc].has_arg = 2;
-                    else
+                    } else {
                         longopts[lc].has_arg = 1;
+                    }
                     longopts[lc].flag  = NULL;
                     longopts[lc++].val = optentry->shortopt;
                 }
@@ -1021,8 +1032,9 @@ struct optstruct *optparse(const char *cfgfile, int argc, char **argv, int verbo
                     shortopts[sc++] = optentry->shortopt;
                     if (optentry->argtype != CLOPT_TYPE_BOOL) {
                         shortopts[sc++] = ':';
-                        if (!(optentry->flags & FLAG_REQUIRED) && optentry->strarg)
+                        if (!(optentry->flags & FLAG_REQUIRED) && optentry->strarg) {
                             shortopts[sc++] = ':';
+                        }
                     }
                 }
             }
@@ -1050,40 +1062,48 @@ struct optstruct *optparse(const char *cfgfile, int argc, char **argv, int verbo
     while (1) {
 
         if (cfgfile) {
-            if (!fgets(buffer, sizeof(buffer), fs))
+            if (!fgets(buffer, sizeof(buffer), fs)) {
                 break;
+            }
 
             buff = buffer;
-            for (i = 0; i < (int)strlen(buff) - 1 && (buff[i] == ' ' || buff[i] == '\t'); i++)
+            for (i = 0; i < (int)strlen(buff) - 1 && (buff[i] == ' ' || buff[i] == '\t'); i++) {
                 ;
+            }
             buff += i;
             line++;
-            if (strlen(buff) <= 2 || buff[0] == '#')
+            if (strlen(buff) <= 2 || buff[0] == '#') {
                 continue;
+            }
 
             if (!strncmp("Example", buff, 7)) {
-                if (verbose)
+                if (verbose) {
                     fprintf(stderr, "ERROR: Please edit the example config file %s\n", cfgfile);
+                }
                 err = 1;
                 break;
             }
 
             if (!(pt = strpbrk(buff, " \t"))) {
-                if (verbose)
+                if (verbose) {
                     fprintf(stderr, "ERROR: Missing argument for option at %s:%d\n", cfgfile, line);
+                }
                 err = 1;
                 break;
             }
             name  = buff;
             *pt++ = 0;
-            for (i = 0; i < (int)strlen(pt) - 1 && (pt[i] == ' ' || pt[i] == '\t'); i++)
+            for (i = 0; i < (int)strlen(pt) - 1 && (pt[i] == ' ' || pt[i] == '\t'); i++) {
                 ;
+            }
             pt += i;
-            for (i = strlen(pt); i >= 1 && (pt[i - 1] == ' ' || pt[i - 1] == '\t' || pt[i - 1] == '\n'); i--)
+            for (i = strlen(pt); i >= 1 && (pt[i - 1] == ' ' || pt[i - 1] == '\t' || pt[i - 1] == '\n'); i--) {
                 ;
+            }
             if (!i) {
-                if (verbose)
+                if (verbose) {
                     fprintf(stderr, "ERROR: Missing argument for option at %s:%d\n", cfgfile, line);
+                }
                 err = 1;
                 break;
             }
@@ -1094,15 +1114,17 @@ struct optstruct *optparse(const char *cfgfile, int argc, char **argv, int verbo
                 pt++;
                 pt = strrchr(pt, '"');
                 if (!pt) {
-                    if (verbose)
+                    if (verbose) {
                         fprintf(stderr, "ERROR: Missing closing parenthesis in option %s at %s:%d\n", name, cfgfile, line);
+                    }
                     err = 1;
                     break;
                 }
                 *pt = 0;
                 if (!strlen(arg)) {
-                    if (verbose)
+                    if (verbose) {
                         fprintf(stderr, "ERROR: Empty argument for option %s at %s:%d\n", name, cfgfile, line);
+                    }
                     err = 1;
                     break;
                 }
@@ -1111,8 +1133,9 @@ struct optstruct *optparse(const char *cfgfile, int argc, char **argv, int verbo
         } else {
             opt_index = 0;
             ret       = my_getopt_long(argc, argv, shortopts, longopts, &opt_index);
-            if (ret == -1)
+            if (ret == -1) {
                 break;
+            }
 
             if (ret == ':') {
                 fprintf(stderr, "ERROR: Incomplete option passed (missing argument)\n");
@@ -1152,8 +1175,9 @@ struct optstruct *optparse(const char *cfgfile, int argc, char **argv, int verbo
         opt = optget_i(opts, name);
         if (!opt) {
             if (cfgfile) {
-                if (verbose)
+                if (verbose) {
                     fprintf(stderr, "ERROR: Parse error at %s:%d: Unknown option %s\n", cfgfile, line, name);
+                }
             }
             err = 1;
             break;
@@ -1162,14 +1186,16 @@ struct optstruct *optparse(const char *cfgfile, int argc, char **argv, int verbo
 
         if (ignore && (optentry->owner & ignore) && !(optentry->owner & toolmask)) {
             if (cfgfile) {
-                if (verbose)
+                if (verbose) {
                     fprintf(stderr, "WARNING: Ignoring unsupported option %s at %s:%d\n", opt->name, cfgfile, line);
+                }
             } else {
                 if (verbose) {
-                    if (optentry->shortopt)
+                    if (optentry->shortopt) {
                         fprintf(stderr, "WARNING: Ignoring unsupported option --%s (-%c)\n", optentry->longopt, optentry->shortopt);
-                    else
+                    } else {
                         fprintf(stderr, "WARNING: Ignoring unsupported option --%s\n", optentry->longopt);
+                    }
                 }
             }
             continue;
@@ -1178,23 +1204,26 @@ struct optstruct *optparse(const char *cfgfile, int argc, char **argv, int verbo
         if (optentry->owner & OPT_DEPRECATED) {
             if (toolmask & OPT_DEPRECATED) {
                 if (optaddarg(opts, name, "foo", 1) < 0) {
-                    if (cfgfile)
+                    if (cfgfile) {
                         fprintf(stderr, "ERROR: Can't register argument for option %s\n", name);
-                    else
+                    } else {
                         fprintf(stderr, "ERROR: Can't register argument for option --%s\n", optentry->longopt);
+                    }
                     err = 1;
                     break;
                 }
             } else {
                 if (cfgfile) {
-                    if (verbose)
+                    if (verbose) {
                         fprintf(stderr, "WARNING: Ignoring deprecated option %s at %s:%d\n", opt->name, cfgfile, line);
+                    }
                 } else {
                     if (verbose) {
-                        if (optentry->shortopt)
+                        if (optentry->shortopt) {
                             fprintf(stderr, "WARNING: Ignoring deprecated option --%s (-%c)\n", optentry->longopt, optentry->shortopt);
-                        else
+                        } else {
                             fprintf(stderr, "WARNING: Ignoring deprecated option --%s\n", optentry->longopt);
+                        }
                     }
                 }
             }
@@ -1204,8 +1233,9 @@ struct optstruct *optparse(const char *cfgfile, int argc, char **argv, int verbo
         if (!cfgfile && !arg && optentry->argtype == CLOPT_TYPE_BOOL) {
             arg = "yes"; /* default to yes */
         } else if (optentry->regex) {
-            if (!(optentry->flags & FLAG_REG_CASE))
+            if (!(optentry->flags & FLAG_REG_CASE)) {
                 regflags |= REG_ICASE;
+            }
 
             if (cli_regcomp(&regex, optentry->regex, regflags)) {
                 fprintf(stderr, "ERROR: optparse: Can't compile regular expression %s for option %s\n", optentry->regex, name);
@@ -1218,10 +1248,11 @@ struct optstruct *optparse(const char *cfgfile, int argc, char **argv, int verbo
                 if (cfgfile) {
                     fprintf(stderr, "ERROR: Incorrect argument format for option %s\n", name);
                 } else {
-                    if (optentry->shortopt)
+                    if (optentry->shortopt) {
                         fprintf(stderr, "ERROR: Incorrect argument format for option --%s (-%c)\n", optentry->longopt, optentry->shortopt);
-                    else
+                    } else {
                         fprintf(stderr, "ERROR: Incorrect argument format for option --%s\n", optentry->longopt);
+                    }
                 }
                 err = 1;
                 break;
@@ -1231,39 +1262,43 @@ struct optstruct *optparse(const char *cfgfile, int argc, char **argv, int verbo
         numarg = -1;
         switch (optentry->argtype) {
             case CLOPT_TYPE_STRING:
-                if (!arg)
+                if (!arg) {
                     arg = optentry->strarg;
+                }
                 if (!cfgfile && !strlen(arg)) {
-                    if (optentry->shortopt)
+                    if (optentry->shortopt) {
                         fprintf(stderr, "ERROR: Option --%s (-%c) requires a non-empty string argument\n", optentry->longopt, optentry->shortopt);
-                    else
+                    } else {
                         fprintf(stderr, "ERROR: Option --%s requires a non-empty string argument\n", optentry->longopt);
+                    }
                     err = 1;
                     break;
                 }
                 break;
 
             case CLOPT_TYPE_NUMBER:
-                if (arg)
+                if (arg) {
                     numarg = atoi(arg);
-                else
+                } else {
                     numarg = 0;
+                }
                 arg = NULL;
                 break;
 
             case CLOPT_TYPE_SIZE:
             case CLOPT_TYPE_SIZE64:
-                if (optentry->argtype == CLOPT_TYPE_SIZE64)
+                if (optentry->argtype == CLOPT_TYPE_SIZE64) {
                     /* guaranteed to be "long long" (64 bit but possibly signed) further down the line */
                     lnumlimit = LLONG_MAX;
-                else
+                } else {
                     /* probably mostly "unsigned long int" (32 or 64 bit unsigned depending on platform),
                      * but may be expected to fit into a "long long" (64-bit signed) */
                     lnumlimit = LLONG_MAX < ULONG_MAX ? LLONG_MAX : ULONG_MAX;
+                }
                 errno = 0;
-                if (arg)
+                if (arg) {
                     lnumarg = strtoll(arg, &buff, 0);
-                else {
+                } else {
                     numarg = 0;
                     break;
                 }
@@ -1271,24 +1306,27 @@ struct optstruct *optparse(const char *cfgfile, int argc, char **argv, int verbo
                     switch (*buff) {
                         case 'G':
                         case 'g':
-                            if (lnumarg <= lnumlimit / (1024 * 1024 * 1024))
+                            if (lnumarg <= lnumlimit / (1024 * 1024 * 1024)) {
                                 lnumarg *= 1024 * 1024 * 1024;
-                            else
+                            } else {
                                 errno = ERANGE;
+                            }
                             break;
                         case 'M':
                         case 'm':
-                            if (lnumarg <= lnumlimit / (1024 * 1024))
+                            if (lnumarg <= lnumlimit / (1024 * 1024)) {
                                 lnumarg *= 1024 * 1024;
-                            else
+                            } else {
                                 errno = ERANGE;
+                            }
                             break;
                         case 'K':
                         case 'k':
-                            if (lnumarg <= lnumlimit / 1024)
+                            if (lnumarg <= lnumlimit / 1024) {
                                 lnumarg *= 1024;
-                            else
+                            } else {
                                 errno = ERANGE;
+                            }
                             break;
                         case '\0':
                             break;
@@ -1296,25 +1334,29 @@ struct optstruct *optparse(const char *cfgfile, int argc, char **argv, int verbo
                             if (cfgfile) {
                                 fprintf(stderr, "ERROR: Can't parse numerical argument for option %s\n", name);
                             } else {
-                                if (optentry->shortopt)
+                                if (optentry->shortopt) {
                                     fprintf(stderr, "ERROR: Can't parse numerical argument for option --%s (-%c)\n", optentry->longopt, optentry->shortopt);
-                                else
+                                } else {
                                     fprintf(stderr, "ERROR: Can't parse numerical argument for option --%s\n", optentry->longopt);
+                                }
                             }
                             err = 1;
                     }
                 }
 
                 arg = NULL;
-                if (err) break;
+                if (err) {
+                    break;
+                }
                 if (errno == ERANGE) {
                     if (cfgfile) {
                         fprintf(stderr, "WARNING: Numerical value for option %s too high, resetting to %lld\n", name, lnumlimit);
                     } else {
-                        if (optentry->shortopt)
+                        if (optentry->shortopt) {
                             fprintf(stderr, "WARNING: Numerical value for option --%s (-%c) too high, resetting to %lld\n", optentry->longopt, optentry->shortopt, lnumlimit);
-                        else
+                        } else {
                             fprintf(stderr, "WARNING: Numerical value for option %s too high, resetting to %lld\n", optentry->longopt, lnumlimit);
+                        }
                     }
                     lnumarg = lnumlimit;
                 }
@@ -1323,30 +1365,34 @@ struct optstruct *optparse(const char *cfgfile, int argc, char **argv, int verbo
                 break;
 
             case CLOPT_TYPE_BOOL:
-                if (!strcasecmp(arg, "yes") || !strcmp(arg, "1") || !strcasecmp(arg, "true"))
+                if (!strcasecmp(arg, "yes") || !strcmp(arg, "1") || !strcasecmp(arg, "true")) {
                     numarg = 1;
-                else
+                } else {
                     numarg = 0;
+                }
 
                 arg = NULL;
                 break;
         }
 
-        if (err)
+        if (err) {
             break;
+        }
 
         if (optaddarg(opts, name, arg, numarg) < 0) {
-            if (cfgfile)
+            if (cfgfile) {
                 fprintf(stderr, "ERROR: Can't register argument for option %s\n", name);
-            else
+            } else {
                 fprintf(stderr, "ERROR: Can't register argument for option --%s\n", optentry->longopt);
+            }
             err = 1;
             break;
         }
     }
 
-    if (fs)
+    if (fs) {
         fclose(fs);
+    }
 
     if (err) {
         optfree(opts);
@@ -1386,13 +1432,15 @@ struct optstruct *optadditem(const char *name, const char *arg, int verbose, int
     int regflags                       = REG_EXTENDED | REG_NOSUB;
     const struct clam_option *optentry = NULL;
 
-    if (oldopts)
+    if (oldopts) {
         opts = oldopts;
+    }
 
     for (i = 0;; i++) {
         optentry = &clam_options[i];
-        if (!optentry->name && !optentry->longopt)
+        if (!optentry->name && !optentry->longopt) {
             break;
+        }
 
         if (((optentry->owner & toolmask) && ((optentry->owner & toolmask) != OPT_DEPRECATED)) || (ignore && (optentry->owner & ignore))) {
             if (!oldopts && optadd(&opts, &opts_last, optentry->name, optentry->longopt, optentry->strarg, optentry->numarg, optentry->flags, i) < 0) {
@@ -1418,16 +1466,18 @@ struct optstruct *optadditem(const char *name, const char *arg, int verbose, int
 
         opt = optget_i(opts, name);
         if (!opt) {
-            if (verbose)
+            if (verbose) {
                 fprintf(stderr, "ERROR: Parse error: Unknown option %s\n", name);
+            }
             err = 1;
             break;
         }
         optentry = &clam_options[opt->idx];
 
         if (ignore && (optentry->owner & ignore) && !(optentry->owner & toolmask)) {
-            if (verbose)
+            if (verbose) {
                 fprintf(stderr, "WARNING: Ignoring unsupported option %s\n", opt->name);
+            }
             continue;
         }
 
@@ -1439,15 +1489,17 @@ struct optstruct *optadditem(const char *name, const char *arg, int verbose, int
                     break;
                 }
             } else {
-                if (verbose)
+                if (verbose) {
                     fprintf(stderr, "WARNING: Ignoring deprecated option %s\n", opt->name);
+                }
             }
             continue;
         }
 
         if (optentry->regex) {
-            if (!(optentry->flags & FLAG_REG_CASE))
+            if (!(optentry->flags & FLAG_REG_CASE)) {
                 regflags |= REG_ICASE;
+            }
 
             if (cli_regcomp(&regex, optentry->regex, regflags)) {
                 fprintf(stderr, "ERROR: optparse: Can't compile regular expression %s for option %s\n", optentry->regex, name);
@@ -1466,32 +1518,35 @@ struct optstruct *optadditem(const char *name, const char *arg, int verbose, int
         numarg = -1;
         switch (optentry->argtype) {
             case CLOPT_TYPE_STRING:
-                if (!arg)
+                if (!arg) {
                     arg = optentry->strarg;
+                }
 
                 break;
 
             case CLOPT_TYPE_NUMBER:
-                if (arg)
+                if (arg) {
                     numarg = atoi(arg);
-                else
+                } else {
                     numarg = 0;
+                }
                 arg = NULL;
                 break;
 
             case CLOPT_TYPE_SIZE:
             case CLOPT_TYPE_SIZE64:
-                if (optentry->argtype == CLOPT_TYPE_SIZE64)
+                if (optentry->argtype == CLOPT_TYPE_SIZE64) {
                     /* guaranteed to be "long long" (64 bit but possibly signed) further down the line */
                     lnumlimit = LLONG_MAX;
-                else
+                } else {
                     /* probably mostly "unsigned long int" (32 or 64 bit unsigned depending on platform),
                      * but may be expected to fit into a "long long" (64-bit signed) */
                     lnumlimit = LLONG_MAX < ULONG_MAX ? LLONG_MAX : ULONG_MAX;
+                }
                 errno = 0;
-                if (arg)
+                if (arg) {
                     lnumarg = strtoll(arg, &buff, 0);
-                else {
+                } else {
                     numarg = 0;
                     break;
                 }
@@ -1499,24 +1554,27 @@ struct optstruct *optadditem(const char *name, const char *arg, int verbose, int
                     switch (*buff) {
                         case 'G':
                         case 'g':
-                            if (lnumarg <= lnumlimit / (1024 * 1024 * 1024))
+                            if (lnumarg <= lnumlimit / (1024 * 1024 * 1024)) {
                                 lnumarg *= 1024 * 1024 * 1024;
-                            else
+                            } else {
                                 errno = ERANGE;
+                            }
                             break;
                         case 'M':
                         case 'm':
-                            if (lnumarg <= lnumlimit / (1024 * 1024))
+                            if (lnumarg <= lnumlimit / (1024 * 1024)) {
                                 lnumarg *= 1024 * 1024;
-                            else
+                            } else {
                                 errno = ERANGE;
+                            }
                             break;
                         case 'K':
                         case 'k':
-                            if (lnumarg <= lnumlimit / 1024)
+                            if (lnumarg <= lnumlimit / 1024) {
                                 lnumarg *= 1024;
-                            else
+                            } else {
                                 errno = ERANGE;
+                            }
                             break;
                         case '\0':
                             break;
@@ -1527,7 +1585,9 @@ struct optstruct *optadditem(const char *name, const char *arg, int verbose, int
                 }
 
                 arg = NULL;
-                if (err) break;
+                if (err) {
+                    break;
+                }
                 if (errno == ERANGE) {
                     fprintf(stderr, "WARNING: Numerical value for option %s too high, resetting to 4G\n", name);
                     lnumarg = UINT_MAX;
@@ -1537,17 +1597,19 @@ struct optstruct *optadditem(const char *name, const char *arg, int verbose, int
                 break;
 
             case CLOPT_TYPE_BOOL:
-                if (!strcasecmp(arg, "yes") || !strcmp(arg, "1") || !strcasecmp(arg, "true"))
+                if (!strcasecmp(arg, "yes") || !strcmp(arg, "1") || !strcasecmp(arg, "true")) {
                     numarg = 1;
-                else
+                } else {
                     numarg = 0;
+                }
 
                 arg = NULL;
                 break;
         }
 
-        if (err)
+        if (err) {
             break;
+        }
 
         if (optaddarg(opts, name, arg, numarg) < 0) {
             fprintf(stderr, "ERROR: Can't register argument for option --%s\n", optentry->longopt);

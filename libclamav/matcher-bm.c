@@ -57,10 +57,11 @@ cl_error_t cli_bm_addpatt(struct cli_matcher *root, struct cli_bm_patt *pattern,
         return ret;
     }
     if (pattern->offdata[0] != CLI_OFF_ANY) {
-        if (pattern->offdata[0] == CLI_OFF_ABSOLUTE)
+        if (pattern->offdata[0] == CLI_OFF_ABSOLUTE) {
             root->bm_absoff_num++;
-        else
+        } else {
             root->bm_reloff_num++;
+        }
     }
 
     /* bm_offmode doesn't use the prefilter for BM signatures anyway, so
@@ -101,16 +102,18 @@ cl_error_t cli_bm_addpatt(struct cli_matcher *root, struct cli_bm_patt *pattern,
 
     prev = next = root->bm_suffix[idx];
     while (next) {
-        if (pt[0] >= next->pattern0)
+        if (pt[0] >= next->pattern0) {
             break;
+        }
         prev = next;
         next = next->next;
     }
 
     if (next == root->bm_suffix[idx]) {
         pattern->next = root->bm_suffix[idx];
-        if (root->bm_suffix[idx])
+        if (root->bm_suffix[idx]) {
             pattern->cnt = root->bm_suffix[idx]->cnt;
+        }
         root->bm_suffix[idx] = pattern;
     } else {
         pattern->next = prev->next;
@@ -126,8 +129,9 @@ cl_error_t cli_bm_addpatt(struct cli_matcher *root, struct cli_bm_patt *pattern,
             return CL_EMEM;
         }
         root->bm_pattab[root->bm_patterns] = pattern;
-        if (pattern->offdata[0] != CLI_OFF_ABSOLUTE)
+        if (pattern->offdata[0] != CLI_OFF_ABSOLUTE) {
             pattern->offset_min = root->bm_patterns;
+        }
     }
 
     root->bm_patterns++;
@@ -141,16 +145,18 @@ cl_error_t cli_bm_init(struct cli_matcher *root)
     assert(root->mempool && "mempool must be initialized");
 #endif
 
-    if (!(root->bm_shift = (uint8_t *)MPOOL_CALLOC(root->mempool, size, sizeof(uint8_t))))
+    if (!(root->bm_shift = (uint8_t *)MPOOL_CALLOC(root->mempool, size, sizeof(uint8_t)))) {
         return CL_EMEM;
+    }
 
     if (!(root->bm_suffix = (struct cli_bm_patt **)MPOOL_CALLOC(root->mempool, size, sizeof(struct cli_bm_patt *)))) {
         MPOOL_FREE(root->mempool, root->bm_shift);
         return CL_EMEM;
     }
 
-    for (i = 0; i < size; i++)
+    for (i = 0; i < size; i++) {
         root->bm_shift[i] = BM_MIN_LENGTH - BM_BLOCK_SIZE + 1;
+    }
 
     return CL_SUCCESS;
 }
@@ -183,8 +189,9 @@ cl_error_t cli_bm_initoff(const struct cli_matcher *root, struct cli_bm_off *dat
         patt = root->bm_pattab[i];
         if (patt->offdata[0] == CLI_OFF_ABSOLUTE) {
             data->offtab[data->cnt] = patt->offset_min + patt->prefix_length;
-            if (data->offtab[data->cnt] >= info->fsize)
+            if (data->offtab[data->cnt] >= info->fsize) {
                 continue;
+            }
             data->cnt++;
         } else if (CL_SUCCESS != (ret = cli_caloff(NULL, info, root->type, patt->offdata, &data->offset[patt->offset_min], NULL))) {
             cli_errmsg("cli_bm_initoff: Can't calculate relative offset in signature for %s\n", patt->virname);
@@ -194,8 +201,9 @@ cl_error_t cli_bm_initoff(const struct cli_matcher *root, struct cli_bm_off *dat
         } else if ((data->offset[patt->offset_min] != CLI_OFF_NONE) && (data->offset[patt->offset_min] + patt->length <= info->fsize)) {
             if (!data->cnt || (data->offset[patt->offset_min] + patt->prefix_length != data->offtab[data->cnt - 1])) {
                 data->offtab[data->cnt] = data->offset[patt->offset_min] + patt->prefix_length;
-                if (data->offtab[data->cnt] >= info->fsize)
+                if (data->offtab[data->cnt] >= info->fsize) {
                     continue;
+                }
                 data->cnt++;
             }
         }
@@ -218,11 +226,13 @@ void cli_bm_free(struct cli_matcher *root)
     struct cli_bm_patt *patt, *prev;
     uint16_t i, size = HASH(255, 255, 255) + 1;
 
-    if (root->bm_shift)
+    if (root->bm_shift) {
         MPOOL_FREE(root->mempool, root->bm_shift);
+    }
 
-    if (root->bm_pattab)
+    if (root->bm_pattab) {
         MPOOL_FREE(root->mempool, root->bm_pattab);
+    }
 
     if (root->bm_suffix) {
         for (i = 0; i < size; i++) {
@@ -230,12 +240,14 @@ void cli_bm_free(struct cli_matcher *root)
             while (patt) {
                 prev = patt;
                 patt = patt->next;
-                if (prev->prefix)
+                if (prev->prefix) {
                     MPOOL_FREE(root->mempool, prev->prefix);
-                else
+                } else {
                     MPOOL_FREE(root->mempool, prev->pattern);
-                if (prev->virname)
+                }
+                if (prev->virname) {
                     MPOOL_FREE(root->mempool, prev->virname);
+                }
                 MPOOL_FREE(root->mempool, prev);
             }
         }
@@ -254,24 +266,31 @@ cl_error_t cli_bm_scanbuff(const unsigned char *buffer, uint32_t length, const c
     cl_error_t ret;
     int viruses_found = 0;
 
-    if (!root || !root->bm_shift)
+    if (!root || !root->bm_shift) {
         return CL_CLEAN;
+    }
 
-    if (length < BM_MIN_LENGTH)
+    if (length < BM_MIN_LENGTH) {
         return CL_CLEAN;
+    }
 
     i = BM_MIN_LENGTH - BM_BLOCK_SIZE;
     if (offdata) {
-        if (!offdata->cnt)
+        if (!offdata->cnt) {
             return CL_CLEAN;
-        if (offdata->pos == offdata->cnt)
+        }
+        if (offdata->pos == offdata->cnt) {
             offdata->pos--;
-        for (; offdata->pos && offdata->offtab[offdata->pos] > offset; offdata->pos--)
+        }
+        for (; offdata->pos && offdata->offtab[offdata->pos] > offset; offdata->pos--) {
             ;
-        if (offdata->offtab[offdata->pos] < offset)
+        }
+        if (offdata->offtab[offdata->pos] < offset) {
             offdata->pos++;
-        if (offdata->pos >= offdata->cnt)
+        }
+        if (offdata->pos >= offdata->cnt) {
             return CL_CLEAN;
+        }
         i += offdata->offtab[offdata->pos] - offset;
     }
     for (; i < length - BM_BLOCK_SIZE + 1;) {
@@ -284,11 +303,13 @@ cl_error_t cli_bm_scanbuff(const unsigned char *buffer, uint32_t length, const c
             if (p && p->cnt == 1 && p->pattern0 != prefix) {
                 if (offdata) {
                     off = offset + i - BM_MIN_LENGTH + BM_BLOCK_SIZE;
-                    for (; offdata->pos < offdata->cnt && off >= offdata->offtab[offdata->pos]; offdata->pos++)
+                    for (; offdata->pos < offdata->cnt && off >= offdata->offtab[offdata->pos]; offdata->pos++) {
                         ;
+                    }
                     if (offdata->pos == offdata->cnt || off >= offdata->offtab[offdata->pos]) {
-                        if (viruses_found)
+                        if (viruses_found) {
                             return CL_VIRUS;
+                        }
                         return CL_CLEAN;
                     }
                     i += offdata->offtab[offdata->pos] - off;
@@ -300,12 +321,14 @@ cl_error_t cli_bm_scanbuff(const unsigned char *buffer, uint32_t length, const c
             pchain = 0;
             while (p) {
                 if (p->pattern0 != prefix) {
-                    if (pchain)
+                    if (pchain) {
                         break;
+                    }
                     p = p->next;
                     continue;
-                } else
+                } else {
                     pchain = 1;
+                }
 
                 off = i - BM_MIN_LENGTH + BM_BLOCK_SIZE;
                 bp  = buffer + off;
@@ -392,11 +415,13 @@ cl_error_t cli_bm_scanbuff(const unsigned char *buffer, uint32_t length, const c
                         }
                     }
 
-                    if (patt)
+                    if (patt) {
                         *patt = p;
+                    }
 
-                    if (ctx != NULL && !SCAN_ALLMATCHES)
+                    if (ctx != NULL && !SCAN_ALLMATCHES) {
                         return CL_VIRUS;
+                    }
                 }
                 p = p->next;
             }
@@ -405,8 +430,9 @@ cl_error_t cli_bm_scanbuff(const unsigned char *buffer, uint32_t length, const c
 
         if (offdata) {
             off = offset + i - BM_MIN_LENGTH + BM_BLOCK_SIZE;
-            for (; offdata->pos < offdata->cnt && off >= offdata->offtab[offdata->pos]; offdata->pos++)
+            for (; offdata->pos < offdata->cnt && off >= offdata->offtab[offdata->pos]; offdata->pos++) {
                 ;
+            }
             if (offdata->pos == offdata->cnt || off >= offdata->offtab[offdata->pos]) {
                 if (viruses_found > 0) {
                     return CL_VIRUS;

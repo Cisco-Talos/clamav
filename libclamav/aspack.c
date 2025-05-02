@@ -71,7 +71,9 @@ struct ASPK {
 static inline int readstream(struct ASPK *stream)
 {
     while (stream->bitpos >= 8) {
-        if (stream->input >= stream->iend) return 0;
+        if (stream->input >= stream->iend) {
+            return 0;
+        }
         stream->hash = (stream->hash << 8) | *stream->input;
         stream->input++;
         stream->bitpos -= 8;
@@ -88,33 +90,41 @@ static uint32_t getdec(struct ASPK *stream, uint8_t which, int *err)
 
     *err = 1;
 
-    if (!readstream(stream)) return 0;
+    if (!readstream(stream)) {
+        return 0;
+    }
 
     ret = (stream->hash >> (8 - stream->bitpos)) & 0xfffe00;
 
     if (ret < d3[8]) {
-        if ((ret >> 16) >= 0x100) return 0;
-        if (!(pos = stream->dict_helper[which].ends[ret >> 16]) || pos >= 24) return 0; /* 0<pos<24 */
+        if ((ret >> 16) >= 0x100) {
+            return 0;
+        }
+        if (!(pos = stream->dict_helper[which].ends[ret >> 16]) || pos >= 24) {
+            return 0; /* 0<pos<24 */
+        }
     } else {
         if (ret < d3[10]) {
-            if (ret < d3[9])
+            if (ret < d3[9]) {
                 pos = 9;
-            else
+            } else {
                 pos = 10;
+            }
         } else {
-            if (ret < d3[11])
+            if (ret < d3[11]) {
                 pos = 11;
-            else {
-                if (ret < d3[12])
+            } else {
+                if (ret < d3[12]) {
                     pos = 12;
-                else {
-                    if (ret < d3[13])
+                } else {
+                    if (ret < d3[13]) {
                         pos = 13;
-                    else {
-                        if (ret < d3[14])
+                    } else {
+                        if (ret < d3[14]) {
                             pos = 14;
-                        else
+                        } else {
                             pos = 15;
+                        }
                     }
                 }
             }
@@ -124,7 +134,9 @@ static uint32_t getdec(struct ASPK *stream, uint8_t which, int *err)
     stream->bitpos += pos;
     ret = ((ret - d3[pos - 1]) >> (24 - pos)) + d4[pos];
 
-    if (ret >= stream->dict_helper[which].size) return 0;
+    if (ret >= stream->dict_helper[which].size) {
+        return 0;
+    }
     ret = stream->dict_helper[which].starts[ret];
 
     *err = 0;
@@ -143,7 +155,9 @@ static uint8_t build_decrypt_array(struct ASPK *stream, uint8_t *array, uint8_t 
 
     for (i = 0; i < stream->dict_helper[which].size; i++) {
         /* within bounds - see comments in build_decrypt_dictionaries */
-        if (array[i] > 17) return 0;
+        if (array[i] > 17) {
+            return 0;
+        }
         bus[array[i]]++;
     }
 
@@ -153,7 +167,9 @@ static uint8_t build_decrypt_array(struct ASPK *stream, uint8_t *array, uint8_t 
     i = 0;
     while (counter >= 9) { /* 0<=i<=14 */
         sum += (bus[i + 1] << counter);
-        if (sum > 0x1000000) return 0;
+        if (sum > 0x1000000) {
+            return 0;
+        }
 
         d3[i + 1] = sum;
         d4[i + 1] = dict[i + 1] = bus[i] + d4[i];
@@ -162,7 +178,9 @@ static uint8_t build_decrypt_array(struct ASPK *stream, uint8_t *array, uint8_t 
             uint32_t old = endoff;
             endoff       = d3[i + 1] >> 0x10;
             if (endoff - old) {
-                if (!CLI_ISCONTAINED(stream->dict_helper[which].ends, 0x100, stream->dict_helper[which].ends + old, endoff - old)) return 0;
+                if (!CLI_ISCONTAINED(stream->dict_helper[which].ends, 0x100, stream->dict_helper[which].ends + old, endoff - old)) {
+                    return 0;
+                }
                 memset((stream->dict_helper[which].ends + old), i + 1, endoff - old);
             }
         }
@@ -171,13 +189,19 @@ static uint8_t build_decrypt_array(struct ASPK *stream, uint8_t *array, uint8_t 
         counter--;
     }
 
-    if (sum != 0x1000000) return 0;
+    if (sum != 0x1000000) {
+        return 0;
+    }
 
     i = 0;
     for (i = 0; i < stream->dict_helper[which].size; i++) {
         if (array[i]) { /* within bounds - see above */
-            if (array[i] > 17) return 0;
-            if (dict[array[i]] >= stream->dict_helper[which].size) return 0;
+            if (array[i] > 17) {
+                return 0;
+            }
+            if (dict[array[i]] >= stream->dict_helper[which].size) {
+                return 0;
+            }
             stream->dict_helper[which].starts[dict[array[i]]] = i;
             dict[array[i]]++;
         }
@@ -208,38 +232,57 @@ static int build_decrypt_dictionaries(struct ASPK *stream)
     uint32_t ret;
     int oob;
 
-    if (!getbits(stream, 1, &oob)) memset(stream->decrypt_dict, 0, 0x2f5);
-    if (oob) return 0;
+    if (!getbits(stream, 1, &oob)) {
+        memset(stream->decrypt_dict, 0, 0x2f5);
+    }
+    if (oob) {
+        return 0;
+    }
 
     for (counter = 0; counter < 19; counter++) {
         stream->array1[counter] = getbits(stream, 4, &oob);
-        if (oob) return 0;
+        if (oob) {
+            return 0;
+        }
     }
 
-    if (!build_decrypt_array(stream, stream->array1, 3)) return 0; /* array1[19] - [3].size=19 */
+    if (!build_decrypt_array(stream, stream->array1, 3)) {
+        return 0; /* array1[19] - [3].size=19 */
+    }
 
     counter = 0;
     while (counter < 757) {
         ret = getdec(stream, 3, &oob);
-        if (oob) return 0;
+        if (oob) {
+            return 0;
+        }
         if (ret >= 16) {
             if (ret != 16) {
-                if (ret == 17)
+                if (ret == 17) {
                     ret = 3 + getbits(stream, 3, &oob);
-                else
+                } else {
                     ret = 11 + getbits(stream, 7, &oob);
-                if (oob) return 0;
+                }
+                if (oob) {
+                    return 0;
+                }
                 while (ret) {
-                    if (counter >= 757) break;
+                    if (counter >= 757) {
+                        break;
+                    }
                     stream->array2[1 + counter] = 0;
                     counter++;
                     ret--;
                 }
             } else {
                 ret = 3 + getbits(stream, 2, &oob);
-                if (oob) return 0;
+                if (oob) {
+                    return 0;
+                }
                 while (ret) {
-                    if (counter >= 757) break;
+                    if (counter >= 757) {
+                        break;
+                    }
                     stream->array2[1 + counter] = stream->array2[counter];
                     counter++;
                     ret--;
@@ -251,7 +294,9 @@ static int build_decrypt_dictionaries(struct ASPK *stream)
         }
     }
 
-    if (!build_decrypt_array(stream, &stream->array2[1], 0) /* array2[758-1=757] - [0].size=721 */ || !build_decrypt_array(stream, &stream->array2[722], 1) /* array2[758-722=36] - [1].size=28 */ || !build_decrypt_array(stream, &stream->array2[750], 2) /* array2[758-750=8] - [2].size=8 */) return 0;
+    if (!build_decrypt_array(stream, &stream->array2[1], 0) /* array2[758-1=757] - [0].size=721 */ || !build_decrypt_array(stream, &stream->array2[722], 1) /* array2[758-722=36] - [1].size=28 */ || !build_decrypt_array(stream, &stream->array2[750], 2) /* array2[758-750=8] - [2].size=8 */) {
+        return 0;
+    }
 
     stream->dict_ok = 0;
     for (counter = 0; counter < 8; counter++) {
@@ -276,14 +321,18 @@ static int decrypt(struct ASPK *stream, uint8_t *stuff, uint32_t size, uint8_t *
     cli_dbgmsg("Aspack: decrypt size:%x\n", size);
     while (counter < size) {
         gen = getdec(stream, 0, &oob);
-        if (oob) return 0;
+        if (oob) {
+            return 0;
+        }
         if (gen < 256) { /* implied within bounds */
             output[counter] = (uint8_t)gen;
             counter++;
             continue;
         }
         if (gen >= 720) {
-            if (!build_decrypt_dictionaries(stream)) return 0;
+            if (!build_decrypt_dictionaries(stream)) {
+                return 0;
+            }
             continue;
         }
         backbytes = (gen - 256) >> 3;
@@ -294,9 +343,13 @@ static int decrypt(struct ASPK *stream, uint8_t *stuff, uint32_t size, uint8_t *
         if ((backsize - 2) == 7) {
             uint8_t hlp;
             gen = getdec(stream, 1, &oob);
-            if (oob || gen >= 0x56) return 0;
+            if (oob || gen >= 0x56) {
+                return 0;
+            }
             hlp = stuff[gen + 0x1c];
-            if (!readstream(stream)) return 0;
+            if (!readstream(stream)) {
+                return 0;
+            }
             backsize += stuff[gen] + (((stream->hash >> (8 - stream->bitpos)) & 0xffffff) >> (0x18 - hlp));
             stream->bitpos += hlp;
         }
@@ -305,16 +358,22 @@ static int decrypt(struct ASPK *stream, uint8_t *stuff, uint32_t size, uint8_t *
         gen    = stuff[backbytes + 0x38];
 
         if (!stream->dict_ok || gen < 3) {
-            if (!readstream(stream)) return 0;
+            if (!readstream(stream)) {
+                return 0;
+            }
             useold += ((stream->hash >> (8 - stream->bitpos)) & 0xffffff) >> (24 - gen);
             stream->bitpos += gen;
         } else {
             gen -= 3;
-            if (!readstream(stream)) return 0;
+            if (!readstream(stream)) {
+                return 0;
+            }
             useold += ((((stream->hash >> (8 - stream->bitpos)) & 0xffffff) >> (24 - gen)) * 8);
             stream->bitpos += gen;
             useold += getdec(stream, 2, &oob);
-            if (oob) return 0;
+            if (oob) {
+                return 0;
+            }
         }
 
         if (useold < 3) {
@@ -331,7 +390,9 @@ static int decrypt(struct ASPK *stream, uint8_t *stuff, uint32_t size, uint8_t *
 
         backbytes++;
 
-        if (!backbytes || backbytes > counter || backsize > size - counter) return 0;
+        if (!backbytes || backbytes > counter || backsize > size - counter) {
+            return 0;
+        }
         while (backsize--) {
             output[counter] = output[counter - backbytes];
             counter++;
@@ -347,7 +408,9 @@ static int decomp_block(struct ASPK *stream, uint32_t size, uint8_t *stuff, uint
     memset(stream->decarray4, 0, sizeof(stream->decarray4));
     memset(stream->decrypt_dict, 0, 757);
     stream->bitpos = 0x20;
-    if (!build_decrypt_dictionaries(stream)) return 0;
+    if (!build_decrypt_dictionaries(stream)) {
+        return 0;
+    }
     return decrypt(stream, stuff, size, output);
 }
 
@@ -441,8 +504,9 @@ int unaspack(uint8_t *image, unsigned int size, struct cli_exe_section *sections
             cli_dbgmsg("Aspack: decomp_block failed\n");
             free(wrkbuf);
             break;
-        } else
+        } else {
             cli_dbgmsg("Aspack: decomp block succeed\n");
+        }
 
         free(wrkbuf);
 

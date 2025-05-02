@@ -151,8 +151,9 @@ static int patt_cmp_fn(const struct cli_ac_patt *a, const struct cli_ac_patt *b)
     }
 
     RETURN_RES_IF_NE(a->special, b->special);
-    if (!a->special && !b->special)
+    if (!a->special && !b->special) {
         return 0;
+    }
 
     for (i = 0; i < a->special; i++) {
         struct cli_ac_special *spcl_a = a->special_table[i], *spcl_b = b->special_table[i];
@@ -163,20 +164,26 @@ static int patt_cmp_fn(const struct cli_ac_patt *a, const struct cli_ac_patt *b)
 
         if (spcl_a->type == AC_SPECIAL_ALT_CHAR) {
             res = memcmp((spcl_a->alt).byte, (spcl_b->alt).byte, spcl_a->num);
-            if (res) return res;
+            if (res) {
+                return res;
+            }
         } else if (spcl_a->type == AC_SPECIAL_ALT_STR_FIXED) {
             unsigned int j;
             RETURN_RES_IF_NE(spcl_a->len[0], spcl_b->len[0]);
             for (j = 0; j < spcl_a->num; j++) {
                 res = memcmp((spcl_a->alt).f_str[j], (spcl_b->alt).f_str[j], spcl_a->len[0]);
-                if (res) return res;
+                if (res) {
+                    return res;
+                }
             }
         } else if (spcl_a->type == AC_SPECIAL_ALT_STR) {
             struct cli_alt_node *alt_a = (spcl_a->alt).v_str, *alt_b = (spcl_b->alt).v_str;
             while (alt_a && alt_b) {
                 RETURN_RES_IF_NE(alt_a->len, alt_b->len);
                 res = memcmp(alt_a->str, alt_b->str, alt_a->len);
-                if (res) return res;
+                if (res) {
+                    return res;
+                }
                 alt_a = alt_a->next;
                 alt_b = alt_b->next;
             }
@@ -201,8 +208,9 @@ static int sort_list_fn(const void *a, const void *b)
     /* 2. Group together equal pattern in a node
      * (this is for building the next_same list) */
     res = patt_cmp_fn(patt_a, patt_b);
-    if (res)
+    if (res) {
         return res;
+    }
 
     /* 3. Sort equal patterns in a node by partno in ascending order
      * (this is required by the matcher) */
@@ -231,12 +239,14 @@ static int sort_heads_by_partno_fn(const void *a, const void *b)
 
     while (1) {
         if (!list_a->next_same) {
-            if (!list_b->next_same)
+            if (!list_b->next_same) {
                 break;
+            }
             return +1;
         }
-        if (!list_b->next_same)
+        if (!list_b->next_same) {
             return -1;
+        }
         list_a = list_a->next_same;
         list_b = list_b->next_same;
     }
@@ -277,8 +287,9 @@ static inline void link_node_lists(struct cli_ac_list **listtable, unsigned int 
 
     /* Link heads in the next list */
     node->list = listtable[0];
-    for (i = 1; i < nheads; i++)
+    for (i = 1; i < nheads; i++) {
         listtable[i - 1]->next = listtable[i];
+    }
     listtable[nheads - 1]->next = NULL;
 }
 
@@ -287,8 +298,9 @@ static void link_lists(struct cli_matcher *root)
     struct cli_ac_node *curnode;
     unsigned int i, grouplen;
 
-    if (!root->ac_lists)
+    if (!root->ac_lists) {
         return;
+    }
 
     /* Group the list by owning node, pattern equality and sort by partno */
     cli_qsort(root->ac_listtable, root->ac_lists, sizeof(root->ac_listtable[0]), sort_list_fn);
@@ -387,8 +399,9 @@ static inline struct cli_ac_node *add_new_node(struct cli_matcher *root, uint16_
     if (!newtable) {
         root->ac_nodes--;
         cli_errmsg("cli_ac_addpatt: Can't realloc ac_nodetable\n");
-        if (new->trans)
+        if (new->trans) {
             MPOOL_FREE(root->mempool, new->trans);
+        }
         MPOOL_FREE(root->mempool, new);
         return NULL;
     }
@@ -427,25 +440,30 @@ static int cli_ac_addpatt_recursive(struct cli_matcher *root, struct cli_ac_patt
      */
     if ((pattern->sigopts & ACPATT_OPTION_NOCASE) && (pattern->pattern[i] & 0xff) < 0x80 && isalpha((unsigned char)(pattern->pattern[i] & 0xff))) {
         next = pt->trans[CLI_NOCASEI((unsigned char)(pattern->pattern[i] & 0xff))];
-        if (!next)
+        if (!next) {
             next = add_new_node(root, i, len);
-        if (!next)
+        }
+        if (!next) {
             return CL_EMEM;
-        else
+        } else {
             pt->trans[CLI_NOCASEI((unsigned char)(pattern->pattern[i] & 0xff))] = next;
+        }
 
-        if ((ret = cli_ac_addpatt_recursive(root, pattern, next, i + 1, len)) != CL_SUCCESS)
+        if ((ret = cli_ac_addpatt_recursive(root, pattern, next, i + 1, len)) != CL_SUCCESS) {
             return ret;
+        }
     }
 
     /* normal transition, also enumerates the 'normal' nocase */
     next = pt->trans[(unsigned char)(pattern->pattern[i] & 0xff)];
-    if (!next)
+    if (!next) {
         next = add_new_node(root, i, len);
-    if (!next)
+    }
+    if (!next) {
         return CL_EMEM;
-    else
+    } else {
         pt->trans[(unsigned char)(pattern->pattern[i] & 0xff)] = next;
+    }
 
     return cli_ac_addpatt_recursive(root, pattern, next, i + 1, len);
 }
@@ -524,8 +542,9 @@ static struct cli_ac_node *bfs_dequeue(struct bfs_list **bfs, struct bfs_list **
         *bfs = (*bfs)->next;
         pt   = lpt->node;
 
-        if (lpt == *last)
+        if (lpt == *last) {
             *last = NULL;
+        }
 
         free(lpt);
         return pt;
@@ -544,8 +563,9 @@ static int ac_maketrans(struct cli_matcher *root)
             ac_root->trans[i] = ac_root;
         } else {
             node->fail = ac_root;
-            if ((ret = bfs_enqueue(&bfs, &bfs_last, node)))
+            if ((ret = bfs_enqueue(&bfs, &bfs_last, node))) {
                 return ret;
+            }
         }
     }
 
@@ -553,11 +573,13 @@ static int ac_maketrans(struct cli_matcher *root)
         if (IS_LEAF(node)) {
             struct cli_ac_node *failtarget = node->fail;
 
-            while (NULL != failtarget && (IS_LEAF(failtarget) || !IS_FINAL(failtarget)))
+            while (NULL != failtarget && (IS_LEAF(failtarget) || !IS_FINAL(failtarget))) {
                 failtarget = failtarget->fail;
+            }
 
-            if (NULL != failtarget)
+            if (NULL != failtarget) {
                 node->fail = failtarget;
+            }
 
             continue;
         }
@@ -567,13 +589,15 @@ static int ac_maketrans(struct cli_matcher *root)
             if (child) {
                 fail = node->fail;
 
-                while (IS_LEAF(fail) || !fail->trans[i])
+                while (IS_LEAF(fail) || !fail->trans[i]) {
                     fail = fail->fail;
+                }
 
                 child->fail = fail->trans[i];
 
-                if ((ret = bfs_enqueue(&bfs, &bfs_last, child)) != 0)
+                if ((ret = bfs_enqueue(&bfs, &bfs_last, child)) != 0) {
                     return ret;
+                }
             }
         }
     }
@@ -582,21 +606,24 @@ static int ac_maketrans(struct cli_matcher *root)
     for (i = 0; i < 256; i++) {
         node = ac_root->trans[i];
         if (node != ac_root) {
-            if ((ret = bfs_enqueue(&bfs, &bfs_last, node)))
+            if ((ret = bfs_enqueue(&bfs, &bfs_last, node))) {
                 return ret;
+            }
         }
     }
 
     while ((node = bfs_dequeue(&bfs, &bfs_last))) {
-        if (IS_LEAF(node))
+        if (IS_LEAF(node)) {
             continue;
+        }
         for (i = 0; i < 256; i++) {
             child = node->trans[i];
             if (!child || (!IS_FINAL(child) && IS_LEAF(child))) {
                 struct cli_ac_node *failtarget = node->fail;
 
-                while (IS_LEAF(failtarget) || !failtarget->trans[i])
+                while (IS_LEAF(failtarget) || !failtarget->trans[i]) {
                     failtarget = failtarget->fail;
+                }
 
                 failtarget     = failtarget->trans[i];
                 node->trans[i] = failtarget;
@@ -605,8 +632,9 @@ static int ac_maketrans(struct cli_matcher *root)
 
                 list = child->list;
                 if (list) {
-                    while (list->next)
+                    while (list->next) {
                         list = list->next;
+                    }
 
                     list->next = child->fail->list;
                 } else {
@@ -615,8 +643,9 @@ static int ac_maketrans(struct cli_matcher *root)
 
                 child->trans = child->fail->trans;
             } else {
-                if ((ret = bfs_enqueue(&bfs, &bfs_last, child)) != 0)
+                if ((ret = bfs_enqueue(&bfs, &bfs_last, child)) != 0) {
                     return ret;
+                }
             }
         }
     }
@@ -626,16 +655,18 @@ static int ac_maketrans(struct cli_matcher *root)
 
 cl_error_t cli_ac_buildtrie(struct cli_matcher *root)
 {
-    if (!root)
+    if (!root) {
         return CL_EMALFDB;
+    }
 
     if (!(root->ac_root)) {
         cli_dbgmsg("cli_ac_buildtrie: AC pattern matcher is not initialised\n");
         return CL_SUCCESS;
     }
 
-    if (root->filter)
+    if (root->filter) {
         cli_dbgmsg("Using filter for trie %d\n", root->type);
+    }
 
     link_lists(root);
 
@@ -690,16 +721,18 @@ static void ac_free_special(struct cli_ac_patt *p)
     struct cli_ac_special *a1;
     struct cli_alt_node *b1, *b2;
 
-    if (!p->special)
+    if (!p->special) {
         return;
+    }
 
     for (i = 0; i < p->special; i++) {
         a1 = p->special_table[i];
         if (a1->type == AC_SPECIAL_ALT_CHAR) {
             MPOOL_FREE(mempool, (a1->alt).byte);
         } else if (a1->type == AC_SPECIAL_ALT_STR_FIXED) {
-            for (j = 0; j < a1->num; j++)
+            for (j = 0; j < a1->num; j++) {
                 MPOOL_FREE(mempool, (a1->alt).f_str[j]);
+            }
             MPOOL_FREE(mempool, (a1->alt).f_str);
         } else if (a1->type == AC_SPECIAL_ALT_STR) {
             b1 = (a1->alt).v_str;
@@ -816,8 +849,9 @@ int cli_ac_chklsig(const char *expr, const char *end, uint32_t *lsigcnt, unsigne
                 }
         }
 
-        if (op)
+        if (op) {
             break;
+        }
 
         if (op1 && !pth) {
             blkend = i;
@@ -825,22 +859,25 @@ int cli_ac_chklsig(const char *expr, const char *end, uint32_t *lsigcnt, unsigne
                 blkmod = expr[i + 1];
 
                 ret = sscanf(&expr[i + 2], "%u,%u", &modval1, &modval2);
-                if (ret != 2)
+                if (ret != 2) {
                     ret = sscanf(&expr[i + 2], "%u", &modval1);
+                }
 
                 if (!ret || ret == EOF) {
                     cli_errmsg("chklexpr: Syntax error: Missing number after '%c'\n", expr[i + 1]);
                     return -1;
                 }
 
-                for (i += 2; i + 1 < len && (isdigit(expr[i + 1]) || expr[i + 1] == ','); i++)
+                for (i += 2; i + 1 < len && (isdigit(expr[i + 1]) || expr[i + 1] == ','); i++) {
                     ;
+                }
             }
 
-            if (&expr[i + 1] == rend)
+            if (&expr[i + 1] == rend) {
                 break;
-            else
+            } else {
                 blkmod = 0;
+            }
         }
     }
 
@@ -850,8 +887,9 @@ int cli_ac_chklsig(const char *expr, const char *end, uint32_t *lsigcnt, unsigne
     }
 
     if (!op && !op1) {
-        if (expr[0] == '(')
+        if (expr[0] == '(') {
             return cli_ac_chklsig(++expr, --end, lsigcnt, cnt, ids, parse_only);
+        }
 
         ret = sscanf(expr, "%u", &id);
         if (!ret || ret == EOF) {
@@ -859,10 +897,11 @@ int cli_ac_chklsig(const char *expr, const char *end, uint32_t *lsigcnt, unsigne
             return -1;
         }
 
-        if (parse_only)
+        if (parse_only) {
             val = id;
-        else
+        } else {
             val = lsigcnt[id];
+        }
 
         if (mod) {
             pt  = expr + modoff + 1;
@@ -875,16 +914,19 @@ int cli_ac_chklsig(const char *expr, const char *end, uint32_t *lsigcnt, unsigne
             if (!parse_only) {
                 switch (mod) {
                     case '=':
-                        if (val != modval1)
+                        if (val != modval1) {
                             return 0;
+                        }
                         break;
                     case '<':
-                        if (val >= modval1)
+                        if (val >= modval1) {
                             return 0;
+                        }
                         break;
                     case '>':
-                        if (val <= modval1)
+                        if (val <= modval1) {
                             return 0;
+                        }
                         break;
                     default:
                         return 0;
@@ -981,16 +1023,19 @@ int cli_ac_chklsig(const char *expr, const char *end, uint32_t *lsigcnt, unsigne
 
             switch (blkmod) {
                 case '=':
-                    if (tcnt != modval1)
+                    if (tcnt != modval1) {
                         return 0;
+                    }
                     break;
                 case '<':
-                    if (tcnt >= modval1)
+                    if (tcnt >= modval1) {
                         return 0;
+                    }
                     break;
                 case '>':
-                    if (tcnt <= modval1)
+                    if (tcnt <= modval1) {
                         return 0;
+                    }
                     break;
                 default:
                     return 0;
@@ -1003,8 +1048,9 @@ int cli_ac_chklsig(const char *expr, const char *end, uint32_t *lsigcnt, unsigne
                     tids >>= 1;
                 }
 
-                if (val < modval2)
+                if (val < modval2) {
                     return 0;
+                }
             }
 
             *cnt += tcnt;
@@ -1118,19 +1164,22 @@ inline static int ac_findmatch_special(const unsigned char *buffer, uint32_t off
                 if (cmp == 0) {
                     match = !special->negative;
                     break;
-                } else if (cmp < 0)
+                } else if (cmp < 0) {
                     break;
+                }
             }
             break;
 
         case AC_SPECIAL_ALT_STR_FIXED: /* fixed length multi-byte */
             if (!rev) {
-                if (bp + special->len[0] > length)
+                if (bp + special->len[0] > length) {
                     break;
+                }
                 subbp = bp;
             } else {
-                if (bp < (uint32_t)(special->len[0] - 1))
+                if (bp < (uint32_t)(special->len[0] - 1)) {
                     break;
+                }
                 subbp = bp - (uint32_t)(special->len[0] - 1);
             }
 
@@ -1140,8 +1189,9 @@ inline static int ac_findmatch_special(const unsigned char *buffer, uint32_t off
                 if (cmp == 0) {
                     match = (!special->negative) * special->len[0];
                     break;
-                } else if (cmp < 0)
+                } else if (cmp < 0) {
                     break;
+                }
             }
             break;
 
@@ -1166,8 +1216,9 @@ inline static int ac_findmatch_special(const unsigned char *buffer, uint32_t off
                 match = 1;
                 for (j = 0; j < alt->len; j++) {
                     AC_MATCH_CHAR2(alt->str[j], buffer[subbp + j]);
-                    if (!match)
+                    if (!match) {
                         break;
+                    }
                 }
                 if (match) {
                     /* if match is unique (has no derivatives), we can pass it directly back */
@@ -1176,12 +1227,14 @@ inline static int ac_findmatch_special(const unsigned char *buffer, uint32_t off
                         break;
                     }
                     /* branch for backtracking */
-                    if (!rev)
+                    if (!rev) {
                         match = ac_forward_match_branch(buffer, subbp + alt->len, offset, fileoffset, length, pattern, pp + 1, specialcnt + 1, start, end);
-                    else
+                    } else {
                         match = ac_backward_match_branch(buffer, subbp - 1, offset, fileoffset, length, pattern, pp - 1, specialcnt - 1, start, end);
-                    if (match)
+                    }
+                    if (match) {
                         return -1; /* alerts caller that match has been resolved in child callee */
+                    }
                 }
 
                 alt = alt->next;
@@ -1189,20 +1242,23 @@ inline static int ac_findmatch_special(const unsigned char *buffer, uint32_t off
             break;
 
         case AC_SPECIAL_LINE_MARKER:
-            if (b == '\n')
+            if (b == '\n') {
                 match = !special->negative;
-            else if (b == '\r' && (bp + 1 < length && buffer[bp + 1] == '\n'))
+            } else if (b == '\r' && (bp + 1 < length && buffer[bp + 1] == '\n')) {
                 match = (!special->negative) * 2;
+            }
             break;
 
         case AC_SPECIAL_BOUNDARY:
-            if (boundary[b])
+            if (boundary[b]) {
                 match = !special->negative;
+            }
             break;
 
         case AC_SPECIAL_WORD_MARKER:
-            if (!isalnum(b))
+            if (!isalnum(b)) {
                 match = !special->negative;
+            }
             break;
 
         default:
@@ -1228,12 +1284,14 @@ static int ac_backward_match_branch(const unsigned char *buffer, uint32_t bp, ui
 
         for (i = pp; 1; i--) {
             AC_MATCH_CHAR(pattern->prefix[i], buffer[bp], 1);
-            if (!match)
+            if (!match) {
                 return 0;
+            }
 
             /* needs to perform check before decrement due to unsignedness */
-            if (i == 0 || bp == 0)
+            if (i == 0 || bp == 0) {
                 break;
+            }
 
             bp--;
         }
@@ -1249,57 +1307,69 @@ static int ac_backward_match_branch(const unsigned char *buffer, uint32_t bp, ui
     /* left-side special checks, bp = start */
     if (pattern->boundary & AC_BOUNDARY_LEFT) {
         match = !!(pattern->boundary & AC_BOUNDARY_LEFT_NEGATIVE);
-        if (!filestart || (bp && (boundary[buffer[bp - 1]] == 1 || boundary[buffer[bp - 1]] == 3)))
+        if (!filestart || (bp && (boundary[buffer[bp - 1]] == 1 || boundary[buffer[bp - 1]] == 3))) {
             match = !match;
+        }
 
-        if (!match)
+        if (!match) {
             return 0;
+        }
     }
 
     if (pattern->boundary & AC_LINE_MARKER_LEFT) {
         match = !!(pattern->boundary & AC_LINE_MARKER_LEFT_NEGATIVE);
-        if (!filestart || (bp && (buffer[bp - 1] == '\n')))
+        if (!filestart || (bp && (buffer[bp - 1] == '\n'))) {
             match = !match;
+        }
 
-        if (!match)
+        if (!match) {
             return 0;
+        }
     }
 
     if (pattern->boundary & AC_WORD_MARKER_LEFT) {
         match = !!(pattern->boundary & AC_WORD_MARKER_LEFT_NEGATIVE);
-        if (!filestart)
+        if (!filestart) {
             match = !match;
-        else if (pattern->sigopts & ACPATT_OPTION_WIDE) {
-            if (filestart - 1 == 0)
+        } else if (pattern->sigopts & ACPATT_OPTION_WIDE) {
+            if (filestart - 1 == 0) {
                 match = !match;
-            if (bp - 1 && bp && !(isalnum(buffer[bp - 2]) && buffer[bp - 1] == '\0'))
+            }
+            if (bp - 1 && bp && !(isalnum(buffer[bp - 2]) && buffer[bp - 1] == '\0')) {
                 match = !match;
-        } else if (bp && !isalnum(buffer[bp - 1]))
+            }
+        } else if (bp && !isalnum(buffer[bp - 1])) {
             match = !match;
+        }
 
-        if (!match)
+        if (!match) {
             return 0;
+        }
     }
 
     /* bp is shifted for left anchor check, thus invalidated as pattern start */
     if (!(pattern->ch[0] & CLI_MATCH_IGNORE)) {
-        if (pattern->ch_mindist[0] + (uint32_t)1 > bp)
+        if (pattern->ch_mindist[0] + (uint32_t)1 > bp) {
             return 0;
+        }
 
         bp -= pattern->ch_mindist[0] + 1;
         for (i = pattern->ch_mindist[0]; i <= pattern->ch_maxdist[0]; i++) {
             match = 1;
             AC_MATCH_CHAR(pattern->ch[0], buffer[bp], 1);
-            if (match)
+            if (match) {
                 break;
+            }
 
-            if (!bp)
+            if (!bp) {
                 return 0;
-            else
+            } else {
                 bp--;
+            }
         }
-        if (!match)
+        if (!match) {
             return 0;
+        }
     }
 
     return 1;
@@ -1318,8 +1388,9 @@ static int ac_forward_match_branch(const unsigned char *buffer, uint32_t bp, uin
     /* forward (pattern) validation; determines end */
     for (i = pp; i < pattern->length[0] && bp < length; i++) {
         AC_MATCH_CHAR(pattern->pattern[i], buffer[bp], 0);
-        if (!match)
+        if (!match) {
             return 0;
+        }
 
         bp++;
     }
@@ -1328,36 +1399,43 @@ static int ac_forward_match_branch(const unsigned char *buffer, uint32_t bp, uin
     /* right-side special checks, bp = end */
     if (pattern->boundary & AC_BOUNDARY_RIGHT) {
         match = !!(pattern->boundary & AC_BOUNDARY_RIGHT_NEGATIVE);
-        if ((length <= SCANBUFF) && (bp == length || boundary[buffer[bp]] >= 2))
+        if ((length <= SCANBUFF) && (bp == length || boundary[buffer[bp]] >= 2)) {
             match = !match;
+        }
 
-        if (!match)
+        if (!match) {
             return 0;
+        }
     }
 
     if (pattern->boundary & AC_LINE_MARKER_RIGHT) {
         match = !!(pattern->boundary & AC_LINE_MARKER_RIGHT_NEGATIVE);
-        if ((length <= SCANBUFF) && (bp == length || buffer[bp] == '\n' || (buffer[bp] == '\r' && bp + 1 < length && buffer[bp + 1] == '\n')))
+        if ((length <= SCANBUFF) && (bp == length || buffer[bp] == '\n' || (buffer[bp] == '\r' && bp + 1 < length && buffer[bp + 1] == '\n'))) {
             match = !match;
+        }
 
-        if (!match)
+        if (!match) {
             return 0;
+        }
     }
 
     if (pattern->boundary & AC_WORD_MARKER_RIGHT) {
         match = !!(pattern->boundary & AC_WORD_MARKER_RIGHT_NEGATIVE);
         if (length <= SCANBUFF) {
-            if (bp == length)
+            if (bp == length) {
                 match = !match;
-            else if ((pattern->sigopts & ACPATT_OPTION_WIDE) && (bp + 1 < length)) {
-                if (!(isalnum(buffer[bp]) && buffer[bp + 1] == '\0'))
+            } else if ((pattern->sigopts & ACPATT_OPTION_WIDE) && (bp + 1 < length)) {
+                if (!(isalnum(buffer[bp]) && buffer[bp + 1] == '\0')) {
                     match = !match;
-            } else if (!isalnum(buffer[bp]))
+                }
+            } else if (!isalnum(buffer[bp])) {
                 match = !match;
+            }
         }
 
-        if (!match)
+        if (!match) {
             return 0;
+        }
     }
 
     /* bp is shifted for right anchor check, thus invalidated as pattern right-side */
@@ -1365,19 +1443,22 @@ static int ac_forward_match_branch(const unsigned char *buffer, uint32_t bp, uin
         bp += pattern->ch_mindist[1];
 
         for (i = pattern->ch_mindist[1]; i <= pattern->ch_maxdist[1]; i++) {
-            if (bp >= length)
+            if (bp >= length) {
                 return 0;
+            }
 
             match = 1;
             AC_MATCH_CHAR(pattern->ch[1], buffer[bp], 0);
-            if (match)
+            if (match) {
                 break;
+            }
 
             bp++;
         }
 
-        if (!match)
+        if (!match) {
             return 0;
+        }
     }
 
     return ac_backward_match_branch(buffer, offset - 1, offset, fileoffset, length, pattern, pattern->prefix_length[0] - 1, pattern->special_pattern - 1, start, end);
@@ -1389,12 +1470,14 @@ inline static int ac_findmatch(const unsigned char *buffer, uint32_t offset, uin
     uint16_t specialcnt = pattern->special_pattern;
 
     /* minimal check as the maximum variable length may exceed the buffer */
-    if ((offset + pattern->length[1] > length) || (pattern->prefix_length[1] > offset))
+    if ((offset + pattern->length[1] > length) || (pattern->prefix_length[1] > offset)) {
         return 0;
+    }
 
     match = ac_forward_match_branch(buffer, offset + pattern->depth, offset, fileoffset, length, pattern, pattern->depth, specialcnt, start, end);
-    if (match)
+    if (match) {
         return 1;
+    }
     return 0;
 }
 
@@ -1417,8 +1500,9 @@ cl_error_t cli_ac_initdata(struct cli_ac_data *data, uint32_t partsigs, uint32_t
             cli_errmsg("cli_ac_init: Can't allocate memory for data->offset\n");
             return CL_EMEM;
         }
-        for (i = 0; i < reloffsigs * 2; i += 2)
+        for (i = 0; i < reloffsigs * 2; i += 2) {
             data->offset[i] = CLI_OFF_NONE;
+        }
     }
 
     data->partsigs = partsigs;
@@ -1427,8 +1511,9 @@ cl_error_t cli_ac_initdata(struct cli_ac_data *data, uint32_t partsigs, uint32_t
         if (!data->offmatrix) {
             cli_errmsg("cli_ac_init: Can't allocate memory for data->offmatrix\n");
 
-            if (reloffsigs)
+            if (reloffsigs) {
                 free(data->offset);
+            }
 
             return CL_EMEM;
         }
@@ -1438,11 +1523,13 @@ cl_error_t cli_ac_initdata(struct cli_ac_data *data, uint32_t partsigs, uint32_t
     if (lsigs) {
         data->lsigcnt = (uint32_t **)malloc(lsigs * sizeof(uint32_t *));
         if (!data->lsigcnt) {
-            if (partsigs)
+            if (partsigs) {
                 free(data->offmatrix);
+            }
 
-            if (reloffsigs)
+            if (reloffsigs) {
                 free(data->offset);
+            }
 
             cli_errmsg("cli_ac_init: Can't allocate memory for data->lsigcnt\n");
             return CL_EMEM;
@@ -1450,26 +1537,31 @@ cl_error_t cli_ac_initdata(struct cli_ac_data *data, uint32_t partsigs, uint32_t
         data->lsigcnt[0] = (uint32_t *)calloc(lsigs * 64, sizeof(uint32_t));
         if (!data->lsigcnt[0]) {
             free(data->lsigcnt);
-            if (partsigs)
+            if (partsigs) {
                 free(data->offmatrix);
+            }
 
-            if (reloffsigs)
+            if (reloffsigs) {
                 free(data->offset);
+            }
 
             cli_errmsg("cli_ac_init: Can't allocate memory for data->lsigcnt[0]\n");
             return CL_EMEM;
         }
-        for (i = 1; i < lsigs; i++)
+        for (i = 1; i < lsigs; i++) {
             data->lsigcnt[i] = data->lsigcnt[0] + 64 * i;
+        }
         data->yr_matches = (uint8_t *)calloc(lsigs, sizeof(uint8_t));
         if (data->yr_matches == NULL) {
             free(data->lsigcnt[0]);
             free(data->lsigcnt);
-            if (partsigs)
+            if (partsigs) {
                 free(data->offmatrix);
+            }
 
-            if (reloffsigs)
+            if (reloffsigs) {
                 free(data->offset);
+            }
             return CL_EMEM;
         }
 
@@ -1479,11 +1571,13 @@ cl_error_t cli_ac_initdata(struct cli_ac_data *data, uint32_t partsigs, uint32_t
             free(data->yr_matches);
             free(data->lsigcnt[0]);
             free(data->lsigcnt);
-            if (partsigs)
+            if (partsigs) {
                 free(data->offmatrix);
+            }
 
-            if (reloffsigs)
+            if (reloffsigs) {
                 free(data->offset);
+            }
 
             cli_errmsg("cli_ac_init: Can't allocate memory for data->lsig_matches\n");
             return CL_EMEM;
@@ -1497,11 +1591,13 @@ cl_error_t cli_ac_initdata(struct cli_ac_data *data, uint32_t partsigs, uint32_t
             free(data->yr_matches);
             free(data->lsigcnt[0]);
             free(data->lsigcnt);
-            if (partsigs)
+            if (partsigs) {
                 free(data->offmatrix);
+            }
 
-            if (reloffsigs)
+            if (reloffsigs) {
                 free(data->offset);
+            }
 
             cli_errmsg("cli_ac_init: Can't allocate memory for data->lsigsuboff_(last|first)\n");
             return CL_EMEM;
@@ -1517,11 +1613,13 @@ cl_error_t cli_ac_initdata(struct cli_ac_data *data, uint32_t partsigs, uint32_t
             free(data->yr_matches);
             free(data->lsigcnt[0]);
             free(data->lsigcnt);
-            if (partsigs)
+            if (partsigs) {
                 free(data->offmatrix);
+            }
 
-            if (reloffsigs)
+            if (reloffsigs) {
                 free(data->offset);
+            }
 
             cli_errmsg("cli_ac_init: Can't allocate memory for data->lsigsuboff_(last|first)[0]\n");
             return CL_EMEM;
@@ -1539,8 +1637,9 @@ cl_error_t cli_ac_initdata(struct cli_ac_data *data, uint32_t partsigs, uint32_t
             }
         }
     }
-    for (i = 0; i < 32; i++)
+    for (i = 0; i < 32; i++) {
         data->macro_lastmatch[i] = CLI_OFF_NONE;
+    }
 
     data->min_partno = 1;
 
@@ -1553,8 +1652,9 @@ cl_error_t cli_ac_caloff(const struct cli_matcher *root, struct cli_ac_data *dat
     unsigned int i;
     struct cli_ac_patt *patt;
 
-    if (info)
+    if (info) {
         data->vinfo = &info->exeinfo.vinfo;
+    }
 
     for (i = 0; i < root->ac_reloff_num; i++) {
         patt = root->ac_reloff[i];
@@ -1575,8 +1675,9 @@ void cli_ac_freedata(struct cli_ac_data *data)
 {
     uint32_t i;
 
-    if (!data)
+    if (!data) {
         return;
+    }
 
     if (data->partsigs) {
         for (i = 0; i < data->partsigs; i++) {
@@ -1631,8 +1732,9 @@ inline static int ac_addtype(struct cli_matched_type **list, cli_file_t type, of
     struct cli_matched_type *tnode, *tnode_last;
 
     if (type == CL_TYPE_ZIPSFX) {
-        if (*list && ctx && ctx->engine->maxfiles && (*list)->cnt > ctx->engine->maxfiles)
+        if (*list && ctx && ctx->engine->maxfiles && (*list)->cnt > ctx->engine->maxfiles) {
             return CL_SUCCESS;
+        }
     } else if (*list && (*list)->cnt >= MAX_EMBEDDED_OBJ) {
         return CL_SUCCESS;
     }
@@ -1646,13 +1748,15 @@ inline static int ac_addtype(struct cli_matched_type **list, cli_file_t type, of
     tnode->offset = offset;
 
     tnode_last = *list;
-    while (tnode_last && tnode_last->next)
+    while (tnode_last && tnode_last->next) {
         tnode_last = tnode_last->next;
+    }
 
-    if (tnode_last)
+    if (tnode_last) {
         tnode_last->next = tnode;
-    else
+    } else {
         *list = tnode;
+    }
 
     (*list)->cnt++;
     return CL_SUCCESS;
@@ -1796,8 +1900,9 @@ cl_error_t cli_ac_chkmacro(struct cli_matcher *root, struct cli_ac_data *data, u
      * macro matched at a correct distance */
     for (i = 0; i < tdb->subsigs; i++) {
         rc = lsig_sub_matched(root, data, lsig_id, i, CLI_OFF_NONE, 0);
-        if (rc != CL_SUCCESS)
+        if (rc != CL_SUCCESS) {
             return rc;
+        }
     }
     return CL_SUCCESS;
 }
@@ -1828,8 +1933,9 @@ cl_error_t cli_ac_scanbuff(
     cl_error_t rc;
     cl_error_t ret;
 
-    if (!root->ac_root)
+    if (!root->ac_root) {
         return CL_CLEAN;
+    }
 
     if (!mdata && (root->ac_partsigs || root->ac_lsigs || root->ac_reloff_num)) {
         cli_errmsg("cli_ac_scanbuff: mdata == NULL\n");
@@ -1876,8 +1982,9 @@ cl_error_t cli_ac_scanbuff(
                 if (ac_findmatch(buffer, bp, offset + bp, length, patt, &matchstart, &matchend)) {
                     while (ptN) {
                         pt = ptN->me;
-                        if (pt->partno > mdata->min_partno)
+                        if (pt->partno > mdata->min_partno) {
                             break;
+                        }
 
                         if ((pt->type && !(mode & AC_SCAN_FT)) || (!pt->type && !(mode & AC_SCAN_VIR))) {
                             ptN = ptN->next_same;
@@ -1921,8 +2028,9 @@ cl_error_t cli_ac_scanbuff(
                                 continue;
                             }
 
-                            if ((uint32_t)(pt->partno + 1) > mdata->min_partno)
+                            if ((uint32_t)(pt->partno + 1) > mdata->min_partno) {
                                 mdata->min_partno = pt->partno + 1;
+                            }
 
                             /* sparsely populated matrix, so allocate and initialize if NULL */
                             if (!mdata->offmatrix[pt->sigid - 1]) {
@@ -1952,19 +2060,25 @@ cl_error_t cli_ac_scanbuff(
                             if (pt->partno != 1) {
                                 for (j = 1; (j <= CLI_DEFAULT_AC_TRACKLEN + 1) && (offmatrix[pt->partno - 2][j] != (uint32_t)-1); j++) {
                                     found = j;
-                                    if (realoff < offmatrix[pt->partno - 2][j])
+                                    if (realoff < offmatrix[pt->partno - 2][j]) {
                                         found = 0;
+                                    }
 
-                                    if (found && pt->maxdist)
-                                        if (realoff - offmatrix[pt->partno - 2][j] > pt->maxdist)
+                                    if (found && pt->maxdist) {
+                                        if (realoff - offmatrix[pt->partno - 2][j] > pt->maxdist) {
                                             found = 0;
+                                        }
+                                    }
 
-                                    if (found && pt->mindist)
-                                        if (realoff - offmatrix[pt->partno - 2][j] < pt->mindist)
+                                    if (found && pt->mindist) {
+                                        if (realoff - offmatrix[pt->partno - 2][j] < pt->mindist) {
                                             found = 0;
+                                        }
+                                    }
 
-                                    if (found)
+                                    if (found) {
                                         break;
+                                    }
                                 }
                             }
 
@@ -1981,18 +2095,21 @@ cl_error_t cli_ac_scanbuff(
                             }
 
                             if (pt->partno == 1 || (found && (pt->partno != pt->parts))) {
-                                if (offmatrix[pt->partno - 1][0] == CLI_DEFAULT_AC_TRACKLEN + 1)
+                                if (offmatrix[pt->partno - 1][0] == CLI_DEFAULT_AC_TRACKLEN + 1) {
                                     offmatrix[pt->partno - 1][0] = 1; /* wrap, ends up at 2 */
+                                }
                                 offmatrix[pt->partno - 1][0]++;
                                 offmatrix[pt->partno - 1][offmatrix[pt->partno - 1][0]] = offset + matchend;
 
-                                if (pt->partno == 1) /* save realoff for the first part */
+                                if (pt->partno == 1) { /* save realoff for the first part */
                                     offmatrix[pt->parts - 1][offmatrix[pt->partno - 1][0]] = realoff;
+                                }
                             } else if (found && pt->partno == pt->parts) {
                                 if (pt->type) {
 
-                                    if (pt->type == CL_TYPE_IGNORED && (!pt->rtype || ftype == pt->rtype))
+                                    if (pt->type == CL_TYPE_IGNORED && (!pt->rtype || ftype == pt->rtype)) {
                                         return CL_TYPE_IGNORED;
+                                    }
 
                                     if ((pt->type > type || pt->type >= CL_TYPE_SFX || pt->type == CL_TYPE_MSEXE) &&
                                         (pt->rtype == CL_TYPE_ANY || ftype == pt->rtype)) {
@@ -2004,21 +2121,25 @@ cl_error_t cli_ac_scanbuff(
                                             /* FIXME: the first offset in the array is most likely the correct one but
                                              * it may happen it is not
                                              */
-                                            for (j = 1; j <= CLI_DEFAULT_AC_TRACKLEN + 1 && offmatrix[0][j] != (uint32_t)-1; j++)
-                                                if (ac_addtype(ftoffset, type, offmatrix[pt->parts - 1][j], ctx))
+                                            for (j = 1; j <= CLI_DEFAULT_AC_TRACKLEN + 1 && offmatrix[0][j] != (uint32_t)-1; j++) {
+                                                if (ac_addtype(ftoffset, type, offmatrix[pt->parts - 1][j], ctx)) {
                                                     return CL_EMEM;
+                                                }
+                                            }
                                         }
 
                                         memset(offmatrix[0], (uint32_t)-1, pt->parts * (CLI_DEFAULT_AC_TRACKLEN + 2) * sizeof(uint32_t));
-                                        for (j = 0; j < pt->parts; j++)
+                                        for (j = 0; j < pt->parts; j++) {
                                             offmatrix[j][0] = 0;
+                                        }
                                     }
 
                                 } else { /* !pt->type */
                                     if (pt->lsigid[0]) {
                                         rc = lsig_sub_matched(root, mdata, pt->lsigid[1], pt->lsigid[2], offmatrix[pt->parts - 1][1], 1);
-                                        if (rc != CL_SUCCESS)
+                                        if (rc != CL_SUCCESS) {
                                             return rc;
+                                        }
                                         ptN = ptN->next_same;
                                         continue;
                                     }
@@ -2044,12 +2165,15 @@ cl_error_t cli_ac_scanbuff(
                                                 viruses_found = 1;
                                             }
                                         }
-                                        if (virname)
+                                        if (virname) {
                                             *virname = pt->virname;
-                                        if (customdata)
+                                        }
+                                        if (customdata) {
                                             *customdata = pt->customdata;
-                                        if (!ctx || !SCAN_ALLMATCHES)
+                                        }
+                                        if (!ctx || !SCAN_ALLMATCHES) {
                                             return CL_VIRUS;
+                                        }
                                         ptN = ptN->next_same;
                                         continue;
                                     }
@@ -2058,8 +2182,9 @@ cl_error_t cli_ac_scanbuff(
 
                         } else { /* old type signature */
                             if (pt->type) {
-                                if (pt->type == CL_TYPE_IGNORED && (pt->rtype == CL_TYPE_ANY || ftype == pt->rtype))
+                                if (pt->type == CL_TYPE_IGNORED && (pt->rtype == CL_TYPE_ANY || ftype == pt->rtype)) {
                                     return CL_TYPE_IGNORED;
+                                }
 
                                 if ((pt->type > type || pt->type >= CL_TYPE_SFX || pt->type == CL_TYPE_MSEXE) &&
                                     (pt->rtype == CL_TYPE_ANY || ftype == pt->rtype)) {
@@ -2069,15 +2194,17 @@ cl_error_t cli_ac_scanbuff(
                                     if ((ftoffset != NULL) &&
                                         ((*ftoffset == NULL) || (*ftoffset)->cnt < MAX_EMBEDDED_OBJ || type == CL_TYPE_ZIPSFX) && (type == CL_TYPE_MBR || type >= CL_TYPE_SFX || ((ftype == CL_TYPE_MSEXE || ftype == CL_TYPE_ZIP || ftype == CL_TYPE_MSOLE2) && type == CL_TYPE_MSEXE))) {
 
-                                        if (ac_addtype(ftoffset, type, realoff, ctx))
+                                        if (ac_addtype(ftoffset, type, realoff, ctx)) {
                                             return CL_EMEM;
+                                        }
                                     }
                                 }
                             } else {
                                 if (pt->lsigid[0]) {
                                     rc = lsig_sub_matched(root, mdata, pt->lsigid[1], pt->lsigid[2], realoff, 0);
-                                    if (rc != CL_SUCCESS)
+                                    if (rc != CL_SUCCESS) {
                                         return rc;
+                                    }
                                     ptN = ptN->next_same;
                                     continue;
                                 }
@@ -2104,14 +2231,17 @@ cl_error_t cli_ac_scanbuff(
                                         }
                                     }
 
-                                    if (virname)
+                                    if (virname) {
                                         *virname = pt->virname;
+                                    }
 
-                                    if (customdata)
+                                    if (customdata) {
                                         *customdata = pt->customdata;
+                                    }
 
-                                    if (!ctx || !SCAN_ALLMATCHES)
+                                    if (!ctx || !SCAN_ALLMATCHES) {
                                         return CL_VIRUS;
+                                    }
 
                                     ptN = ptN->next_same;
                                     continue;
@@ -2126,8 +2256,9 @@ cl_error_t cli_ac_scanbuff(
         }
     }
 
-    if (viruses_found)
+    if (viruses_found) {
         return CL_VIRUS;
+    }
 
     return (mode & AC_SCAN_FT) ? type : CL_CLEAN;
 }
@@ -2187,8 +2318,9 @@ inline static int ac_analyze_expr(char *hexstr, int *fixed_len, int *sub_len)
                     slen = len;
                 } else if (len != slen) {
                     flen = 0;
-                    if (len > slen)
+                    if (len > slen) {
                         slen = len;
+                    }
                 }
                 break;
             }
@@ -2199,14 +2331,16 @@ inline static int ac_analyze_expr(char *hexstr, int *fixed_len, int *sub_len)
                 slen = len;
             } else if (len != slen) {
                 flen = 0;
-                if (len > slen)
+                if (len > slen) {
                     slen = len;
+                }
             }
             len = 0;
             numexpr++;
         } else {
-            if (hexstr[i] == '?')
+            if (hexstr[i] == '?') {
                 flen = 0;
+            }
             len++;
         }
     }
@@ -2214,14 +2348,17 @@ inline static int ac_analyze_expr(char *hexstr, int *fixed_len, int *sub_len)
         slen = len;
     } else if (len != slen) {
         flen = 0;
-        if (len > slen)
+        if (len > slen) {
             slen = len;
+        }
     }
 
-    if (sub_len)
+    if (sub_len) {
         *sub_len = slen;
-    if (fixed_len)
+    }
+    if (fixed_len) {
         *fixed_len = flen;
+    }
 
     return numexpr;
 }
@@ -2318,12 +2455,14 @@ inline static int ac_uicmp(uint16_t *a, size_t alen, uint16_t *b, size_t blen, i
         }
 
         /* both sides contain a wildcard that contains the other, therefore unique by wildcards */
-        if (side_wild == 3)
+        if (side_wild == 3) {
             return 1;
+        }
     }
 
-    if (wild)
+    if (wild) {
         *wild = side_wild;
+    }
     return 0;
 }
 
@@ -2360,11 +2499,12 @@ inline static int ac_addspecial_add_alt_node(const char *subexpr, uint8_t sigopt
 
     /* setting nocase match */
     if (sigopts & ACPATT_OPTION_NOCASE) {
-        for (i = 0; i < newnode->len; ++i)
+        for (i = 0; i < newnode->len; ++i) {
             if ((newnode->str[i] & CLI_MATCH_METADATA) == CLI_MATCH_CHAR) {
                 newnode->str[i] = CLI_NOCASE(newnode->str[i] & 0xff);
                 newnode->str[i] += CLI_MATCH_NOCASE;
             }
+        }
     }
 
     /* search for uniqueness, TODO: directed acyclic word graph */
@@ -2389,10 +2529,12 @@ inline static int ac_addspecial_add_alt_node(const char *subexpr, uint8_t sigopt
 
     *prev         = newnode;
     newnode->next = ins;
-    if ((special->num == 0) || (newnode->len < special->len[0]))
+    if ((special->num == 0) || (newnode->len < special->len[0])) {
         special->len[0] = newnode->len;
-    if ((special->num == 0) || (newnode->len > special->len[1]))
+    }
+    if ((special->num == 0) || (newnode->len > special->len[1])) {
         special->len[1] = newnode->len;
+    }
     special->num++;
     return CL_SUCCESS;
 }
@@ -2412,8 +2554,9 @@ static int ac_special_altexpand(char *hexpr, char *subexpr, uint16_t maxlen, int
     /* while there are expressions to resolve */
     while (scnt < numexpr) {
         scnt++;
-        while ((*ept != '(') && (*ept != '|') && (*ept != ')') && (*ept != '\0'))
+        while ((*ept != '(') && (*ept != '|') && (*ept != ')') && (*ept != '\0')) {
             ept++;
+        }
 
         /* check for invalid negation */
         term = *ept;
@@ -2436,8 +2579,9 @@ static int ac_special_altexpand(char *hexpr, char *subexpr, uint16_t maxlen, int
 
         if (term == '|') {
             if (lvl == 0) {
-                if ((ret = ac_addspecial_add_alt_node(subexpr, sigopts, special, root)) != CL_SUCCESS)
+                if ((ret = ac_addspecial_add_alt_node(subexpr, sigopts, special, root)) != CL_SUCCESS) {
                     return ret;
+                }
             } else {
                 find_paren_end(ept, &end);
                 if (!end) {
@@ -2446,8 +2590,9 @@ static int ac_special_altexpand(char *hexpr, char *subexpr, uint16_t maxlen, int
                 }
                 end++;
 
-                if ((ret = ac_special_altexpand(end, subexpr, maxlen, lvl - 1, lvl, sigopts, special, root)) != CL_SUCCESS)
+                if ((ret = ac_special_altexpand(end, subexpr, maxlen, lvl - 1, lvl, sigopts, special, root)) != CL_SUCCESS) {
                     return ret;
+                }
             }
 
             *fp = 0;
@@ -2457,8 +2602,9 @@ static int ac_special_altexpand(char *hexpr, char *subexpr, uint16_t maxlen, int
                 return CL_EPARSE;
             }
 
-            if ((ret = ac_special_altexpand(ept, subexpr, maxlen, lvl - 1, lvl, sigopts, special, root)) != CL_SUCCESS)
+            if ((ret = ac_special_altexpand(ept, subexpr, maxlen, lvl - 1, lvl, sigopts, special, root)) != CL_SUCCESS) {
                 return ret;
+            }
             break;
         } else if (term == '(') {
             int inner, found;
@@ -2469,8 +2615,9 @@ static int ac_special_altexpand(char *hexpr, char *subexpr, uint16_t maxlen, int
             }
             end++;
 
-            if ((ret = ac_special_altexpand(ept, subexpr, maxlen, lvl + 1, lvl + 1, sigopts, special, root)) != CL_SUCCESS)
+            if ((ret = ac_special_altexpand(ept, subexpr, maxlen, lvl + 1, lvl + 1, sigopts, special, root)) != CL_SUCCESS) {
                 return ret;
+            }
 
             /* move ept to end of current alternate expression (recursive call already populates them) */
             ept   = end;
@@ -2479,8 +2626,9 @@ static int ac_special_altexpand(char *hexpr, char *subexpr, uint16_t maxlen, int
             while (!found && *ept != '\0') {
                 switch (*ept) {
                     case '|':
-                        if (!inner)
+                        if (!inner) {
                             found = 1;
+                        }
                         break;
                     case '(':
                         inner++;
@@ -2491,19 +2639,22 @@ static int ac_special_altexpand(char *hexpr, char *subexpr, uint16_t maxlen, int
                 }
                 ept++;
             }
-            if (*ept == '|')
+            if (*ept == '|') {
                 ept++;
+            }
 
             sexpr = ept;
             *fp   = 0;
         } else if (term == '\0') {
-            if ((ret = ac_addspecial_add_alt_node(subexpr, sigopts, special, root)) != CL_SUCCESS)
+            if ((ret = ac_addspecial_add_alt_node(subexpr, sigopts, special, root)) != CL_SUCCESS) {
                 return ret;
+            }
             break;
         }
 
-        if (lvl != maxlvl)
+        if (lvl != maxlvl) {
             return CL_SUCCESS;
+        }
     }
     if (scnt != numexpr) {
         cli_errmsg("ac_addspecial: Mismatch in parsed and expected signature\n");
@@ -2573,11 +2724,13 @@ inline static int ac_special_altstr(const char *hexpr, uint8_t sigopts, struct c
             special->num++;
         }
         /* sorting byte alternates */
-        if (special->num > 1 && special->type == AC_SPECIAL_ALT_CHAR)
+        if (special->num > 1 && special->type == AC_SPECIAL_ALT_CHAR) {
             cli_qsort((special->alt).byte, special->num, sizeof(unsigned char), qcompare_byte);
+        }
         /* sorting str alternates */
-        if (special->num > 1 && special->type == AC_SPECIAL_ALT_STR_FIXED)
+        if (special->num > 1 && special->type == AC_SPECIAL_ALT_STR_FIXED) {
             cli_qsort_r((special->alt).f_str, special->num, sizeof(unsigned char *), qcompare_fstr, &(special->len));
+        }
     } else { /* generic alternates */
         char *subexpr;
         if (special->negative) {
@@ -2627,8 +2780,9 @@ cl_error_t cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
         return CL_EMALFDB;
     }
 
-    if ((new = (struct cli_ac_patt *)MPOOL_CALLOC(root->mempool, 1, sizeof(struct cli_ac_patt))) == NULL)
+    if ((new = (struct cli_ac_patt *)MPOOL_CALLOC(root->mempool, 1, sizeof(struct cli_ac_patt))) == NULL) {
         return CL_EMEM;
+    }
 
     new->rtype      = rtype;
     new->type       = type;
@@ -2655,8 +2809,9 @@ cl_error_t cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
         for (i = 0; i < 2; i++) {
             unsigned int n, n1, n2;
 
-            if (!(pt = strchr(hex, '[')))
+            if (!(pt = strchr(hex, '['))) {
                 break;
+            }
 
             *pt++ = 0;
 
@@ -2695,10 +2850,11 @@ cl_error_t cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
                     break;
                 }
 
-                if ((sigopts & ACPATT_OPTION_NOCASE) && ((*dec & CLI_MATCH_METADATA) == CLI_MATCH_CHAR))
+                if ((sigopts & ACPATT_OPTION_NOCASE) && ((*dec & CLI_MATCH_METADATA) == CLI_MATCH_CHAR)) {
                     new->ch[i] = CLI_NOCASE(*dec) | CLI_MATCH_NOCASE;
-                else
+                } else {
                     new->ch[i] = *dec;
+                }
                 free(dec);
                 new->ch_mindist[i] = n1;
                 new->ch_maxdist[i] = n2;
@@ -2711,10 +2867,11 @@ cl_error_t cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
                     break;
                 }
 
-                if ((sigopts & ACPATT_OPTION_NOCASE) && ((*dec & CLI_MATCH_METADATA) == CLI_MATCH_CHAR))
+                if ((sigopts & ACPATT_OPTION_NOCASE) && ((*dec & CLI_MATCH_METADATA) == CLI_MATCH_CHAR)) {
                     new->ch[i] = CLI_NOCASE(*dec) | CLI_MATCH_NOCASE;
-                else
+                } else {
                     new->ch[i] = *dec;
+                }
                 free(dec);
                 new->ch_mindist[i] = n1;
                 new->ch_maxdist[i] = n2;
@@ -2812,42 +2969,48 @@ cl_error_t cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
             if (!strcmp(pt, "B")) {
                 if (!*start) {
                     new->boundary |= AC_BOUNDARY_RIGHT;
-                    if (newspecial->negative)
+                    if (newspecial->negative) {
                         new->boundary |= AC_BOUNDARY_RIGHT_NEGATIVE;
+                    }
                     MPOOL_FREE(root->mempool, newspecial);
                     continue;
                 } else if (pt - 1 == hexcpy) {
                     new->boundary |= AC_BOUNDARY_LEFT;
-                    if (newspecial->negative)
+                    if (newspecial->negative) {
                         new->boundary |= AC_BOUNDARY_LEFT_NEGATIVE;
+                    }
                     MPOOL_FREE(root->mempool, newspecial);
                     continue;
                 }
             } else if (!strcmp(pt, "L")) {
                 if (!*start) {
                     new->boundary |= AC_LINE_MARKER_RIGHT;
-                    if (newspecial->negative)
+                    if (newspecial->negative) {
                         new->boundary |= AC_LINE_MARKER_RIGHT_NEGATIVE;
+                    }
                     MPOOL_FREE(root->mempool, newspecial);
                     continue;
                 } else if (pt - 1 == hexcpy) {
                     new->boundary |= AC_LINE_MARKER_LEFT;
-                    if (newspecial->negative)
+                    if (newspecial->negative) {
                         new->boundary |= AC_LINE_MARKER_LEFT_NEGATIVE;
+                    }
                     MPOOL_FREE(root->mempool, newspecial);
                     continue;
                 }
             } else if (!strcmp(pt, "W")) {
                 if (!*start) {
                     new->boundary |= AC_WORD_MARKER_RIGHT;
-                    if (newspecial->negative)
+                    if (newspecial->negative) {
                         new->boundary |= AC_WORD_MARKER_RIGHT_NEGATIVE;
+                    }
                     MPOOL_FREE(root->mempool, newspecial);
                     continue;
                 } else if (pt - 1 == hexcpy) {
                     new->boundary |= AC_WORD_MARKER_LEFT;
-                    if (newspecial->negative)
+                    if (newspecial->negative) {
                         new->boundary |= AC_WORD_MARKER_LEFT_NEGATIVE;
+                    }
                     MPOOL_FREE(root->mempool, newspecial);
                     continue;
                 }
@@ -2879,8 +3042,9 @@ cl_error_t cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
             }
         }
 
-        if (start)
+        if (start) {
             cli_strlcat(hexnew, start, hexnewsz);
+        }
 
         hex = hexnew;
         free(hexcpy);
@@ -2900,8 +3064,9 @@ cl_error_t cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
      */
     new->pattern = CLI_MPOOL_HEX2UI(root->mempool, hex ? hex : hexsig);
     if (new->pattern == NULL) {
-        if (new->special)
+        if (new->special) {
             mpool_ac_free_special(root->mempool, new);
+        }
 
         MPOOL_FREE(root->mempool, new);
         free(hex);
@@ -2911,8 +3076,9 @@ cl_error_t cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
     new->length[0] = (uint16_t)strlen(hex ? hex : hexsig) / 2;
     if (new->length[0] < root->ac_mindepth) {
         cli_errmsg("cli_ac_addsig: Subpattern in signature is shorter than the minimum depth of the AC trie. (%u < %u)\n", new->length[0], root->ac_mindepth);
-        if (new->special)
+        if (new->special) {
             mpool_ac_free_special(root->mempool, new);
+        }
 
         MPOOL_FREE(root->mempool, new->pattern);
         MPOOL_FREE(root->mempool, new);
@@ -2936,11 +3102,12 @@ cl_error_t cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
     new->sigopts = sigopts;
     /* setting nocase match */
     if (sigopts & ACPATT_OPTION_NOCASE) {
-        for (i = 0; i < new->length[0]; i++)
+        for (i = 0; i < new->length[0]; i++) {
             if ((new->pattern[i] & CLI_MATCH_METADATA) == CLI_MATCH_CHAR) {
                 new->pattern[i] = CLI_NOCASE(new->pattern[i] & 0xff);
                 new->pattern[i] += CLI_MATCH_NOCASE;
             }
+        }
     }
 
     /* TODO - sigopts affect on filters? */
@@ -3051,8 +3218,9 @@ cl_error_t cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
         // The "prefix" length is the number of bytes before the starting position of the pattern that goes in the AC Trie.
         new->prefix_length[0] = ppos;
         for (i = 0, j = 0; i < new->prefix_length[0]; i++) {
-            if ((new->prefix[i] & CLI_MATCH_WILDCARD) == CLI_MATCH_SPECIAL)
+            if ((new->prefix[i] & CLI_MATCH_WILDCARD) == CLI_MATCH_SPECIAL) {
                 new->special_pattern++;
+            }
 
             if ((new->prefix[i] & CLI_MATCH_METADATA) == CLI_MATCH_SPECIAL) {
                 new->prefix_length[1] += new->special_table[j]->len[0];

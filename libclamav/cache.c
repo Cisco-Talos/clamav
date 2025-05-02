@@ -92,8 +92,9 @@ static int cacheset_init(struct cache_set *cs, mpool_t *mempool, uint32_t nodes_
     cs->data = MPOOL_CALLOC(mempool, nodes_per_tree, sizeof(*cs->data));
     cs->root = NULL;
 
-    if (!cs->data)
+    if (!cs->data) {
         return 1;
+    }
 
     for (i = 1; i < nodes_per_tree; i++) {
         cs->data[i - 1].next = &cs->data[i];
@@ -120,12 +121,24 @@ static inline void cacheset_destroy(struct cache_set *cs, mpool_t *mempool)
 /* The left/right chooser for the splay tree */
 static inline int cmp(int64_t *a, ssize_t sa, int64_t *b, ssize_t sb)
 {
-    if (a[1] < b[1]) return -1;
-    if (a[1] > b[1]) return 1;
-    if (a[0] < b[0]) return -1;
-    if (a[0] > b[0]) return 1;
-    if (sa < sb) return -1;
-    if (sa > sb) return 1;
+    if (a[1] < b[1]) {
+        return -1;
+    }
+    if (a[1] > b[1]) {
+        return 1;
+    }
+    if (a[0] < b[0]) {
+        return -1;
+    }
+    if (a[0] > b[0]) {
+        return 1;
+    }
+    if (sa < sb) {
+        return -1;
+    }
+    if (sa > sb) {
+        return 1;
+    }
     return 0;
 }
 
@@ -270,36 +283,49 @@ static int splay(int64_t *md5, size_t len, struct cache_set *cs)
     struct node next = {{0, 0}, NULL, NULL, NULL, NULL, NULL, 0, 0}, *right = &next, *left = &next, *temp, *root = cs->root;
     int comp, found = 0;
 
-    if (!root)
+    if (!root) {
         return 0;
+    }
 
     while (1) {
         comp = cmp(md5, len, root->digest, root->size);
         if (comp < 0) {
-            if (!root->left) break;
+            if (!root->left) {
+                break;
+            }
             if (cmp(md5, len, root->left->digest, root->left->size) < 0) {
                 temp       = root->left;
                 root->left = temp->right;
-                if (temp->right) temp->right->up = root;
+                if (temp->right) {
+                    temp->right->up = root;
+                }
                 temp->right = root;
                 root->up    = temp;
                 root        = temp;
-                if (!root->left) break;
+                if (!root->left) {
+                    break;
+                }
             }
             right->left = root;
             root->up    = right;
             right       = root;
             root        = root->left;
         } else if (comp > 0) {
-            if (!root->right) break;
+            if (!root->right) {
+                break;
+            }
             if (cmp(md5, len, root->right->digest, root->right->size) > 0) {
                 temp        = root->right;
                 root->right = temp->left;
-                if (temp->left) temp->left->up = root;
+                if (temp->left) {
+                    temp->left->up = root;
+                }
                 temp->left = root;
                 root->up   = temp;
                 root       = temp;
-                if (!root->right) break;
+                if (!root->right) {
+                    break;
+                }
             }
             left->right = root;
             root->up    = left;
@@ -312,13 +338,21 @@ static int splay(int64_t *md5, size_t len, struct cache_set *cs)
     }
 
     left->right = root->left;
-    if (root->left) root->left->up = left;
+    if (root->left) {
+        root->left->up = left;
+    }
     right->left = root->right;
-    if (root->right) root->right->up = right;
+    if (root->right) {
+        root->right->up = right;
+    }
     root->left = next.right;
-    if (next.right) next.right->up = root;
+    if (next.right) {
+        next.right->up = root;
+    }
     root->right = next.left;
-    if (next.left) next.left->up = root;
+    if (next.left) {
+        next.left->up = root;
+    }
     root->up = NULL;
     cs->root = root;
     return found;
@@ -337,10 +371,11 @@ static inline int cacheset_lookup(struct cache_set *cs, unsigned char *md5, size
         printchain("before", cs);
 #endif
         if (q) {
-            if (o)
+            if (o) {
                 o->next = q;
-            else
+            } else {
                 cs->first = q;
+            }
             q->prev        = o;
             cs->last->next = p;
             p->prev        = cs->last;
@@ -358,8 +393,9 @@ static inline int cacheset_lookup(struct cache_set *cs, unsigned char *md5, size
         //      ├── file1 -> file2 -> file3 -> file4 -> file5
         //      └── file3 -> file4 -> file5
         // See: https://bugzilla.clamav.net/show_bug.cgi?id=1856
-        if (recursion_level >= p->minrec)
+        if (recursion_level >= p->minrec) {
             return 1;
+        }
     }
     return 0;
 }
@@ -374,8 +410,9 @@ static inline const char *cacheset_add(struct cache_set *cs, unsigned char *md5,
 
     memcpy(hash, md5, 16);
     if (splay(hash, size, cs)) {
-        if (cs->root->minrec > recursion_level)
+        if (cs->root->minrec > recursion_level) {
             cs->root->minrec = recursion_level;
+        }
         return NULL; /* Already there */
     }
 
@@ -386,8 +423,9 @@ static inline const char *cacheset_add(struct cache_set *cs, unsigned char *md5,
 
     newnode = cs->first;
     while (newnode) {
-        if (!newnode->right && !newnode->left)
+        if (!newnode->right && !newnode->left) {
             break;
+        }
         if (newnode->next) {
             if (newnode == newnode->next) {
                 return "cacheset_add: cache chain in a bad state";
@@ -401,17 +439,21 @@ static inline const char *cacheset_add(struct cache_set *cs, unsigned char *md5,
         return "cacheset_add: tree has got no end nodes";
     }
     if (newnode->up) {
-        if (newnode->up->left == newnode)
+        if (newnode->up->left == newnode) {
             newnode->up->left = NULL;
-        else
+        } else {
             newnode->up->right = NULL;
+        }
     }
-    if (newnode->prev)
+    if (newnode->prev) {
         newnode->prev->next = newnode->next;
-    if (newnode->next)
+    }
+    if (newnode->next) {
         newnode->next->prev = newnode->prev;
-    if (cs->first == newnode)
+    }
+    if (cs->first == newnode) {
         cs->first = newnode->next;
+    }
 
     newnode->prev  = cs->last;
     newnode->next  = NULL;
@@ -436,8 +478,12 @@ static inline const char *cacheset_add(struct cache_set *cs, unsigned char *md5,
             newnode->left   = cs->root;
             cs->root->right = NULL;
         }
-        if (newnode->left) newnode->left->up = newnode;
-        if (newnode->right) newnode->right->up = newnode;
+        if (newnode->left) {
+            newnode->left->up = newnode;
+        }
+        if (newnode->right) {
+            newnode->right->up = newnode;
+        }
     }
     newnode->digest[0] = hash[0];
     newnode->digest[1] = hash[1];
@@ -477,8 +523,9 @@ static inline void cacheset_remove(struct cache_set *cs, unsigned char *md5, siz
     if (targetnode->left == NULL) {
         /* At left edge so prune */
         cs->root = targetnode->right;
-        if (cs->root)
+        if (cs->root) {
             cs->root->up = NULL;
+        }
     } else {
         /* new root will come from leftside tree */
         cs->root     = targetnode->left;
@@ -489,8 +536,9 @@ static inline void cacheset_remove(struct cache_set *cs, unsigned char *md5, siz
         if (targetnode->right) {
             /* reattach right tree to clean right-side attach point */
             reattachnode = cs->root;
-            while (reattachnode->right)
+            while (reattachnode->right) {
                 reattachnode = reattachnode->right; /* shouldn't happen, but safer in case of dupe */
+            }
             reattachnode->right   = targetnode->right;
             targetnode->right->up = reattachnode;
         }
@@ -503,18 +551,22 @@ static inline void cacheset_remove(struct cache_set *cs, unsigned char *md5, siz
     targetnode->right     = NULL;
 
     /* Tree is fixed, so now fix chain around targetnode */
-    if (targetnode->prev)
+    if (targetnode->prev) {
         targetnode->prev->next = targetnode->next;
-    if (targetnode->next)
+    }
+    if (targetnode->next) {
         targetnode->next->prev = targetnode->prev;
-    if (cs->last == targetnode)
+    }
+    if (cs->last == targetnode) {
         cs->last = targetnode->prev;
+    }
 
     /* Put targetnode at front of chain, if not there already */
     if (cs->first != targetnode) {
         targetnode->next = cs->first;
-        if (cs->first)
+        if (cs->first) {
             cs->first->prev = targetnode;
+        }
         cs->first = targetnode;
     }
     targetnode->prev = NULL;
@@ -594,16 +646,24 @@ int clean_cache_init(struct cl_engine *engine)
 #ifdef CL_THREAD_SAFE
         if (pthread_mutex_init(&cache[i].mutex, NULL)) {
             cli_errmsg("clean_cache_init: mutex init fail\n");
-            for (j = 0; j < i; j++) cacheset_destroy(&cache[j].cacheset, engine->mempool);
-            for (j = 0; j < i; j++) pthread_mutex_destroy(&cache[j].mutex);
+            for (j = 0; j < i; j++) {
+                cacheset_destroy(&cache[j].cacheset, engine->mempool);
+            }
+            for (j = 0; j < i; j++) {
+                pthread_mutex_destroy(&cache[j].mutex);
+            }
             MPOOL_FREE(engine->mempool, cache);
             return 1;
         }
 #endif
         if (cacheset_init(&cache[i].cacheset, engine->mempool, cache->nodes_per_tree)) {
-            for (j = 0; j < i; j++) cacheset_destroy(&cache[j].cacheset, engine->mempool);
+            for (j = 0; j < i; j++) {
+                cacheset_destroy(&cache[j].cacheset, engine->mempool);
+            }
 #ifdef CL_THREAD_SAFE
-            for (j = 0; j <= i; j++) pthread_mutex_destroy(&cache[j].mutex);
+            for (j = 0; j <= i; j++) {
+                pthread_mutex_destroy(&cache[j].mutex);
+            }
 #endif
             MPOOL_FREE(engine->mempool, cache);
             return 1;
@@ -618,8 +678,9 @@ void clean_cache_destroy(struct cl_engine *engine)
     struct CACHE *cache;
     unsigned int i;
 
-    if (!engine || !(cache = engine->cache))
+    if (!engine || !(cache = engine->cache)) {
         return;
+    }
 
     if (engine->engine_options & ENGINE_OPTIONS_DISABLE_CACHE) {
         return;
@@ -642,8 +703,9 @@ void clean_cache_add(unsigned char *md5, size_t size, cli_ctx *ctx)
     uint32_t level;
     struct CACHE *c;
 
-    if (!ctx || !ctx->engine || !ctx->engine->cache)
+    if (!ctx || !ctx->engine || !ctx->engine->cache) {
         return;
+    }
 
     if (ctx->engine->engine_options & ENGINE_OPTIONS_DISABLE_CACHE) {
         cli_dbgmsg("clean_cache_add: Caching disabled. Not adding sample to cache.\n");
@@ -706,8 +768,9 @@ void clean_cache_remove(unsigned char *md5, size_t size, const struct cl_engine 
     unsigned int key = 0;
     struct CACHE *c;
 
-    if (!engine || !engine->cache)
+    if (!engine || !engine->cache) {
         return;
+    }
 
     if (engine->engine_options & ENGINE_OPTIONS_DISABLE_CACHE) {
         cli_dbgmsg("clean_cache_remove: Caching disabled.\n");
@@ -742,8 +805,9 @@ cl_error_t clean_cache_check(unsigned char *md5, size_t size, cli_ctx *ctx)
 {
     int ret;
 
-    if (!ctx || !ctx->engine || !ctx->engine->cache)
+    if (!ctx || !ctx->engine || !ctx->engine->cache) {
         return CL_VIRUS;
+    }
 
     if (SCAN_COLLECT_METADATA) {
         // Don't cache when using the "collect metadata" feature.

@@ -44,8 +44,9 @@ struct openioc_hash {
 static const xmlChar *openioc_read(xmlTextReaderPtr reader)
 {
     const xmlChar *name;
-    if (xmlTextReaderRead(reader) != 1)
+    if (xmlTextReaderRead(reader) != 1) {
         return NULL;
+    }
     name = xmlTextReaderConstLocalName(reader);
     if (name != NULL) {
         cli_dbgmsg("openioc_parse: xmlTextReaderRead read %s%s\n", name,
@@ -64,12 +65,15 @@ static int openioc_is_context_hash(xmlTextReaderPtr reader)
         !xmlStrcmp(document, (const xmlChar *)"FileItem") &&
         (!xmlStrcmp(search, (const xmlChar *)"FileItem/Md5sum") ||
          !xmlStrcmp(search, (const xmlChar *)"FileItem/Sha1sum") ||
-         !xmlStrcmp(search, (const xmlChar *)"FileItem/Sha256sum")))
+         !xmlStrcmp(search, (const xmlChar *)"FileItem/Sha256sum"))) {
         rc = 1;
-    if (document != NULL)
+    }
+    if (document != NULL) {
         xmlFree(document);
-    if (search != NULL)
+    }
+    if (search != NULL) {
         xmlFree(search);
+    }
     return rc;
 }
 
@@ -124,8 +128,9 @@ static int openioc_parse_indicatoritem(xmlTextReaderPtr reader, struct openioc_h
 
     while (1) {
         name = openioc_read(reader);
-        if (name == NULL)
+        if (name == NULL) {
             break;
+        }
         if (xmlStrEqual(name, (const xmlChar *)"Context") &&
             xmlTextReaderNodeType(reader) == XML_READER_TYPE_ELEMENT) {
             context_hash = openioc_is_context_hash(reader);
@@ -150,8 +155,9 @@ static int openioc_parse_indicator(xmlTextReaderPtr reader, struct openioc_hash 
 
     while (1) {
         name = openioc_read(reader);
-        if (name == NULL)
+        if (name == NULL) {
             return rc;
+        }
         if (xmlStrEqual(name, (const xmlChar *)"Indicator") &&
             xmlTextReaderNodeType(reader) == XML_READER_TYPE_ELEMENT) {
             rc = openioc_parse_indicator(reader, elems);
@@ -184,11 +190,13 @@ int openioc_parse(const char *fname, int fd, struct cl_engine *engine, unsigned 
     char *virusname;
     int hash_count = 0;
 
-    if (fname == NULL)
+    if (fname == NULL) {
         return CL_ENULLARG;
+    }
 
-    if (fd < 0)
+    if (fd < 0) {
         return CL_EARG;
+    }
 
     cli_dbgmsg("openioc_parse: XML parsing file %s\n", fname);
 
@@ -219,10 +227,11 @@ int openioc_parse(const char *fname, int fd, struct cl_engine *engine, unsigned 
 
     iocp = strrchr(fname, *PATHSEP);
 
-    if (NULL == iocp)
+    if (NULL == iocp) {
         iocp = fname;
-    else
+    } else {
         iocp++;
+    }
 
     ioclen = (uint16_t)strlen(fname);
 
@@ -248,8 +257,9 @@ int openioc_parse(const char *fname, int fd, struct cl_engine *engine, unsigned 
         elem  = elems;
         elems = elems->next;
         hash  = (char *)(elem->hash);
-        while (isspace(*hash))
+        while (isspace(*hash)) {
             hash++;
+        }
         hashlen = strlen(hash);
         if (hashlen == 0) {
             xmlFree(elem->hash);
@@ -285,10 +295,11 @@ int openioc_parse(const char *fname, int fd, struct cl_engine *engine, unsigned 
                     *vp = '_';
                     break;
                 default:
-                    if (isspace(*sp))
+                    if (isspace(*sp)) {
                         *vp = '_';
-                    else
+                    } else {
                         *vp = *sp;
+                    }
             }
         }
         *vp++ = '.';
@@ -312,21 +323,23 @@ int openioc_parse(const char *fname, int fd, struct cl_engine *engine, unsigned 
         free(vp);
 
         rc = hm_addhash_str(engine->hm_hdb, hash, 0, virusname);
-        if (rc != CL_SUCCESS)
+        if (rc != CL_SUCCESS) {
             cli_dbgmsg("openioc_parse: hm_addhash_str failed with %i hash len %i for %s.\n",
                        rc, hashlen, virusname);
-        else
+        } else {
             hash_count++;
+        }
 
         xmlFree(elem->hash);
         free(elem);
     }
 
-    if (hash_count == 0)
+    if (hash_count == 0) {
         cli_warnmsg("openioc_parse: No hash signatures extracted from %s.\n", fname);
-    else
+    } else {
         cli_dbgmsg("openioc_parse: %i hash signature%s extracted from %s.\n",
                    hash_count, hash_count == 1 ? "" : "s", fname);
+    }
 
     xmlTextReaderClose(reader);
     xmlFreeTextReader(reader);

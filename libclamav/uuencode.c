@@ -88,8 +88,9 @@ int uudecodeFile(message *m, const char *firstline, const char *dir, fmap_t *map
     char buffer[RFC2821LENGTH + 1];
     char *filename = cli_strtok(firstline, 2, " ");
 
-    if (filename == NULL)
+    if (filename == NULL) {
         return -1;
+    }
 
     fb = fileblobCreate();
     if (fb == NULL) {
@@ -107,21 +108,26 @@ int uudecodeFile(message *m, const char *firstline, const char *dir, fmap_t *map
         size_t len;
 
         cli_chomp(buffer);
-        if (strcasecmp(buffer, "end") == 0)
+        if (strcasecmp(buffer, "end") == 0) {
             break;
-        if (buffer[0] == '\0')
+        }
+        if (buffer[0] == '\0') {
             break;
+        }
 
         uptr = decodeLine(m, UUENCODE, buffer, data, sizeof(data));
-        if (uptr == NULL)
+        if (uptr == NULL) {
             break;
+        }
 
         len = (size_t)(uptr - data);
-        if ((len > 62) || (len == 0))
+        if ((len > 62) || (len == 0)) {
             break;
+        }
 
-        if (fileblobAddData(fb, data, len) < 0)
+        if (fileblobAddData(fb, data, len) < 0) {
             break;
+        }
     }
 
     fileblobDestroy(fb);

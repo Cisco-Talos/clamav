@@ -85,9 +85,11 @@ static int td_isascii(const unsigned char *buf, unsigned int len)
     /* Validate that the data all falls within the bounds of
      * plain ASCII, ISO-8859 text, and non-ISO extended ASCII (Mac, IBM PC)
      */
-    for (i = 0; i < len; i++)
-        if (text_chars[buf[i]] == F)
+    for (i = 0; i < len; i++) {
+        if (text_chars[buf[i]] == F) {
             return 0;
+        }
+    }
 
     return 1;
 }
@@ -102,8 +104,9 @@ static int td_isutf8(const unsigned char *buf, unsigned int len)
              * Even if the whole file is valid UTF-8 sequences,
              * still reject it if it uses weird control characters.
              */
-            if (text_chars[buf[i]] != T)
+            if (text_chars[buf[i]] != T) {
                 return 0;
+            }
 
         } else if ((buf[i] & 0x40) == 0) { /* 10xxxxxx never 1st byte */
             return 0;
@@ -130,11 +133,13 @@ static int td_isutf8(const unsigned char *buf, unsigned int len)
             }
 
             for (j = 0; j < following; j++) {
-                if (++i >= len)
+                if (++i >= len) {
                     return gotone;
+                }
 
-                if ((buf[i] & 0x80) == 0 || (buf[i] & 0x40))
+                if ((buf[i] & 0x80) == 0 || (buf[i] & 0x40)) {
                     return 0;
+                }
 
                 /* c = (c << 6) + (buf[i] & 0x3f); */
             }
@@ -150,30 +155,35 @@ static int td_isutf16(const unsigned char *buf, unsigned int len)
 {
     unsigned int be = 1, nobom = 0, i, c, bad = 0, high = 0;
 
-    if (len < 2)
+    if (len < 2) {
         return 0;
+    }
 
-    if (buf[0] == 0xff && buf[1] == 0xfe)
+    if (buf[0] == 0xff && buf[1] == 0xfe) {
         be = 0;
-    else if (buf[0] == 0xfe && buf[1] == 0xff)
+    } else if (buf[0] == 0xfe && buf[1] == 0xff) {
         be = 1;
-    else
+    } else {
         nobom = 1;
+    }
 
     for (i = 2; i + 1 < len; i += 2) {
-        if (be)
+        if (be) {
             c = buf[i + 1] + 256 * buf[i];
-        else
+        } else {
             c = buf[i] + 256 * buf[i + 1];
+        }
 
-        if (c == 0xfffe)
+        if (c == 0xfffe) {
             return 0;
+        }
 
         if (c < 128 && text_chars[c] != T) {
-            if (nobom)
+            if (nobom) {
                 return 0;
-            else
+            } else {
                 bad++;
+            }
         } else if (c >= 128) {
             high++;
         }
@@ -182,8 +192,9 @@ static int td_isutf16(const unsigned char *buf, unsigned int len)
     //   if (nobom && high >= len / 4)
     //        return 0;
 
-    if (!nobom && bad >= len / 2)
+    if (!nobom && bad >= len / 2) {
         return 0;
+    }
 
     return 1 + be;
 }

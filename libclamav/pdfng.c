@@ -87,8 +87,9 @@ char *pdf_convert_utf(char *begin, size_t sz)
 #endif
 
     buf = cli_max_calloc(1, sz + 1);
-    if (!(buf))
+    if (!(buf)) {
         return NULL;
+    }
     memcpy(buf, begin, sz);
 
 #if HAVE_ICONV
@@ -159,66 +160,81 @@ int is_object_reference(char *begin, char **endchar, uint32_t *id)
      */
 
     /* Skip whitespace */
-    while (p1 < end && isspace(p1[0]))
+    while (p1 < end && isspace(p1[0])) {
         p1++;
+    }
 
-    if (p1 == end)
+    if (p1 == end) {
         return 0;
+    }
 
-    if (!isdigit(p1[0]))
+    if (!isdigit(p1[0])) {
         return 0;
+    }
 
     /* Ensure strtoul() isn't going to go past our buffer */
     p2 = p1 + 1;
-    while (p2 < end && !isspace(p2[0]))
+    while (p2 < end && !isspace(p2[0])) {
         p2++;
+    }
 
-    if (p2 == end)
+    if (p2 == end) {
         return 0;
+    }
 
     n = strtoul(p1, &p2, 10);
-    if (n == ULONG_MAX && errno)
+    if (n == ULONG_MAX && errno) {
         return 0;
+    }
 
     t = n << 8;
 
     /* Skip more whitespace */
     p1 = p2;
-    while (p1 < end && isspace(p1[0]))
+    while (p1 < end && isspace(p1[0])) {
         p1++;
+    }
 
-    if (p1 == end)
+    if (p1 == end) {
         return 0;
+    }
 
-    if (!isdigit(p1[0]))
+    if (!isdigit(p1[0])) {
         return 0;
+    }
 
     /* Ensure strtoul() is going to go past our buffer */
     p2 = p1 + 1;
-    while (p2 < end && !isspace(p2[0]))
+    while (p2 < end && !isspace(p2[0])) {
         p2++;
+    }
 
-    if (p2 == end)
+    if (p2 == end) {
         return 0;
+    }
 
     n = strtoul(p1, &p2, 10);
-    if (n == ULONG_MAX && errno)
+    if (n == ULONG_MAX && errno) {
         return 0;
+    }
 
     t |= (n & 0xff);
 
     /* Skip even more whitespace */
     p1 = p2;
-    while (p1 < end && isspace(p1[0]))
+    while (p1 < end && isspace(p1[0])) {
         p1++;
+    }
 
-    if (p1 == end)
+    if (p1 == end) {
         return 0;
+    }
 
     if (p1[0] == 'R') {
         *endchar = p1 + 1;
-        if (id)
+        if (id) {
             *id = t;
+        }
 
         return 1;
     }
@@ -307,13 +323,15 @@ char *pdf_finalize_string(struct pdf_struct *pdf, struct pdf_obj *obj, const cha
     size_t wrklen          = len, outlen, i;
     unsigned int likelyutf = 0;
 
-    if (!in)
+    if (!in) {
         return NULL;
+    }
 
     /* get a working copy */
     wrkstr = cli_max_calloc(len + 1, sizeof(char));
-    if (!wrkstr)
+    if (!wrkstr) {
         return NULL;
+    }
     memcpy(wrkstr, in, len);
 
     // cli_errmsg("pdf_final: start(%d):   %s\n", wrklen, wrkstr);
@@ -341,8 +359,9 @@ char *pdf_finalize_string(struct pdf_struct *pdf, struct pdf_obj *obj, const cha
 
                     value = (char)strtoul(octal, &check, 8);
                     /* check if all characters were converted */
-                    if (check == &octal[3])
+                    if (check == &octal[3]) {
                         output[outlen++] = value;
+                    }
                     i += 3; /* 4 with for loop [\ddd] */
                 } else {
                     /* other sequences */
@@ -476,26 +495,32 @@ char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *
     if (str) {
         checklen = strlen(str);
 
-        if (objsize < strlen(str) + 3)
+        if (objsize < strlen(str) + 3) {
             return NULL;
+        }
 
-        for (p1 = (char *)q; (size_t)(p1 - q) < objsize - checklen; p1++)
-            if (!strncmp(p1, str, checklen))
+        for (p1 = (char *)q; (size_t)(p1 - q) < objsize - checklen; p1++) {
+            if (!strncmp(p1, str, checklen)) {
                 break;
+            }
+        }
 
-        if ((size_t)(p1 - q) == objsize - checklen)
+        if ((size_t)(p1 - q) == objsize - checklen) {
             return NULL;
+        }
 
         p1 += checklen;
     } else {
         p1 = (char *)q;
     }
 
-    while ((size_t)(p1 - q) < objsize && isspace(p1[0]))
+    while ((size_t)(p1 - q) < objsize && isspace(p1[0])) {
         p1++;
+    }
 
-    if ((size_t)(p1 - q) == objsize)
+    if ((size_t)(p1 - q) == objsize) {
         return NULL;
+    }
 
     /*
      * If str is non-null:
@@ -515,23 +540,26 @@ char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *
         size_t objsize2;
 
         newobj = find_obj(pdf, obj, objid);
-        if (!(newobj))
+        if (!(newobj)) {
             return NULL;
+        }
 
         if (!CLI_ISCONTAINED(pdf->map, pdf->size, newobj->start, newobj->size)) {
             cli_dbgmsg("pdf_parse_string: object not contained in PDF\n");
             return NULL;
         }
 
-        if (newobj == obj)
+        if (newobj == obj) {
             return NULL;
+        }
 
         /*
          * If pdf_handlename hasn't been called for this object,
          * then parse the object prior to extracting it
          */
-        if (!(newobj->statsflags & OBJ_FLAG_PDFNAME_DONE))
+        if (!(newobj->statsflags & OBJ_FLAG_PDFNAME_DONE)) {
             pdf_parseobj(pdf, newobj);
+        }
 
         /* Extract the object. Force pdf_extract_obj() to dump this object. */
         objflags = newobj->flags;
@@ -546,8 +574,9 @@ char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *
 
         newobj->flags = objflags;
 
-        if (!(newobj->path))
+        if (!(newobj->path)) {
             return NULL;
+        }
 
         fd = open(newobj->path, O_RDONLY | O_BINARY);
         if (fd == -1) {
@@ -632,8 +661,9 @@ char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *
         free(newobj->path);
         newobj->path = NULL;
 
-        if (endchar)
+        if (endchar) {
             *endchar = p2;
+        }
 
         return res;
     }
@@ -642,8 +672,9 @@ char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *
         /* Hex string */
 
         p2 = p1 + 1;
-        while ((size_t)(p2 - objstart) < objsize && *p2 != '>')
+        while ((size_t)(p2 - objstart) < objsize && *p2 != '>') {
             p2++;
+        }
 
         if ((size_t)(p2 - objstart) == objsize) {
             return NULL;
@@ -652,8 +683,9 @@ char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *
         res = pdf_finalize_string(pdf, obj, p1, (p2 - p1) + 1);
         if (!res) {
             res = cli_max_calloc(1, (p2 - p1) + 2);
-            if (!(res))
+            if (!(res)) {
                 return NULL;
+            }
             memcpy(res, p1, (p2 - p1) + 1);
             res[(p2 - p1) + 1] = '\0';
 
@@ -668,15 +700,17 @@ char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *
             meta->success = 1;
         }
 
-        if (res && endchar)
+        if (res && endchar) {
             *endchar = p2;
+        }
 
         return res;
     }
 
     /* We should be at the start of a string literal (...) here */
-    if (*p1 != '(')
+    if (*p1 != '(') {
         return NULL;
+    }
 
     /* Make a best effort to find the end of the string and determine if UTF-* */
     p2 = ++p1;
@@ -701,16 +735,18 @@ char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *
         p2++;
     }
 
-    if (p2 >= objstart + objsize)
+    if (p2 >= objstart + objsize) {
         return NULL;
+    }
 
     len = (size_t)(p2 - p1) + 1;
 
     res = pdf_finalize_string(pdf, obj, p1, len);
     if (!res) {
         res = cli_max_calloc(1, len + 1);
-        if (!(res))
+        if (!(res)) {
             return NULL;
+        }
         memcpy(res, p1, len);
         res[len] = '\0';
 
@@ -725,8 +761,9 @@ char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *
         meta->success = 1;
     }
 
-    if (res && endchar)
+    if (res && endchar) {
         *endchar = p2;
+    }
 
     return res;
 }
@@ -740,8 +777,9 @@ struct pdf_dict *pdf_parse_dict(struct pdf_struct *pdf, struct pdf_obj *obj, siz
     unsigned int in_string = 0, ninner = 0;
 
     /* Sanity checking */
-    if (!(pdf) || !(obj) || !(begin))
+    if (!(pdf) || !(obj) || !(begin)) {
         return NULL;
+    }
 
     if (PDF_OBJECT_RECURSION_LIMIT < pdf->parse_recursion_depth) {
         cli_dbgmsg("pdf_parse_dict: Recursion limit reached\n");
@@ -751,11 +789,13 @@ struct pdf_dict *pdf_parse_dict(struct pdf_struct *pdf, struct pdf_obj *obj, siz
     objstart = (obj->objstm) ? (const char *)(obj->start + obj->objstm->streambuf)
                              : (const char *)(obj->start + pdf->map);
 
-    if (begin < objstart || (size_t)(begin - objstart) >= objsize - 2)
+    if (begin < objstart || (size_t)(begin - objstart) >= objsize - 2) {
         return NULL;
+    }
 
-    if (begin[0] != '<' || begin[1] != '<')
+    if (begin[0] != '<' || begin[1] != '<') {
         return NULL;
+    }
 
     /* Find the end of the dictionary */
     end = begin;
@@ -767,8 +807,9 @@ struct pdf_dict *pdf_parse_dict(struct pdf_struct *pdf, struct pdf_obj *obj, siz
                 continue;
             }
 
-            if (*end == ')')
+            if (*end == ')') {
                 in_string = 0;
+            }
 
             end++;
             continue;
@@ -779,34 +820,41 @@ struct pdf_dict *pdf_parse_dict(struct pdf_struct *pdf, struct pdf_obj *obj, siz
                 in_string = 1;
                 break;
             case '<':
-                if ((size_t)(end - objstart) <= objsize - 2 && end[1] == '<')
+                if ((size_t)(end - objstart) <= objsize - 2 && end[1] == '<') {
                     ninner++;
+                }
                 increment = 2;
                 break;
             case '>':
-                if ((size_t)(end - objstart) <= objsize - 2 && end[1] == '>')
+                if ((size_t)(end - objstart) <= objsize - 2 && end[1] == '>') {
                     ninner--;
+                }
                 increment = 2;
                 break;
         }
 
-        if ((size_t)(end - objstart) <= objsize - 2)
-            if (end[0] == '>' && end[1] == '>' && ninner == 0)
+        if ((size_t)(end - objstart) <= objsize - 2) {
+            if (end[0] == '>' && end[1] == '>' && ninner == 0) {
                 break;
+            }
+        }
 
         end += increment;
     }
 
     /* More sanity checking */
-    if ((size_t)(end - objstart) >= objsize - 2)
+    if ((size_t)(end - objstart) >= objsize - 2) {
         return NULL;
+    }
 
-    if (end[0] != '>' || end[1] != '>')
+    if (end[0] != '>' || end[1] != '>') {
         return NULL;
+    }
 
     res = calloc(1, sizeof(struct pdf_dict));
-    if (!(res))
+    if (!(res)) {
         return NULL;
+    }
 
     /* Loop through each element of the dictionary */
     begin += 2;
@@ -817,11 +865,13 @@ struct pdf_dict *pdf_parse_dict(struct pdf_struct *pdf, struct pdf_obj *obj, siz
         unsigned int nhex     = 0, i;
 
         /* Skip any whitespaces */
-        while (begin < end && isspace(begin[0]))
+        while (begin < end && isspace(begin[0])) {
             begin++;
+        }
 
-        if (begin == end)
+        if (begin == end) {
             break;
+        }
 
         /* Get the key */
         p1 = begin + 1;
@@ -852,18 +902,21 @@ struct pdf_dict *pdf_parse_dict(struct pdf_struct *pdf, struct pdf_obj *obj, siz
                     break;
             }
 
-            if (breakout)
+            if (breakout) {
                 break;
+            }
 
             p1++;
         }
 
-        if (p1 == end)
+        if (p1 == end) {
             break;
+        }
 
         key = cli_max_calloc((p1 - begin) + 2, 1);
-        if (!(key))
+        if (!(key)) {
             break;
+        }
 
         if (nhex == 0) {
             /* Key isn't obfuscated with hex. Just copy the string */
@@ -884,8 +937,9 @@ struct pdf_dict *pdf_parse_dict(struct pdf_struct *pdf, struct pdf_obj *obj, siz
         begin = p1;
 
         /* Skip any whitespaces */
-        while (begin < end && isspace(begin[0]))
+        while (begin < end && isspace(begin[0])) {
             begin++;
+        }
 
         if (begin == end) {
             free(key);
@@ -932,8 +986,9 @@ struct pdf_dict *pdf_parse_dict(struct pdf_struct *pdf, struct pdf_obj *obj, siz
                             break;
                     }
 
-                    if (shouldbreak)
+                    if (shouldbreak) {
                         break;
+                    }
 
                     p1++;
                 }
@@ -941,16 +996,18 @@ struct pdf_dict *pdf_parse_dict(struct pdf_struct *pdf, struct pdf_obj *obj, siz
                 is_object_reference(begin, &p1, NULL);
 
                 val = cli_max_calloc((p1 - begin) + 2, 1);
-                if (!(val))
+                if (!(val)) {
                     break;
+                }
 
                 strncpy(val, begin, p1 - begin);
                 val[p1 - begin] = '\0';
 
-                if (p1[0] != '/')
+                if (p1[0] != '/') {
                     begin = p1 + 1;
-                else
+                } else {
                     begin = p1;
+                }
 
                 break;
         }
@@ -964,30 +1021,37 @@ struct pdf_dict *pdf_parse_dict(struct pdf_struct *pdf, struct pdf_obj *obj, siz
             res->nodes = res->tail = node = calloc(1, sizeof(struct pdf_dict_node));
             if (!(node)) {
                 free(key);
-                if (dict)
+                if (dict) {
                     pdf_free_dict(dict);
-                if (val)
+                }
+                if (val) {
                     free(val);
-                if (arr)
+                }
+                if (arr) {
                     pdf_free_array(arr);
+                }
                 break;
             }
         } else {
             node = calloc(1, sizeof(struct pdf_dict_node));
             if (!(node)) {
                 free(key);
-                if (dict)
+                if (dict) {
                     pdf_free_dict(dict);
-                if (val)
+                }
+                if (val) {
                     free(val);
-                if (arr)
+                }
+                if (arr) {
                     pdf_free_array(arr);
+                }
                 break;
             }
 
             node->prev = res->tail;
-            if (res->tail)
+            if (res->tail) {
                 res->tail->next = node;
+            }
             res->tail = node;
         }
 
@@ -1007,8 +1071,9 @@ struct pdf_dict *pdf_parse_dict(struct pdf_struct *pdf, struct pdf_obj *obj, siz
         }
     }
 
-    if (endchar)
+    if (endchar) {
         *endchar = end;
+    }
 
     return res;
 }
@@ -1022,8 +1087,9 @@ struct pdf_array *pdf_parse_array(struct pdf_struct *pdf, struct pdf_obj *obj, s
     int in_string = 0, ninner = 0;
 
     /* Sanity checking */
-    if (!(pdf) || !(obj) || !(begin))
+    if (!(pdf) || !(obj) || !(begin)) {
         return NULL;
+    }
 
     if (PDF_OBJECT_RECURSION_LIMIT < pdf->parse_recursion_depth) {
         cli_dbgmsg("pdf_parse_array: Recursion limit reached\n");
@@ -1033,11 +1099,13 @@ struct pdf_array *pdf_parse_array(struct pdf_struct *pdf, struct pdf_obj *obj, s
     objstart = (obj->objstm) ? (const char *)(obj->start + obj->objstm->streambuf)
                              : (const char *)(obj->start + pdf->map);
 
-    if (begin < objstart || (size_t)(begin - objstart) >= objsize)
+    if (begin < objstart || (size_t)(begin - objstart) >= objsize) {
         return NULL;
+    }
 
-    if (begin[0] != '[')
+    if (begin[0] != '[') {
         return NULL;
+    }
 
     /* Find the end of the array */
     end = begin;
@@ -1048,8 +1116,9 @@ struct pdf_array *pdf_parse_array(struct pdf_struct *pdf, struct pdf_obj *obj, s
                 continue;
             }
 
-            if (*end == ')')
+            if (*end == ')') {
                 in_string = 0;
+            }
 
             end++;
             continue;
@@ -1067,22 +1136,26 @@ struct pdf_array *pdf_parse_array(struct pdf_struct *pdf, struct pdf_obj *obj, s
                 break;
         }
 
-        if (*end == ']' && ninner == 0)
+        if (*end == ']' && ninner == 0) {
             break;
+        }
 
         end++;
     }
 
     /* More sanity checking */
-    if ((size_t)(end - objstart) >= objsize)
+    if ((size_t)(end - objstart) >= objsize) {
         return NULL;
+    }
 
-    if (*end != ']')
+    if (*end != ']') {
         return NULL;
+    }
 
     res = calloc(1, sizeof(struct pdf_array));
-    if (!(res))
+    if (!(res)) {
         return NULL;
+    }
 
     begin++;
     while (begin < end) {
@@ -1090,11 +1163,13 @@ struct pdf_array *pdf_parse_array(struct pdf_struct *pdf, struct pdf_obj *obj, s
         struct pdf_array *arr = NULL;
         struct pdf_dict *dict = NULL;
 
-        while (begin < end && isspace(begin[0]))
+        while (begin < end && isspace(begin[0])) {
             begin++;
+        }
 
-        if (begin == end)
+        if (begin == end) {
             break;
+        }
 
         switch (begin[0]) {
             case '<':
@@ -1124,13 +1199,15 @@ struct pdf_array *pdf_parse_array(struct pdf_struct *pdf, struct pdf_obj *obj, s
                 p1 = end;
                 if (!is_object_reference(begin, &p1, NULL)) {
                     p1 = begin + 1;
-                    while (p1 < end && !isspace(p1[0]))
+                    while (p1 < end && !isspace(p1[0])) {
                         p1++;
+                    }
                 }
 
                 val = cli_max_calloc((p1 - begin) + 2, 1);
-                if (!(val))
+                if (!(val)) {
                     break;
+                }
 
                 strncpy(val, begin, p1 - begin);
                 val[p1 - begin] = '\0';
@@ -1140,37 +1217,45 @@ struct pdf_array *pdf_parse_array(struct pdf_struct *pdf, struct pdf_obj *obj, s
         }
 
         /* Parse error, just return what we could */
-        if (!(val) && !(arr) && !(dict))
+        if (!(val) && !(arr) && !(dict)) {
             break;
+        }
 
         if (!(node)) {
             res->nodes = res->tail = node = calloc(1, sizeof(struct pdf_array_node));
             if (!(node)) {
-                if (dict)
+                if (dict) {
                     pdf_free_dict(dict);
-                if (val)
+                }
+                if (val) {
                     free(val);
-                if (arr)
+                }
+                if (arr) {
                     pdf_free_array(arr);
+                }
 
                 break;
             }
         } else {
             node = calloc(1, sizeof(struct pdf_array_node));
             if (!(node)) {
-                if (dict)
+                if (dict) {
                     pdf_free_dict(dict);
-                if (val)
+                }
+                if (val) {
                     free(val);
-                if (arr)
+                }
+                if (arr) {
                     pdf_free_array(arr);
+                }
 
                 break;
             }
 
             node->prev = res->tail;
-            if (res->tail)
+            if (res->tail) {
                 res->tail->next = node;
+            }
             res->tail = node;
         }
 
@@ -1189,8 +1274,9 @@ struct pdf_array *pdf_parse_array(struct pdf_struct *pdf, struct pdf_obj *obj, s
         }
     }
 
-    if (endchar)
+    if (endchar) {
         *endchar = end;
+    }
 
     return res;
 }
@@ -1203,12 +1289,13 @@ void pdf_free_dict(struct pdf_dict *dict)
     while (node != NULL) {
         free(node->key);
 
-        if (node->type == PDF_DICT_STRING)
+        if (node->type == PDF_DICT_STRING) {
             free(node->value);
-        else if (node->type == PDF_DICT_ARRAY)
+        } else if (node->type == PDF_DICT_ARRAY) {
             pdf_free_array((struct pdf_array *)(node->value));
-        else if (node->type == PDF_DICT_DICT)
+        } else if (node->type == PDF_DICT_DICT) {
             pdf_free_dict((struct pdf_dict *)(node->value));
+        }
 
         next = node->next;
         free(node);
@@ -1222,17 +1309,19 @@ void pdf_free_array(struct pdf_array *array)
 {
     struct pdf_array_node *node, *next;
 
-    if (!(array))
+    if (!(array)) {
         return;
+    }
 
     node = array->nodes;
     while (node != NULL) {
-        if (node->type == PDF_ARR_ARRAY)
+        if (node->type == PDF_ARR_ARRAY) {
             pdf_free_array((struct pdf_array *)(node->data));
-        else if (node->type == PDF_ARR_DICT)
+        } else if (node->type == PDF_ARR_DICT) {
             pdf_free_dict((struct pdf_dict *)(node->data));
-        else
+        } else {
             free(node->data);
+        }
 
         next = node->next;
         free(node);
@@ -1248,10 +1337,11 @@ void pdf_print_array(struct pdf_array *array, unsigned long depth)
     unsigned long i;
 
     for (i = 0, node = array->nodes; node != NULL; node = node->next, i++) {
-        if (node->type == PDF_ARR_STRING)
+        if (node->type == PDF_ARR_STRING) {
             cli_errmsg("array[%lu][%lu]: %s\n", depth, i, (char *)(node->data));
-        else
+        } else {
             pdf_print_array((struct pdf_array *)(node->data), depth + 1);
+        }
     }
 }
 

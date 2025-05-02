@@ -34,8 +34,9 @@ int is_tar(const unsigned char *buf, unsigned int nbytes)
     int sum, recsum;
     char *p;
 
-    if (nbytes < sizeof(union record))
+    if (nbytes < sizeof(union record)) {
         return 0;
+    }
 
     recsum = from_oct(8, header->header.chksum);
 
@@ -50,15 +51,18 @@ int is_tar(const unsigned char *buf, unsigned int nbytes)
     }
 
     /* Adjust checksum to count the "chksum" field as blanks. */
-    for (i = sizeof(header->header.chksum); --i >= 0;)
+    for (i = sizeof(header->header.chksum); --i >= 0;) {
         sum -= 0xFF & header->header.chksum[i];
+    }
     sum += ' ' * sizeof header->header.chksum;
 
-    if (sum != recsum)
+    if (sum != recsum) {
         return 0; /* Not a tar archive */
+    }
 
-    if (0 == strcmp(header->header.magic, TMAGIC))
+    if (0 == strcmp(header->header.magic, TMAGIC)) {
         return 2; /* Unix Standard tar archive */
+    }
 
     return 1; /* Old fashioned tar archive */
 }
@@ -74,8 +78,9 @@ static int from_oct(int digs, char *where)
 
     while (isspace((unsigned char)*where)) { /* Skip spaces */
         where++;
-        if (--digs <= 0)
+        if (--digs <= 0) {
             return -1; /* All blank field */
+        }
     }
     value = 0;
     while (digs > 0 && isodigit(*where)) { /* Scan til nonoctal */
@@ -83,8 +88,9 @@ static int from_oct(int digs, char *where)
         --digs;
     }
 
-    if (digs > 0 && *where && !isspace((unsigned char)*where))
+    if (digs > 0 && *where && !isspace((unsigned char)*where)) {
         return -1; /* Ended on non-space/nul */
+    }
 
     return value;
 }

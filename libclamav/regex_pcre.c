@@ -47,8 +47,9 @@ void cli_pcre_free(void *ptr, void *ext)
 
 cl_error_t cli_pcre_addoptions(struct cli_pcre_data *pd, const char **opt, int errout)
 {
-    if (!pd || !opt || !(*opt))
+    if (!pd || !opt || !(*opt)) {
         return CL_ENULLARG;
+    }
 
     while (**opt != '\0') {
         switch (**opt) {
@@ -79,8 +80,9 @@ cl_error_t cli_pcre_addoptions(struct cli_pcre_data *pd, const char **opt, int e
                 if (errout) {
                     cli_errmsg("cli_pcre_addoptions: unknown/extra pcre option encountered %c\n", **opt);
                     return CL_EMALFDB;
-                } else
+                } else {
                     return CL_EPARSE; /* passed to caller to handle */
+                }
         }
         (*opt)++;
     }
@@ -114,10 +116,11 @@ cl_error_t cli_pcre_compile(struct cli_pcre_data *pd, long long unsigned match_l
     }
 
     /* compile the pcre2 regex last arg is charset, allow for options override */
-    if (opt_override)
+    if (opt_override) {
         pd->re = pcre2_compile((PCRE2_SPTR8)pd->expression, PCRE2_ZERO_TERMINATED, options, &errornum, &erroffset, cctx); /* pd->re handled by pcre2 -> call pcre_free() -> calls free() */
-    else
+    } else {
         pd->re = pcre2_compile((PCRE2_SPTR8)pd->expression, PCRE2_ZERO_TERMINATED, pd->options, &errornum, &erroffset, cctx); /* pd->re handled by pcre2 -> call pcre_free() -> calls free() */
+    }
     if (pd->re == NULL) {
         PCRE2_UCHAR errmsg[256];
         pcre2_get_error_message(errornum, errmsg, sizeof(errmsg));
@@ -155,8 +158,9 @@ int cli_pcre_match(struct cli_pcre_data *pd, const unsigned char *buffer, size_t
 
     /* set the startoffset, override if a value is specified */
     startoffset = pd->search_offset;
-    if (override_offset != pd->search_offset)
+    if (override_offset != pd->search_offset) {
         startoffset = override_offset;
+    }
 
     /* execute the pcre and return */
     rc = pcre2_match(pd->re, buffer, buflen, startoffset, options, results->match_data, pd->mctx);
@@ -232,8 +236,9 @@ static void named_substr_print(const struct cli_pcre_data *pd, const unsigned ch
                 length = MATCH_MAXLEN;
             }
 
-            for (j = 0; j < length; ++j)
+            for (j = 0; j < length; ++j) {
                 snprintf(outstr + (2 * j), sizeof(outstr) - (2 * j), "%02x", (unsigned int)*(start + j));
+            }
 
             cli_dbgmsg("cli_pcre_report: (%d) %*s: %s%s\n", n, name_entry_size - 3, tabptr + 2,
                        outstr, trunc ? " (trunc)" : "");
@@ -282,8 +287,9 @@ void cli_pcre_report(const struct cli_pcre_data *pd, const unsigned char *buffer
                     length = MATCH_MAXLEN;
                 }
 
-                for (j = 0; j < length; ++j)
+                for (j = 0; j < length; ++j) {
                     snprintf(outstr + (2 * j), sizeof(outstr) - (2 * j), "%02x", (unsigned int)*(start + j));
+                }
 
                 cli_dbgmsg("cli_pcre_report:  %d: %s%s\n", i, outstr, trunc ? " (trunc)" : "");
                 // cli_dbgmsg("cli_pcre_report:  %d: %.*s%s\n", i, length, start, trunc ? " (trunc)":"");
@@ -306,20 +312,23 @@ cl_error_t cli_pcre_results_reset(struct cli_pcre_results *results, const struct
     results->err      = CL_SUCCESS;
     results->match[0] = results->match[1] = 0;
 
-    if (results->match_data)
+    if (results->match_data) {
         pcre2_match_data_free(results->match_data);
+    }
 
     results->match_data = pcre2_match_data_create_from_pattern(pd->re, NULL);
-    if (!results->match_data)
+    if (!results->match_data) {
         return CL_EMEM;
+    }
 
     return CL_SUCCESS;
 }
 
 void cli_pcre_results_free(struct cli_pcre_results *results)
 {
-    if (results->match_data)
+    if (results->match_data) {
         pcre2_match_data_free(results->match_data);
+    }
 }
 
 void cli_pcre_free_single(struct cli_pcre_data *pd)

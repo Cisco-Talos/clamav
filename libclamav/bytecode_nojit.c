@@ -33,8 +33,9 @@ cl_error_t cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
 {
     unsigned i;
     for (i = 0; i < bcs->count; i++) {
-        if (bcs->all_bcs[i].state == bc_skip)
+        if (bcs->all_bcs[i].state == bc_skip) {
             continue;
+        }
         if (bcs->all_bcs[i].state != bc_loaded &&
             bcs->all_bcs[i].kind != BC_STARTUP) {
             cli_warnmsg("Cannot prepare for JIT, because it has already been converted to interpreter\n");

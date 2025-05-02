@@ -79,21 +79,27 @@ int allow_list_init(const char *fname)
         char *ptr            = buf;
         int len;
 
-        if (*buf == '#' || *buf == ':' || *buf == '!')
+        if (*buf == '#' || *buf == ':' || *buf == '!') {
             continue;
+        }
 
         if (!strncasecmp("From:", buf, 5)) {
             ptr += 5;
             addto = &wfrom;
-        } else if (!strncasecmp("To:", buf, 3))
+        } else if (!strncasecmp("To:", buf, 3)) {
             ptr += 3;
+        }
 
         len = strlen(ptr) - 1;
         for (; len >= 0; len--) {
-            if (ptr[len] != '\n' && ptr[len] != '\r') break;
+            if (ptr[len] != '\n' && ptr[len] != '\r') {
+                break;
+            }
             ptr[len] = '\0';
         }
-        if (!len) continue;
+        if (!len) {
+            continue;
+        }
         if (!(w = (struct WHLST *)malloc(sizeof(*w)))) {
             logg(LOGG_ERROR, "Out of memory loading allow list file\n");
             allow_list_free();
@@ -117,14 +123,16 @@ int allowed(const char *addr, int from)
 {
     struct WHLST *w;
 
-    if (from)
+    if (from) {
         w = wfrom;
-    else
+    } else {
         w = wto;
+    }
 
     while (w) {
-        if (!cli_regexec(&w->preg, addr, 0, NULL, 0))
+        if (!cli_regexec(&w->preg, addr, 0, NULL, 0)) {
             return 1;
+        }
         w = w->next;
     }
     return 0;
@@ -147,14 +155,19 @@ int smtpauth_init(const char *r)
             int len;
             char *ptr;
 
-            if (*buf == '#' || *buf == ':' || *buf == '!')
+            if (*buf == '#' || *buf == ':' || *buf == '!') {
                 continue;
+            }
             len = strlen(buf) - 1;
             for (; len >= 0; len--) {
-                if (buf[len] != '\n' && buf[len] != '\r') break;
+                if (buf[len] != '\n' && buf[len] != '\r') {
+                    break;
+                }
                 buf[len] = '\0';
             }
-            if (len <= 0) continue;
+            if (len <= 0) {
+                continue;
+            }
             if (len * 3 + 1 > rxavail) {
                 ptr        = regex;
                 char *temp = realloc(regex, rxsize + 2048);
@@ -206,18 +219,23 @@ int smtpauth_init(const char *r)
 
     if (cli_regcomp(&authreg, r, REG_ICASE | REG_NOSUB | REG_EXTENDED)) {
         logg(LOGG_ERROR, "Failed to compile regex '%s' for SkipAuthenticated\n", r);
-        if (regex) free(regex);
+        if (regex) {
+            free(regex);
+        }
         return 1;
     }
-    if (regex) free(regex);
+    if (regex) {
+        free(regex);
+    }
     skipauth = 1;
     return 0;
 }
 
 int smtpauthed(const char *login)
 {
-    if (skipauth && !cli_regexec(&authreg, login, 0, NULL, 0))
+    if (skipauth && !cli_regexec(&authreg, login, 0, NULL, 0)) {
         return 1;
+    }
     return 0;
 }
 

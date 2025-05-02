@@ -84,7 +84,9 @@ static int getdest(const char *fullpath, char **newname)
             free(tmps);
             return fd;
         }
-        if (errno != EEXIST) break;
+        if (errno != EEXIST) {
+            break;
+        }
         sprintf(*newname, "%s" PATHSEP "%s.%03u", actarget, filename, i);
     }
     free(tmps);
@@ -633,18 +635,27 @@ static void action_move(const char *filename)
 #endif
         logg(LOGG_ERROR, "Can't move file %s to %s\n", filename, nuname);
         notmoved++;
-        if (nuname) traverse_unlink(nuname);
+        if (nuname) {
+            traverse_unlink(nuname);
+        }
     } else {
-        if (copied && (0 != traverse_unlink(filename)))
+        if (copied && (0 != traverse_unlink(filename))) {
             logg(LOGG_ERROR, "Can't unlink '%s' after copy: %s\n", filename, strerror(errno));
-        else
+        } else {
             logg(LOGG_INFO, "%s: moved to '%s'\n", filename, nuname);
+        }
     }
 
 done:
-    if (NULL != real_filename) free(real_filename);
-    if (fd >= 0) close(fd);
-    if (NULL != nuname) free(nuname);
+    if (NULL != real_filename) {
+        free(real_filename);
+    }
+    if (fd >= 0) {
+        close(fd);
+    }
+    if (NULL != nuname) {
+        free(nuname);
+    }
     return;
 }
 
@@ -656,12 +667,19 @@ static void action_copy(const char *filename)
     if (fd < 0 || filecopy(filename, nuname)) {
         logg(LOGG_ERROR, "Can't copy file '%s'\n", filename);
         notmoved++;
-        if (nuname) traverse_unlink(nuname);
-    } else
+        if (nuname) {
+            traverse_unlink(nuname);
+        }
+    } else {
         logg(LOGG_INFO, "%s: copied to '%s'\n", filename, nuname);
+    }
 
-    if (fd >= 0) close(fd);
-    if (nuname) free(nuname);
+    if (fd >= 0) {
+        close(fd);
+    }
+    if (nuname) {
+        free(nuname);
+    }
 }
 
 static void action_remove(const char *filename)
@@ -680,7 +698,9 @@ static void action_remove(const char *filename)
     }
 
 done:
-    if (NULL != real_filename) free(real_filename);
+    if (NULL != real_filename) {
+        free(real_filename);
+    }
     return;
 }
 
@@ -713,10 +733,13 @@ int actsetup(const struct optstruct *opts)
             return 0;
         }
 #endif
-        if (!isdir()) return 1;
+        if (!isdir()) {
+            return 1;
+        }
         action  = move ? action_move : action_copy;
         targlen = strlen(actarget);
-    } else if (optget(opts, "remove")->enabled)
+    } else if (optget(opts, "remove")->enabled) {
         action = action_remove;
+    }
     return 0;
 }

@@ -212,8 +212,9 @@ int lzwInflate(lzw_streamp strm)
     uint32_t flags;
 
     if (strm == NULL || strm->state == NULL || strm->next_out == NULL ||
-        (strm->next_in == NULL && strm->avail_in != 0))
+        (strm->next_in == NULL && strm->avail_in != 0)) {
         return LZW_STREAM_ERROR;
+    }
 
     /* load state */
     to  = strm->next_out;
@@ -237,8 +238,9 @@ int lzwInflate(lzw_streamp strm)
     cext      = flags & LZW_FLAG_EXTNCODE;
     free_code = free_entp - &state->dec_codetab[0];
 
-    if (oldcodep == &state->dec_codetab[CODE_EOI])
+    if (oldcodep == &state->dec_codetab[CODE_EOI]) {
         return LZW_STREAM_END;
+    }
 
     /*
      * Restart interrupted output operation.
@@ -282,8 +284,9 @@ int lzwInflate(lzw_streamp strm)
     if (left > 0 && (oldcodep == &state->dec_codetab[CODE_CLEAR])) {
         code = CODE_CLEAR;
         CodeClear(code);
-        if (ret != LZW_OK)
+        if (ret != LZW_OK) {
             goto inf_end;
+        }
     }
 
     while (left > 0) {
@@ -294,8 +297,9 @@ int lzwInflate(lzw_streamp strm)
         }
         if (code == CODE_CLEAR) {
             CodeClear(code);
-            if (ret != LZW_OK)
+            if (ret != LZW_OK) {
                 break;
+            }
             continue;
         }
         codep = state->dec_codetab + code;
@@ -305,10 +309,11 @@ int lzwInflate(lzw_streamp strm)
             /* non-earlychange bit expansion */
             if (!echg && free_entp > maxcodep) {
                 if (++nbits > BITS_VALID) {
-                    if (!cext)
+                    if (!cext) {
                         nbits = BITS_VALID;
-                    else if (nbits > BITS_MAX)
+                    } else if (nbits > BITS_MAX) {
                         nbits = BITS_MAX;
+                    }
                 }
                 nbitsmask = MAXCODE(nbits);
                 maxcodep  = state->dec_codetab + nbitsmask - 1;
@@ -331,19 +336,22 @@ int lzwInflate(lzw_streamp strm)
             /* earlychange bit expansion */
             if (echg && free_entp > maxcodep) {
                 if (++nbits > BITS_VALID) {
-                    if (!cext)
+                    if (!cext) {
                         nbits = BITS_VALID;
-                    else if (nbits > BITS_MAX)
+                    } else if (nbits > BITS_MAX) {
                         nbits = BITS_MAX;
+                    }
                 }
                 nbitsmask = MAXCODE(nbits);
                 maxcodep  = state->dec_codetab + nbitsmask - 1;
             }
-            if (free_code++ > CODE_VALID)
+            if (free_code++ > CODE_VALID) {
                 flags |= LZW_FLAG_EXTNCODEUSE;
+            }
             oldcodep = codep;
-        } else
+        } else {
             flags |= LZW_FLAG_FULLDICT;
+        }
         if (code >= CODE_BASIC) {
             /* check if code is valid */
             if (code >= free_code) {
@@ -383,8 +391,9 @@ int lzwInflate(lzw_streamp strm)
                 *--wp = codep->value;
                 codep = codep->next;
             } while (codep != NULL);
-        } else
+        } else {
             *to++ = code, left--;
+        }
     }
 
 inf_end:

@@ -51,11 +51,13 @@ static size_t base64_len(const char *data, size_t len)
     int padding = 0;
     size_t i;
 
-    if (!len)
+    if (!len) {
         return 0;
+    }
 
-    for (i = len - 1; i > 0 && data[i] == '='; i--)
+    for (i = len - 1; i > 0 && data[i] == '='; i--) {
         padding++;
+    }
 
     return (size_t)((3 * len) / 4 - padding);
 }
@@ -73,13 +75,15 @@ void *cl_base64_decode(char *data, size_t len, void *obuf, size_t *olen, int one
     void *buf;
 
     buf = (obuf) ? obuf : malloc(base64_len(data, len) + 1);
-    if (!(buf))
+    if (!(buf)) {
         return NULL;
+    }
 
     b64 = BIO_new(BIO_f_base64());
     if (!(b64)) {
-        if (!(obuf))
+        if (!(obuf)) {
             free(buf);
+        }
 
         return NULL;
     }
@@ -87,15 +91,17 @@ void *cl_base64_decode(char *data, size_t len, void *obuf, size_t *olen, int one
     bio = BIO_new_mem_buf(data, len);
     if (!(bio)) {
         BIO_free(b64);
-        if (!(obuf))
+        if (!(obuf)) {
             free(buf);
+        }
 
         return NULL;
     }
 
     bio = BIO_push(b64, bio);
-    if (oneline)
+    if (oneline) {
         BIO_set_flags(bio, BIO_FLAGS_BASE64_NO_NL);
+    }
 
     *olen = BIO_read(bio, buf, base64_len(data, len));
 
@@ -116,8 +122,9 @@ char *cl_base64_encode(void *data, size_t len)
     size_t elen;
 
     b64 = BIO_new(BIO_f_base64());
-    if (!(b64))
+    if (!(b64)) {
         return NULL;
+    }
     bio = BIO_new(BIO_s_mem());
     if (!(bio)) {
         BIO_free(b64);
