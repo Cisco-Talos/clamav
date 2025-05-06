@@ -117,12 +117,15 @@ static void mspack_fmap_close(struct mspack_file *file)
 {
     struct mspack_handle *mspack_handle = (struct mspack_handle *)file;
 
-    if (!mspack_handle)
+    if (!mspack_handle) {
         return;
+    }
 
-    if (mspack_handle->type == FILETYPE_FILENAME)
-        if (mspack_handle->f)
+    if (mspack_handle->type == FILETYPE_FILENAME) {
+        if (mspack_handle->f) {
             fclose(mspack_handle->f);
+        }
+    }
 
     memset(mspack_handle, 0, (sizeof(*mspack_handle)));
     free(mspack_handle);
@@ -191,12 +194,14 @@ static int mspack_fmap_write(struct mspack_file *file, void *buffer, int bytes)
         return -1;
     }
 
-    if (!bytes)
+    if (!bytes) {
         return 0;
+    }
 
     max_size = mspack_handle->max_size;
-    if (!max_size)
+    if (!max_size) {
         return bytes;
+    }
 
     max_size = max_size < (uint64_t)bytes ? max_size : (uint64_t)bytes;
 
@@ -268,11 +273,13 @@ static off_t mspack_fmap_tell(struct mspack_file *file)
 {
     struct mspack_handle *mspack_handle = (struct mspack_handle *)file;
 
-    if (!mspack_handle)
+    if (!mspack_handle) {
         return -1;
+    }
 
-    if (mspack_handle->type == FILETYPE_FMAP)
+    if (mspack_handle->type == FILETYPE_FMAP) {
         return mspack_handle->offset;
+    }
 
     return (off_t)ftell(mspack_handle->f);
 }

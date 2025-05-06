@@ -146,14 +146,20 @@ size_t text_normalize_map(struct text_norm_state *state, fmap_t *map, size_t off
 
     while (1) {
         /* Break out if we've reached the end of the map or our buffer. */
-        if (!(acc_len = MIN_3(map_pgsz, map_len - offset, buff_len - acc_total))) break;
+        if (!(acc_len = MIN_3(map_pgsz, map_len - offset, buff_len - acc_total))) {
+            break;
+        }
 
         /* If map_loc is NULL, then there's nothing left to do but recover. */
-        if (!(map_loc = fmap_need_off_once(map, offset, acc_len))) break;
+        if (!(map_loc = fmap_need_off_once(map, offset, acc_len))) {
+            break;
+        }
         offset += acc_len;
 
         /* If we didn't normalize anything, no need to update values, just break out. */
-        if (!(acc = text_normalize_buffer(state, map_loc, acc_len))) break;
+        if (!(acc = text_normalize_buffer(state, map_loc, acc_len))) {
+            break;
+        }
         acc_total += acc;
     }
 

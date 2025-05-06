@@ -125,15 +125,23 @@ static cl_error_t unz(
 
     if (tmpd) {
         if (ctx->engine->keeptmp && (NULL != original_filename)) {
-            if (!(tempfile = cli_gentemp_with_prefix(tmpd, original_filename))) return CL_EMEM;
+            if (!(tempfile = cli_gentemp_with_prefix(tmpd, original_filename))) {
+                return CL_EMEM;
+            }
         } else {
-            if (!(tempfile = cli_gentemp(tmpd))) return CL_EMEM;
+            if (!(tempfile = cli_gentemp(tmpd))) {
+                return CL_EMEM;
+            }
         }
     } else {
         if (ctx->engine->keeptmp && (NULL != original_filename)) {
-            if (!(tempfile = cli_gentemp_with_prefix(ctx->sub_tmpdir, original_filename))) return CL_EMEM;
+            if (!(tempfile = cli_gentemp_with_prefix(ctx->sub_tmpdir, original_filename))) {
+                return CL_EMEM;
+            }
         } else {
-            if (!(tempfile = cli_gentemp(ctx->sub_tmpdir))) return CL_EMEM;
+            if (!(tempfile = cli_gentemp(ctx->sub_tmpdir))) {
+                return CL_EMEM;
+            }
         }
     }
     if ((out_file = open(tempfile, O_RDWR | O_CREAT | O_TRUNC | O_BINARY, S_IRUSR | S_IWUSR)) == -1) {
@@ -150,8 +158,9 @@ static cl_error_t unz(
                                              tmpd, zcb, original_filename, decrypted))) {
                     (*num_files_unzipped)++;
                     res = fake - (*num_files_unzipped);
-                } else
+                } else {
                     break;
+                }
             }
             if (res == 1) {
                 if (ctx->engine->maxfilesize && csize > ctx->engine->maxfilesize) {
@@ -159,10 +168,11 @@ static cl_error_t unz(
                                (long unsigned int)ctx->engine->maxfilesize);
                     csize = ctx->engine->maxfilesize;
                 }
-                if (cli_writen(out_file, src, csize) != csize)
+                if (cli_writen(out_file, src, csize) != csize) {
                     ret = CL_EWRITE;
-                else
+                } else {
                     res = 0;
+                }
             }
             break;
 
@@ -237,7 +247,9 @@ static cl_error_t unz(
                 break;
             }
             unz_end(&strm);
-            if ((res == Z_STREAM_END) | (res == Z_BUF_ERROR)) res = 0;
+            if ((res == Z_STREAM_END) | (res == Z_BUF_ERROR)) {
+                res = 0;
+            }
             break;
         }
 
@@ -274,12 +286,16 @@ static cl_error_t unz(
                     }
                     strm.next_out  = obuf;
                     strm.avail_out = sizeof(obuf);
-                    if (res == BZ_OK) continue; /* after returning BZ_STREAM_END once, decompress returns an error */
+                    if (res == BZ_OK) {
+                        continue; /* after returning BZ_STREAM_END once, decompress returns an error */
+                    }
                 }
                 break;
             }
             BZ2_bzDecompressEnd(&strm);
-            if (res == BZ_STREAM_END) res = 0;
+            if (res == BZ_STREAM_END) {
+                res = 0;
+            }
             break;
         }
 
@@ -353,15 +369,21 @@ static cl_error_t unz(
         }
         ret = zcb(out_file, tempfile, ctx, original_filename, decrypted);
         close(out_file);
-        if (!ctx->engine->keeptmp)
-            if (cli_unlink(tempfile)) ret = CL_EUNLINK;
+        if (!ctx->engine->keeptmp) {
+            if (cli_unlink(tempfile)) {
+                ret = CL_EUNLINK;
+            }
+        }
         free(tempfile);
         return ret;
     }
 
     close(out_file);
-    if (!ctx->engine->keeptmp)
-        if (cli_unlink(tempfile)) ret = CL_EUNLINK;
+    if (!ctx->engine->keeptmp) {
+        if (cli_unlink(tempfile)) {
+            ret = CL_EUNLINK;
+        }
+    }
     free(tempfile);
     cli_dbgmsg("cli_unzip: extraction failed\n");
     return ret;
@@ -393,8 +415,9 @@ static inline void zinitkey(uint32_t key[3], struct cli_pwdb *password)
     key[2] = 878082192L;
 
     /* update keys with password  */
-    for (i = 0; i < password->length; i++)
+    for (i = 0; i < password->length; i++) {
         zupdatekey(key, password->passwd[i]);
+    }
 }
 
 /* zip decrypt byte */
@@ -438,8 +461,9 @@ static inline cl_error_t zdecrypt(
     uint8_t encryption_header[12]; /* encryption header buffer */
     struct cli_pwdb *password, *pass_any, *pass_zip;
 
-    if (!ctx || !ctx->engine)
+    if (!ctx || !ctx->engine) {
         return CL_ENULLARG;
+    }
 
     /* dconf */
     if (ctx->dconf && !(ctx->dconf->archive & ARCH_CONF_PASSWD)) {
@@ -469,24 +493,28 @@ static inline cl_error_t zdecrypt(
 
             if (LOCAL_HEADER_flags & F_USEDD) {
                 cli_dbgmsg("cli_unzip: decrypt - (v%u) >> 0x%02x 0x%x (moddate)\n", LOCAL_HEADER_version, a, LOCAL_HEADER_mtime);
-                if (a == ((LOCAL_HEADER_mtime >> 8) & 0xff))
+                if (a == ((LOCAL_HEADER_mtime >> 8) & 0xff)) {
                     v = 1;
+                }
             } else {
                 cli_dbgmsg("cli_unzip: decrypt - (v%u) >> 0x%02x 0x%x (crc32)\n", LOCAL_HEADER_version, a, LOCAL_HEADER_crc32);
-                if (a == ((LOCAL_HEADER_crc32 >> 24) & 0xff))
+                if (a == ((LOCAL_HEADER_crc32 >> 24) & 0xff)) {
                     v = 1;
+                }
             }
         } else {
             uint16_t a = encryption_header[SIZEOF_ENCRYPTION_HEADER - 1], b = encryption_header[SIZEOF_ENCRYPTION_HEADER - 2];
 
             if (LOCAL_HEADER_flags & F_USEDD) {
                 cli_dbgmsg("cli_unzip: decrypt - (v%u) >> 0x0000%02x%02x 0x%x (moddate)\n", LOCAL_HEADER_version, a, b, LOCAL_HEADER_mtime);
-                if ((uint32_t)(b | (a << 8)) == (LOCAL_HEADER_mtime & 0xffff))
+                if ((uint32_t)(b | (a << 8)) == (LOCAL_HEADER_mtime & 0xffff)) {
                     v = 1;
+                }
             } else {
                 cli_dbgmsg("cli_unzip: decrypt - (v%u) >> 0x0000%02x%02x 0x%x (crc32)\n", LOCAL_HEADER_version, encryption_header[SIZEOF_ENCRYPTION_HEADER - 1], encryption_header[SIZEOF_ENCRYPTION_HEADER - 2], LOCAL_HEADER_crc32);
-                if ((uint32_t)(b | (a << 8)) == ((LOCAL_HEADER_crc32 >> 16) & 0xffff))
+                if ((uint32_t)(b | (a << 8)) == ((LOCAL_HEADER_crc32 >> 16) & 0xffff)) {
                     v = 1;
+                }
             }
         }
 
@@ -505,11 +533,15 @@ static inline cl_error_t zdecrypt(
                 snprintf(name, sizeof(name), "%s" PATHSEP "zip.decrypt.%03u", tmpd, *num_files_unzipped);
                 name[sizeof(name) - 1] = '\0';
             } else {
-                if (!(tempfile = cli_gentemp_with_prefix(ctx->sub_tmpdir, "zip-decrypt"))) return CL_EMEM;
+                if (!(tempfile = cli_gentemp_with_prefix(ctx->sub_tmpdir, "zip-decrypt"))) {
+                    return CL_EMEM;
+                }
             }
             if ((out_file = open(tempfile, O_RDWR | O_CREAT | O_TRUNC | O_BINARY, S_IRUSR | S_IWUSR)) == -1) {
                 cli_warnmsg("cli_unzip: decrypt - failed to create temporary file %s\n", tempfile);
-                if (!tmpd) free(tempfile);
+                if (!tmpd) {
+                    free(tempfile);
+                }
                 return CL_ETMPFILE;
             }
 
@@ -560,19 +592,25 @@ static inline cl_error_t zdecrypt(
             funmap(dcypt_map);
         zd_clean:
             close(out_file);
-            if (!ctx->engine->keeptmp)
+            if (!ctx->engine->keeptmp) {
                 if (cli_unlink(tempfile)) {
-                    if (!tmpd) free(tempfile);
+                    if (!tmpd) {
+                        free(tempfile);
+                    }
                     return CL_EUNLINK;
                 }
-            if (!tmpd) free(tempfile);
+            }
+            if (!tmpd) {
+                free(tempfile);
+            }
             return ret;
         }
 
-        if (pass_zip)
+        if (pass_zip) {
             pass_zip = pass_zip->next;
-        else
+        } else {
             pass_any = pass_any->next;
+        }
     }
 
     cli_dbgmsg("cli_unzip: decrypt failed - will attempt to unzip as if it were not encrypted\n");
@@ -630,10 +668,11 @@ static unsigned int parse_local_file_header(
         goto done;
     }
     if (LOCAL_HEADER_magic != ZIP_MAGIC_LOCAL_FILE_HEADER) {
-        if (!central_header)
+        if (!central_header) {
             cli_dbgmsg("cli_unzip: local header - wrkcomplete\n");
-        else
+        } else {
             cli_dbgmsg("cli_unzip: local header - bad magic\n");
+        }
         fmap_unneed_off(map, loff, SIZEOF_LOCAL_HEADER);
         goto done;
     }
@@ -726,12 +765,14 @@ static unsigned int parse_local_file_header(
         /* Don't actually unzip if we're just collecting the file record information (offset, sizes) */
         if (NULL == record) {
             if (LOCAL_HEADER_flags & F_ENCR) {
-                if (fmap_need_ptr_once(map, zip, csize))
+                if (fmap_need_ptr_once(map, zip, csize)) {
                     *ret = zdecrypt(zip, csize, usize, local_header, num_files_unzipped, ctx, tmpd, zcb, original_filename);
+                }
             } else {
-                if (fmap_need_ptr_once(map, zip, csize))
+                if (fmap_need_ptr_once(map, zip, csize)) {
                     *ret = unz(zip, csize, usize, LOCAL_HEADER_method, LOCAL_HEADER_flags, num_files_unzipped,
                                ctx, tmpd, zcb, original_filename, false);
+                }
             }
         } else {
             if ((NULL == original_filename) ||
@@ -937,10 +978,11 @@ static int sort_by_file_offset(const void *first, const void *second)
 
     /* Avoid return x - y, which can cause undefined behaviour
        because of signed integer overflow. */
-    if (a->local_header_offset < b->local_header_offset)
+    if (a->local_header_offset < b->local_header_offset) {
         return -1;
-    else if (a->local_header_offset > b->local_header_offset)
+    } else if (a->local_header_offset > b->local_header_offset) {
         return 1;
+    }
 
     return 0;
 }
@@ -1246,8 +1288,9 @@ cl_error_t index_local_file_headers_within_bounds(
      * Search for local file headers between the start and end offsets. Append found file headers to zip_catalogue
      */
     for (coff = start_offset; coff < end_offset; coff++) {
-        if (!(ptr = fmap_need_off_once(map, coff, 4)))
+        if (!(ptr = fmap_need_off_once(map, coff, 4))) {
             continue;
+        }
         if (cli_readint32(ptr) == ZIP_MAGIC_LOCAL_FILE_HEADER) {
             // increment coff by the size of the found local file header + file data
             coff += parse_local_file_header(
@@ -1643,11 +1686,14 @@ cl_error_t cli_unzip(cli_ctx *ctx)
     }
 
     for (coff = fsize - 22; coff > 0; coff--) { /* sizeof(EOC)==22 */
-        if (!(ptr = fmap_need_off_once(map, coff, 20)))
+        if (!(ptr = fmap_need_off_once(map, coff, 20))) {
             continue;
+        }
         if (cli_readint32(ptr) == ZIP_MAGIC_CENTRAL_DIRECTORY_RECORD_END) {
             uint32_t chptr = cli_readint32(&ptr[16]);
-            if (!CLI_ISCONTAINED_0_TO(fsize, chptr, SIZEOF_CENTRAL_HEADER)) continue;
+            if (!CLI_ISCONTAINED_0_TO(fsize, chptr, SIZEOF_CENTRAL_HEADER)) {
+                continue;
+            }
             coff = chptr;
             break;
         }
@@ -1887,8 +1933,9 @@ cl_error_t unzip_search(cli_ctx *ctx, fmap_t *map, struct zip_requests *requests
     }
 
     /* get priority to given map over ctx->fmap */
-    if (ctx && !map)
+    if (ctx && !map) {
         zmap = ctx->fmap;
+    }
     fsize = zmap->len;
     if (sizeof(off_t) != sizeof(uint32_t) && fsize != zmap->len) {
         cli_dbgmsg("unzip_search: file too big\n");
@@ -1900,11 +1947,14 @@ cl_error_t unzip_search(cli_ctx *ctx, fmap_t *map, struct zip_requests *requests
     }
 
     for (coff = fsize - 22; coff > 0; coff--) { /* sizeof(EOC)==22 */
-        if (!(ptr = fmap_need_off_once(zmap, coff, 20)))
+        if (!(ptr = fmap_need_off_once(zmap, coff, 20))) {
             continue;
+        }
         if (cli_readint32(ptr) == ZIP_MAGIC_CENTRAL_DIRECTORY_RECORD_END) {
             uint32_t chptr = cli_readint32(&ptr[16]);
-            if (!CLI_ISCONTAINED_0_TO(fsize, chptr, SIZEOF_CENTRAL_HEADER)) continue;
+            if (!CLI_ISCONTAINED_0_TO(fsize, chptr, SIZEOF_CENTRAL_HEADER)) {
+                continue;
+            }
             coff = chptr;
             break;
         }

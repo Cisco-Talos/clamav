@@ -129,8 +129,9 @@ static int msxml_parse_value(json_object *wrkptr, const char *arrname, const xml
     json_object *newobj, *arrobj;
     int val;
 
-    if (!wrkptr)
+    if (!wrkptr) {
         return CL_ENULLARG;
+    }
 
     arrobj = cli_jsonarray(wrkptr, arrname);
     if (arrobj == NULL) {
@@ -179,8 +180,9 @@ static cl_error_t msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr 
 
         if (track_json(mxctx)) {
             cl_error_t tmp = cli_json_parse_error(root, "MSXML_RECURSIVE_LIMIT");
-            if (tmp != CL_SUCCESS)
+            if (tmp != CL_SUCCESS) {
                 return tmp;
+            }
         }
 
         /* skip it */
@@ -191,8 +193,9 @@ static cl_error_t msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr 
 
     /* acquire element type */
     node_type = xmlTextReaderNodeType(reader);
-    if (node_type == -1)
+    if (node_type == -1) {
         return CL_EPARSE;
+    }
 
     node_name  = xmlTextReaderConstLocalName(reader);
     node_value = xmlTextReaderConstValue(reader);
@@ -209,8 +212,9 @@ static cl_error_t msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr 
 
                 if (track_json(mxctx)) {
                     cl_error_t tmp = cli_json_parse_error(root, "MSXML_NAMELESS_ELEMENT");
-                    if (tmp != CL_SUCCESS)
+                    if (tmp != CL_SUCCESS) {
                         return tmp;
+                    }
                 }
 
                 return CL_EPARSE; /* no name, nameless */
@@ -233,10 +237,11 @@ static cl_error_t msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr 
             }
 
             if (track_json(mxctx) && (keyinfo->type & MSXML_JSON_TRACK)) {
-                if (keyinfo->type & MSXML_JSON_ROOT)
+                if (keyinfo->type & MSXML_JSON_ROOT) {
                     thisjobj = cli_jsonobj(root, keyinfo->name);
-                else if (keyinfo->type & MSXML_JSON_WRKPTR)
+                } else if (keyinfo->type & MSXML_JSON_WRKPTR) {
                     thisjobj = cli_jsonobj(parent, keyinfo->name);
+                }
 
                 if (!thisjobj) {
                     return CL_EMEM;
@@ -266,8 +271,9 @@ static cl_error_t msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr 
                     cli_msxmlmsg("msxml_parse_element: generated or retrieved json multi array\n");
 
                     thisjobj = cli_jsonobj(multi, NULL);
-                    if (!thisjobj)
+                    if (!thisjobj) {
                         return CL_EMEM;
+                    }
                     cli_msxmlmsg("msxml_parse_element: generated json multi entry object\n");
                 }
 
@@ -291,8 +297,9 @@ static cl_error_t msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr 
                             cli_msxmlmsg("\t%s: %s\n", name, value);
                             cli_jsonstr(attributes, (char *)name, (const char *)value);
                         }
-                    } else if (state == -1)
+                    } else if (state == -1) {
                         return CL_EPARSE;
+                    }
                 }
             }
 
@@ -327,8 +334,9 @@ static cl_error_t msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr 
 
             /* check self-containment */
             state = xmlTextReaderMoveToElement(reader);
-            if (state == -1)
+            if (state == -1) {
                 return CL_EPARSE;
+            }
 
             state = xmlTextReaderIsEmptyElement(reader);
             if (state == 1) {
@@ -337,20 +345,23 @@ static cl_error_t msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr 
                 state = xmlTextReaderNext(reader);
                 check_state(state);
                 return CL_SUCCESS;
-            } else if (state == -1)
+            } else if (state == -1) {
                 return CL_EPARSE;
+            }
 
             /* advance to first content node */
             state = xmlTextReaderRead(reader);
             check_state(state);
 
             while (!endtag) {
-                if (track_json(mxctx) && (cli_json_timeout_cycle_check(ctx, &(mxctx->ictx->toval)) != CL_SUCCESS))
+                if (track_json(mxctx) && (cli_json_timeout_cycle_check(ctx, &(mxctx->ictx->toval)) != CL_SUCCESS)) {
                     return CL_ETIMEOUT;
+                }
 
                 node_type = xmlTextReaderNodeType(reader);
-                if (node_type == -1)
+                if (node_type == -1) {
                     return CL_EPARSE;
+                }
 
                 switch (node_type) {
                     case XML_READER_TYPE_ELEMENT:
@@ -368,8 +379,9 @@ static cl_error_t msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr 
                         if (thisjobj && (keyinfo->type & MSXML_JSON_VALUE)) {
 
                             ret = msxml_parse_value(thisjobj, "Value", node_value);
-                            if (ret != CL_SUCCESS)
+                            if (ret != CL_SUCCESS) {
                                 return ret;
+                            }
 
                             cli_msxmlmsg("msxml_parse_element: added json value [%s: %s]\n", keyinfo->name, (const char *)node_value);
                         }
@@ -390,8 +402,9 @@ static cl_error_t msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr 
 
                             if (cli_writen(of, (char *)node_value, vlen) != vlen) {
                                 close(of);
-                                if (!(ctx->engine->keeptmp))
+                                if (!(ctx->engine->keeptmp)) {
                                     cli_unlink(tempfile);
+                                }
                                 free(tempfile);
                                 return CL_EWRITE;
                             }
@@ -435,8 +448,9 @@ static cl_error_t msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr 
                             if (cli_writen(of, decoded, decodedlen) != decodedlen) {
                                 free(decoded);
                                 close(of);
-                                if (!(ctx->engine->keeptmp))
+                                if (!(ctx->engine->keeptmp)) {
                                     cli_unlink(tempfile);
+                                }
                                 free(tempfile);
                                 return CL_EWRITE;
                             }
@@ -446,8 +460,9 @@ static cl_error_t msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr 
 
                             ret = cli_magic_scan_desc(of, tempfile, ctx, NULL, LAYER_ATTRIBUTES_NONE);
                             close(of);
-                            if (!(ctx->engine->keeptmp))
+                            if (!(ctx->engine->keeptmp)) {
                                 cli_unlink(tempfile);
+                            }
                             free(tempfile);
                             if (ret != CL_SUCCESS) {
                                 return ret;
@@ -556,8 +571,9 @@ cl_error_t cli_msxml_parse_document(cli_ctx *ctx, xmlTextReaderPtr reader, const
     if (flags & MSXML_FLAG_JSON) {
         ictx.root = ctx->wrkproperty;
         /* JSON Sanity Check */
-        if (!ictx.root)
+        if (!ictx.root) {
             ictx.flags &= ~MSXML_FLAG_JSON;
+        }
         ictx.toval = 0;
     } else {
         ictx.root = NULL;
@@ -565,14 +581,16 @@ cl_error_t cli_msxml_parse_document(cli_ctx *ctx, xmlTextReaderPtr reader, const
     mxctx->ictx = &ictx;
 
     /* Error Handler (setting handler on tree walker causes segfault) */
-    if (!(flags & MSXML_FLAG_WALK))
+    if (!(flags & MSXML_FLAG_WALK)) {
         // xmlTextReaderSetErrorHandler(reader, NULL, NULL); /* xml default handler */
         xmlTextReaderSetErrorHandler(reader, msxml_error_handler, NULL);
+    }
 
     /* Main Processing Loop */
     while ((state = xmlTextReaderRead(reader)) == 1) {
-        if ((ictx.flags & MSXML_FLAG_JSON) && (cli_json_timeout_cycle_check(ictx.ctx, &(ictx.toval)) != CL_SUCCESS))
+        if ((ictx.flags & MSXML_FLAG_JSON) && (cli_json_timeout_cycle_check(ictx.ctx, &(ictx.toval)) != CL_SUCCESS)) {
             return CL_ETIMEOUT;
+        }
 
         ret = msxml_parse_element(mxctx, reader, 0, ictx.root);
         if (ret != CL_SUCCESS) {
@@ -624,8 +642,9 @@ cl_error_t cli_msxml_parse_document(cli_ctx *ctx, xmlTextReaderPtr reader, const
     }
 
     /* non-critical return suppression */
-    if (ret == CL_BREAK)
+    if (ret == CL_BREAK) {
         ret = CL_SUCCESS;
+    }
 
     /* important but non-critical suppression */
     if (ret == CL_EPARSE) {

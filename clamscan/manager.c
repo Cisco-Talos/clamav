@@ -106,18 +106,21 @@ static int checkaccess(const char *path, const char *username, int mode)
                     exit(0);
                 }
 
-                if (access(path, mode))
+                if (access(path, mode)) {
                     exit(0);
-                else
+                } else {
                     exit(1);
+                }
             default:
                 wait(&status);
-                if (WIFEXITED(status) && WEXITSTATUS(status) == 1)
+                if (WIFEXITED(status) && WEXITSTATUS(status) == 1) {
                     ret = 1;
+                }
         }
     } else {
-        if (!access(path, mode))
+        if (!access(path, mode)) {
             ret = 1;
+        }
     }
 
     return ret;
@@ -145,12 +148,14 @@ static cl_error_t pre(int fd, const char *type, void *context)
     UNUSEDPARAM(fd);
     UNUSEDPARAM(type);
 
-    if (!(context))
+    if (!(context)) {
         return CL_CLEAN;
+    }
     d = (struct clamscan_cb_data *)context;
     c = d->chain;
-    if (c == NULL)
+    if (c == NULL) {
         return CL_CLEAN;
+    }
 
     c->level++;
 
@@ -165,11 +170,13 @@ static int print_chain(struct metachain *c, char *str, size_t len)
     for (i = 0; i < c->nchains - 1; i++) {
         size_t n = strlen(c->chains[i]);
 
-        if (na)
+        if (na) {
             str[na++] = '!';
+        }
 
-        if (n + na + 2 > len)
+        if (n + na + 2 > len) {
             break;
+        }
 
         memcpy(str + na, c->chains[i], n);
         na += n;
@@ -190,21 +197,25 @@ static cl_error_t post(int fd, int result, const char *virname, void *context)
     UNUSEDPARAM(fd);
     UNUSEDPARAM(result);
 
-    if (d != NULL)
+    if (d != NULL) {
         c = d->chain;
+    }
 
     if (c && c->nchains) {
         print_chain(c, str, sizeof(str));
 
-        if (c->level == c->lastadd && !virname)
+        if (c->level == c->lastadd && !virname) {
             free(c->chains[--c->nchains]);
+        }
 
-        if (virname && !c->lastvir)
+        if (virname && !c->lastvir) {
             c->lastvir = c->level;
+        }
     }
 
-    if (c)
+    if (c) {
         c->level--;
+    }
 
     return CL_CLEAN;
 }
@@ -226,26 +237,30 @@ static cl_error_t meta(const char *container_type, unsigned long fsize_container
     UNUSEDPARAM(is_encrypted);
     UNUSEDPARAM(filepos_container);
 
-    if (!(context))
+    if (!(context)) {
         return CL_CLEAN;
+    }
     d = (struct clamscan_cb_data *)context;
 
     c    = d->chain;
     type = (strncmp(container_type, "CL_TYPE_", 8) == 0 ? container_type + 8 : container_type);
     n    = strlen(type) + strlen(filename) + 2;
 
-    if (!c)
+    if (!c) {
         return CL_CLEAN;
+    }
 
     chain = malloc(n);
 
-    if (!chain)
+    if (!chain) {
         return CL_CLEAN;
+    }
 
-    if (!strcmp(type, "ANY"))
+    if (!strcmp(type, "ANY")) {
         snprintf(chain, n, "%s", filename);
-    else
+    } else {
         snprintf(chain, n, "%s:%s", type, filename);
+    }
 
     if (c->lastadd != c->level) {
         n = c->nchains + 1;
@@ -260,8 +275,9 @@ static cl_error_t meta(const char *container_type, unsigned long fsize_container
         c->nchains = n;
         c->lastadd = c->level;
     } else {
-        if (c->nchains > 0)
+        if (c->nchains > 0) {
             free(c->chains[c->nchains - 1]);
+        }
     }
 
     if (c->nchains > 0) {
@@ -282,12 +298,14 @@ static void clamscan_virus_found_cb(int fd, const char *virname, void *context)
 
     UNUSEDPARAM(fd);
 
-    if (data == NULL)
+    if (data == NULL) {
         return;
-    if (data->filename != NULL)
+    }
+    if (data->filename != NULL) {
         filename = data->filename;
-    else
+    } else {
         filename = "(filename not set)";
+    }
     logg(LOGG_INFO, "%s: %s FOUND\n", filename, virname);
     return;
 }
@@ -322,8 +340,9 @@ static void scanfile(const char *filename, struct cl_engine *engine, const struc
     if ((opt = optget(opts, "exclude"))->enabled) {
         while (opt) {
             if (match_regex(filename, opt->strarg) == 1) {
-                if (!printinfected)
+                if (!printinfected) {
                     logg(LOGG_INFO, "%s: Excluded\n", filename);
+                }
 
                 goto done;
             }
@@ -345,8 +364,9 @@ static void scanfile(const char *filename, struct cl_engine *engine, const struc
         }
 
         if (!included) {
-            if (!printinfected)
+            if (!printinfected) {
                 logg(LOGG_INFO, "%s: Excluded\n", filename);
+            }
 
             goto done;
         }
@@ -356,15 +376,17 @@ static void scanfile(const char *filename, struct cl_engine *engine, const struc
     if (CLAMSTAT(filename, &sb) != -1) {
 #ifdef C_LINUX
         if (procdev && sb.st_dev == procdev) {
-            if (!printinfected)
+            if (!printinfected) {
                 logg(LOGG_INFO, "%s: Excluded (/proc)\n", filename);
+            }
 
             goto done;
         }
 #endif
         if (!sb.st_size) {
-            if (!printinfected)
+            if (!printinfected) {
                 logg(LOGG_INFO, "%s: Empty file\n", filename);
+            }
 
             goto done;
         }
@@ -375,8 +397,9 @@ static void scanfile(const char *filename, struct cl_engine *engine, const struc
 #ifndef _WIN32
     if (geteuid()) {
         if (checkaccess(filename, NULL, R_OK) != 1) {
-            if (!printinfected)
+            if (!printinfected) {
                 logg(LOGG_INFO, "%s: Access denied\n", filename);
+            }
 
             info.errors++;
             goto done;
@@ -423,28 +446,33 @@ static void scanfile(const char *filename, struct cl_engine *engine, const struc
         info.files++;
         info.ifiles++;
 
-        if (bell)
+        if (bell) {
             fprintf(stderr, "\007");
+        }
     } else if (ret == CL_CLEAN) {
-        if (!printinfected && printclean)
+        if (!printinfected && printclean) {
             mprintf(LOGG_INFO, "%s: OK\n", filename);
+        }
 
         info.files++;
     } else {
-        if (!printinfected)
+        if (!printinfected) {
             logg(LOGG_INFO, "%s: %s ERROR\n", filename, cl_strerror(ret));
+        }
 
         info.errors++;
     }
 
-    for (i = 0; i < chain.nchains; i++)
+    for (i = 0; i < chain.nchains; i++) {
         free(chain.chains[i]);
+    }
 
     free(chain.chains);
     close(fd);
 
-    if (ret == CL_VIRUS && action)
+    if (ret == CL_VIRUS && action) {
         action(filename);
+    }
 
 done:
     if (NULL != real_filename) {
@@ -466,8 +494,9 @@ static void scandirs(const char *dirname, struct cl_engine *engine, const struct
     if ((opt = optget(opts, "exclude-dir"))->enabled) {
         while (opt) {
             if (match_regex(dirname, opt->strarg) == 1) {
-                if (!printinfected)
+                if (!printinfected) {
                     logg(LOGG_INFO, "%s: Excluded\n", dirname);
+                }
 
                 return;
             }
@@ -488,15 +517,17 @@ static void scandirs(const char *dirname, struct cl_engine *engine, const struct
         }
 
         if (!included) {
-            if (!printinfected)
+            if (!printinfected) {
                 logg(LOGG_INFO, "%s: Excluded\n", dirname);
+            }
 
             return;
         }
     }
 
-    if (depth > (unsigned int)optget(opts, "max-dir-recursion")->numarg)
+    if (depth > (unsigned int)optget(opts, "max-dir-recursion")->numarg) {
         return;
+    }
 
     dirlnk  = optget(opts, "follow-dir-symlinks")->numarg;
     filelnk = optget(opts, "follow-file-symlinks")->numarg;
@@ -514,17 +545,19 @@ static void scandirs(const char *dirname, struct cl_engine *engine, const struct
                         break;
                     }
 
-                    if (!strcmp(dirname, PATHSEP))
+                    if (!strcmp(dirname, PATHSEP)) {
                         sprintf(fname, PATHSEP "%s", dent->d_name);
-                    else
+                    } else {
                         sprintf(fname, "%s" PATHSEP "%s", dirname, dent->d_name);
+                    }
 
                     /* stat the file */
                     if (LSTAT(fname, &sb) != -1) {
                         if (!optget(opts, "cross-fs")->enabled) {
                             if (sb.st_dev != dev) {
-                                if (!printinfected)
+                                if (!printinfected) {
                                     logg(LOGG_INFO, "%s: Excluded\n", fname);
+                                }
 
                                 free(fname);
                                 continue;
@@ -532,17 +565,20 @@ static void scandirs(const char *dirname, struct cl_engine *engine, const struct
                         }
                         if (S_ISLNK(sb.st_mode)) {
                             if (dirlnk != 2 && filelnk != 2) {
-                                if (!printinfected)
+                                if (!printinfected) {
                                     logg(LOGG_INFO, "%s: Symbolic link\n", fname);
+                                }
                             } else if (CLAMSTAT(fname, &sb) != -1) {
                                 if (S_ISREG(sb.st_mode) && filelnk == 2) {
                                     scanfile(fname, engine, opts, options);
                                 } else if (S_ISDIR(sb.st_mode) && dirlnk == 2) {
-                                    if (recursion)
+                                    if (recursion) {
                                         scandirs(fname, engine, opts, options, depth, dev);
+                                    }
                                 } else {
-                                    if (!printinfected)
+                                    if (!printinfected) {
                                         logg(LOGG_INFO, "%s: Symbolic link\n", fname);
+                                    }
                                 }
                             }
                         } else if (S_ISREG(sb.st_mode)) {
@@ -558,8 +594,9 @@ static void scandirs(const char *dirname, struct cl_engine *engine, const struct
         }
         closedir(dd);
     } else {
-        if (!printinfected)
+        if (!printinfected) {
             logg(LOGG_INFO, "%s: Can't open directory.\n", dirname);
+        }
 
         info.errors++;
     }
@@ -619,14 +656,17 @@ static int scanstdin(const struct cl_engine *engine, struct cl_scan_options *opt
     if ((ret = cl_scanfile_callback(file, &virname, &info.blocks, engine, options, &data)) == CL_VIRUS) {
         info.ifiles++;
 
-        if (bell)
+        if (bell) {
             fprintf(stderr, "\007");
+        }
     } else if (ret == CL_CLEAN) {
-        if (!printinfected)
+        if (!printinfected) {
             mprintf(LOGG_INFO, "stdin: OK\n");
+        }
     } else {
-        if (!printinfected)
+        if (!printinfected) {
             logg(LOGG_INFO, "stdin: %s ERROR\n", cl_strerror(ret));
+        }
 
         info.errors++;
     }
@@ -1074,24 +1114,29 @@ int scanmanager(const struct optstruct *opts)
     if (optget(opts, "yara-rules")->enabled) {
         char *p = optget(opts, "yara-rules")->strarg;
         if (strcmp(p, "yes")) {
-            if (!strcmp(p, "only"))
+            if (!strcmp(p, "only")) {
                 dboptions |= CL_DB_YARA_ONLY;
-            else if (!strcmp(p, "no"))
+            } else if (!strcmp(p, "no")) {
                 dboptions |= CL_DB_YARA_EXCLUDE;
+            }
         }
     }
 
-    if (optget(opts, "phishing-sigs")->enabled)
+    if (optget(opts, "phishing-sigs")->enabled) {
         dboptions |= CL_DB_PHISHING;
+    }
 
-    if (optget(opts, "official-db-only")->enabled)
+    if (optget(opts, "official-db-only")->enabled) {
         dboptions |= CL_DB_OFFICIAL_ONLY;
+    }
 
-    if (optget(opts, "phishing-scan-urls")->enabled)
+    if (optget(opts, "phishing-scan-urls")->enabled) {
         dboptions |= CL_DB_PHISHING_URLS;
+    }
 
-    if (optget(opts, "bytecode")->enabled)
+    if (optget(opts, "bytecode")->enabled) {
         dboptions |= CL_DB_BYTECODE;
+    }
 
     if ((ret = cl_init(CL_INIT_DEFAULT))) {
         logg(LOGG_ERROR, "Can't initialize libclamav: %s\n", cl_strerror(ret));
@@ -1120,10 +1165,12 @@ int scanmanager(const struct optstruct *opts)
 #endif
     }
 
-    if ((opt = optget(opts, "cache-size"))->enabled)
+    if ((opt = optget(opts, "cache-size"))->enabled) {
         cl_engine_set_num(engine, CL_ENGINE_CACHE_SIZE, opt->numarg);
-    if (optget(opts, "disable-cache")->enabled)
+    }
+    if (optget(opts, "disable-cache")->enabled) {
         cl_engine_set_num(engine, CL_ENGINE_DISABLE_CACHE, 1);
+    }
 
     if (optget(opts, "detect-pua")->enabled) {
         dboptions |= CL_DB_PUA;
@@ -1190,41 +1237,50 @@ int scanmanager(const struct optstruct *opts)
         }
     }
 
-    if (optget(opts, "dev-ac-only")->enabled)
+    if (optget(opts, "dev-ac-only")->enabled) {
         cl_engine_set_num(engine, CL_ENGINE_AC_ONLY, 1);
+    }
 
-    if (optget(opts, "dev-ac-depth")->enabled)
+    if (optget(opts, "dev-ac-depth")->enabled) {
         cl_engine_set_num(engine, CL_ENGINE_AC_MAXDEPTH, optget(opts, "dev-ac-depth")->numarg);
+    }
 
-    if (optget(opts, "leave-temps")->enabled)
+    if (optget(opts, "leave-temps")->enabled) {
         cl_engine_set_num(engine, CL_ENGINE_KEEPTMP, 1);
+    }
 
-    if (optget(opts, "force-to-disk")->enabled)
+    if (optget(opts, "force-to-disk")->enabled) {
         cl_engine_set_num(engine, CL_ENGINE_FORCETODISK, 1);
+    }
 
-    if (optget(opts, "bytecode-unsigned")->enabled)
+    if (optget(opts, "bytecode-unsigned")->enabled) {
         dboptions |= CL_DB_BYTECODE_UNSIGNED;
+    }
 
-    if ((opt = optget(opts, "bytecode-timeout"))->enabled)
+    if ((opt = optget(opts, "bytecode-timeout"))->enabled) {
         cl_engine_set_num(engine, CL_ENGINE_BYTECODE_TIMEOUT, opt->numarg);
+    }
 
-    if (optget(opts, "nocerts")->enabled)
+    if (optget(opts, "nocerts")->enabled) {
         cl_engine_set_num(engine, CL_ENGINE_DISABLE_PE_CERTS, 1);
+    }
 
-    if (optget(opts, "dumpcerts")->enabled)
+    if (optget(opts, "dumpcerts")->enabled) {
         cl_engine_set_num(engine, CL_ENGINE_PE_DUMPCERTS, 1);
+    }
 
     if ((opt = optget(opts, "bytecode-mode"))->enabled) {
         enum bytecode_mode mode;
 
-        if (!strcmp(opt->strarg, "ForceJIT"))
+        if (!strcmp(opt->strarg, "ForceJIT")) {
             mode = CL_BYTECODE_MODE_JIT;
-        else if (!strcmp(opt->strarg, "ForceInterpreter"))
+        } else if (!strcmp(opt->strarg, "ForceInterpreter")) {
             mode = CL_BYTECODE_MODE_INTERPRETER;
-        else if (!strcmp(opt->strarg, "Test"))
+        } else if (!strcmp(opt->strarg, "Test")) {
             mode = CL_BYTECODE_MODE_TEST;
-        else
+        } else {
             mode = CL_BYTECODE_MODE_AUTO;
+        }
 
         cl_engine_set_num(engine, CL_ENGINE_BYTECODE_MODE, mode);
     }
@@ -1240,8 +1296,9 @@ int scanmanager(const struct optstruct *opts)
         }
     }
 
-    if (optget(opts, "gen-json")->enabled)
+    if (optget(opts, "gen-json")->enabled) {
         options.general |= CL_SCAN_GENERAL_COLLECT_METADATA;
+    }
 
     if ((opt = optget(opts, "tempdir"))->enabled) {
         if ((ret = cl_engine_set_str(engine, CL_ENGINE_TMPDIR, opt->strarg))) {
@@ -1394,10 +1451,12 @@ int scanmanager(const struct optstruct *opts)
 
 #ifndef _WIN32
     if (getrlimit(RLIMIT_FSIZE, &rlim) == 0) {
-        if (rlim.rlim_cur < (rlim_t)cl_engine_get_num(engine, CL_ENGINE_MAX_FILESIZE, NULL))
+        if (rlim.rlim_cur < (rlim_t)cl_engine_get_num(engine, CL_ENGINE_MAX_FILESIZE, NULL)) {
             logg(LOGG_WARNING, "System limit for file size is lower than engine->maxfilesize\n");
-        if (rlim.rlim_cur < (rlim_t)cl_engine_get_num(engine, CL_ENGINE_MAX_SCANSIZE, NULL))
+        }
+        if (rlim.rlim_cur < (rlim_t)cl_engine_get_num(engine, CL_ENGINE_MAX_SCANSIZE, NULL)) {
             logg(LOGG_WARNING, "System limit for file size is lower than engine->maxscansize\n");
+        }
     } else {
         logg(LOGG_WARNING, "Cannot obtain resource limits for file size\n");
     }
@@ -1507,24 +1566,29 @@ int scanmanager(const struct optstruct *opts)
 
     /* TODO: Remove deprecated option in a future feature release */
     if ((optget(opts, "phishing-ssl")->enabled) ||
-        (optget(opts, "alert-phishing-ssl")->enabled))
+        (optget(opts, "alert-phishing-ssl")->enabled)) {
         options.heuristic |= CL_SCAN_HEURISTIC_PHISHING_SSL_MISMATCH;
+    }
 
     /* TODO: Remove deprecated option in a future feature release */
     if ((optget(opts, "phishing-cloak")->enabled) ||
-        (optget(opts, "alert-phishing-cloak")->enabled))
+        (optget(opts, "alert-phishing-cloak")->enabled)) {
         options.heuristic |= CL_SCAN_HEURISTIC_PHISHING_CLOAK;
+    }
 
     /* TODO: Remove deprecated option in a future feature release */
     if ((optget(opts, "partition-intersection")->enabled) ||
-        (optget(opts, "alert-partition-intersection")->enabled))
+        (optget(opts, "alert-partition-intersection")->enabled)) {
         options.heuristic |= CL_SCAN_HEURISTIC_PARTITION_INTXN;
+    }
 
-    if (optget(opts, "heuristic-scan-precedence")->enabled)
+    if (optget(opts, "heuristic-scan-precedence")->enabled) {
         options.general |= CL_SCAN_GENERAL_HEURISTIC_PRECEDENCE;
+    }
 
-    if (optget(opts, "scan-archive")->enabled)
+    if (optget(opts, "scan-archive")->enabled) {
         options.parse |= CL_SCAN_PARSE_ARCHIVE;
+    }
 
     /* TODO: Remove deprecated option in a future feature release */
     if ((optget(opts, "detect-broken")->enabled) ||
@@ -1543,11 +1607,13 @@ int scanmanager(const struct optstruct *opts)
         options.heuristic |= CL_SCAN_HEURISTIC_ENCRYPTED_DOC;
     }
 
-    if (optget(opts, "alert-encrypted-archive")->enabled)
+    if (optget(opts, "alert-encrypted-archive")->enabled) {
         options.heuristic |= CL_SCAN_HEURISTIC_ENCRYPTED_ARCHIVE;
+    }
 
-    if (optget(opts, "alert-encrypted-doc")->enabled)
+    if (optget(opts, "alert-encrypted-doc")->enabled) {
         options.heuristic |= CL_SCAN_HEURISTIC_ENCRYPTED_DOC;
+    }
 
     /* TODO: Remove deprecated option in a future feature release */
     if ((optget(opts, "block-macros")->enabled) ||
@@ -1555,41 +1621,53 @@ int scanmanager(const struct optstruct *opts)
         options.heuristic |= CL_SCAN_HEURISTIC_MACROS;
     }
 
-    if (optget(opts, "scan-pe")->enabled)
+    if (optget(opts, "scan-pe")->enabled) {
         options.parse |= CL_SCAN_PARSE_PE;
+    }
 
-    if (optget(opts, "scan-elf")->enabled)
+    if (optget(opts, "scan-elf")->enabled) {
         options.parse |= CL_SCAN_PARSE_ELF;
+    }
 
-    if (optget(opts, "scan-ole2")->enabled)
+    if (optget(opts, "scan-ole2")->enabled) {
         options.parse |= CL_SCAN_PARSE_OLE2;
+    }
 
-    if (optget(opts, "scan-pdf")->enabled)
+    if (optget(opts, "scan-pdf")->enabled) {
         options.parse |= CL_SCAN_PARSE_PDF;
+    }
 
-    if (optget(opts, "scan-swf")->enabled)
+    if (optget(opts, "scan-swf")->enabled) {
         options.parse |= CL_SCAN_PARSE_SWF;
+    }
 
-    if (optget(opts, "scan-html")->enabled && optget(opts, "normalize")->enabled)
+    if (optget(opts, "scan-html")->enabled && optget(opts, "normalize")->enabled) {
         options.parse |= CL_SCAN_PARSE_HTML;
+    }
 
-    if (optget(opts, "scan-mail")->enabled)
+    if (optget(opts, "scan-mail")->enabled) {
         options.parse |= CL_SCAN_PARSE_MAIL;
+    }
 
-    if (optget(opts, "scan-xmldocs")->enabled)
+    if (optget(opts, "scan-xmldocs")->enabled) {
         options.parse |= CL_SCAN_PARSE_XMLDOCS;
+    }
 
-    if (optget(opts, "scan-hwp3")->enabled)
+    if (optget(opts, "scan-hwp3")->enabled) {
         options.parse |= CL_SCAN_PARSE_HWP3;
+    }
 
-    if (optget(opts, "scan-onenote")->enabled)
+    if (optget(opts, "scan-onenote")->enabled) {
         options.parse |= CL_SCAN_PARSE_ONENOTE;
+    }
 
-    if (optget(opts, "scan-image")->enabled)
+    if (optget(opts, "scan-image")->enabled) {
         options.parse |= CL_SCAN_PARSE_IMAGE;
+    }
 
-    if (optget(opts, "scan-image-fuzzy-hash")->enabled)
+    if (optget(opts, "scan-image-fuzzy-hash")->enabled) {
         options.parse |= CL_SCAN_PARSE_IMAGE_FUZZY_HASH;
+    }
 
     /* TODO: Remove deprecated option in a future feature release */
     if ((optget(opts, "algorithmic-detection")->enabled) && /* && used due to default-yes for both options */
@@ -1612,8 +1690,9 @@ int scanmanager(const struct optstruct *opts)
         options.dev |= CL_SCAN_DEV_COLLECT_SHA;
 #endif
 
-    if (optget(opts, "dev-performance")->enabled)
+    if (optget(opts, "dev-performance")->enabled) {
         options.dev |= CL_SCAN_DEV_COLLECT_PERFORMANCE_INFO;
+    }
 
     if (optget(opts, "detect-structured")->enabled) {
         options.heuristic |= CL_SCAN_HEURISTIC_STRUCTURED;
@@ -1724,10 +1803,11 @@ done:
     cl_engine_free(engine);
 
     /* overwrite return code - infection takes priority */
-    if (info.ifiles)
+    if (info.ifiles) {
         ret = 1;
-    else if (info.errors)
+    } else if (info.errors) {
         ret = 2;
+    }
 
     return ret;
 }

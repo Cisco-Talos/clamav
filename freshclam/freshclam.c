@@ -89,8 +89,9 @@ sighandler(int sig)
     switch (sig) {
 #ifdef SIGCHLD
         case SIGCHLD:
-            if (g_sigchildWait)
+            if (g_sigchildWait) {
                 waitpid(-1, NULL, WNOHANG);
+            }
             g_active_children--;
             break;
 #endif
@@ -115,10 +116,12 @@ sighandler(int sig)
             break;
 #endif
         default:
-            if (*g_freshclamTempDirectory)
+            if (*g_freshclamTempDirectory) {
                 cli_rmdirs(g_freshclamTempDirectory);
-            if (g_pidfile)
+            }
+            if (g_pidfile) {
                 unlink(g_pidfile);
+            }
             logg(LOGG_INFO, "Update process terminated\n");
             exit(0);
     }
@@ -371,8 +374,9 @@ fc_error_t download_complete_callback(const char *dbFilename, void *context)
                     firstline[0] = 0;
                     lastline[0]  = 0;
                     do {
-                        if (!fgets(firstline, sizeof(firstline), pipeHandle))
+                        if (!fgets(firstline, sizeof(firstline), pipeHandle)) {
                             break;
+                        }
                         /* ignore warning messages, otherwise the outdated warning will
                          * make us miss the important part of the error message */
                     } while (!strncmp(firstline, "LibClamAV Warning:", 18));
@@ -388,8 +392,9 @@ fc_error_t download_complete_callback(const char *dbFilename, void *context)
                         continue;
                     }
 
-                    if ((waitpidret == -1) && (errno != ECHILD))
+                    if ((waitpidret == -1) && (errno != ECHILD)) {
                         logg(LOGG_WARNING, "waitpid() failed: %s\n", strerror(errno));
+                    }
 
                     /* Strip trailing whitespace from child error output */
                     cli_chomp(firstline);
@@ -408,8 +413,9 @@ fc_error_t download_complete_callback(const char *dbFilename, void *context)
                             goto done;
                         }
 
-                        if (firstline[0])
+                        if (firstline[0]) {
                             logg(LOGG_WARNING, "Database successfully loaded, but there is stderr output\n");
+                        }
 
                     } else if (WIFSIGNALED(stat_loc)) {
                         logg(LOGG_ERROR, "Database load killed by signal %d\n", WTERMSIG(stat_loc));
@@ -866,8 +872,9 @@ static fc_error_t initialize(struct optstruct *opts)
     /* Set libclamav Message and [file-based] Logging option flags.
        mprintf and logg options are also directly set, as they are also
        used in freshclam (not only used in libfreshclam) */
-    if (optget(opts, "Debug")->enabled || optget(opts, "debug")->enabled)
+    if (optget(opts, "Debug")->enabled || optget(opts, "debug")->enabled) {
         fcConfig.msgFlags |= FC_CONFIG_MSG_DEBUG;
+    }
 
     if ((optget(opts, "verbose")->enabled) ||
         (optget(opts, "LogVerbose")->enabled)) {
@@ -903,8 +910,9 @@ static fc_error_t initialize(struct optstruct *opts)
     if (optget(opts, "LogFileMaxSize")->numarg && optget(opts, "LogRotate")->enabled) {
         fcConfig.logFlags |= FC_CONFIG_LOG_ROTATE;
     }
-    if (optget(opts, "LogSyslog")->enabled)
+    if (optget(opts, "LogSyslog")->enabled) {
         fcConfig.logFlags |= FC_CONFIG_LOG_SYSLOG;
+    }
 
     logFileOpt = optget(opts, "UpdateLogFile");
     if (logFileOpt->enabled) {
@@ -922,8 +930,9 @@ static fc_error_t initialize(struct optstruct *opts)
     }
 #endif
 
-    if ((optget(opts, "LocalIPAddress"))->enabled)
+    if ((optget(opts, "LocalIPAddress"))->enabled) {
         fcConfig.localIP = (optget(opts, "LocalIPAddress"))->strarg;
+    }
 
     /* Select a path for the temp directory:  databaseDirectory/tmp */
     tempDirectory          = cli_gentemp_with_prefix(fcConfig.databaseDirectory, "tmp");
@@ -960,8 +969,9 @@ static fc_error_t initialize(struct optstruct *opts)
     /* Initialize proxy settings */
     if (optget(opts, "HTTPProxyServer")->enabled) {
         fcConfig.proxyServer = optget(opts, "HTTPProxyServer")->strarg;
-        if (strncasecmp(fcConfig.proxyServer, "http://", strlen("http://")) == 0)
+        if (strncasecmp(fcConfig.proxyServer, "http://", strlen("http://")) == 0) {
             fcConfig.proxyServer += strlen("http://");
+        }
 
         if (optget(opts, "HTTPProxyUsername")->enabled) {
             fcConfig.proxyUsername = optget(opts, "HTTPProxyUsername")->strarg;
@@ -973,8 +983,9 @@ static fc_error_t initialize(struct optstruct *opts)
                 goto done;
             }
         }
-        if (optget(opts, "HTTPProxyPort")->enabled)
+        if (optget(opts, "HTTPProxyPort")->enabled) {
             fcConfig.proxyPort = (uint16_t)optget(opts, "HTTPProxyPort")->numarg;
+        }
         logg(LOGG_INFO, "Connecting via %s\n", fcConfig.proxyServer);
     }
 
@@ -1677,8 +1688,9 @@ int main(int argc, char **argv)
     int i;
     pid_t parentPid = getpid();
 
-    if (check_flevel())
+    if (check_flevel()) {
         exit(FC_EINIT);
+    }
 
     if ((opts = optparse(NULL, argc, argv, 1, OPT_FRESHCLAM, 0, NULL)) == NULL) {
         mprintf(LOGG_ERROR, "Can't parse command line options\n");
@@ -2099,11 +2111,13 @@ int main(int argc, char **argv)
 #endif
 
             if (ret > FC_UPTODATE) {
-                if ((opt = optget(opts, "OnErrorExecute"))->enabled)
+                if ((opt = optget(opts, "OnErrorExecute"))->enabled) {
                     arg = opt->strarg;
+                }
 
-                if (arg)
+                if (arg) {
                     execute("OnErrorExecute", arg, optget(opts, "daemon")->enabled);
+                }
 
                 arg = NULL;
 
@@ -2160,8 +2174,9 @@ int main(int argc, char **argv)
 done:
 
     if ((status > FC_UPTODATE) && (NULL != opts)) {
-        if ((opt = optget(opts, "OnErrorExecute"))->enabled)
+        if ((opt = optget(opts, "OnErrorExecute"))->enabled) {
             execute("OnErrorExecute", opt->strarg, optget(opts, "daemon")->enabled);
+        }
     }
 
     logg_close();

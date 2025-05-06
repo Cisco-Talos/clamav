@@ -86,14 +86,16 @@ static int nsis_init(struct nsis_st *n)
     switch (n->comp) {
         case COMP_BZIP2:
             memset(&n->bz, 0, sizeof(nsis_bzstream));
-            if (nsis_BZ2_bzDecompressInit(&n->bz, 0, 0) != BZ_OK)
+            if (nsis_BZ2_bzDecompressInit(&n->bz, 0, 0) != BZ_OK) {
                 return CL_EUNPACK;
+            }
             n->freecomp = 1;
             break;
         case COMP_LZMA:
             memset(&n->lz, 0, sizeof(struct CLI_LZMA));
-            if (cli_LzmaInit(&n->lz, 0xffffffffffffffffULL) != LZMA_RESULT_OK)
+            if (cli_LzmaInit(&n->lz, 0xffffffffffffffffULL) != LZMA_RESULT_OK) {
                 return CL_EUNPACK;
+            }
             n->freecomp = 1;
             break;
         case COMP_ZLIB:
@@ -108,8 +110,9 @@ static int nsis_init(struct nsis_st *n)
 
 static void nsis_shutdown(struct nsis_st *n)
 {
-    if (!n->freecomp)
+    if (!n->freecomp) {
         return;
+    }
 
     switch (n->comp) {
         case COMP_BZIP2:
@@ -198,13 +201,15 @@ static int nsis_unpack_next(struct nsis_st *n, cli_ctx *ctx)
         return CL_BREAK;
     }
 
-    if ((ret = cli_checklimits("NSIS", ctx, 0, 0, 0)) != CL_CLEAN)
+    if ((ret = cli_checklimits("NSIS", ctx, 0, 0, 0)) != CL_CLEAN) {
         return ret;
+    }
 
-    if (n->fno)
+    if (n->fno) {
         snprintf(n->ofn, 1023, "%s" PATHSEP "content.%.3u", n->dir, n->fno);
-    else
+    } else {
         snprintf(n->ofn, 1023, "%s" PATHSEP "headers", n->dir);
+    }
 
     n->fno++;
     n->opened = 0;
@@ -347,7 +352,9 @@ static int nsis_unpack_next(struct nsis_st *n, cli_ctx *ctx)
         loops             = 0;
 
         while ((ret = nsis_decomp(n)) == CL_SUCCESS) {
-            if (n->nsis.next_out - obuf == 4) break;
+            if (n->nsis.next_out - obuf == 4) {
+                break;
+            }
             if (++loops > 20) {
                 cli_dbgmsg("NSIS: xs looping, breaking out"__AT__
                            "\n");
@@ -437,8 +444,12 @@ static int nsis_unpack_next(struct nsis_st *n, cli_ctx *ctx)
 
 static uint8_t nsis_detcomp(const char *b)
 {
-    if (*b == '1') return COMP_BZIP2;
-    if ((cli_readint32(b) & ~0x80000000) == 0x5d) return COMP_LZMA;
+    if (*b == '1') {
+        return COMP_BZIP2;
+    }
+    if ((cli_readint32(b) & ~0x80000000) == 0x5d) {
+        return COMP_LZMA;
+    }
     return COMP_ZLIB;
 }
 
@@ -449,8 +460,9 @@ static int nsis_headers(struct nsis_st *n, cli_ctx *ctx)
     int i;
     uint8_t comps[] = {0, 0, 0, 0}, trunc = 0;
 
-    if (!(buf = fmap_need_off_once(n->map, n->off, 0x1c)))
+    if (!(buf = fmap_need_off_once(n->map, n->off, 0x1c))) {
         return CL_EREAD;
+    }
 
     n->hsz    = (uint32_t)cli_readint32(buf + 0x14);
     n->asz    = (uint32_t)cli_readint32(buf + 0x18);
@@ -472,13 +484,19 @@ static int nsis_headers(struct nsis_st *n, cli_ctx *ctx)
     /* Guess if solid */
     for (i = 0, pos = 0; pos < n->asz - 4; i++) {
         int32_t nextsz;
-        if (!(buf = fmap_need_ptr_once(n->map, (void *)buf, 4))) return CL_EREAD;
+        if (!(buf = fmap_need_ptr_once(n->map, (void *)buf, 4))) {
+            return CL_EREAD;
+        }
         nextsz = cli_readint32(buf);
-        if (!i) n->comp = nsis_detcomp(buf);
+        if (!i) {
+            n->comp = nsis_detcomp(buf);
+        }
         buf += 4;
         if (nextsz & 0x80000000) {
             nextsz &= ~0x80000000;
-            if (!(buf = fmap_need_ptr_once(n->map, (void *)buf, 4))) return CL_EREAD;
+            if (!(buf = fmap_need_ptr_once(n->map, (void *)buf, 4))) {
+                return CL_EREAD;
+            }
             comps[nsis_detcomp(buf)]++;
             nextsz -= 4;
             pos += 4;
@@ -492,7 +510,9 @@ static int nsis_headers(struct nsis_st *n, cli_ctx *ctx)
         buf += nextsz;
     }
 
-    if (trunc && i >= 2) n->solid = 0;
+    if (trunc && i >= 2) {
+        n->solid = 0;
+    }
 
     cli_dbgmsg("NSIS: solid compression%s detected\n", (n->solid) ? "" : " not");
 
@@ -521,8 +541,9 @@ int cli_scannulsft(cli_ctx *ctx, off_t offset)
     memset(&nsist, 0, sizeof(struct nsis_st));
 
     nsist.off = offset;
-    if (!(nsist.dir = cli_gentemp_with_prefix(ctx->sub_tmpdir, "nulsft-tmp")))
+    if (!(nsist.dir = cli_gentemp_with_prefix(ctx->sub_tmpdir, "nulsft-tmp"))) {
         return CL_ETMPDIR;
+    }
     if (mkdir(nsist.dir, 0700)) {
         cli_dbgmsg("NSIS: Can't create temporary directory %s\n", nsist.dir);
         free(nsist.dir);
@@ -530,7 +551,9 @@ int cli_scannulsft(cli_ctx *ctx, off_t offset)
     }
 
     nsist.map = ctx->fmap;
-    if (ctx->engine->keeptmp) cli_dbgmsg("NSIS: Extracting files to %s\n", nsist.dir);
+    if (ctx->engine->keeptmp) {
+        cli_dbgmsg("NSIS: Extracting files to %s\n", nsist.dir);
+    }
 
     do {
         ret = cli_nsis_unpack(&nsist, ctx);
@@ -561,8 +584,9 @@ int cli_scannulsft(cli_ctx *ctx, off_t offset)
         }
     } while (ret == CL_SUCCESS);
 
-    if (ret == CL_BREAK)
+    if (ret == CL_BREAK) {
         ret = CL_CLEAN;
+    }
 
     nsis_shutdown(&nsist);
 

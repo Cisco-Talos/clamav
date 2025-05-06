@@ -33,13 +33,15 @@ bool arc4_init(struct arc4_state *a, const uint8_t *key, unsigned keylength)
     uint8_t j;
     uint32_t *S;
 
-    if (NULL == a || NULL == key || 0 == keylength)
+    if (NULL == a || NULL == key || 0 == keylength) {
         return false;
+    }
 
     S = &a->S[0];
 
-    for (i = 0; i < 256; i++)
+    for (i = 0; i < 256; i++) {
         S[i] = i;
+    }
     for (i = 0, j = 0; i < 256; i++) {
         uint8_t tmp = S[i];
         j           = j + S[i] + key[i % keylength];

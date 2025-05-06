@@ -76,13 +76,15 @@ int connect_host(const char *host, const char *port, uint32_t timeout, int useAs
     hints.ai_family   = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
 
-    if (getaddrinfo(host, port, &hints, &servinfo))
+    if (getaddrinfo(host, port, &hints, &servinfo)) {
         return -1;
+    }
 
     for (p = servinfo; p != NULL; p = p->ai_next) {
         sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
-        if (sockfd < 0)
+        if (sockfd < 0) {
             continue;
+        }
 
         if (useAsync) {
             flags = fcntl(sockfd, F_GETFL, 0);
@@ -135,8 +137,9 @@ int connect_host(const char *host, const char *port, uint32_t timeout, int useAs
 
     if (!(p)) {
         freeaddrinfo(servinfo);
-        if (sockfd >= 0)
+        if (sockfd >= 0) {
             closesocket(sockfd);
+        }
         return -1;
     }
 
@@ -158,8 +161,9 @@ size_t encoded_size(const char *postdata)
     const char *p;
     size_t len = 0;
 
-    for (p = postdata; *p != '\0'; p++)
+    for (p = postdata; *p != '\0'; p++) {
         len += isalnum(*p) ? 1 : 3;
+    }
 
     return len;
 }
@@ -170,12 +174,14 @@ char *encode_data(const char *postdata)
     size_t bufsz, i, j;
 
     bufsz = encoded_size(postdata);
-    if (bufsz == 0)
+    if (bufsz == 0) {
         return NULL;
+    }
 
     buf = cli_max_calloc(1, bufsz + 1);
-    if (!(buf))
+    if (!(buf)) {
         return NULL;
+    }
 
     for (i = 0, j = 0; postdata[i] != '\0'; i++) {
         if (isalnum(postdata[i])) {
@@ -205,12 +211,15 @@ void submit_post(const char *host, const char *port, const char *method, const c
         "POST",
         NULL};
 
-    for (i = 0; acceptable_methods[i] != NULL; i++)
-        if (!strcmp(method, acceptable_methods[i]))
+    for (i = 0; acceptable_methods[i] != NULL; i++) {
+        if (!strcmp(method, acceptable_methods[i])) {
             break;
+        }
+    }
 
-    if (acceptable_methods[i] == NULL)
+    if (acceptable_methods[i] == NULL) {
         return;
+    }
 
     bufsz = strlen(method);
     bufsz += sizeof("   HTTP/1.1") + 2; /* Yes. Three blank spaces. +1 for the \n */
@@ -222,8 +231,9 @@ void submit_post(const char *host, const char *port, const char *method, const c
 
     if (!strcmp(method, "POST") || !strcmp(method, "PUT")) {
         encoded = encode_data(postdata);
-        if (!(encoded))
+        if (!(encoded)) {
             return;
+        }
         snprintf(chunkedlen, sizeof(chunkedlen), "%zu", strlen(encoded));
         bufsz += sizeof("Content-Type: application/x-www-form-urlencoded\r\n");
         bufsz += sizeof("Content-Length: \r\n");
@@ -233,8 +243,9 @@ void submit_post(const char *host, const char *port, const char *method, const c
 
     buf = cli_max_calloc(1, bufsz);
     if (!(buf)) {
-        if ((encoded))
+        if ((encoded)) {
             free(encoded);
+        }
 
         return;
     }
@@ -281,13 +292,15 @@ void submit_post(const char *host, const char *port, const char *method, const c
          */
         tv.tv_sec  = timeout;
         tv.tv_usec = 0;
-        if ((n = select(sockfd + 1, &readfds, NULL, NULL, &tv)) <= 0)
+        if ((n = select(sockfd + 1, &readfds, NULL, NULL, &tv)) <= 0) {
             break;
+        }
 
         if (FD_ISSET(sockfd, &readfds)) {
             memset(buf, 0x00, bufsz);
-            if ((recvsz = recv(sockfd, buf, bufsz - 1, 0) <= 0))
+            if ((recvsz = recv(sockfd, buf, bufsz - 1, 0) <= 0)) {
                 break;
+            }
 
             buf[bufsz - 1] = '\0';
 

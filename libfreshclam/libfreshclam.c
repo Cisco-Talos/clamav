@@ -145,7 +145,9 @@ fc_error_t fc_initialize(fc_config *fcConfig)
     curl_global_init(CURL_GLOBAL_ALL);
 
     /* Initialize mprintf options */
-    if (fcConfig->msgFlags & FC_CONFIG_MSG_DEBUG) cl_debug();
+    if (fcConfig->msgFlags & FC_CONFIG_MSG_DEBUG) {
+        cl_debug();
+    }
     mprintf_verbose  = (fcConfig->msgFlags & FC_CONFIG_MSG_VERBOSE) ? 1 : 0;
     mprintf_quiet    = (fcConfig->msgFlags & FC_CONFIG_MSG_QUIET) ? 1 : 0;
     mprintf_nowarn   = (fcConfig->msgFlags & FC_CONFIG_MSG_NOWARN) ? 1 : 0;
@@ -208,10 +210,11 @@ fc_error_t fc_initialize(fc_config *fcConfig)
              */
             const struct servent *webcache = getservbyname("webcache", "TCP");
 
-            if (webcache)
+            if (webcache) {
                 g_proxyPort = ntohs(webcache->s_port);
-            else
+            } else {
                 g_proxyPort = 8080;
+            }
 
             endservent();
         }
@@ -446,10 +449,12 @@ int version_string_compare(char *v1, size_t v1_len, char *v2, size_t v2_len)
             j++;
         }
 
-        if (vnum1 > vnum2)
+        if (vnum1 > vnum2) {
             return 1;
-        if (vnum2 > vnum1)
+        }
+        if (vnum2 > vnum1) {
             return -1;
+        }
 
         vnum1 = vnum2 = 0;
         i++;
@@ -506,8 +511,9 @@ fc_error_t fc_test_database(const char *dbFilename, int bBytecodeEnabled)
 done:
 
     if (NULL != engine) {
-        if (engine->domain_list_matcher && engine->domain_list_matcher->sha256_pfx_set.keys)
+        if (engine->domain_list_matcher && engine->domain_list_matcher->sha256_pfx_set.keys) {
             cli_hashset_destroy(&engine->domain_list_matcher->sha256_pfx_set);
+        }
 
         cl_engine_free(engine);
     }
@@ -581,8 +587,9 @@ fc_error_t fc_dns_query_update_info(
         goto done;
     }
 
-    if (*reply_token == '0')
+    if (*reply_token == '0') {
         vwarning = 0;
+    }
     free(reply_token);
     reply_token = NULL;
 

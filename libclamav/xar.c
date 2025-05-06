@@ -45,8 +45,9 @@
 static int xar_cleanup_temp_file(cli_ctx *ctx, int fd, char *tmpname)
 {
     int rc = CL_SUCCESS;
-    if (fd > -1)
+    if (fd > -1) {
         close(fd);
+    }
     if (tmpname != NULL) {
         if (!ctx->engine->keeptmp) {
             if (cli_unlink(tmpname)) {
@@ -122,8 +123,9 @@ static void xar_get_checksum_values(xmlTextReaderPtr reader, unsigned char **cks
             *hash = XAR_CKSUM_OTHER;
         }
     }
-    if (style != NULL)
+    if (style != NULL) {
         xmlFree(style);
+    }
 
     if (xmlTextReaderRead(reader) == 1 && xmlTextReaderNodeType(reader) == XML_READER_TYPE_TEXT) {
         xmlval = xmlTextReaderConstValue(reader);
@@ -141,8 +143,9 @@ static void xar_get_checksum_values(xmlTextReaderPtr reader, unsigned char **cks
             *cksum = NULL;
             cli_dbgmsg("cli_scanxar: xmlTextReaderConstValue() returns NULL for checksum value.\n");
         }
-    } else
+    } else {
         cli_dbgmsg("cli_scanxar: No text for XML checksum element.\n");
+    }
 }
 
 /*
@@ -180,18 +183,21 @@ static int xar_get_toc_data_values(xmlTextReaderPtr reader, size_t *length, size
             /*  cli_dbgmsg("cli_scanxar: xmlTextReaderRead read %s\n", name); */
             if (xmlStrEqual(name, (const xmlChar *)"offset") &&
                 xmlTextReaderNodeType(reader) == XML_READER_TYPE_ELEMENT) {
-                if (CL_SUCCESS == xar_get_numeric_from_xml_element(reader, offset))
+                if (CL_SUCCESS == xar_get_numeric_from_xml_element(reader, offset)) {
                     gotoffset = 1;
+                }
 
             } else if (xmlStrEqual(name, (const xmlChar *)"length") &&
                        xmlTextReaderNodeType(reader) == XML_READER_TYPE_ELEMENT) {
-                if (CL_SUCCESS == xar_get_numeric_from_xml_element(reader, length))
+                if (CL_SUCCESS == xar_get_numeric_from_xml_element(reader, length)) {
                     gotlength = 1;
+                }
 
             } else if (xmlStrEqual(name, (const xmlChar *)"size") &&
                        xmlTextReaderNodeType(reader) == XML_READER_TYPE_ELEMENT) {
-                if (CL_SUCCESS == xar_get_numeric_from_xml_element(reader, size))
+                if (CL_SUCCESS == xar_get_numeric_from_xml_element(reader, size)) {
                     gotsize = 1;
+                }
 
             } else if (xmlStrEqual(name, (const xmlChar *)"archived-checksum") &&
                        xmlTextReaderNodeType(reader) == XML_READER_TYPE_ELEMENT) {
@@ -230,8 +236,9 @@ static int xar_get_toc_data_values(xmlTextReaderPtr reader, size_t *length, size
                     cli_dbgmsg("cli_scaxar: unknown style value=%s for encoding element\n", style);
                     *encoding = CL_TYPE_ANY;
                 }
-                if (style != NULL)
+                if (style != NULL) {
                     xmlFree(style);
+                }
 
             } else if (indata && xmlStrEqual(name, (const xmlChar *)"data") &&
                        xmlTextReaderNodeType(reader) == XML_READER_TYPE_END_ELEMENT) {
@@ -262,10 +269,11 @@ static int xar_get_toc_data_values(xmlTextReaderPtr reader, size_t *length, size
 
     if (gotoffset && gotlength && gotsize) {
         rc = CL_SUCCESS;
-    } else if (0 == gotoffset + gotlength + gotsize)
+    } else if (0 == gotoffset + gotlength + gotsize) {
         rc = CL_BREAK;
-    else
+    } else {
         rc = CL_EFORMAT;
+    }
 
     return rc;
 }
@@ -295,8 +303,9 @@ static int xar_scan_subdocuments(xmlTextReaderPtr reader, cli_ctx *ctx)
             break;
         }
         if (xmlStrEqual(name, (const xmlChar *)"toc") &&
-            xmlTextReaderNodeType(reader) == XML_READER_TYPE_ELEMENT)
+            xmlTextReaderNodeType(reader) == XML_READER_TYPE_ELEMENT) {
             return CL_SUCCESS;
+        }
         if (xmlStrEqual(name, (const xmlChar *)"subdoc") &&
             xmlTextReaderNodeType(reader) == XML_READER_TYPE_ELEMENT) {
             subdoc = xmlTextReaderReadInnerXml(reader);
@@ -325,8 +334,9 @@ static int xar_scan_subdocuments(xmlTextReaderPtr reader, cli_ctx *ctx)
             }
 
             xmlFree(subdoc);
-            if (rc != CL_SUCCESS)
+            if (rc != CL_SUCCESS) {
                 return rc;
+            }
             xmlTextReaderNext(reader);
         }
     }
@@ -335,8 +345,9 @@ static int xar_scan_subdocuments(xmlTextReaderPtr reader, cli_ctx *ctx)
 
 static void *xar_hash_init(int hash, void **sc, void **mc)
 {
-    if (!sc && !mc)
+    if (!sc && !mc) {
         return NULL;
+    }
     switch (hash) {
         case XAR_CKSUM_SHA1:
             *sc = cl_hash_init("sha1");
@@ -361,8 +372,9 @@ static void *xar_hash_init(int hash, void **sc, void **mc)
 
 static void xar_hash_update(void *hash_ctx, void *data, unsigned long size, int hash)
 {
-    if (!hash_ctx || !data || !size)
+    if (!hash_ctx || !data || !size) {
         return;
+    }
 
     switch (hash) {
         case XAR_CKSUM_NONE:
@@ -375,8 +387,9 @@ static void xar_hash_update(void *hash_ctx, void *data, unsigned long size, int 
 
 static void xar_hash_final(void *hash_ctx, void *result, int hash)
 {
-    if (!hash_ctx || !result)
+    if (!hash_ctx || !result) {
         return;
+    }
 
     switch (hash) {
         case XAR_CKSUM_OTHER:
@@ -391,8 +404,9 @@ static int xar_hash_check(int hash, const void *result, const void *expected)
 {
     int len;
 
-    if (!result || !expected)
+    if (!result || !expected) {
         return 1;
+    }
     switch (hash) {
         case XAR_CKSUM_SHA1:
             len = CLI_HASHLEN_SHA1;
@@ -531,8 +545,9 @@ int cli_scanxar(cli_ctx *ctx)
         }
         rc      = xar_cleanup_temp_file(ctx, fd, tmpname);
         tmpname = NULL;
-        if (rc != CL_SUCCESS)
+        if (rc != CL_SUCCESS) {
             goto exit_toc;
+        }
     }
 
     reader = xmlReaderForMemory(toc, hdr.toc_length_decompressed, "noname.xml", NULL, CLAMAV_MIN_XMLREADER_FLAGS);
@@ -562,8 +577,9 @@ int cli_scanxar(cli_ctx *ctx)
         if (fd > -1 && tmpname) {
             rc      = xar_cleanup_temp_file(ctx, fd, tmpname);
             tmpname = NULL;
-            if (rc != CL_SUCCESS)
+            if (rc != CL_SUCCESS) {
                 goto exit_reader;
+            }
         }
 
         at = offset + hdr.toc_length_compressed + hdr.size;
@@ -619,8 +635,9 @@ int cli_scanxar(cli_ctx *ctx)
 
                         bytes = sizeof(buff) - strm.avail_out;
 
-                        if (e_hash_ctx != NULL)
+                        if (e_hash_ctx != NULL) {
                             xar_hash_update(e_hash_ctx, buff, bytes, e_hash);
+                        }
 
                         if (cli_writen(fd, buff, bytes) == (size_t)-1) {
                             cli_dbgmsg("cli_scanxar: cli_writen error file %s.\n", tmpname);
@@ -637,12 +654,14 @@ int cli_scanxar(cli_ctx *ctx)
                         }
                     } while (strm.avail_out == 0);
 
-                    if (rc != CL_SUCCESS)
+                    if (rc != CL_SUCCESS) {
                         break;
+                    }
 
                     avail_in -= strm.avail_in;
-                    if (a_hash_ctx != NULL)
+                    if (a_hash_ctx != NULL) {
                         xar_hash_update(a_hash_ctx, next_in, avail_in, a_hash);
+                    }
                 }
 
                 inflateEnd(&strm);
@@ -658,8 +677,9 @@ int cli_scanxar(cli_ctx *ctx)
                 unsigned char *buff        = __lzma_wrap_alloc(NULL, CLI_LZMA_OBUF_SIZE);
                 int lret;
 
-                if (length > in_remaining)
+                if (length > in_remaining) {
                     length = in_remaining;
+                }
 
                 memset(&lz, 0, sizeof(lz));
                 if (buff == NULL) {
@@ -682,8 +702,9 @@ int cli_scanxar(cli_ctx *ctx)
                 lz.next_in  = blockp;
                 lz.avail_in = CLI_LZMA_HDR_SIZE;
 
-                if (a_hash_ctx != NULL)
+                if (a_hash_ctx != NULL) {
                     xar_hash_update(a_hash_ctx, blockp, CLI_LZMA_HDR_SIZE, a_hash);
+                }
 
                 lret = cli_LzmaInit(&lz, 0);
                 if (lret != LZMA_RESULT_OK) {
@@ -730,15 +751,18 @@ int cli_scanxar(cli_ctx *ctx)
                     at += in_consumed;
                     avail_out = CLI_LZMA_OBUF_SIZE - lz.avail_out;
 
-                    if (avail_out == 0)
+                    if (avail_out == 0) {
                         cli_dbgmsg("cli_scanxar: cli_LzmaDecode() produces no output for "
                                    "avail_in %llu, avail_out %llu.\n",
                                    (long long unsigned)avail_in, (long long unsigned)avail_out);
+                    }
 
-                    if (a_hash_ctx != NULL)
+                    if (a_hash_ctx != NULL) {
                         xar_hash_update(a_hash_ctx, next_in, in_consumed, a_hash);
-                    if (e_hash_ctx != NULL)
+                    }
+                    if (e_hash_ctx != NULL) {
                         xar_hash_update(e_hash_ctx, buff, avail_out, e_hash);
+                    }
 
                     /* Write a decompressed block. */
                     /* cli_dbgmsg("Writing %li bytes to LZMA decompress temp file, " */
@@ -760,8 +784,9 @@ int cli_scanxar(cli_ctx *ctx)
                         break;
                     }
 
-                    if (lret == LZMA_STREAM_END)
+                    if (lret == LZMA_STREAM_END) {
                         break;
+                    }
                 }
 
                 cli_LzmaShutdown(&lz);
@@ -776,8 +801,9 @@ int cli_scanxar(cli_ctx *ctx)
                 {
                     size_t writelen = MIN(map->len - at, length);
 
-                    if (ctx->engine->maxfilesize)
+                    if (ctx->engine->maxfilesize) {
                         writelen = MIN((size_t)(ctx->engine->maxfilesize), writelen);
+                    }
 
                     if (!(blockp = (void *)fmap_need_off_once(map, at, writelen))) {
                         char errbuff[128];
@@ -788,8 +814,9 @@ int cli_scanxar(cli_ctx *ctx)
                         goto exit_tmpfile;
                     }
 
-                    if (a_hash_ctx != NULL)
+                    if (a_hash_ctx != NULL) {
                         xar_hash_update(a_hash_ctx, blockp, writelen, a_hash);
+                    }
 
                     if (cli_writen(fd, blockp, writelen) == (size_t)-1) {
                         cli_dbgmsg("cli_scanxar: cli_writen error %zu bytes @ %zu.\n", writelen, at);
@@ -858,23 +885,28 @@ int cli_scanxar(cli_ctx *ctx)
 
 exit_tmpfile:
     xar_cleanup_temp_file(ctx, fd, tmpname);
-    if (a_hash_ctx != NULL)
+    if (a_hash_ctx != NULL) {
         xar_hash_final(a_hash_ctx, a_hash_result, a_hash);
-    if (e_hash_ctx != NULL)
+    }
+    if (e_hash_ctx != NULL) {
         xar_hash_final(e_hash_ctx, e_hash_result, e_hash);
+    }
 
 exit_reader:
-    if (a_cksum != NULL)
+    if (a_cksum != NULL) {
         xmlFree(a_cksum);
-    if (e_cksum != NULL)
+    }
+    if (e_cksum != NULL) {
         xmlFree(e_cksum);
+    }
     xmlTextReaderClose(reader);
     xmlFreeTextReader(reader);
 
 exit_toc:
     free(toc);
-    if (rc == CL_BREAK)
+    if (rc == CL_BREAK) {
         rc = CL_SUCCESS;
+    }
 
     if (cksum_fails + extract_errors != 0) {
         cli_dbgmsg("cli_scanxar: %u checksum errors and %u extraction errors.\n",

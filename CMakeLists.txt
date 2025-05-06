@@ -138,6 +138,47 @@ if(MAINTAINER_MODE)
 endif()
 find_package(Rust REQUIRED)
 
+if(DEFINED CLANG_TIDY)
+    # Clang-tidy may be used to check for code style issues.
+    # It is not required to build ClamAV. See: https://clang.llvm.org/docs/ClangTidy.html
+
+    # To enable clang-tidy, set the CMake variable CLANG_TIDY to your clang-tidy executable.
+    # E.g. `-D CLANG_TIDY=clang-tidy-16`
+
+    # After a build, you may also wish to try to auto-fix some of the issues.
+    # To do this, run the following from the source directory:
+    # ```bash
+    # clang-apply-replacements --format --style-config=(pwd) ./build/
+    # ```
+
+    if(NOT DEFINED CLANG_TIDY_OPTIONS)
+        set(CLANG_TIDY_OPTIONS
+            "readability-braces-around-statements"
+            # "readability-else-after-return"
+            # "readability-function-size"
+            # "readability-magic-numbers"
+            # "readability-redundant-string-cstr"
+            # "readability-redundant-string-init"
+            # "modernize-*"
+            # "performance-*"
+            # "bugprone-*"
+        )
+    endif()
+
+    string(REPLACE ";" "," CLANG_TIDY_OPTIONS "${CLANG_TIDY_OPTIONS}")
+    set(CLANG_TIDY_PROPERTY "${CLANG_TIDY};-checks=${CLANG_TIDY_OPTIONS}")
+
+    set(CMAKE_C_CLANG_TIDY_EXPORT_FIXES_DIR "${CMAKE_BINARY_DIR}/clang-tidy-fixes")
+
+    # Example of how to set clang-tidy for a target:
+    #
+    # if(CLANG_TIDY)
+    #     set_target_properties( clamav PROPERTIES
+    #         C_CLANG_TIDY "${CLANG_TIDY_PROPERTY}"
+    #         C_CLANG_TIDY_EXPORT_FIXES_DIR "${CMAKE_BINARY_DIR}/clang-tidy-fixes" )
+    # endif()
+endif()
+
 if(ENABLE_FUZZ)
     # We'd like the fuzz targets to be statically linked
     set(ENABLE_STATIC_LIB       ON)
@@ -1133,6 +1174,11 @@ ${b}        Rust toolchain:     ${e}${cargo_EXECUTABLE} (${cargo_VERSION})
 ${b}        CFLAGS:             ${e}${CMAKE_C_FLAGS_${_build_type}} ${CMAKE_C_FLAGS}
 ${b}        CXXFLAGS:           ${e}${CMAKE_CXX_FLAGS_${_build_type}} ${CMAKE_CXX_FLAGS}
 ${b}        WARNCFLAGS:         ${e}${WARNCFLAGS}")
+if(DEFINED CLANG_TIDY)
+message("\
+${b}        clang-tidy:         ${e}${CLANG_TIDY}
+${b}        clang-tidy options: ${e}${CLANG_TIDY_OPTIONS}")
+endif()
 if(VCPKG_TOOLCHAIN)
 message("\
 ${c}    Using vcpkg:            ${e}

@@ -518,8 +518,9 @@ int cli_filecopy(const char *src, const char *dest)
     int s, d;
     size_t bytes;
 
-    if ((s = open(src, O_RDONLY | O_BINARY)) == -1)
+    if ((s = open(src, O_RDONLY | O_BINARY)) == -1) {
         return -1;
+    }
 
     if ((d = open(dest, O_CREAT | O_WRONLY | O_TRUNC | O_BINARY, S_IRUSR | S_IWUSR)) == -1) {
         close(s);
@@ -564,9 +565,11 @@ const char *cli_gettmpdir(void)
     char *envs[] = {"TMPDIR", NULL};
 #endif
 
-    for (i = 0; envs[i] != NULL; i++)
-        if ((tmpdir = getenv(envs[i])))
+    for (i = 0; envs[i] != NULL; i++) {
+        if ((tmpdir = getenv(envs[i]))) {
             return tmpdir;
+        }
+    }
 
     return P_tmpdir;
 }
@@ -621,8 +624,9 @@ static int get_filetype(const char *fname, int flags, int need_stat,
              * to lstat(), we can just stat() directly.*/
             if (*ft != ft_link) {
                 /* need to lstat to determine if it is a symlink */
-                if (LSTAT(fname, statbuf) == -1)
+                if (LSTAT(fname, statbuf) == -1) {
                     return -1;
+                }
                 if (S_ISLNK(statbuf->st_mode)) {
                     *ft = ft_link;
                 } else {
@@ -640,8 +644,9 @@ static int get_filetype(const char *fname, int flags, int need_stat,
     }
 
     if (need_stat) {
-        if (CLAMSTAT(fname, statbuf) == -1)
+        if (CLAMSTAT(fname, statbuf) == -1) {
             return -1;
+        }
         stated = 1;
     }
 
@@ -709,8 +714,9 @@ static cl_error_t handle_filetype(const char *fname, int flags,
                           fname,
                           *ft == ft_skipped_link ? warning_skipped_link : warning_skipped_special,
                           data);
-        if (status != CL_SUCCESS)
+        if (status != CL_SUCCESS) {
             goto done;
+        }
     }
 
     status = CL_SUCCESS;
@@ -744,10 +750,14 @@ cl_error_t cli_ftw(char *path, int flags, int maxdepth, cli_ftw_cb callback, str
         /* trim slashes so that dir and dir/ behave the same when
          * they are symlinks, and we are not following symlinks */
 #ifndef _WIN32
-        while (path[0] == *PATHSEP && path[1] == *PATHSEP) path++;
+        while (path[0] == *PATHSEP && path[1] == *PATHSEP) {
+            path++;
+        }
 #endif
         pathend = path + strlen(path);
-        while (pathend > path && pathend[-1] == *PATHSEP) --pathend;
+        while (pathend > path && pathend[-1] == *PATHSEP) {
+            --pathend;
+        }
         *pathend = '\0';
     }
 
@@ -847,8 +857,9 @@ static cl_error_t cli_ftw_dir(const char *dirname, int flags, int maxdepth, cli_
             STATBUF statbuf;
             STATBUF *statbufp;
 
-            if (!strcmp(dent->d_name, ".") || !strcmp(dent->d_name, ".."))
+            if (!strcmp(dent->d_name, ".") || !strcmp(dent->d_name, "..")) {
                 continue;
+            }
 #ifdef _DIRENT_HAVE_D_TYPE
             switch (dent->d_type) {
                 case DT_DIR:
@@ -879,14 +890,16 @@ static cl_error_t cli_ftw_dir(const char *dirname, int flags, int maxdepth, cli_
             fname = (char *)cli_max_malloc(strlen(dirname) + strlen(dent->d_name) + 2);
             if (!fname) {
                 ret = callback(NULL, NULL, dirname, error_mem, data);
-                if (ret != CL_SUCCESS)
+                if (ret != CL_SUCCESS) {
                     break;
+                }
                 continue; /* have to skip this one if continuing after error */
             }
-            if (!strcmp(dirname, PATHSEP))
+            if (!strcmp(dirname, PATHSEP)) {
                 sprintf(fname, PATHSEP "%s", dent->d_name);
-            else
+            } else {
                 sprintf(fname, "%s" PATHSEP "%s", dirname, dent->d_name);
+            }
 
             if (pathchk && pathchk(fname, data) == 1) {
                 free(fname);
@@ -910,9 +923,9 @@ static cl_error_t cli_ftw_dir(const char *dirname, int flags, int maxdepth, cli_
                 if (!statbufp) {
                     ret = callback(stated ? &statbuf : NULL, NULL, fname, error_mem, data);
                     free(fname);
-                    if (ret != CL_SUCCESS)
+                    if (ret != CL_SUCCESS) {
                         break;
-                    else {
+                    } else {
                         errno = 0;
                         continue;
                     }
@@ -927,8 +940,9 @@ static cl_error_t cli_ftw_dir(const char *dirname, int flags, int maxdepth, cli_
             if (!entries) {
                 ret = callback(stated ? &statbuf : NULL, NULL, fname, error_mem, data);
                 free(fname);
-                if (statbufp)
+                if (statbufp) {
                     free(statbufp);
+                }
                 break;
             } else {
                 struct dirent_data *entry = &entries[entries_cnt - 1];
@@ -952,10 +966,12 @@ static cl_error_t cli_ftw_dir(const char *dirname, int flags, int maxdepth, cli_
             for (i = 0; i < entries_cnt; i++) {
                 struct dirent_data *entry = &entries[i];
                 ret                       = handle_entry(entry, flags, maxdepth - 1, callback, data, pathchk);
-                if (entry->is_dir)
+                if (entry->is_dir) {
                     free(entry->filename);
-                if (entry->statbuf)
+                }
+                if (entry->statbuf) {
                     free(entry->statbuf);
+                }
                 if (ret != CL_SUCCESS) {
                     /* Something went horribly wrong, Skip the rest of the files */
                     cli_errmsg("File tree walk aborted.\n");
@@ -1001,11 +1017,13 @@ static char *cli_md5buff(const unsigned char *buffer, unsigned int len, unsigned
 
     cl_hash_data("md5", buffer, len, digest, NULL);
 
-    if (dig)
+    if (dig) {
         memcpy(dig, digest, 16);
+    }
 
-    if (!(md5str = (char *)cli_max_calloc(32 + 1, sizeof(char))))
+    if (!(md5str = (char *)cli_max_calloc(32 + 1, sizeof(char)))) {
         return NULL;
+    }
 
     pt = md5str;
     for (i = 0; i < 16; i++) {
@@ -1211,8 +1229,9 @@ char *cli_genfname(const char *prefix)
 
     memcpy(salt, name_salt, 16);
 
-    for (i = 16; i < 48; i++)
+    for (i = 16; i < 48; i++) {
         salt[i] = cli_rndnum(255);
+    }
 
     tmp = cli_md5buff(salt, 48, name_salt);
 
@@ -1338,8 +1357,9 @@ cl_error_t cli_gentempfd(const char *dir, char **name, int *fd)
 cl_error_t cli_gentempfd_with_prefix(const char *dir, const char *prefix, char **name, int *fd)
 {
     *name = cli_gentemp_with_prefix(dir, prefix);
-    if (!*name)
+    if (!*name) {
         return CL_EMEM;
+    }
 
     *fd = open(*name, O_RDWR | O_CREAT | O_TRUNC | O_BINARY | O_EXCL, S_IRUSR | S_IWUSR);
     /*
@@ -1351,8 +1371,9 @@ cl_error_t cli_gentempfd_with_prefix(const char *dir, const char *prefix, char *
             cli_dbgmsg("cli_gentempfd_with_prefix: Can't create temp file using prefix. Using a randomly generated name instead.\n");
             free(*name);
             *name = cli_gentemp(dir);
-            if (!*name)
+            if (!*name) {
                 return CL_EMEM;
+            }
             *fd = open(*name, O_RDWR | O_CREAT | O_TRUNC | O_BINARY | O_EXCL, S_IRUSR | S_IWUSR);
             if (*fd == -1) {
                 cli_errmsg("cli_gentempfd_with_prefix: Can't create temporary file %s: %s\n", *name, strerror(errno));

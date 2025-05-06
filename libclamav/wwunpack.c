@@ -111,10 +111,11 @@ cl_error_t wwunpack(uint8_t *exe, uint32_t exesz, uint8_t *wwsect, struct cli_ex
 
             BIT;
             if (!bits) { /* BYTE copy */
-                if (ccur - compd >= szd || !CLI_ISCONTAINED(exe, exesz, ucur, 1))
+                if (ccur - compd >= szd || !CLI_ISCONTAINED(exe, exesz, ucur, 1)) {
                     error = 1;
-                else
+                } else {
                     *ucur++ = *ccur++;
+                }
                 continue;
             }
 
@@ -129,7 +130,9 @@ cl_error_t wwunpack(uint8_t *exe, uint32_t exesz, uint8_t *wwsect, struct cli_ex
                 }
                 backbytes = (1 << shifted) - subbed; /* 1h, 21h, 61h, 161h */
                 BITS(shifted);                       /* 5, 6, 8, 9 */
-                if (error || bits == 0x1ff) break;
+                if (error || bits == 0x1ff) {
+                    break;
+                }
                 backbytes += bits;
                 if (!CLI_ISCONTAINED(exe, exesz, ucur, 2) || !CLI_ISCONTAINED(exe, exesz, ucur - backbytes, 2)) {
                     error = 1;
@@ -214,20 +217,23 @@ cl_error_t wwunpack(uint8_t *exe, uint32_t exesz, uint8_t *wwsect, struct cli_ex
                 backsize = saved + 2;
             }
 
-            if (!CLI_ISCONTAINED(exe, exesz, ucur, backsize) || !CLI_ISCONTAINED(exe, exesz, ucur - backbytes, backsize))
+            if (!CLI_ISCONTAINED(exe, exesz, ucur, backsize) || !CLI_ISCONTAINED(exe, exesz, ucur - backbytes, backsize)) {
                 error = 1;
-            else
+            } else {
                 while (backsize--) {
                     *ucur = *(ucur - backbytes);
                     ucur++;
                 }
+            }
         }
         free(compd);
         if (error) {
             cli_dbgmsg("WWPack: decompression error\n");
             break;
         }
-        if (error || !*structs++) break;
+        if (error || !*structs++) {
+            break;
+        }
     }
 
     if (CL_SUCCESS == error) {

@@ -118,8 +118,9 @@ static struct scope *scope_new(struct parser_state *state)
 {
     struct scope *parent = state->current;
     struct scope *s      = calloc(1, sizeof(*s));
-    if (!s)
+    if (!s) {
         return NULL;
+    }
     if (cli_hashtab_init(&s->id_map, 10) < 0) {
         free(s);
         return NULL;
@@ -288,8 +289,9 @@ static cl_error_t tokens_ensure_capacity(struct tokens *tokens, size_t cap)
         cap += 1024;
         /* Keep old data if OOM */
         data = cli_max_realloc(tokens->data, cap * sizeof(*tokens->data));
-        if (!data)
+        if (!data) {
             return CL_EMEM;
+        }
         tokens->data     = data;
         tokens->capacity = cap;
     }
@@ -298,8 +300,9 @@ static cl_error_t tokens_ensure_capacity(struct tokens *tokens, size_t cap)
 
 static int add_token(struct parser_state *state, const yystype *token)
 {
-    if (tokens_ensure_capacity(&state->tokens, state->tokens.cnt + 1))
+    if (tokens_ensure_capacity(&state->tokens, state->tokens.cnt + 1)) {
         return -1;
+    }
     state->tokens.data[state->tokens.cnt++] = *token;
     return 0;
 }
@@ -313,8 +316,9 @@ struct buf {
 static inline cl_error_t buf_outc(char c, struct buf *buf)
 {
     if (buf->pos >= sizeof(buf->buf)) {
-        if (write(buf->outfd, buf->buf, sizeof(buf->buf)) != sizeof(buf->buf))
+        if (write(buf->outfd, buf->buf, sizeof(buf->buf)) != sizeof(buf->buf)) {
             return CL_EWRITE;
+        }
         buf->pos = 0;
     }
     buf->buf[buf->pos++] = c;
@@ -329,15 +333,17 @@ static inline cl_error_t buf_outs(const char *s, struct buf *buf)
     i = buf->pos;
     while (*s) {
         while (i < buf_len && *s) {
-            if (isspace(*s & 0xff))
+            if (isspace(*s & 0xff)) {
                 buf->buf[i++] = ' ';
-            else
+            } else {
                 buf->buf[i++] = tolower((unsigned char)(*s));
+            }
             ++s;
         }
         if (i == buf_len) {
-            if (write(buf->outfd, buf->buf, buf_len) < 0)
+            if (write(buf->outfd, buf->buf, buf_len) < 0) {
                 return CL_EWRITE;
+            }
             i = 0;
         }
     }
@@ -347,8 +353,9 @@ static inline cl_error_t buf_outs(const char *s, struct buf *buf)
 
 static inline void output_space(char last, char current, struct buf *out)
 {
-    if (isalnum(last) && isalnum(current))
+    if (isalnum(last) && isalnum(current)) {
         buf_outc(' ', out);
+    }
 }
 
 /* return class of last character */
@@ -544,13 +551,15 @@ static cl_error_t replace_token_range(struct tokens *dst, size_t start, size_t e
     size_t i;
     cli_dbgmsg(MODULE "Replacing tokens %lu - %lu with %lu tokens\n", (unsigned long)start,
                (unsigned long)end, (unsigned long)len);
-    if (start >= dst->cnt || end > dst->cnt)
+    if (start >= dst->cnt || end > dst->cnt) {
         return CL_EARG;
+    }
     for (i = start; i < end; i++) {
         free_token(&dst->data[i]);
     }
-    if (tokens_ensure_capacity(dst, dst->cnt - (end - start) + len))
+    if (tokens_ensure_capacity(dst, dst->cnt - (end - start) + len)) {
         return CL_EMEM;
+    }
     memmove(&dst->data[start + len], &dst->data[end], (dst->cnt - end) * sizeof(dst->data[0]));
     if (with && len > 0) {
         memcpy(&dst->data[start], with->data, len * sizeof(dst->data[0]));
@@ -561,10 +570,12 @@ static cl_error_t replace_token_range(struct tokens *dst, size_t start, size_t e
 
 static cl_error_t append_tokens(struct tokens *dst, const struct tokens *src)
 {
-    if (!dst || !src)
+    if (!dst || !src) {
         return CL_ENULLARG;
-    if (tokens_ensure_capacity(dst, dst->cnt + src->cnt))
+    }
+    if (tokens_ensure_capacity(dst, dst->cnt + src->cnt)) {
         return CL_EMEM;
+    }
     cli_dbgmsg(MODULE "Appending %lu tokens\n", (unsigned long)(src->cnt));
     memcpy(&dst->data[dst->cnt], src->data, src->cnt * sizeof(dst->data[0]));
     dst->cnt += src->cnt;
@@ -584,10 +595,14 @@ static void decode_de(yystype *params[], struct text_buffer *txtbuf)
     const char *o;
     const char **tokens;
 
-    if (!p || !k)
+    if (!p || !k) {
         return;
-    for (o = k; *o; o++)
-        if (*o == '|') nsplit++;
+    }
+    for (o = k; *o; o++) {
+        if (*o == '|') {
+            nsplit++;
+        }
+    }
     nsplit++;
     tokens = malloc(sizeof(char *) * nsplit);
     if (!tokens) {
@@ -597,31 +612,37 @@ static void decode_de(yystype *params[], struct text_buffer *txtbuf)
 
     do {
         while (*p && !isalnum(*p)) {
-            if (*p == '\\' && (p[1] == '\'' || p[1] == '\"'))
+            if (*p == '\\' && (p[1] == '\'' || p[1] == '\"')) {
                 p++;
-            else
+            } else {
                 textbuffer_putc(txtbuf, *p++);
+            }
         }
-        if (!*p) break;
+        if (!*p) {
+            break;
+        }
         val = 0;
         o   = p;
         while (*p && isalnum(*p)) {
             unsigned x;
             unsigned char v = *p++;
             /* TODO: use a table here */
-            if (v >= 'a')
+            if (v >= 'a') {
                 x = 10 + v - 'a';
-            else if (v >= 'A')
+            } else if (v >= 'A') {
                 x = 36 + v - 'A';
-            else
+            } else {
                 x = v - '0';
+            }
             val = val * a + x;
         }
-        if (val >= nsplit || !tokens[val] || !tokens[val][0])
-            while (o != p)
+        if (val >= nsplit || !tokens[val] || !tokens[val][0]) {
+            while (o != p) {
                 textbuffer_putc(txtbuf, *o++);
-        else
+            }
+        } else {
             textbuffer_append(txtbuf, tokens[val]);
+        }
     } while (*p);
     free((void *)tokens);
     textbuffer_append(txtbuf, "\0");
@@ -646,16 +667,19 @@ static void handle_de(yystype *tokens, size_t start, const size_t cnt, const cha
 
     for (i = start; i < cnt; i++) {
         if (tokens[i].type == TOK_FUNCTION) {
-            if (TOKEN_GET(&tokens[i], scope))
+            if (TOKEN_GET(&tokens[i], scope)) {
                 nesting++;
-            else
+            } else {
                 nesting--;
-            if (!nesting)
+            }
+            if (!nesting) {
                 break;
+            }
         }
     }
-    if (nesting)
+    if (nesting) {
         return;
+    }
     memset(parameters, 0, sizeof(parameters));
     if (name) {
         /* find call to function */
@@ -669,10 +693,15 @@ static void handle_de(yystype *tokens, size_t start, const size_t cnt, const cha
                 i += 2;
                 for (j = 0; j < parameters_cnt && i < cnt; j++) {
                     parameters[j] = &tokens[i++];
-                    if (j != parameters_cnt - 1)
-                        while (i < cnt && tokens[i].type != TOK_COMMA) i++;
-                    else
-                        while (i < cnt && tokens[i].type != TOK_PAR_CLOSE) i++;
+                    if (j != parameters_cnt - 1) {
+                        while (i < cnt && tokens[i].type != TOK_COMMA) {
+                            i++;
+                        }
+                    } else {
+                        while (i < cnt && tokens[i].type != TOK_PAR_CLOSE) {
+                            i++;
+                        }
+                    }
                     i++;
                 }
                 if (j == parameters_cnt) {
@@ -686,16 +715,25 @@ static void handle_de(yystype *tokens, size_t start, const size_t cnt, const cha
             }
         }
     } else {
-        while (i < cnt && tokens[i].type != TOK_PAR_OPEN) i++;
+        while (i < cnt && tokens[i].type != TOK_PAR_OPEN) {
+            i++;
+        }
         ++i;
-        if (i >= cnt) return;
+        if (i >= cnt) {
+            return;
+        }
         /* TODO: move this v to another func */
         for (j = 0; j < parameters_cnt && i < cnt; j++) {
             parameters[j] = &tokens[i++];
-            if (j != parameters_cnt - 1)
-                while (i < cnt && tokens[i].type != TOK_COMMA) i++;
-            else
-                while (i < cnt && tokens[i].type != TOK_PAR_CLOSE) i++;
+            if (j != parameters_cnt - 1) {
+                while (i < cnt && tokens[i].type != TOK_COMMA) {
+                    i++;
+                }
+            } else {
+                while (i < cnt && tokens[i].type != TOK_PAR_CLOSE) {
+                    i++;
+                }
+            }
             i++;
         }
         if (j == parameters_cnt) {
@@ -759,14 +797,17 @@ static void handle_df(const yystype *tokens, size_t start, struct decode_result 
     unsigned char clast;
     char *R;
 
-    if (tokens[start].type != TOK_StringLiteral)
+    if (tokens[start].type != TOK_StringLiteral) {
         return;
+    }
     str = TOKEN_GET(&tokens[start], string);
-    if (!str)
+    if (!str) {
         return;
+    }
     len = strlen(str);
-    if (!len)
+    if (!len) {
         return;
+    }
     clast = str[len - 1] - '0';
 
     str[len - 1] = '\0';
@@ -788,8 +829,9 @@ static void handle_eval(struct tokens *tokens, size_t start, struct decode_resul
 {
     res->txtbuf.data = TOKEN_GET(&tokens->data[start], string);
 
-    if (start + 1 >= tokens->cnt)
+    if (start + 1 >= tokens->cnt) {
         return;
+    }
 
     if (res->txtbuf.data && tokens->data[start + 1].type == TOK_PAR_CLOSE) {
         TOKEN_SET(&tokens->data[start], string, NULL);
@@ -822,8 +864,9 @@ static inline int state_update_scope(struct parser_state *state, const yystype *
             state->current = scope;
         } else {
             /* dummy token marking function end */
-            if (state->current->parent)
+            if (state->current->parent) {
                 state->current = state->current->parent;
+            }
             /* don't output this token, it is just a dummy marker */
             return 0;
         }
@@ -870,14 +913,15 @@ static void run_decoders(struct parser_state *state)
         }
         if (res.pos_end > res.pos_begin) {
             struct tokens parent_tokens;
-            if (res.pos_end < tokens->cnt && tokens->data[res.pos_end].type == TOK_SEMICOLON)
+            if (res.pos_end < tokens->cnt && tokens->data[res.pos_end].type == TOK_SEMICOLON) {
                 res.pos_end++;
+            }
             parent_tokens = state->tokens; /* save current tokens */
             /* initialize embedded context */
             memset(&state->tokens, 0, sizeof(state->tokens));
-            if (++state->rec > 16)
+            if (++state->rec > 16) {
                 cli_dbgmsg(MODULE "recursion limit reached\n");
-            else {
+            } else {
                 cli_js_process_buffer(state, res.txtbuf.data, res.txtbuf.pos);
                 --state->rec;
             }
@@ -924,14 +968,16 @@ void cli_js_parse_done(struct parser_state *state)
         default: /* make gcc happy */
             break;
     }
-    if (end != '\0')
+    if (end != '\0') {
         cli_js_process_buffer(state, &end, 1);
+    }
     /* close remaining parenthesis */
     for (i = 0; i < tokens->cnt; i++) {
-        if (tokens->data[i].type == TOK_PAR_OPEN)
+        if (tokens->data[i].type == TOK_PAR_OPEN) {
             par_balance++;
-        else if (tokens->data[i].type == TOK_PAR_CLOSE && par_balance > 0)
+        } else if (tokens->data[i].type == TOK_PAR_CLOSE && par_balance > 0) {
             par_balance--;
+        }
     }
     if (par_balance > 0) {
         memset(&val, 0, sizeof(val));
@@ -974,12 +1020,14 @@ void cli_js_output(struct parser_state *state, const char *tempdir)
     buf_outs("<script>", &buf);
     state->current = state->global;
     for (i = 0; i < state->tokens.cnt; i++) {
-        if (state_update_scope(state, &state->tokens.data[i]))
+        if (state_update_scope(state, &state->tokens.data[i])) {
             lastchar = output_token(&state->tokens.data[i], state->current, &buf, lastchar);
+        }
     }
     /* add /script if not already there */
-    if (buf.pos < 9 || memcmp(buf.buf + buf.pos - 9, "</script>", 9))
+    if (buf.pos < 9 || memcmp(buf.buf + buf.pos - 9, "</script>", 9)) {
         buf_outs("</script>", &buf);
+    }
     if (write(buf.outfd, buf.buf, buf.pos) < 0) {
         cli_dbgmsg(MODULE "I/O error\n");
     }
@@ -990,16 +1038,18 @@ void cli_js_output(struct parser_state *state, const char *tempdir)
 void cli_js_destroy(struct parser_state *state)
 {
     size_t i;
-    if (!state)
+    if (!state) {
         return;
+    }
     scope_free_all(state->list);
     for (i = 0; i < state->tokens.cnt; i++) {
         free_token(&state->tokens.data[i]);
     }
     free(state->tokens.data);
     /* detect use after free */
-    if (state->scanner)
+    if (state->scanner) {
         yylex_destroy(state->scanner);
+    }
     memset(state, 0x55, sizeof(*state));
     free(state);
     cli_dbgmsg(MODULE "cli_js_destroy() done\n");
@@ -1116,10 +1166,11 @@ void cli_js_process_buffer(struct parser_state *state, const char *buf, size_t n
                 }
                 break;
             case TOK_CURLY_BRACE_CLOSE:
-                if (current->blocks > 0)
+                if (current->blocks > 0) {
                     current->blocks--;
-                else
+                } else {
                     state->syntax_errors++;
+                }
                 if (!current->blocks) {
                     if (current->parent) {
                         /* add dummy FUNCTION token to
@@ -1140,10 +1191,11 @@ void cli_js_process_buffer(struct parser_state *state, const char *buf, size_t n
                 current->brackets++;
                 break;
             case TOK_BRACKET_CLOSE:
-                if (current->brackets > 0)
+                if (current->brackets > 0) {
                     current->brackets--;
-                else
+                } else {
                     state->syntax_errors++;
+                }
                 break;
             case TOK_COMMA:
                 if (current->fsm_state == InsideInitializer && current->brackets == 0 && current->blocks == 0) {
@@ -1182,8 +1234,9 @@ void cli_js_process_buffer(struct parser_state *state, const char *buf, size_t n
                         free_token(&state->tokens.data[--state->tokens.cnt]);
 
                         str = cli_max_realloc(str, str_len + leng + 1);
-                        if (!str)
+                        if (!str) {
                             break;
+                        }
                         strncpy(str + str_len, text, leng);
                         str[str_len + leng] = '\0';
                         TOKEN_SET(prev_string, string, str);
@@ -1210,8 +1263,9 @@ void cli_js_process_buffer(struct parser_state *state, const char *buf, size_t n
 struct parser_state *cli_js_init(void)
 {
     struct parser_state *state = calloc(1, sizeof(*state));
-    if (!state)
+    if (!state) {
         return NULL;
+    }
     if (!scope_new(state)) {
         free(state);
         return NULL;
@@ -1554,8 +1608,9 @@ static void textbuf_clean(struct text_buffer *buf)
 {
     if (buf->capacity > BUF_KEEP_SIZE) {
         char *data = cli_max_realloc(buf->data, BUF_KEEP_SIZE);
-        if (data)
+        if (data) {
             buf->data = data;
+        }
         buf->capacity = BUF_KEEP_SIZE;
     }
     buf->pos = 0;
@@ -1576,10 +1631,11 @@ static inline int parseString(YYSTYPE *lvalp, yyscan_t scanner, const char q,
         }
         break;
     } while (1);
-    if (end && end >= start)
+    if (end && end >= start) {
         len = end - start;
-    else
+    } else {
         len = scanner->insize - scanner->pos;
+    }
     cli_textbuffer_append_normalize(&scanner->buf, start, len);
     if (end) {
         char *str;
@@ -1641,8 +1697,9 @@ static inline int parseNumber(YYSTYPE *lvalp, yyscan_t scanner)
         scanner->pos--;
         textbuffer_putc(&scanner->buf, '\0');
         scanner->state = Initial;
-        if (!scanner->buf.data)
+        if (!scanner->buf.data) {
             return 0;
+        }
         if (is_float) {
             TOKEN_SET(lvalp, dval, atof(scanner->buf.data));
             return TOK_NumericFloat;
@@ -1845,8 +1902,9 @@ static int yylex(YYSTYPE *lvalp, yyscan_t scanner)
                 while (scanner->pos < scanner->insize) {
                     /* htmlnorm converts \n to space, so
                      * stop on space too */
-                    if (in[scanner->pos] == '\n' || in[scanner->pos] == ' ')
+                    if (in[scanner->pos] == '\n' || in[scanner->pos] == ' ') {
                         break;
+                    }
                     scanner->pos++;
                 }
                 scanner->state = Initial;

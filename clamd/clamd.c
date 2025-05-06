@@ -174,8 +174,9 @@ int main(int argc, char **argv)
     char *cvdcertsdir     = NULL;
     STATBUF statbuf;
 
-    if (check_flevel())
+    if (check_flevel()) {
         exit(1);
+    }
 
 #ifndef _WIN32
     memset(&sa, 0, sizeof(sa));
@@ -202,8 +203,9 @@ int main(int argc, char **argv)
 #if defined(C_LINUX)
         /* njh@bandsman.co.uk: create a dump if needed */
         rlim.rlim_cur = rlim.rlim_max = RLIM_INFINITY;
-        if (setrlimit(RLIMIT_CORE, &rlim) < 0)
+        if (setrlimit(RLIMIT_CORE, &rlim) < 0) {
             perror("setrlimit");
+        }
 #endif
         debug_mode = 1;
     }
@@ -256,8 +258,9 @@ int main(int argc, char **argv)
     logok        = optget(opts, "LogClean")->enabled;
     logg_size    = optget(opts, "LogFileMaxSize")->numarg;
     logg_verbose = mprintf_verbose = optget(opts, "LogVerbose")->enabled;
-    if (logg_size)
+    if (logg_size) {
         logg_rotate = optget(opts, "LogRotate")->enabled;
+    }
     mprintf_send_timeout = optget(opts, "SendBufTimeout")->numarg;
 
     if ((opt = optget(opts, "LogFile"))->enabled) {
@@ -384,8 +387,9 @@ int main(int argc, char **argv)
 
     do { /* logger initialized */
 
-        if (optget(opts, "DevLiblog")->enabled)
+        if (optget(opts, "DevLiblog")->enabled) {
             cl_set_clcb_msg(msg_callback);
+        }
 
         if ((ret = cl_init(CL_INIT_DEFAULT))) {
             logg(LOGG_ERROR, "Can't initialize libclamav: %s\n", cl_strerror(ret));
@@ -417,17 +421,20 @@ int main(int argc, char **argv)
 
 #ifdef C_LINUX
         procdev = 0;
-        if (CLAMSTAT("/proc", &sb) != -1 && !sb.st_size)
+        if (CLAMSTAT("/proc", &sb) != -1 && !sb.st_size) {
             procdev = sb.st_dev;
+        }
 #endif
 
         /* check socket type */
 
-        if (optget(opts, "TCPSocket")->enabled)
+        if (optget(opts, "TCPSocket")->enabled) {
             tcpsock = 1;
+        }
 
-        if (optget(opts, "LocalSocket")->enabled)
+        if (optget(opts, "LocalSocket")->enabled) {
             localsock = 1;
+        }
 
         logg(LOGG_INFO_NF, "Received %d file descriptor(s) from systemd.\n", num_fd);
 
@@ -440,8 +447,9 @@ int main(int argc, char **argv)
         logg(LOGG_INFO_NF, "clamd daemon %s (OS: " TARGET_OS_TYPE ", ARCH: " TARGET_ARCH_TYPE ", CPU: " TARGET_CPU_TYPE ")\n", get_version());
 
 #ifndef _WIN32
-        if (user)
+        if (user) {
             logg(LOGG_INFO_NF, "Running as user %s (UID %u, GID %u)\n", user->pw_name, user->pw_uid, user->pw_gid);
+        }
 #endif
 
 #if defined(RLIMIT_DATA) && defined(C_BSD)
@@ -462,10 +470,11 @@ int main(int argc, char **argv)
         }
 #endif
 
-        if (logg_size)
+        if (logg_size) {
             logg(LOGG_INFO_NF, "Log file size limited to %lld bytes.\n", (long long int)logg_size);
-        else
+        } else {
             logg(LOGG_INFO_NF, "Log file size limit disabled.\n");
+        }
 
         min_port = optget(opts, "StreamMinPort")->numarg;
         max_port = optget(opts, "StreamMaxPort")->numarg;
@@ -481,10 +490,12 @@ int main(int argc, char **argv)
             break;
         }
 
-        if ((opt = optget(opts, "cache-size"))->enabled)
+        if ((opt = optget(opts, "cache-size"))->enabled) {
             cl_engine_set_num(engine, CL_ENGINE_CACHE_SIZE, opt->numarg);
-        if (optget(opts, "disable-cache")->enabled)
+        }
+        if (optget(opts, "disable-cache")->enabled) {
             cl_engine_set_num(engine, CL_ENGINE_DISABLE_CACHE, 1);
+        }
 
         /* load the database(s) */
         dbdir = optget(opts, "DatabaseDirectory")->strarg;
@@ -514,8 +525,9 @@ int main(int argc, char **argv)
                     opt         = opt->nextarg;
                 }
 
-                if (ret)
+                if (ret) {
                     break;
+                }
 
                 logg(LOGG_INFO_NF, "\n");
                 pua_cats[i]     = '.';
@@ -548,8 +560,9 @@ int main(int argc, char **argv)
                     opt         = opt->nextarg;
                 }
 
-                if (ret)
+                if (ret) {
                     break;
+                }
 
                 logg(LOGG_INFO_NF, "\n");
                 pua_cats[i]     = '.';
@@ -614,16 +627,19 @@ int main(int argc, char **argv)
 
         cl_engine_set_clcb_virus_found(engine, clamd_virus_found_cb);
 
-        if (optget(opts, "LeaveTemporaryFiles")->enabled)
+        if (optget(opts, "LeaveTemporaryFiles")->enabled) {
             cl_engine_set_num(engine, CL_ENGINE_KEEPTMP, 1);
+        }
 
-        if (optget(opts, "ForceToDisk")->enabled)
+        if (optget(opts, "ForceToDisk")->enabled) {
             cl_engine_set_num(engine, CL_ENGINE_FORCETODISK, 1);
+        }
 
-        if (optget(opts, "PhishingSignatures")->enabled)
+        if (optget(opts, "PhishingSignatures")->enabled) {
             dboptions |= CL_DB_PHISHING;
-        else
+        } else {
             logg(LOGG_INFO_NF, "Not loading phishing signatures.\n");
+        }
 
         if (optget(opts, "Bytecode")->enabled) {
             dboptions |= CL_DB_BYTECODE;
@@ -657,14 +673,15 @@ int main(int argc, char **argv)
             if ((opt = optget(opts, "BytecodeMode"))->enabled) {
                 enum bytecode_mode mode;
 
-                if (!strcmp(opt->strarg, "ForceJIT"))
+                if (!strcmp(opt->strarg, "ForceJIT")) {
                     mode = CL_BYTECODE_MODE_JIT;
-                else if (!strcmp(opt->strarg, "ForceInterpreter"))
+                } else if (!strcmp(opt->strarg, "ForceInterpreter")) {
                     mode = CL_BYTECODE_MODE_INTERPRETER;
-                else if (!strcmp(opt->strarg, "Test"))
+                } else if (!strcmp(opt->strarg, "Test")) {
                     mode = CL_BYTECODE_MODE_TEST;
-                else
+                } else {
                     mode = CL_BYTECODE_MODE_AUTO;
+                }
                 cl_engine_set_num(engine, CL_ENGINE_BYTECODE_MODE, mode);
             }
 
@@ -675,10 +692,11 @@ int main(int argc, char **argv)
             logg(LOGG_INFO_NF, "Bytecode support disabled.\n");
         }
 
-        if (optget(opts, "PhishingScanURLs")->enabled)
+        if (optget(opts, "PhishingScanURLs")->enabled) {
             dboptions |= CL_DB_PHISHING_URLS;
-        else
+        } else {
             logg(LOGG_INFO_NF, "Disabling URL based phishing detection.\n");
+        }
 
         if (optget(opts, "DevACOnly")->enabled) {
             logg(LOGG_INFO_NF, "Only using the A-C matcher.\n");
@@ -715,8 +733,9 @@ int main(int argc, char **argv)
             break;
         }
 
-        if (optget(opts, "DisableCertCheck")->enabled)
+        if (optget(opts, "DisableCertCheck")->enabled) {
             cl_engine_set_num(engine, CL_ENGINE_DISABLE_PE_CERTS, 1);
+        }
 
         logg(LOGG_INFO_NF, "Loaded %u signatures.\n", sigs);
 
@@ -760,8 +779,9 @@ int main(int argc, char **argv)
                     opt = opt->nextarg;
                 }
 
-                if (breakout)
+                if (breakout) {
                     break;
+                }
             } else {
                 if (tcpserver(&lsockets, &nlsockets, NULL, opts) == -1) {
                     ret = 1;
@@ -898,10 +918,11 @@ int main(int argc, char **argv)
         if (nlsockets && localsock) {
             opt = optget(opts, "LocalSocket");
 
-            if (unlink(opt->strarg) == -1)
+            if (unlink(opt->strarg) == -1) {
                 logg(LOGG_ERROR, "Can't unlink the socket file %s\n", opt->strarg);
-            else
+            } else {
                 logg(LOGG_INFO, "Socket file removed.\n");
+            }
         }
 #endif
     }

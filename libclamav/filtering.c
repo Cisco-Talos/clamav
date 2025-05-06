@@ -198,27 +198,33 @@ int filter_add_static(struct filter *m, const unsigned char *pattern, unsigned l
     if (len > MAXPATLEN) {
         len = MAXPATLEN;
     }
-    if (len < 2)
+    if (len < 2) {
         return -1;
+    }
 
     /* we want subsigs to be as long as possible */
     if (len > 4) {
         maxlen = len - 4;
-        if (maxlen == 1) maxlen = 2;
-    } else
+        if (maxlen == 1) {
+            maxlen = 2;
+        }
+    } else {
         maxlen = 2;
+    }
     for (j = 0; (best < 100 && j < MAX_CHOICES) || (j < maxlen); j++) {
         uint32_t num = MAXSOPATLEN;
         uint8_t k;
-        if ((unsigned long)(j + 2) > len)
+        if ((unsigned long)(j + 2) > len) {
             break;
+        }
         for (k = j; k < len - 1 && (k - j < MAXSOPATLEN); k++) {
             q = cli_readint16(&pattern[k]);
             /* we want to favor subsigs that add as little as
              * possible to the filter */
             num += filter_isset(m, k - j, q) ? 0 : MAXSOPATLEN - (k - j);
-            if ((k == j || k == j + 1) && (q == 0x0000 || q == 0xffff))
+            if ((k == j || k == j + 1) && (q == 0x0000 || q == 0xffff)) {
                 num += k == j ? 10000 : 1000; /* bad */
+            }
         }
         /* it is very important to keep the end set small */
         num += 10 * (filter_end_isset(m, k - j - 1, q) ? 0 : 1);
@@ -226,8 +232,9 @@ int filter_add_static(struct filter *m, const unsigned char *pattern, unsigned l
          * */
         num += 5 * (MAXSOPATLEN - (k - j));
         /* if we are lower length than threshold penalize */
-        if (k - j + 1 < 4)
+        if (k - j + 1 < 4) {
             num += 200;
+        }
         /* favour longer patterns */
         num -= (2 * MAXSOPATLEN - (k + 1 + j)) * (k - j) / 2;
 
@@ -332,16 +339,18 @@ static inline void get_score(enum badness badness, unsigned i, const struct filt
             base = -0x7fffff;
             break;
         case avoid_first:
-            if (!i)
+            if (!i) {
                 base = -0x700000;
-            else
+            } else {
                 base = 0;
+            }
             break;
         case avoid_anywhere:
-            if (!i)
+            if (!i) {
                 base = -0x720000;
-            else
+            } else {
                 base = -0x1000;
+            }
             break;
         case dontlike:
             base = 0;
@@ -389,10 +398,12 @@ static inline void add_choice(struct choice *choices, unsigned *cnt, unsigned i,
     struct choice *choice;
     int i_neg = -1;
     assert(ie < MAXPATLEN);
-    if (ie < i + 1)
+    if (ie < i + 1) {
         return;
-    if (*cnt >= MAX_CHOICES)
+    }
+    if (*cnt >= MAX_CHOICES) {
         return;
+    }
     if (badness > avoid_first && *cnt >= (MAX_CHOICES >> 1)) {
         unsigned j;
         /* replace very bad picks if we're full */
@@ -419,8 +430,9 @@ static inline int32_t spec_iter(const struct char_spec *spec)
     unsigned count;
     assert(spec->step);
     count = (spec->step + spec->end - spec->start) / spec->step;
-    if (spec->negative) /* all chars except itself are added */
+    if (spec->negative) { /* all chars except itself are added */
         count *= 254;
+    }
     return count;
 }
 
@@ -446,8 +458,9 @@ int filter_add_acpatt(struct filter *m, const struct cli_ac_patt *pat)
     j = MIN(prefix_len + pat->length[0], MAXPATLEN);
     for (i = 0; i < j; i++) {
         const uint16_t p = i < prefix_len ? pat->prefix[i] : pat->pattern[i - prefix_len];
-        if ((p & CLI_MATCH_METADATA) != CLI_MATCH_CHAR)
+        if ((p & CLI_MATCH_METADATA) != CLI_MATCH_CHAR) {
             break;
+        }
         patc[i] = (uint8_t)p;
     }
     if (i == j) {
@@ -460,8 +473,9 @@ int filter_add_acpatt(struct filter *m, const struct cli_ac_patt *pat)
     if (!prefix_len) {
         while ((pat->pattern[i] & CLI_MATCH_METADATA) == CLI_MATCH_SPECIAL) {
             /* we support only ALT_CHAR, skip the rest */
-            if (pat->special_table[altcnt]->type == 1)
+            if (pat->special_table[altcnt]->type == 1) {
                 break;
+            }
             altcnt++;
             i++;
         }
@@ -529,13 +543,16 @@ int filter_add_acpatt(struct filter *m, const struct cli_ac_patt *pat)
                 return -1;
         }
     }
-    if (stop) --speci;
+    if (stop) {
+        --speci;
+    }
     j = speci;
     if (j < 2) {
-        if (stop)
+        if (stop) {
             cli_warnmsg("Don't know how to create filter for: %s\n", pat->virname);
-        else
+        } else {
             cli_warnmsg("Subpattern too short: %s\n", pat->virname);
+        }
         return -1;
     }
 
@@ -547,10 +564,11 @@ int filter_add_acpatt(struct filter *m, const struct cli_ac_patt *pat)
         num_iter = spec_iter(spec0) * spec_iter(spec1);
 
         if (num_iter >= 0x100) {
-            if (num_iter == 0x10000)
+            if (num_iter == 0x10000) {
                 char_badness[i] = reject;
-            else
+            } else {
                 char_badness[i] = avoid_anywhere;
+            }
         } else {
             int8_t binary     = 0;
             enum badness scor = acceptable;
@@ -570,8 +588,9 @@ int filter_add_acpatt(struct filter *m, const struct cli_ac_patt *pat)
                         scor = dontlike;
                         break;
                     }
-                    if ((c0 < 32 || c0 > 127) && (c1 < 32 || c1 > 127))
+                    if ((c0 < 32 || c0 > 127) && (c1 < 32 || c1 > 127)) {
                         binary = 1;
+                    }
                 }
             }
             if (scor == acceptable && binary) {
@@ -595,12 +614,16 @@ int filter_add_acpatt(struct filter *m, const struct cli_ac_patt *pat)
          * first negative, and one we stop at last positive, but never
          * include reject */
         assert(kend - 1 < j - 1);
-        if (char_badness[i] == reject)
+        if (char_badness[i] == reject) {
             continue;
-        if ((char_badness[i] == avoid_anywhere || char_badness[i] == avoid_first) && choices_cnt > 0)
+        }
+        if ((char_badness[i] == avoid_anywhere || char_badness[i] == avoid_first) && choices_cnt > 0) {
             /* if we have another choice don't choose this */
             continue;
-        while ((kend > i + 3) && char_badness[kend - 1] == reject) kend--;
+        }
+        while ((kend > i + 3) && char_badness[kend - 1] == reject) {
+            kend--;
+        }
         for (k = i; k < kend; k++) {
             enum badness badness = char_badness[k];
             if (badness < acceptable) {
@@ -609,16 +632,20 @@ int filter_add_acpatt(struct filter *m, const struct cli_ac_patt *pat)
                     kend = k;
                     break;
                 }
-                if (badness == avoid_first && k != i)
+                if (badness == avoid_first && k != i) {
                     badness = dontlike;
-                if (k == i && badness == avoid_anywhere)
+                }
+                if (k == i && badness == avoid_anywhere) {
                     badness = avoid_first;
-                if (ki == -0xff)
+                }
+                if (ki == -0xff) {
                     ki = k;
+                }
             }
             base0 = MIN(base0, badness);
-            if (ki == -0xff)
+            if (ki == -0xff) {
                 base1 = MIN(base1, badness);
+            }
         }
         add_choice(choices, &choices_cnt, i, kend, base0);
         if (ki > (int)i) {
@@ -722,7 +749,9 @@ __hot__ int filter_search_ext(const struct filter *m, const unsigned char *data,
     const uint8_t *B   = m->B;
     const uint8_t *End = m->end;
 
-    if (len < 2) return -1;
+    if (len < 2) {
+        return -1;
+    }
     /* look for first match */
     for (j = 0; j < len - 1; j++) {
         uint8_t match_state_end;
@@ -751,7 +780,9 @@ long filter_search(const struct filter *m, const unsigned char *data, unsigned l
     const uint8_t *End = m->end;
 
     /* we use 2-grams, must be higher than 1 */
-    if (len < 2) return -1;
+    if (len < 2) {
+        return -1;
+    }
     /* Shift-Or like search algorithm */
     for (j = 0; j < len - 1; j++) {
         const uint16_t q0 = cli_readint16(&data[j]);

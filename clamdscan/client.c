@@ -96,16 +96,18 @@ static int isremote(const struct optstruct *opts)
         return 0;
     }
 #endif
-    if (!(opt = optget(clamdopts, "TCPSocket"))->enabled)
+    if (!(opt = optget(clamdopts, "TCPSocket"))->enabled) {
         return 0;
+    }
 
     snprintf(port, sizeof(port), "%lld", optget(clamdopts, "TCPSocket")->numarg);
 
     opt = optget(clamdopts, "TCPAddr");
     while (opt) {
         ipaddr = NULL;
-        if (opt->strarg)
+        if (opt->strarg) {
             ipaddr = (!strcmp(opt->strarg, "any") ? NULL : opt->strarg);
+        }
 
         memset(&hints, 0x00, sizeof(struct addrinfo));
         hints.ai_family   = AF_UNSPEC;
@@ -238,15 +240,17 @@ int16_t ping_clamd(const struct optstruct *opts)
 
         if (i + 1 < attempts) {
             if (optget(opts, "wait")->enabled) {
-                if (interval == 1)
+                if (interval == 1) {
                     logg(LOGG_DEBUG, "Could not connect, will try again in %lu second\n", interval);
-                else
+                } else {
                     logg(LOGG_DEBUG, "Could not connect, will try again in %lu seconds\n", interval);
+                }
             } else {
-                if (interval == 1)
+                if (interval == 1) {
                     logg(LOGG_INFO, "Could not connect, will PING again in %lu second\n", interval);
-                else
+                } else {
                     logg(LOGG_INFO, "Could not connect, will PING again in %lu seconds\n", interval);
+                }
             }
             sleep(interval);
         }
@@ -326,12 +330,14 @@ static int client_scan(const char *file, int scantype, int *infected, int *err, 
         fullpath = real_path;
     }
 
-    if (!fullpath)
+    if (!fullpath) {
         return 0;
-    if (!session)
+    }
+    if (!session) {
         ret = serial_client_scan(fullpath, scantype, infected, err, maxlevel, flags);
-    else
+    } else {
         ret = parallel_client_scan(fullpath, scantype, infected, err, maxlevel, flags);
+    }
     free(fullpath);
     return ret;
 }
@@ -344,7 +350,9 @@ int get_clamd_version(const struct optstruct *opts)
     const char zVERSION[] = "zVERSION";
 
     isremote(opts);
-    if ((sockd = dconnect(clamdopts)) < 0) return 2;
+    if ((sockd = dconnect(clamdopts)) < 0) {
+        return 2;
+    }
     recvlninit(&rcv, sockd);
 
     if (sendln(sockd, zVERSION, sizeof(zVERSION))) {
@@ -372,7 +380,9 @@ int reload_clamd_database(const struct optstruct *opts)
     const char zRELOAD[] = "zRELOAD";
 
     isremote(opts);
-    if ((sockd = dconnect(clamdopts)) < 0) return 2;
+    if ((sockd = dconnect(clamdopts)) < 0) {
+        return 2;
+    }
     recvlninit(&rcv, sockd);
 
     if (sendln(sockd, zRELOAD, sizeof(zRELOAD))) {
@@ -417,19 +427,22 @@ int client(const struct optstruct *opts, int *infected, int *err)
         if (remote || scandash) {
         scantype = STREAM;
         session  = optget(opts, "multiscan")->enabled;
-    } else if (optget(opts, "multiscan")->enabled)
+    } else if (optget(opts, "multiscan")->enabled) {
         scantype = MULTI;
-    else if (optget(opts, "allmatch")->enabled)
+    } else if (optget(opts, "allmatch")->enabled) {
         scantype = ALLMATCH;
-    else
+    } else {
         scantype = CONT;
+    }
 
     maxrec    = optget(clamdopts, "MaxDirectoryRecursion")->numarg;
     maxstream = optget(clamdopts, "StreamMaxLength")->numarg;
-    if (optget(clamdopts, "FollowDirectorySymlinks")->enabled)
+    if (optget(clamdopts, "FollowDirectorySymlinks")->enabled) {
         flags |= CLI_FTW_FOLLOW_DIR_SYMLINK;
-    if (optget(clamdopts, "FollowFileSymlinks")->enabled)
+    }
+    if (optget(clamdopts, "FollowFileSymlinks")->enabled) {
         flags |= CLI_FTW_FOLLOW_FILE_SYMLINK;
+    }
     flags |= CLI_FTW_TRIM_SLASHES;
 
     *infected = 0;
@@ -442,15 +455,21 @@ int client(const struct optstruct *opts, int *infected, int *err)
                  opts->filename[0], strerror(errno));
             return 2;
         }
-        if ((sb.st_mode & S_IFMT) != S_IFREG) scantype = STREAM;
-        if ((sockd = dconnect(clamdopts)) >= 0 && (ret = dsresult(sockd, scantype, NULL, &ret, NULL, clamdopts)) >= 0)
+        if ((sb.st_mode & S_IFMT) != S_IFREG) {
+            scantype = STREAM;
+        }
+        if ((sockd = dconnect(clamdopts)) >= 0 && (ret = dsresult(sockd, scantype, NULL, &ret, NULL, clamdopts)) >= 0) {
             *infected = ret;
-        else
+        } else {
             errors = 1;
-        if (sockd >= 0) closesocket(sockd);
+        }
+        if (sockd >= 0) {
+            closesocket(sockd);
+        }
     } else if (opts->filename || optget(opts, "file-list")->enabled) {
-        if (opts->filename && optget(opts, "file-list")->enabled)
+        if (opts->filename && optget(opts, "file-list")->enabled) {
             logg(LOGG_WARNING, "Only scanning files from --file-list (files passed at cmdline are ignored)\n");
+        }
 
         while ((fname = filelist(opts, NULL))) {
             if (!strcmp(fname, "-")) {

@@ -55,8 +55,9 @@ void tableDestroy(table_t *table)
     while (tableItem) {
         tableEntry *tableNext = tableItem->next;
 
-        if (tableItem->key)
+        if (tableItem->key) {
             free(tableItem->key);
+        }
         free(tableItem);
 
         tableItem = tableNext;
@@ -72,14 +73,15 @@ int tableInsert(table_t *table, const char *key, int value)
 {
     const int v = tableFind(table, key);
 
-    if (v > 0)                            /* duplicate key */
+    if (v > 0) {                          /* duplicate key */
         return (v == value) ? value : -1; /* allow real dups */
+    }
 
     assert(value != -1); /* that would confuse us */
 
-    if (table->tableHead == NULL)
+    if (table->tableHead == NULL) {
         table->tableLast = table->tableHead = (tableEntry *)malloc(sizeof(tableEntry));
-    else {
+    } else {
         /*
          * Re-use deleted items
          */
@@ -88,13 +90,14 @@ int tableInsert(table_t *table, const char *key, int value)
 
             assert(table->tableHead != NULL);
 
-            for (tableItem = table->tableHead; tableItem; tableItem = tableItem->next)
+            for (tableItem = table->tableHead; tableItem; tableItem = tableItem->next) {
                 if (tableItem->key == NULL) {
                     /* This item has been deleted */
                     tableItem->key   = cli_safer_strdup(key);
                     tableItem->value = value;
                     return value;
                 }
+            }
 
             table->flags &= ~TABLE_HAS_DELETED_ENTRIES;
         }
@@ -131,8 +134,9 @@ int tableFind(const table_t *table, const char *key)
 
     assert(table != NULL);
 
-    if (key == NULL)
+    if (key == NULL) {
         return -1; /* not treated as a fatal error */
+    }
 
 #ifdef CL_DEBUG
     cost = 0;
@@ -163,14 +167,16 @@ int tableUpdate(table_t *table, const char *key, int new_value)
 
     assert(table != NULL);
 
-    if (key == NULL)
+    if (key == NULL) {
         return -1; /* not treated as a fatal error */
+    }
 
-    for (tableItem = table->tableHead; tableItem; tableItem = tableItem->next)
+    for (tableItem = table->tableHead; tableItem; tableItem = tableItem->next) {
         if (tableItem->key && (strcasecmp(tableItem->key, key) == 0)) {
             tableItem->value = new_value;
             return new_value;
         }
+    }
 
     /* not found */
     return tableInsert(table, key, new_value);
@@ -185,26 +191,31 @@ void tableRemove(table_t *table, const char *key)
 
     assert(table != NULL);
 
-    if (key == NULL)
+    if (key == NULL) {
         return; /* not treated as a fatal error */
+    }
 
-    for (tableItem = table->tableHead; tableItem; tableItem = tableItem->next)
+    for (tableItem = table->tableHead; tableItem; tableItem = tableItem->next) {
         if (tableItem->key && (strcasecmp(tableItem->key, key) == 0)) {
             free(tableItem->key);
             tableItem->key = NULL;
             table->flags |= TABLE_HAS_DELETED_ENTRIES;
             /* don't break, duplicate keys are allowed */
         }
+    }
 }
 
 void tableIterate(table_t *table, void (*callback)(char *key, int value, void *arg), void *arg)
 {
     tableEntry *tableItem;
 
-    if (table == NULL)
+    if (table == NULL) {
         return;
+    }
 
-    for (tableItem = table->tableHead; tableItem; tableItem = tableItem->next)
-        if (tableItem->key) /* check node has not been deleted */
+    for (tableItem = table->tableHead; tableItem; tableItem = tableItem->next) {
+        if (tableItem->key) { /* check node has not been deleted */
             (*callback)(tableItem->key, tableItem->value, arg);
+        }
+    }
 }

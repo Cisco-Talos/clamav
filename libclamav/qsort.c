@@ -114,10 +114,12 @@ loop:
     SWAPINIT(a, es);
     swap_cnt = 0;
     if (n < 7) {
-        for (pm = (char *)a + es; pm < (char *)a + n * es; pm += es)
+        for (pm = (char *)a + es; pm < (char *)a + n * es; pm += es) {
             for (pl = pm; pl > (char *)a && CMP(pl - es, pl) > 0;
-                 pl -= es)
+                 pl -= es) {
                 swap(pl, pl - es);
+}
+}
         return;
     }
     pm = (char *)a + (n / 2) * es;
@@ -153,18 +155,21 @@ loop:
             }
             pc -= es;
         }
-        if (pb > pc)
+        if (pb > pc) {
             break;
+}
         swap(pb, pc);
         swap_cnt = 1;
         pb += es;
         pc -= es;
     }
     if (swap_cnt == 0) { /* Switch to insertion sort */
-        for (pm = (char *)a + es; pm < (char *)a + n * es; pm += es)
+        for (pm = (char *)a + es; pm < (char *)a + n * es; pm += es) {
             for (pl = pm; pl > (char *)a && CMP(pl - es, pl) > 0;
-                 pl -= es)
+                 pl -= es) {
                 swap(pl, pl - es);
+}
+}
         return;
     }
 
@@ -173,8 +178,9 @@ loop:
     vecswap(a, pb - r, r);
     r = MIN((size_t)(pd - pc), (size_t)(pn - pd - es));
     vecswap(pb, pn - r, r);
-    if ((size_t)(r = pb - pa) > es)
+    if ((size_t)(r = pb - pa) > es) {
         cli_qsort(a, r / es, es, cmp);
+}
     if ((size_t)(r = pd - pc) > es) {
         /* Iterate rather than recurse to save stack space */
         a = pn - r;
@@ -193,10 +199,12 @@ loop:
     SWAPINIT(a, es);
     swap_cnt = 0;
     if (n < 7) {
-        for (pm = (char *)a + es; pm < (char *)a + n * es; pm += es)
+        for (pm = (char *)a + es; pm < (char *)a + n * es; pm += es) {
             for (pl = pm; pl > (char *)a && CMP_R(arg, pl - es, pl) > 0;
-                 pl -= es)
+                 pl -= es) {
                 swap(pl, pl - es);
+}
+}
         return;
     }
     pm = (char *)a + (n / 2) * es;
@@ -232,18 +240,21 @@ loop:
             }
             pc -= es;
         }
-        if (pb > pc)
+        if (pb > pc) {
             break;
+}
         swap(pb, pc);
         swap_cnt = 1;
         pb += es;
         pc -= es;
     }
     if (swap_cnt == 0) { /* Switch to insertion sort */
-        for (pm = (char *)a + es; pm < (char *)a + n * es; pm += es)
+        for (pm = (char *)a + es; pm < (char *)a + n * es; pm += es) {
             for (pl = pm; pl > (char *)a && CMP_R(arg, pl - es, pl) > 0;
-                 pl -= es)
+                 pl -= es) {
                 swap(pl, pl - es);
+}
+}
         return;
     }
 
@@ -252,8 +263,9 @@ loop:
     vecswap(a, pb - r, r);
     r = MIN((size_t)(pd - pc), (size_t)(pn - pd - es));
     vecswap(pb, pn - r, r);
-    if ((size_t)(r = pb - pa) > es)
+    if ((size_t)(r = pb - pa) > es) {
         cli_qsort_r(a, r / es, es, cmp, arg);
+}
     if ((size_t)(r = pd - pc) > es) {
         /* Iterate rather than recurse to save stack space */
         a = pn - r;

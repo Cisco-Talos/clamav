@@ -130,13 +130,15 @@ static void scanner_thread(void *arg)
         progexit = 1;
         pthread_mutex_unlock(&exit_mutex);
         errors = 1;
-    } else
+    } else {
         errors = ret;
+    }
 
     thrmgr_setactiveengine(NULL);
 
-    if (conn->filename)
+    if (conn->filename) {
         free(conn->filename);
+    }
     logg(LOGG_DEBUG_NV, "Finished scanthread\n");
     enum thrmgr_exit exit_code;
     if (virus != 0) {
@@ -187,9 +189,11 @@ void sighandler_th(int sig)
             break; /* Take no action on other signals - e.g. SIGPIPE */
     }
     /* a signal doesn't always wake poll(), for example on FreeBSD */
-    if (action && syncpipe_wake_recv_w != -1)
-        if (write(syncpipe_wake_recv_w, "", 1) != 1)
+    if (action && syncpipe_wake_recv_w != -1) {
+        if (write(syncpipe_wake_recv_w, "", 1) != 1) {
             logg(LOGG_DEBUG_NV, "Failed to write to syncpipe\n");
+        }
+    }
 }
 
 static int need_db_reload(void)
@@ -285,9 +289,11 @@ done:
 #ifdef _WIN32
     SetEvent(event_wake_recv);
 #else
-    if (syncpipe_wake_recv_w != -1)
-        if (write(syncpipe_wake_recv_w, "", 1) != 1)
+    if (syncpipe_wake_recv_w != -1) {
+        if (write(syncpipe_wake_recv_w, "", 1) != 1) {
             logg(LOGG_DEBUG_NV, "Failed to write to syncpipe\n");
+        }
+    }
 #endif
 
     return NULL;
@@ -377,8 +383,9 @@ static cl_error_t reload_db(struct cl_engine **engine, unsigned int dboptions, c
     }
 
     retval = pthread_create(&th, &th_attr, reload_th, rldata);
-    if (pthread_attr_destroy(&th_attr))
+    if (pthread_attr_destroy(&th_attr)) {
         logg(LOGG_WARNING, "Failed to release reload thread attributes\n");
+    }
     if (retval) {
         logg(LOGG_ERROR, "Failed to spawn reload thread\n");
         goto done;
@@ -470,8 +477,9 @@ static const char *get_cmd(struct fd_buf *buf, size_t off, size_t *len, char *te
             return buf->buffer + off + 1;
         default:
             /* one packet = one command */
-            if (off)
+            if (off) {
                 return NULL;
+            }
             pos = memchr(buf->buffer, '\n', buf->off);
             if (pos) {
                 *len = pos - buf->buffer;
@@ -548,8 +556,9 @@ static void *acceptloop_th(void *arg)
         /* accept() loop */
         for (i = 0; i < fds->nfds && new_sd >= 0; i++) {
             struct fd_buf *buf = &fds->buf[i];
-            if (!buf->got_newdata)
+            if (!buf->got_newdata) {
                 continue;
+            }
 #ifndef _WIN32
             if (buf->fd == data->syncpipe_wake_accept[0]) {
                 /* dummy sync pipe, just to wake us */
@@ -647,8 +656,9 @@ static void *acceptloop_th(void *arg)
     if (sd_listen_fds(0) == 0) {
         /* only close the sockets, when not using systemd socket activation */
         for (i = 0; i < fds->nfds; i++) {
-            if (fds->buf[i].fd == -1)
+            if (fds->buf[i].fd == -1) {
                 continue;
+            }
             logg(LOGG_DEBUG_NV, "Shutdown: closed fd %d\n", fds->buf[i].fd);
             shutdown(fds->buf[i].fd, 2);
             closesocket(fds->buf[i].fd);
@@ -797,12 +807,14 @@ static const char *parse_dispatch_cmd(client_conn_t *conn, struct fd_buf *buf, s
         if (pos < buf->off) {
             memmove(buf->buffer, &buf->buffer[pos], buf->off - pos);
             buf->off -= pos;
-        } else
+        } else {
             buf->off = 0;
-        if (buf->off)
+        }
+        if (buf->off) {
             logg(LOGG_DEBUG_NV, "Moved partial command: %lu\n", (unsigned long)buf->off);
-        else
+        } else {
             logg(LOGG_DEBUG_NV, "Consumed entire command\n");
+        }
         /* adjust pos to account for the buffer shuffle */
         pos = 0;
     }
@@ -836,8 +848,9 @@ static int handle_stream(client_conn_t *conn, struct fd_buf *buf, const struct o
                     conn->term   = buf->term;
                     buf->dumpfd  = -1;
                     buf->mode    = buf->group ? MODE_COMMAND : MODE_WAITREPLY;
-                    if (buf->mode == MODE_WAITREPLY)
+                    if (buf->mode == MODE_WAITREPLY) {
                         buf->fd = -1;
+                    }
                     logg(LOGG_DEBUG_NV, "Chunks complete\n");
                     buf->dumpname = NULL;
                     if ((rc = execute_or_dispatch_command(conn, COMMAND_INSTREAMSCAN, NULL)) < 0) {
@@ -875,10 +888,11 @@ static int handle_stream(client_conn_t *conn, struct fd_buf *buf, const struct o
                 return -1;
             }
         }
-        if (pos + buf->chunksize < buf->off)
+        if (pos + buf->chunksize < buf->off) {
             cmdlen = buf->chunksize;
-        else
+        } else {
             cmdlen = buf->off - pos;
+        }
         buf->chunksize -= cmdlen;
         if (cli_writen(buf->dumpfd, buf->buffer + pos, cmdlen) == (size_t)-1) {
             conn_reply_error(conn, "Error writing to temporary file");
@@ -939,10 +953,11 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
         }
     }
     val = cl_engine_get_num(engine, CL_ENGINE_MAX_SCANTIME, NULL);
-    if (val)
+    if (val) {
         logg(LOGG_INFO, "Limits: Global time limit set to %llu milliseconds.\n", val);
-    else
+    } else {
         logg(LOGG_WARNING, "Limits: Global time limit protection disabled.\n");
+    }
 
     if ((opt = optget(opts, "MaxScanSize"))->active) {
         if ((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_SCANSIZE, opt->numarg))) {
@@ -952,10 +967,11 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
         }
     }
     val = cl_engine_get_num(engine, CL_ENGINE_MAX_SCANSIZE, NULL);
-    if (val)
+    if (val) {
         logg(LOGG_INFO, "Limits: Global size limit set to %llu bytes.\n", val);
-    else
+    } else {
         logg(LOGG_WARNING, "Limits: Global size limit protection disabled.\n");
+    }
 
     if ((opt = optget(opts, "MaxFileSize"))->active) {
         if ((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_FILESIZE, opt->numarg))) {
@@ -965,17 +981,20 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
         }
     }
     val = cl_engine_get_num(engine, CL_ENGINE_MAX_FILESIZE, NULL);
-    if (val)
+    if (val) {
         logg(LOGG_INFO, "Limits: File size limit set to %llu bytes.\n", val);
-    else
+    } else {
         logg(LOGG_WARNING, "Limits: File size limit protection disabled.\n");
+    }
 
 #ifndef _WIN32
     if (getrlimit(RLIMIT_FSIZE, &rlim) == 0) {
-        if (rlim.rlim_cur < (rlim_t)cl_engine_get_num(engine, CL_ENGINE_MAX_FILESIZE, NULL))
+        if (rlim.rlim_cur < (rlim_t)cl_engine_get_num(engine, CL_ENGINE_MAX_FILESIZE, NULL)) {
             logg(LOGG_WARNING, "System limit for file size is lower than engine->maxfilesize\n");
-        if (rlim.rlim_cur < (rlim_t)cl_engine_get_num(engine, CL_ENGINE_MAX_SCANSIZE, NULL))
+        }
+        if (rlim.rlim_cur < (rlim_t)cl_engine_get_num(engine, CL_ENGINE_MAX_SCANSIZE, NULL)) {
             logg(LOGG_WARNING, "System limit for file size is lower than engine->maxscansize\n");
+        }
     } else {
         logg(LOGG_WARNING, "Cannot obtain resource limits for file size\n");
     }
@@ -995,10 +1014,11 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
         }
     }
     val = cl_engine_get_num(engine, CL_ENGINE_MAX_RECURSION, NULL);
-    if (val)
+    if (val) {
         logg(LOGG_INFO, "Limits: Recursion level limit set to %u.\n", (unsigned int)val);
-    else
+    } else {
         logg(LOGG_WARNING, "Limits: Recursion level limit protection disabled.\n");
+    }
 
     if ((opt = optget(opts, "MaxFiles"))->active) {
         if ((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_FILES, opt->numarg))) {
@@ -1008,10 +1028,11 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
         }
     }
     val = cl_engine_get_num(engine, CL_ENGINE_MAX_FILES, NULL);
-    if (val)
+    if (val) {
         logg(LOGG_INFO, "Limits: Files limit set to %u.\n", (unsigned int)val);
-    else
+    } else {
         logg(LOGG_WARNING, "Limits: Files limit protection disabled.\n");
+    }
 
 #ifndef _WIN32
     if (getrlimit(RLIMIT_CORE, &rlim) == 0) {
@@ -1359,8 +1380,9 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
         val = cl_engine_get_num(engine, CL_ENGINE_MIN_CC_COUNT, NULL);
         logg(LOGG_INFO, "Structured: Minimum Credit Card Number Count set to %u\n", (unsigned int)val);
 
-        if (optget(opts, "StructuredCCOnly")->enabled)
+        if (optget(opts, "StructuredCCOnly")->enabled) {
             options.heuristic |= CL_SCAN_HEURISTIC_STRUCTURED_CC;
+        }
 
         if ((opt = optget(opts, "StructuredMinSSNCount"))->enabled) {
             if ((ret = cl_engine_set_num(engine, CL_ENGINE_MIN_SSN_COUNT, opt->numarg))) {
@@ -1372,11 +1394,13 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
         val = cl_engine_get_num(engine, CL_ENGINE_MIN_SSN_COUNT, NULL);
         logg(LOGG_INFO, "Structured: Minimum Social Security Number Count set to %u\n", (unsigned int)val);
 
-        if (optget(opts, "StructuredSSNFormatNormal")->enabled)
+        if (optget(opts, "StructuredSSNFormatNormal")->enabled) {
             options.heuristic |= CL_SCAN_HEURISTIC_STRUCTURED_SSN_NORMAL;
+        }
 
-        if (optget(opts, "StructuredSSNFormatStripped")->enabled)
+        if (optget(opts, "StructuredSSNFormatStripped")->enabled) {
             options.heuristic |= CL_SCAN_HEURISTIC_STRUCTURED_SSN_STRIPPED;
+        }
     }
 
 #ifdef HAVE__INTERNAL__SHA_COLLECT
@@ -1385,8 +1409,9 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
 #endif
 
     /* JSON check to prevent engine loading if specified without libjson-c */
-    if (optget(opts, "GenerateMetadataJson")->enabled)
+    if (optget(opts, "GenerateMetadataJson")->enabled) {
         options.general |= CL_SCAN_GENERAL_COLLECT_METADATA;
+    }
 
     selfchk = optget(opts, "SelfCheck")->numarg;
     if (!selfchk) {
@@ -1464,8 +1489,9 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
         max_max_queue = rlim.rlim_cur - maxrec * max_threads - clamdfiles + max_threads;
         if (max_queue < max_threads) {
             max_queue = max_threads;
-            if (warn)
+            if (warn) {
                 logg(LOGG_WARNING, "MaxQueue value too low, increasing to: %d\n", max_queue);
+            }
         }
         if (max_max_queue < max_threads) {
             logg(LOGG_WARNING, "MaxThreads * MaxRecursion is too high: %d, open file descriptor limit is: %lu\n",
@@ -1474,12 +1500,14 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
         }
         if (max_queue > max_max_queue) {
             max_queue = max_max_queue;
-            if (warn)
+            if (warn) {
                 logg(LOGG_WARNING, "MaxQueue value too high, lowering to: %d\n", max_queue);
+            }
         } else if (max_queue < 2 * max_threads && max_queue < max_max_queue) {
             max_queue = 2 * max_threads;
-            if (max_queue > max_max_queue)
+            if (max_queue > max_max_queue) {
                 max_queue = max_max_queue;
+            }
             /* always warn here */
             logg(LOGG_WARNING, "MaxQueue is lower than twice MaxThreads, increasing to: %d\n", max_queue);
         }
@@ -1526,12 +1554,13 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
 
     idletimeout = optget(opts, "IdleTimeout")->numarg;
 
-    for (i = 0; i < nsockets; i++)
+    for (i = 0; i < nsockets; i++) {
         if (fds_add(&acceptdata.fds, socketds[i], 1, 0) == -1) {
             logg(LOGG_ERROR, "fds_add failed\n");
             cl_engine_free(engine);
             return 1;
         }
+    }
 #ifdef _WIN32
     event_wake_accept = CreateEvent(NULL, TRUE, FALSE, NULL);
     event_wake_recv   = CreateEvent(NULL, TRUE, FALSE, NULL);
@@ -1569,8 +1598,9 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
         pthread_mutex_lock(fds->buf_mutex);
         fds_cleanup(fds);
         /* signal that we can accept more connections */
-        if (fds->nfds <= (unsigned)max_queue)
+        if (fds->nfds <= (unsigned)max_queue) {
             pthread_cond_signal(&acceptdata.cond_nfds);
+        }
         new_sd = fds_poll_recv(fds, selfchk ? (int)selfchk : -1, 1, event_wake_recv);
 #ifdef _WIN32
         ResetEvent(event_wake_recv);
@@ -1592,13 +1622,16 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
             pthread_mutex_unlock(&exit_mutex);
         }
 
-        if (fds->nfds) i = (rr_last + 1) % fds->nfds;
+        if (fds->nfds) {
+            i = (rr_last + 1) % fds->nfds;
+        }
         for (j = 0; j < fds->nfds && new_sd >= 0; j++, i = (i + 1) % fds->nfds) {
             size_t pos         = 0;
             int error          = 0;
             struct fd_buf *buf = &fds->buf[i];
-            if (!buf->got_newdata)
+            if (!buf->got_newdata) {
                 continue;
+            }
 
 #ifndef _WIN32
             if (buf->fd == acceptdata.syncpipe_wake_recv[0]) {
@@ -1658,8 +1691,9 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
                 /* Parse & dispatch command */
                 cmd = parse_dispatch_cmd(&conn, buf, &pos, &error, opts, readtimeout);
 
-                if (conn.mode == MODE_COMMAND && !cmd)
+                if (conn.mode == MODE_COMMAND && !cmd) {
                     break;
+                }
                 if (!error) {
                     if (buf->mode == MODE_WAITREPLY && buf->off) {
                         /* Client is not supposed to send anything more */
@@ -1669,10 +1703,11 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
                         error = 1;
                     } else if (buf->mode == MODE_STREAM) {
                         rc = handle_stream(&conn, buf, opts, &error, &pos, readtimeout);
-                        if (rc == -1)
+                        if (rc == -1) {
                             break;
-                        else
+                        } else {
                             continue;
+                        }
                     }
                 }
                 if (error && error != CL_ETIMEOUT) {
@@ -1697,8 +1732,9 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
                         shutdown(buf->fd, 2);
                         closesocket(buf->fd);
                     }
-                } else
+                } else {
                     logg(LOGG_DEBUG_NV, "Socket not shut down due to active tasks\n");
+                }
                 buf->fd = -1;
             }
         }
@@ -1712,8 +1748,9 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
             if (sd_listen_fds(0) == 0) {
                 /* only close the sockets, when not using systemd socket activation */
                 for (i = 0; i < fds->nfds; i++) {
-                    if (fds->buf[i].fd == -1)
+                    if (fds->buf[i].fd == -1) {
                         continue;
+                    }
                     thrmgr_group_terminate(fds->buf[i].group);
                     if (thrmgr_group_finished(fds->buf[i].group, EXIT_ERROR)) {
                         logg(LOGG_DEBUG_NV, "Shutdown closed fd %d\n", fds->buf[i].fd);
@@ -1733,8 +1770,9 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
             logg(LOGG_INFO, "SIGHUP caught: re-opening log file.\n");
             logg_close();
             sighup = 0;
-            if (!logg_file && (opt = optget(opts, "LogFile"))->enabled)
+            if (!logg_file && (opt = optget(opts, "LogFile"))->enabled) {
                 logg_file = opt->strarg;
+            }
         }
 
         /* SelfCheck */
@@ -1831,20 +1869,23 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
     close(acceptdata.syncpipe_wake_accept[1]);
     close(acceptdata.syncpipe_wake_recv[1]);
 #endif
-    if (dbstat.entries)
+    if (dbstat.entries) {
         cl_statfree(&dbstat);
+    }
     if (sd_listen_fds(0) == 0) {
         /* only close the sockets, when not using systemd socket activation */
         logg(LOGG_DEBUG, "Shutting down the main socket%s.\n", (nsockets > 1) ? "s" : "");
-        for (i = 0; i < nsockets; i++)
+        for (i = 0; i < nsockets; i++) {
             shutdown(socketds[i], 2);
+        }
     }
 
     if ((opt = optget(opts, "PidFile"))->enabled) {
-        if (unlink(opt->strarg) == -1)
+        if (unlink(opt->strarg) == -1) {
             logg(LOGG_ERROR, "Can't unlink the pid file %s\n", opt->strarg);
-        else
+        } else {
             logg(LOGG_INFO, "Pid file removed.\n");
+        }
     }
 
     time(&current_time);

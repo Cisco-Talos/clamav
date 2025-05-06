@@ -147,10 +147,12 @@ static void remove_frompools(threadpool_t *t)
         pthread_mutex_unlock(&pools_lock);
         return;
     }
-    if (prev)
+    if (prev) {
         prev->nxt = l->nxt;
-    if (l == pools)
+    }
+    if (l == pools) {
         pools = l->nxt;
+    }
     free(l);
     desc = t->tasks;
     while (desc) {
@@ -168,8 +170,9 @@ static void print_queue(int f, work_queue_t *queue, struct timeval *tv_now)
     unsigned invalids = 0, cnt = 0;
     work_item_t *q;
 
-    if (!queue->head)
+    if (!queue->head) {
         return;
+    }
     for (q = queue->head; q; q = q->next) {
         long delta;
         delta = tv_now->tv_usec - q->time_queued.tv_usec;
@@ -178,20 +181,24 @@ static void print_queue(int f, work_queue_t *queue, struct timeval *tv_now)
             invalids++;
             continue;
         }
-        if (delta > umax)
+        if (delta > umax) {
             umax = delta;
-        if (delta < umin)
+        }
+        if (delta < umin) {
             umin = delta;
+        }
         usum += delta;
         ++cnt;
     }
     mdprintf(f, " min_wait: %.6f max_wait: %.6f avg_wait: %.6f",
              umin / 1e6, umax / 1e6, usum / (1e6 * cnt));
-    if (invalids)
+    if (invalids) {
         mdprintf(f, " (INVALID timestamps: %u)", invalids);
-    if (cnt + invalids != (unsigned)queue->item_count)
+    }
+    if (cnt + invalids != (unsigned)queue->item_count) {
         mdprintf(f, " (ERROR: %u != %u)", cnt + invalids,
                  (unsigned)queue->item_count);
+    }
 }
 
 int thrmgr_printstats(int f, char term)
@@ -204,7 +211,9 @@ int thrmgr_printstats(int f, char term)
     int has_libc_memstats         = 0;
 
     pthread_mutex_lock(&pools_lock);
-    for (cnt = 0, l = pools; l; l = l->nxt) cnt++;
+    for (cnt = 0, l = pools; l; l = l->nxt) {
+        cnt++;
+    }
     mdprintf(f, "POOLS: %u\n\n", cnt);
     for (l = pools; l && !error_flag; l = l->nxt) {
         threadpool_t *pool = l->pool;
@@ -258,8 +267,9 @@ int thrmgr_printstats(int f, char term)
                  * search is good enough */
                 size_t i;
                 for (i = 0; i < seen_cnt; i++) {
-                    if (seen[i] == task->engine)
+                    if (seen[i] == task->engine) {
                         break;
+                    }
                 }
                 /* we need to count the memusage from the same
                  * engine only once */
@@ -300,13 +310,14 @@ int thrmgr_printstats(int f, char term)
     if (error_flag) {
         mdprintf(f, "ERROR: error encountered while formatting statistics\n");
     } else {
-        if (has_libc_memstats)
+        if (has_libc_memstats) {
             mdprintf(f, "MEMSTATS: heap %.3fM mmap %.3fM used %.3fM free %.3fM releasable %.3fM pools %u pools_used %.3fM pools_total %.3fM\n",
                      mem_heap, mem_mmap, mem_used, mem_free, mem_releasable, pool_cnt,
                      pool_used / (1024 * 1024.0), pool_total / (1024 * 1024.0));
-        else
+        } else {
             mdprintf(f, "MEMSTATS: heap N/A mmap N/A used N/A free N/A releasable N/A pools %u pools_used %.3fM pools_total %.3fM\n",
                      pool_cnt, pool_used / (1024 * 1024.0), pool_total / (1024 * 1024.0));
+        }
     }
     mdprintf(f, "END%c", term);
     pthread_mutex_unlock(&pools_lock);
@@ -546,12 +557,14 @@ void thrmgr_setactivetask(const char *filename, const char *cmd)
     struct task_desc *desc;
     pthread_once(&stats_tls_key_once, stats_tls_key_alloc);
     desc = pthread_getspecific(stats_tls_key);
-    if (!desc)
+    if (!desc) {
         return;
+    }
     desc->filename = filename;
     if (cmd) {
-        if (cmd == IDLE_TASK && desc->command == cmd)
+        if (cmd == IDLE_TASK && desc->command == cmd) {
             return;
+        }
         desc->command = cmd;
         gettimeofday(&desc->tv, NULL);
     }
@@ -562,8 +575,9 @@ void thrmgr_setactiveengine(const struct cl_engine *engine)
     struct task_desc *desc;
     pthread_once(&stats_tls_key_once, stats_tls_key_alloc);
     desc = pthread_getspecific(stats_tls_key);
-    if (!desc)
+    if (!desc) {
         return;
+    }
     desc->engine = engine;
 }
 
@@ -571,13 +585,14 @@ void thrmgr_setactiveengine(const struct cl_engine *engine)
 static void stats_init(threadpool_t *pool)
 {
     struct task_desc *desc = calloc(1, sizeof(*desc));
-    if (!desc)
+    if (!desc) {
         return;
+    }
     pthread_once(&stats_tls_key_once, stats_tls_key_alloc);
     pthread_setspecific(stats_tls_key, desc);
-    if (!pool->tasks)
+    if (!pool->tasks) {
         pool->tasks = desc;
-    else {
+    } else {
         desc->nxt        = pool->tasks;
         pool->tasks->prv = desc;
         pool->tasks      = desc;
@@ -588,15 +603,19 @@ static void stats_init(threadpool_t *pool)
 static void stats_destroy(threadpool_t *pool)
 {
     struct task_desc *desc = pthread_getspecific(stats_tls_key);
-    if (!desc)
+    if (!desc) {
         return;
+    }
     pthread_mutex_lock(&pools_lock);
-    if (desc->prv)
+    if (desc->prv) {
         desc->prv->nxt = desc->nxt;
-    if (desc->nxt)
+    }
+    if (desc->nxt) {
         desc->nxt->prv = desc->prv;
-    if (pool->tasks == desc)
+    }
+    if (pool->tasks == desc) {
         pool->tasks = desc->nxt;
+    }
     free(desc);
     pthread_setspecific(stats_tls_key, NULL);
     pthread_mutex_unlock(&pools_lock);
@@ -606,8 +625,9 @@ static inline int thrmgr_contended(threadpool_t *pool, int bulk)
 {
     /* don't allow bulk items to exceed 50% of queue, so that
      * non-bulk items get a chance to be in the queue */
-    if (bulk && pool->bulk_queue->item_count >= pool->queue_max / 2)
+    if (bulk && pool->bulk_queue->item_count >= pool->queue_max / 2) {
         return 1;
+    }
     return pool->bulk_queue->item_count + pool->single_queue->item_count + pool->thr_alive - pool->thr_idle >= pool->queue_max;
 }
 
@@ -635,13 +655,15 @@ static void *thrmgr_pop(threadpool_t *pool)
 
     task = work_queue_pop(first);
     if (task) {
-        if (++first->popped == ratio)
+        if (++first->popped == ratio) {
             second->popped = 0;
+        }
     } else {
         task = work_queue_pop(second);
         if (task) {
-            if (++second->popped == ratio)
+            if (++second->popped == ratio) {
                 first->popped = 0;
+            }
         }
     }
 
@@ -840,10 +862,12 @@ int thrmgr_group_finished(jobgroup_t *group, enum thrmgr_exit exitc)
     if (group->jobs) {
         if (!--group->jobs) {
             ret = 1;
-        } else
+        } else {
             logg(LOGG_DEBUG_NV, "THRMGR: active jobs for %p: %d\n", group, group->jobs);
-        if (group->jobs == 1)
+        }
+        if (group->jobs == 1) {
             pthread_cond_signal(&group->only);
+        }
     }
     pthread_mutex_unlock(&group->mutex);
     if (ret) {
@@ -864,8 +888,9 @@ void thrmgr_group_waitforall(jobgroup_t *group, unsigned *ok, unsigned *error, u
         pthread_mutex_lock(&exit_mutex);
         needexit = progexit;
         pthread_mutex_unlock(&exit_mutex);
-        if (needexit)
+        if (needexit) {
             break;
+        }
         /* wake to check progexit */
         timeout.tv_sec  = time(NULL) + 5;
         timeout.tv_nsec = 0;
@@ -874,10 +899,11 @@ void thrmgr_group_waitforall(jobgroup_t *group, unsigned *ok, unsigned *error, u
     *ok    = group->exit_ok;
     *error = group->exit_error + needexit;
     *total = group->exit_total;
-    if (!--group->jobs)
+    if (!--group->jobs) {
         needfree = 1;
-    else
+    } else {
         logg(LOGG_DEBUG_NV, "THRMGR: active jobs for %p: %d\n", group, group->jobs);
+    }
     pthread_mutex_unlock(&group->mutex);
     if (needfree) {
         logg(LOGG_DEBUG_NV, "THRMGR: group finished freeing %p\n", group);
@@ -890,8 +916,9 @@ jobgroup_t *thrmgr_group_new(void)
     jobgroup_t *group;
 
     group = malloc(sizeof(*group));
-    if (!group)
+    if (!group) {
         return NULL;
+    }
     group->jobs    = 1;
     group->exit_ok = group->exit_error = group->exit_total = group->force_exit = 0;
     if (pthread_mutex_init(&group->mutex, NULL)) {
@@ -916,8 +943,9 @@ int thrmgr_group_need_terminate(jobgroup_t *group)
         pthread_mutex_lock(&group->mutex);
         ret = group->force_exit;
         pthread_mutex_unlock(&group->mutex);
-    } else
+    } else {
         ret = 0;
+    }
     pthread_mutex_lock(&exit_mutex);
     ret |= progexit;
     pthread_mutex_unlock(&exit_mutex);

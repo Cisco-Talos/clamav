@@ -103,8 +103,9 @@ static const char *lzma_bswap_4861dc(struct lzmastate *p, const char *old_edx)
 static uint32_t lzma_486248(struct lzmastate *p, const char **old_ecx, char *src, uint32_t size)
 {
     uint32_t loc_esi, loc_edi, loc_eax, loc_ecx, ret;
-    if (!CLI_ISCONTAINED(src, size, *old_ecx, 4) || !CLI_ISCONTAINED(src, size, p->p0, 1))
+    if (!CLI_ISCONTAINED(src, size, *old_ecx, 4) || !CLI_ISCONTAINED(src, size, p->p0, 1)) {
         return 0xffffffff;
+    }
     loc_esi = p->p1;
     loc_eax = loc_esi >> 0xb;
     loc_ecx = cli_readint32(*old_ecx);
@@ -159,8 +160,9 @@ static uint32_t lzma_48635C(uint8_t znaczek, const char **old_ecx, struct lzmast
     ret      = loc_esi << 9;
     loc_edi  = *old_ecx;
     *old_ecx = loc_edi + ret + 0x202;
-    if ((ret = lzma_486248(p, old_ecx, src, size)) == 0xffffffff)
+    if ((ret = lzma_486248(p, old_ecx, src, size)) == 0xffffffff) {
         return 0xffffffff;
+    }
     loc_ebx = ret | 2;
 
     while (loc_esi == ret) {
@@ -173,8 +175,9 @@ static uint32_t lzma_48635C(uint8_t znaczek, const char **old_ecx, struct lzmast
         znaczek <<= 1;
         ret      = ((loc_esi + 1) << 8) + loc_ebx;
         *old_ecx = loc_edi + ret * 2;
-        if ((ret = lzma_486248(p, old_ecx, src, size)) == 0xffffffff)
+        if ((ret = lzma_486248(p, old_ecx, src, size)) == 0xffffffff) {
             return 0xffffffff;
+        }
         loc_ebx += loc_ebx;
         loc_ebx |= ret;
     }
@@ -182,8 +185,9 @@ static uint32_t lzma_48635C(uint8_t znaczek, const char **old_ecx, struct lzmast
     while (loc_ebx < loc_esi) {
         loc_ebx += loc_ebx;
         *old_ecx = loc_edi + loc_ebx;
-        if ((ret = lzma_486248(p, old_ecx, src, size)) == 0xffffffff)
+        if ((ret = lzma_486248(p, old_ecx, src, size)) == 0xffffffff) {
             return 0xffffffff;
+        }
         loc_ebx |= ret;
     }
     ret     = (ret & 0xffffff00) | (loc_ebx & 0xff);
@@ -205,8 +209,9 @@ static uint32_t lzma_4862e0(struct lzmastate *p, const char **old_ecx, uint32_t 
         do {
             loc_esi  = ret + ret;
             *old_ecx = loc_edi + loc_esi;
-            if ((ret = lzma_486248(p, old_ecx, src, size)) == 0xffffffff)
+            if ((ret = lzma_486248(p, old_ecx, src, size)) == 0xffffffff) {
                 return 0xffffffff;
+            }
             ret += loc_esi;
             stack_ecx--;
         } while (stack_ecx);
@@ -228,27 +233,31 @@ static uint32_t lzma_4863da(uint32_t var0, struct lzmastate *p, const char **old
     uint32_t ret;
     const char *loc_esi = *old_ecx;
 
-    if ((ret = lzma_486248(p, old_ecx, src, size)) == 0xffffffff)
+    if ((ret = lzma_486248(p, old_ecx, src, size)) == 0xffffffff) {
         return -1;
+    }
     if (ret) {
         /* loc_4863ff */
         *old_ecx = loc_esi + 2;
-        if ((ret = lzma_486248(p, old_ecx, src, size)) == 0xffffffff)
+        if ((ret = lzma_486248(p, old_ecx, src, size)) == 0xffffffff) {
             return -1;
+        }
         if (ret) {
             /* loc_486429 */
             *old_edx = 8;
             *old_ecx = loc_esi + 0x204;
-            if (lzma_4862e0(p, old_ecx, old_edx, &ret, src, size) == 0xffffffff)
+            if (lzma_4862e0(p, old_ecx, old_edx, &ret, src, size) == 0xffffffff) {
                 return -1;
+            }
             ret += 0x10;
         } else {
             /* loc_48640e */
             ret      = var0 << 4;
             *old_edx = 3;
             *old_ecx = loc_esi + 0x104 + ret;
-            if (lzma_4862e0(p, old_ecx, old_edx, &ret, src, size) == 0xffffffff)
+            if (lzma_4862e0(p, old_ecx, old_edx, &ret, src, size) == 0xffffffff) {
                 return -1;
+            }
             ret += 0x8;
         }
     } else {
@@ -256,8 +265,9 @@ static uint32_t lzma_4863da(uint32_t var0, struct lzmastate *p, const char **old
         ret      = var0 << 4;
         *old_edx = 3;
         *old_ecx = loc_esi + 0x4 + ret;
-        if (lzma_4862e0(p, old_ecx, old_edx, &ret, src, size) == 0xffffffff)
+        if (lzma_4862e0(p, old_ecx, old_edx, &ret, src, size) == 0xffffffff) {
             return -1;
+        }
     }
     *retval = ret;
     return 0;
@@ -282,8 +292,9 @@ static uint32_t lzma_486204(struct lzmastate *p, uint32_t old_edx, uint32_t *ret
             }
             /* loc_486222 */
             if (loc_esi < 0x1000000) {
-                if (!CLI_ISCONTAINED(src, size, p->p0, 1))
+                if (!CLI_ISCONTAINED(src, size, p->p0, 1)) {
                     return 0xffffffff;
+                }
                 loc_edx = p->p0;
                 loc_edi <<= 8;
                 loc_esi <<= 8;
@@ -319,8 +330,9 @@ static uint32_t lzma_48631a(struct lzmastate *p, const char **old_ecx, uint32_t 
     do {
         loc_esi  = *old_edx + *old_edx;
         *old_ecx = loc_esi + loc_ebx;
-        if ((ret = lzma_486248(p, old_ecx, src, size)) == 0xffffffff)
+        if ((ret = lzma_486248(p, old_ecx, src, size)) == 0xffffffff) {
             return 0xffffffff;
+        }
         /* unneeded *old_ecx  = loc_edi; */
         *old_edx = loc_esi + ret;
         /* ret <<= (uint32_t)(*old_ecx)&0xff; */
@@ -358,7 +370,9 @@ int mew_lzma(char *orgsource, const char *buf, uint32_t size_sum, uint32_t vma, 
     }
     temp = cli_readint32(source) - vma;
     source += 4;
-    if (!special) pushed_ebx = source;
+    if (!special) {
+        pushed_ebx = source;
+    }
     new_ebx = orgsource + temp;
 
     do {
@@ -367,36 +381,42 @@ int mew_lzma(char *orgsource, const char *buf, uint32_t size_sum, uint32_t vma, 
             /* loc_486450 */
             if (!special) {
                 source = pushed_ebx;
-                if (!CLI_ISCONTAINED(orgsource, size_sum, source, 16))
+                if (!CLI_ISCONTAINED(orgsource, size_sum, source, 16)) {
                     return -1;
+                }
 
                 if (cli_readint32(source) == 0) {
                     return 0;
                 }
             } else {
-                if (!CLI_ISCONTAINED(orgsource, size_sum, source, 12))
+                if (!CLI_ISCONTAINED(orgsource, size_sum, source, 12)) {
                     return -1;
+                }
             }
 
             var28 = cli_readint32(source);
             source += 4;
             temp  = cli_readint32(source) - vma;
             var18 = (uint8_t *)(orgsource + temp);
-            if (special) pushed_esi = orgsource + temp;
+            if (special) {
+                pushed_esi = orgsource + temp;
+            }
             source += 4;
             temp = cli_readint32(source);
             source += 5; /* yes, five */
             var2C = source;
             source += temp;
-            if (special)
+            if (special) {
                 pushed_ebx = source;
-            else
+            } else {
                 pushed_ebx = source;
+            }
             var1 = 0;
             dest = new_ebx;
 
-            if (!CLI_ISCONTAINED(orgsource, size_sum, dest, 0x6E6C))
+            if (!CLI_ISCONTAINED(orgsource, size_sum, dest, 0x6E6C)) {
                 return -1;
+            }
             for (i = 0; i < 0x1b9b; i++) {
                 cli_writeint32(dest, 0x4000400);
                 dest += 4;
@@ -406,8 +426,9 @@ int mew_lzma(char *orgsource, const char *buf, uint32_t size_sum, uint32_t vma, 
             loc_edi       = 1;
             var14 = var10 = var24 = 1;
 
-            if (!CLI_ISCONTAINED(orgsource, size_sum, var2C, 5))
+            if (!CLI_ISCONTAINED(orgsource, size_sum, var2C, 5)) {
                 return -1;
+            }
             lzma_bswap_4861dc(&var40, var2C);
             new_edx = 0;
         } while (var28 <= loc_esi); /* source = 0 */
@@ -418,15 +439,17 @@ int mew_lzma(char *orgsource, const char *buf, uint32_t size_sum, uint32_t vma, 
             new_eax = var08 & 3;
             new_ecx = (((loc_esi << 4) + new_eax) * 2) + new_ebx;
             var0C   = new_eax;
-            if ((new_eax = lzma_486248(&var40, &new_ecx, orgsource, size_sum)) == 0xffffffff)
+            if ((new_eax = lzma_486248(&var40, &new_ecx, orgsource, size_sum)) == 0xffffffff) {
                 return -1;
+            }
             if (new_eax) {
                 /* loc_486549 */
                 new_ecx = new_ebx + loc_esi * 2 + 0x180;
                 var20   = 1;
                 /* eax=1 */
-                if ((new_eax = lzma_486248(&var40, &new_ecx, orgsource, size_sum)) == 0xffffffff)
+                if ((new_eax = lzma_486248(&var40, &new_ecx, orgsource, size_sum)) == 0xffffffff) {
                     return -1;
+                }
                 if (new_eax != 1) {
                     /* loc_486627 */
                     var24 = var10;
@@ -437,18 +460,21 @@ int mew_lzma(char *orgsource, const char *buf, uint32_t size_sum, uint32_t vma, 
                     new_ecx = new_ebx + 0x664;
                     var14   = loc_edi;
                     loc_esi = new_eax;
-                    if (lzma_4863da(var0C, &var40, &new_ecx, &new_edx, &new_eax, orgsource, size_sum) == 0xffffffff)
+                    if (lzma_4863da(var0C, &var40, &new_ecx, &new_edx, &new_eax, orgsource, size_sum) == 0xffffffff) {
                         return -1;
+                    }
                     var0C = new_eax;
-                    if (var0C >= 4)
+                    if (var0C >= 4) {
                         new_eax = 3;
+                    }
 
                     /* loc_486662 */
                     new_edx = 6;
                     new_eax <<= 7;
                     new_ecx = new_eax + new_ebx + 0x360;
-                    if (lzma_4862e0(&var40, &new_ecx, &new_edx, &new_eax, orgsource, size_sum) == 0xffffffff)
+                    if (lzma_4862e0(&var40, &new_ecx, &new_edx, &new_eax, orgsource, size_sum) == 0xffffffff) {
                         return -1;
+                    }
                     if (new_eax < 4) {
                         /* loc_4866ca */
                         loc_edi = new_eax;
@@ -460,8 +486,9 @@ int mew_lzma(char *orgsource, const char *buf, uint32_t size_sum, uint32_t vma, 
                         if (new_eax >= 0xe) {
                             /* loc_4866ab */
                             new_edx = loc_ecx - 4;
-                            if (lzma_486204(&var40, new_edx, &new_eax, orgsource, size_sum) == 0xffffffff)
+                            if (lzma_486204(&var40, new_edx, &new_eax, orgsource, size_sum) == 0xffffffff) {
                                 return -1;
+                            }
                             loc_edi += new_eax << 4;
 
                             new_edx = 4;
@@ -473,26 +500,30 @@ int mew_lzma(char *orgsource, const char *buf, uint32_t size_sum, uint32_t vma, 
                             new_ecx = new_ebx + loc_ecx * 2 + 0x55e;
                         }
                         /* loc_4866a2 */
-                        if (lzma_48631a(&var40, &new_ecx, &new_edx, &new_eax, orgsource, size_sum) == 0xffffffff)
+                        if (lzma_48631a(&var40, &new_ecx, &new_edx, &new_eax, orgsource, size_sum) == 0xffffffff) {
                             return -1;
+                        }
                         loc_edi += new_eax;
                     }
                     loc_edi++;
                 } else {
                     /* loc_486568 */
                     new_ecx = new_ebx + loc_esi * 2 + 0x198;
-                    if ((new_eax = lzma_486248(&var40, &new_ecx, orgsource, size_sum)) == 0xffffffff)
+                    if ((new_eax = lzma_486248(&var40, &new_ecx, orgsource, size_sum)) == 0xffffffff) {
                         return -1;
+                    }
                     if (new_eax) {
                         /* loc_4865bd */
                         new_ecx = new_ebx + loc_esi * 2 + 0x1B0;
-                        if ((new_eax = lzma_486248(&var40, &new_ecx, orgsource, size_sum)) == 0xffffffff)
+                        if ((new_eax = lzma_486248(&var40, &new_ecx, orgsource, size_sum)) == 0xffffffff) {
                             return -1;
+                        }
                         if (new_eax) {
                             /* loc_4865d2 */
                             new_ecx = new_ebx + loc_esi * 2 + 0x1C8;
-                            if ((new_eax = lzma_486248(&var40, &new_ecx, orgsource, size_sum)) == 0xffffffff)
+                            if ((new_eax = lzma_486248(&var40, &new_ecx, orgsource, size_sum)) == 0xffffffff) {
                                 return -1;
+                            }
                             if (new_eax) {
                                 /* loc_4865ea */
                                 new_eax = var24;
@@ -514,8 +545,9 @@ int mew_lzma(char *orgsource, const char *buf, uint32_t size_sum, uint32_t vma, 
                         /* loc_48657e */
                         new_eax = ((loc_esi + 0xf) << 4) + var0C;
                         new_ecx = new_ebx + new_eax * 2;
-                        if ((new_eax = lzma_486248(&var40, &new_ecx, orgsource, size_sum)) == 0xffffffff)
+                        if ((new_eax = lzma_486248(&var40, &new_ecx, orgsource, size_sum)) == 0xffffffff) {
                             return -1;
+                        }
                         if (!new_eax) {
                             uint32_t loc_ecx;
                             /* loc_486593 */
@@ -523,14 +555,16 @@ int mew_lzma(char *orgsource, const char *buf, uint32_t size_sum, uint32_t vma, 
                             loc_ecx -= loc_edi;
                             /* loc_esi = ((((loc_esi >= 7)-1)&0xFFFFFFFE) + 0xB); */
                             loc_esi = loc_esi >= 7 ? 11 : 9;
-                            if (!CLI_ISCONTAINED((uint8_t *)orgsource, size_sum, var18 + loc_ecx, 1))
+                            if (!CLI_ISCONTAINED((uint8_t *)orgsource, size_sum, var18 + loc_ecx, 1)) {
                                 return -1;
+                            }
                             var1    = *(var18 + loc_ecx);
                             loc_ecx = (loc_ecx & 0xffffff00) | var1;
                             /* loc_4865af */
                             new_edx = var08++;
-                            if (!CLI_ISCONTAINED((uint8_t *)orgsource, size_sum, var18 + new_edx, 1))
+                            if (!CLI_ISCONTAINED((uint8_t *)orgsource, size_sum, var18 + new_edx, 1)) {
                                 return -1;
+                            }
                             *(var18 + new_edx) = loc_ecx & 0xff;
 
                             /* loc_4866fe */
@@ -540,8 +574,9 @@ int mew_lzma(char *orgsource, const char *buf, uint32_t size_sum, uint32_t vma, 
                     }
                     /* loc_4865fe */
                     new_ecx = new_ebx + 0xa68;
-                    if (lzma_4863da(var0C, &var40, &new_ecx, &new_edx, &new_eax, orgsource, size_sum) == 0xffffffff)
+                    if (lzma_4863da(var0C, &var40, &new_ecx, &new_edx, &new_eax, orgsource, size_sum) == 0xffffffff) {
                         return -1;
+                    }
                     var0C = new_eax;
                     /* new_eax = (((loc_esi >= 7)-1)&0xFFFFFFFD) + 0xB; */
                     new_eax = loc_esi >= 7 ? 11 : 8;
@@ -559,8 +594,9 @@ int mew_lzma(char *orgsource, const char *buf, uint32_t size_sum, uint32_t vma, 
                          (!CLI_ISCONTAINED(orgsource, size_sum, (char *)(new_ecx + new_eax), var0C) ||
                           !CLI_ISCONTAINED(orgsource, size_sum, (char *)(new_ecx + new_edx), var0C))) ||
                         (!CLI_ISCONTAINED(orgsource, size_sum, (char *)(new_ecx + new_eax), var28 - new_edx) ||
-                         !CLI_ISCONTAINED(orgsource, size_sum, (char *)(new_ecx + new_edx), var28 - new_edx)))
+                         !CLI_ISCONTAINED(orgsource, size_sum, (char *)(new_ecx + new_edx), var28 - new_edx))) {
                         return -1;
+                    }
                     do {
                         var1                            = *(uint8_t *)(new_ecx + new_eax);
                         *(uint8_t *)(new_ecx + new_edx) = var1;
@@ -568,8 +604,9 @@ int mew_lzma(char *orgsource, const char *buf, uint32_t size_sum, uint32_t vma, 
                         new_edx++;
                         new_eax++;
                         var0C--;
-                        if (var0C <= 0)
+                        if (var0C <= 0) {
                             break;
+                        }
                     } while (new_edx < var28);
                     var08 = new_edx;
                 }
@@ -580,10 +617,11 @@ int mew_lzma(char *orgsource, const char *buf, uint32_t size_sum, uint32_t vma, 
                 var0C_ecxcopy = new_ecx;
                 if (loc_esi >= 4) {
                     /* loc_4864e8 */
-                    if (loc_esi >= 10)
+                    if (loc_esi >= 10) {
                         loc_esi -= 6;
-                    else
+                    } else {
                         loc_esi -= 3;
+                    }
 
                 } else {
                     /* loc_4864e4 */
@@ -599,8 +637,9 @@ int mew_lzma(char *orgsource, const char *buf, uint32_t size_sum, uint32_t vma, 
                         new_eax += new_eax;
                         new_ecx += new_eax;
                         var34 = new_eax;
-                        if ((new_eax = lzma_486248(&var40, &new_ecx, orgsource, size_sum)) == 0xffffffff)
+                        if ((new_eax = lzma_486248(&var40, &new_ecx, orgsource, size_sum)) == 0xffffffff) {
                             return -1;
+                        }
                         new_eax |= var34;
                         /* loc_486522 */
                         /* keeping it here instead of at the top
@@ -616,13 +655,15 @@ int mew_lzma(char *orgsource, const char *buf, uint32_t size_sum, uint32_t vma, 
                     int t;
                     /* loc_4864FB */
                     new_eax = var08 - loc_edi;
-                    if (!CLI_ISCONTAINED((uint8_t *)orgsource, size_sum, var18 + new_eax, 1))
+                    if (!CLI_ISCONTAINED((uint8_t *)orgsource, size_sum, var18 + new_eax, 1)) {
                         return -1;
+                    }
                     t       = *(var18 + new_eax);
                     new_eax = (new_eax & 0xffffff00) | t;
 
-                    if (lzma_48635C(t, &new_ecx, &var40, &new_eax, orgsource, size_sum) == 0xffffffff)
+                    if (lzma_48635C(t, &new_ecx, &var40, &new_eax, orgsource, size_sum) == 0xffffffff) {
                         return -1;
+                    }
                     var20 = 0;
                     var1  = new_eax & 0xff;
                 }
@@ -634,8 +675,9 @@ int mew_lzma(char *orgsource, const char *buf, uint32_t size_sum, uint32_t vma, 
                 /* loc_4865af */
                 new_edx = var08++;
 
-                if (!CLI_ISCONTAINED((uint8_t *)orgsource, size_sum, var18 + new_edx, 1))
+                if (!CLI_ISCONTAINED((uint8_t *)orgsource, size_sum, var18 + new_edx, 1)) {
                     return -1;
+                }
                 *(var18 + new_edx) = var1;
             }
             /* loc_4866fe */
@@ -647,8 +689,9 @@ int mew_lzma(char *orgsource, const char *buf, uint32_t size_sum, uint32_t vma, 
             /* let's fix calls */
             cli_dbgmsg("MEWlen: %08x ? %08x\n", new_edx, pushed_edx);
 
-            if (pushed_edx < 5 || !CLI_ISCONTAINED(orgsource, size_sum, pushed_esi, pushed_edx))
+            if (pushed_edx < 5 || !CLI_ISCONTAINED(orgsource, size_sum, pushed_esi, pushed_edx)) {
                 return 0; /* No point in full failing just because we can't fixxup the calls */
+            }
 
             for (loc_ecx = 0; loc_ecx < pushed_edx - 5; loc_ecx++) {
                 /* 0xe8, 0xe9 call opcodes */
@@ -674,10 +717,11 @@ uint32_t lzma_upack_esi_00(struct lzmastate *p, char *old_ecx, char *bb, uint32_
     uint32_t loc_eax, ret, loc_edi;
     loc_eax = p->p1 >> 0xb;
     if (!CLI_ISCONTAINED(bb, bl, old_ecx, 4) || !CLI_ISCONTAINED(bb, bl, p->p0, 4)) {
-        if (!CLI_ISCONTAINED(bb, bl, old_ecx, 4))
+        if (!CLI_ISCONTAINED(bb, bl, old_ecx, 4)) {
             cli_dbgmsg("contain error! %p %08x ecx: %p [%p]\n", bb, bl, old_ecx, bb + bl);
-        else
+        } else {
             cli_dbgmsg("contain error! %p %08x p0: %p [%p]\n", bb, bl, p->p0, bb + bl);
+        }
         return 0xffffffff;
     }
     ret = cli_readint32(old_ecx);
@@ -714,8 +758,9 @@ uint32_t lzma_upack_esi_50(struct lzmastate *p, uint32_t old_eax, uint32_t old_e
 
     do {
         *old_edx = old_ebp + (loc_eax << 2);
-        if ((ret = lzma_upack_esi_00(p, *old_edx, bs, bl)) == 0xffffffff)
+        if ((ret = lzma_upack_esi_00(p, *old_edx, bs, bl)) == 0xffffffff) {
             return 0xffffffff;
+        }
         loc_eax += loc_eax;
         loc_eax += ret;
     } while (loc_eax < old_ecx);
@@ -741,8 +786,9 @@ uint32_t lzma_upack_esi_54(struct lzmastate *p, uint32_t old_eax, uint32_t *old_
         }
     }
     ret = loc_eax;
-    if (lzma_upack_esi_50(p, 1, *old_ecx, old_edx, *old_edx + (loc_eax << 2), &loc_eax, bs, bl) == 0xffffffff)
+    if (lzma_upack_esi_50(p, 1, *old_ecx, old_edx, *old_edx + (loc_eax << 2), &loc_eax, bs, bl) == 0xffffffff) {
         return 0xffffffff;
+    }
 
     *retval = ret + loc_eax;
     return 0;
@@ -813,8 +859,9 @@ int unmew11(char *src, uint32_t off, uint32_t ssize, uint32_t dsize, uint32_t ba
         cli_dbgmsg("MEW unpacking section %d (%p->%p)\n", i, lesi, ledi);
         if (!CLI_ISCONTAINED(src, size_sum, lesi, loc_ss) || !CLI_ISCONTAINED(src, size_sum, ledi, loc_ds)) {
             cli_dbgmsg("Possibly programmer error or hand-crafted PE file, report to clamav team\n");
-            if (section != NULL)
+            if (section != NULL) {
                 free(section);
+            }
             return -1;
         }
         if (unmew(lesi, ledi, loc_ss, loc_ds, &f1, &f2)) {
@@ -872,8 +919,9 @@ int unmew11(char *src, uint32_t off, uint32_t ssize, uint32_t dsize, uint32_t ba
         }
         i++;
 
-        if (!cli_readint32(f1))
+        if (!cli_readint32(f1)) {
             break;
+        }
     }
 
     /* LZMA stuff */

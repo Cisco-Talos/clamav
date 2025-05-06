@@ -76,6 +76,9 @@ git checkout libclamav/inflate64.h
 git checkout libclamav/inflate64.c
 git checkout libclamav/inflate64_priv.h
 git checkout libclamav/queue.h
+git checkout libclamav/nsis/bzlib.c
+git checkout libclamav/nsis/infblock.c
+git checkout libclamav/strlcat.c
 git checkout clamonacc/c-thread-pool/thpool.c
 git checkout clamonacc/c-thread-pool/thpool.h
 git checkout clamonacc/misc/fts.c

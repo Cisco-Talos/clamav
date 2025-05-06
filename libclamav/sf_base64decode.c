@@ -124,8 +124,9 @@ int sf_base64decode(uint8_t *inbuf, size_t inbuf_size, uint8_t *outbuf, size_t o
         cursor++;
     }
 
-    if (error)
+    if (error) {
         return (-1);
-    else
+    } else {
         return (0);
+    }
 }

@@ -142,8 +142,9 @@ size_t pdf_decodestream(
     }
 
     token->flags = 0;
-    if (xref)
+    if (xref) {
         token->flags |= PDFTOKEN_FLAG_XREF;
+    }
 
     token->success = 0;
 
@@ -243,9 +244,9 @@ static size_t pdf_decodestream_internal(
      * if none, force a DECRYPT filter application
      */
     if ((pdf->flags & (1 << DECRYPTABLE_PDF)) && !(obj->flags & (1 << OBJ_FILTER_CRYPT))) {
-        if (token->flags & PDFTOKEN_FLAG_XREF) /* TODO: is this on all crypt filters or only the assumed one? */
+        if (token->flags & PDFTOKEN_FLAG_XREF) { /* TODO: is this on all crypt filters or only the assumed one? */
             cli_dbgmsg("pdf_decodestream_internal: skipping decoding => non-filter CRYPT (reason: xref)\n");
-        else {
+        } else {
             cli_dbgmsg("pdf_decodestream_internal: decoding => non-filter CRYPT\n");
             retval = filter_decrypt(pdf, obj, params, token, 1);
             if (retval != CL_SUCCESS) {
@@ -288,16 +289,24 @@ static size_t pdf_decodestream_internal(
                 break;
 
             case OBJ_FILTER_JPX:
-                if (!filter) filter = "JPXDECODE";
+                if (!filter) {
+                    filter = "JPXDECODE";
+                }
                 /*fallthrough*/
             case OBJ_FILTER_DCT:
-                if (!filter) filter = "DCTDECODE";
+                if (!filter) {
+                    filter = "DCTDECODE";
+                }
                 /*fallthrough*/
             case OBJ_FILTER_FAX:
-                if (!filter) filter = "FAXDECODE";
+                if (!filter) {
+                    filter = "FAXDECODE";
+                }
                 /*fallthrough*/
             case OBJ_FILTER_JBIG2:
-                if (!filter) filter = "JBIG2DECODE";
+                if (!filter) {
+                    filter = "JBIG2DECODE";
+                }
 
                 cli_dbgmsg("pdf_decodestream_internal: unimplemented filter type [%u] => %s\n", obj->filterlist[i], filter);
                 filter = NULL;
@@ -411,14 +420,16 @@ static cl_error_t filter_ascii85decode(struct pdf_struct *pdf, struct pdf_obj *o
         return CL_EMEM;
     }
 
-    if (cli_memstr((const char *)ptr, remaining, "~>", 2) == NULL)
+    if (cli_memstr((const char *)ptr, remaining, "~>", 2) == NULL) {
         cli_dbgmsg("cli_pdf: no EOF marker found\n");
+    }
 
     while (remaining > 0) {
         int byte = (remaining--) ? (int)*ptr++ : EOF;
 
-        if ((byte == '~') && (remaining > 0) && (*ptr == '>'))
+        if ((byte == '~') && (remaining > 0) && (*ptr == '>')) {
             byte = EOF;
+        }
 
         if (byte >= '!' && byte <= 'u') {
             sum = (sum * 85) + ((uint32_t)byte - '!');
@@ -456,14 +467,17 @@ static cl_error_t filter_ascii85decode(struct pdf_struct *pdf, struct pdf_obj *o
                     break;
                 }
 
-                for (i = quintet; i < 5; i++)
+                for (i = quintet; i < 5; i++) {
                     sum *= 85;
+                }
 
-                if (quintet > 1)
+                if (quintet > 1) {
                     sum += (0xFFFFFF >> ((quintet - 2) * 8));
+                }
 
-                for (i = 0; i < quintet - 1; i++)
+                for (i = 0; i < quintet - 1; i++) {
                     *dptr++ = (uint8_t)((sum >> (24 - 8 * i)) & 0xFF);
+                }
                 declen += quintet - 1;
             }
 
@@ -486,8 +500,9 @@ static cl_error_t filter_ascii85decode(struct pdf_struct *pdf, struct pdf_obj *o
         token->content = decoded;
         token->length  = declen;
     } else {
-        if (!(obj->flags & ((1 << OBJ_IMAGE) | (1 << OBJ_TRUNCATED))))
+        if (!(obj->flags & ((1 << OBJ_IMAGE) | (1 << OBJ_TRUNCATED)))) {
             pdfobj_flag(pdf, obj, BAD_ASCIIDECODE);
+        }
 
         cli_dbgmsg("cli_pdf: error occurred parsing byte %lu of %lu\n",
                    (unsigned long)(token->length - remaining), (unsigned long)(token->length));
@@ -528,8 +543,9 @@ static cl_error_t filter_rldecode(struct pdf_struct *pdf, struct pdf_obj *obj, s
             }
             if (declen + srclen + 1 > capacity) {
 
-                if ((rc = cli_checklimits("pdf", pdf->ctx, capacity + INFLATE_CHUNK_SIZE, 0, 0)) != CL_SUCCESS)
+                if ((rc = cli_checklimits("pdf", pdf->ctx, capacity + INFLATE_CHUNK_SIZE, 0, 0)) != CL_SUCCESS) {
                     break;
+                }
 
                 if (!(temp = cli_max_realloc(decoded, capacity + INFLATE_CHUNK_SIZE))) {
                     cli_errmsg("cli_pdf: cannot reallocate memory for decoded output\n");
@@ -613,10 +629,11 @@ static uint8_t *decode_nextlinestart(uint8_t *content, uint32_t length)
     int toggle = 0;
 
     for (r = 0; r < length; r++, pt++) {
-        if (*pt == '\n' || *pt == '\r')
+        if (*pt == '\n' || *pt == '\r') {
             toggle = 1;
-        else if (toggle)
+        } else if (toggle) {
             break;
+        }
     }
 
     return pt;
@@ -642,8 +659,9 @@ static cl_error_t filter_flatedecode(struct pdf_struct *pdf, struct pdf_obj *obj
          * Sample 0015315109, it has \r followed by zlib header.
          * Flag pdf as suspicious, and attempt to extract by skipping the \r.
          */
-        if (!length)
+        if (!length) {
             return CL_SUCCESS;
+        }
     }
 
     capacity = INFLATE_CHUNK_SIZE;
@@ -739,12 +757,13 @@ static cl_error_t filter_flatedecode(struct pdf_struct *pdf, struct pdf_obj *obj
         case Z_DATA_ERROR:
         case Z_MEM_ERROR:
         default:
-            if (stream.msg)
+            if (stream.msg) {
                 cli_dbgmsg("cli_pdf: after writing %lu bytes, got error \"%s\" inflating PDF stream in %u %u obj\n",
                            (unsigned long)declen, stream.msg, obj->id >> 8, obj->id & 0xff);
-            else
+            } else {
                 cli_dbgmsg("cli_pdf: after writing %lu bytes, got error %d inflating PDF stream in %u %u obj\n",
                            (unsigned long)declen, zstat, obj->id >> 8, obj->id & 0xff);
+            }
 
             if (declen == 0) {
                 pdfobj_flag(pdf, obj, BAD_FLATESTART);
@@ -801,15 +820,18 @@ static cl_error_t filter_asciihexdecode(struct pdf_struct *pdf, struct pdf_obj *
     }
 
     for (i = 0, j = 0; i + 1 < length; i++) {
-        if (content[i] == ' ')
+        if (content[i] == ' ') {
             continue;
+        }
 
-        if (content[i] == '>')
+        if (content[i] == '>') {
             break;
+        }
 
         if (cli_hex2str_to((const char *)content + i, (char *)decoded + j, 2) == -1) {
-            if (length - i < 4)
+            if (length - i < 4) {
                 continue;
+            }
 
             rc = CL_EFORMAT;
             break;
@@ -828,8 +850,9 @@ static cl_error_t filter_asciihexdecode(struct pdf_struct *pdf, struct pdf_obj *
         token->content = decoded;
         token->length  = j;
     } else {
-        if (!(obj->flags & ((1 << OBJ_IMAGE) | (1 << OBJ_TRUNCATED))))
+        if (!(obj->flags & ((1 << OBJ_IMAGE) | (1 << OBJ_TRUNCATED)))) {
             pdfobj_flag(pdf, obj, BAD_ASCIIDECODE);
+        }
 
         cli_dbgmsg("cli_pdf: error occurred parsing byte %lu of %lu\n",
                    (unsigned long)i, (unsigned long)(token->length));
@@ -845,21 +868,23 @@ static cl_error_t filter_decrypt(struct pdf_struct *pdf, struct pdf_obj *obj, st
     size_t length       = (size_t)token->length;
     enum enc_method enc = ENC_IDENTITY;
 
-    if (mode)
+    if (mode) {
         enc = get_enc_method(pdf, obj);
-    else if (params) {
+    } else if (params) {
         struct pdf_dict_node *node = params->nodes;
 
         while (node) {
             if (node->type == PDF_DICT_STRING) {
                 if (!strncmp(node->key, "/Type", 6)) { /* optional field - Type */
                     /* MUST be "CryptFilterDecodeParms" */
-                    if (node->value)
+                    if (node->value) {
                         cli_dbgmsg("cli_pdf: Type: %s\n", (char *)(node->value));
+                    }
                 } else if (!strncmp(node->key, "/Name", 6)) { /* optional field - Name */
                     /* overrides document and default encryption method */
-                    if (node->value)
+                    if (node->value) {
                         cli_dbgmsg("cli_pdf: Name: %s\n", (char *)(node->value));
+                    }
                     enc = parse_enc_method(pdf->CF, pdf->CF_n, (char *)(node->value), enc);
                 }
             }
@@ -892,8 +917,9 @@ static cl_error_t filter_lzwdecode(struct pdf_struct *pdf, struct pdf_obj *obj, 
     lzw_stream stream;
     int echg = 1, lzwstat, rc = CL_SUCCESS;
 
-    if (pdf->ctx && !(pdf->ctx->dconf->other & OTHER_CONF_LZW))
+    if (pdf->ctx && !(pdf->ctx->dconf->other & OTHER_CONF_LZW)) {
         return CL_BREAK;
+    }
 
     if (params) {
         struct pdf_dict_node *node = params->nodes;
@@ -907,8 +933,9 @@ static cl_error_t filter_lzwdecode(struct pdf_struct *pdf, struct pdf_obj *obj, 
                     if (value) {
                         cli_dbgmsg("cli_pdf: EarlyChange: %s\n", value);
                         set = strtol(value, &end, 10);
-                        if (end != value)
+                        if (end != value) {
                             echg = (int)set;
+                        }
                     }
                 }
             }
@@ -924,8 +951,9 @@ static cl_error_t filter_lzwdecode(struct pdf_struct *pdf, struct pdf_obj *obj, 
          * Sample 0015315109, it has \r followed by zlib header.
          * Flag pdf as suspicious, and attempt to extract by skipping the \r.
          */
-        if (!length)
+        if (!length) {
             return CL_SUCCESS;
+        }
     }
 
     capacity = INFLATE_CHUNK_SIZE;
@@ -940,8 +968,9 @@ static cl_error_t filter_lzwdecode(struct pdf_struct *pdf, struct pdf_obj *obj, 
     stream.avail_in  = length;
     stream.next_out  = decoded;
     stream.avail_out = INFLATE_CHUNK_SIZE;
-    if (echg)
+    if (echg) {
         stream.flags |= LZW_FLAG_EARLYCHG;
+    }
 
     lzwstat = lzwInit(&stream);
     if (lzwstat != Z_OK) {
@@ -1024,12 +1053,13 @@ static cl_error_t filter_lzwdecode(struct pdf_struct *pdf, struct pdf_obj *obj, 
         case LZW_BUF_ERROR:
         case LZW_DICT_ERROR:
         default:
-            if (stream.msg)
+            if (stream.msg) {
                 cli_dbgmsg("cli_pdf: after writing %lu bytes, got error \"%s\" inflating PDF stream in %u %u obj\n",
                            (unsigned long)declen, stream.msg, obj->id >> 8, obj->id & 0xff);
-            else
+            } else {
                 cli_dbgmsg("cli_pdf: after writing %lu bytes, got error %d inflating PDF stream in %u %u obj\n",
                            (unsigned long)declen, lzwstat, obj->id >> 8, obj->id & 0xff);
+            }
 
             if (declen == 0) {
                 pdfobj_flag(pdf, obj, BAD_FLATESTART);

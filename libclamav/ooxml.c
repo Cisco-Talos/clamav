@@ -121,8 +121,9 @@ static cl_error_t ooxml_parse_document(int fd, cli_ctx *ctx)
 
     /* perform engine limit checks in temporary tracking session */
     ret = ooxml_updatelimits(fd, ctx);
-    if (ret != CL_CLEAN)
+    if (ret != CL_CLEAN) {
         return ret;
+    }
 
     reader = xmlReaderForFd(fd, "properties.xml", NULL, CLAMAV_MIN_XMLREADER_FLAGS);
     if (reader == NULL) {
@@ -132,8 +133,9 @@ static cl_error_t ooxml_parse_document(int fd, cli_ctx *ctx)
 
     ret = cli_msxml_parse_document(ctx, reader, ooxml_keys, num_ooxml_keys, MSXML_FLAG_JSON, NULL);
 
-    if (ret != CL_SUCCESS && ret != CL_ETIMEOUT && ret != CL_BREAK)
+    if (ret != CL_SUCCESS && ret != CL_ETIMEOUT && ret != CL_BREAK) {
         cli_warnmsg("ooxml_parse_document: encountered issue in parsing properties document\n");
+    }
 
     xmlTextReaderClose(reader);
     xmlFreeTextReader(reader);
@@ -150,10 +152,11 @@ static cl_error_t ooxml_core_cb(int fd, const char *filepath, cli_ctx *ctx, cons
 
     cli_dbgmsg("in ooxml_core_cb\n");
     ret = ooxml_parse_document(fd, ctx);
-    if (ret == CL_EPARSE)
+    if (ret == CL_EPARSE) {
         cli_json_parse_error(ctx->wrkproperty, "OOXML_ERROR_CORE_XMLPARSER");
-    else if (ret == CL_EFORMAT)
+    } else if (ret == CL_EFORMAT) {
         cli_json_parse_error(ctx->wrkproperty, "OOXML_ERROR_CORE_MALFORMED");
+    }
 
     return ret;
 }
@@ -168,10 +171,11 @@ static cl_error_t ooxml_extn_cb(int fd, const char *filepath, cli_ctx *ctx, cons
 
     cli_dbgmsg("in ooxml_extn_cb\n");
     ret = ooxml_parse_document(fd, ctx);
-    if (ret == CL_EPARSE)
+    if (ret == CL_EPARSE) {
         cli_json_parse_error(ctx->wrkproperty, "OOXML_ERROR_EXTN_XMLPARSER");
-    else if (ret == CL_EFORMAT)
+    } else if (ret == CL_EFORMAT) {
         cli_json_parse_error(ctx->wrkproperty, "OOXML_ERROR_EXTN_MALFORMED");
+    }
 
     return ret;
 }
@@ -197,8 +201,9 @@ static cl_error_t ooxml_content_cb(int fd, const char *filepath, cli_ctx *ctx, c
 
     /* perform engine limit checks in temporary tracking session */
     ret = ooxml_updatelimits(fd, ctx);
-    if (ret != CL_CLEAN)
+    if (ret != CL_CLEAN) {
         return ret;
+    }
 
     /* apply a reader to the document */
     reader = xmlReaderForFd(fd, "[Content_Types].xml", NULL, CLAMAV_MIN_XMLREADER_FLAGS);
@@ -221,17 +226,25 @@ static cl_error_t ooxml_content_cb(int fd, const char *filepath, cli_ctx *ctx, c
         }
 
         localname = xmlTextReaderConstLocalName(reader);
-        if (localname == NULL) continue;
+        if (localname == NULL) {
+            continue;
+        }
 
-        if (strcmp((const char *)localname, "Override")) continue;
+        if (strcmp((const char *)localname, "Override")) {
+            continue;
+        }
 
-        if (xmlTextReaderHasAttributes(reader) != 1) continue;
+        if (xmlTextReaderHasAttributes(reader) != 1) {
+            continue;
+        }
 
         CT = PN = NULL;
         while (xmlTextReaderMoveToNextAttribute(reader) == 1) {
             localname = xmlTextReaderConstLocalName(reader);
             value     = xmlTextReaderConstValue(reader);
-            if (localname == NULL || value == NULL) continue;
+            if (localname == NULL || value == NULL) {
+                continue;
+            }
 
             if (!xmlStrcmp(localname, (const xmlChar *)"ContentType")) {
                 CT = value;
@@ -242,7 +255,9 @@ static cl_error_t ooxml_content_cb(int fd, const char *filepath, cli_ctx *ctx, c
             cli_dbgmsg("%s: %s\n", localname, value);
         }
 
-        if (!CT || !PN) continue;
+        if (!CT || !PN) {
+            continue;
+        }
 
         if (!xmlStrcmp(CT, (const xmlChar *)"application/vnd.openxmlformats-package.core-properties+xml")) {
             /* default: /docProps/core.xml*/
@@ -297,17 +312,20 @@ static cl_error_t ooxml_content_cb(int fd, const char *filepath, cli_ctx *ctx, c
             dsig++;
         }
 
-        if (ret != CL_SUCCESS)
+        if (ret != CL_SUCCESS) {
             goto ooxml_content_exit;
+        }
     }
 
 ooxml_content_exit:
     if (core) {
         cli_jsonint(ctx->wrkproperty, "CorePropertiesFileCount", core);
-        if (core > 1)
+        if (core > 1) {
             cli_json_parse_error(ctx->wrkproperty, "OOXML_ERROR_MULTIPLE_CORE_PROPFILES");
-    } else if (!mcore)
+        }
+    } else if (!mcore) {
         cli_dbgmsg("cli_process_ooxml: file does not contain core properties file\n");
+    }
     if (mcore) {
         cli_jsonint(ctx->wrkproperty, "CorePropertiesMissingFileCount", mcore);
         cli_json_parse_error(ctx->wrkproperty, "OOXML_ERROR_MISSING_CORE_PROPFILES");
@@ -315,10 +333,12 @@ ooxml_content_exit:
 
     if (extn) {
         cli_jsonint(ctx->wrkproperty, "ExtendedPropertiesFileCount", extn);
-        if (extn > 1)
+        if (extn > 1) {
             cli_json_parse_error(ctx->wrkproperty, "OOXML_ERROR_MULTIPLE_EXTN_PROPFILES");
-    } else if (!mextn)
+        }
+    } else if (!mextn) {
         cli_dbgmsg("cli_process_ooxml: file does not contain extended properties file\n");
+    }
     if (mextn) {
         cli_jsonint(ctx->wrkproperty, "ExtendedPropertiesMissingFileCount", mextn);
         cli_json_parse_error(ctx->wrkproperty, "OOXML_ERROR_MISSING_EXTN_PROPFILES");
@@ -326,10 +346,12 @@ ooxml_content_exit:
 
     if (cust) {
         cli_jsonint(ctx->wrkproperty, "CustomPropertiesFileCount", cust);
-        if (cust > 1)
+        if (cust > 1) {
             cli_json_parse_error(ctx->wrkproperty, "OOXML_ERROR_MULTIPLE_CUSTOM_PROPFILES");
-    } else if (!mcust)
+        }
+    } else if (!mcust) {
         cli_dbgmsg("cli_process_ooxml: file does not contain custom properties file\n");
+    }
     if (mcust) {
         cli_jsonint(ctx->wrkproperty, "CustomPropertiesMissingFileCount", mcust);
         cli_json_parse_error(ctx->wrkproperty, "OOXML_ERROR_MISSING_CUST_PROPFILES");
@@ -361,8 +383,9 @@ static cl_error_t ooxml_hwp_cb(int fd, const char *filepath, cli_ctx *ctx, const
 
     /* perform engine limit checks in temporary tracking session */
     ret = ooxml_updatelimits(fd, ctx);
-    if (ret != CL_CLEAN)
+    if (ret != CL_CLEAN) {
         return ret;
+    }
 
     reader = xmlReaderForFd(fd, "ooxml_hwp.xml", NULL, CLAMAV_MIN_XMLREADER_FLAGS);
     if (reader == NULL) {
@@ -372,8 +395,9 @@ static cl_error_t ooxml_hwp_cb(int fd, const char *filepath, cli_ctx *ctx, const
 
     ret = cli_msxml_parse_document(ctx, reader, ooxml_hwp_keys, num_ooxml_hwp_keys, MSXML_FLAG_JSON, NULL);
 
-    if (ret != CL_SUCCESS && ret != CL_ETIMEOUT && ret != CL_BREAK)
+    if (ret != CL_SUCCESS && ret != CL_ETIMEOUT && ret != CL_BREAK) {
         cli_warnmsg("ooxml_hwp_cb: encountered issue in parsing properties document\n");
+    }
 
     xmlTextReaderClose(reader);
     xmlFreeTextReader(reader);

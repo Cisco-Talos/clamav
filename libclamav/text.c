@@ -139,32 +139,35 @@ textCopy(const text *t_head)
     text *first = NULL, *last = NULL;
 
     while (t_head) {
-        if (first == NULL)
+        if (first == NULL) {
             last = first = (text *)malloc(sizeof(text));
-        else {
+        } else {
             last->t_next = (text *)malloc(sizeof(text));
             last         = last->t_next;
         }
 
         if (last == NULL) {
             cli_errmsg("textCopy: Unable to allocate memory to clone object\n");
-            if (first)
+            if (first) {
                 textDestroy(first);
+            }
             return NULL;
         }
 
         last->t_next = NULL;
 
-        if (t_head->t_line)
+        if (t_head->t_line) {
             last->t_line = lineLink(t_head->t_line);
-        else
+        } else {
             last->t_line = NULL;
+        }
 
         t_head = t_head->t_next;
     }
 
-    if (first)
+    if (first) {
         last->t_next = NULL;
+    }
 
     return first;
 }
@@ -184,8 +187,9 @@ textAdd(text *t_head, const text *t)
         return textCopy(t);
     }
 
-    if (t == NULL)
+    if (t == NULL) {
         return t_head;
+    }
 
     ret = t_head;
 
@@ -203,10 +207,11 @@ textAdd(text *t_head, const text *t)
 
         assert(t_head != NULL);
 
-        if (t->t_line)
+        if (t->t_line) {
             t_head->t_line = lineLink(t->t_line);
-        else
+        } else {
             t_head->t_line = NULL;
+        }
 
         t = t->t_next;
     }
@@ -224,9 +229,9 @@ textAddMessage(text *aText, message *aMessage)
 {
     assert(aMessage != NULL);
 
-    if (messageGetEncoding(aMessage) == NOENCODING)
+    if (messageGetEncoding(aMessage) == NOENCODING) {
         return textAdd(aText, messageGetBody(aMessage));
-    else {
+    } else {
         text *anotherText = messageToText(aMessage);
 
         if (aText) {
@@ -265,13 +270,15 @@ textMove(text *t_head, text *t)
         return t_head;
     }
 
-    if (t == NULL)
+    if (t == NULL) {
         return t_head;
+    }
 
     ret = t_head;
 
-    while (t_head->t_next)
+    while (t_head->t_next) {
         t_head = t_head->t_next;
+    }
 
     /*
      * Move the first line manually so that the caller is left clean but
@@ -289,8 +296,9 @@ textMove(text *t_head, text *t)
     if (t->t_line) {
         t_head->t_line = t->t_line;
         t->t_line      = NULL;
-    } else
+    } else {
         t_head->t_line = NULL;
+    }
 
     t_head->t_next = t->t_next;
     t->t_next      = NULL;
@@ -308,15 +316,17 @@ textToBlob(text *t, blob *b, int destroy)
     size_t s;
     blob *bin;
 
-    if (t == NULL)
+    if (t == NULL) {
         return NULL;
+    }
 
     s = 0;
 
     (void)textIterate(t, getLength, &s, 0);
 
-    if (s == 0)
+    if (s == 0) {
         return b;
+    }
 
     /*
      * copy b. If b is NULL and an error occurs we know we need to free
@@ -326,8 +336,9 @@ textToBlob(text *t, blob *b, int destroy)
     if (b == NULL) {
         b = blobCreate();
 
-        if (b == NULL)
+        if (b == NULL) {
             return NULL;
+        }
     }
 
     if (blobGrow(b, s) != CL_SUCCESS) {
@@ -343,8 +354,9 @@ textToBlob(text *t, blob *b, int destroy)
 		 * create the blob
 		 */
 #else
-        if (bin == NULL)
+        if (bin == NULL) {
             blobDestroy(b);
+        }
         return NULL;
 #endif
     }
@@ -371,8 +383,9 @@ textToFileblob(text *t, fileblob *fb, int destroy)
         cli_dbgmsg("textToFileBlob, destroy = %d\n", destroy);
         fb = fileblobCreate();
 
-        if (fb == NULL)
+        if (fb == NULL) {
             return NULL;
+        }
     } else {
         cli_dbgmsg("textToFileBlob to %s, destroy = %d\n",
                    fileblobGetFilename(fb), destroy);
@@ -393,10 +406,11 @@ getLength(const line_t *line, void *arg)
 {
     size_t *length = (size_t *)arg;
 
-    if (line)
+    if (line) {
         *length += strlen(lineGetData(line)) + 1;
-    else
+    } else {
         (*length)++;
+    }
 }
 
 static void
@@ -444,7 +458,7 @@ textIterate(text *t_text, void (*cb)(const line_t *item, void *arg), void *arg, 
 		t_text = t_text->t_next;
 	}
 #else
-    if (destroy)
+    if (destroy) {
         while (t_text) {
             (*cb)(t_text->t_line, arg);
 
@@ -455,12 +469,13 @@ textIterate(text *t_text, void (*cb)(const line_t *item, void *arg), void *arg, 
 
             t_text = t_text->t_next;
         }
-    else
+    } else {
         while (t_text) {
             (*cb)(t_text->t_line, arg);
 
             t_text = t_text->t_next;
         }
+    }
 #endif
     return arg;
 }

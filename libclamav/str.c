@@ -135,11 +135,13 @@ uint16_t *cli_hex2ui(const char *hex)
     }
 
     str = cli_max_calloc((len / 2) + 1, sizeof(uint16_t));
-    if (!str)
+    if (!str) {
         return NULL;
+    }
 
-    if (cli_realhex2ui(hex, str, len))
+    if (cli_realhex2ui(hex, str, len)) {
         return str;
+    }
 
     free(str);
     return NULL;
@@ -159,8 +161,9 @@ char *cli_hex2str(const char *hex)
     }
 
     str = cli_max_calloc((len / 2) + 1, sizeof(char));
-    if (!str)
+    if (!str) {
         return NULL;
+    }
 
     if (cli_hex2str_to(hex, str, len) == -1) {
         free(str);
@@ -206,8 +209,9 @@ int cli_hex2num(const char *hex)
     }
 
     for (i = 0; i < len; i++) {
-        if ((hexval = cli_hex2int(hex[i])) < 0)
+        if ((hexval = cli_hex2int(hex[i])) < 0) {
             break;
+        }
         ret = (ret << 4) | hexval;
     }
 
@@ -221,8 +225,9 @@ int cli_xtoi(const char *hex)
 
     len = strlen(hex);
 
-    if (len % 2 == 0)
+    if (len % 2 == 0) {
         return cli_hex2num(hex);
+    }
 
     hexbuf = cli_max_calloc(len + 2, sizeof(char));
     if (hexbuf == NULL) {
@@ -230,8 +235,9 @@ int cli_xtoi(const char *hex)
         return -1;
     }
 
-    for (i = 0; i < len; i++)
+    for (i = 0; i < len; i++) {
         hexbuf[i + 1] = hex[i];
+    }
     val = cli_hex2num(hexbuf);
     free(hexbuf);
     return val;
@@ -244,8 +250,9 @@ char *cli_str2hex(const char *string, unsigned int len)
                   '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
     unsigned int i, j;
 
-    if ((hexstr = (char *)cli_max_calloc(2 * len + 1, sizeof(char))) == NULL)
+    if ((hexstr = (char *)cli_max_calloc(2 * len + 1, sizeof(char))) == NULL) {
         return NULL;
+    }
 
     for (i = 0, j = 0; i < len; i++, j += 2) {
         hexstr[j]     = HEX[(string[i] >> 4) & 0xf];
@@ -263,8 +270,9 @@ int cli_strbcasestr(const char *haystack, const char *needle)
     i = strlen(haystack);
     j = strlen(needle);
 
-    if (i < j)
+    if (i < j) {
         return 0;
+    }
 
     pt += i - j;
 
@@ -282,18 +290,21 @@ int cli_chomp(char *string)
 {
     int l;
 
-    if (string == NULL)
+    if (string == NULL) {
         return -1;
+    }
 
     l = strlen(string);
 
-    if (l == 0)
+    if (l == 0) {
         return 0;
+    }
 
     --l;
 
-    while ((l >= 0) && ((string[l] == '\n') || (string[l] == '\r')))
+    while ((l >= 0) && ((string[l] == '\n') || (string[l] == '\r'))) {
         string[l--] = '\0';
+    }
 
     return l + 1;
 }
@@ -386,14 +397,17 @@ const char *cli_memstr(const char *haystack, size_t hs, const char *needle, size
 {
     size_t i, s1, s2;
 
-    if (!hs || !ns || hs < ns)
+    if (!hs || !ns || hs < ns) {
         return NULL;
+    }
 
-    if (needle == haystack)
+    if (needle == haystack) {
         return haystack;
+    }
 
-    if (ns == 1)
+    if (ns == 1) {
         return memchr(haystack, needle[0], hs);
+    }
 
     if (needle[0] == needle[1]) {
         s1 = 2;
@@ -407,8 +421,9 @@ const char *cli_memstr(const char *haystack, size_t hs, const char *needle, size
             i += s1;
         } else {
             if ((needle[0] == haystack[i]) &&
-                !memcmp(needle + 2, haystack + i + 2, ns - 2))
+                !memcmp(needle + 2, haystack + i + 2, ns - 2)) {
                 return &haystack[i];
+            }
             i += s2;
         }
     }
@@ -424,8 +439,9 @@ char *cli_strrcpy(char *dest, const char *source) /* by NJH */
         return NULL;
     }
 
-    while ((*dest++ = *source++))
+    while ((*dest++ = *source++)) {
         ;
+    }
 
     return --dest;
 }
@@ -440,9 +456,11 @@ const char *__cli_strcasestr(const char *haystack, const char *needle)
     f[0] = tolower(*needle);
     f[1] = toupper(*needle);
     f[2] = '\0';
-    for (l = strcspn(haystack, f); l != strlen_a; l += strcspn(haystack + l + 1, f) + 1)
-        if (strncasecmp(haystack + l, needle, strlen_b) == 0)
+    for (l = strcspn(haystack, f); l != strlen_a; l += strcspn(haystack + l + 1, f) + 1) {
+        if (strncasecmp(haystack + l, needle, strlen_b) == 0) {
             return (haystack + l);
+        }
+    }
     return (NULL);
 }
 
@@ -460,8 +478,9 @@ char *__cli_strndup(const char *s, size_t n)
 
     if (!alloc) {
         return NULL;
-    } else
+    } else {
         memcpy(alloc, s, len);
+    }
 
     alloc[len] = '\0';
     return alloc;
@@ -470,8 +489,9 @@ char *__cli_strndup(const char *s, size_t n)
 size_t __cli_strnlen(const char *s, size_t n)
 {
     size_t i = 0;
-    for (; (i < n) && s[i] != '\0'; ++i)
+    for (; (i < n) && s[i] != '\0'; ++i) {
         ;
+    }
     return i;
 }
 
@@ -504,11 +524,13 @@ char *__cli_strnstr(const char *s, const char *find, size_t slen)
         len = strlen(find);
         do {
             do {
-                if (slen-- < 1 || (sc = *s++) == '\0')
+                if (slen-- < 1 || (sc = *s++) == '\0') {
                     return (NULL);
+                }
             } while (sc != c);
-            if (len > slen)
+            if (len > slen) {
                 return (NULL);
+            }
         } while (strncmp(s, find, len) != 0);
         s--;
     }
@@ -527,8 +549,9 @@ size_t cli_strtokenize(char *buffer, const char delim, const size_t token_count,
             *buffer++ = '\0';
         } else {
             i = tokens_found;
-            while (i < token_count)
+            while (i < token_count) {
                 tokens[i++] = NULL;
+            }
 
             return tokens_found;
         }
@@ -606,8 +629,9 @@ long cli_strntol(const char *nptr, size_t n, char **endptr, register int base)
         }
     }
 
-    if (base == 0)
+    if (base == 0) {
         base = c == '0' ? 8 : 10;
+    }
 
     /*
      * Compute the cutoff value between legal numbers and illegal
@@ -632,17 +656,19 @@ long cli_strntol(const char *nptr, size_t n, char **endptr, register int base)
     for (acc = 0, any = 0; s < nptr + n; s++) {
         c = *s;
 
-        if (isdigit(c))
+        if (isdigit(c)) {
             c -= '0';
-        else if (isalpha(c))
+        } else if (isalpha(c)) {
             c -= isupper(c) ? 'A' - 10 : 'a' - 10;
-        else
+        } else {
             break;
-        if (c >= base)
+        }
+        if (c >= base) {
             break;
-        if (any < 0 || acc > cutoff || (acc == cutoff && c > cutlim))
+        }
+        if (any < 0 || acc > cutoff || (acc == cutoff && c > cutlim)) {
             any = -1;
-        else {
+        } else {
             any = 1;
             acc *= base;
             acc += c;
@@ -651,12 +677,14 @@ long cli_strntol(const char *nptr, size_t n, char **endptr, register int base)
     if (any < 0) {
         acc   = neg ? LONG_MIN : LONG_MAX;
         errno = ERANGE;
-    } else if (neg)
+    } else if (neg) {
         acc = -acc;
+    }
 
 done:
-    if (endptr != 0)
+    if (endptr != 0) {
         *endptr = (char *)(any ? s : nptr);
+    }
     return (acc);
 }
 
@@ -725,25 +753,28 @@ unsigned long cli_strntoul(const char *nptr, size_t n, char **endptr,
             base = 16;
         }
     }
-    if (base == 0)
+    if (base == 0) {
         base = c == '0' ? 8 : 10;
+    }
 
     cutoff = (unsigned long)ULONG_MAX / (unsigned long)base;
     cutlim = (unsigned long)ULONG_MAX % (unsigned long)base;
     for (acc = 0, any = 0; s < nptr + n; s++) {
         c = *s;
 
-        if (isdigit(c))
+        if (isdigit(c)) {
             c -= '0';
-        else if (isalpha(c))
+        } else if (isalpha(c)) {
             c -= isupper(c) ? 'A' - 10 : 'a' - 10;
-        else
+        } else {
             break;
-        if (c >= base)
+        }
+        if (c >= base) {
             break;
-        if (any < 0 || acc > cutoff || (acc == cutoff && c > cutlim))
+        }
+        if (any < 0 || acc > cutoff || (acc == cutoff && c > cutlim)) {
             any = -1;
-        else {
+        } else {
             any = 1;
             acc *= base;
             acc += c;
@@ -752,12 +783,14 @@ unsigned long cli_strntoul(const char *nptr, size_t n, char **endptr,
     if (any < 0) {
         acc   = ULONG_MAX;
         errno = ERANGE;
-    } else if (neg)
+    } else if (neg) {
         acc = -acc;
+    }
 
 done:
-    if (endptr != 0)
+    if (endptr != 0) {
         *endptr = (char *)(any ? s : nptr);
+    }
     return (acc);
 }
 
@@ -900,9 +933,11 @@ int cli_isnumber(const char *str)
         return 0;
     }
 
-    while (*str)
-        if (!strchr("0123456789", *str++))
+    while (*str) {
+        if (!strchr("0123456789", *str++)) {
             return 0;
+        }
+    }
 
     return 1;
 }
@@ -969,8 +1004,9 @@ char *cli_unescape(const char *str)
                 continue;
             }
         }
-        if (!c)
+        if (!c) {
             c = 1; /* don't add \0 */
+        }
         R[i++] = c;
     }
     R[i++] = '\0';
@@ -1010,10 +1046,11 @@ int cli_textbuffer_append_normalize(struct text_buffer *buf, const char *str,
                     c = 13;
                     break;
                 case 'x':
-                    if (i + 2 < len)
+                    if (i + 2 < len) {
                         c = ((cli_hex2int(str[i + 1]) < 0 ? 0 : cli_hex2int(str[i + 1]))
                              << 4) |
                             cli_hex2int(str[i + 2]);
+                    }
                     i += 2;
                     break;
                 case 'u':
@@ -1026,8 +1063,9 @@ int cli_textbuffer_append_normalize(struct text_buffer *buf, const char *str,
                             ((cli_hex2int(str[i + 3]) < 0 ? 0 : cli_hex2int(str[i + 3]))
                              << 4) |
                             cli_hex2int(str[i + 4]);
-                        if (textbuffer_ensure_capacity(buf, 4) == -1)
+                        if (textbuffer_ensure_capacity(buf, 4) == -1) {
                             return -1;
+                        }
                         buf->pos += output_utf8(u, (unsigned char *)&buf->data[buf->pos]);
                         i += 4;
                         continue;
@@ -1038,10 +1076,12 @@ int cli_textbuffer_append_normalize(struct text_buffer *buf, const char *str,
                     break;
             }
         }
-        if (!c)
+        if (!c) {
             c = 1; /* we don't insert \0 */
-        if (textbuffer_putc(buf, c) == -1)
+        }
+        if (textbuffer_putc(buf, c) == -1) {
             return -1;
+        }
     }
     return 0;
 }
@@ -1051,8 +1091,9 @@ int cli_hexnibbles(char *str, int len)
     int i;
     for (i = 0; i < len; i++) {
         int c = cli_hex2int(str[i]);
-        if (c < 0)
+        if (c < 0) {
             return 1;
+        }
         str[i] = c;
     }
     return 0;
@@ -1072,12 +1113,14 @@ cl_error_t cli_basename(const char *filepath, size_t filepath_len,
     index = filepath + filepath_len - 1;
 
     while (index > filepath) {
-        if (index[0] == PATHSEP[0])
+        if (index[0] == PATHSEP[0]) {
             break;
+        }
         index--;
     }
-    if ((index != filepath) || (index[0] == PATHSEP[0]))
+    if ((index != filepath) || (index[0] == PATHSEP[0])) {
         index++;
+    }
 
     if (0 == CLI_STRNLEN(index, filepath_len - (index - filepath))) {
         cli_dbgmsg("cli_basename: Provided path does not include a file name.\n");

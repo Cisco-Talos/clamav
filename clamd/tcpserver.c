@@ -124,8 +124,9 @@ int tcpserver(int **lsockets, unsigned int *nlsockets, char *ipaddr, const struc
     for (p = info; p != NULL; p = p->ai_next, i++) {
         t = realloc(sockets, sizeof(int) * (*nlsockets + 1));
         if (!(t)) {
-            for (i = 0; i < *nlsockets; i++)
+            for (i = 0; i < *nlsockets; i++) {
                 close(sockets[i]);
+            }
 
             freeaddrinfo(info);
             return -1;
@@ -161,8 +162,9 @@ int tcpserver(int **lsockets, unsigned int *nlsockets, char *ipaddr, const struc
         if (ipaddr) {
             strncpy(host, ipaddr, sizeof(host));
             host[sizeof(host) - 1] = '\0';
-        } else
+        } else {
             host[0] = '\0';
+        }
         snprintf(serv, sizeof(serv), "%u", (unsigned int)(optget(opts, "TCPSocket")->numarg));
 #endif
         if (bind(sockfd, p->ai_addr, p->ai_addrlen) == -1) {

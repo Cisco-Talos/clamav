@@ -60,8 +60,9 @@ int init_domain_list(struct cl_engine* engine)
         ((struct regex_matcher*)engine->domain_list_matcher)->mempool = engine->mempool;
 #endif
         return init_regex_list(engine->domain_list_matcher, engine->dconf->other & OTHER_CONF_PREFILTERING);
-    } else
+    } else {
         return CL_ENULLARG;
+    }
 }
 
 int is_domain_list_ok(const struct cl_engine* engine)

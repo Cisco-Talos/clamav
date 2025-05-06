@@ -178,6 +178,12 @@ else()
             bytecode.h )
     set_target_properties( bytecode_runtime PROPERTIES
         COMPILE_FLAGS "${WARNCFLAGS}" )
+
+    if(CLANG_TIDY)
+        set_target_properties( bytecode_runtime PROPERTIES
+            C_CLANG_TIDY "${CLANG_TIDY_PROPERTY}"
+            C_CLANG_TIDY_EXPORT_FIXES_DIR "${CMAKE_BINARY_DIR}/clang-tidy-fixes" )
+    endif()
 endif()
 target_include_directories( bytecode_runtime
     PRIVATE ${CMAKE_BINARY_DIR}
@@ -461,6 +467,12 @@ if(ENABLE_SHARED_LIB)
     set_target_properties( clamav PROPERTIES
         COMPILE_FLAGS "${WARNCFLAGS}"
         VERSION ${LIBCLAMAV_VERSION} SOVERSION ${LIBCLAMAV_SOVERSION} )
+
+    if(CLANG_TIDY)
+        set_target_properties( clamav PROPERTIES
+            C_CLANG_TIDY "${CLANG_TIDY_PROPERTY}"
+            C_CLANG_TIDY_EXPORT_FIXES_DIR "${CMAKE_BINARY_DIR}/clang-tidy-fixes" )
+    endif()
 
     if (APPLE AND CLAMAV_SIGN_FILE)
         set_target_properties( clamav PROPERTIES

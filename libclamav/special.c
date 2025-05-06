@@ -55,10 +55,12 @@ int cli_check_mydoom_log(cli_ctx *ctx)
     unsigned int blocks = map->len / (8 * 4);
 
     cli_dbgmsg("in cli_check_mydoom_log()\n");
-    if (blocks < 2)
+    if (blocks < 2) {
         return CL_CLEAN;
-    if (blocks > 5)
+    }
+    if (blocks > 5) {
         blocks = 5;
+    }
 
     /*
      * The following pointer might not be properly aligned. There there is
@@ -66,14 +68,16 @@ int cli_check_mydoom_log(cli_ctx *ctx)
      * while reading the uint32_t.
      */
     ptr = fmap_need_off_once(map, 0, 8 * 4 * blocks);
-    if (!ptr)
+    if (!ptr) {
         return CL_CLEAN;
+    }
 
     while (blocks) { /* This wasn't probably intended but that's what the current code does anyway */
         const uint32_t marker_ff = 0xffffffff;
 
-        if (!memcmp(&ptr[--blocks], &marker_ff, sizeof(uint32_t)))
+        if (!memcmp(&ptr[--blocks], &marker_ff, sizeof(uint32_t))) {
             return CL_CLEAN;
+        }
     }
 
     memcpy(record, ptr, sizeof(record));
@@ -86,8 +90,9 @@ int cli_check_mydoom_log(cli_ctx *ctx)
             (be32_to_host(record[5]) ^ key) +
             (be32_to_host(record[6]) ^ key) +
             (be32_to_host(record[7]) ^ key);
-    if ((~check) != key)
+    if ((~check) != key) {
         return CL_CLEAN;
+    }
 
     key   = ~be32_to_host(record[8]);
     check = (be32_to_host(record[9]) ^ key) +
@@ -97,18 +102,20 @@ int cli_check_mydoom_log(cli_ctx *ctx)
             (be32_to_host(record[13]) ^ key) +
             (be32_to_host(record[14]) ^ key) +
             (be32_to_host(record[15]) ^ key);
-    if ((~check) != key)
+    if ((~check) != key) {
         return CL_CLEAN;
+    }
 
     return cli_append_potentially_unwanted(ctx, "Heuristics.Worm.Mydoom.M.log");
 }
 
 static uint32_t riff_endian_convert_32(uint32_t value, int big_endian)
 {
-    if (big_endian)
+    if (big_endian) {
         return be32_to_host(value);
-    else
+    } else {
         return le32_to_host(value);
+    }
 }
 
 static int riff_read_chunk(fmap_t *map, off_t *offset, int big_endian, int rec_level)
@@ -124,8 +131,9 @@ static int riff_read_chunk(fmap_t *map, off_t *offset, int big_endian, int rec_l
         return 0;
     }
 
-    if (!(buf = fmap_need_off_once(map, cur_offset, 4 * 2)))
+    if (!(buf = fmap_need_off_once(map, cur_offset, 4 * 2))) {
         return 0;
+    }
     cur_offset += 4 * 2;
 
     buffer = (char *)buf;
@@ -133,8 +141,9 @@ static int riff_read_chunk(fmap_t *map, off_t *offset, int big_endian, int rec_l
            sizeof(cache_buf));
     chunk_size = riff_endian_convert_32(cache_buf, big_endian);
 
-    if (!memcmp(buf, "anih", 4) && chunk_size != 36)
+    if (!memcmp(buf, "anih", 4) && chunk_size != 36) {
         return 2;
+    }
 
     if (memcmp(buf, "RIFF", 4) == 0) {
         return 0;
@@ -175,8 +184,9 @@ int cli_check_riff_exploit(cli_ctx *ctx)
 
     cli_dbgmsg("in cli_check_riff_exploit()\n");
 
-    if (!(buf = fmap_need_off_once(map, 0, 4 * 3)))
+    if (!(buf = fmap_need_off_once(map, 0, 4 * 3))) {
         return 0;
+    }
 
     if (memcmp(buf, "RIFF", 4) == 0) {
         big_endian = FALSE;
@@ -205,12 +215,14 @@ static inline int swizz_j48(const uint16_t n[])
 {
     cli_dbgmsg("swizz_j48: %u, %u, %u\n", n[0], n[1], n[2]);
     /* rules based on J48 tree */
-    if (n[0] <= 961 || !n[1])
+    if (n[0] <= 961 || !n[1]) {
         return 0;
-    if (n[0] <= 1006)
+    }
+    if (n[0] <= 1006) {
         return (n[2] > 0 && n[2] <= 6);
-    else
+    } else {
         return n[1] <= 10 && n[2];
+    }
 }
 
 void cli_detect_swizz_str(const unsigned char *str, uint32_t len, struct swizz_stats *stats, int blob)
@@ -233,20 +245,23 @@ void cli_detect_swizz_str(const unsigned char *str, uint32_t len, struct swizz_s
             continue;
         }
         if (!isalnum(c)) {
-            if (!lastalnum)
+            if (!lastalnum) {
                 continue;
+            }
             lastalnum = 0;
             c         = ' ';
         } else {
             lastalnum = 1;
-            if (isdigit(c))
+            if (isdigit(c)) {
                 continue;
+            }
         }
         stri[j++] = tolower(c);
     }
     stri[j++] = '\0';
-    if ((!blob && (bad >= 8)) || j < 4)
+    if ((!blob && (bad >= 8)) || j < 4) {
         return;
+    }
     memset(ngrams, 0, sizeof(ngrams));
     memset(ngram_cnts, 0, sizeof(ngram_cnts));
     for (i = 0; i < j - 2; i++) {
@@ -256,19 +271,23 @@ void cli_detect_swizz_str(const unsigned char *str, uint32_t len, struct swizz_s
                 ngrams[idx]++;
                 stats->gngrams[idx]++;
             }
-        } else if (stri[i] == ' ')
+        } else if (stri[i] == ' ') {
             words++;
+        }
     }
     for (i = 0; i < sizeof(ngrams); i++) {
         uint8_t v = ngrams[i];
-        if (v > 3) v = 3;
+        if (v > 3) {
+            v = 3;
+        }
         if (v) {
             ngram_cnts[v - 1]++;
             all++;
         }
     }
-    if (!all)
+    if (!all) {
         return;
+    }
     cli_dbgmsg("cli_detect_swizz_str: %u, %u, %u\n", ngram_cnts[0], ngram_cnts[1], ngram_cnts[2]);
     /* normalize */
     for (i = 0; i < sizeof(ngram_cnts) / sizeof(ngram_cnts[0]); i++) {
@@ -276,7 +295,9 @@ void cli_detect_swizz_str(const unsigned char *str, uint32_t len, struct swizz_s
         ngram_cnts[i] = (v << 10) / all;
     }
     ret = swizz_j48(ngram_cnts) ? CL_VIRUS : CL_CLEAN;
-    if (words < 3) ret = CL_CLEAN;
+    if (words < 3) {
+        ret = CL_CLEAN;
+    }
     cli_dbgmsg("cli_detect_swizz_str: %s, %u words\n", ret == CL_VIRUS ? "suspicious" : "ok", words);
     if (ret == CL_VIRUS) {
         stats->suspicious += j;
@@ -322,7 +343,9 @@ int cli_detect_swizz(struct swizz_stats *stats)
     memset(gn, 0, sizeof(gn));
     for (i = 0; i < 17576; i++) {
         uint8_t v = stats->gngrams[i];
-        if (v > 10) v = 10;
+        if (v > 10) {
+            v = 10;
+        }
         if (v) {
             gn[v - 1]++;
             all++;
@@ -334,8 +357,9 @@ int cli_detect_swizz(struct swizz_stats *stats)
         for (i = 0; i < sizeof(gn) / sizeof(gn[0]); i++) {
             uint32_t v = gn[i];
             gn[i]      = (v << 15) / all;
-            if (cli_debug_flag)
+            if (cli_debug_flag) {
                 cli_eprintf("%lu, ", (unsigned long)gn[i]);
+            }
         }
         global_swizz = swizz_j48_global(gn) ? CL_VIRUS : CL_CLEAN;
         if (cli_debug_flag) {
@@ -348,11 +372,14 @@ int cli_detect_swizz(struct swizz_stats *stats)
         cli_dbgmsg("cli_detect_swizz: resources broken, ignoring\n");
         return CL_CLEAN;
     }
-    if (stats->total <= 337)
+    if (stats->total <= 337) {
         return CL_CLEAN;
-    if (stats->suspicious << 10 > 40 * stats->total)
+    }
+    if (stats->suspicious << 10 > 40 * stats->total) {
         return CL_VIRUS;
-    if (!stats->suspicious)
+    }
+    if (!stats->suspicious) {
         return CL_CLEAN;
+    }
     return global_swizz;
 }

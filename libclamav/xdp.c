@@ -64,14 +64,16 @@ static char *dump_xdp(cli_ctx *ctx, const char *start, size_t sz)
     size_t nwritten = 0;
     ssize_t writeret;
 
-    if (cli_gentempfd(ctx->sub_tmpdir, &filename, &fd) != CL_SUCCESS)
+    if (cli_gentempfd(ctx->sub_tmpdir, &filename, &fd) != CL_SUCCESS) {
         return NULL;
+    }
 
     while (nwritten < sz) {
         writeret = write(fd, start + nwritten, sz - nwritten);
         if (writeret < 0) {
-            if (errno == EAGAIN)
+            if (errno == EAGAIN) {
                 continue;
+            }
 
             close(fd);
             cli_unlink(filename);
@@ -102,13 +104,15 @@ cl_error_t cli_scanxdp(cli_ctx *ctx)
     size_t i;
 
     buf = (const char *)fmap_need_off_once(ctx->fmap, 0, ctx->fmap->len);
-    if (!(buf))
+    if (!(buf)) {
         return CL_EREAD;
+    }
 
     if (ctx->engine->keeptmp) {
         dumpname = dump_xdp(ctx, buf, ctx->fmap->len);
-        if (dumpname)
+        if (dumpname) {
             free(dumpname);
+        }
     }
 
     /*
@@ -119,13 +123,15 @@ cl_error_t cli_scanxdp(cli_ctx *ctx)
      * continue on.
      */
     reader = xmlReaderForMemory(buf, (int)(ctx->fmap->len), "noname.xml", NULL, CLAMAV_MIN_XMLREADER_FLAGS);
-    if (!(reader))
+    if (!(reader)) {
         return CL_SUCCESS;
+    }
 
     while (xmlTextReaderRead(reader) == 1) {
         name = xmlTextReaderConstLocalName(reader);
-        if (!(name))
+        if (!(name)) {
             continue;
+        }
 
         if (!strcmp((const char *)name, "chunk") && xmlTextReaderNodeType(reader) == XML_READER_TYPE_ELEMENT) {
             value = xmlTextReaderReadInnerXml(reader);
@@ -136,8 +142,9 @@ cl_error_t cli_scanxdp(cli_ctx *ctx)
 
                     if (decodedlen > 5) {
                         for (i = 0; i < MIN(MAGIC_BUFFER_SIZE, decodedlen - 5); i++) {
-                            if (decoded[i] != '%')
+                            if (decoded[i] != '%') {
                                 continue;
+                            }
 
                             if (decoded[i + 1] == 'P' || decoded[i + 1] == 'p') {
                                 if (decoded[i + 2] == 'D' || decoded[i + 2] == 'd') {

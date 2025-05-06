@@ -143,16 +143,19 @@ void cli_pcre_perf_print()
         const char *name = cli_event_get_name(p_sigevents, i * PCRE_EVENTS_PER_SIG);
         cli_event_get(p_sigevents, i * PCRE_EVENTS_PER_SIG, &val, &count);
         if (!count) {
-            if (name)
+            if (name) {
                 cli_dbgmsg("No event triggered for %s\n", name);
+            }
             continue;
         }
-        if (name)
+        if (name) {
             name_len = (int)strlen(name);
-        else
+        } else {
             name_len = 0;
-        if (name_len > max_name_len)
+        }
+        if (name_len > max_name_len) {
             max_name_len = name_len;
+        }
         elem->name      = name ? name : "\"noname\"";
         elem->usecs     = val.v_int;
         elem->run_count = count;
@@ -161,8 +164,9 @@ void cli_pcre_perf_print()
         elem++;
         elems++;
     }
-    if (max_name_len < (int)strlen("PCRE Expression"))
+    if (max_name_len < (int)strlen("PCRE Expression")) {
         max_name_len = (int)strlen("PCRE Expression");
+    }
 
     cli_qsort(stats, elems, sizeof(struct sigperf_elem), sigelem_comp);
 
@@ -287,10 +291,11 @@ cl_error_t cli_pcre_addpatt(struct cli_matcher *root, const char *virname, const
         return ret;
     }
     if (pm->offdata[0] != CLI_OFF_ANY) {
-        if (pm->offdata[0] == CLI_OFF_ABSOLUTE)
+        if (pm->offdata[0] == CLI_OFF_ABSOLUTE) {
             root->pcre_absoff_num++;
-        else
+        } else {
             root->pcre_reloff_num++;
+        }
     }
 
     /* parse and add options, also totally not from snort */
@@ -344,8 +349,9 @@ cl_error_t cli_pcre_addpatt(struct cli_matcher *root, const char *virname, const
     }
 
     /* add metadata to the performance tracker */
-    if (options & CL_DB_PCRE_STATS)
+    if (options & CL_DB_PCRE_STATS) {
         pcre_perf_events_init(pm, virname);
+    }
 
     /* add pcre data to root after reallocation */
     pcre_count   = root->pcre_metas + 1;
@@ -373,8 +379,9 @@ cl_error_t cli_pcre_build(struct cli_matcher *root, long long unsigned match_lim
     struct cli_pcre_meta *pm = NULL;
     int disable_all          = 0;
 
-    if (dconf && !(dconf->pcre & PCRE_CONF_SUPPORT))
+    if (dconf && !(dconf->pcre & PCRE_CONF_SUPPORT)) {
         disable_all = 1;
+    }
 
     for (i = 0; i < root->pcre_metas; ++i) {
         pm = root->pcre_metatable[i];
@@ -516,8 +523,9 @@ void cli_pcre_freeoff(struct cli_pcre_off *data)
 
 int cli_pcre_qoff(struct cli_pcre_meta *pm, uint32_t length, uint32_t *adjbuffer, uint32_t *adjshift)
 {
-    if (!pm)
+    if (!pm) {
         return CL_ENULLARG;
+    }
 
     /* default to scanning whole buffer but try to use existing offdata */
     if (pm->offdata[0] == CLI_OFF_NONE) {
@@ -557,8 +565,9 @@ cl_error_t cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const 
     int options     = 0;
     uint32_t offset = 0;
 
-    if ((root->pcre_metas == 0) || (!root->pcre_metatable) || (ctx && ctx->dconf && !(ctx->dconf->pcre & PCRE_CONF_SUPPORT)))
+    if ((root->pcre_metas == 0) || (!root->pcre_metatable) || (ctx && ctx->dconf && !(ctx->dconf->pcre & PCRE_CONF_SUPPORT))) {
         return CL_SUCCESS;
+    }
 
     memset(&p_res, 0, sizeof(p_res));
 
@@ -583,10 +592,12 @@ cl_error_t cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const 
         if (pm->lsigid[0]) {
             pm_dbgmsg("cli_pcre_scanbuf: checking %s; running regex /%s/\n", pm->trigger, pd->expression);
 #ifdef PCRE_BYPASS
-            if (strcmp(pm->trigger, PCRE_BYPASS))
+            if (strcmp(pm->trigger, PCRE_BYPASS)) {
 #endif
-                if (cli_ac_chklsig(pm->trigger, pm->trigger + strlen(pm->trigger), mdata->lsigcnt[pm->lsigid[1]], &evalcnt, &evalids, 0) != 1)
+                if (cli_ac_chklsig(pm->trigger, pm->trigger + strlen(pm->trigger), mdata->lsigcnt[pm->lsigid[1]], &evalcnt, &evalids, 0) != 1) {
                     continue;
+                }
+            }
         } else {
             cli_dbgmsg("cli_pcre_scanbuf: skipping %s check due to uninitialized lsigid\n", pm->trigger);
             /* fall-through to unconditional execution - sigtool-only */
@@ -602,30 +613,34 @@ cl_error_t cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const 
 
         /* adjust the buffer sent to cli_pcre_match for offset and maxshift */
         if (!data) {
-            if (cli_pcre_qoff(pm, length, &adjbuffer, &adjshift) != CL_SUCCESS)
+            if (cli_pcre_qoff(pm, length, &adjbuffer, &adjshift) != CL_SUCCESS) {
                 continue;
+            }
         } else {
             adjbuffer = data->offset[i];
             adjshift  = data->shift[i];
         }
 
         /* check for need to anchoring */
-        if (!rolling && !adjshift && (adjbuffer != CLI_OFF_ANY))
+        if (!rolling && !adjshift && (adjbuffer != CLI_OFF_ANY)) {
             options |= PCRE2_ANCHORED;
-        else
+        } else {
             options = 0;
+        }
 
-        if (adjbuffer == CLI_OFF_ANY)
+        if (adjbuffer == CLI_OFF_ANY) {
             adjbuffer = 0;
+        }
 
         /* check the offset bounds */
         if (adjbuffer < length) {
             /* handle encompass flag */
             if (encompass && adjshift != 0 && adjshift != CLI_OFF_NONE) {
-                if (adjbuffer + adjshift > length)
+                if (adjbuffer + adjshift > length) {
                     adjlength = length - adjbuffer;
-                else
+                } else {
                     adjlength = adjshift;
+                }
             } else {
                 /* NOTE - if using non-encompass method 2, alter shift universally */
                 /* TODO - limitations on non-encompassed buffers? */
@@ -648,16 +663,18 @@ cl_error_t cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const 
             }
 
             /* reset the match results */
-            if ((ret = cli_pcre_results_reset(&p_res, pd)) != CL_SUCCESS)
+            if ((ret = cli_pcre_results_reset(&p_res, pd)) != CL_SUCCESS) {
                 break;
+            }
 
             /* performance metrics */
             cli_event_time_start(p_sigevents, pm->sigtime_id);
             rc = cli_pcre_match(pd, buffer + adjbuffer, adjlength, offset, options, &p_res);
             cli_event_time_stop(p_sigevents, pm->sigtime_id);
             /* if debug, generate a match report */
-            if (cli_debug_flag)
+            if (cli_debug_flag) {
                 cli_pcre_report(pd, buffer + adjbuffer, adjlength, rc, &p_res);
+            }
 
             /* matched, rc shouldn't be >0 unless a full match occurs */
             if (rc > 0) {
@@ -742,8 +759,9 @@ cl_error_t cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const 
 
 void cli_pcre_freemeta(struct cli_matcher *root, struct cli_pcre_meta *pm)
 {
-    if (!pm)
+    if (!pm) {
         return;
+    }
 
 #ifndef USE_MPOOL
     UNUSEDPARAM(root);

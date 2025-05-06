@@ -91,18 +91,21 @@ char *freshdbdir(void)
                     return NULL;
                 }
                 sprintf(daily, "%s" PATHSEP "daily.cvd", opt->strarg);
-                if (access(daily, R_OK))
+                if (access(daily, R_OK)) {
                     sprintf(daily, "%s" PATHSEP "daily.cld", opt->strarg);
+                }
 
                 if (!access(daily, R_OK) && (d1 = cl_cvdhead(daily))) {
                     sprintf(daily, "%s" PATHSEP "daily.cvd", dbdir);
-                    if (access(daily, R_OK))
+                    if (access(daily, R_OK)) {
                         sprintf(daily, "%s" PATHSEP "daily.cld", dbdir);
+                    }
 
                     if (!access(daily, R_OK) && (d2 = cl_cvdhead(daily))) {
                         free(daily);
-                        if (d1->version > d2->version)
+                        if (d1->version > d2->version) {
                             dbdir = opt->strarg;
+                        }
                         cl_cvdfree(d2);
                     } else {
                         free(daily);
@@ -118,8 +121,9 @@ char *freshdbdir(void)
 
     retdir = strdup(dbdir);
 
-    if (opts)
+    if (opts) {
         optfree(opts);
+    }
 
     return retdir;
 }
@@ -132,10 +136,11 @@ void print_version(const char *dbdir)
     time_t db_time;
     unsigned int db_version = 0;
 
-    if (dbdir)
+    if (dbdir) {
         pt = dbdir;
-    else
+    } else {
         pt = fdbdir = freshdbdir();
+    }
 
     if (!pt) {
         printf("ClamAV %s\n", get_version());
@@ -143,8 +148,9 @@ void print_version(const char *dbdir)
     }
 
     if (!(path = malloc(strlen(pt) + 11))) {
-        if (!dbdir)
+        if (!dbdir) {
             free(fdbdir);
+        }
         return;
     }
 
@@ -170,8 +176,9 @@ void print_version(const char *dbdir)
         }
     }
 
-    if (!dbdir)
+    if (!dbdir) {
         free(fdbdir);
+    }
 
     if (db_version) {
         printf("ClamAV %s/%u/%s", get_version(), db_version, ctime(&db_time));
@@ -204,8 +211,9 @@ const char *filelist(const struct optstruct *opts, int *err)
             fs = fopen(opt->strarg, "r");
             if (!fs) {
                 fprintf(stderr, "ERROR: --file-list: Can't open file %s\n", opt->strarg);
-                if (err)
+                if (err) {
                     *err = 54;
+                }
                 return NULL;
             }
         }
@@ -218,8 +226,9 @@ const char *filelist(const struct optstruct *opts, int *err)
                 return NULL;
             }
             len--;
-            while (len && ((buff[len] == '\n') || (buff[len] == '\r')))
+            while (len && ((buff[len] == '\n') || (buff[len] == '\r'))) {
                 buff[len--] = '\0';
+            }
             return buff;
         } else {
             fclose(fs);
@@ -267,25 +276,31 @@ int close_std_descriptors()
     fds[2] = open("/dev/null", O_WRONLY);
     if (fds[0] == -1 || fds[1] == -1 || fds[2] == -1) {
         fputs("Can't open /dev/null\n", stderr);
-        for (i = 0; i <= 2; i++)
-            if (fds[i] != -1)
+        for (i = 0; i <= 2; i++) {
+            if (fds[i] != -1) {
                 close(fds[i]);
+            }
+        }
         return -1;
     }
 
     for (i = 0; i <= 2; i++) {
         if (dup2(fds[i], i) == -1) {
             fprintf(stderr, "dup2(%d, %d) failed\n", fds[i], i); /* may not be printed */
-            for (i = 0; i <= 2; i++)
-                if (fds[i] != -1)
+            for (i = 0; i <= 2; i++) {
+                if (fds[i] != -1) {
                     close(fds[i]);
+                }
+            }
             return -1;
         }
     }
 
-    for (i = 0; i <= 2; i++)
-        if (fds[i] > 2)
+    for (i = 0; i <= 2; i++) {
+        if (fds[i] > 2) {
             close(fds[i]);
+        }
+    }
 
     return 0;
 }
@@ -443,8 +458,9 @@ int match_regex(const char *filename, const char *pattern)
 #ifdef _WIN32
     flags |= REG_ICASE; /* case insensitive on Windows */
 #endif
-    if (cli_regcomp(&reg, pattern, flags) != 0)
+    if (cli_regcomp(&reg, pattern, flags) != 0) {
         return 2;
+    }
 
     if (pattern[strlen(pattern) - 1] == *PATHSEP) {
         snprintf(fname, 511, "%s" PATHSEP, filename);
@@ -475,18 +491,25 @@ unsigned int countlines(const char *filename)
     char buff[1024];
     unsigned int lines = 0;
 
-    if ((fh = fopen(filename, "r")) == NULL)
+    if ((fh = fopen(filename, "r")) == NULL) {
         return 0;
+    }
 
     while (fgets(buff, sizeof(buff), fh)) {
         // ignore comments
-        if (buff[0] == '#') continue;
+        if (buff[0] == '#') {
+            continue;
+        }
 
         // ignore empty lines in CR/LF format
-        if (buff[0] == '\r' && buff[1] == '\n') continue;
+        if (buff[0] == '\r' && buff[1] == '\n') {
+            continue;
+        }
 
         // ignore empty lines in LF format
-        if (buff[0] == '\n') continue;
+        if (buff[0] == '\n') {
+            continue;
+        }
 
         lines++;
     }

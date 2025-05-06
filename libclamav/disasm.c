@@ -1205,10 +1205,11 @@ static void spam_x86(struct DISASMED *s, char *hr)
                 break;
             case ACCESS_IMM:
             case ACCESS_REL:
-                if (s->args[i].arg.rq >= 0)
+                if (s->args[i].arg.rq >= 0) {
                     hr += sprintf(hr, "%s %lx", comma, (long)s->args[i].arg.q);
-                else
+                } else {
                     hr += sprintf(hr, "%s -%x", comma, -(int)s->args[i].arg.rq);
+                }
                 break;
             case ACCESS_REG:
                 hr += sprintf(hr, "%s %s", comma, x86regs[s->args[i].reg]);
@@ -1216,7 +1217,9 @@ static void spam_x86(struct DISASMED *s, char *hr)
             case ACCESS_MEM: {
                 const char *gotstuff = "";
                 hr += sprintf(hr, "%s %s ptr ", comma, dis_size[s->args[i].size]);
-                if (s->segment) hr += sprintf(hr, "%s:", x86regs[s->segment]);
+                if (s->segment) {
+                    hr += sprintf(hr, "%s:", x86regs[s->segment]);
+                }
                 *hr++ = '[';
                 *hr   = '\0';
                 if (s->args[i].arg.marg.r1 != X86_REG_INVALID) {
@@ -1237,10 +1240,11 @@ static void spam_x86(struct DISASMED *s, char *hr)
                     gotstuff = "+";
                 }
                 if (s->args[i].arg.marg.disp) {
-                    if (*gotstuff == '+' && s->args[i].arg.marg.disp < 0)
+                    if (*gotstuff == '+' && s->args[i].arg.marg.disp < 0) {
                         hr += sprintf(hr, "-%x", -s->args[i].arg.marg.disp);
-                    else
+                    } else {
                         hr += sprintf(hr, "%s%x", gotstuff, s->args[i].arg.marg.disp);
+                    }
                 }
                 *hr++ = ']';
                 *hr   = '\0';
@@ -1370,7 +1374,9 @@ static const uint8_t *disasm_x86(const uint8_t *command, unsigned int len, struc
                         }
                         s->args[0].arg.marg.r2 = X86_REG_INVALID;
                     }
-                    if (mod == 2) mod += mod;
+                    if (mod == 2) {
+                        mod += mod;
+                    }
                     for (i = 0; i < mod; i++) {
                         GETBYTE(b);
                         s->args[0].arg.marg.disp += b << (i * 8);
@@ -1519,8 +1525,9 @@ static const uint8_t *disasm_x86(const uint8_t *command, unsigned int len, struc
                         if ((s->args[reversed ^ 1].reg = p[s->args[reversed].size][rop]) == X86_REG_INVALID) INVALIDATE;
 
                         /* MOVZX size fixxup */
-                        if (s->real_op == OP_MOVZX || s->real_op == OP_MOVSX)
+                        if (s->real_op == OP_MOVZX || s->real_op == OP_MOVSX) {
                             s->args[reversed].size = SIZEB + (s->table_op & 1);
+                        }
 
                         if (mod == 3) {
                             if (x86ops[table][s->table_op].dmethod == ADDR_MRM_GEN_GM || x86ops[table][s->table_op].dmethod == ADDR_MRM_EXTRA_1A_M) INVALIDATE;
@@ -1538,8 +1545,9 @@ static const uint8_t *disasm_x86(const uint8_t *command, unsigned int len, struc
                                     s->state = STATE_FINALIZE;
                                     continue;
                                 }
-                            } else
+                            } else {
                                 s->cur++;
+                            }
                             s->state = STATE_CHECKSTYPE;
                             continue;
                         }
@@ -1573,7 +1581,9 @@ static const uint8_t *disasm_x86(const uint8_t *command, unsigned int len, struc
                                 }
                                 s->args[reversed].arg.marg.r2 = X86_REG_INVALID;
                             }
-                            if (mod == 2) mod += mod;
+                            if (mod == 2) {
+                                mod += mod;
+                            }
                             for (i = 0; i < mod; i++) {
                                 GETBYTE(b);
                                 shiftme += b << (i * 8);
@@ -1581,8 +1591,9 @@ static const uint8_t *disasm_x86(const uint8_t *command, unsigned int len, struc
                             if (mod) {
                                 shiftme <<= ((8 - mod) * 8);
                                 s->args[reversed].arg.marg.disp = shiftme >> ((8 - mod) * 8);
-                            } else
+                            } else {
                                 s->args[reversed].arg.marg.disp = 0;
+                            }
                         } else {
                             if (mod == 0 && rm == 6) {
                                 s->args[reversed].arg.marg.r1 = X86_REG_INVALID;
@@ -1610,8 +1621,9 @@ static const uint8_t *disasm_x86(const uint8_t *command, unsigned int len, struc
                                 s->state = STATE_FINALIZE;
                                 continue;
                             }
-                        } else
+                        } else {
                             s->cur++;
+                        }
                         s->state = STATE_CHECKSTYPE;
                         continue;
                     }
@@ -1725,8 +1737,9 @@ const uint8_t *cli_disasm_one(const uint8_t *buff, unsigned int len,
 
     memset(&w->extra[0], 0, sizeof(w->extra));
     buff = disasm_x86(buff, len, &s);
-    if (!buff)
+    if (!buff) {
         return NULL;
+    }
     if (spam) {
         char hr[128];
         spam_x86(&s, hr);

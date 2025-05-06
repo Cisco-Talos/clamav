@@ -66,14 +66,19 @@ int cli_binhex(cli_ctx *ctx)
     char *dname, *rname;
 
     cli_dbgmsg("in cli_binhex\n");
-    if (!map->len) return CL_CLEAN;
+    if (!map->len) {
+        return CL_CLEAN;
+    }
 
-    if ((ret = cli_gentempfd(ctx->sub_tmpdir, &dname, &datafd)) != CL_SUCCESS)
+    if ((ret = cli_gentempfd(ctx->sub_tmpdir, &dname, &datafd)) != CL_SUCCESS) {
         return ret;
+    }
 
     if ((ret = cli_gentempfd(ctx->sub_tmpdir, &rname, &resfd)) != CL_SUCCESS) {
         close(datafd);
-        if (cli_unlink(dname)) ret = CL_EUNLINK;
+        if (cli_unlink(dname)) {
+            ret = CL_EUNLINK;
+        }
         free(dname);
         return ret;
     }
@@ -98,10 +103,12 @@ int cli_binhex(cli_ctx *ctx)
                     cli_dbgmsg("cli_binhex: file too short for header\n");
                     break;
                 }
-                if ((ret = cli_checklimits("cli_binhex(data)", ctx, datalen, 0, 0)) != CL_CLEAN)
+                if ((ret = cli_checklimits("cli_binhex(data)", ctx, datalen, 0, 0)) != CL_CLEAN) {
                     break;
-                if (cli_checklimits("cli_binhex(resources)", ctx, reslen, 0, 0) != CL_CLEAN)
+                }
+                if (cli_checklimits("cli_binhex(resources)", ctx, reslen, 0, 0) != CL_CLEAN) {
                     reslen = 0;
+                }
                 cli_dbgmsg("cli_binhex: decoding '%s' - %u bytes of data to %s - %u bytes or resources to %s\n", decoded + 1, datalen, dname, reslen, rname);
                 memmove(decoded, &decoded[hdrlen], dec_done - hdrlen);
                 dec_done -= hdrlen;
@@ -127,8 +134,9 @@ int cli_binhex(cli_ctx *ctx)
                         break;
                     }
                 }
-                if (dec_done)
+                if (dec_done) {
                     memmove(decoded, &decoded[todo], dec_done);
+                }
             }
             if (dec_done && write_phase == IN_LIMBO1) {
                 if (dec_done > 1) {
@@ -138,13 +146,15 @@ int cli_binhex(cli_ctx *ctx)
                     }
                     dec_done -= 2;
                     write_phase += 2;
-                    if (dec_done)
+                    if (dec_done) {
                         memmove(decoded, &decoded[2], dec_done);
+                    }
                 } else {
                     dec_done--;
                     write_phase++;
-                    if (dec_done)
+                    if (dec_done) {
                         memmove(decoded, &decoded[1], dec_done);
+                    }
                 }
             }
             if (dec_done && write_phase == IN_LIMBO2) {
@@ -153,8 +163,9 @@ int cli_binhex(cli_ctx *ctx)
                     break;
                 }
                 write_phase++;
-                if (--dec_done)
+                if (--dec_done) {
                     memmove(decoded, &decoded[1], dec_done);
+                }
             }
             if (dec_done && write_phase == IN_RES) {
                 unsigned int todo = MIN(dec_done, reslen);
@@ -217,7 +228,9 @@ int cli_binhex(cli_ctx *ctx)
             in_data = 1;
             continue;
         }
-        if (!in_data) continue;
+        if (!in_data) {
+            continue;
+        }
         if (write_phase == IN_BANNER) {
             if ((char)b != ':') {
                 cli_dbgmsg("cli_binhex: broken file (missing stream start identifier)\n");
@@ -225,8 +238,9 @@ int cli_binhex(cli_ctx *ctx)
             }
             write_phase++;
         }
-        if ((char)b == ':')
+        if ((char)b == ':') {
             continue;
+        }
         if (b > 0x7f || (b = hqxtbl[b]) == 0xff) {
             cli_dbgmsg("cli_binhex: Invalid character (%02x)\n", encoded[chunkoff - 1]);
             break;
@@ -249,11 +263,12 @@ int cli_binhex(cli_ctx *ctx)
 
         if (in_run) {
             in_run = 0;
-            if (!this_byte)
+            if (!this_byte) {
                 this_byte = 0x90;
-            else {
-                while (--this_byte)
+            } else {
+                while (--this_byte) {
                     decoded[dec_done++] = last_byte;
+                }
                 continue;
             }
         } else if (this_byte == 0x90) {
@@ -267,8 +282,12 @@ int cli_binhex(cli_ctx *ctx)
     close(datafd);
     close(resfd);
     if (!ctx->engine->keeptmp) {
-        if (cli_unlink(dname) && ret != CL_VIRUS) ret = CL_EUNLINK;
-        if (cli_unlink(rname) && ret != CL_VIRUS) ret = CL_EUNLINK;
+        if (cli_unlink(dname) && ret != CL_VIRUS) {
+            ret = CL_EUNLINK;
+        }
+        if (cli_unlink(rname) && ret != CL_VIRUS) {
+            ret = CL_EUNLINK;
+        }
     }
     free(dname);
     free(rname);

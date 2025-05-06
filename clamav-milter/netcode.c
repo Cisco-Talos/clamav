@@ -110,7 +110,9 @@ static int nc_connect(int s, struct CP_ENTRY *cpe)
     struct timeval tv;
     char er[256];
 
-    if (!res) return 0;
+    if (!res) {
+        return 0;
+    }
     if (errno != EINPROGRESS) {
         strerror_print(LOGG_DEBUG, "connect failed");
         close(s);
@@ -255,8 +257,9 @@ char *nc_recv(int s)
 
         res = select(s + 1, &fds, NULL, NULL, readtimeout ? &tv : NULL);
         if (res < 1) {
-            if (res != -1 || errno != EINTR)
+            if (res != -1 || errno != EINTR) {
                 timeout = 0;
+            }
             continue;
         }
 
@@ -268,14 +271,17 @@ char *nc_recv(int s)
         }
         if (res == -1) {
             char er[256];
-            if (errno == EAGAIN)
+            if (errno == EAGAIN) {
                 continue;
+            }
             strerror_print(LOGG_ERROR, "recv failed after successful select");
             close(s);
             return NULL;
         }
         len += res;
-        if (len && buf[len - 1] == '\n') break;
+        if (len && buf[len - 1] == '\n') {
+            break;
+        }
         if (len >= sizeof(buf)) {
             logg(LOGG_ERROR, "Overlong reply from clamd\n");
             close(s);
@@ -295,7 +301,9 @@ char *nc_recv(int s)
 int nc_connect_entry(struct CP_ENTRY *cpe)
 {
     int s = nc_socket(cpe);
-    if (s == -1) return -1;
+    if (s == -1) {
+        return -1;
+    }
     return nc_connect(s, cpe) ? -1 : s;
 }
 
@@ -320,7 +328,9 @@ int nc_connect_rand(int *main, int *alt, int *local)
 {
     struct CP_ENTRY *cpe = cpool_get_rand(main);
 
-    if (!cpe) return 1;
+    if (!cpe) {
+        return 1;
+    }
     *local = (cpe->server->sa_family == AF_UNIX);
     if (*local) {
         char *unlinkme;
@@ -414,10 +424,11 @@ static struct LOCALNET *localnet(char *name, char *mask)
         return l;
     }
 
-    if (!mask || !*mask)
+    if (!mask || !*mask) {
         nmask = 32 + 96 * (l->family == INET6_HOST);
-    else
+    } else {
         nmask = atoi(mask);
+    }
 
     if ((l->family == INET6_HOST && nmask > 128) || (l->family == INET_HOST && nmask > 32)) {
         logg(LOGG_ERROR, "Bad netmask '/%s' for LocalNet %s\n", mask, name);
@@ -426,8 +437,9 @@ static struct LOCALNET *localnet(char *name, char *mask)
     }
 
     l->mask[0] = l->mask[1] = l->mask[2] = l->mask[3] = 0;
-    for (i = 0; i < nmask; i++)
+    for (i = 0; i < nmask; i++) {
         l->mask[i >> 5] |= 1 << (31 - (i & 31));
+    }
 
     l->basehost[0] &= l->mask[0];
     l->basehost[1] &= l->mask[1];
@@ -441,12 +453,16 @@ static int islocalnet(uint32_t family, uint32_t *host)
 {
     struct LOCALNET *l = lnet;
 
-    if (!l) return 0;
+    if (!l) {
+        return 0;
+    }
     while (l) {
         if (
             (l->family == family) &&
             (l->basehost[0] == (host[0] & l->mask[0])) && (l->basehost[1] == (host[1] & l->mask[1])) &&
-            (l->basehost[2] == (host[2] & l->mask[2])) && (l->basehost[3] == (host[3] & l->mask[3]))) return 1;
+            (l->basehost[2] == (host[2] & l->mask[2])) && (l->basehost[3] == (host[3] & l->mask[3]))) {
+            return 1;
+        }
         l = l->next;
     }
     return 0;
@@ -456,7 +472,9 @@ int islocalnet_name(char *name)
 {
     uint32_t host[4], family;
 
-    if (!lnet) return 0;
+    if (!lnet) {
+        return 0;
+    }
     if (resolve(name, &family, host)) {
         logg(LOGG_DEBUG, "Cannot resolv %s\n", name);
         return 0;
@@ -469,7 +487,9 @@ int islocalnet_sock(struct sockaddr *sa)
     uint32_t host[4] = {0};
     uint32_t family;
 
-    if (!lnet) return 0;
+    if (!lnet) {
+        return 0;
+    }
 
     if (sa->sa_family == AF_INET) {
         struct sockaddr_in *sa4 = (struct sockaddr_in *)sa;
@@ -489,8 +509,9 @@ int islocalnet_sock(struct sockaddr *sa)
                 j = u = 0;
             }
         }
-    } else
+    } else {
         return 0;
+    }
     return islocalnet(family, host);
 }
 
@@ -518,7 +539,9 @@ int localnets_init(struct optstruct *opts)
                 *mask = '\0';
                 mask++;
             }
-            if (!strcasecmp(lnetname, "local")) lnetname = NULL;
+            if (!strcasecmp(lnetname, "local")) {
+                lnetname = NULL;
+            }
             if ((l = localnet(lnetname, mask)) == NULL) {
                 localnets_free();
                 return 1;

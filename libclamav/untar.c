@@ -62,8 +62,9 @@ octal(const char *str)
 {
     int ret;
 
-    if (sscanf(str, "%o", (unsigned int *)&ret) != 1)
+    if (sscanf(str, "%o", (unsigned int *)&ret) != 1) {
         return -1;
+    }
     return ret;
 }
 
@@ -149,15 +150,18 @@ cl_error_t cli_untar(const char *dir, unsigned int posix, cli_ctx *ctx)
         block = fmap_need_off_once_len(ctx->fmap, pos, BLOCKSIZE, &nread);
         cli_dbgmsg("cli_untar: pos = %lu\n", (unsigned long)pos);
 
-        if (!in_block && !nread)
+        if (!in_block && !nread) {
             break;
+        }
 
-        if (!nread)
+        if (!nread) {
             block = zero;
+        }
 
         if (!block) {
-            if (fout >= 0)
+            if (fout >= 0) {
                 close(fout);
+            }
             cli_errmsg("cli_untar: block read error\n");
             return CL_EREAD;
         }
@@ -185,10 +189,12 @@ cl_error_t cli_untar(const char *dir, unsigned int posix, cli_ctx *ctx)
                 fout = -1;
             }
 
-            if (block[0] == '\0') /* We're done */
+            if (block[0] == '\0') { /* We're done */
                 break;
-            if ((ret = cli_checklimits("cli_untar", ctx, 0, 0, 0)) != CL_CLEAN)
+            }
+            if ((ret = cli_checklimits("cli_untar", ctx, 0, 0, 0)) != CL_CLEAN) {
                 return ret;
+            }
 
             if (nread < TARHEADERSIZE) {
                 return CL_CLEAN;
@@ -325,8 +331,9 @@ cl_error_t cli_untar(const char *dir, unsigned int posix, cli_ctx *ctx)
             char err[128];
 
             nbytes = (size > 512) ? 512 : size;
-            if (nread && (nread < nbytes))
+            if (nread && (nread < nbytes)) {
                 nbytes = nread;
+            }
 
             if (limitnear > 0) {
                 currsize += nbytes;
@@ -360,8 +367,9 @@ cl_error_t cli_untar(const char *dir, unsigned int posix, cli_ctx *ctx)
                 size = 0;
             }
         }
-        if (size == 0)
+        if (size == 0) {
             in_block = 0;
+        }
     }
     if (fout >= 0) {
         lseek(fout, 0, SEEK_SET);

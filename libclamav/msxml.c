@@ -126,8 +126,9 @@ int msxml_read_cb(void *ctx, char *buffer, int buffer_len)
 
     /* initial iteration */
     if (!cbdata->window) {
-        if ((winret = msxml_read_cb_new_window(cbdata)) <= 0)
+        if ((winret = msxml_read_cb_new_window(cbdata)) <= 0) {
             return winret;
+        }
     }
 
     cli_msxmlmsg("msxml_read_cb: requested %zu bytes from offset %llu\n", len, (long long unsigned)(cbdata->mappos + cbdata->winpos));
@@ -145,8 +146,9 @@ int msxml_read_cb(void *ctx, char *buffer, int buffer_len)
 #endif
 
         if (!rbytes) {
-            if ((winret = msxml_read_cb_new_window(cbdata)) < 0)
+            if ((winret = msxml_read_cb_new_window(cbdata)) < 0) {
                 return winret;
+            }
             if (winret == 0) {
                 cli_msxmlmsg("msxml_read_cb: propagating fmap EOF [%llu]\n", (long long unsigned)wbytes);
                 return (int)wbytes;
@@ -168,34 +170,39 @@ int msxml_read_cb(void *ctx, char *buffer, int buffer_len)
         while ((rbytes > 0) && (wbytes < len)) {
             switch (*state) {
                 case MSXML_STATE_NORMAL:
-                    if ((*read_from) == '&')
+                    if ((*read_from) == '&') {
                         *state = MSXML_STATE_ENTITY_START_1;
+                    }
                     break;
                 case MSXML_STATE_ENTITY_START_1:
-                    if ((*read_from) == '#')
+                    if ((*read_from) == '#') {
                         *state = MSXML_STATE_ENTITY_START_2;
-                    else
+                    } else {
                         *state = MSXML_STATE_NORMAL;
+                    }
                     break;
                 case MSXML_STATE_ENTITY_START_2:
-                    if ((*read_from) == 'x')
+                    if ((*read_from) == 'x') {
                         *state = MSXML_STATE_ENTITY_HEX;
-                    else if (((*read_from) >= '0') && ((*read_from) <= '9'))
+                    } else if (((*read_from) >= '0') && ((*read_from) <= '9')) {
                         *state = MSXML_STATE_ENTITY_DEC;
-                    else
+                    } else {
                         *state = MSXML_STATE_NORMAL;
+                    }
                     break;
                 case MSXML_STATE_ENTITY_HEX:
                     if ((((*read_from) >= '0') && ((*read_from) <= '9')) ||
                         (((*read_from) >= 'a') && ((*read_from) <= 'f')) ||
                         (((*read_from) >= 'A') && ((*read_from) <= 'F'))) {
-                    } else
+                    } else {
                         *state = MSXML_STATE_ENTITY_CLOSE;
+                    }
                     break;
                 case MSXML_STATE_ENTITY_DEC:
                     if (((*read_from) >= '0') && ((*read_from) <= '9')) {
-                    } else
+                    } else {
                         *state = MSXML_STATE_ENTITY_CLOSE;
+                    }
                     break;
                 default:
                     cli_errmsg("unknown *state: %d\n", *state);
@@ -209,8 +216,9 @@ int msxml_read_cb(void *ctx, char *buffer, int buffer_len)
                     wbytes++;
                 }
                 *state = MSXML_STATE_NORMAL;
-                if (wbytes >= len)
+                if (wbytes >= len) {
                     break;
+                }
             }
 
             *(write_to++) = *(read_from++);
@@ -231,8 +239,9 @@ cl_error_t cli_scanmsxml(cli_ctx *ctx)
 
     cli_dbgmsg("in cli_scanmsxml()\n");
 
-    if (!ctx)
+    if (!ctx) {
         return CL_ENULLARG;
+    }
 
     memset(&cbdata, 0, sizeof(cbdata));
     cbdata.map = ctx->fmap;

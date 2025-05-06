@@ -60,7 +60,9 @@ static void bs(uint8_t *k, uint8_t *v, unsigned int elements)
                 stop     = 0;
             }
         }
-        if (stop) break;
+        if (stop) {
+            break;
+        }
         r--;
         i--;
         for (; i > l; i--) {
@@ -86,7 +88,9 @@ static int unpack_tree(struct xplstate *X, uint32_t *tree, unsigned int expected
 
     packsz = *cur++;
 
-    for (i = 0; i < expected; i++) order[i] = i;
+    for (i = 0; i < expected; i++) {
+        order[i] = i;
+    }
 
     i = expected;
 
@@ -95,13 +99,18 @@ static int unpack_tree(struct xplstate *X, uint32_t *tree, unsigned int expected
         values = *cur++;
         len    = (values & 15) + 1;
         values = (values >> 4) + 1;
-        if (values > i) return 1;
+        if (values > i) {
+            return 1;
+        }
         i -= values;
-        while (values--)
+        while (values--) {
             *ttree++ = len;
+        }
     } while (packsz--);
 
-    if (i) return 1;
+    if (i) {
+        return 1;
+    }
 
     bs(order, temptree, expected - 1);
 
@@ -123,8 +132,11 @@ static int lookup_tree(uint32_t *tree, unsigned int size, uint16_t code, uint8_t
 {
     uint32_t lookup = ((uint32_t)(len + 1)) << 16 | code;
     unsigned int i;
-    for (i = 0; i < size; i++)
-        if (tree[i] == lookup) return i;
+    for (i = 0; i < size; i++) {
+        if (tree[i] == lookup) {
+            return i;
+        }
+    }
     return -1;
 }
 
@@ -260,9 +272,13 @@ int explode(struct xplstate *X)
                             case EXPLODE_LITCODES:
                                 GETBIT;
                                 X->backsize |= val << (15 - X->got);
-                                if ((temp = lookup_tree(X->lit_tree, 256, X->backsize, X->got)) != -1) break;
+                                if ((temp = lookup_tree(X->lit_tree, 256, X->backsize, X->got)) != -1) {
+                                    break;
+                                }
                         }
-                        if (temp == -1) return EXPLODE_ESTREAM;
+                        if (temp == -1) {
+                            return EXPLODE_ESTREAM;
+                        }
                         X->got = temp;
                     } else {
                         SETCASE(EXPLODE_LITS);
@@ -270,7 +286,9 @@ int explode(struct xplstate *X)
                         X->got = val;
                     }
                     SETCASE(EXPLODE_WBYTE);
-                    if (!X->avail_out) return EXPLODE_EBUFF;
+                    if (!X->avail_out) {
+                        return EXPLODE_EBUFF;
+                    }
                     X->avail_out--;
                     *X->next_out = X->window[X->cur & X->mask] = X->got;
                     X->cur++;
@@ -285,9 +303,13 @@ int explode(struct xplstate *X)
                         case EXPLODE_DECODEDISTS:
                             GETBIT;
                             X->backsize |= val << (15 - X->got);
-                            if ((temp = lookup_tree(X->dist_tree, 64, X->backsize, X->got)) != -1) break;
+                            if ((temp = lookup_tree(X->dist_tree, 64, X->backsize, X->got)) != -1) {
+                                break;
+                            }
                     }
-                    if (temp == -1) return EXPLODE_ESTREAM;
+                    if (temp == -1) {
+                        return EXPLODE_ESTREAM;
+                    }
                     X->backbytes |= temp << (6 + X->largewin);
                     X->backbytes++;
                     X->backsize = 0;
@@ -296,9 +318,13 @@ int explode(struct xplstate *X)
                         case EXPLODE_DECODELENS:
                             GETBIT;
                             X->backsize |= val << (15 - X->got);
-                            if ((temp = lookup_tree(X->len_tree, 64, X->backsize, X->got)) != -1) break;
+                            if ((temp = lookup_tree(X->len_tree, 64, X->backsize, X->got)) != -1) {
+                                break;
+                            }
                     }
-                    if (temp == -1) return EXPLODE_ESTREAM;
+                    if (temp == -1) {
+                        return EXPLODE_ESTREAM;
+                    }
 
                     if (temp == 63) {
                         SETCASE(EXPLODE_DECODEEXTRA);
@@ -309,12 +335,15 @@ int explode(struct xplstate *X)
                     X->state    = EXPLODE_BACKCOPY;
                     while (X->backsize--) {
                         case EXPLODE_BACKCOPY:
-                            if (!X->avail_out) return EXPLODE_EBUFF;
+                            if (!X->avail_out) {
+                                return EXPLODE_EBUFF;
+                            }
                             X->avail_out--;
-                            if (X->cur >= X->backbytes)
+                            if (X->cur >= X->backbytes) {
                                 *X->next_out = X->window[X->cur & X->mask] = X->window[(X->cur - X->backbytes) & X->mask];
-                            else
+                            } else {
                                 *X->next_out = X->window[X->cur & X->mask] = 0;
+                            }
                             X->cur++;
                             X->next_out++;
                     }

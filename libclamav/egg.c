@@ -1023,8 +1023,9 @@ static void print_posix_info_mode(uint32_t mode)
         printf("-");
     }
     /* Sticky Bit */
-    if (mode & POSIX_INFO_MODE_STICKY_BIT)
+    if (mode & POSIX_INFO_MODE_STICKY_BIT) {
         printf("t");
+    }
     printf("\n");
 }
 
@@ -1112,20 +1113,23 @@ static cl_error_t egg_parse_file_extra_field(egg_handle* handle, egg_file* eggFi
                 goto done;
             }
 
-            if (extraField->bit_flag & FILENAME_HEADER_FLAGS_ENCRYPT)
+            if (extraField->bit_flag & FILENAME_HEADER_FLAGS_ENCRYPT) {
                 cli_dbgmsg("egg_parse_file_extra_field: filename_header->bit_flag: encrypted\n");
-            else
+            } else {
                 cli_dbgmsg("egg_parse_file_extra_field: filename_header->bit_flag: not encrypted\n");
+            }
 
-            if (extraField->bit_flag & FILENAME_HEADER_FLAGS_RELATIVE_PATH_INSTEAD_OF_ABSOLUTE)
+            if (extraField->bit_flag & FILENAME_HEADER_FLAGS_RELATIVE_PATH_INSTEAD_OF_ABSOLUTE) {
                 cli_dbgmsg("egg_parse_file_extra_field: filename_header->bit_flag: relative-path\n");
-            else
+            } else {
                 cli_dbgmsg("egg_parse_file_extra_field: filename_header->bit_flag: absolute-path\n");
+            }
 
-            if (extraField->bit_flag & FILENAME_HEADER_FLAGS_MULTIBYTE_CODEPAGE_INSTEAD_OF_UTF8)
+            if (extraField->bit_flag & FILENAME_HEADER_FLAGS_MULTIBYTE_CODEPAGE_INSTEAD_OF_UTF8) {
                 cli_dbgmsg("egg_parse_file_extra_field: filename_header->bit_flag: Windows Multibyte + codepage\n");
-            else
+            } else {
                 cli_dbgmsg("egg_parse_file_extra_field: filename_header->bit_flag: UTF-8\n");
+            }
 
             if (extraField->bit_flag & FILENAME_HEADER_FLAGS_MULTIBYTE_CODEPAGE_INSTEAD_OF_UTF8) {
                 /* Utf-8 - header will include locale */
@@ -1802,10 +1806,11 @@ cl_error_t cli_egg_open(fmap_t* map, void** hArchive, char*** comments, uint32_t
     if (CL_SUCCESS != retval) {
         if (CL_BREAK == retval) {
             /* End of archive. */
-            if ((handle->bSplit) && (handle->splitInfo->next_file_id != 0))
+            if ((handle->bSplit) && (handle->splitInfo->next_file_id != 0)) {
                 cli_warnmsg("cli_egg_open: Abrupt end to EGG volume!\n");
-            else
+            } else {
                 cli_dbgmsg("cli_egg_open: End of EGG volume in split archive.\n");
+            }
         } else {
             /* Something went wrong. */
             cli_warnmsg("cli_egg_open: Failed to parse file headers!\n");
@@ -1900,13 +1905,15 @@ cl_error_t cli_egg_peek_file_header(void* hArchive, cl_egg_metadata* file_metada
 
     file_metadata->filename = strdup(currFile->filename.name_utf8);
 
-    if (NULL != currFile->encrypt)
+    if (NULL != currFile->encrypt) {
         file_metadata->encrypted = 1;
+    }
 
-    if (currFile->posixFileInformation && currFile->posixFileInformation->mode & POSIX_INFO_MODE_DIRECTORY)
+    if (currFile->posixFileInformation && currFile->posixFileInformation->mode & POSIX_INFO_MODE_DIRECTORY) {
         file_metadata->is_dir = 1;
-    else if (currFile->windowsFileInformation && currFile->windowsFileInformation->attribute & WINDOWS_INFO_ATTRIBUTE_DIRECTORY)
+    } else if (currFile->windowsFileInformation && currFile->windowsFileInformation->attribute & WINDOWS_INFO_ATTRIBUTE_DIRECTORY) {
         file_metadata->is_dir = 1;
+    }
 
     status = CL_SUCCESS;
 done:
@@ -2002,12 +2009,13 @@ cl_error_t cli_egg_deflate_decompress(char* compressed, size_t compressed_size, 
         case Z_DATA_ERROR:
         case Z_MEM_ERROR:
         default:
-            if (stream.msg)
+            if (stream.msg) {
                 cli_dbgmsg("cli_egg_deflate_decompress: after decompressing %lu bytes, got error \"%s\"\n",
                            (unsigned long)declen, stream.msg);
-            else
+            } else {
                 cli_dbgmsg("cli_egg_deflate_decompress: after decompressing %lu bytes, got error %d\n",
                            (unsigned long)declen, zstat);
+            }
 
             if (declen == 0) {
                 cli_dbgmsg("cli_egg_deflate_decompress: no bytes were decompressed.\n");

@@ -84,7 +84,9 @@ int hm_addhash_bin(struct cli_matcher *root, const void *binhash, cli_hash_type_
         ht = &root->hm.sizehashes[type];
         if (!root->hm.sizehashes[type].capacity) {
             i = CLI_HTU32_INIT(ht, 64, root->mempool);
-            if (i) return i;
+            if (i) {
+                return i;
+            }
         }
 
         item = cli_htu32_find(ht, size);
@@ -104,8 +106,9 @@ int hm_addhash_bin(struct cli_matcher *root, const void *binhash, cli_hash_type_
                 MPOOL_FREE(root->mempool, szh);
                 return i;
             }
-        } else
+        } else {
             szh = (struct cli_sz_hash *)item->data.as_ptr;
+        }
     } else {
         /* size 0 = wildcard */
         szh = &root->hwild.hashes[type];
@@ -140,8 +143,9 @@ static inline int hm_cmp(const uint8_t *itm, const uint8_t *ref, unsigned int ke
 {
 #if WORDS_BIGENDIAN == 0
     uint32_t i = *(uint32_t *)itm, r = *(uint32_t *)ref;
-    if (i != r)
+    if (i != r) {
         return (i < r) * 2 - 1;
+    }
     return memcmp(&itm[4], &ref[4], keylen - 4);
 #else
     return memcmp(itm, ref, keylen);
@@ -155,8 +159,9 @@ static void hm_sort(struct cli_sz_hash *szh, size_t l, size_t r, unsigned int ke
 
     const char *tmpv;
 
-    if (l + 1 >= r)
+    if (l + 1 >= r) {
         return;
+    }
 
     l1 = l + 1, r1 = r;
 
@@ -164,15 +169,18 @@ static void hm_sort(struct cli_sz_hash *szh, size_t l, size_t r, unsigned int ke
     while (l1 < r1) {
         if (hm_cmp(&szh->hash_array[keylen * l1], piv, keylen) > 0) {
             r1--;
-            if (l1 == r1) break;
+            if (l1 == r1) {
+                break;
+            }
             memcpy(tmph, &szh->hash_array[keylen * l1], keylen);
             tmpv = szh->virusnames[l1];
             memcpy(&szh->hash_array[keylen * l1], &szh->hash_array[keylen * r1], keylen);
             szh->virusnames[l1] = szh->virusnames[r1];
             memcpy(&szh->hash_array[keylen * r1], tmph, keylen);
             szh->virusnames[r1] = tmpv;
-        } else
+        } else {
             l1++;
+        }
     }
 
     l1--;
@@ -196,23 +204,26 @@ void hm_flush(struct cli_matcher *root)
     unsigned int keylen;
     struct cli_sz_hash *szh;
 
-    if (!root)
+    if (!root) {
         return;
+    }
 
     for (type = CLI_HASH_MD5; type < CLI_HASH_AVAIL_TYPES; type++) {
         struct cli_htu32 *ht                 = &root->hm.sizehashes[type];
         const struct cli_htu32_element *item = NULL;
         szh                                  = NULL;
 
-        if (!root->hm.sizehashes[type].capacity)
+        if (!root->hm.sizehashes[type].capacity) {
             continue;
+        }
 
         while ((item = cli_htu32_next(ht, item))) {
             szh    = (struct cli_sz_hash *)item->data.as_ptr;
             keylen = hashlen[type];
 
-            if (szh->items > 1)
+            if (szh->items > 1) {
                 hm_sort(szh, 0, szh->items, keylen);
+            }
         }
     }
 
@@ -220,8 +231,9 @@ void hm_flush(struct cli_matcher *root)
         szh    = &root->hwild.hashes[type];
         keylen = hashlen[type];
 
-        if (szh->items > 1)
+        if (szh->items > 1) {
             hm_sort(szh, 0, szh->items, keylen);
+        }
     }
 }
 
@@ -245,8 +257,9 @@ static int hm_scan(const unsigned char *digest, const char **virname, const stru
     unsigned int keylen;
     size_t l, r;
 
-    if (!digest || !szh || !szh->items)
+    if (!digest || !szh || !szh->items) {
         return CL_CLEAN;
+    }
 
     keylen = hashlen[type];
 
@@ -257,14 +270,16 @@ static int hm_scan(const unsigned char *digest, const char **virname, const stru
         int res  = hm_cmp(digest, &szh->hash_array[keylen * c], keylen);
 
         if (res < 0) {
-            if (!c)
+            if (!c) {
                 break;
+            }
             r = c - 1;
-        } else if (res > 0)
+        } else if (res > 0) {
             l = c + 1;
-        else {
-            if (virname)
+        } else {
+            if (virname) {
                 *virname = szh->virusnames[c];
+            }
             return CL_VIRUS;
         }
     }
@@ -277,12 +292,14 @@ int cli_hm_scan(const unsigned char *digest, uint32_t size, const char **virname
     const struct cli_htu32_element *item;
     struct cli_sz_hash *szh;
 
-    if (!digest || !size || size == 0xffffffff || !root || !root->hm.sizehashes[type].capacity)
+    if (!digest || !size || size == 0xffffffff || !root || !root->hm.sizehashes[type].capacity) {
         return CL_CLEAN;
+    }
 
     item = cli_htu32_find(&root->hm.sizehashes[type], size);
-    if (!item)
+    if (!item) {
         return CL_CLEAN;
+    }
 
     szh = (struct cli_sz_hash *)item->data.as_ptr;
 
@@ -292,8 +309,9 @@ int cli_hm_scan(const unsigned char *digest, uint32_t size, const char **virname
 /* cli_hm_scan_wild will scan only size-agnostic hashes, if any */
 int cli_hm_scan_wild(const unsigned char *digest, const char **virname, const struct cli_matcher *root, cli_hash_type_t type)
 {
-    if (!digest || !root || !root->hwild.hashes[type].items)
+    if (!digest || !root || !root->hwild.hashes[type].items) {
         return CL_CLEAN;
+    }
 
     return hm_scan(digest, virname, &root->hwild.hashes[type], type);
 }
@@ -303,22 +321,25 @@ void hm_free(struct cli_matcher *root)
 {
     cli_hash_type_t type;
 
-    if (!root)
+    if (!root) {
         return;
+    }
 
     for (type = CLI_HASH_MD5; type < CLI_HASH_AVAIL_TYPES; type++) {
         struct cli_htu32 *ht                 = &root->hm.sizehashes[type];
         const struct cli_htu32_element *item = NULL;
 
-        if (!root->hm.sizehashes[type].capacity)
+        if (!root->hm.sizehashes[type].capacity) {
             continue;
+        }
 
         while ((item = cli_htu32_next(ht, item))) {
             struct cli_sz_hash *szh = (struct cli_sz_hash *)item->data.as_ptr;
 
             MPOOL_FREE(root->mempool, szh->hash_array);
-            while (szh->items)
+            while (szh->items) {
                 MPOOL_FREE(root->mempool, (void *)szh->virusnames[--szh->items]);
+            }
             MPOOL_FREE(root->mempool, (void *)szh->virusnames);
             MPOOL_FREE(root->mempool, szh);
         }
@@ -328,12 +349,14 @@ void hm_free(struct cli_matcher *root)
     for (type = CLI_HASH_MD5; type < CLI_HASH_AVAIL_TYPES; type++) {
         struct cli_sz_hash *szh = &root->hwild.hashes[type];
 
-        if (!szh->items)
+        if (!szh->items) {
             continue;
+        }
 
         MPOOL_FREE(root->mempool, szh->hash_array);
-        while (szh->items)
+        while (szh->items) {
             MPOOL_FREE(root->mempool, (void *)szh->virusnames[--szh->items]);
+        }
         MPOOL_FREE(root->mempool, (void *)szh->virusnames);
     }
 }

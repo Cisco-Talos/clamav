@@ -42,8 +42,9 @@ static SRes FileInStream_fmap_Read(void *pp, void *buf, size_t *size)
     CFileInStream *p = (CFileInStream *)pp;
     size_t read_sz;
 
-    if (*size == 0)
+    if (*size == 0) {
         return 0;
+    }
 
     read_sz = fmap_readn(p->file.fmap, buf, p->s.curpos, *size);
     if (read_sz == (size_t)-1) {
@@ -100,8 +101,9 @@ int cli_7unz(cli_ctx *ctx, size_t offset)
 
     LookToRead_CreateVTable(&lookStream, False);
 
-    if (archiveStream.s.Seek(&archiveStream.s, &begin_of_archive, SZ_SEEK_SET) != 0)
+    if (archiveStream.s.Seek(&archiveStream.s, &begin_of_archive, SZ_SEEK_SET) != 0) {
         return CL_CLEAN;
+    }
 
     lookStream.realStream = &archiveStream.s;
     LookToRead_Init(&lookStream);
@@ -127,23 +129,27 @@ int cli_7unz(cli_ctx *ctx, size_t offset)
             int newnamelen, fd;
 
             // abort if we would exceed max files or max scan time.
-            if ((found = cli_checklimits("7unz", ctx, 0, 0, 0)))
+            if ((found = cli_checklimits("7unz", ctx, 0, 0, 0))) {
                 break;
+            }
 
-            if (f->IsDir)
+            if (f->IsDir) {
                 continue;
+            }
 
             // skip this file if we would exceed max file size or max scan size. (we already checked for the max files and max scan time)
-            if (cli_checklimits("7unz", ctx, f->Size, 0, 0))
+            if (cli_checklimits("7unz", ctx, f->Size, 0, 0)) {
                 continue;
+            }
 
-            if (!db.FileNameOffsets)
+            if (!db.FileNameOffsets) {
                 newnamelen = 0; /* no filename */
-            else {
+            } else {
                 newnamelen = SzArEx_GetFileNameUtf16(&db, i, NULL);
                 if (newnamelen > namelen) {
-                    if (namelen > UTFBUFSZ)
+                    if (namelen > UTFBUFSZ) {
                         free(utf16name);
+                    }
                     utf16name = cli_max_malloc(newnamelen * 2);
                     if (!utf16name) {
                         found = CL_EMEM;
@@ -155,8 +161,9 @@ int cli_7unz(cli_ctx *ctx, size_t offset)
             }
 
             name = (char *)utf16name;
-            for (j = 0; j < (size_t)newnamelen; j++) /* FIXME */
+            for (j = 0; j < (size_t)newnamelen; j++) { /* FIXME */
                 name[j] = utf16name[j];
+            }
             name[j] = 0;
             cli_dbgmsg("cli_7unz: extracting %s\n", name);
 
@@ -175,13 +182,14 @@ int cli_7unz(cli_ctx *ctx, size_t offset)
                 found = CL_VIRUS;
                 break;
             }
-            if (res != SZ_OK)
+            if (res != SZ_OK) {
                 cli_dbgmsg("cli_unz: extraction failed with %d\n", res);
-            else if ((outBuffer == NULL) || (outSizeProcessed == 0)) {
+            } else if ((outBuffer == NULL) || (outSizeProcessed == 0)) {
                 cli_dbgmsg("cli_unz: extracted empty file\n");
             } else {
-                if ((found = cli_gentempfd(ctx->sub_tmpdir, &tmp_name, &fd)))
+                if ((found = cli_gentempfd(ctx->sub_tmpdir, &tmp_name, &fd))) {
                     break;
+                }
 
                 cli_dbgmsg("cli_7unz: Saving to %s\n", tmp_name);
                 if (cli_writen(fd, outBuffer + offset, outSizeProcessed) != outSizeProcessed) {
@@ -191,32 +199,36 @@ int cli_7unz(cli_ctx *ctx, size_t offset)
                 found = cli_magic_scan_desc(fd, tmp_name, ctx, name, LAYER_ATTRIBUTES_NONE);
 
                 close(fd);
-                if (!ctx->engine->keeptmp && cli_unlink(tmp_name))
+                if (!ctx->engine->keeptmp && cli_unlink(tmp_name)) {
                     found = CL_EUNLINK;
+                }
 
                 free(tmp_name);
-                if (found != CL_SUCCESS)
+                if (found != CL_SUCCESS) {
                     break;
+                }
             }
         }
         IAlloc_Free(&allocImp, outBuffer);
     }
     SzArEx_Free(&db, &allocImp);
-    if (namelen > UTFBUFSZ)
+    if (namelen > UTFBUFSZ) {
         free(utf16name);
+    }
 
-    if (res == SZ_OK)
+    if (res == SZ_OK) {
         cli_dbgmsg("cli_7unz: completed successfully\n");
-    else if (res == SZ_ERROR_UNSUPPORTED)
+    } else if (res == SZ_ERROR_UNSUPPORTED) {
         cli_dbgmsg("cli_7unz: unsupported\n");
-    else if (res == SZ_ERROR_MEM)
+    } else if (res == SZ_ERROR_MEM) {
         cli_dbgmsg("cli_7unz: oom\n");
-    else if (res == SZ_ERROR_CRC)
+    } else if (res == SZ_ERROR_CRC) {
         cli_dbgmsg("cli_7unz: crc mismatch\n");
-    else if (res == SZ_ERROR_ENCRYPTED)
+    } else if (res == SZ_ERROR_ENCRYPTED) {
         cli_dbgmsg("cli_7unz: encrypted\n");
-    else
+    } else {
         cli_dbgmsg("cli_7unz: error %d\n", res);
+    }
 
     return found;
 }

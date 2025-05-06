@@ -223,15 +223,17 @@ static void string_free(struct string* str)
     for (;;) {
         str->refcount--;
         if (!str->refcount) {
-            if (str->ref)       /* don't free, this is a portion of another string */
+            if (str->ref) {     /* don't free, this is a portion of another string */
                 str = str->ref; /* try to free that one*/
-            else {
-                if (str->data)
+            } else {
+                if (str->data) {
                     free(str->data);
+                }
                 break;
             }
-        } else
+        } else {
             break;
+        }
     }
 }
 
@@ -330,8 +332,9 @@ static int build_regex(regex_t* preg, const char* regex, int nosub)
             cli_regerror(rc, preg, errbuf, buflen);
             cli_errmsg("Phishcheck: Error in compiling regex:%s\nDisabling phishing checks\n", errbuf);
             free(errbuf);
-        } else
+        } else {
             cli_errmsg("Phishcheck: Error in compiling regex, disabling phishing checks. Additionally an Out-of-memory error was encountered while generating a detailed error message\n");
+        }
         return 1;
     }
     return CL_SUCCESS;
@@ -356,18 +359,21 @@ static int get_host(const char* URL, int isReal, int* phishy, const char** hstar
             /* it is not required to use mailto: in the displayed url, they might use to:, or whatever */
             end   = URL + strlen(URL) + 1;
             start = URL + strcspn(URL, ": ") + 1;
-            if (start == end)
+            if (start == end) {
                 start = URL;
+            }
             ismailto = 1;
         } else {
             start = URL; /*URL without protocol*/
-            if (isReal)
+            if (isReal) {
                 cli_dbgmsg("Phishcheck: Real URL without protocol: %s\n", URL);
-            else
+            } else {
                 ismailto = 2; /*no-protocol, might be mailto, @ is no problem*/
+            }
         }
-    } else
+    } else {
         start += 3; /* :// */
+    }
 
     if (!ismailto || !isReal) {
         const char *realhost, *tld;
@@ -383,20 +389,24 @@ static int get_host(const char* URL, int isReal, int* phishy, const char** hstar
 
             tld = strrchr(realhost, '.');
             rc  = tld ? !!in_tld_set(tld, strlen(tld)) : 0;
-            if (rc < 0)
+            if (rc < 0) {
                 return rc;
-            if (rc)
-                *phishy |= PHISHY_USERNAME_IN_URL; /* if the url contains a username that is there just to fool people,
-                                                                     like http://banksite@example.com/ */
-            start = realhost + 1;                  /*skip the username*/
-        } while (realhost);                        /*skip over multiple @ characters, text following last @ character is the real host*/
-    } else if (ismailto && isReal)
+            }
+            if (rc) {
+                *phishy |= PHISHY_USERNAME_IN_URL;
+            }                     /* if the url contains a username that is there just to fool people,
+                                                                                                      like http://banksite@example.com/ */
+            start = realhost + 1; /*skip the username*/
+        } while (realhost);       /*skip over multiple @ characters, text following last @ character is the real host*/
+    } else if (ismailto && isReal) {
         *phishy |= REAL_IS_MAILTO;
+    }
 
     if (!end) {
         end = start + strcspn(start, ":/?"); /*especially important for mailto:somebody@yahoo.com?subject=...*/
-        if (!end)
+        if (!end) {
             end = start + strlen(start);
+        }
     }
     *hstart = start;
     *hend   = end;
@@ -411,11 +421,13 @@ rfind(char* start, char c, size_t len)
 {
     char* p;
 
-    if (start == NULL)
+    if (start == NULL) {
         return NULL;
+    }
 
-    for (p = start + len; (p >= start) && (*p != c); p--)
+    for (p = start + len; (p >= start) && (*p != c); p--) {
         ;
+    }
     return (p < start) ? NULL : p;
 }
 
@@ -457,12 +469,15 @@ static int isNumeric(const char* host)
     int a, b, c, d, n = 0;
     /* 1.2.3.4 -> 7*/
     /* 127.127.127.127 -> 15*/
-    if (len < 7 || len > 15)
+    if (len < 7 || len > 15) {
         return 0;
+    }
     sscanf(host, "%d.%d.%d.%d%n", &a, &b, &c, &d, &n);
-    if (n == len)
-        if (a >= 0 && a <= 256 && b >= 0 && b <= 256 && c >= 0 && c <= 256 && d >= 0 && d <= 256)
+    if (n == len) {
+        if (a >= 0 && a <= 256 && b >= 0 && b <= 256 && c >= 0 && c <= 256 && d >= 0 && d <= 256) {
             return 1;
+        }
+    }
     return 0;
 }
 
@@ -480,8 +495,9 @@ str_hex_to_char(char** begin, const char** end)
     char* sbegin        = *begin;
     const char* str_end = *end;
 
-    if (str_end <= &sbegin[1])
+    if (str_end <= &sbegin[1]) {
         return;
+    }
 
     /* convert leading %xx*/
     if (sbegin[0] == '%') {
@@ -497,8 +513,9 @@ str_hex_to_char(char** begin, const char** end)
                 const char* src = sbegin + 3;
                 if (isxdigit(sbegin[1]) && isxdigit(sbegin[2])) {
                     *sbegin = hex2int((unsigned char*)sbegin + 1);
-                    if (*sbegin == '%' && !firsthex)
+                    if (*sbegin == '%' && !firsthex) {
                         firsthex = sbegin;
+                    }
                     /* move string */
                     memmove(sbegin + 1, src, str_end - src + 1);
                     str_end -= 2;
@@ -523,22 +540,25 @@ str_strip(char** begin, const char** end, const char* what, size_t what_len)
     const char* str_end_what;
     size_t cmp_len = what_len;
 
-    if (begin == NULL || str_end <= sbegin)
+    if (begin == NULL || str_end <= sbegin) {
         return;
+    }
 
     /*if(str_end < (sbegin + what_len))
                 return;*/
-    if (strlen(sbegin) < what_len)
+    if (strlen(sbegin) < what_len) {
         return;
+    }
 
     /* strip leading @what */
     while (cmp_len && !strncmp(sbegin, what, cmp_len)) {
         sbegin += what_len;
 
-        if (cmp_len > what_len)
+        if (cmp_len > what_len) {
             cmp_len -= what_len;
-        else
+        } else {
             cmp_len = 0;
+        }
     }
 
     /* strip trailing @what */
@@ -568,8 +588,9 @@ str_strip(char** begin, const char** end, const char* what, size_t what_len)
 static void str_replace(char* str, const char* end, char c, char r)
 {
     for (; str <= end; str++) {
-        if (*str == c)
+        if (*str == c) {
             *str = r;
+        }
     }
 }
 static void str_make_lowercase(char* str, size_t len)
@@ -582,8 +603,9 @@ static void str_make_lowercase(char* str, size_t len)
 #define fix32(x) ((x) < 32 ? 32 : (x))
 static void clear_msb(char* begin)
 {
-    for (; *begin; begin++)
+    for (; *begin; begin++) {
         *begin = fix32((*begin) & 0x7f);
+    }
 }
 
 /*
@@ -610,16 +632,23 @@ str_fixup_spaces(char** begin, const char** end)
 {
     char* sbegin     = *begin;
     const char* send = *end;
-    if (!sbegin || !send || send < sbegin)
+    if (!sbegin || !send || send < sbegin) {
         return;
+    }
     /* strip spaces */
     str_strip(&sbegin, &send, " ", 1);
     /* strip leading/trailing garbage */
-    while (!isalnum(sbegin[0] & 0xff) && sbegin <= send) sbegin++;
-    while (!isalnum(send[0] & 0xff) && send >= sbegin) send--;
+    while (!isalnum(sbegin[0] & 0xff) && sbegin <= send) {
+        sbegin++;
+    }
+    while (!isalnum(send[0] & 0xff) && send >= sbegin) {
+        send--;
+    }
 
     /* keep terminating slash character*/
-    if (send[1] == '/') send++;
+    if (send[1] == '/') {
+        send++;
+    }
     *begin = sbegin;
     *end   = send;
 }
@@ -636,8 +665,9 @@ cleanupURL(struct string* URL, struct string* pre_URL, int isReal)
     /*if(begin == NULL)
                 return;*/
     /*TODO: handle hex-encoded IPs*/
-    while (isspace(*begin))
+    while (isspace(*begin)) {
         begin++;
+    }
 
     len = strlen(begin);
     if (len == 0) {
@@ -653,8 +683,9 @@ cleanupURL(struct string* URL, struct string* pre_URL, int isReal)
         string_assign_null(pre_URL);
         return 0;
     }
-    while (isspace(*end))
+    while (isspace(*end)) {
         end--;
+    }
     /* From mailscanner, my comments enclosed in {} */
     if (!strncmp(begin, dotnet, dotnet_len) || !strncmp(begin, adonet, adonet_len) || !strncmp(begin, aspnet, aspnet_len)) {
         string_assign_null(URL);
@@ -670,11 +701,14 @@ cleanupURL(struct string* URL, struct string* pre_URL, int isReal)
          *  strip path & query parameter(s)
          * - we want to make hostname lowercase*/
         host_begin = strchr(begin, ':');
-        while (host_begin && (host_begin < end) && (host_begin[1] == '/')) host_begin++;
-        if (!host_begin)
-            host_begin = begin;
-        else
+        while (host_begin && (host_begin < end) && (host_begin[1] == '/')) {
             host_begin++;
+        }
+        if (!host_begin) {
+            host_begin = begin;
+        } else {
+            host_begin++;
+        }
         host_len = strcspn(host_begin, ":/?");
         if (host_begin + host_len > end + 1) {
             /* prevent hostname extending beyond end, it can happen
@@ -704,8 +738,12 @@ cleanupURL(struct string* URL, struct string* pre_URL, int isReal)
             str_strip(&begin, &end, " ", 1);
         } else {
             /* trim space */
-            while ((begin <= end) && (begin[0] == ' ')) begin++;
-            while ((begin <= end) && (end[0] == ' ')) end--;
+            while ((begin <= end) && (begin[0] == ' ')) {
+                begin++;
+            }
+            while ((begin <= end) && (end[0] == ' ')) {
+                end--;
+            }
         }
         if ((rc = string_assign_dup(isReal ? URL : pre_URL, begin, end + 1))) {
             string_assign_null(URL);
@@ -739,8 +777,9 @@ cl_error_t phishingScan(cli_ctx* ctx, tag_arguments_t* hrefs)
         urls.flags     = strncmp((char*)hrefs->tag[i], href_text, href_text_len) ? (CL_PHISH_ALL_CHECKS & ~CHECK_SSL) : CL_PHISH_ALL_CHECKS;
         urls.link_type = 0;
         if (!strncmp((char*)hrefs->tag[i], src_text, src_text_len)) {
-            if (!(urls.flags & CHECK_IMG_URL))
+            if (!(urls.flags & CHECK_IMG_URL)) {
                 continue;
+            }
             urls.link_type |= LINKTYPE_IMAGE;
         }
         urls.always_check_flags = 0;
@@ -834,8 +873,9 @@ cl_error_t phishing_init(struct cl_engine* engine)
         pchk->is_disabled = 1;
     } else {
         pchk = engine->phishcheck;
-        if (!pchk)
+        if (!pchk) {
             return CL_ENULLARG;
+        }
         if (!pchk->is_disabled) {
             /* already initialized */
             return CL_SUCCESS;
@@ -931,8 +971,9 @@ static inline int validate_uri_xalphas_nodot(const char* start, const char* end)
 {
     const unsigned char* p;
     for (p = (const unsigned char*)start; p < (const unsigned char*)end; p++) {
-        if (!URI_xalpha_nodot[*p])
+        if (!URI_xalpha_nodot[*p]) {
             return 0;
+        }
     }
     return 1;
 }
@@ -941,8 +982,9 @@ static inline int validate_uri_xpalphas_nodot(const char* start, const char* end
 {
     const unsigned char* p;
     for (p = (const unsigned char*)start; p < (const unsigned char*)end; p++) {
-        if (!URI_xpalpha_nodot[*p])
+        if (!URI_xpalpha_nodot[*p]) {
             return 0;
+        }
     }
     /* must have at least on char */
     return p > (const unsigned char*)start;
@@ -951,8 +993,9 @@ static inline int validate_uri_xpalphas_nodot(const char* start, const char* end
 static inline int validate_uri_ialpha(const char* start, const char* end)
 {
     const unsigned char* p = (const unsigned char*)start;
-    if (start >= end || !URI_alpha[*p])
+    if (start >= end || !URI_alpha[*p]) {
         return 0;
+    }
     return validate_uri_xalphas_nodot(start + 1, end);
 }
 
@@ -964,24 +1007,30 @@ static int isURL(char* URL, int accept_anyproto)
     char *last_tld_end = NULL, *q;
     const char *start  = NULL, *p, *end;
     int has_proto      = 0;
-    if (!URL)
+    if (!URL) {
         return 0;
+    }
 
-    while (*URL == ' ') URL++;
+    while (*URL == ' ') {
+        URL++;
+    }
     switch (URL[0]) {
         case 'h':
-            if (strncmp(URL, https, https_len) == 0)
+            if (strncmp(URL, https, https_len) == 0) {
                 start = URL + https_len - 1;
-            else if (strncmp(URL, http, http_len) == 0)
+            } else if (strncmp(URL, http, http_len) == 0) {
                 start = URL + http_len - 1;
+            }
             break;
         case 'f':
-            if (strncmp(URL, ftp, ftp_len) == 0)
+            if (strncmp(URL, ftp, ftp_len) == 0) {
                 start = URL + ftp_len - 1;
+            }
             break;
         case 'm':
-            if (strncmp(URL, mailto_proto, mailto_proto_len) == 0)
+            if (strncmp(URL, mailto_proto, mailto_proto_len) == 0) {
                 start = URL + mailto_proto_len - 1;
+            }
             break;
     }
     if (start && start[1] == '/' && start[2] == '/') {
@@ -995,51 +1044,68 @@ static int isURL(char* URL, int accept_anyproto)
             /* skip :// */
             if (start[1] == '/') {
                 start += 2;
-                if (*start == '/')
+                if (*start == '/') {
                     start++;
-            } else
+                }
+            } else {
                 start++;
+            }
             has_proto = 1;
-        } else
+        } else {
             start = URL; /* scheme invalid */
-    } else
+        }
+    } else {
         start = URL;
+    }
     p   = start;
     end = strchr(p, '/');
-    if (!end)
+    if (!end) {
         end = p + strlen(p);
+    }
 
     if (!has_proto && (q = memchr(p, '@', end - p))) {
         /* don't phishcheck if displayed URL is email, but do phishcheck if
          * foo.TLD@host is used */
         const char* q2 = q - 1;
-        while (q2 > p && *q2 != '.') q2--;
-        if (q2 == p || !in_tld_set(q2 + 1, q - q2 - 1))
+        while (q2 > p && *q2 != '.') {
+            q2--;
+        }
+        if (q2 == p || !in_tld_set(q2 + 1, q - q2 - 1)) {
             return 0;
+        }
     }
 
     do {
         q = strchr(p, '.');
-        if (q > end)
+        if (q > end) {
             break;
+        }
         if (q) {
-            if (!validate_uri_xpalphas_nodot(p, q))
+            if (!validate_uri_xpalphas_nodot(p, q)) {
                 return 0;
-            if (accept_anyproto && in_tld_set(p, q - p))
+            }
+            if (accept_anyproto && in_tld_set(p, q - p)) {
                 last_tld_end = q;
+            }
             p = q + 1;
         }
     } while (q);
-    if (p == start) /* must have at least one dot in the URL */
+    if (p == start) { /* must have at least one dot in the URL */
         return 0;
-    if (end < p)
+    }
+    if (end < p) {
         end = p;
-    while (*end == ' ' && end > p) --end;
+    }
+    while (*end == ' ' && end > p) {
+        --end;
+    }
 
-    if (in_tld_set(p, end - p))
+    if (in_tld_set(p, end - p)) {
         return 1;
-    if (!accept_anyproto)
+    }
+    if (!accept_anyproto) {
         return 0;
+    }
     if (last_tld_end) {
         *last_tld_end = '\0';
         return 1;
@@ -1076,10 +1142,12 @@ static enum phish_status cleanupURLs(struct url_check* urls)
     if (urls->flags & CLEANUP_URL) {
         cleanupURL(&urls->realLink, NULL, 1);
         cleanupURL(&urls->displayLink, &urls->pre_fixup.pre_displayLink, 0);
-        if (!urls->displayLink.data || !urls->realLink.data)
+        if (!urls->displayLink.data || !urls->realLink.data) {
             return CL_PHISH_NODECISION;
-        if (!strcmp(urls->realLink.data, urls->displayLink.data))
+        }
+        if (!strcmp(urls->realLink.data, urls->displayLink.data)) {
             return CL_PHISH_CLEAN;
+        }
     }
     return CL_PHISH_NODECISION;
 }
@@ -1131,12 +1199,13 @@ static void url_get_domain(struct url_check* url, struct url_check* domains)
 
 static enum phish_status phishy_map(int phishy, enum phish_status fallback)
 {
-    if (phishy & PHISHY_USERNAME_IN_URL)
+    if (phishy & PHISHY_USERNAME_IN_URL) {
         return CL_PHISH_CLOAKED_UIU;
-    else if (phishy & PHISHY_NUMERIC_IP)
+    } else if (phishy & PHISHY_NUMERIC_IP) {
         return CL_PHISH_NUMERIC_IP;
-    else
+    } else {
         return fallback;
+    }
 }
 
 static cl_error_t allow_list_check(const struct cl_engine* engine, struct url_check* urls, int hostOnly)
@@ -1176,8 +1245,9 @@ static cl_error_t hash_match(const struct regex_matcher* rlist,
         void* sha256;
 
         sha256 = cl_hash_init("sha256");
-        if (!(sha256))
+        if (!(sha256)) {
             return CL_EMEM;
+        }
 
         cl_update_hash(sha256, (void*)host, hlen);
         cl_update_hash(sha256, (void*)path, plen);
@@ -1235,24 +1305,32 @@ enum phish_status cli_url_canon(const char* inurl, size_t len, char* urlbuff, si
 
     /* canonicalize only real URLs, with a protocol */
     host_begin = strchr(url, ':');
-    if (!host_begin)
+    if (!host_begin) {
         return CL_PHISH_CLEAN;
+    }
     ++host_begin;
 
     /* ignore username in URL */
-    while ((host_begin < urlend) && *host_begin == '/') ++host_begin;
+    while ((host_begin < urlend) && *host_begin == '/') {
+        ++host_begin;
+    }
     host_len = strcspn(host_begin, ":/?");
     p        = memchr(host_begin, '@', host_len);
-    if (p)
+    if (p) {
         host_begin = p + 1;
+    }
     url = host_begin;
     /* repeatedly % unescape characters */
     str_hex_to_char(&url, &urlend);
     host_begin = url;
     len        = urlend - url;
     /* skip to beginning of hostname */
-    while ((host_begin < urlend) && *host_begin == '/') ++host_begin;
-    while (*host_begin == '.' && host_begin < urlend) ++host_begin;
+    while ((host_begin < urlend) && *host_begin == '/') {
+        ++host_begin;
+    }
+    while (*host_begin == '.' && host_begin < urlend) {
+        ++host_begin;
+    }
 
     last = strchr(host_begin, '/');
     p    = host_begin;
@@ -1260,18 +1338,21 @@ enum phish_status cli_url_canon(const char* inurl, size_t len, char* urlbuff, si
         if (p + 2 < urlend && *p == '/' && p[1] == '.') {
             if (p[2] == '/') {
                 /* remove /./ */
-                if (p + 3 < urlend)
+                if (p + 3 < urlend) {
                     memmove(p + 1, p + 3, urlend - p - 3);
+                }
                 urlend -= 2;
             } else if (p[2] == '.' && (p[3] == '/' || p[3] == '\0') && last) {
                 /* remove /component/../ */
-                if (p + 4 < urlend)
+                if (p + 4 < urlend) {
                     memmove(last + 1, p + 4, urlend - p - 4);
+                }
                 urlend -= 3 + (p - last);
             }
         }
-        if (*p == '/')
+        if (*p == '/') {
             last = p;
+        }
         p++;
     }
     p  = &url[urlend - url];
@@ -1302,8 +1383,9 @@ enum phish_status cli_url_canon(const char* inurl, size_t len, char* urlbuff, si
         memmove(path_begin + 2, path_begin + 1, len - host_len);
         *path_begin++ = '/';
         *path_begin++ = '\0';
-    } else
+    } else {
         path_begin = url + len;
+    }
     if (url + len >= path_begin) {
         path_len = url + len - path_begin + 1;
         p        = strchr(path_begin, '#');
@@ -1372,10 +1454,12 @@ static cl_error_t url_hash_match(
         do {
             --component;
         } while (*component != '.' && component > host_begin);
-        if (*component != '.')
+        if (*component != '.') {
             component = NULL;
-        if (component)
+        }
+        if (component) {
             lp[j--] = component + 1;
+        }
     }
     lp[j] = host_begin;
 
@@ -1383,17 +1467,19 @@ static cl_error_t url_hash_match(
     pp[0] = path_len;
     if (path_len) {
         pp[1] = strcspn(path_begin, "?");
-        if (pp[1] != pp[0])
+        if (pp[1] != pp[0]) {
             k = 2;
-        else
+        } else {
             k = 1;
+        }
         pp[k++] = 0;
         while (k < COMPONENTS + 2) {
             p = strchr(path_begin + pp[k - 1] + 1, '/');
             if (p && p > path_begin) {
                 pp[k++] = p - path_begin + 1;
-            } else
+            } else {
                 break;
+            }
         }
     } else {
         k = 1;

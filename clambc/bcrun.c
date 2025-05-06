@@ -89,8 +89,9 @@ static struct dbg_state {
 static void tracehook(struct cli_bc_ctx *ctx, unsigned event)
 {
     dbg_state.directory = ctx->directory;
-    if (*ctx->file == '?')
+    if (*ctx->file == '?') {
         return;
+    }
     switch (event) {
         case trace_func:
             fprintf(stderr, "[trace] %s:%u:%u -> %s:%u:%u Entered function %s\n",
@@ -109,11 +110,12 @@ static void tracehook(struct cli_bc_ctx *ctx, unsigned event)
             break;
         case trace_line:
         case trace_col:
-            if (dbg_state.showline)
+            if (dbg_state.showline) {
                 cli_bytecode_debug_printsrc(ctx);
-            else
+            } else {
                 fprintf(stderr, "[trace] %s:%u:%u\n",
                         dbg_state.file, dbg_state.line, dbg_state.col);
+            }
             break;
         default:
             break;
@@ -165,8 +167,9 @@ static void print_src(const char *file)
             }
         }
     } while (!found && (nread == sizeof(buf)));
-    if (debug_flag)
+    if (debug_flag) {
         printf("[clambc] Source code:");
+    }
     do {
         for (; i + 1 < nread; i++) {
             if (buf[i] == 'S' || buf[i] == '\n') {
@@ -176,8 +179,9 @@ static void print_src(const char *file)
             putc(((buf[i] & 0xf) | ((buf[i + 1] & 0xf) << 4)), stdout);
             i++;
         }
-        if (i == nread - 1 && nread != 1)
+        if (i == nread - 1 && nread != 1) {
             fseek(f, -1, SEEK_CUR);
+        }
         i     = 0;
         nread = fread(buf, 1, sizeof(buf), f);
     } while (nread > 0);
@@ -262,8 +266,9 @@ int main(int argc, char *argv[])
     int fd = -1;
     unsigned tracelevel;
 
-    if (check_flevel())
+    if (check_flevel()) {
         exit(1);
+    }
 
     opts = optparse(NULL, argc, argv, 1, OPT_CLAMBC, 0, NULL);
     if (!opts) {
@@ -308,10 +313,13 @@ int main(int argc, char *argv[])
     }
 
     dbgargc = 1;
-    while (opts->filename[dbgargc]) dbgargc++;
+    while (opts->filename[dbgargc]) {
+        dbgargc++;
+    }
 
-    if (dbgargc > 1)
+    if (dbgargc > 1) {
         cli_bytecode_debug(dbgargc, opts->filename);
+    }
 
     if (optget(opts, "force-interpreter")->enabled) {
         bcs.engine = NULL;
@@ -329,8 +337,9 @@ int main(int argc, char *argv[])
 
     if ((opt = optget(opts, "statistics"))->enabled) {
         while (opt) {
-            if (!strcasecmp(opt->strarg, "bytecode"))
+            if (!strcasecmp(opt->strarg, "bytecode")) {
                 bc_stats = 1;
+            }
             opt = opt->nextarg;
         }
     }
@@ -346,8 +355,9 @@ int main(int argc, char *argv[])
         fprintf(stderr, "bytecode load skipped\n");
         exit(0);
     }
-    if (debug_flag)
+    if (debug_flag) {
         printf("[clambc] Bytecode loaded\n");
+    }
     if (optget(opts, "info")->enabled) {
         cli_bytecode_describe(bc);
     } else if (optget(opts, "printsrc")->enabled) {
@@ -386,8 +396,9 @@ int main(int argc, char *argv[])
             optfree(opts);
             exit(4);
         }
-        if (debug_flag)
+        if (debug_flag) {
             printf("[clambc] Bytecode prepared\n");
+        }
 
         ctx = cli_bytecode_context_alloc();
         if (!ctx) {
@@ -428,8 +439,9 @@ int main(int argc, char *argv[])
             funcid = atoi(opts->filename[1]);
         }
         cli_bytecode_context_setfuncid(ctx, bc, funcid);
-        if (debug_flag)
+        if (debug_flag) {
             printf("[clambc] Running bytecode function :%u\n", funcid);
+        }
 
         if (opts->filename[1]) {
             i = 2;
@@ -469,15 +481,18 @@ int main(int argc, char *argv[])
             fprintf(stderr, "Unable to run bytecode: %s\n", cl_strerror(rc));
         } else {
             uint64_t v;
-            if (debug_flag)
+            if (debug_flag) {
                 printf("[clambc] Bytecode run finished\n");
+            }
             v = cli_bytecode_context_getresult_int(ctx);
-            if (debug_flag)
+            if (debug_flag) {
                 printf("[clambc] Bytecode returned: 0x%llx\n", (long long)v);
+            }
         }
         cli_bytecode_context_destroy(ctx);
-        if (map)
+        if (map) {
             funmap(map);
+        }
         cl_engine_free(engine);
         free(cctx.recursion_stack);
         evidence_free(cctx.evidence);
@@ -486,10 +501,12 @@ int main(int argc, char *argv[])
     cli_bytecode_done(&bcs);
     free(bc);
     optfree(opts);
-    if (fd != -1)
+    if (fd != -1) {
         close(fd);
-    if (debug_flag)
+    }
+    if (debug_flag) {
         printf("[clambc] Exiting\n");
+    }
 
     return 0;
 }

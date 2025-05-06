@@ -76,24 +76,36 @@ size_t gpt_detect_size(fmap_t *map)
     unsigned char *buff;
 
     buff = (unsigned char *)fmap_need_off_once(map, 512, 8);
-    if (!buff) return 0;
-    if (0 == strncmp((const char *)buff, GPT_SIGNATURE_STR, 8))
+    if (!buff) {
+        return 0;
+    }
+    if (0 == strncmp((const char *)buff, GPT_SIGNATURE_STR, 8)) {
         return 512;
+    }
 
     buff = (unsigned char *)fmap_need_off_once(map, 1024, 8);
-    if (!buff) return 0;
-    if (0 == strncmp((const char *)buff, GPT_SIGNATURE_STR, 8))
+    if (!buff) {
+        return 0;
+    }
+    if (0 == strncmp((const char *)buff, GPT_SIGNATURE_STR, 8)) {
         return 1024;
+    }
 
     buff = (unsigned char *)fmap_need_off_once(map, 2048, 8);
-    if (!buff) return 0;
-    if (0 == strncmp((const char *)buff, GPT_SIGNATURE_STR, 8))
+    if (!buff) {
+        return 0;
+    }
+    if (0 == strncmp((const char *)buff, GPT_SIGNATURE_STR, 8)) {
         return 2048;
+    }
 
     buff = (unsigned char *)fmap_need_off_once(map, 4096, 8);
-    if (!buff) return 0;
-    if (0 == strncmp((const char *)buff, GPT_SIGNATURE_STR, 8))
+    if (!buff) {
+        return 0;
+    }
+    if (0 == strncmp((const char *)buff, GPT_SIGNATURE_STR, 8)) {
         return 4096;
+    }
 
     return 0;
 }

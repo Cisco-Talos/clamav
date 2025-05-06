@@ -210,9 +210,11 @@ static int pop_state(struct stack* stack, struct rtf_state* state)
 static int load_actions(table_t* t)
 {
     size_t i;
-    for (i = 0; i < rtf_action_mapping_cnt; i++)
-        if (tableInsert(t, rtf_action_mapping[i].controlword, rtf_action_mapping[i].action) == -1)
+    for (i = 0; i < rtf_action_mapping_cnt; i++) {
+        if (tableInsert(t, rtf_action_mapping[i].controlword, rtf_action_mapping[i].action) == -1) {
             return -1;
+        }
+    }
     return 0;
 }
 
@@ -257,8 +259,11 @@ static cl_error_t decode_and_scan(struct rtf_object_data* data, cli_ctx* ctx)
     }
 
     if (data->name) {
-        if (!ctx->engine->keeptmp)
-            if (cli_unlink(data->name)) ret = CL_EUNLINK;
+        if (!ctx->engine->keeptmp) {
+            if (cli_unlink(data->name)) {
+                ret = CL_EUNLINK;
+            }
+        }
         free(data->name);
         data->name = NULL;
     }
@@ -275,25 +280,30 @@ static int rtf_object_process(struct rtf_state* state, const unsigned char* inpu
     size_t i;
     int ret;
 
-    if (!data || !len)
+    if (!data || !len) {
         return 0;
+    }
 
     if (data->has_partial) {
-        for (i = 0; i < len && !isxdigit(input[i]); i++)
+        for (i = 0; i < len && !isxdigit(input[i]); i++) {
             ;
+        }
         if (i < len) {
             outdata[out_cnt++] = data->partial | hextable[input[i++]];
             data->has_partial  = 0;
-        } else
+        } else {
             return 0;
-    } else
+        }
+    } else {
         i = 0;
+    }
 
     for (; i < len; i++) {
         if (isxdigit(input[i])) {
             const unsigned char byte = hextable[input[i++]] << 4;
-            while (i < len && !isxdigit(input[i]))
+            while (i < len && !isxdigit(input[i])) {
                 i++;
+            }
             if (i == len) {
                 data->partial     = byte;
                 data->has_partial = 1;
@@ -308,10 +318,11 @@ static int rtf_object_process(struct rtf_state* state, const unsigned char* inpu
         switch (data->internal_state) {
             case WAIT_MAGIC: {
                 cli_dbgmsg("RTF: waiting for magic\n");
-                for (i = 0; i < out_cnt && data->bread < rtf_data_magic_len; i++, data->bread++)
+                for (i = 0; i < out_cnt && data->bread < rtf_data_magic_len; i++, data->bread++) {
                     if (rtf_data_magic[data->bread] != out_data[i]) {
                         cli_dbgmsg("Warning: rtf objdata magic number not matched, expected:%d, got: %d, at pos:%lu\n", rtf_data_magic[i], out_data[i], (unsigned long int)data->bread);
                     }
+                }
                 out_cnt -= i;
                 if (data->bread == rtf_data_magic_len) {
                     out_data += i;
@@ -321,10 +332,12 @@ static int rtf_object_process(struct rtf_state* state, const unsigned char* inpu
                 break;
             }
             case WAIT_DESC_LEN: {
-                if (data->bread == 0)
+                if (data->bread == 0) {
                     data->desc_len = 0;
-                for (i = 0; i < out_cnt && data->bread < 4; i++, data->bread++)
+                }
+                for (i = 0; i < out_cnt && data->bread < 4; i++, data->bread++) {
                     data->desc_len |= ((size_t)out_data[i]) << (data->bread * 8);
+                }
                 out_cnt -= i;
                 if (data->bread == 4) {
                     out_data += i;
@@ -332,8 +345,9 @@ static int rtf_object_process(struct rtf_state* state, const unsigned char* inpu
                     if (data->desc_len > 64) {
                         cli_dbgmsg("Description length too big (%lu), showing only 64 bytes of it\n", (unsigned long int)data->desc_len);
                         data->desc_name = malloc(65);
-                    } else
+                    } else {
                         data->desc_name = cli_max_malloc(data->desc_len + 1);
+                    }
                     if (!data->desc_name) {
                         cli_errmsg("rtf_object_process: Unable to allocate memory for data->desc_name\n");
                         return CL_EMEM;
@@ -345,8 +359,9 @@ static int rtf_object_process(struct rtf_state* state, const unsigned char* inpu
             }
             case WAIT_DESC: {
                 cli_dbgmsg("RTF: in WAIT_DESC\n");
-                for (i = 0; i < out_cnt && data->bread < data->desc_len && data->bread < 64; i++, data->bread++)
+                for (i = 0; i < out_cnt && data->bread < data->desc_len && data->bread < 64; i++, data->bread++) {
                     data->desc_name[data->bread] = out_data[i];
+                }
                 out_cnt -= i;
                 out_data += i;
                 if (data->bread < data->desc_len && data->bread < 64) {
@@ -389,17 +404,20 @@ static int rtf_object_process(struct rtf_state* state, const unsigned char* inpu
 
             case WAIT_DATA_SIZE: {
                 cli_dbgmsg("RTF: in WAIT_DATA_SIZE\n");
-                if (data->bread == 0)
+                if (data->bread == 0) {
                     data->desc_len = 0;
-                for (i = 0; i < out_cnt && data->bread < 4; i++, data->bread++)
+                }
+                for (i = 0; i < out_cnt && data->bread < 4; i++, data->bread++) {
                     data->desc_len |= ((size_t)out_data[i]) << (8 * data->bread);
+                }
                 out_cnt -= i;
                 if (data->bread == 4) {
                     out_data += i;
                     data->bread = 0;
                     cli_dbgmsg("Dumping rtf embedded object of size:%lu\n", (unsigned long int)data->desc_len);
-                    if ((ret = cli_gentempfd(data->tmpdir, &data->name, &data->fd)))
+                    if ((ret = cli_gentempfd(data->tmpdir, &data->name, &data->fd))) {
                         return ret;
+                    }
                     data->internal_state = DUMP_DATA;
                     cli_dbgmsg("RTF: next state: DUMP_DATA\n");
                 }
@@ -414,10 +432,12 @@ static int rtf_object_process(struct rtf_state* state, const unsigned char* inpu
                         char out[4];
                         data->bread = 1; /* flag to indicate this needs to be scanned with cli_decode_ole_object*/
                         cli_writeint32(out, data->desc_len);
-                        if (cli_writen(data->fd, out, 4) != 4)
+                        if (cli_writen(data->fd, out, 4) != 4) {
                             return CL_EWRITE;
-                    } else
+                        }
+                    } else {
                         data->bread = 2;
+                    }
                 }
 
                 data->desc_len -= out_want;
@@ -428,8 +448,9 @@ static int rtf_object_process(struct rtf_state* state, const unsigned char* inpu
                 out_cnt -= out_want;
                 if (!data->desc_len) {
                     int rc;
-                    if ((rc = decode_and_scan(data, data->ctx)))
+                    if ((rc = decode_and_scan(data, data->ctx))) {
                         return rc;
+                    }
                     data->bread          = 0;
                     data->internal_state = WAIT_MAGIC;
                 }
@@ -448,15 +469,18 @@ static int rtf_object_end(struct rtf_state* state, cli_ctx* ctx)
 {
     struct rtf_object_data* data = state->cb_data;
     int rc                       = 0;
-    if (!data)
+    if (!data) {
         return 0;
+    }
     if (data->fd > 0) {
         rc = decode_and_scan(data, ctx);
     }
-    if (data->name)
+    if (data->name) {
         free(data->name);
-    if (data->desc_name)
+    }
+    if (data->desc_name) {
         free(data->desc_name);
+    }
     free(data);
     state->cb_data = NULL;
     return rc;
@@ -480,12 +504,14 @@ static void rtf_action(struct rtf_state* state, long action)
 
 static void cleanup_stack(struct stack* stack, struct rtf_state* state, cli_ctx* ctx)
 {
-    if (!stack || !stack->states)
+    if (!stack || !stack->states) {
         return;
+    }
     while (stack && stack->stack_cnt /* && state->default_elements*/) {
         pop_state(stack, state);
-        if (state->cb_data && state->cb_end)
+        if (state->cb_data && state->cb_end) {
             state->cb_end(state, ctx);
+        }
     }
 }
 
@@ -532,8 +558,9 @@ int cli_scanrtf(cli_ctx* ctx)
         return CL_EMEM;
     }
 
-    if (!(tempname = cli_gentemp_with_prefix(ctx->sub_tmpdir, "rtf-tmp")))
+    if (!(tempname = cli_gentemp_with_prefix(ctx->sub_tmpdir, "rtf-tmp"))) {
         return CL_EMEM;
+    }
 
     if (mkdir(tempname, 0700)) {
         cli_dbgmsg("ScanRTF -> Can't create temporary directory %s\n", tempname);
@@ -546,8 +573,9 @@ int cli_scanrtf(cli_ctx* ctx)
     if ((ret = load_actions(actiontable))) {
         cli_dbgmsg("RTF: Unable to load rtf action table\n");
         free(stack.states);
-        if (!ctx->engine->keeptmp)
+        if (!ctx->engine->keeptmp) {
             cli_rmdirs(tempname);
+        }
         free(tempname);
         tableDestroy(actiontable);
         return ret;
@@ -569,11 +597,12 @@ int cli_scanrtf(cli_ctx* ctx)
                             }
                             break;
                         case '}':
-                            if (state.cb_data && state.cb_end)
+                            if (state.cb_data && state.cb_end) {
                                 if ((ret = state.cb_end(&state, ctx))) {
                                     SCAN_CLEANUP;
                                     return ret;
                                 }
+                            }
                             if ((ret = pop_state(&stack, &state))) {
                                 cli_dbgmsg("RTF:pop failure!\n");
                                 SCAN_CLEANUP;
@@ -589,17 +618,19 @@ int cli_scanrtf(cli_ctx* ctx)
                                 size_t i;
                                 size_t left = ptr_end - ptr;
                                 size_t use  = left;
-                                for (i = 1; i < left; i++)
+                                for (i = 1; i < left; i++) {
                                     if (main_symbols[ptr[i]]) {
                                         use = i;
                                         break;
                                     }
+                                }
                                 if (state.cb_begin) {
-                                    if (!state.cb_data)
+                                    if (!state.cb_data) {
                                         if ((ret = state.cb_begin(&state, ctx, tempname))) {
                                             SCAN_CLEANUP;
                                             return ret;
                                         }
+                                    }
                                     if ((ret = state.cb_process(&state, ptr, use))) {
                                         if (state.cb_end) {
                                             state.cb_end(&state, ctx);
@@ -616,8 +647,9 @@ int cli_scanrtf(cli_ctx* ctx)
                     if (isalpha(*ptr)) {
                         state.parse_state     = PARSE_CONTROL_WORD;
                         state.controlword_cnt = 0;
-                    } else
+                    } else {
                         state.parse_state = PARSE_CONTROL_SYMBOL;
+                    }
                     break;
                 case PARSE_CONTROL_SYMBOL:
                     ptr++; /* Do nothing */
@@ -627,9 +659,9 @@ int cli_scanrtf(cli_ctx* ctx)
                     if (state.controlword_cnt == 32) {
                         cli_dbgmsg("Invalid control word: maximum size exceeded:%s\n", state.controlword);
                         state.parse_state = PARSE_MAIN;
-                    } else if (isalpha(*ptr))
+                    } else if (isalpha(*ptr)) {
                         state.controlword[state.controlword_cnt++] = *ptr++;
-                    else {
+                    } else {
                         if (isspace(*ptr)) {
                             state.controlword[state.controlword_cnt++] = *ptr++;
                             state.parse_state                          = PARSE_INTERPRET_CONTROLWORD;
@@ -660,8 +692,9 @@ int cli_scanrtf(cli_ctx* ctx)
                     } else if (isalpha(*ptr)) {
                         ptr++;
                     } else {
-                        if (state.controlword_param_sign < 0)
+                        if (state.controlword_param_sign < 0) {
                             state.controlword_param = -state.controlword_param;
+                        }
                         state.parse_state = PARSE_INTERPRET_CONTROLWORD;
                     }
                     break;

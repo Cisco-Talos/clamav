@@ -92,7 +92,9 @@ static int cpool_addunix(char *path)
     cpe->server                              = (struct sockaddr *)srv;
     cpe->socklen                             = sizeof(*srv);
     SETGAI(cpe, NULL);
-    if (!cp->local_cpe) cp->local_cpe = cpe;
+    if (!cp->local_cpe) {
+        cp->local_cpe = cpe;
+    }
     logg(LOGG_DEBUG, "Local socket unix:%s added to the pool (slot %d)\n", srv->sun_path, cp->entries);
     return 0;
 }
@@ -101,7 +103,9 @@ static int islocal(struct sockaddr *sa, socklen_t addrlen)
 {
     int s = socket(sa->sa_family, SOCK_STREAM, 0);
     int ret;
-    if (s < 0) return 0;
+    if (s < 0) {
+        return 0;
+    }
     ret = (bind(s, sa, addrlen) == 0);
     close(s);
     return ret;
@@ -130,8 +134,9 @@ static int cpool_addtcp(char *addr, char *port)
     if (!getaddrinfo(addr, NULL, &hints, &res2)) {
         cpe->local = islocal(res2->ai_addr, res2->ai_addrlen);
         freeaddrinfo(res2);
-    } else
+    } else {
         cpe->local = 0;
+    }
     cpe->last_poll = 0;
     cpe->server    = res->ai_addr;
     cpe->socklen   = res->ai_addrlen;
@@ -149,8 +154,9 @@ static int addslot(void)
         cpool_free();
         return 1;
     }
-    if (cp->local_cpe)
+    if (cp->local_cpe) {
         cp->local_cpe = (struct CP_ENTRY *)((char *)cp->local_cpe + ((char *)cpe - (char *)cp->pool));
+    }
     memset(&cpe[cp->entries], 0, sizeof(*cpe));
     cp->pool = cpe;
     cp->entries++;
@@ -180,8 +186,9 @@ static void cpool_probe(void)
     }
     cp->alive = cp->entries - dead;
 
-    if (!cp->alive)
+    if (!cp->alive) {
         logg(LOGG_WARNING, "No clamd server appears to be available\n");
+    }
 }
 
 static void *cpool_mon(_UNUSED_ void *v)
@@ -220,7 +227,9 @@ void cpool_init(struct optstruct *opts)
         while (opt) {
             char *socktype = opt->strarg;
 
-            if (addslot()) return;
+            if (addslot()) {
+                return;
+            }
             if (!strncasecmp(socktype, "unix:", 5)) {
                 failed = cpool_addunix(socktype + 5);
             } else if (!strncasecmp(socktype, "tcp:", 4)) {
@@ -234,7 +243,9 @@ void cpool_init(struct optstruct *opts)
                 logg(LOGG_ERROR, "Failed to parse ClamdSocket directive '%s'\n", socktype);
                 failed = 1;
             }
-            if (failed) break;
+            if (failed) {
+                break;
+            }
             opt = opt->nextarg;
         }
         if (failed) {
@@ -284,9 +295,12 @@ struct CP_ENTRY *cpool_get_rand(int *s)
         start = rand() % cp->entries;
         for (i = 0; i < cp->entries; i++) {
             cpe = &cp->pool[(i + start) % cp->entries];
-            if (cpe->dead) continue;
-            if (cpe->local && cp->local_cpe && !cp->local_cpe->dead)
+            if (cpe->dead) {
+                continue;
+            }
+            if (cpe->local && cp->local_cpe && !cp->local_cpe->dead) {
                 cpe = cp->local_cpe;
+            }
             if ((*s = nc_connect_entry(cpe)) == -1) {
                 cpe->dead = 1;
                 continue;

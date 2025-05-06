@@ -78,8 +78,9 @@ static void printopts(struct optstruct *opts, int nondef)
             continue;
         }
         if (clam_options[opts->idx].owner & OPT_DEPRECATED) {
-            if (opts->active)
+            if (opts->active) {
                 printf("*** %s is DEPRECATED ***\n", opts->name);
+            }
             opts = opts->next;
             continue;
         }
@@ -87,15 +88,16 @@ static void printopts(struct optstruct *opts, int nondef)
             opts = opts->next;
             continue;
         }
-        if (!opts->enabled)
+        if (!opts->enabled) {
             printf("%s disabled\n", opts->name);
-        else
+        } else {
             switch (clam_options[opts->idx].argtype) {
                 case CLOPT_TYPE_STRING:
                     printf("%s = \"%s\"", opts->name, opts->strarg);
                     opt = opts;
-                    while ((opt = opt->nextarg))
+                    while ((opt = opt->nextarg)) {
                         printf(", \"%s\"", opt->strarg);
+                    }
                     printf("\n");
                     break;
 
@@ -104,8 +106,9 @@ static void printopts(struct optstruct *opts, int nondef)
                 case CLOPT_TYPE_SIZE64:
                     printf("%s = \"%lld\"", opts->name, opts->numarg);
                     opt = opts;
-                    while ((opt = opt->nextarg))
+                    while ((opt = opt->nextarg)) {
                         printf(", \"%lld\"", opt->numarg);
+                    }
                     printf("\n");
                     break;
 
@@ -116,6 +119,7 @@ static void printopts(struct optstruct *opts, int nondef)
                 default:
                     printf("!!! %s: UNKNOWN INTERNAL TYPE !!!\n", opts->name);
             }
+        }
         opts = opts->next;
     }
 }
@@ -135,8 +139,9 @@ static int printconf(const char *name)
     }
     if (!tool) {
         printf("ERROR: Unknown config file\nAvailable options:");
-        for (i = 0; cfgfile[i].name; i++)
+        for (i = 0; cfgfile[i].name; i++) {
             printf(" %s", cfgfile[i].name);
+        }
         printf("\n");
         return 1;
     }
@@ -151,38 +156,43 @@ static int printconf(const char *name)
             buffer[sizeof(buffer) - 1] = 0;
             tokens_count               = cli_strtokenize(buffer, '\n', 128, tokens);
             printf("\n");
-            for (j = 0; j < tokens_count; j++)
+            for (j = 0; j < tokens_count; j++) {
                 printf("# %s\n", tokens[j]);
+            }
 
             switch (cpt->argtype) {
                 case CLOPT_TYPE_STRING:
-                    if (cpt->strarg)
+                    if (cpt->strarg) {
                         printf("# Default: %s\n", cpt->strarg);
-                    else
+                    } else {
                         printf("# Default: disabled\n");
+                    }
                     break;
 
                 case CLOPT_TYPE_NUMBER:
-                    if (cpt->numarg != -1)
+                    if (cpt->numarg != -1) {
                         printf("# Default: %lld\n", cpt->numarg);
-                    else
+                    } else {
                         printf("# Default: disabled\n");
+                    }
                     break;
 
                 case CLOPT_TYPE_SIZE:
                 case CLOPT_TYPE_SIZE64:
                     printf("# You may use 'G' or 'g' for gigabytes (1G = 1g = 1,073,741,824 bytes)\n# 'M' or 'm' for megabytes (1M = 1m = 1048576 bytes)\n# and 'K' or 'k' for kilobytes (1K = 1k = 1024 bytes). To specify the size\n# in bytes just don't use modifiers.\n");
-                    if (cpt->numarg != -1)
+                    if (cpt->numarg != -1) {
                         printf("# Default: %lld\n", cpt->numarg);
-                    else
+                    } else {
                         printf("# Default: disabled\n");
+                    }
                     break;
 
                 case CLOPT_TYPE_BOOL:
-                    if (cpt->numarg != -1)
+                    if (cpt->numarg != -1) {
                         printf("# Default: %s\n", cpt->numarg ? "yes" : "no");
-                    else
+                    } else {
                         printf("# Default: disabled\n");
+                    }
                     break;
 
                 default:
@@ -193,8 +203,9 @@ static int printconf(const char *name)
                 strncpy(buffer, cpt->suggested, sizeof(buffer) - 1);
                 buffer[sizeof(buffer) - 1] = 0;
                 tokens_count               = cli_strtokenize(buffer, '\n', 128, tokens);
-                for (j = 0; j < tokens_count; j++)
+                for (j = 0; j < tokens_count; j++) {
                     printf("#%s %s\n", cpt->name, tokens[j]);
+                }
             } else {
                 printf("#%s %s\n", cpt->name, cpt->suggested ? cpt->suggested : "ARG");
             }
@@ -250,8 +261,9 @@ static void print_platform(struct cli_environment *env)
     }
 #endif
 
-    if (strcmp(ZLIB_VERSION, zlibVersion()))
+    if (strcmp(ZLIB_VERSION, zlibVersion())) {
         printf("WARNING: zlib version mismatch: %s (%s)\n", ZLIB_VERSION, zlibVersion());
+    }
 #ifdef ZLIB_VERNUM
     printf("zlib version: %s (%s), compile flags: %02lx\n",
            ZLIB_VERSION, zlibVersion(), zlibCompileFlags());
@@ -261,10 +273,12 @@ static void print_platform(struct cli_environment *env)
            ZLIB_VERSION, zlibVersion());
 #endif
 
-    if (env->triple[0])
+    if (env->triple[0]) {
         printf("Triple: %s\n", env->triple);
-    if (env->cpu[0])
+    }
+    if (env->cpu[0]) {
         printf("CPU: %s, %s\n", env->cpu, env->big_endian ? "Big-endian" : "Little-endian");
+    }
     printf("platform id: 0x%08x%08x%08x\n",
            env->platform_id_a,
            env->platform_id_b,
@@ -302,13 +316,14 @@ static void print_build(struct cli_environment *env)
         default:
             name = NULL;
     }
-    if (name)
+    if (name) {
         printf("%s: %s%s(%u.%u.%u)\n", name,
                version ? version : "",
                version ? " " : "",
                env->c_version >> 16,
                (env->c_version >> 8) & 0xff,
                (env->c_version) & 0xff);
+    }
     cli_printcxxver();
 #if defined(BUILD_CPPFLAGS) && defined(BUILD_CFLAGS) && defined(BUILD_CXXFLAGS) && defined(BUILD_LDFLAGS) && defined(BUILD_CONFIGURE_FLAGS)
     printf("CPPFLAGS: %s\nCFLAGS: %s\nCXXFLAGS: %s\nLDFLAGS: %s\nConfigure: %s\n",
@@ -352,8 +367,9 @@ static void print_dbs(const char *dir)
                         const time_t t = cvd->stime;
                         printf("%s: version %u, sigs: %u, built on %s", dent->d_name, cvd->version, cvd->sigs, ctime(&t));
                         sigs += cvd->sigs;
-                        if (cvd->fl > flevel)
+                        if (cvd->fl > flevel) {
                             printf("%s: WARNING: This database requires f-level %u (current f-level: %u)\n", dent->d_name, cvd->fl, flevel);
+                        }
                         cl_cvdfree(cvd);
                     }
                 } else if (cli_strbcasestr(dbfile, ".cbc")) {
@@ -417,12 +433,14 @@ int main(int argc, char **argv)
             continue;
         }
         printf("\nConfig file: %s\n", cfgfile[i].name);
-        for (j = 0; j < strlen(cfgfile[i].name) + 13; j++)
+        for (j = 0; j < strlen(cfgfile[i].name) + 13; j++) {
             printf("-");
+        }
         printf("\n");
         toolopts = optparse(path, 0, NULL, 1, cfgfile[i].tool | OPT_DEPRECATED, 0, NULL);
-        if (!toolopts)
+        if (!toolopts) {
             continue;
+        }
         printopts(toolopts, optget(opts, "non-default")->enabled);
         if (cfgfile[i].tool == OPT_FRESHCLAM) {
             opt = optget(toolopts, "DatabaseDirectory");
@@ -439,8 +457,9 @@ int main(int argc, char **argv)
 
     printf("\nSoftware settings\n-----------------\n");
     printf("Version: %s\n", cl_retver());
-    if (strcmp(cl_retver(), get_version()))
+    if (strcmp(cl_retver(), get_version())) {
         printf("WARNING: Version mismatch: libclamav=%s, clamconf=%s\n", cl_retver(), get_version());
+    }
     cl_init(CL_INIT_DEFAULT);
     printf("Optional features supported: ");
 #ifdef USE_MPOOL
@@ -453,17 +472,20 @@ int main(int argc, char **argv)
     printf("FRESHCLAM_DNS_FIX ");
 #endif
 #ifndef _WIN32
-    if (get_fpu_endian() != FPU_ENDIAN_UNKNOWN)
+    if (get_fpu_endian() != FPU_ENDIAN_UNKNOWN) {
 #endif
         printf("AUTOIT_EA06 ");
+    }
 
 #ifdef HAVE_ICONV
     printf("ICONV ");
 #endif
-    if (have_rar)
+    if (have_rar) {
         printf("RAR ");
-    if (have_clamjit())
+    }
+    if (have_clamjit()) {
         printf("JIT");
+    }
     printf("\n");
 
     if (!strlen(dbdir)) {
@@ -479,8 +501,9 @@ int main(int argc, char **argv)
 
     printf("\nDatabase information\n--------------------\n");
     printf("Database directory: %s\n", dbdir);
-    if (strcmp(dbdir, clamd_dbdir))
+    if (strcmp(dbdir, clamd_dbdir)) {
         printf("WARNING: freshclam.conf and clamd.conf point to different database directories\n");
+    }
     print_dbs(dbdir);
 
     cli_detect_environment(&env);

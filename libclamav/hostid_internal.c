@@ -82,8 +82,9 @@ struct device *get_device_entry(struct device *devices, size_t *ndevices, const 
         if (!found) {
             p = realloc(devices, sizeof(struct device) * (*ndevices + 1));
             if (!(p)) {
-                for (i = 0; i < *ndevices; i++)
+                for (i = 0; i < *ndevices; i++) {
                     free(devices[i].name);
+                }
                 free(devices);
                 return NULL;
             }
@@ -94,14 +95,16 @@ struct device *get_device_entry(struct device *devices, size_t *ndevices, const 
         }
     } else {
         devices = calloc(1, sizeof(struct device));
-        if (!(devices))
+        if (!(devices)) {
             return NULL;
+        }
 
         *ndevices = 1;
     }
 
-    if (*ndevices && !(devices[*ndevices - 1].name) && name)
+    if (*ndevices && !(devices[*ndevices - 1].name) && name) {
         devices[*ndevices - 1].name = strdup(name);
+    }
 
     return devices;
 }
@@ -251,8 +254,9 @@ char *internal_get_host_id(void)
     void *ctx;
 
     devices = get_devices();
-    if (!(devices))
+    if (!(devices)) {
         return NULL;
+    }
 
     printable_md5 = calloc(1, 37);
     if (!(printable_md5)) {
@@ -262,8 +266,9 @@ char *internal_get_host_id(void)
 
     ctx = cl_hash_init("md5");
     if (!(ctx)) {
-        for (i = 0; devices[i].name != NULL; i++)
+        for (i = 0; devices[i].name != NULL; i++) {
             free(devices[i].name);
+        }
 
         free(devices);
         free(printable_md5);
@@ -271,13 +276,15 @@ char *internal_get_host_id(void)
         return NULL;
     }
 
-    for (i = 0; devices[i].name != NULL; i++)
+    for (i = 0; devices[i].name != NULL; i++) {
         cl_update_hash(ctx, devices[i].mac, sizeof(devices[i].mac));
+    }
 
     cl_finish_hash(ctx, raw_md5);
 
-    for (i = 0; devices[i].name != NULL; i++)
+    for (i = 0; devices[i].name != NULL; i++) {
         free(devices[i].name);
+    }
     free(devices);
 
     for (i = 0; i < sizeof(raw_md5); i++) {

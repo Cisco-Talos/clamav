@@ -80,11 +80,13 @@ static cl_error_t decompress_and_callback(cli_ctx *ctx, fmap_t *input, size_t at
     char *tmpname;
     unsigned char inbuf[FILEBUFF], outbuf[FILEBUFF];
 
-    if (!ctx || !input || !cb)
+    if (!ctx || !input || !cb) {
         return CL_ENULLARG;
+    }
 
-    if (len)
+    if (len) {
         remain = len;
+    }
 
     /* reserve tempfile for output and callback */
     if ((ret = cli_gentempfd(ctx->sub_tmpdir, &tmpname, &ofd)) != CL_SUCCESS) {
@@ -120,12 +122,14 @@ static cl_error_t decompress_and_callback(cli_ctx *ctx, fmap_t *input, size_t at
                 ret = CL_EUNPACK;
                 goto dc_end;
             }
-            if (!in)
+            if (!in) {
                 break;
+            }
 
             if (len) {
-                if (remain < in)
+                if (remain < in) {
                     in = remain;
+                }
                 remain -= in;
             }
             zstrm.avail_in = in;
@@ -134,8 +138,9 @@ static cl_error_t decompress_and_callback(cli_ctx *ctx, fmap_t *input, size_t at
         zret  = inflate(&zstrm, Z_SYNC_FLUSH);
         count = FILEBUFF - zstrm.avail_out;
         if (count) {
-            if ((ret = cli_checklimits("HWP", ctx, outsize + count, 0, 0)) != CL_SUCCESS)
+            if ((ret = cli_checklimits("HWP", ctx, outsize + count, 0, 0)) != CL_SUCCESS) {
                 break;
+            }
 
             if (cli_writen(ofd, outbuf, count) != count) {
                 cli_errmsg("%s: Can't write to file %s\n", parent, tmpname);
@@ -163,8 +168,9 @@ static cl_error_t decompress_and_callback(cli_ctx *ctx, fmap_t *input, size_t at
 
     /* check for limits exceeded or zlib failure */
     if (ret == CL_SUCCESS && (zret == Z_STREAM_END || zret == Z_OK)) {
-        if (len && remain > 0)
+        if (len && remain > 0) {
             cli_infomsg(ctx, "%s: Error decompressing stream. Not all requested input was converted\n", parent);
+        }
 
         /* scanning inflated stream */
         ret = cb(cbdata, ofd, tmpname, ctx);
@@ -178,13 +184,16 @@ dc_end:
     zret = inflateEnd(&zstrm);
     if (zret != Z_OK) {
         cli_errmsg("%s: Error closing zlib inflation stream\n", parent);
-        if (ret == CL_SUCCESS)
+        if (ret == CL_SUCCESS) {
             ret = CL_EUNPACK;
+        }
     }
     close(ofd);
-    if (!ctx->engine->keeptmp)
-        if (cli_unlink(tmpname))
+    if (!ctx->engine->keeptmp) {
+        if (cli_unlink(tmpname)) {
             ret = CL_EUNLINK;
+        }
+    }
     free(tmpname);
     return ret;
 }
@@ -254,10 +263,11 @@ static char *convert_hstr_to_utf8(const char *begin, size_t sz, const char *pare
             memcpy(tmpbuf, begin, sz);
 
             res = (char *)cl_base64_encode(tmpbuf, sz);
-            if (res)
+            if (res) {
                 rc = CL_VIRUS; /* used as placeholder */
-            else
+            } else {
                 rc = CL_EMEM;
+            }
 
             free(tmpbuf);
         } else {
@@ -283,10 +293,11 @@ cl_error_t cli_scanhwpole2(cli_ctx *ctx)
         return CL_EREAD;
     }
 
-    if (usize != asize)
+    if (usize != asize) {
         cli_warnmsg("HWPOLE2: Mismatched uncompressed prefix and size: %u != %u\n", usize, asize);
-    else
+    } else {
         cli_dbgmsg("HWPOLE2: Matched uncompressed prefix and size: %u == %u\n", usize, asize);
+    }
 
     return cli_magic_scan_nested_fmap_type(map, 4, 0, ctx,
                                            CL_TYPE_ANY, NULL, LAYER_ATTRIBUTES_NONE);
@@ -296,8 +307,9 @@ cl_error_t cli_scanhwpole2(cli_ctx *ctx)
 
 cl_error_t cli_hwp5header(cli_ctx *ctx, hwp5_header_t *hwp5)
 {
-    if (!ctx || !hwp5)
+    if (!ctx || !hwp5) {
         return CL_ENULLARG;
+    }
 
     if (SCAN_COLLECT_METADATA) {
         json_object *header, *flags;
@@ -365,8 +377,9 @@ static cl_error_t hwp5_cb(void *cbdata, int fd, const char *filepath, cli_ctx *c
 {
     UNUSEDPARAM(cbdata);
 
-    if (fd < 0 || !ctx)
+    if (fd < 0 || !ctx) {
         return CL_ENULLARG;
+    }
 
     return cli_magic_scan_desc(fd, filepath, ctx, NULL, LAYER_ATTRIBUTES_NONE);
 }
@@ -421,8 +434,9 @@ cl_error_t cli_scanhwp5_stream(cli_ctx *ctx, hwp5_header_t *hwp5, char *name, in
             if (name && !strncmp(name, "_5_hwpsummaryinformation", 24)) {
                 cli_dbgmsg("HWP5.x: Detected a '_5_hwpsummaryinformation' stream\n");
                 /* JSONOLE2 - what to do if something breaks? */
-                if (cli_ole2_summary_json(ctx, fd, 2) == CL_ETIMEOUT)
+                if (cli_ole2_summary_json(ctx, fd, 2) == CL_ETIMEOUT) {
                     return CL_ETIMEOUT;
+                }
             }
         }
     }
@@ -557,11 +571,13 @@ static inline cl_error_t parsehwp3_docinfo(cli_ctx *ctx, size_t offset, struct h
 
         /* Printed File Name */
         str = convert_hstr_to_utf8((char *)(hwp3_ptr + DI_PNAME), 40, "HWP3.x", &iret);
-        if (!str)
+        if (!str) {
             return CL_EMEM;
+        }
 
-        if (iret == CL_VIRUS)
+        if (iret == CL_VIRUS) {
             cli_jsonbool(header, "PrintName_base64", 1);
+        }
 
         hwp3_debug("HWP3.x: di_pname:   %s\n", str);
         cli_jsonstr(header, "PrintName", str);
@@ -569,11 +585,13 @@ static inline cl_error_t parsehwp3_docinfo(cli_ctx *ctx, size_t offset, struct h
 
         /* Annotation */
         str = convert_hstr_to_utf8((char *)(hwp3_ptr + DI_ANNOTE), 24, "HWP3.x", &iret);
-        if (!str)
+        if (!str) {
             return CL_EMEM;
+        }
 
-        if (iret == CL_VIRUS)
+        if (iret == CL_VIRUS) {
             cli_jsonbool(header, "Annotation_base64", 1);
+        }
 
         hwp3_debug("HWP3.x: di_annote:  %s\n", str);
         cli_jsonstr(header, "Annotation", str);
@@ -592,8 +610,9 @@ static inline cl_error_t parsehwp3_docsummary(cli_ctx *ctx, size_t offset)
 
     json_object *summary;
 
-    if (!SCAN_COLLECT_METADATA)
+    if (!SCAN_COLLECT_METADATA) {
         return CL_SUCCESS;
+    }
 
     if (!(hwp3_ptr = fmap_need_off_once(ctx->fmap, offset, HWP3_DOCSUMMARY_SIZE))) {
         cli_errmsg("HWP3.x: Failed to read fmap for hwp docinfo\n");
@@ -608,8 +627,9 @@ static inline cl_error_t parsehwp3_docsummary(cli_ctx *ctx, size_t offset)
 
     for (i = 0; i < NUM_DOCSUMMARY_FIELDS; i++) {
         str = convert_hstr_to_utf8((char *)(hwp3_ptr + hwp3_docsummary_fields[i].offset), 112, "HWP3.x", &iret);
-        if (!str)
+        if (!str) {
             return CL_EMEM;
+        }
 
         if (iret == CL_VIRUS) {
             char *b64;
@@ -628,8 +648,9 @@ static inline cl_error_t parsehwp3_docsummary(cli_ctx *ctx, size_t offset)
         hwp3_debug("HWP3.x: %s, %s\n", hwp3_docsummary_fields[i].name, str);
         ret = cli_jsonstr(summary, hwp3_docsummary_fields[i].name, str);
         free(str);
-        if (ret != CL_SUCCESS)
+        if (ret != CL_SUCCESS) {
             return ret;
+        }
     }
 
     return CL_SUCCESS;
@@ -683,24 +704,29 @@ static inline cl_error_t parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, u
     hwp3_debug("HWP3.x: recursion level: %u\n", level);
     hwp3_debug("HWP3.x: Paragraph[%u, %d] starts @ offset %zu\n", level, p, offset);
 
-    if (level >= ctx->engine->maxrechwp3)
+    if (level >= ctx->engine->maxrechwp3) {
         return CL_EMAXREC;
+    }
 
-    if (fmap_readn(map, &ppfs, offset + PI_PPFS, sizeof(ppfs)) != sizeof(ppfs))
+    if (fmap_readn(map, &ppfs, offset + PI_PPFS, sizeof(ppfs)) != sizeof(ppfs)) {
         return CL_EREAD;
+    }
 
-    if (fmap_readn(map, &nchars, offset + PI_NCHARS, sizeof(nchars)) != sizeof(nchars))
+    if (fmap_readn(map, &nchars, offset + PI_NCHARS, sizeof(nchars)) != sizeof(nchars)) {
         return CL_EREAD;
+    }
 
     nchars = le16_to_host(nchars);
 
-    if (fmap_readn(map, &nlines, offset + PI_NLINES, sizeof(nlines)) != sizeof(nlines))
+    if (fmap_readn(map, &nlines, offset + PI_NLINES, sizeof(nlines)) != sizeof(nlines)) {
         return CL_EREAD;
+    }
 
     nlines = le16_to_host(nlines);
 
-    if (fmap_readn(map, &ifsc, offset + PI_IFSC, sizeof(ifsc)) != sizeof(ifsc))
+    if (fmap_readn(map, &ifsc, offset + PI_IFSC, sizeof(ifsc)) != sizeof(ifsc)) {
         return CL_EREAD;
+    }
 
     hwp3_debug("HWP3.x: Paragraph[%u, %d]: ppfs   %u\n", level, p, ppfs);
     hwp3_debug("HWP3.x: Paragraph[%u, %d]: nchars %u\n", level, p, nchars);
@@ -735,12 +761,13 @@ static inline cl_error_t parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, u
         return CL_SUCCESS;
     }
 
-    if (ppfs)
+    if (ppfs) {
         offset += HWP3_PARAINFO_SIZE_S;
-    else
+    } else {
         offset += HWP3_PARAINFO_SIZE_L;
+    }
 
-        /* line information blocks */
+    /* line information blocks */
 #if HWP3_DEBUG
     for (i = 0; (i < nlines) && (offset < map->len); i++) {
         hwp3_debug("HWP3.x: Paragraph[%u, %d]: Line %d information starts @ offset %zu\n", level, p, i, offset);
@@ -777,14 +804,16 @@ static inline cl_error_t parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, u
     offset = new_offset;
 #endif
 
-    if (offset >= map->len)
+    if (offset >= map->len) {
         return CL_EFORMAT;
+    }
 
     if (ifsc) {
         for (i = 0, c = 0; i < nchars; i++) {
             /* examine byte for cs data type */
-            if (fmap_readn(map, &cfsb, offset, sizeof(cfsb)) != sizeof(cfsb))
+            if (fmap_readn(map, &cfsb, offset, sizeof(cfsb)) != sizeof(cfsb)) {
                 return CL_EREAD;
+            }
 
             offset += sizeof(cfsb);
 
@@ -829,8 +858,9 @@ static inline cl_error_t parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, u
     while ((!term) &&
            (offset < map->len)) {
 
-        if (fmap_readn(map, &content, offset, sizeof(content)) != sizeof(content))
+        if (fmap_readn(map, &content, offset, sizeof(content)) != sizeof(content)) {
             return CL_EREAD;
+        }
 
         content = le16_to_host(content);
 
@@ -861,8 +891,9 @@ static inline cl_error_t parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, u
                     /* id block verification (only on HWP3_VERIFY) */
                     HWP3_PSPECIAL_VERIFY(map, offset, 6, content, match);
 
-                    if (fmap_readn(map, &length, offset + 2, sizeof(length)) != sizeof(length))
+                    if (fmap_readn(map, &length, offset + 2, sizeof(length)) != sizeof(length)) {
                         return CL_EREAD;
+                    }
 
                     length     = le32_to_host(length);
                     new_offset = offset + (8 + length);
@@ -894,8 +925,9 @@ static inline cl_error_t parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, u
                     /* id block verification (only on HWP3_VERIFY) */
                     HWP3_PSPECIAL_VERIFY(map, offset, 6, content, match);
 
-                    if (fmap_readn(map, &length, offset + 2, sizeof(length)) != sizeof(length))
+                    if (fmap_readn(map, &length, offset + 2, sizeof(length)) != sizeof(length)) {
                         return CL_EREAD;
+                    }
 
                     length     = le32_to_host(length);
                     new_offset = offset + (8 + length);
@@ -1032,8 +1064,9 @@ static inline cl_error_t parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, u
 #endif
 
                     /* ncells is located at offset 80 of box information */
-                    if (fmap_readn(map, &ncells, offset + 80, sizeof(ncells)) != sizeof(ncells))
+                    if (fmap_readn(map, &ncells, offset + 80, sizeof(ncells)) != sizeof(ncells)) {
                         return CL_EREAD;
+                    }
 
                     ncells = le16_to_host(ncells);
                     offset += 84;
@@ -1054,17 +1087,23 @@ static inline cl_error_t parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, u
                     hwp3_debug("HWP3.x: Paragraph[%u, %d]: box cell paragraph list starts @ %zu\n", level, p, offset);
                     for (i = 0; i < ncells; i++) {
                         l = 0;
-                        while (!l && ((ret = parsehwp3_paragraph(ctx, map, sp++, level + 1, &offset, &l)) == CL_SUCCESS)) continue;
-                        if (ret != CL_SUCCESS)
+                        while (!l && ((ret = parsehwp3_paragraph(ctx, map, sp++, level + 1, &offset, &l)) == CL_SUCCESS)) {
+                            continue;
+                        }
+                        if (ret != CL_SUCCESS) {
                             return ret;
+                        }
                     }
 
                     /* box caption paragraph list */
                     hwp3_debug("HWP3.x: Paragraph[%u, %d]: box cell caption paragraph list starts @ %zu\n", level, p, offset);
                     l = 0;
-                    while (!l && ((ret = parsehwp3_paragraph(ctx, map, sp++, level + 1, &offset, &l)) == CL_SUCCESS)) continue;
-                    if (ret != CL_SUCCESS)
+                    while (!l && ((ret = parsehwp3_paragraph(ctx, map, sp++, level + 1, &offset, &l)) == CL_SUCCESS)) {
+                        continue;
+                    }
+                    if (ret != CL_SUCCESS) {
                         return ret;
+                    }
                     break;
                 }
                 case 11: /* drawing */
@@ -1083,8 +1122,9 @@ static inline cl_error_t parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, u
 
                     /* Drawing Info Block is 328+n bytes with n = size of image */
                     /* n is located at offset 0 of info block */
-                    if (fmap_readn(map, &size, offset, sizeof(size)) != sizeof(size))
+                    if (fmap_readn(map, &size, offset, sizeof(size)) != sizeof(size)) {
                         return CL_EREAD;
+                    }
 
                     hwp3_debug("HWP3.x: Paragraph[%u, %d]: drawing is %u additional bytes\n", level, p, size);
 
@@ -1099,9 +1139,12 @@ static inline cl_error_t parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, u
                     /* caption paragraph list */
                     hwp3_debug("HWP3.x: Paragraph[%u, %d]: drawing caption paragraph list starts @ %zu\n", level, p, offset);
                     l = 0;
-                    while (!l && ((ret = parsehwp3_paragraph(ctx, map, sp++, level + 1, &offset, &l)) == CL_SUCCESS)) continue;
-                    if (ret != CL_SUCCESS)
+                    while (!l && ((ret = parsehwp3_paragraph(ctx, map, sp++, level + 1, &offset, &l)) == CL_SUCCESS)) {
+                        continue;
+                    }
+                    if (ret != CL_SUCCESS) {
                         return ret;
+                    }
                     break;
                 }
                 case 13: /* end-of-paragraph marker - treated identically as character */
@@ -1144,9 +1187,12 @@ static inline cl_error_t parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, u
                     /* hidden description paragraph list */
                     hwp3_debug("HWP3.x: Paragraph[%u, %d]: hidden description paragraph list starts @ %zu\n", level, p, offset);
                     l = 0;
-                    while (!l && ((ret = parsehwp3_paragraph(ctx, map, sp++, level + 1, &offset, &l)) == CL_SUCCESS)) continue;
-                    if (ret != CL_SUCCESS)
+                    while (!l && ((ret = parsehwp3_paragraph(ctx, map, sp++, level + 1, &offset, &l)) == CL_SUCCESS)) {
+                        continue;
+                    }
+                    if (ret != CL_SUCCESS) {
                         return ret;
+                    }
                     break;
                 }
                 case 16: /* header/footer */
@@ -1186,9 +1232,12 @@ static inline cl_error_t parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, u
                     /* content paragraph list */
                     hwp3_debug("HWP3.x: Paragraph[%u, %d]: header/footer paragraph list starts @ %zu\n", level, p, offset);
                     l = 0;
-                    while (!l && ((ret = parsehwp3_paragraph(ctx, map, sp++, level + 1, &offset, &l)) == CL_SUCCESS)) continue;
-                    if (ret != CL_SUCCESS)
+                    while (!l && ((ret = parsehwp3_paragraph(ctx, map, sp++, level + 1, &offset, &l)) == CL_SUCCESS)) {
+                        continue;
+                    }
+                    if (ret != CL_SUCCESS) {
                         return ret;
+                    }
                     break;
                 }
                 case 17: /* footnote/endnote */
@@ -1214,9 +1263,12 @@ static inline cl_error_t parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, u
                     /* content paragraph list */
                     hwp3_debug("HWP3.x: Paragraph[%u, %d]: footnote/endnote paragraph list starts @ %zu\n", level, p, offset);
                     l = 0;
-                    while (!l && ((ret = parsehwp3_paragraph(ctx, map, sp++, level + 1, &offset, &l)) == CL_SUCCESS)) continue;
-                    if (ret != CL_SUCCESS)
+                    while (!l && ((ret = parsehwp3_paragraph(ctx, map, sp++, level + 1, &offset, &l)) == CL_SUCCESS)) {
+                        continue;
+                    }
+                    if (ret != CL_SUCCESS) {
                         return ret;
+                    }
                     break;
                 }
                 case 18: /* paste code number */
@@ -1438,8 +1490,9 @@ static inline cl_error_t parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, u
                     /* id block verification (only on HWP3_VERIFY) */
                     HWP3_PSPECIAL_VERIFY(map, offset, 6, content, match);
 
-                    if (fmap_readn(map, &length, offset + 2, sizeof(length)) != sizeof(length))
+                    if (fmap_readn(map, &length, offset + 2, sizeof(length)) != sizeof(length)) {
                         return CL_EREAD;
+                    }
 
                     length     = le32_to_host(length);
                     new_offset = offset + (8 + length);
@@ -1557,8 +1610,9 @@ static inline cl_error_t parsehwp3_infoblk_1(cli_ctx *ctx, fmap_t *dmap, size_t 
     if (infoid == 5) {
         hwp3_debug("HWP3.x: Information Block[%llu]: TYPE: Booking Information\n", infoloc);
 
-        if (SCAN_COLLECT_METADATA)
+        if (SCAN_COLLECT_METADATA) {
             cli_jsonstr(entry, "Type", "Booking Information");
+        }
 
         return CL_SUCCESS;
     }
@@ -1589,10 +1643,13 @@ static inline cl_error_t parsehwp3_infoblk_1(cli_ctx *ctx, fmap_t *dmap, size_t 
             if (infolen == 0) {
                 hwp3_debug("HWP3.x: Information Block[%llu]: TYPE: Terminating Entry\n", infoloc);
 
-                if (SCAN_COLLECT_METADATA)
+                if (SCAN_COLLECT_METADATA) {
                     cli_jsonstr(entry, "Type", "Terminating Entry");
+                }
 
-                if (last) *last = 1;
+                if (last) {
+                    *last = 1;
+                }
                 return CL_SUCCESS;
             } else {
                 cli_errmsg("HWP3.x: Information Block[%llu]: TYPE: Invalid Terminating Entry\n", infoloc);
@@ -1601,8 +1658,9 @@ static inline cl_error_t parsehwp3_infoblk_1(cli_ctx *ctx, fmap_t *dmap, size_t 
         case 1: /* Image Data */
             hwp3_debug("HWP3.x: Information Block[%llu]: TYPE: Image Data\n", infoloc);
 
-            if (SCAN_COLLECT_METADATA)
+            if (SCAN_COLLECT_METADATA) {
                 cli_jsonstr(entry, "Type", "Image Data");
+            }
 
 #if HWP3_DEBUG /* additional fields can be added */
             memset(field, 0, HWP3_FIELD_LENGTH);
@@ -1620,19 +1678,22 @@ static inline cl_error_t parsehwp3_infoblk_1(cli_ctx *ctx, fmap_t *dmap, size_t 
             hwp3_debug("HWP3.x: Information Block[%llu]: FORM: %s\n", infoloc, field);
 #endif
             /* 32 bytes for extra data fields */
-            if (infolen > 0)
+            if (infolen > 0) {
                 ret = cli_magic_scan_nested_fmap_type(map, *offset + 32, infolen - 32, ctx,
                                                       CL_TYPE_ANY, NULL, LAYER_ATTRIBUTES_NONE);
+            }
             break;
         case 2: /* OLE2 Data */
             hwp3_debug("HWP3.x: Information Block[%llu]: TYPE: OLE2 Data\n", infoloc);
 
-            if (SCAN_COLLECT_METADATA)
+            if (SCAN_COLLECT_METADATA) {
                 cli_jsonstr(entry, "Type", "OLE2 Data");
+            }
 
-            if (infolen > 0)
+            if (infolen > 0) {
                 ret = cli_magic_scan_nested_fmap_type(map, *offset, infolen, ctx,
                                                       CL_TYPE_ANY, NULL, LAYER_ATTRIBUTES_NONE);
+            }
             break;
         case 3: /* Hypertext/Hyperlink Information */
             hwp3_debug("HWP3.x: Information Block[%llu]: TYPE: Hypertext/Hyperlink Information\n", infoloc);
@@ -1666,8 +1727,9 @@ static inline cl_error_t parsehwp3_infoblk_1(cli_ctx *ctx, fmap_t *dmap, size_t 
         case 4: /* Presentation Information */
             hwp3_debug("HWP3.x: Information Block[%llu]: TYPE: Presentation Information\n", infoloc);
 
-            if (SCAN_COLLECT_METADATA)
+            if (SCAN_COLLECT_METADATA) {
                 cli_jsonstr(entry, "Type", "Presentation Information");
+            }
 
             /* contains nothing of interest to scan */
             break;
@@ -1675,8 +1737,9 @@ static inline cl_error_t parsehwp3_infoblk_1(cli_ctx *ctx, fmap_t *dmap, size_t 
             /* should never run this as it is short-circuited above */
             hwp3_debug("HWP3.x: Information Block[%llu]: TYPE: Booking Information\n", infoloc);
 
-            if (SCAN_COLLECT_METADATA)
+            if (SCAN_COLLECT_METADATA) {
                 cli_jsonstr(entry, "Type", "Booking Information");
+            }
 
             break;
         case 6: /* Background Image Data */
@@ -1696,31 +1759,35 @@ static inline cl_error_t parsehwp3_infoblk_1(cli_ctx *ctx, fmap_t *dmap, size_t 
             hwp3_debug("HWP3.x: Information Block[%llu]: NAME: %s\n", infoloc, field);
 #endif
             /* 324 bytes for extra data fields */
-            if (infolen > 0)
+            if (infolen > 0) {
                 ret = cli_magic_scan_nested_fmap_type(map, *offset + 324, infolen - 324, ctx,
                                                       CL_TYPE_ANY, NULL, LAYER_ATTRIBUTES_NONE);
+            }
             break;
         case 0x100: /* Table Extension */
             hwp3_debug("HWP3.x: Information Block[%llu]: TYPE: Table Extension\n", infoloc);
 
-            if (SCAN_COLLECT_METADATA)
+            if (SCAN_COLLECT_METADATA) {
                 cli_jsonstr(entry, "Type", "Table Extension");
+            }
 
             /* contains nothing of interest to scan */
             break;
         case 0x101: /* Press Frame Information Field Name */
             hwp3_debug("HWP3.x: Information Block[%llu]: TYPE: Press Frame Information Field Name\n", infoloc);
 
-            if (SCAN_COLLECT_METADATA)
+            if (SCAN_COLLECT_METADATA) {
                 cli_jsonstr(entry, "Type", "Press Frame Information Field Name");
+            }
 
             /* contains nothing of interest to scan */
             break;
         default:
             cli_warnmsg("HWP3.x: Information Block[%llu]: TYPE: UNKNOWN(%u)\n", infoloc, infoid);
-            if (infolen > 0)
+            if (infolen > 0) {
                 ret = cli_magic_scan_nested_fmap_type(map, *offset, infolen, ctx,
                                                       CL_TYPE_ANY, NULL, LAYER_ATTRIBUTES_NONE);
+            }
     }
 
     *offset += infolen;
@@ -1766,28 +1833,32 @@ static cl_error_t hwp3_cb(void *cbdata, int fd, const char *filepath, cli_ctx *c
     }
 
     /* Fonts - 7 entries of 2 + (n x 40) bytes where n is the first 2 bytes of the entry */
-    if (SCAN_COLLECT_METADATA)
+    if (SCAN_COLLECT_METADATA) {
         fonts = cli_jsonarray(ctx->wrkproperty, "FontCounts");
+    }
 
     for (i = 0; i < 7; i++) {
         uint16_t nfonts;
 
         if (fmap_readn(map, &nfonts, offset, sizeof(nfonts)) != sizeof(nfonts)) {
-            if (dmap)
+            if (dmap) {
                 funmap(dmap);
+            }
             return CL_EREAD;
         }
         nfonts = le16_to_host(nfonts);
 
-        if (SCAN_COLLECT_METADATA)
+        if (SCAN_COLLECT_METADATA) {
             cli_jsonint(fonts, NULL, nfonts);
+        }
 
         hwp3_debug("HWP3.x: Font Entry %d with %u entries @ offset %zu\n", i + 1, nfonts, offset);
         new_offset = offset + (2 + nfonts * 40);
         if ((new_offset <= offset) || (new_offset >= map->len)) {
             cli_errmsg("HWP3.x: Font Entry: number of fonts is too high, invalid. %u\n", nfonts);
-            if (dmap)
+            if (dmap) {
                 funmap(dmap);
+            }
             return CL_EPARSE;
         }
         offset = new_offset;
@@ -1795,21 +1866,24 @@ static cl_error_t hwp3_cb(void *cbdata, int fd, const char *filepath, cli_ctx *c
 
     /* Styles - 2 + (n x 238) bytes where n is the first 2 bytes of the section */
     if (fmap_readn(map, &nstyles, offset, sizeof(nstyles)) != sizeof(nstyles)) {
-        if (dmap)
+        if (dmap) {
             funmap(dmap);
+        }
         return CL_EREAD;
     }
     nstyles = le16_to_host(nstyles);
 
-    if (SCAN_COLLECT_METADATA)
+    if (SCAN_COLLECT_METADATA) {
         cli_jsonint(ctx->wrkproperty, "StyleCount", nstyles);
+    }
 
     hwp3_debug("HWP3.x: %u Styles @ offset %zu\n", nstyles, offset);
     new_offset = offset + (2 + nstyles * 238);
     if ((new_offset <= offset) || (new_offset >= map->len)) {
         cli_errmsg("HWP3.x: Font Entry: number of font styles is too high, invalid. %u\n", nstyles);
-        if (dmap)
+        if (dmap) {
             funmap(dmap);
+        }
         return CL_EPARSE;
     }
     offset += (2 + nstyles * 238);
@@ -1817,20 +1891,26 @@ static cl_error_t hwp3_cb(void *cbdata, int fd, const char *filepath, cli_ctx *c
     last = 0;
     /* Paragraphs - variable */
     /* Paragraphs - are terminated with 0x0d00[13(CR) as hchar], empty paragraph marks end of section and do NOT end with 0x0d00 */
-    while (!last && ((ret = parsehwp3_paragraph(ctx, map, p++, 0, &offset, &last)) == CL_SUCCESS)) continue;
+    while (!last && ((ret = parsehwp3_paragraph(ctx, map, p++, 0, &offset, &last)) == CL_SUCCESS)) {
+        continue;
+    }
     /* return is never a virus */
     if (ret != CL_SUCCESS) {
-        if (dmap)
+        if (dmap) {
             funmap(dmap);
+        }
         return ret;
     }
 
-    if (SCAN_COLLECT_METADATA)
+    if (SCAN_COLLECT_METADATA) {
         cli_jsonint(ctx->wrkproperty, "ParagraphCount", p);
+    }
 
     last = 0;
     /* 'additional information block #1's - attachments and media */
-    while (!last && ((ret = parsehwp3_infoblk_1(ctx, map, &offset, &last)) == CL_SUCCESS)) continue;
+    while (!last && ((ret = parsehwp3_infoblk_1(ctx, map, &offset, &last)) == CL_SUCCESS)) {
+        continue;
+    }
 
     /* scan the uncompressed stream - both compressed and uncompressed cases [ALLMATCH] */
     if (ret == CL_SUCCESS) {
@@ -1839,8 +1919,9 @@ static cl_error_t hwp3_cb(void *cbdata, int fd, const char *filepath, cli_ctx *c
         ret = cli_magic_scan_nested_fmap_type(map, start, dlen, ctx, CL_TYPE_ANY, NULL, LAYER_ATTRIBUTES_NONE);
     }
 
-    if (dmap)
+    if (dmap) {
         funmap(dmap);
+    }
     return ret;
 }
 
@@ -1858,13 +1939,15 @@ cl_error_t cli_scanhwp3(cli_ctx *ctx)
     */
     offset += HWP3_IDENTITY_INFO_SIZE;
 
-    if ((ret = parsehwp3_docinfo(ctx, offset, &docinfo)) != CL_SUCCESS)
+    if ((ret = parsehwp3_docinfo(ctx, offset, &docinfo)) != CL_SUCCESS) {
         return ret;
+    }
 
     offset += HWP3_DOCINFO_SIZE;
 
-    if ((ret = parsehwp3_docsummary(ctx, offset)) != CL_SUCCESS)
+    if ((ret = parsehwp3_docsummary(ctx, offset)) != CL_SUCCESS) {
         return ret;
+    }
 
     offset += HWP3_DOCSUMMARY_SIZE;
 
@@ -1884,13 +1967,15 @@ cl_error_t cli_scanhwp3(cli_ctx *ctx)
         offset = new_offset;
     }
 
-    if (docinfo.di_compressed)
+    if (docinfo.di_compressed) {
         ret = decompress_and_callback(ctx, ctx->fmap, offset, 0, "HWP3.x", hwp3_cb, NULL);
-    else
+    } else {
         ret = hwp3_cb(&offset, 0, ctx->sub_filepath, ctx);
+    }
 
-    if (ret != CL_SUCCESS)
+    if (ret != CL_SUCCESS) {
         return ret;
+    }
 
     /* OPTIONAL TODO: HANDLE OPTIONAL ADDITIONAL INFORMATION BLOCK #2's FOR PRECLASS*/
 
@@ -1938,8 +2023,9 @@ static cl_error_t hwpml_scan_cb(void *cbdata, int fd, const char *filepath, cli_
 {
     UNUSEDPARAM(cbdata);
 
-    if (fd < 0 || !ctx)
+    if (fd < 0 || !ctx) {
         return CL_ENULLARG;
+    }
 
     return cli_magic_scan_desc(fd, filepath, ctx, NULL, LAYER_ATTRIBUTES_NONE);
 }
@@ -1956,19 +2042,21 @@ static cl_error_t hwpml_binary_cb(int fd, const char *filepath, cli_ctx *ctx, in
     /* check attributes for compression and encoding */
     for (i = 0; i < num_attribs; i++) {
         if (!strcmp(attribs[i].key, "Compress")) {
-            if (!strcmp(attribs[i].value, "true"))
+            if (!strcmp(attribs[i].value, "true")) {
                 com = 1;
-            else if (!strcmp(attribs[i].value, "false"))
+            } else if (!strcmp(attribs[i].value, "false")) {
                 com = 0;
-            else
+            } else {
                 com = -1;
+            }
         }
 
         if (!strcmp(attribs[i].key, "Encoding")) {
-            if (!strcmp(attribs[i].value, "Base64"))
+            if (!strcmp(attribs[i].value, "Base64")) {
                 enc = 1;
-            else
+            } else {
                 enc = -1;
+            }
         }
     }
 
@@ -2065,8 +2153,9 @@ static cl_error_t hwpml_binary_cb(int fd, const char *filepath, cli_ctx *ctx, in
 hwpml_end:
     if (df) {
         close(df);
-        if (!(ctx->engine->keeptmp))
+        if (!(ctx->engine->keeptmp)) {
             cli_unlink(tempfile);
+        }
         free(tempfile);
     }
     return ret;
@@ -2082,8 +2171,9 @@ cl_error_t cli_scanhwpml(cli_ctx *ctx)
 
     cli_dbgmsg("in cli_scanhwpml()\n");
 
-    if (!ctx)
+    if (!ctx) {
         return CL_ENULLARG;
+    }
 
     memset(&cbdata, 0, sizeof(cbdata));
     cbdata.map = ctx->fmap;

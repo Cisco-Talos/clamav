@@ -64,11 +64,11 @@ cl_error_t cli_parsetiff(cli_ctx *ctx)
     }
     offset += 4;
 
-    if (!memcmp(magic, "\x4d\x4d\x00\x2a", 4))
+    if (!memcmp(magic, "\x4d\x4d\x00\x2a", 4)) {
         big_endian = 1;
-    else if (!memcmp(magic, "\x49\x49\x2a\x00", 4))
+    } else if (!memcmp(magic, "\x49\x49\x2a\x00", 4)) {
         big_endian = 0;
-    else {
+    } else {
         status = CL_CLEAN; /* Not a TIFF file */
         goto done;
     }

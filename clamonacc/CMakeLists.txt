@@ -45,6 +45,12 @@ target_include_directories( clamonacc
 
 set_target_properties( clamonacc PROPERTIES COMPILE_FLAGS "${WARNCFLAGS}" )
 
+if(CLANG_TIDY)
+    set_target_properties( clamonacc PROPERTIES
+        C_CLANG_TIDY "${CLANG_TIDY_PROPERTY}"
+        C_CLANG_TIDY_EXPORT_FIXES_DIR "${CMAKE_BINARY_DIR}/clang-tidy-fixes" )
+endif()
+
 target_link_libraries( clamonacc
     PRIVATE
         ClamAV::libclamav

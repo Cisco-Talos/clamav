@@ -65,8 +65,9 @@ static int doubledl(char **scur, uint8_t *mydlptr, char *buffer, uint32_t buffer
 
     mydl *= 2;
     if (!(olddl & 0x7f)) {
-        if (*scur < buffer || *scur >= buffer + buffersize - 1)
+        if (*scur < buffer || *scur >= buffer + buffersize - 1) {
             return -1;
+        }
         olddl = **scur;
         mydl  = olddl * 2 + 1;
         *scur = *scur + 1;
@@ -95,8 +96,9 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, uint32_t bufsz, struct cli
      * See below...
      */
 
-    if (version == 2)
+    if (version == 2) {
         packed = adjbuf + sections[sectcount - 1].rva + 0x1b8;
+    }
     if (version == 1) {
         packed = adjbuf + sections[sectcount - 1].rva + 0x178;
         grown  = 0x323; /* My name is Harry potter */
@@ -110,8 +112,9 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, uint32_t bufsz, struct cli
         unsigned int backsize;
 
         if (!CLI_ISCONTAINED(buf, bufsz, packed, 4)) {
-            if (usects)
+            if (usects) {
                 free(usects);
+            }
             return 1;
         }
         srva = cli_readint32(packed);
@@ -120,8 +123,9 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, uint32_t bufsz, struct cli
             /* WERE DONE !!! :D */
             int t, upd = 1;
 
-            if (j <= 0) /* Some non petite compressed files will get here */
+            if (j <= 0) { /* Some non petite compressed files will get here */
                 return 1;
+            }
 
             /* Select * from sections order by rva asc; */
             while (upd) {
@@ -129,8 +133,9 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, uint32_t bufsz, struct cli
                 for (t = 0; t < j - 1; t++) {
                     uint32_t trva, trsz, tvsz;
 
-                    if (usects[t].rva <= usects[t + 1].rva)
+                    if (usects[t].rva <= usects[t + 1].rva) {
                         continue;
+                    }
                     trva              = usects[t].rva;
                     trsz              = usects[t].rsz;
                     tvsz              = usects[t].vsz;
@@ -146,8 +151,9 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, uint32_t bufsz, struct cli
 
             /* Computes virtualsize... we try to guess, actually :O */
             for (t = 0; t < j - 1; t++) {
-                if (usects[t].vsz != usects[t + 1].rva - usects[t].rva)
+                if (usects[t].vsz != usects[t + 1].rva - usects[t].rva) {
                     usects[t].vsz = usects[t + 1].rva - usects[t].rva;
+                }
             }
 
             /*
@@ -192,16 +198,19 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, uint32_t bufsz, struct cli
                             } else {
                                 api = 0xbff01337; /* KERNEL32!leet */
                             }
-                            if (sections[sectcount - 1].rva + Imagebase < api)
+                            if (sections[sectcount - 1].rva + Imagebase < api) {
                                 enc_ep--;
-                            if (api < virtaddr)
+                            }
+                            if (api < virtaddr) {
                                 enc_ep--;
+                            }
                             tmpep  = (enc_ep & 0xfffffff8) >> 3 & 0x1fffffff;
                             enc_ep = (enc_ep & 7) << 29 | tmpep;
                         }
                     }
-                } else
+                } else {
                     workdone = 1;
+                }
                 enc_ep = pep + 5 + enc_ep;
                 if (workdone == 1) {
                     cli_dbgmsg("Petite: Old EP: %x\n", enc_ep);
@@ -227,8 +236,9 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, uint32_t bufsz, struct cli
 
             /* Showtime!!! */
             cli_dbgmsg("Petite: Sections dump:\n");
-            for (t = 0; t < j; t++)
+            for (t = 0; t < j; t++) {
                 cli_dbgmsg("Petite: .SECT%d RVA:%x VSize:%x ROffset: %x, RSize:%x\n", t, usects[t].rva, usects[t].vsz, usects[t].raw, usects[t].rsz);
+            }
             if (!cli_rebuildpe(buf, usects, j, Imagebase, enc_ep, ResRva, ResSize, desc)) {
                 cli_dbgmsg("Petite: Rebuilding failed\n");
                 free(usects);
@@ -249,16 +259,18 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, uint32_t bufsz, struct cli
              */
 
             if (!CLI_ISCONTAINED(buf, bufsz, packed + 4, 8)) {
-                if (usects)
+                if (usects) {
                     free(usects);
+                }
                 return 1;
             }
             /* Save the end of current packed section for later use */
             bottom = (uint32_t)cli_readint32(packed + 8);
             if (bottom > UINT32_MAX - 4) {
                 /* bottom is too large, would cause integer overflow */
-                if (usects)
+                if (usects) {
                     free(usects);
+                }
                 return 1;
             }
             bottom += 4;
@@ -267,8 +279,9 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, uint32_t bufsz, struct cli
             ddst = adjbuf + cli_readint32(packed + 8) - (size - 1) * 4;
 
             if (!CLI_ISCONTAINED(buf, bufsz, ssrc, size * 4) || !CLI_ISCONTAINED(buf, bufsz, ddst, size * 4)) {
-                if (usects)
+                if (usects) {
                     free(usects);
+                }
                 return 1;
             }
 
@@ -284,8 +297,9 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, uint32_t bufsz, struct cli
             /* Unpack each original section in turn */
 
             if (!CLI_ISCONTAINED(buf, bufsz, packed + 4, 8)) {
-                if (usects)
+                if (usects) {
                     free(usects);
+                }
                 return 1;
             }
 
@@ -300,8 +314,9 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, uint32_t bufsz, struct cli
             }
             /* Alloc 1 more struct */
             if (!(tmpsct = cli_max_realloc(usects, sizeof(struct cli_exe_section) * (j + 1)))) {
-                if (usects)
+                if (usects) {
                     free(usects);
+                }
                 return 1;
             }
 
@@ -309,10 +324,11 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, uint32_t bufsz, struct cli
             /* Save section spex for later rebuilding */
             usects[j].rva = thisrva;
             usects[j].rsz = size;
-            if ((int)(bottom - thisrva) > 0)
+            if ((int)(bottom - thisrva) > 0) {
                 usects[j].vsz = bottom - thisrva;
-            else
+            } else {
                 usects[j].vsz = size;
+            }
             usects[j].raw = 0; /* Cheaper than memset */
 
             if (!size) { /* That's a ghost section! reloc any1? :P */
@@ -328,8 +344,9 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, uint32_t bufsz, struct cli
              */
 
             for (q = 0; q < sectcount; q++) {
-                if (!CLI_ISCONTAINED(sections[q].rva, sections[q].vsz, usects[j].rva, usects[j].vsz))
+                if (!CLI_ISCONTAINED(sections[q].rva, sections[q].vsz, usects[j].rva, usects[j].vsz)) {
                     continue;
+                }
                 if (!check4resources) {
                     usects[j].rva = sections[q].rva;
                     usects[j].rsz = thisrva - sections[q].rva + size;
@@ -407,8 +424,9 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, uint32_t bufsz, struct cli
                             free(usects);
                             return 1;
                         }
-                        if (!oob)
+                        if (!oob) {
                             break;
+                        }
                     }
                     backbytes -= 3;
                     if (backbytes >= 0) {
@@ -456,8 +474,9 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, uint32_t bufsz, struct cli
                                 free(usects);
                                 return 1;
                             }
-                            if (!oob)
+                            if (!oob) {
                                 break;
+                            }
                         }
                         backsize += 2;
                     }

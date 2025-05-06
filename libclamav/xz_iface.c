@@ -50,17 +50,20 @@ static ISzAlloc g_Alloc = {__xz_wrap_alloc, __xz_wrap_free};
 
 int cli_XzInit(struct CLI_XZ *XZ)
 {
-    if (SZ_OK != XzUnpacker_Create(&XZ->state, &g_Alloc))
+    if (SZ_OK != XzUnpacker_Create(&XZ->state, &g_Alloc)) {
         return XZ_RESULT_DATA_ERROR;
-    if (g_Crc64Table[1] == 0)
+    }
+    if (g_Crc64Table[1] == 0) {
         Crc64GenerateTable();
+    }
     return XZ_RESULT_OK;
 }
 
 void cli_XzShutdown(struct CLI_XZ *XZ)
 {
-    if (!XZ)
+    if (!XZ) {
         return;
+    }
     XzUnpacker_Free(&XZ->state);
 }
 
@@ -79,10 +82,12 @@ int cli_XzDecode(struct CLI_XZ *XZ)
     XZ->next_in += inbytes;
     XZ->avail_out -= outbytes;
     XZ->next_out += outbytes;
-    if (XZ->status == CODER_STATUS_FINISHED_WITH_MARK || XzUnpacker_IsStreamWasFinished(&XZ->state))
+    if (XZ->status == CODER_STATUS_FINISHED_WITH_MARK || XzUnpacker_IsStreamWasFinished(&XZ->state)) {
         return XZ_STREAM_END;
-    if (XZ->status == CODER_STATUS_NOT_FINISHED && XZ->avail_out == 0)
+    }
+    if (XZ->status == CODER_STATUS_NOT_FINISHED && XZ->avail_out == 0) {
         return XZ_RESULT_OK;
+    }
     if (((inbytes == 0) && (outbytes == 0)) || res != SZ_OK) {
         if (res == SZ_ERROR_MEM) {
             return XZ_DIC_HEURISTIC;

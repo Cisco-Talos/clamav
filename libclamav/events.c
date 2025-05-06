@@ -51,8 +51,9 @@ struct cli_events {
 cli_events_t *cli_events_new(unsigned max_event)
 {
     struct cli_events *ev = calloc(1, sizeof(*ev));
-    if (!ev)
+    if (!ev) {
         return NULL;
+    }
     ev->max    = max_event;
     ev->events = calloc(max_event, sizeof(*ev->events));
     if (!ev->events) {
@@ -76,13 +77,15 @@ void cli_events_free(cli_events_t *ev)
 
 void cli_event_error_oom(cli_events_t *ctx, uint32_t amount)
 {
-    if (!ctx)
+    if (!ctx) {
         return;
+    }
     ctx->oom_total += amount;
     ctx->oom_count++;
     /* amount == 0 means error already reported, just increment count */
-    if (amount)
+    if (amount) {
         cli_errmsg("events: out of memory allocating %u bytes\n", amount);
+    }
 }
 
 int cli_event_define(cli_events_t *ctx, unsigned id,
@@ -111,15 +114,17 @@ int cli_event_define(cli_events_t *ctx, unsigned id,
     ev->name     = name;
     ev->type     = type;
     ev->multiple = multiple;
-    if (type == ev_data_fast)
+    if (type == ev_data_fast) {
         ev->u.v_int = CRC_INIT_VAL;
+    }
     return 0;
 }
 
 static inline struct cli_event *get_event(cli_events_t *ctx, unsigned id)
 {
-    if (!ctx)
+    if (!ctx) {
         return NULL;
+    }
     if (id >= ctx->max) {
         cli_event_error_str(ctx, "event id out of range");
         return NULL;
@@ -145,16 +150,18 @@ static inline void ev_chain(cli_events_t *ctx, struct cli_event *ev, union ev_va
 const char *cli_event_get_name(cli_events_t *ctx, unsigned id)
 {
     struct cli_event *ev = get_event(ctx, id);
-    if (!ev)
+    if (!ev) {
         return NULL;
+    }
     return ev->name;
 }
 
 void cli_event_int(cli_events_t *ctx, unsigned id, uint64_t arg)
 {
     struct cli_event *ev = get_event(ctx, id);
-    if (!ev)
+    if (!ev) {
         return;
+    }
     if (ev->type != ev_int) {
         cli_event_error_str(ctx, "cli_event_int must be called with ev_int type");
         return;
@@ -184,8 +191,9 @@ void cli_event_time_start(cli_events_t *ctx, unsigned id)
 {
     struct timeval tv;
     struct cli_event *ev = get_event(ctx, id);
-    if (!ev)
+    if (!ev) {
         return;
+    }
     if (ev->type != ev_time) {
         cli_event_error_str(ctx, "cli_event_time* must be called with ev_time type");
         return;
@@ -200,8 +208,9 @@ void cli_event_time_nested_start(cli_events_t *ctx, unsigned id, unsigned nested
     struct timeval tv;
     struct cli_event *ev       = get_event(ctx, id);
     struct cli_event *evnested = get_event(ctx, nestedid);
-    if (!ev || !evnested)
+    if (!ev || !evnested) {
         return;
+    }
     if (ev->type != ev_time || evnested->type != ev_time) {
         cli_event_error_str(ctx, "cli_event_time* must be called with ev_time type");
         return;
@@ -216,8 +225,9 @@ void cli_event_time_stop(cli_events_t *ctx, unsigned id)
 {
     struct timeval tv;
     struct cli_event *ev = get_event(ctx, id);
-    if (!ev)
+    if (!ev) {
         return;
+    }
     if (ev->type != ev_time) {
         cli_event_error_str(ctx, "cli_event_time* must be called with ev_time type");
         return;
@@ -231,8 +241,9 @@ void cli_event_time_nested_stop(cli_events_t *ctx, unsigned id, unsigned nestedi
     struct timeval tv;
     struct cli_event *ev       = get_event(ctx, id);
     struct cli_event *evnested = get_event(ctx, nestedid);
-    if (!ev || !evnested)
+    if (!ev || !evnested) {
         return;
+    }
     if (ev->type != ev_time || evnested->type != ev_time) {
         cli_event_error_str(ctx, "cli_event_time* must be called with ev_time type");
         return;
@@ -244,8 +255,9 @@ void cli_event_time_nested_stop(cli_events_t *ctx, unsigned id, unsigned nestedi
 
 static void event_string(cli_events_t *ctx, struct cli_event *ev, const char *str)
 {
-    if (!str)
+    if (!str) {
         str = "";
+    }
     switch (ev->multiple) {
         case multiple_last:
             ev->u.v_string = str;
@@ -265,8 +277,9 @@ static void event_string(cli_events_t *ctx, struct cli_event *ev, const char *st
 
 void cli_event_error_str(cli_events_t *ctx, const char *str)
 {
-    if (!ctx)
+    if (!ctx) {
         return;
+    }
     cli_warnmsg("events: %s\n", str);
     event_string(ctx, &ctx->errors, str);
 }
@@ -274,8 +287,9 @@ void cli_event_error_str(cli_events_t *ctx, const char *str)
 void cli_event_string(cli_events_t *ctx, unsigned id, const char *str)
 {
     struct cli_event *ev = get_event(ctx, id);
-    if (!ev)
+    if (!ev) {
         return;
+    }
     if (ev->type != ev_string) {
         cli_event_error_str(ctx, "cli_event_string must be called with ev_string type");
         return;
@@ -286,8 +300,9 @@ void cli_event_string(cli_events_t *ctx, unsigned id, const char *str)
 void cli_event_data(cli_events_t *ctx, unsigned id, const void *data, uint32_t len)
 {
     struct cli_event *ev = get_event(ctx, id);
-    if (!ev)
+    if (!ev) {
         return;
+    }
     if (ev->type != ev_data) {
         cli_event_error_str(ctx, "cli_event_string must be called with ev_data type");
         return;
@@ -324,8 +339,9 @@ void cli_event_data(cli_events_t *ctx, unsigned id, const void *data, uint32_t l
 void cli_event_fastdata(cli_events_t *ctx, unsigned id, const void *data, uint32_t len)
 {
     struct cli_event *ev = get_event(ctx, id);
-    if (!ev)
+    if (!ev) {
         return;
+    }
     if (ev->type != ev_data_fast) {
         cli_event_error_str(ctx, "cli_event_fastdata must be called with ev_data_fast");
         return;
@@ -344,8 +360,9 @@ void cli_event_count(cli_events_t *ctx, unsigned id)
 void cli_event_get(cli_events_t *ctx, unsigned id, union ev_val *val, uint32_t *count)
 {
     struct cli_event *ev = get_event(ctx, id);
-    if (!ev)
+    if (!ev) {
         return;
+    }
     memcpy(val, &ev->u, sizeof(*val));
     *count = ev->count;
 }
@@ -401,14 +418,16 @@ void cli_event_debug(cli_events_t *ctx, unsigned id)
 {
     const char *tstr;
     struct cli_event *ev = get_event(ctx, id);
-    if (!ev)
+    if (!ev) {
         return;
+    }
     tstr = evtype(ev->type);
     if (ev->multiple == multiple_chain && ev->type != ev_data) {
         unsigned i;
         cli_dbgmsg("%s: ev_chain %u %s\n", ev->name, ev->count, tstr);
-        for (i = 0; i < ev->count; i++)
+        for (i = 0; i < ev->count; i++) {
             ev_debug(ev->type, &ev->u.v_chain[i], i);
+        }
     } else {
         cli_dbgmsg("%s: %s\n", ev->name, tstr);
         ev_debug(ev->type, &ev->u, ev->count);
@@ -419,8 +438,9 @@ void cli_event_debug_all(cli_events_t *ctx)
 {
     unsigned i;
     for (i = 0; i < ctx->max; i++) {
-        if (ctx->events[i].count)
+        if (ctx->events[i].count) {
             cli_event_debug(ctx, i);
+        }
     }
 }
 
@@ -449,8 +469,9 @@ int cli_event_diff(cli_events_t *ctx1, cli_events_t *ctx2, unsigned id)
     struct cli_event *ev1, *ev2;
     ev1 = get_event(ctx1, id);
     ev2 = get_event(ctx2, id);
-    if (!ev1 || !ev2)
+    if (!ev1 || !ev2) {
         return 1;
+    }
     if (ev1->type != ev2->type ||
         ev1->multiple != ev2->multiple ||
         ev1->name != ev2->name) {
@@ -467,8 +488,9 @@ int cli_event_diff(cli_events_t *ctx1, cli_events_t *ctx2, unsigned id)
         for (i = 0; i < ev1->count; i++) {
             unsigned di = ev_diff(ev1->type, &ev1->u.v_chain[i], &ev2->u.v_chain[i], ev1->count);
             if (di) {
-                if (!diff)
+                if (!diff) {
                     cli_dbgmsg("diff: %s\n", ev1->name);
+                }
                 ev_debug(ev1->type, &ev1->u.v_chain[i], i);
                 ev_debug(ev2->type, &ev2->u.v_chain[i], i);
             }
@@ -482,8 +504,9 @@ int cli_event_diff(cli_events_t *ctx1, cli_events_t *ctx2, unsigned id)
             ev_debug(ev2->type, &ev2->u, ev2->count);
         }
     }
-    if (!diff)
+    if (!diff) {
         return 0;
+    }
     return 1;
 }
 
@@ -497,8 +520,9 @@ int cli_event_diff_all(cli_events_t *ctx1, cli_events_t *ctx2, compare_filter_t 
     }
     for (i = 0; i < ctx1->max; i++) {
         struct cli_event *ev1 = &ctx1->events[i];
-        if (filter && filter(i, ev1->type))
+        if (filter && filter(i, ev1->type)) {
             continue;
+        }
         diff += cli_event_diff(ctx1, ctx2, i);
     }
     return diff ? 1 : 0;
@@ -506,7 +530,8 @@ int cli_event_diff_all(cli_events_t *ctx1, cli_events_t *ctx2, compare_filter_t 
 
 int cli_event_errors(cli_events_t *ctx)
 {
-    if (!ctx)
+    if (!ctx) {
         return 0;
+    }
     return ctx->errors.count + ctx->oom_count;
 }

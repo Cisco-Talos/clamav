@@ -241,8 +241,9 @@ static always_inline struct stack_entry *allocate_stack(struct stack *stack,
 {
     char *values;
     struct stack_entry *entry = cli_stack_alloc(stack, sizeof(*entry) + sizeof(*values) * func->numBytes);
-    if (!entry)
+    if (!entry) {
         return NULL;
+    }
     entry->prev    = prev;
     entry->func    = func_old;
     entry->ret     = ret;
@@ -598,8 +599,9 @@ static inline int64_t ptr_register_stack(struct ptr_infos *infos,
     unsigned n              = infos->nstacks + 1;
     struct ptr_info *sinfos = cli_safer_realloc(infos->stack_infos,
                                                 sizeof(*sinfos) * n);
-    if (!sinfos)
+    if (!sinfos) {
         return 0;
+    }
     infos->stack_infos = sinfos;
     infos->nstacks     = n;
     sinfos             = &sinfos[n - 1];
@@ -614,15 +616,17 @@ static inline int64_t ptr_register_glob_fixedid(struct ptr_infos *infos,
     struct ptr_info *sinfos;
     if (n > infos->nglobs) {
         sinfos = cli_safer_realloc(infos->glob_infos, sizeof(*sinfos) * n);
-        if (!sinfos)
+        if (!sinfos) {
             return 0;
+        }
         memset(sinfos + infos->nglobs, 0, (n - infos->nglobs) * sizeof(*sinfos));
         infos->glob_infos = sinfos;
         infos->nglobs     = n;
     }
     sinfos = &infos->glob_infos[n - 1];
-    if (!values)
+    if (!values) {
         size = 0;
+    }
     sinfos->base = values;
     sinfos->size = size;
     cli_dbgmsg("bytecode: registered ctx variable at %p (+%u) id %u\n", values,
@@ -633,8 +637,9 @@ static inline int64_t ptr_register_glob_fixedid(struct ptr_infos *infos,
 static inline int64_t ptr_register_glob(struct ptr_infos *infos,
                                         void *values, uint32_t size)
 {
-    if (!values)
+    if (!values) {
         return 0;
+    }
     return ptr_register_glob_fixedid(infos, values, size, infos->nglobs + 1);
 }
 
@@ -684,10 +689,12 @@ static always_inline int check_sdivops(int64_t op0, int64_t op1)
 static unsigned globaltypesize(uint16_t id)
 {
     const struct cli_bc_type *ty;
-    if (id <= 64)
+    if (id <= 64) {
         return (id + 7) / 8;
-    if (id < 69)
+    }
+    if (id < 69) {
         return 8; /* ptr */
+    }
     ty = &cli_apicall_types[id - 69];
     switch (ty->kind) {
         case DArrayType:
@@ -695,8 +702,9 @@ static unsigned globaltypesize(uint16_t id)
         case DStructType:
         case DPackedStructType: {
             unsigned i, s = 0;
-            for (i = 0; i < ty->numElements; i++)
+            for (i = 0; i < ty->numElements; i++) {
                 s += globaltypesize(ty->containedTypes[i]);
+            }
             return s;
         }
         default:
@@ -735,8 +743,9 @@ cl_error_t cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const
         uint32_t size;
         const struct cli_apiglobal *g = &cli_globals[i];
         void **apiglobal              = (void **)(((char *)ctx) + g->offset);
-        if (!apiglobal)
+        if (!apiglobal) {
             continue;
+        }
         apiptr = *apiglobal;
         size   = globaltypesize(g->type);
         ptr_register_glob_fixedid(&ptrinfos, apiptr, size, g->globalid - _FIRST_GLOBAL + 1);
@@ -1262,24 +1271,27 @@ cl_error_t cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const
                 DEFINE_OP(OP_BC_PTRDIFF32)
                 {
                     int64_t ptr1, ptr2;
-                    if (BINOP(0) & 0x40000000)
+                    if (BINOP(0) & 0x40000000) {
                         ptr1 = ptr_compose(stackid, BINOP(0) & 0xbfffffff);
-                    else
+                    } else {
                         READ64(ptr1, BINOP(0));
-                    if (BINOP(1) & 0x40000000)
+                    }
+                    if (BINOP(1) & 0x40000000) {
                         ptr2 = ptr_compose(stackid, BINOP(1) & 0xbfffffff);
-                    else
+                    } else {
                         READ64(ptr2, BINOP(1));
+                    }
                     WRITE32(inst->dest, ptr_diff32(ptr1, ptr2));
                     break;
                 }
                 DEFINE_OP(OP_BC_PTRTOINT64)
                 {
                     int64_t ptr;
-                    if (inst->u.unaryop & 0x40000000)
+                    if (inst->u.unaryop & 0x40000000) {
                         ptr = ptr_compose(stackid, inst->u.unaryop & 0xbfffffff);
-                    else
+                    } else {
                         READ64(ptr, BINOP(0));
+                    }
                     WRITE64(inst->dest, ptr);
                     break;
                 }

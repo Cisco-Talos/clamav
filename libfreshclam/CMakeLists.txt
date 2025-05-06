@@ -69,6 +69,13 @@ if(ENABLE_SHARED_LIB)
         COMPILE_FLAGS "${WARNCFLAGS}"
         VERSION ${LIBFRESHCLAM_VERSION} SOVERSION ${LIBFRESHCLAM_SOVERSION}
         LINK_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/libfreshclam.map)
+
+    if(CLANG_TIDY)
+        set_target_properties(freshclam PROPERTIES
+            C_CLANG_TIDY "${CLANG_TIDY_PROPERTY}"
+            C_CLANG_TIDY_EXPORT_FIXES_DIR "${CMAKE_BINARY_DIR}/clang-tidy-fixes")
+    endif()
+
     if(WIN32)
         install(TARGETS freshclam DESTINATION . COMPONENT libraries)
         install(FILES $<TARGET_PDB_FILE:freshclam> DESTINATION . OPTIONAL COMPONENT libraries)

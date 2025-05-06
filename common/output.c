@@ -156,12 +156,14 @@ int mdprintf(int desc, const char *str, ...)
     buff[len - 1] = 0;
 
     if (bytes < 0) {
-        if (len > sizeof(buffer))
+        if (len > sizeof(buffer)) {
             free(abuffer);
+        }
         return bytes;
     }
-    if ((size_t)bytes >= len)
+    if ((size_t)bytes >= len) {
         bytes = len - 1;
+    }
 
     todo = bytes;
 #ifdef CL_THREAD_SAFE
@@ -173,9 +175,10 @@ int mdprintf(int desc, const char *str, ...)
         ret = send(desc, buff, bytes, 0);
         if (ret < 0) {
             struct timeval tv;
-            if (errno != EWOULDBLOCK)
+            if (errno != EWOULDBLOCK) {
                 break;
-                /* didn't send anything yet */
+            }
+            /* didn't send anything yet */
 #ifdef CL_THREAD_SAFE
             pthread_mutex_unlock(&mdprintf_mutex);
 #endif
@@ -204,8 +207,9 @@ int mdprintf(int desc, const char *str, ...)
     pthread_mutex_unlock(&mdprintf_mutex);
 #endif
 
-    if (len > sizeof(buffer))
+    if (len > sizeof(buffer)) {
         free(abuffer);
+    }
 
     return ret < 0 ? -1 : bytes;
 }
@@ -229,8 +233,9 @@ static int rename_logg(STATBUF *sb)
     rotate_file_len = strlen(logg_file) + strlen("-YYYY-MM-DD_HH:MM:SS.log");
     rotate_file     = calloc(1, rotate_file_len + 1);
     if (!rotate_file) {
-        if (logg_fp)
+        if (logg_fp) {
             fprintf(logg_fp, "Need to rotate log file due to size but ran out of memory.\n");
+        }
 
         return -1;
     }
@@ -242,8 +247,9 @@ static int rename_logg(STATBUF *sb)
 #else
     if (!localtime_r(&t, &tmp)) {
 #endif
-        if (logg_fp)
+        if (logg_fp) {
             fprintf(logg_fp, "Need to rotate log file due to size but could not get local time.\n");
+        }
 
         free(rotate_file);
         return -1;
@@ -275,12 +281,17 @@ static int logg_open(void)
 {
     STATBUF sb;
 
-    if (logg_file)
-        if (logg_size > 0)
-            if (CLAMSTAT(logg_file, &sb) != -1)
-                if (sb.st_size > logg_size)
-                    if (rename_logg(&sb))
+    if (logg_file) {
+        if (logg_size > 0) {
+            if (CLAMSTAT(logg_file, &sb) != -1) {
+                if (sb.st_size > logg_size) {
+                    if (rename_logg(&sb)) {
                         return -1;
+                    }
+                }
+            }
+        }
+    }
 
     return 0;
 }
@@ -288,8 +299,9 @@ static int logg_open(void)
 void logg_close(void)
 {
 #if defined(USE_SYSLOG) && !defined(C_AIX)
-    if (logg_syslog)
+    if (logg_syslog) {
         closelog();
+    }
 #endif
 
 #ifdef CL_THREAD_SAFE
@@ -315,8 +327,9 @@ int logg(loglevel_t loglevel, const char *str, ...)
 #endif
 
     if ((loglevel == LOGG_DEBUG_NV && logg_verbose < 2) ||
-        (loglevel == LOGG_DEBUG && !logg_verbose))
+        (loglevel == LOGG_DEBUG && !logg_verbose)) {
         return 0;
+    }
 
     ARGLEN(args, str, len);
     if (len <= sizeof(buffer)) {
@@ -354,8 +367,9 @@ int logg(loglevel_t loglevel, const char *str, ...)
 #ifdef CL_THREAD_SAFE
             pthread_mutex_unlock(&logg_mutex);
 #endif
-            if (abuffer)
+            if (abuffer) {
                 free(abuffer);
+            }
             return -1;
         }
 
@@ -369,8 +383,9 @@ int logg(loglevel_t loglevel, const char *str, ...)
 #ifdef CL_THREAD_SAFE
             pthread_mutex_unlock(&logg_mutex);
 #endif
-            if (abuffer)
+            if (abuffer) {
                 free(abuffer);
+            }
             return -1;
         }
 
@@ -380,9 +395,9 @@ int logg(loglevel_t loglevel, const char *str, ...)
             fl.l_type = F_WRLCK;
             if (fcntl(fileno(logg_fp), F_SETLK, &fl) == -1) {
 #ifdef EOPNOTSUPP
-                if (errno == EOPNOTSUPP)
+                if (errno == EOPNOTSUPP) {
                     printf("WARNING: File locking not supported (NFS?)\n");
-                else
+                } else
 #endif
                 {
                     char errbuf[128];
@@ -394,8 +409,9 @@ int logg(loglevel_t loglevel, const char *str, ...)
 #endif
                     fclose(logg_fp);
                     logg_fp = NULL;
-                    if (abuffer)
+                    if (abuffer) {
                         free(abuffer);
+                    }
                     return -1;
                 }
             }
@@ -421,18 +437,21 @@ int logg(loglevel_t loglevel, const char *str, ...)
             fprintf(logg_fp, "ERROR: %s", buff);
             flush = 1;
         } else if (loglevel == LOGG_WARNING) {
-            if (!logg_nowarn)
+            if (!logg_nowarn) {
                 fprintf(logg_fp, "WARNING: %s", buff);
+            }
             flush = 1;
         } else if (loglevel == LOGG_DEBUG || loglevel == LOGG_DEBUG_NV) {
             fprintf(logg_fp, "%s", buff);
         } else if (loglevel == LOGG_INFO_NF || loglevel == LOGG_INFO) {
             fprintf(logg_fp, "%s", buff);
-        } else
+        } else {
             fprintf(logg_fp, "%s", buff);
+        }
 
-        if (flush)
+        if (flush) {
             fflush(logg_fp);
+        }
     }
 
     if (logg_foreground) {
@@ -456,12 +475,14 @@ int logg(loglevel_t loglevel, const char *str, ...)
         if (loglevel == LOGG_ERROR) {
             syslog(LOG_ERR, "%s", buff);
         } else if (loglevel == LOGG_WARNING) {
-            if (!logg_nowarn)
+            if (!logg_nowarn) {
                 syslog(LOG_WARNING, "%s", buff);
+            }
         } else if (loglevel == LOGG_DEBUG || loglevel == LOGG_DEBUG_NV) {
             syslog(LOG_DEBUG, "%s", buff);
-        } else
+        } else {
             syslog(LOG_INFO, "%s", buff);
+        }
     }
 #endif
 
@@ -469,8 +490,9 @@ int logg(loglevel_t loglevel, const char *str, ...)
     pthread_mutex_unlock(&logg_mutex);
 #endif
 
-    if (abuffer)
+    if (abuffer) {
         free(abuffer);
+    }
 
     return 0;
 }
@@ -482,8 +504,9 @@ void mprintf(loglevel_t loglevel, const char *str, ...)
     char buffer[512], *abuffer = NULL, *buff;
     size_t len;
 
-    if (mprintf_disabled)
+    if (mprintf_disabled) {
         return;
+    }
 
     fd = stdout;
 
@@ -535,30 +558,36 @@ void mprintf(loglevel_t loglevel, const char *str, ...)
     } while (0);
 #endif
     if (loglevel == LOGG_ERROR) {
-        if (!mprintf_stdout)
+        if (!mprintf_stdout) {
             fd = stderr;
+        }
         fprintf(fd, "ERROR: %s", buff);
     } else if (!mprintf_quiet) {
         if (loglevel == LOGG_WARNING) {
             if (!mprintf_nowarn) {
-                if (!mprintf_stdout)
+                if (!mprintf_stdout) {
                     fd = stderr;
+                }
                 fprintf(fd, "WARNING: %s", buff);
             }
         } else if (loglevel == LOGG_DEBUG) {
-            if (mprintf_verbose)
+            if (mprintf_verbose) {
                 fprintf(fd, "%s", buff);
+            }
         } else if (loglevel == LOGG_INFO) {
             fprintf(fd, "%s", buff);
-        } else
+        } else {
             fprintf(fd, "%s", buff);
+        }
     }
 
-    if (fd == stdout)
+    if (fd == stdout) {
         fflush(stdout);
+    }
 
-    if (len > sizeof(buffer))
+    if (len > sizeof(buffer)) {
         free(abuffer);
+    }
 }
 
 struct facstruct {
@@ -637,9 +666,11 @@ int logg_facility(const char *name)
 {
     int i;
 
-    for (i = 0; facilitymap[i].name; i++)
-        if (!strcmp(facilitymap[i].name, name))
+    for (i = 0; facilitymap[i].name; i++) {
+        if (!strcmp(facilitymap[i].name, name)) {
             return facilitymap[i].code;
+        }
+    }
 
     return -1;
 }

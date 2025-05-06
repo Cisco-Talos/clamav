@@ -226,12 +226,14 @@ static cl_error_t x509_cert_name_cmp(X509 *cert_a, X509 *cert_b, int *cmp_out)
     BUF_MEM *biomem_b;
 
     bio_out_a = BIO_new(BIO_s_mem());
-    if (!bio_out_a)
+    if (!bio_out_a) {
         goto done;
+    }
 
     bio_out_b = BIO_new(BIO_s_mem());
-    if (!bio_out_b)
+    if (!bio_out_b) {
         goto done;
+    }
 
     a = X509_get_subject_name(cert_a);
 
@@ -253,10 +255,12 @@ static cl_error_t x509_cert_name_cmp(X509 *cert_a, X509 *cert_b, int *cmp_out)
     status   = CL_SUCCESS;
 
 done:
-    if (NULL != bio_out_a)
+    if (NULL != bio_out_a) {
         BIO_free(bio_out_a);
-    if (NULL != bio_out_b)
+    }
+    if (NULL != bio_out_b) {
         BIO_free(bio_out_b);
+    }
 
     return status;
 }
@@ -278,8 +282,9 @@ cl_error_t x509_get_cert_name(X509 *cert, char **name)
     *name = NULL;
 
     bio_out = BIO_new(BIO_s_mem());
-    if (!bio_out)
+    if (!bio_out) {
         goto done;
+    }
 
     a = X509_get_subject_name(cert);
 
@@ -302,8 +307,9 @@ cl_error_t x509_get_cert_name(X509 *cert, char **name)
     status = CL_SUCCESS;
 
 done:
-    if (NULL != bio_out)
+    if (NULL != bio_out) {
         BIO_free(bio_out);
+    }
 
     return status;
 }
@@ -365,8 +371,9 @@ cl_error_t cert_store_export_pem(char **cert_data,
             if (CL_SUCCESS == x509_cert_name_cmp(_cert_store.system_certs.certificates[i],
                                                  additional_ca_cert,
                                                  &cmp)) {
-                if (0 == cmp)
+                if (0 == cmp) {
                     add_additional_ca_cert = false;
+                }
             }
         }
 #else
@@ -399,8 +406,9 @@ cl_error_t cert_store_export_pem(char **cert_data,
             if (CL_SUCCESS == x509_cert_name_cmp(_cert_store.trusted_certs.certificates[i],
                                                  additional_ca_cert,
                                                  &cmp)) {
-                if (0 == cmp)
+                if (0 == cmp) {
                     add_additional_ca_cert = false;
+                }
             }
         }
 #else

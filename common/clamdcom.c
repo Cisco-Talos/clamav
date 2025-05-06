@@ -59,7 +59,9 @@ int sendln(int sockd, const char *line, unsigned int len)
     while (len) {
         int sent = send(sockd, line, len, 0);
         if (sent <= 0) {
-            if (sent && errno == EINTR) continue;
+            if (sent && errno == EINTR) {
+                continue;
+            }
             logg(LOGG_ERROR, "Can't send to clamd: %s\n", strerror(errno));
             return 1;
         }
@@ -100,10 +102,11 @@ int recvln(struct RCVLN *s, char **rbol, char **reol)
                 }
                 if (s->r || s->cur != s->buf) {
                     *s->cur = '\0';
-                    if (strcmp(s->buf, "UNKNOWN COMMAND\n"))
+                    if (strcmp(s->buf, "UNKNOWN COMMAND\n")) {
                         logg(LOGG_ERROR, "Communication error\n");
-                    else
+                    } else {
                         logg(LOGG_ERROR, "Command rejected by clamd (wrong clamd version?)\n");
+                    }
                     return -1;
                 }
                 return 0;
@@ -114,12 +117,15 @@ int recvln(struct RCVLN *s, char **rbol, char **reol)
             eol++;
             s->r -= eol - s->cur;
             *rbol = s->bol;
-            if (reol) *reol = eol;
+            if (reol) {
+                *reol = eol;
+            }
             ret = eol - s->bol;
-            if (s->r)
+            if (s->r) {
                 s->bol = s->cur = eol;
-            else
+            } else {
                 s->bol = s->cur = s->buf;
+            }
             return ret;
         }
         s->r += s->cur - s->bol;
@@ -187,8 +193,9 @@ int send_fdpass(int sockd, const char *filename)
             logg(LOGG_INFO, "%s: Failed to open file\n", filename);
             return 0;
         }
-    } else
+    } else {
         fd = 0;
+    }
     if (sendln(sockd, zFILDES, sizeof(zFILDES))) {
         close(fd);
         return -1;
@@ -241,7 +248,9 @@ int send_stream(int sockd, const char *filename, struct optstruct *clamdopts)
     }
 
     while ((len = read(fd, &buf[1], sizeof(buf) - sizeof(uint32_t))) > 0) {
-        if ((unsigned int)len > todo) len = todo;
+        if ((unsigned int)len > todo) {
+            len = todo;
+        }
         buf[0] = htonl(len);
         if (sendln(sockd, (const char *)buf, len + sizeof(uint32_t))) {
             close(fd);
@@ -277,9 +286,9 @@ int dconnect(struct optstruct *clamdopts)
     opt = optget(clamdopts, "LocalSocket");
     if (opt->enabled) {
         if ((sockd = socket(AF_UNIX, SOCK_STREAM, 0)) >= 0) {
-            if (connect(sockd, (struct sockaddr *)&nixsock, sizeof(nixsock)) == 0)
+            if (connect(sockd, (struct sockaddr *)&nixsock, sizeof(nixsock)) == 0) {
                 return sockd;
-            else {
+            } else {
                 logg(LOGG_ERROR, "Could not connect to clamd on LocalSocket %s: %s\n", opt->strarg, strerror(errno));
                 close(sockd);
             }
@@ -293,8 +302,9 @@ int dconnect(struct optstruct *clamdopts)
     while (opt) {
         if (opt->enabled) {
             ipaddr = NULL;
-            if (opt->strarg)
+            if (opt->strarg) {
                 ipaddr = (!strcmp(opt->strarg, "any") ? NULL : opt->strarg);
+            }
 
             memset(&hints, 0x00, sizeof(struct addrinfo));
             hints.ai_family   = AF_UNSPEC;
@@ -386,10 +396,12 @@ int dsresult(int sockd, int scantype, const char *filename, int *printok, int *e
     }
 
     if (len <= 0) {
-        if (printok)
+        if (printok) {
             *printok = 0;
-        if (errors)
+        }
+        if (errors) {
             (*errors)++;
+        }
         infected = len;
         goto done;
     }
@@ -400,31 +412,36 @@ int dsresult(int sockd, int scantype, const char *filename, int *printok, int *e
             goto done;
         }
         beenthere = 1;
-        if (!filename) logg(LOGG_INFO, "%s\n", bol);
+        if (!filename) {
+            logg(LOGG_INFO, "%s\n", bol);
+        }
         if (len > 7) {
             char *colon = strrchr(bol, ':');
             if (colon && colon[1] != ' ') {
                 char *br;
                 *colon = 0;
                 br     = strrchr(bol, '(');
-                if (br)
+                if (br) {
                     *br = 0;
+                }
                 colon = strrchr(bol, ':');
             }
             if (!colon) {
                 char *unkco = "UNKNOWN COMMAND";
-                if (!strncmp(bol, unkco, sizeof(unkco) - 1))
+                if (!strncmp(bol, unkco, sizeof(unkco) - 1)) {
                     logg(LOGG_INFO, "clamd replied \"UNKNOWN COMMAND\". Command was %s\n",
                          (scantype < 0 || scantype > MAX_SCANTYPE) ? "unidentified" : scancmd[scantype]);
-                else
+                } else {
                     logg(LOGG_INFO, "Failed to parse reply: \"%s\"\n", bol);
+                }
                 infected = -1;
                 goto done;
             } else if (!memcmp(eol - 7, " FOUND", 6)) {
                 static char last_filename[PATH_MAX + 1] = {'\0'};
                 *(eol - 7)                              = 0;
-                if (printok)
+                if (printok) {
                     *printok = 0;
+                }
                 if (scantype != ALLMATCH) {
                     infected++;
                 } else {
@@ -437,24 +454,30 @@ int dsresult(int sockd, int scantype, const char *filename, int *printok, int *e
                 if (filename) {
                     if (scantype >= STREAM) {
                         logg(LOGG_INFO, "%s%s FOUND\n", filename, colon);
-                        if (action) action(filename);
+                        if (action) {
+                            action(filename);
+                        }
                     } else {
                         logg(LOGG_INFO, "%s FOUND\n", bol);
                         *colon = '\0';
-                        if (action)
+                        if (action) {
                             action(bol);
+                        }
                     }
                 }
             } else if (!memcmp(eol - 7, " ERROR", 6)) {
-                if (errors)
+                if (errors) {
                     (*errors)++;
-                if (printok)
+                }
+                if (printok) {
                     *printok = 0;
+                }
                 if (filename) {
-                    if (scantype >= STREAM)
+                    if (scantype >= STREAM) {
                         logg(LOGG_INFO, "%s%s\n", filename, colon);
-                    else
+                    } else {
                         logg(LOGG_INFO, "%s\n", bol);
+                    }
                 }
             }
         }

@@ -107,8 +107,9 @@ size_t header_cb(char *ptr, size_t size, size_t nmemb, void *userdata)
     int clen               = strlen(set_cookie);
 
     if (len > clen) {
-        if (strncmp(ptr, set_cookie, clen))
+        if (strncmp(ptr, set_cookie, clen)) {
             return len;
+        }
         sp = ptr + clen + 1;
         ep = strchr(sp, ';');
         if (ep == NULL) {
@@ -122,9 +123,9 @@ size_t header_cb(char *ptr, size_t size, size_t nmemb, void *userdata)
         }
         memcpy(mem, sp, ep - sp);
         mem[ep - sp] = '\0';
-        if (!strncmp(mem, "_clamav-net_session", strlen("_clamav-net_session")))
+        if (!strncmp(mem, "_clamav-net_session", strlen("_clamav-net_session"))) {
             hd->session = mem;
-        else {
+        } else {
             logg(LOGG_ERROR, "header_cb(): unrecognized cookie\n");
             free(mem);
         }
@@ -234,13 +235,15 @@ int main(int argc, char *argv[])
                 name = optarg;
                 break;
             case 'p':
-                if (setURL)
+                if (setURL) {
                     usage(argv[0]);
+                }
                 filename = optarg;
                 break;
             case 'n':
-                if (setURL)
+                if (setURL) {
                     usage(argv[0]);
+                }
                 malware  = true;
                 filename = optarg;
                 break;
@@ -257,8 +260,9 @@ int main(int argc, char *argv[])
         }
     }
 
-    if (!(name) || !(email) || !(filename))
+    if (!(name) || !(email) || !(filename)) {
         usage(argv[0]);
+    }
 
     if (malware == false && fpvname == NULL) {
         logg(LOGG_ERROR, "Detected virus name(-V) required for false positive submissions.\n");

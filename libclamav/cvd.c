@@ -115,11 +115,13 @@ static int cli_tgzload(cvd_t *cvd, struct cl_engine *engine, unsigned int *signo
         return CL_ESEEK;
     }
 
-    if (cli_readn(fd, block, 7) != 7)
+    if (cli_readn(fd, block, 7) != 7) {
         return CL_EFORMAT; /* truncated file? */
+    }
 
-    if (!strncmp(block, "COPYING", 7))
+    if (!strncmp(block, "COPYING", 7)) {
         compr = 0;
+    }
 
     if (lseek(fd, 512, SEEK_SET) < 0) {
         return CL_ESEEK;
@@ -133,16 +135,18 @@ static int cli_tgzload(cvd_t *cvd, struct cl_engine *engine, unsigned int *signo
     if (compr) {
         if ((dbio->gzs = gzdopen(fdd, "rb")) == NULL) {
             cli_errmsg("cli_tgzload: Can't gzdopen() descriptor %d, errno = %d\n", fdd, errno);
-            if (fdd > -1)
+            if (fdd > -1) {
                 close(fdd);
+            }
             return CL_EOPEN;
         }
         dbio->fs = NULL;
     } else {
         if ((dbio->fs = fdopen(fdd, "rb")) == NULL) {
             cli_errmsg("cli_tgzload: Can't fdopen() descriptor %d, errno = %d\n", fdd, errno);
-            if (fdd > -1)
+            if (fdd > -1) {
                 close(fdd);
+            }
             return CL_EOPEN;
         }
         dbio->gzs = NULL;
@@ -161,13 +165,15 @@ static int cli_tgzload(cvd_t *cvd, struct cl_engine *engine, unsigned int *signo
 
     while (1) {
 
-        if (compr)
+        if (compr) {
             nread = gzread(dbio->gzs, block, TAR_BLOCKSIZE);
-        else
+        } else {
             nread = fread(block, 1, TAR_BLOCKSIZE, dbio->fs);
+        }
 
-        if (!nread)
+        if (!nread) {
             break;
+        }
 
         if (nread != TAR_BLOCKSIZE) {
             cli_errmsg("cli_tgzload: Incomplete block read\n");
@@ -175,8 +181,9 @@ static int cli_tgzload(cvd_t *cvd, struct cl_engine *engine, unsigned int *signo
             return CL_EMALFDB;
         }
 
-        if (block[0] == '\0') /* We're done */
+        if (block[0] == '\0') { /* We're done */
             break;
+        }
 
         strncpy(name, block, 100);
         name[100] = '\0';
@@ -225,10 +232,11 @@ static int cli_tgzload(cvd_t *cvd, struct cl_engine *engine, unsigned int *signo
         dbio->bread = 0;
 
         /* cli_dbgmsg("cli_tgzload: Loading %s, size: %u\n", name, size); */
-        if (compr)
+        if (compr) {
             off = (off_t)gzseek(dbio->gzs, 0, SEEK_CUR);
-        else
+        } else {
             off = ftell(dbio->fs);
+        }
 
         if ((!dbinfo && cli_strbcasestr(name, ".info")) || (dbinfo && CLI_DBEXT(name))) {
             ret = cli_load(name, engine, signo, options, dbio, sign_verifier);
@@ -242,8 +250,9 @@ static int cli_tgzload(cvd_t *cvd, struct cl_engine *engine, unsigned int *signo
                 return CL_SUCCESS;
             } else {
                 db = dbinfo;
-                while (db && strcmp(db->name, name))
+                while (db && strcmp(db->name, name)) {
                     db = db->next;
+                }
                 if (!db) {
                     cli_errmsg("cli_tgzload: File %s not found in .info\n", name);
                     cli_tgzload_cleanup(compr, dbio, fdd);
@@ -271,15 +280,17 @@ static int cli_tgzload(cvd_t *cvd, struct cl_engine *engine, unsigned int *signo
         }
         pad = size % TAR_BLOCKSIZE ? (TAR_BLOCKSIZE - (size % TAR_BLOCKSIZE)) : 0;
         if (compr) {
-            if (off == gzseek(dbio->gzs, 0, SEEK_CUR))
+            if (off == gzseek(dbio->gzs, 0, SEEK_CUR)) {
                 gzseek(dbio->gzs, size + pad, SEEK_CUR);
-            else if (pad)
+            } else if (pad) {
                 gzseek(dbio->gzs, pad, SEEK_CUR);
+            }
         } else {
-            if (off == ftell(dbio->fs))
+            if (off == ftell(dbio->fs)) {
                 fseek(dbio->fs, size + pad, SEEK_CUR);
-            else if (pad)
+            } else if (pad) {
                 fseek(dbio->fs, pad, SEEK_CUR);
+            }
         }
     }
 
@@ -391,11 +402,13 @@ struct cl_cvd *cl_cvdhead(const char *file)
     fclose(fs);
 
     head[bread] = 0;
-    if ((pt = strpbrk(head, "\n\r")))
+    if ((pt = strpbrk(head, "\n\r"))) {
         *pt = 0;
+    }
 
-    for (i = bread - 1; i > 0 && (head[i] == ' ' || head[i] == '\n' || head[i] == '\r'); head[i] = 0, i--)
+    for (i = bread - 1; i > 0 && (head[i] == ' ' || head[i] == '\n' || head[i] == '\r'); head[i] = 0, i--) {
         ;
+    }
 
     return cl_cvdparse(head);
 }
@@ -616,8 +629,9 @@ done:
         engine->dbinfo = dbinfo->next;
         MPOOL_FREE(engine->mempool, dbinfo->name);
         MPOOL_FREE(engine->mempool, dbinfo->hash);
-        if (dbinfo->cvd)
+        if (dbinfo->cvd) {
             cl_cvdfree(dbinfo->cvd);
+        }
         MPOOL_FREE(engine->mempool, dbinfo);
     }
 
@@ -882,19 +896,23 @@ cl_error_t cl_cvdgetage(const char *path, time_t *age_seconds)
         char fname[1024] = {0};
         time_t file_age;
 
-        if (!dent->d_ino)
+        if (!dent->d_ino) {
             continue;
+        }
 
-        if (!strcmp(dent->d_name, ".") || !strcmp(dent->d_name, ".."))
+        if (!strcmp(dent->d_name, ".") || !strcmp(dent->d_name, "..")) {
             continue;
+        }
 
-        if (!CLI_DBEXT_SIGNATURE(dent->d_name))
+        if (!CLI_DBEXT_SIGNATURE(dent->d_name)) {
             continue;
+        }
 
-        if (ends_with_sep)
+        if (ends_with_sep) {
             snprintf(fname, sizeof(fname) - 1, "%s%s", path, dent->d_name);
-        else
+        } else {
             snprintf(fname, sizeof(fname) - 1, "%s" PATHSEP "%s", path, dent->d_name);
+        }
 
         if ((status = cvdgetfileage(fname, &file_age)) != CL_SUCCESS) {
             cli_errmsg("cl_cvdgetage: cvdgetfileage() failed for %s\n", fname);
@@ -910,8 +928,9 @@ cl_error_t cl_cvdgetage(const char *path, time_t *age_seconds)
     }
 
 done:
-    if (dd)
+    if (dd) {
         closedir(dd);
+    }
 
     return status;
 }

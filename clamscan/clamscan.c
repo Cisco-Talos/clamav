@@ -74,8 +74,9 @@ int main(int argc, char **argv)
     struct optstruct *opts;
     const struct optstruct *opt;
 
-    if (check_flevel())
+    if (check_flevel()) {
         exit(2);
+    }
 
 #if !defined(_WIN32)
     if (!setlocale(LC_CTYPE, "")) {
@@ -100,11 +101,13 @@ int main(int argc, char **argv)
         logg_verbose    = 1;
     }
 
-    if (optget(opts, "quiet")->enabled)
+    if (optget(opts, "quiet")->enabled) {
         mprintf_quiet = 1;
+    }
 
-    if (optget(opts, "stdout")->enabled)
+    if (optget(opts, "stdout")->enabled) {
         mprintf_stdout = 1;
+    }
 
     if (optget(opts, "debug")->enabled) {
 #if defined(C_LINUX)
@@ -112,8 +115,9 @@ int main(int argc, char **argv)
         struct rlimit rlim;
 
         rlim.rlim_cur = rlim.rlim_max = RLIM_INFINITY;
-        if (setrlimit(RLIMIT_CORE, &rlim) < 0)
+        if (setrlimit(RLIMIT_CORE, &rlim) < 0) {
             perror("setrlimit");
+        }
 #endif
         cl_debug(); /* enable debug messages */
     }
@@ -134,17 +138,21 @@ int main(int argc, char **argv)
         return 0;
     }
 
-    if (optget(opts, "recursive")->enabled)
+    if (optget(opts, "recursive")->enabled) {
         recursion = 1;
+    }
 
-    if (optget(opts, "infected")->enabled)
+    if (optget(opts, "infected")->enabled) {
         printinfected = 1;
+    }
 
-    if (optget(opts, "suppress-ok-results")->enabled)
+    if (optget(opts, "suppress-ok-results")->enabled) {
         printclean = 0;
+    }
 
-    if (optget(opts, "bell")->enabled)
+    if (optget(opts, "bell")->enabled) {
         bell = 1;
+    }
 
     /* initialize logger */
     if ((opt = optget(opts, "log"))->enabled) {
@@ -154,8 +162,9 @@ int main(int argc, char **argv)
             optfree(opts);
             return 2;
         }
-    } else
+    } else {
         logg_file = NULL;
+    }
 
     if (actsetup(opts)) {
         optfree(opts);
@@ -185,8 +194,9 @@ int main(int argc, char **argv)
         logg(LOGG_INFO, "Scanned directories: %u\n", info.dirs);
         logg(LOGG_INFO, "Scanned files: %u\n", info.files);
         logg(LOGG_INFO, "Infected files: %u\n", info.ifiles);
-        if (info.errors)
+        if (info.errors) {
             logg(LOGG_INFO, "Total errors: %u\n", info.errors);
+        }
         if (notremoved) {
             logg(LOGG_INFO, "Not removed: %u\n", notremoved);
         }

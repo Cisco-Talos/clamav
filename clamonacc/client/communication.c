@@ -272,10 +272,11 @@ int onas_fd_recvln(struct onas_rcvln *rcv_data, char **ret_bol, char **ret_eol, 
                 }
                 if (rcv_data->retlen || rcv_data->curr != rcv_data->buf) {
                     *rcv_data->curr = '\0';
-                    if (strcmp(rcv_data->buf, "UNKNOWN COMMAND\n"))
+                    if (strcmp(rcv_data->buf, "UNKNOWN COMMAND\n")) {
                         logg(LOGG_ERROR, "Communication error\n");
-                    else
+                    } else {
                         logg(LOGG_ERROR, "Command rejected by clamd (wrong clamd version?)\n");
+                    }
                     return -1;
                 }
                 return 0;
@@ -286,12 +287,15 @@ int onas_fd_recvln(struct onas_rcvln *rcv_data, char **ret_bol, char **ret_eol, 
             eol++;
             rcv_data->retlen -= eol - rcv_data->curr;
             *ret_bol = rcv_data->lnstart;
-            if (ret_eol) *ret_eol = eol;
+            if (ret_eol) {
+                *ret_eol = eol;
+            }
             ret = eol - rcv_data->lnstart;
-            if (rcv_data->retlen)
+            if (rcv_data->retlen) {
                 rcv_data->lnstart = rcv_data->curr = eol;
-            else
+            } else {
                 rcv_data->lnstart = rcv_data->curr = rcv_data->buf;
+            }
             return ret;
         }
         rcv_data->retlen += rcv_data->curr - rcv_data->lnstart;

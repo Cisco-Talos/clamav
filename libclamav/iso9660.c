@@ -45,12 +45,14 @@ static const void *needblock(const iso9660_t *iso, unsigned int block, int temp)
     cli_ctx *ctx = iso->ctx;
     size_t loff;
     unsigned int blocks_per_sect = (2048 / iso->blocksz);
-    if (block > ((ctx->fmap->len - iso->base_offset) / iso->sectsz) * blocks_per_sect)
-        return NULL;                                  /* Block is out of file */
+    if (block > ((ctx->fmap->len - iso->base_offset) / iso->sectsz) * blocks_per_sect) {
+        return NULL; /* Block is out of file */
+    }
     loff = (block / blocks_per_sect) * iso->sectsz;   /* logical sector */
     loff += (block % blocks_per_sect) * iso->blocksz; /* logical block within the sector */
-    if (temp)
+    if (temp) {
         return fmap_need_off_once(ctx->fmap, iso->base_offset + loff, iso->blocksz);
+    }
     return fmap_need_off(ctx->fmap, iso->base_offset + loff, iso->blocksz);
 }
 
@@ -103,8 +105,9 @@ static char *iso_string(iso9660_t *iso, const void *src, unsigned int len)
     if (iso->joliet) {
         char *utf8;
         const char *uutf8;
-        if (len > (sizeof(iso->buf) - 2))
+        if (len > (sizeof(iso->buf) - 2)) {
             len = sizeof(iso->buf) - 2;
+        }
         memcpy(iso->buf, src, len);
         iso->buf[len]     = '\0';
         iso->buf[len + 1] = '\0';
@@ -156,8 +159,9 @@ static cl_error_t iso_parse_dir(iso9660_t *iso, unsigned int block, unsigned int
             unsigned int entrysz = *dir, fileoff, filesz;
             char *sep;
 
-            if (!dirsz || !entrysz) /* continuing on next block, if any */
+            if (!dirsz || !entrysz) { /* continuing on next block, if any */
                 break;
+            }
             if (entrysz > dirsz) { /* record size overlaps onto the next sector, no point in looking in there */
                 cli_dbgmsg("iso_parse_dir: Directory entry overflow, breaking out %u %u\n", entrysz, dirsz);
                 len = 0;
@@ -182,10 +186,11 @@ static cl_error_t iso_parse_dir(iso9660_t *iso, unsigned int block, unsigned int
             }
             iso_string(iso, &dir[33], filesz);
             sep = memchr(iso->buf, ';', filesz);
-            if (sep)
+            if (sep) {
                 *sep = '\0';
-            else
+            } else {
                 iso->buf[filesz] = '\0';
+            }
             fileoff = cli_readint32(dir + 2);
             fileoff += dir[1];
             filesz = cli_readint32(dir + 10);
@@ -196,9 +201,9 @@ static cl_error_t iso_parse_dir(iso9660_t *iso, unsigned int block, unsigned int
                 break;
             }
 
-            if (dir[26] || dir[27])
+            if (dir[26] || dir[27]) {
                 cli_dbgmsg("iso_parse_dir: Skipping interleaved file\n");
-            else {
+            } else {
                 /* TODO Handle multi-extent ? */
                 if (dir[25] & 2) {
                     ret = iso_parse_dir(iso, fileoff, filesz);
@@ -255,25 +260,31 @@ cl_error_t cli_scaniso(cli_ctx *ctx, size_t offset)
     }
 
     iso.blocksz = cli_readint32(privol + 128) & 0xffff;
-    if (iso.blocksz != 512 && iso.blocksz != 1024 && iso.blocksz != 2048)
+    if (iso.blocksz != 512 && iso.blocksz != 1024 && iso.blocksz != 2048) {
         /* Likely not a cdrom image */
         goto done;
+    }
 
     iso.base_offset = offset - iso.sectsz * 16;
     iso.joliet      = 0;
 
     for (i = 16; i < 32; i++) { /* scan for a joliet secondary volume descriptor */
         next = fmap_need_off_once(ctx->fmap, iso.base_offset + i * iso.sectsz, 2048);
-        if (!next)
+        if (!next) {
             break; /* Out of disk */
-        if (*next == 0xff || memcmp(next + 1, "CD001", 5))
+        }
+        if (*next == 0xff || memcmp(next + 1, "CD001", 5)) {
             break; /* Not a volume descriptor */
-        if (*next != 2)
+        }
+        if (*next != 2) {
             continue; /* Not a secondary volume descriptor */
-        if (next[88] != 0x25 || next[89] != 0x2f)
+        }
+        if (next[88] != 0x25 || next[89] != 0x2f) {
             continue; /* Not a joliet descriptor */
-        if (next[156 + 26] || next[156 + 27])
+        }
+        if (next[156 + 26] || next[156 + 27]) {
             continue; /* Root is interleaved so we fallback to the primary descriptor */
+        }
         switch (next[90]) {
             case 0x40: /* Level 1 */
                 iso.joliet = 1;
@@ -336,8 +347,9 @@ cl_error_t cli_scaniso(cli_ctx *ctx, size_t offset)
             cli_dbgmsg("cli_scaniso: Opt MSB Path Table: 0x%x\n", cbswap32(cli_readint32(privol + 152)));
             cli_dbgmsg("cli_scaniso: File Structure Version: %u\n", privol[881]);
 
-            if (iso.joliet)
+            if (iso.joliet) {
                 cli_dbgmsg("cli_scaniso: Joliet level %u\n", iso.joliet);
+            }
         }
 
         if (privol[156 + 26] || privol[156 + 27]) {

@@ -121,8 +121,9 @@ static void forkdata_print(const char *pfx, hfsPlusForkData *fork)
     cli_dbgmsg("%s logicalSize " STDu64 " clumpSize " STDu32 " totalBlocks " STDu32 "\n", pfx,
                fork->logicalSize, fork->clumpSize, fork->totalBlocks);
     for (i = 0; i < 8; i++) {
-        if (fork->extents[i].startBlock == 0)
+        if (fork->extents[i].startBlock == 0) {
             break;
+        }
         cli_dbgmsg("%s extent[%d] startBlock " STDu32 " blockCount " STDu32 "\n", pfx, i,
                    fork->extents[i].startBlock, fork->extents[i].blockCount);
     }
