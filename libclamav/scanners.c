@@ -2082,7 +2082,7 @@ done:
     return ret;
 }
 
-const char *const HTML_URIS_JSON_KEY = "HTMLURIs";
+const char *const HTML_URIS_JSON_KEY = "URIs";
 /* https://www.iana.org/assignments/uri-schemes/uri-schemes.xhtml  */
 const char *URI_LIST[] = {
     "aaa://",
@@ -4311,7 +4311,7 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
                         free_duplicate_fmap(new_map);
                     }
                 } // end check for embedded files
-            }     // end if (fpt->offset > 0)
+            } // end if (fpt->offset > 0)
 
             if ((nret == CL_EMEM) ||
                 (ctx->abort_scan) ||

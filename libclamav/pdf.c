@@ -1476,6 +1476,12 @@ cl_error_t pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t
         }
     }
 
+    /* Check to see if this is a URI referenced from a prior URI object */
+    if (obj->flags & (1 << OBJ_URI)) {
+        URI_cb(pdf, obj, NULL);
+        goto done;
+    }
+
     /* TODO: call bytecode hook here, allow override dumpability */
     if ((!(obj->flags & (1 << OBJ_STREAM)) || (obj->flags & (1 << OBJ_HASFILTERS))) && !(obj->flags & DUMP_MASK)) {
         /* don't dump all streams */
@@ -1963,13 +1969,14 @@ static struct pdfname_action pdfname_actions[] = {
 
 static void handle_pdfname(struct pdf_struct *pdf, struct pdf_obj *obj, const char *pdfname, int escapes, enum objstate *state)
 {
+    struct pdfname_action *act = NULL;
+    unsigned j;
+
     // If we process STATE_S we will get duplicate URIs from the prior STATE_NONE
     if (!strcmp(pdfname, "URI") && *state == STATE_S) {
         *state = STATE_NONE;
         return;
     }
-    struct pdfname_action *act = NULL;
-    unsigned j;
 
     obj->statsflags |= OBJ_FLAG_PDFNAME_DONE;
 
@@ -2182,20 +2189,6 @@ void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
             obj->flags |= (1 << OBJ_STREAM);
             obj->stream      = stream;
             obj->stream_size = stream_size;
-        }
-    }
-
-    if (obj->flags & (1 << OBJ_URI)) {
-        int i = 0;
-        int j = bytesleft;
-        for (i; j > 0; i++, j--){
-            if (q[i] == '(')
-                break;
-        }
-        if (j > 0) {
-            q += i;
-            handle_pdfname(pdf, obj, q, 0, &objstate);
-            return;
         }
     }
 
@@ -4705,25 +4698,30 @@ static void Colors_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfnam
 
 static void URI_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname_action *act)
 {
-    cli_ctx *ctx = NULL;
-    off_t bytesleft = 0;
-    char *uri_stack = NULL;
-    char *uri_heap = NULL;
-    const char *objstart = (obj->objstm) ? (const char *)(obj->start + obj->objstm->streambuf)
-                                         : (const char *)(obj->start + pdf->map);
+    cli_ctx *ctx         = NULL;
+    off_t bytesleft      = 0;
+    char *uri_start      = NULL;
+    char *uri_heap       = NULL;
+    const char *objstart = NULL;
+    json_object *uriarr  = NULL;
 
     UNUSEDPARAM(act);
 
-    if (!(pdf) || !(pdf->ctx) || !(pdf->ctx->wrkproperty))
+    if (!(pdf) || !(pdf->ctx) || !(pdf->ctx->wrkproperty) || !obj) {
         return;
+    }
 
-    ctx = pdf->ctx;
+    objstart = (obj->objstm) ? (const char *)(obj->start + obj->objstm->streambuf)
+                             : (const char *)(obj->start + pdf->map);
+    ctx      = pdf->ctx;
 
-    if (!(SCAN_COLLECT_METADATA) || !(SCAN_STORE_PDF_URIS))
+    if (!(SCAN_COLLECT_METADATA) || !(SCAN_STORE_PDF_URIS)) {
         return;
+    }
 
-    if (obj->size <= 0)
-    return;
+    if (obj->size == 0) {
+        return;
+    }
 
     if (obj->objstm) {
         bytesleft = MIN(obj->size, obj->objstm->streambuf_len - obj->start);
@@ -4732,7 +4730,7 @@ static void URI_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname_a
     }
 
     // Advance forward to the first '(' character
-    int start = 0;
+    size_t start = 0;
     while (bytesleft > 0 && objstart[start] != '(') {
         start++;
         bytesleft--;
@@ -4741,30 +4739,32 @@ static void URI_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname_a
         return;
     }
     // The first character past '(' is the start of the URI
-    uri_stack = (char *)(objstart + start + 1);
+    uri_start = (char *)(objstart + start + 1);
+    bytesleft--;
 
     // Advance forward to the first ')' character
-    int end = 0;
-    while (bytesleft > 0 && uri_stack[end] != ')') {
+    size_t end = 0;
+    while (bytesleft > 0 && uri_start[end] != ')') {
         end++;
         bytesleft--;
     }
-    if (uri_stack[end] != ')') {
+    if (uri_start[end] != ')') {
         return;
     }
 
     // Create a new string containing only the URI
-    uri_heap = (char *)malloc(sizeof(char) * (end + 1));
-    if (!uri_heap) {
-        cli_errmsg("cli_pdf: malloc() failed (URI)\n");
-        return;
-    }
-    strncpy(uri_heap, uri_stack, end);
-    *(uri_heap + end) = '\0';
+    CLI_MAX_MALLOC_OR_GOTO_DONE(uri_heap, end + 1,
+                                cli_errmsg("cli_pdf: malloc() failed (URI)\n"));
+    strncpy(uri_heap, uri_start, end);
+    uri_heap[end] = '\0';
 
-    json_object *uriarr;
     uriarr = cli_jsonarray(pdf->ctx->wrkproperty, "URIs");
+    if (!uriarr) {
+        cli_errmsg("cli_pdf: malloc() failed (URI array)\n");
+        goto done;
+    }
     cli_jsonstr(uriarr, NULL, uri_heap);
+done:
     free(uri_heap);
 }
 
