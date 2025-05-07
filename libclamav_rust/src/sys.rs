@@ -694,9 +694,9 @@ pub struct icomtr {
 #[derive(Debug, Copy, Clone)]
 pub struct icon_matcher {
     pub group_names: [*mut *mut ::std::os::raw::c_char; 2usize],
-    pub group_counts: [::std::os::raw::c_uint; 2usize],
+    pub group_counts: [u32; 2usize],
     pub icons: [*mut icomtr; 3usize],
-    pub icon_counts: [::std::os::raw::c_uint; 3usize],
+    pub icon_counts: [u32; 3usize],
 }
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]

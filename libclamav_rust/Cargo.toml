@@ -26,7 +26,7 @@ inflate = "0.4"
 bzip2-rs = "0.1"
 byteorder = "1.5"
 delharc = "0.6"
-clam-sigutil = { git = "https://github.com/Cisco-Talos/clamav-signature-util", tag = "1.2.0" }
+clam-sigutil = { git = "https://github.com/Cisco-Talos/clamav-signature-util", tag = "1.2.4" }
 tar = "0.4.43"
 md5 = "0.7.0"
 openssl = "0.10.70"

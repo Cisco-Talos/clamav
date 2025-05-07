@@ -1321,46 +1321,63 @@ static cl_error_t cli_loadidb(FILE *fs, struct cl_engine *engine, unsigned int *
 {
     const char *tokens[ICO_TOKENS + 1] = {0};
     char buffer[FILEBUFF] = {0}, *buffer_cpy = NULL;
-    uint8_t *hash     = NULL;
-    int ret           = CL_SUCCESS;
+    uint8_t *hash  = NULL;
+    cl_error_t ret = CL_ERROR;
+
     unsigned int line = 0, sigs = 0, tokens_count, i, size, enginesize;
     struct icomtr *metric        = NULL;
     struct icon_matcher *matcher = NULL;
 
-    if (!(matcher = (struct icon_matcher *)MPOOL_CALLOC(engine->mempool, sizeof(*matcher), 1)))
-        return CL_EMEM;
+    if (NULL != engine->iconcheck) {
+        // If we've already loaded an icon database for this engine, we need to add to it.
+        matcher = engine->iconcheck;
+    } else if (engine->iconcheck == NULL) {
+        // If we haven't loaded an icon database for this engine, we need to create a new one.
+        matcher = (struct icon_matcher *)MPOOL_CALLOC(engine->mempool, sizeof(*matcher), 1);
+        if (!matcher) {
+            cli_errmsg("cli_loadidb: Can't allocate memory for icon matcher\n");
+            ret = CL_EMEM;
+            goto done;
+        }
+        engine->iconcheck = matcher;
+    }
 
-    if (engine->ignored)
+    if (engine->ignored) {
         if (!(buffer_cpy = malloc(FILEBUFF))) {
             cli_errmsg("cli_loadidb: Can't allocate memory for buffer_cpy\n");
-            MPOOL_FREE(engine->mempool, matcher);
-            return CL_EMEM;
+            ret = CL_EMEM;
+            goto done;
         }
+    }
 
     while (cli_dbgets(buffer, FILEBUFF, fs, dbio)) {
         line++;
-        if (buffer[0] == '#')
+
+        if (buffer[0] == '#') {
             continue;
+        }
 
         cli_chomp(buffer);
-        if (engine->ignored)
+        if (engine->ignored) {
             strcpy(buffer_cpy, buffer);
+        }
 
         tokens_count = cli_strtokenize(buffer, ':', ICO_TOKENS + 1, tokens);
         if (tokens_count != ICO_TOKENS) {
             cli_errmsg("cli_loadidb: Malformed hash at line %u (wrong token count)\n", line);
             ret = CL_EMALFDB;
-            break;
+            goto done;
         }
 
         if (strlen(tokens[3]) != 124) {
             cli_errmsg("cli_loadidb: Malformed hash at line %u (wrong length)\n", line);
             ret = CL_EMALFDB;
-            break;
+            goto done;
         }
 
-        if (engine->ignored && cli_chkign(engine->ignored, tokens[0], buffer_cpy))
+        if (engine->ignored && cli_chkign(engine->ignored, tokens[0], buffer_cpy)) {
             continue;
+        }
 
         if (engine->cb_sigload && engine->cb_sigload("idb", tokens[0], ~options & CL_DB_OFFICIAL, engine->cb_sigload_ctx)) {
             cli_dbgmsg("cli_loadidb: skipping %s due to callback\n", tokens[0]);
@@ -1371,13 +1388,13 @@ static cl_error_t cli_loadidb(FILE *fs, struct cl_engine *engine, unsigned int *
         if (cli_hexnibbles((char *)hash, 124)) {
             cli_errmsg("cli_loadidb: Malformed hash at line %u (bad chars)\n", line);
             ret = CL_EMALFDB;
-            break;
+            goto done;
         }
         size = (hash[0] << 4) + hash[1];
         if (size != 32 && size != 24 && size != 16) {
             cli_errmsg("cli_loadidb: Malformed hash at line %u (bad size)\n", line);
             ret = CL_EMALFDB;
-            break;
+            goto done;
         }
         enginesize = (size >> 3) - 2;
         hash += 2;
@@ -1385,7 +1402,7 @@ static cl_error_t cli_loadidb(FILE *fs, struct cl_engine *engine, unsigned int *
         metric = (struct icomtr *)MPOOL_REALLOC(engine->mempool, matcher->icons[enginesize], sizeof(struct icomtr) * (matcher->icon_counts[enginesize] + 1));
         if (!metric) {
             ret = CL_EMEM;
-            break;
+            goto done;
         }
 
         matcher->icons[enginesize] = metric;
@@ -1404,7 +1421,7 @@ static cl_error_t cli_loadidb(FILE *fs, struct cl_engine *engine, unsigned int *
         if (i != 3) {
             cli_errmsg("cli_loadidb: Malformed hash at line %u (bad color data)\n", line);
             ret = CL_EMALFDB;
-            break;
+            goto done;
         }
 
         for (i = 0; i < 3; i++) {
@@ -1419,7 +1436,7 @@ static cl_error_t cli_loadidb(FILE *fs, struct cl_engine *engine, unsigned int *
         if (i != 3) {
             cli_errmsg("cli_loadidb: Malformed hash at line %u (bad gray data)\n", line);
             ret = CL_EMALFDB;
-            break;
+            goto done;
         }
 
         for (i = 0; i < 3; i++) {
@@ -1433,7 +1450,7 @@ static cl_error_t cli_loadidb(FILE *fs, struct cl_engine *engine, unsigned int *
         if (i != 3) {
             cli_errmsg("cli_loadidb: Malformed hash at line %u (bad bright data)\n", line);
             ret = CL_EMALFDB;
-            break;
+            goto done;
         }
 
         for (i = 0; i < 3; i++) {
@@ -1447,7 +1464,7 @@ static cl_error_t cli_loadidb(FILE *fs, struct cl_engine *engine, unsigned int *
         if (i != 3) {
             cli_errmsg("cli_loadidb: Malformed hash at line %u (bad dark data)\n", line);
             ret = CL_EMALFDB;
-            break;
+            goto done;
         }
 
         for (i = 0; i < 3; i++) {
@@ -1461,7 +1478,7 @@ static cl_error_t cli_loadidb(FILE *fs, struct cl_engine *engine, unsigned int *
         if (i != 3) {
             cli_errmsg("cli_loadidb: Malformed hash at line %u (bad edge data)\n", line);
             ret = CL_EMALFDB;
-            break;
+            goto done;
         }
 
         for (i = 0; i < 3; i++) {
@@ -1475,7 +1492,7 @@ static cl_error_t cli_loadidb(FILE *fs, struct cl_engine *engine, unsigned int *
         if (i != 3) {
             cli_errmsg("cli_loadidb: Malformed hash at line %u (bad noedge data)\n", line);
             ret = CL_EMALFDB;
-            break;
+            goto done;
         }
 
         metric->rsum   = (hash[0] << 4) | hash[1];
@@ -1485,12 +1502,12 @@ static cl_error_t cli_loadidb(FILE *fs, struct cl_engine *engine, unsigned int *
         if (metric->rsum + metric->gsum + metric->bsum > 103 || metric->ccount > 100) {
             cli_errmsg("cli_loadidb: Malformed hash at line %u (bad spread data)\n", line);
             ret = CL_EMALFDB;
-            break;
+            goto done;
         }
 
         if (!(metric->name = CLI_MPOOL_STRDUP(engine->mempool, tokens[0]))) {
             ret = CL_EMEM;
-            break;
+            goto done;
         }
 
         for (i = 0; i < matcher->group_counts[0]; i++) {
@@ -1501,7 +1518,7 @@ static cl_error_t cli_loadidb(FILE *fs, struct cl_engine *engine, unsigned int *
             if (!(matcher->group_names[0] = MPOOL_REALLOC(engine->mempool, matcher->group_names[0], sizeof(char *) * (i + 1))) ||
                 !(matcher->group_names[0][i] = CLI_MPOOL_STRDUP(engine->mempool, tokens[1]))) {
                 ret = CL_EMEM;
-                break;
+                goto done;
             }
             matcher->group_counts[0]++;
         }
@@ -1515,7 +1532,7 @@ static cl_error_t cli_loadidb(FILE *fs, struct cl_engine *engine, unsigned int *
             if (!(matcher->group_names[1] = MPOOL_REALLOC(engine->mempool, matcher->group_names[1], sizeof(char *) * (i + 1))) ||
                 !(matcher->group_names[1][i] = CLI_MPOOL_STRDUP(engine->mempool, tokens[2]))) {
                 ret = CL_EMEM;
-                break;
+                goto done;
             }
             matcher->group_counts[1]++;
         }
@@ -1524,30 +1541,53 @@ static cl_error_t cli_loadidb(FILE *fs, struct cl_engine *engine, unsigned int *
         if (matcher->group_counts[0] > 256 || matcher->group_counts[1] > 256) {
             cli_errmsg("cli_loadidb: too many icon groups!\n");
             ret = CL_EMALFDB;
-            break;
+            goto done;
         }
 
         sigs++;
     }
-    if (engine->ignored)
-        free(buffer_cpy);
 
     if (!line) {
-        cli_errmsg("cli_loadidb: Empty database file\n");
-        ret = CL_EMALFDB;
+        cli_dbgmsg("cli_loadidb: Empty database file\n");
+    } else {
+        cli_dbgmsg("cli_loadidb: %u signatures loaded\n", sigs);
+        if (signo) {
+            *signo += sigs;
+        }
     }
 
-    if (ret) {
-        cli_errmsg("cli_loadidb: Problem parsing database at line %u\n", line);
+    ret = CL_SUCCESS;
+
+done:
+
+    if (NULL != buffer_cpy) {
+        free(buffer_cpy);
+    }
+
+    if (CL_SUCCESS != ret) {
+        for (i = 0; i < 3; i++) {
+            if (matcher->icons[i]) {
+                uint32_t j;
+                for (j = 0; j < matcher->icon_counts[i]; j++) {
+                    struct icomtr *metric = matcher->icons[i];
+                    MPOOL_FREE(engine->mempool, metric[j].name);
+                }
+                MPOOL_FREE(engine->mempool, matcher->icons[i]);
+            }
+        }
+        for (i = 0; i < 2; i++) {
+            if (matcher->group_names[i]) {
+                uint32_t j;
+                for (j = 0; j < matcher->group_counts[i]; j++)
+                    MPOOL_FREE(engine->mempool, matcher->group_names[i][j]);
+                MPOOL_FREE(engine->mempool, matcher->group_names[i]);
+            }
+        }
         MPOOL_FREE(engine->mempool, matcher);
-        return ret;
+        engine->iconcheck = NULL;
     }
 
-    if (signo)
-        *signo += sigs;
-
-    engine->iconcheck = matcher;
-    return CL_SUCCESS;
+    return ret;
 }
 
 static int cli_loadwdb(FILE *fs, struct cl_engine *engine, unsigned int options, struct cli_dbio *dbio)
@@ -5635,11 +5675,14 @@ cl_error_t cl_engine_free(struct cl_engine *engine)
 
                 tasks_to_do += 1; // pcre table
 
+                tasks_to_do += 1; // fuzzy hashmap
+
                 tasks_to_do += 1; // root mempool
             }
         }
         tasks_to_do += 1; // engine root mempool
     }
+
     tasks_to_do += 7; // hdb, mdb, imp, fp, crtmgr, cdb, dbinfo
 
     if (engine->dconf) {
@@ -5651,7 +5694,8 @@ cl_error_t cl_engine_free(struct cl_engine *engine)
         tasks_to_do += 1; // phishing cleanup
         tasks_to_do += 1; // dconf mempool
     }
-    tasks_to_do += 7; // pwdbs, pua cats, iconcheck, tempdir, cache, engine, ignored
+
+    tasks_to_do += 8; // certs_directory, pwdbs, pua cats, iconcheck, tempdir, cache, engine, ignored
 
     if (engine->test_root) {
         root = engine->test_root;
@@ -5665,8 +5709,6 @@ cl_error_t cl_engine_free(struct cl_engine *engine)
         }
 
         tasks_to_do += 1; // pcre table
-
-        tasks_to_do += 1; // fuzzy hashmap
 
         tasks_to_do += 1; // engine root mempool
     }
@@ -5806,6 +5848,11 @@ cl_error_t cl_engine_free(struct cl_engine *engine)
         MPOOL_FREE(engine->mempool, engine->dconf);
         TASK_COMPLETE();
     }
+
+    if (engine->certs_directory) {
+        MPOOL_FREE(engine->mempool, engine->certs_directory);
+    }
+    TASK_COMPLETE();
 
     if (engine->pwdbs) {
         for (i = 0; i < CLI_PWDB_COUNT; i++)

@@ -285,9 +285,9 @@ struct icomtr {
 
 struct icon_matcher {
     char **group_names[2];
-    unsigned int group_counts[2];
+    uint32_t group_counts[2];
     struct icomtr *icons[3];
-    unsigned int icon_counts[3];
+    uint32_t icon_counts[3];
 };
 
 struct cli_dbinfo {
