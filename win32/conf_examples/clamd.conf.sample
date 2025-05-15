@@ -102,6 +102,31 @@ TCPSocket 3310
 # Default: no
 TCPAddr localhost
 
+# Enable or disable certain commands.
+# Disabling some commands like SHUTDOWN may improve the security of the daemon.
+# When a client sends one of the following commands but it is disabled,
+# clamd responds with UNKNOWN COMMAND.
+#
+# Enable the SHUTDOWN command.
+# Setting this to no prevents a client to stop clamd via the protocol.
+# Default: yes
+#EnableShutdownCommand no
+#
+# Enable the RELOAD command
+# Setting this to no prevents a client to reload the database.
+# Default: yes
+#EnableReloadCommand no
+#
+# Enable the STATS command
+# Setting this to no prevents a client from querying statistics.
+# Default: yes
+#EnableStatsCommand yes
+#
+# Enable the VERSION command
+# Setting this to no prevents a client from querying version information.
+# Default: yes
+#EnableVersionCommand yes
+
 # Maximum length the queue of pending connections may grow to.
 # Default: 200
 #MaxConnectionQueueLength 30
