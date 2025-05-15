@@ -565,8 +565,7 @@ int execute_or_dispatch_command(client_conn_t *conn, enum commands cmd, const ch
                 reload = 1;
                 pthread_mutex_unlock(&reload_mutex);
                 mdprintf(desc, "RELOADING%c", term);
-                /* we set reload flag, and we'll reload before closing the
-                * connection */
+                /* we set reload flag, and we'll reload before closing the connection */
             } else {
                 conn_reply_single(conn, NULL, "UNKNOWN COMMAND");
             }
