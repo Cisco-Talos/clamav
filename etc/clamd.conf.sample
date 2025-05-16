@@ -148,12 +148,12 @@ Example
 # Enable the STATS command
 # Setting this to no prevents a client from querying statistics.
 # Default: yes
-#EnableStatsCommand yes
+#EnableStatsCommand no
 #
 # Enable the VERSION command
 # Setting this to no prevents a client from querying version information.
 # Default: yes
-#EnableVersionCommand yes
+#EnableVersionCommand no
 
 # Maximum length the queue of pending connections may grow to.
 # Default: 200
