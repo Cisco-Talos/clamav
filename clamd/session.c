@@ -556,7 +556,7 @@ int execute_or_dispatch_command(client_conn_t *conn, enum commands cmd, const ch
                 progexit = 1;
                 pthread_mutex_unlock(&exit_mutex);
             } else {
-                conn_reply_single(conn, NULL, "UNKNOWN COMMAND");
+                conn_reply_single(conn, NULL, "COMMAND UNAVAILABLE");
             }
             return 1;
         case COMMAND_RELOAD:
@@ -567,7 +567,7 @@ int execute_or_dispatch_command(client_conn_t *conn, enum commands cmd, const ch
                 mdprintf(desc, "RELOADING%c", term);
                 /* we set reload flag, and we'll reload before closing the connection */
             } else {
-                conn_reply_single(conn, NULL, "UNKNOWN COMMAND");
+                conn_reply_single(conn, NULL, "COMMAND UNAVAILABLE");
             }
             return 1;
         case COMMAND_PING:
@@ -583,7 +583,7 @@ int execute_or_dispatch_command(client_conn_t *conn, enum commands cmd, const ch
                 print_ver(desc, conn->term, engine);
                 return conn->group ? 0 : 1;
             } else {
-                conn_reply_single(conn, NULL, "UNKNOWN COMMAND");
+                conn_reply_single(conn, NULL, "COMMAND UNAVAILABLE");
                 return 1;
             }
         }
@@ -614,7 +614,7 @@ int execute_or_dispatch_command(client_conn_t *conn, enum commands cmd, const ch
             if (optget(conn->opts, "EnableStatsCommand")->enabled) {
                 return dispatch_command(conn, cmd, argument);
             } else {
-                conn_reply_single(conn, NULL, "UNKNOWN COMMAND");
+                conn_reply_single(conn, NULL, "COMMAND UNAVAILABLE");
                 return 1;
             }
         }

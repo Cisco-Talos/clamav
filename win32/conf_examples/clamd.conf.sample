@@ -105,7 +105,7 @@ TCPAddr localhost
 # Enable or disable certain commands.
 # Disabling some commands like SHUTDOWN may improve the security of the daemon.
 # When a client sends one of the following commands but it is disabled,
-# clamd responds with UNKNOWN COMMAND.
+# clamd responds with COMMAND UNAVAILABLE.
 #
 # Enable the SHUTDOWN command.
 # Setting this to no prevents a client to stop clamd via the protocol.
