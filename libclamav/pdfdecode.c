@@ -73,7 +73,7 @@
 struct pdf_token {
     uint32_t flags;   /* tracking flags */
     uint32_t success; /* successfully decoded filters */
-    uint32_t length;  /* length of current content; TODO: transition to size_t */
+    size_t length;    /* length of current content; TODO: transition to size_t */
     uint8_t *content; /* content stream */
 };
 
@@ -448,9 +448,15 @@ static cl_error_t filter_ascii85decode(struct pdf_struct *pdf, struct pdf_obj *o
     uint32_t declen = 0;
 
     const uint8_t *ptr = (uint8_t *)token->content;
-    uint32_t remaining = token->length;
+    size_t remaining   = token->length;
     int quintet = 0, rc = CL_SUCCESS;
     uint64_t sum = 0;
+
+    /* Check for overflow */
+    if (remaining > (SIZE_MAX / 4)) {
+        cli_dbgmsg("cli_pdf: ascii85decode: overflow detected\n");
+        return CL_EFORMAT;
+    }
 
     /* 5:4 decoding ratio, with 1:4 expansion sequences => (4*length)+1 */
     if (!(dptr = decoded = (uint8_t *)cli_malloc((4 * remaining) + 1))) {
@@ -838,8 +844,8 @@ static cl_error_t filter_asciihexdecode(struct pdf_struct *pdf, struct pdf_obj *
     uint8_t *decoded;
 
     const uint8_t *content = (uint8_t *)token->content;
-    uint32_t length        = token->length;
-    uint32_t i, j;
+    size_t length          = token->length;
+    size_t i, j;
     cl_error_t rc = CL_SUCCESS;
 
     if (!(decoded = (uint8_t *)cli_calloc(length / 2 + 1, sizeof(uint8_t)))) {
@@ -869,8 +875,8 @@ static cl_error_t filter_asciihexdecode(struct pdf_struct *pdf, struct pdf_obj *
     if (rc == CL_SUCCESS) {
         free(token->content);
 
-        cli_dbgmsg("cli_pdf: deflated %lu bytes from %lu total bytes\n",
-                   (unsigned long)j, (unsigned long)(token->length));
+        cli_dbgmsg("cli_pdf: deflated %zu bytes from %zu total bytes\n",
+                   j, token->length);
 
         token->content = decoded;
         token->length  = j;
@@ -878,8 +884,8 @@ static cl_error_t filter_asciihexdecode(struct pdf_struct *pdf, struct pdf_obj *
         if (!(obj->flags & ((1 << OBJ_IMAGE) | (1 << OBJ_TRUNCATED))))
             pdfobj_flag(pdf, obj, BAD_ASCIIDECODE);
 
-        cli_dbgmsg("cli_pdf: error occurred parsing byte %lu of %lu\n",
-                   (unsigned long)i, (unsigned long)(token->length));
+        cli_dbgmsg("cli_pdf: error occurred parsing byte %zu of %zu\n",
+                   i, token->length);
         free(decoded);
     }
     return rc;
@@ -920,27 +926,29 @@ static cl_error_t filter_decrypt(struct pdf_struct *pdf, struct pdf_obj *obj, st
         return CL_EPARSE; /* TODO: what should this value be? CL_SUCCESS would mirror previous behavior */
     }
 
-    cli_dbgmsg("cli_pdf: decrypted %zu bytes from %u total bytes\n",
+    cli_dbgmsg("cli_pdf: decrypted %zu bytes from %zu total bytes\n",
                length, token->length);
 
     free(token->content);
     token->content = (uint8_t *)decrypted;
-    token->length  = (uint32_t)length; /* this may truncate unfortunately, TODO: use 64-bit values internally? */
+    token->length  = length;
     return CL_SUCCESS;
 }
 
 static cl_error_t filter_lzwdecode(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_dict *params, struct pdf_token *token)
 {
     uint8_t *decoded, *temp;
-    uint32_t declen = 0, capacity = 0;
+    size_t declen = 0, capacity = 0;
 
     uint8_t *content = (uint8_t *)token->content;
     uint32_t length  = token->length;
     lzw_stream stream;
     int echg = 1, lzwstat, rc = CL_SUCCESS;
 
-    if (pdf->ctx && !(pdf->ctx->dconf->other & OTHER_CONF_LZW))
-        return CL_BREAK;
+    if (pdf->ctx && !(pdf->ctx->dconf->other & OTHER_CONF_LZW)) {
+        rc = CL_BREAK;
+        goto done;
+    }
 
     if (params) {
         struct pdf_dict_node *node = params->nodes;
@@ -971,15 +979,18 @@ static cl_error_t filter_lzwdecode(struct pdf_struct *pdf, struct pdf_obj *obj, 
          * Sample 0015315109, it has \r followed by zlib header.
          * Flag pdf as suspicious, and attempt to extract by skipping the \r.
          */
-        if (!length)
-            return CL_SUCCESS;
+        if (!length) {
+            rc = CL_SUCCESS;
+            goto done;
+        }
     }
 
     capacity = INFLATE_CHUNK_SIZE;
 
     if (!(decoded = (uint8_t *)cli_malloc(capacity))) {
         cli_errmsg("cli_pdf: cannot allocate memory for decoded output\n");
-        return CL_EMEM;
+        rc = CL_EMEM;
+        goto done;
     }
 
     memset(&stream, 0, sizeof(stream));
@@ -994,7 +1005,8 @@ static cl_error_t filter_lzwdecode(struct pdf_struct *pdf, struct pdf_obj *obj, 
     if (lzwstat != Z_OK) {
         cli_warnmsg("cli_pdf: lzwInit failed\n");
         free(decoded);
-        return CL_EMEM;
+        rc = CL_EMEM;
+        goto done;
     }
 
     /* initial inflate */
@@ -1009,16 +1021,23 @@ static cl_error_t filter_lzwdecode(struct pdf_struct *pdf, struct pdf_obj *obj, 
             length -= q - content;
             content = q;
 
-            stream.next_in   = (Bytef *)content;
-            stream.avail_in  = length;
-            stream.next_out  = (Bytef *)decoded;
+            stream.next_in  = (Bytef *)content;
+            stream.avail_in = length;
+            stream.next_out = (Bytef *)decoded;
+            /* Make sure we don't overflow during type conversion */
+            if (capacity > UINT_MAX) {
+                cli_dbgmsg("cli_pdf: lzwdecode: overflow detected\n");
+                rc = CL_EFORMAT;
+                goto done;
+            }
             stream.avail_out = capacity;
 
             lzwstat = lzwInit(&stream);
             if (lzwstat != Z_OK) {
                 cli_warnmsg("cli_pdf: lzwInit failed\n");
                 free(decoded);
-                return CL_EMEM;
+                rc = CL_EMEM;
+                goto done;
             }
 
             pdfobj_flag(pdf, obj, BAD_FLATESTART);
@@ -1031,7 +1050,7 @@ static cl_error_t filter_lzwdecode(struct pdf_struct *pdf, struct pdf_obj *obj, 
         /* extend output capacity if needed,*/
         if (stream.avail_out == 0) {
             if ((rc = cli_checklimits("pdf", pdf->ctx, capacity + INFLATE_CHUNK_SIZE, 0, 0)) != CL_SUCCESS) {
-                cli_dbgmsg("cli_pdf: required buffer size to inflate compressed filter exceeds maximum: %u\n", capacity + INFLATE_CHUNK_SIZE);
+                cli_dbgmsg("cli_pdf: required buffer size to inflate compressed filter exceeds maximum: %zu\n", capacity + INFLATE_CHUNK_SIZE);
                 break;
             }
 
@@ -1043,12 +1062,28 @@ static cl_error_t filter_lzwdecode(struct pdf_struct *pdf, struct pdf_obj *obj, 
             decoded          = temp;
             stream.next_out  = decoded + capacity;
             stream.avail_out = INFLATE_CHUNK_SIZE;
+            if (declen > (SIZE_MAX - INFLATE_CHUNK_SIZE)) {
+                cli_dbgmsg("cli_pdf: lzwdecode: overflow detected\n");
+                rc = CL_EFORMAT;
+                goto done;
+            }
             declen += INFLATE_CHUNK_SIZE;
+            if (capacity > (SIZE_MAX - INFLATE_CHUNK_SIZE)) {
+                cli_dbgmsg("cli_pdf: lzwdecode: overflow detected\n");
+                rc = CL_EFORMAT;
+                goto done;
+            }
             capacity += INFLATE_CHUNK_SIZE;
         }
 
         /* continue inflation */
         lzwstat = lzwInflate(&stream);
+    }
+
+    if (declen > (UINT32_MAX - (INFLATE_CHUNK_SIZE - stream.avail_out))) {
+        cli_dbgmsg("cli_pdf: lzwdecode: overflow detected\n");
+        rc = CL_EFORMAT;
+        goto done;
     }
 
     /* add stream end fragment to decoded length */
@@ -1091,6 +1126,7 @@ static cl_error_t filter_lzwdecode(struct pdf_struct *pdf, struct pdf_obj *obj, 
 
     (void)lzwInflateEnd(&stream);
 
+done:
     if (rc == CL_SUCCESS) {
         if (declen == 0) {
             cli_dbgmsg("cli_pdf: empty stream after inflation completed.\n");

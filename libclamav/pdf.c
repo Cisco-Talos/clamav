@@ -441,7 +441,7 @@ int pdf_findobj_in_objstm(struct pdf_struct *pdf, struct objstm_struct *objstm, 
 
         if (CL_SUCCESS != cli_strntol_wrap(index, bytes_remaining, 0, 10, &temp_long)) {
             /* Failed to find obj offset for next obj */
-            cli_dbgmsg("pdf_findobj_in_objstm: Failed to find next obj offset for obj in object stream though there should be {%u} more.\n", objstm->n - objstm->nobjs_found);
+            cli_dbgmsg("pdf_findobj_in_objstm: Failed to find next obj offset for obj in object stream though there should be {%zu} more.\n", objstm->n - objstm->nobjs_found);
             status = CL_EPARSE;
             goto done;
         } else if (temp_long < 0) {
@@ -1555,18 +1555,18 @@ cl_error_t pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t
                 }
             }
 
-            cli_dbgmsg("pdf_extract_obj: calculated length %lld\n", (long long)length);
+            cli_dbgmsg("pdf_extract_obj: calculated length %zu\n", length);
         } else {
             if (obj->stream_size > (size_t)length + 2) {
                 cli_dbgmsg("cli_pdf: calculated length %zu < %zu\n",
-                           (size_t)length, obj->stream_size);
+                           length, obj->stream_size);
                 length = obj->stream_size;
             }
         }
 
-        if ((0 != orig_length) && (obj->stream_size > (size_t)orig_length + 20)) {
-            cli_dbgmsg("pdf_extract_obj: orig length: %lld, length: %lld, size: %zu\n",
-                       (long long)orig_length, (long long)length, obj->stream_size);
+        if ((0 != orig_length) && (obj->stream_size > orig_length + 20)) {
+            cli_dbgmsg("pdf_extract_obj: orig length: %zu, length: %zu, size: %zu\n",
+                       orig_length, length, obj->stream_size);
             pdfobj_flag(pdf, obj, BAD_STREAMLEN);
         }
 
@@ -1620,18 +1620,18 @@ cl_error_t pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t
          */
         dict_len = obj->stream - start;
         if (NULL != (pstr = pdf_getdict(start, &dict_len, "/Type/ObjStm"))) {
-            int32_t objstm_first  = -1;
-            int32_t objstm_length = -1;
-            int32_t objstm_n      = -1;
+            int objstm_first  = -1;
+            int objstm_length = -1;
+            int objstm_n      = -1;
 
             cli_dbgmsg("pdf_extract_obj: Found /Type/ObjStm\n");
 
             dict_len = obj->stream - start;
-            if ((-1 == (objstm_first = pdf_readint(start, dict_len, "/First")))) {
+            if (-1 == (objstm_first = pdf_readint(start, dict_len, "/First"))) {
                 cli_warnmsg("pdf_extract_obj: Failed to find offset of first object in object stream\n");
-            } else if ((-1 == (objstm_length = pdf_readint(start, dict_len, "/Length")))) {
+            } else if (-1 == (objstm_length = pdf_readint(start, dict_len, "/Length"))) {
                 cli_warnmsg("pdf_extract_obj: Failed to find length of object stream\n");
-            } else if ((-1 == (objstm_n = pdf_readint(start, dict_len, "/N")))) {
+            } else if (-1 == (objstm_n = pdf_readint(start, dict_len, "/N"))) {
                 cli_warnmsg("pdf_extract_obj: Failed to find num objects in object stream\n");
             } else {
                 /* Add objstm to pdf struct, so it can be freed eventually */
@@ -1653,19 +1653,19 @@ cl_error_t pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t
 
                 memset(objstm, 0, sizeof(*objstm));
 
-                objstm->first        = (uint32_t)objstm_first;
-                objstm->current      = (uint32_t)objstm_first;
+                objstm->first        = (size_t)objstm_first;
+                objstm->current      = (size_t)objstm_first;
                 objstm->current_pair = 0;
-                objstm->length       = (uint32_t)objstm_length;
-                objstm->n            = (uint32_t)objstm_n;
+                objstm->length       = (size_t)objstm_length;
+                objstm->n            = (size_t)objstm_n;
 
-                cli_dbgmsg("pdf_extract_obj: ObjStm first obj at offset %d\n", objstm->first);
-                cli_dbgmsg("pdf_extract_obj: ObjStm length is %d bytes\n", objstm->length);
-                cli_dbgmsg("pdf_extract_obj: ObjStm should contain %d objects\n", objstm->n);
+                cli_dbgmsg("pdf_extract_obj: ObjStm first obj at offset %zu\n", objstm->first);
+                cli_dbgmsg("pdf_extract_obj: ObjStm length is %zu bytes\n", objstm->length);
+                cli_dbgmsg("pdf_extract_obj: ObjStm should contain %zu objects\n", objstm->n);
             }
         }
 
-        sum = pdf_decodestream(pdf, obj, dparams, obj->stream, (uint32_t)length, xref, fout, &rc, objstm);
+        sum = pdf_decodestream(pdf, obj, dparams, obj->stream, length, xref, fout, &rc, objstm);
         if ((CL_SUCCESS != rc) && (CL_VIRUS != rc)) {
             cli_dbgmsg("Error decoding stream! Error code: %d\n", rc);
 
@@ -3351,7 +3351,7 @@ cl_error_t pdf_find_and_parse_objs_in_objstm(struct pdf_struct *pdf, struct objs
         retval = pdf_findobj_in_objstm(pdf, objstm, &obj);
         if (retval != CL_SUCCESS) {
             if (retval != CL_BREAK) {
-                cli_dbgmsg("pdf_find_and_parse_objs_in_objstm: Fewer objects in stream than expected: %u found, %u expected.\n",
+                cli_dbgmsg("pdf_find_and_parse_objs_in_objstm: Fewer objects in stream than expected: %zu found, %zu expected.\n",
                            objstm->nobjs_found, objstm->n);
                 badobjects++;
                 pdf->stats.ninvalidobjs++;
