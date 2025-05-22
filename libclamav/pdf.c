@@ -1447,22 +1447,26 @@ static int pdf_scan_contents(int fd, struct pdf_struct *pdf, struct pdf_obj *obj
 
 cl_error_t pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t flags)
 {
+    cl_error_t status = CL_SUCCESS;
+    cl_error_t ret;
+
     char fullname[PATH_MAX + 1];
-    int fout      = -1;
-    size_t sum    = 0;
-    cl_error_t rc = CL_SUCCESS;
-    int dump      = 1;
+    int fout   = -1;
+    size_t sum = 0;
+    bool dump  = true;
 
     cli_dbgmsg("pdf_extract_obj: obj %u %u\n", obj->id >> 8, obj->id & 0xff);
 
     if (PDF_OBJECT_RECURSION_LIMIT < pdf->parse_recursion_depth) {
         cli_dbgmsg("pdf_extract_obj: Recursion limit reached.\n");
-        return CL_SUCCESS;
+        status = CL_SUCCESS;
+        goto done;
     }
 
     if (obj->extracted) {
         // Should not attempt to extract the same object more than once.
-        return CL_SUCCESS;
+        status = CL_SUCCESS;
+        goto done;
     }
     // We're not done yet, but this is enough to say we've tried.
     // Trying again won't help any.
@@ -1472,7 +1476,8 @@ cl_error_t pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t
         cli_dbgmsg("pdf_extract_obj: extracting obj found in objstm.\n");
         if (obj->objstm->streambuf == NULL) {
             cli_warnmsg("pdf_extract_obj: object in object stream has null stream buffer!\n");
-            return CL_EFORMAT;
+            status = CL_EFORMAT;
+            goto done;
         }
     }
 
@@ -1485,21 +1490,23 @@ cl_error_t pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t
     /* TODO: call bytecode hook here, allow override dumpability */
     if ((!(obj->flags & (1 << OBJ_STREAM)) || (obj->flags & (1 << OBJ_HASFILTERS))) && !(obj->flags & DUMP_MASK)) {
         /* don't dump all streams */
-        dump = 0;
+        dump = false;
     }
 
     if ((obj->flags & (1 << OBJ_IMAGE)) && !(obj->flags & (1 << OBJ_FILTER_DCT))) {
         /* don't dump / scan non-JPG images */
-        dump = 0;
+        dump = false;
     }
 
     if (obj->flags & (1 << OBJ_FORCEDUMP)) {
         /* bytecode can force dump by setting this flag */
-        dump = 1;
+        dump = true;
     }
 
-    if (!dump)
-        return CL_CLEAN;
+    if (!dump) {
+        status = CL_SUCCESS;
+        goto done;
+    }
 
     cli_dbgmsg("pdf_extract_obj: dumping obj %u %u\n", obj->id >> 8, obj->id & 0xff);
 
@@ -1508,8 +1515,8 @@ cl_error_t pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t
     if (fout < 0) {
         char err[128];
         cli_errmsg("pdf_extract_obj: can't create temporary file %s: %s\n", fullname, cli_strerror(errno, err, sizeof(err)));
-
-        return CL_ETMPFILE;
+        status = CL_ETMPFILE;
+        goto done;
     }
 
     if (!(flags & PDF_EXTRACT_OBJ_SCAN)) {
@@ -1655,14 +1662,16 @@ cl_error_t pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t
                 if (!pdf->objstms) {
                     cli_warnmsg("pdf_extract_obj: out of memory parsing object stream (%u)\n", pdf->nobjstms);
                     pdf_free_dict(dparams);
-                    return CL_EMEM;
+                    status = CL_EMEM;
+                    goto done;
                 }
 
                 objstm = malloc(sizeof(struct objstm_struct));
                 if (!objstm) {
                     cli_warnmsg("pdf_extract_obj: out of memory parsing object stream (%u)\n", pdf->nobjstms);
                     pdf_free_dict(dparams);
-                    return CL_EMEM;
+                    status = CL_EMEM;
+                    goto done;
                 }
                 pdf->objstms[pdf->nobjstms - 1] = objstm;
 
@@ -1680,18 +1689,18 @@ cl_error_t pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t
             }
         }
 
-        sum = pdf_decodestream(pdf, obj, dparams, obj->stream, (uint32_t)length, xref, fout, &rc, objstm);
-        if ((CL_SUCCESS != rc) && (CL_VIRUS != rc)) {
-            cli_dbgmsg("Error decoding stream! Error code: %d\n", rc);
+        sum = pdf_decodestream(pdf, obj, dparams, obj->stream, (uint32_t)length, xref, fout, &status, objstm);
+        if ((CL_SUCCESS != status) && (CL_VIRUS != status)) {
+            cli_dbgmsg("Error decoding stream! Error code: %d\n", status);
 
             /* It's ok if we couldn't decode the stream,
              *   make a best effort to keep parsing...
              *   Unless we were unable to allocate memory.*/
-            if (CL_EMEM == rc) {
+            if (CL_EMEM == status) {
                 goto really_done;
             }
-            if (CL_EPARSE == rc) {
-                rc = CL_SUCCESS;
+            if (CL_EPARSE == status) {
+                status = CL_SUCCESS;
             }
 
             if (NULL != objstm) {
@@ -1720,7 +1729,8 @@ cl_error_t pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t
 
                             if (!pdf->objstms) {
                                 cli_warnmsg("pdf_extract_obj: out of memory when shrinking down objstm array\n");
-                                return CL_EMEM;
+                                status = CL_EMEM;
+                                goto done;
                             }
                         }
                     } else {
@@ -1734,7 +1744,7 @@ cl_error_t pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t
         if (dparams)
             pdf_free_dict(dparams);
 
-        if (rc == CL_VIRUS) {
+        if (status == CL_VIRUS) {
             sum = 0; /* prevents post-filter scan */
             goto done;
         }
@@ -1796,7 +1806,7 @@ cl_error_t pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t
                 pdf->stats.njs++;
 
                 if (filter_writen(pdf, obj, fout, out, js_len, (size_t *)&sum) != js_len) {
-                    rc = CL_EWRITE;
+                    status = CL_EWRITE;
                     free(js);
                     break;
                 }
@@ -1831,14 +1841,16 @@ cl_error_t pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t
         off_t bytesleft = obj->size;
 
         if (bytesleft < 0)
-            rc = CL_EFORMAT;
+            status = CL_EFORMAT;
         else {
             if (obj->objstm) {
-                if (filter_writen(pdf, obj, fout, obj->objstm->streambuf + obj->start, bytesleft, (size_t *)&sum) != (size_t)bytesleft)
-                    rc = CL_EWRITE;
+                if (filter_writen(pdf, obj, fout, obj->objstm->streambuf + obj->start, bytesleft, (size_t *)&sum) != (size_t)bytesleft) {
+                    status = CL_EWRITE;
+                }
             } else {
-                if (filter_writen(pdf, obj, fout, pdf->map + obj->start, bytesleft, (size_t *)&sum) != (size_t)bytesleft)
-                    rc = CL_EWRITE;
+                if (filter_writen(pdf, obj, fout, pdf->map + obj->start, bytesleft, (size_t *)&sum) != (size_t)bytesleft) {
+                    status = CL_EWRITE;
+                }
             }
         }
     }
@@ -1849,46 +1861,49 @@ done:
     cli_dbgmsg("pdf_extract_obj:         ... to %s\n", fullname);
 
     if (flags & PDF_EXTRACT_OBJ_SCAN && sum) {
-        int rc2;
-
         /* TODO: invoke bytecode on this pdf obj with metainformation associated */
         lseek(fout, 0, SEEK_SET);
-        rc2 = cli_magic_scan_desc(fout, fullname, pdf->ctx, NULL, LAYER_ATTRIBUTES_NONE);
-        if (rc2 != CL_SUCCESS) {
-            rc = rc2;
+        ret = cli_magic_scan_desc(fout, fullname, pdf->ctx, NULL, LAYER_ATTRIBUTES_NONE);
+        if (ret != CL_SUCCESS) {
+            status = ret;
             goto really_done;
         }
 
-        if ((rc == CL_CLEAN) || (rc == CL_VIRUS)) {
-            rc2 = run_pdf_hooks(pdf, PDF_PHASE_POSTDUMP, fout);
-            if (rc2 == CL_VIRUS) {
-                rc = rc2;
+        if ((status == CL_CLEAN) || (status == CL_VIRUS)) {
+            ret = run_pdf_hooks(pdf, PDF_PHASE_POSTDUMP, fout);
+            if (ret == CL_VIRUS) {
+                status = ret;
                 goto really_done;
             }
         }
 
-        if (((rc == CL_CLEAN) || (rc == CL_VIRUS)) && (obj->flags & (1 << OBJ_CONTENTS))) {
+        if (((status == CL_CLEAN) || (status == CL_VIRUS)) && (obj->flags & (1 << OBJ_CONTENTS))) {
             lseek(fout, 0, SEEK_SET);
             cli_dbgmsg("pdf_extract_obj: dumping contents from obj %u %u\n", obj->id >> 8, obj->id & 0xff);
 
-            rc2 = pdf_scan_contents(fout, pdf, obj);
-            if (rc2 != CL_SUCCESS) {
-                rc = rc2;
+            ret = pdf_scan_contents(fout, pdf, obj);
+            if (ret != CL_SUCCESS) {
+                status = ret;
                 goto really_done;
             }
         }
     }
 
 really_done:
-    close(fout);
 
-    if (CL_EMEM != rc) {
-        if (flags & PDF_EXTRACT_OBJ_SCAN && !pdf->ctx->engine->keeptmp)
-            if (cli_unlink(fullname) && rc != CL_VIRUS)
-                rc = CL_EUNLINK;
+    if (-1 != fout) {
+        close(fout);
     }
 
-    return rc;
+    if (CL_EMEM != status) {
+        if (flags & PDF_EXTRACT_OBJ_SCAN && !pdf->ctx->engine->keeptmp) {
+            if (cli_unlink(fullname) && status != CL_VIRUS) {
+                status = CL_EUNLINK;
+            }
+        }
+    }
+
+    return status;
 }
 
 enum objstate {

@@ -61,11 +61,6 @@
 
 #endif
 
-/* Apple does not define __pid_t */
-#ifdef __APPLE__
-typedef pid_t __pid_t;
-#endif
-
 #define UNUSEDPARAM(x) (void)(x)
 
 #include <sys/types.h>
