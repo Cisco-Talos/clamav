@@ -231,11 +231,17 @@ TCPAddr localhost
 # Default: no
 #GenerateMetadataJson yes
 
-# Store URLs found in html files to the json metadata.
-# URLs will be stored in an array with the tag 'HTMLUrls'
+# Store URIs found in html files to the json metadata.
+# URIs will be stored in an array with the tag 'URIs'
 # GenerateMetadataJson is required for this feature.
 # Default: yes (if GenerateMetadataJson is used)
-#JsonStoreHTMLUrls no
+#JsonStoreHTMLURIs no
+
+# Store URIs found in pdf files to the json metadata.
+# URIs will be stored in an array with the tag 'URIs'
+# GenerateMetadataJson is required for this feature.
+# Default: yes (if GenerateMetadataJson is used)
+#JsonStorePDFURIs no
 
 # Permit use of the ALLMATCHSCAN command. If set to no, clamd will reject
 # any ALLMATCHSCAN command as invalid.
