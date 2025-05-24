@@ -92,7 +92,7 @@ struct clam_option {
     int argtype;
     const char *regex;
     long long numarg;
-    const char *strarg;
+    char *strarg;
     int flags;
     int owner;
     const char *description;

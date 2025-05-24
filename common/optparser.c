@@ -61,6 +61,7 @@
 #endif
 
 #define MAXCMDOPTS 150
+#define MAX_OPTION_LINE_LENGTH 1024
 
 #define MATCH_NUMBER "^[0-9]+((( +)?#(.*))?)$"
 #define MATCH_SIZE   "^[0-9]+[KMG]?(( +)?#(.*))?$"
@@ -964,10 +965,11 @@ struct optstruct *optparse(const char *cfgfile, int argc, char **argv, int verbo
     FILE *fs = NULL;
     const struct clam_option *optentry;
     char *pt;
-    const char *name = NULL, *arg;
+    const char *name = NULL;
+    char *arg;
     int i, err = 0, lc = 0, sc = 0, opt_index, line = 0, ret;
     struct optstruct *opts = NULL, *opts_last = NULL, *opt;
-    char buffer[1024], *buff;
+    char buffer[MAX_OPTION_LINE_LENGTH], *buff;
     struct option longopts[MAXCMDOPTS];
     char shortopts[MAXCMDOPTS];
     regex_t regex;
@@ -1056,8 +1058,9 @@ struct optstruct *optparse(const char *cfgfile, int argc, char **argv, int verbo
                 break;
 
             buff = buffer;
-            for (i = 0; i < (int)strlen(buff) - 1 && (buff[i] == ' ' || buff[i] == '\t'); i++)
+            for (i = 0; i < (int)strlen(buff) - 1 && (buff[i] == ' ' || buff[i] == '\t'); i++) {
                 ;
+            }
             buff += i;
             line++;
             if (strlen(buff) <= 2 || buff[0] == '#')
@@ -1078,11 +1081,13 @@ struct optstruct *optparse(const char *cfgfile, int argc, char **argv, int verbo
             }
             name  = buff;
             *pt++ = 0;
-            for (i = 0; i < (int)strlen(pt) - 1 && (pt[i] == ' ' || pt[i] == '\t'); i++)
+            for (i = 0; i < (int)strlen(pt) - 1 && (pt[i] == ' ' || pt[i] == '\t'); i++) {
                 ;
+            }
             pt += i;
-            for (i = strlen(pt); i >= 1 && (pt[i - 1] == ' ' || pt[i - 1] == '\t' || pt[i - 1] == '\n'); i--)
+            for (i = strlen(pt); i >= 1 && (pt[i - 1] == ' ' || pt[i - 1] == '\t' || pt[i - 1] == '\n'); i--) {
                 ;
+            }
             if (!i) {
                 if (verbose)
                     fprintf(stderr, "ERROR: Missing argument for option at %s:%d\n", cfgfile, line);
@@ -1230,14 +1235,18 @@ struct optstruct *optparse(const char *cfgfile, int argc, char **argv, int verbo
             }
         }
 
+        /* Find and remove inline comments. */
         numarg        = -1;
         inlinecomment = strchr(arg, '#');
         if (inlinecomment != NULL) {
+            /* Found a '#', indicating an inline comment. Strip it off along with any leading spaces or tabs. */
             arg          = strtok(arg, "#");
             trim_comment = arg + strlen(arg) - 1;
-            while (trim_comment >= arg && *trim_comment == ' ')
+            while (trim_comment >= arg && (*trim_comment == ' ' || *trim_comment == '\t')) {
                 *(trim_comment--) = '\0';
+            }
         }
+
         switch (optentry->argtype) {
             case CLOPT_TYPE_STRING:
                 if (!arg)
