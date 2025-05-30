@@ -1,0 +1,50 @@
+//devcontainer.json
+{
+    "name": "ClamAV AlmaLinux Development Container",
+    "build": {
+        "dockerfile": "Dockerfile",
+        "context": "../..",
+        "args": {
+            "REMOTE_USER": "${localEnv:USER}",
+            // This requires UID to be exported in your shell profile. See https://aka.ms/vscode-remote/containers/non-root-user.
+            "REMOTE_UID": "${localEnv:UID}"
+        },
+        "options": [
+            "--ssh=default"
+        ]
+    },
+    "postCreateCommand": "echo 'Welcome to your ClamAV AlmaLinux development container!'",
+    "postStartCommand": "git config --global --add safe.directory ${containerWorkspaceFolder}",
+    "mounts": [
+        "source=${localEnv:HOME}/data/cvd,target=/var/lib/clamav,type=bind,consistency=cached"
+    ],
+    "runArgs": [
+        "--cap-add=SYS_PTRACE",
+        "--security-opt",
+        "seccomp=unconfined",
+        // Set the SSH_AUTH_SOCK environment variable
+        "-e",
+        "SSH_AUTH_SOCK=/ssh-agent.sock",
+        // Mount the SSH agent socket
+        "--mount=type=bind,src=${localEnv:SSH_AUTH_SOCK},target=/ssh-agent.sock",
+        // Add host.docker.internal to /etc/hosts to enable container to reach host machine so that it can reach test Kafka broker running in docker on host machine
+        "--add-host=host.docker.internal:host-gateway"
+    ],
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "rust-lang.rust-analyzer",
+                "ms-azuretools.vscode-docker",
+                "eamodio.gitlens",
+                "vadimcn.vscode-lldb",
+                "webfreak.debug",
+                "ms-vscode-remote.remote-containers",
+                "ms-vscode.cpptools-extension-pack",
+                "ms-vscode.cpptools"
+            ],
+            "settings": {
+                "terminal.integrated.shell.linux": "/bin/bash"
+            }
+        }
+    }
+}
