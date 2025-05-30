@@ -50,6 +50,7 @@ class TC(testcase.TestCase):
     def tearDown(self):
         if TC.mock_mirror != None:
             TC.mock_mirror.terminate()
+            TC.mock_mirror.join()
             TC.mock_mirror = None
 
         # Clear the database directory
