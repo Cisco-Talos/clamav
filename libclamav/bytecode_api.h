@@ -263,7 +263,8 @@ enum pdf_objflags {
     OBJ_FILTER_STANDARD, /* */
     OBJ_LAUNCHACTION,    /* */
     OBJ_PAGE,            /* */
-    OBJ_CONTENTS         /* */
+    OBJ_CONTENTS,        /* */
+    OBJ_URI              /* */
 };
 
 /**

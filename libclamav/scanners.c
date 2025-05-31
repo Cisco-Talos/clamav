@@ -2082,7 +2082,7 @@ done:
     return ret;
 }
 
-const char *const HTML_URLS_JSON_KEY = "HTMLUrls";
+const char *const HTML_URIS_JSON_KEY = "URIs";
 /* https://www.iana.org/assignments/uri-schemes/uri-schemes.xhtml  */
 const char *URI_LIST[] = {
     "aaa://",
@@ -2495,7 +2495,7 @@ static void save_urls(cli_ctx *ctx, tag_arguments_t *hrefs, form_data_t *form_da
         return;
     }
 
-    if (!(SCAN_STORE_HTML_URLS && SCAN_COLLECT_METADATA && (ctx->wrkproperty != NULL))) {
+    if (!(SCAN_STORE_HTML_URIS && SCAN_COLLECT_METADATA && (ctx->wrkproperty != NULL))) {
         return;
     }
 
@@ -2503,9 +2503,9 @@ static void save_urls(cli_ctx *ctx, tag_arguments_t *hrefs, form_data_t *form_da
     for (i = 0; i < hrefs->count; i++) {
         if (is_url((const char *)hrefs->value[i], strlen((const char *)hrefs->value[i]))) {
             if (NULL == ary) {
-                ary = cli_jsonarray(ctx->wrkproperty, HTML_URLS_JSON_KEY);
+                ary = cli_jsonarray(ctx->wrkproperty, HTML_URIS_JSON_KEY);
                 if (!ary) {
-                    cli_dbgmsg("[cli_scanhtml] Failed to add \"%s\" entry JSON array\n", HTML_URLS_JSON_KEY);
+                    cli_dbgmsg("[cli_scanhtml] Failed to add \"%s\" entry JSON array\n", HTML_URIS_JSON_KEY);
                     return;
                 }
             }
@@ -2517,9 +2517,9 @@ static void save_urls(cli_ctx *ctx, tag_arguments_t *hrefs, form_data_t *form_da
     for (i = 0; i < (int)form_data->count; i++) {
         if (is_url((const char *)form_data->urls[i], strlen((const char *)form_data->urls[i]))) {
             if (NULL == ary) {
-                ary = cli_jsonarray(ctx->wrkproperty, HTML_URLS_JSON_KEY);
+                ary = cli_jsonarray(ctx->wrkproperty, HTML_URIS_JSON_KEY);
                 if (!ary) {
-                    cli_dbgmsg("[cli_scanhtml] Failed to add \"%s\" entry JSON array\n", HTML_URLS_JSON_KEY);
+                    cli_dbgmsg("[cli_scanhtml] Failed to add \"%s\" entry JSON array\n", HTML_URIS_JSON_KEY);
                     return;
                 }
             }
@@ -2560,7 +2560,7 @@ static cl_error_t cli_scanhtml(cli_ctx *ctx)
     cli_dbgmsg("cli_scanhtml: using tempdir %s\n", tempname);
 
     /* Output JSON Summary Information */
-    if (SCAN_STORE_HTML_URLS && SCAN_COLLECT_METADATA && (ctx->wrkproperty != NULL)) {
+    if (SCAN_STORE_HTML_URIS && SCAN_COLLECT_METADATA && (ctx->wrkproperty != NULL)) {
         tag_arguments_t hrefs = {0};
         hrefs.scanContents    = 1;
         form_data_t form_data = {0};
@@ -4311,7 +4311,7 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
                         free_duplicate_fmap(new_map);
                     }
                 } // end check for embedded files
-            }     // end if (fpt->offset > 0)
+            } // end if (fpt->offset > 0)
 
             if ((nret == CL_EMEM) ||
                 (ctx->abort_scan) ||
