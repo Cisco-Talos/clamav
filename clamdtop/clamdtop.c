@@ -803,6 +803,7 @@ static int make_connection(const char *soname, conn_t *conn)
     send_string(conn, "nIDSESSION\nnVERSION\n");
     free(conn->version);
     conn->version = NULL;
+
     rv = read_version(conn);
     if (rv == -3) {
         print_con_info(conn, "VERSION command unavailable, consider enabling it in the clamd configuration.\n");
@@ -1352,7 +1353,6 @@ static int read_version(conn_t *conn)
             conn->version[i] = ' ';
     return 0;
 }
-
 
 static int check_stats_available(conn_t *conn)
 {
