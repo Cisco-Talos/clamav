@@ -2883,7 +2883,7 @@ static void compute_hash_r6(const char *password, size_t pwlen, const unsigned c
     int32_t block_size = 32;
     size_t in_data_len = 0, out_data_len;
     int32_t i, j, sum;
-    uint8_t sha256[32], sha384[48], sha512[64];
+    uint8_t sha2_256[32], sha2_384[48], sha2_512[64];
 
     /*
      * Compute a SHA-256 hash of the UTF-8 password concatenated with the 8 bytes of the owner or user validation salt.
@@ -2923,18 +2923,18 @@ static void compute_hash_r6(const char *password, size_t pwlen, const unsigned c
         block_size = 32 + (sum % 3) * 16;
         switch (block_size) {
             case 32:
-                cl_sha256(data, in_data_len * 64, sha256, NULL);
-                memcpy(block, sha256, 32);
+                cl_sha256(data, in_data_len * 64, sha2_256, NULL);
+                memcpy(block, sha2_256, 32);
                 break;
 
             case 48:
-                cl_sha384(data, in_data_len * 64, sha384, NULL);
-                memcpy(block, sha384, 48);
+                cl_sha384(data, in_data_len * 64, sha2_384, NULL);
+                memcpy(block, sha2_384, 48);
                 break;
 
             case 64:
-                cl_sha512(data, in_data_len * 64, sha512, NULL);
-                memcpy(block, sha512, 64);
+                cl_sha512(data, in_data_len * 64, sha2_512, NULL);
+                memcpy(block, sha2_512, 64);
                 break;
         }
     }

@@ -2615,7 +2615,7 @@ static int cli_loadinfo(FILE *fs, struct cl_engine *engine, unsigned int options
         return CL_EMALFDB;
     }
 
-    ctx = cl_hash_init("sha256");
+    ctx = cl_hash_init("sha2-256");
     if (!(ctx))
         return CL_EMALFDB;
 
@@ -2695,7 +2695,7 @@ static int cli_loadinfo(FILE *fs, struct cl_engine *engine, unsigned int options
         new->size = atoi(tokens[1]);
 
         if (strlen(tokens[2]) != 64 || !(new->hash = CLI_MPOOL_HEX2STR(engine->mempool, tokens[2]))) {
-            cli_errmsg("cli_loadinfo: Malformed SHA256 string at line %u\n", line);
+            cli_errmsg("cli_loadinfo: Malformed SHA2-256 string at line %u\n", line);
             MPOOL_FREE(engine->mempool, new->name);
             MPOOL_FREE(engine->mempool, new);
             ret = CL_EMALFDB;
@@ -5289,7 +5289,7 @@ cl_error_t cl_load(const char *path, struct cl_engine *engine, unsigned int *sig
     }
 
     if (engine->dboptions & CL_DB_COMPILED) {
-        cli_errmsg("cl_load(): can't load new databases when engine is already compiled\n");
+        cli_errmsg("cl_load: can't load new databases when engine is already compiled\n");
         return CL_EARG;
     }
 
@@ -5297,27 +5297,27 @@ cl_error_t cl_load(const char *path, struct cl_engine *engine, unsigned int *sig
         switch (errno) {
 #if defined(EACCES)
             case EACCES:
-                cli_errmsg("cl_load(): Access denied for path: %s\n", path);
+                cli_errmsg("cl_load: Access denied for path: %s\n", path);
                 break;
 #endif
 #if defined(ENOENT)
             case ENOENT:
-                cli_errmsg("cl_load(): No such file or directory: %s\n", path);
+                cli_errmsg("cl_load: No such file or directory: %s\n", path);
                 break;
 #endif
 #if defined(ELOOP)
             case ELOOP:
-                cli_errmsg("cl_load(): Too many symbolic links encountered in path: %s\n", path);
+                cli_errmsg("cl_load: Too many symbolic links encountered in path: %s\n", path);
                 break;
 #endif
 #if defined(EOVERFLOW)
             case EOVERFLOW:
-                cli_errmsg("cl_load(): File size is too large to be recognized. Path: %s\n", path);
+                cli_errmsg("cl_load: File size is too large to be recognized. Path: %s\n", path);
                 break;
 #endif
 #if defined(EIO)
             case EIO:
-                cli_errmsg("cl_load(): An I/O error occurred while reading from path: %s\n", path);
+                cli_errmsg("cl_load: An I/O error occurred while reading from path: %s\n", path);
                 break;
 #endif
             default:
@@ -5338,8 +5338,13 @@ cl_error_t cl_load(const char *path, struct cl_engine *engine, unsigned int *sig
         cli_dbgmsg("Bytecode engine disabled\n");
     }
 
-    if (!engine->cache && clean_cache_init(engine))
-        return CL_EMEM;
+    if (!engine->cache) {
+        ret = clean_cache_init(engine);
+        if (ret != CL_SUCCESS) {
+            cli_errmsg("cl_load: Failed to initialize the cache: %s\n", cl_strerror(ret));
+            return ret;
+        }
+    }
 
     engine->dboptions |= dboptions;
 
@@ -5365,7 +5370,7 @@ cl_error_t cl_load(const char *path, struct cl_engine *engine, unsigned int *sig
             break;
 
         default:
-            cli_errmsg("cl_load(%s): Not supported database file type\n", path);
+            cli_errmsg("cl_load: Not supported database file type: %s\n", path);
             if (sign_verifier) {
                 codesign_verifier_free(sign_verifier);
             }

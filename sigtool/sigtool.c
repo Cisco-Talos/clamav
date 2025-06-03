@@ -162,7 +162,7 @@ static int hexdump(void)
     return 0;
 }
 
-static int hashpe(const char *filename, unsigned int class, int type)
+static int hashpe(const char *filename, unsigned int class, cli_hash_type_t type)
 {
     int status = -1;
     STATBUF sb;
@@ -295,7 +295,7 @@ done:
     return status;
 }
 
-static int hashsig(const struct optstruct *opts, unsigned int class, int type)
+static int hashsig(const struct optstruct *opts, unsigned int class, cli_hash_type_t type)
 {
     char *hash;
     unsigned int i;
@@ -309,7 +309,7 @@ static int hashsig(const struct optstruct *opts, unsigned int class, int type)
                 return -1;
             } else {
                 if ((sb.st_mode & S_IFMT) == S_IFREG) {
-                    if ((class == 0) && (hash = cli_hashfile(opts->filename[i], type))) {
+                    if ((class == 0) && (hash = cli_hashfile(opts->filename[i], NULL, type))) {
                         mprintf(LOGG_INFO, "%s:%u:%s\n", hash, (unsigned int)sb.st_size, basename(opts->filename[i]));
                         free(hash);
                     } else if ((class > 0) && (hashpe(opts->filename[i], class, type) == 0)) {
@@ -720,7 +720,7 @@ static int utf16decode(const struct optstruct *opts)
     return 0;
 }
 
-static char *sha256file(const char *file, unsigned int *size)
+static char *sha2_256_file(const char *file, unsigned int *size)
 {
     FILE *fh;
     unsigned int i, bytes;
@@ -728,12 +728,12 @@ static char *sha256file(const char *file, unsigned int *size)
     char *sha;
     void *ctx;
 
-    ctx = cl_hash_init("sha256");
+    ctx = cl_hash_init("sha2-256");
     if (!(ctx))
         return NULL;
 
     if (!(fh = fopen(file, "rb"))) {
-        mprintf(LOGG_ERROR, "sha256file: Can't open file %s\n", file);
+        mprintf(LOGG_ERROR, "sha2_256_file: Can't open file %s\n", file);
         cl_hash_destroy(ctx);
         return NULL;
     }
@@ -786,8 +786,8 @@ static int writeinfo(const char *dbname, const char *builder, const char *header
 
     if (dblist2cnt) {
         for (i = 0; i < dblist2cnt; i++) {
-            if (!(pt = sha256file(dblist2[i], &bytes))) {
-                mprintf(LOGG_ERROR, "writeinfo: Can't generate SHA256 for %s\n", file);
+            if (!(pt = sha2_256_file(dblist2[i], &bytes))) {
+                mprintf(LOGG_ERROR, "writeinfo: Can't generate SHA2-256 for %s\n", file);
                 fclose(fh);
                 return -1;
             }
@@ -804,8 +804,8 @@ static int writeinfo(const char *dbname, const char *builder, const char *header
         for (i = 0; dblist[i].ext; i++) {
             snprintf(dbfile, sizeof(dbfile), "%s.%s", dbname, dblist[i].ext);
             if (strcmp(dblist[i].ext, "info") && !access(dbfile, R_OK)) {
-                if (!(pt = sha256file(dbfile, &bytes))) {
-                    mprintf(LOGG_ERROR, "writeinfo: Can't generate SHA256 for %s\n", file);
+                if (!(pt = sha2_256_file(dbfile, &bytes))) {
+                    mprintf(LOGG_ERROR, "writeinfo: Can't generate SHA2-256 for %s\n", file);
                     fclose(fh);
                     return -1;
                 }
@@ -821,7 +821,7 @@ static int writeinfo(const char *dbname, const char *builder, const char *header
     }
     if (!optget(opts, "unsigned")->enabled) {
         rewind(fh);
-        ctx = cl_hash_init("sha256");
+        ctx = cl_hash_init("sha2-256");
         if (!(ctx)) {
             fclose(fh);
             return -1;
@@ -1435,7 +1435,7 @@ static int build(const struct optstruct *opts)
         return -1;
     }
 
-    if (!(pt = cli_hashstream(fh, buffer, 1))) {
+    if (!(pt = cli_hashstream(fh, buffer, CLI_HASH_MD5))) {
         mprintf(LOGG_ERROR, "build: Can't generate MD5 checksum for %s\n", tarfile);
         fclose(fh);
         unlink(tarfile);
@@ -2230,8 +2230,8 @@ static int comparesha(const char *diff)
             ret = -1;
             break;
         }
-        if (!(sha = sha256file(tokens[0], NULL))) {
-            mprintf(LOGG_ERROR, "verifydiff: Can't generate SHA256 for %s\n", buff);
+        if (!(sha = sha2_256_file(tokens[0], NULL))) {
+            mprintf(LOGG_ERROR, "verifydiff: Can't generate SHA2-256 for %s\n", buff);
             ret = -1;
             break;
         }
@@ -2286,7 +2286,7 @@ static int rundiff(const struct optstruct *opts)
         goto done;
     }
 
-    // success. compare the SHA256 checksums of the files
+    // success. compare the SHA2-256 checksums of the files
     ret = comparesha(diff);
 
 done:
@@ -2342,8 +2342,8 @@ static int compare(const char *oldpath, const char *newpath, FILE *diff)
     int l1 = 0, l2;
     long opos;
 
-    if (!access(oldpath, R_OK) && (omd5 = cli_hashfile(oldpath, 1))) {
-        if (!(nmd5 = cli_hashfile(newpath, 1))) {
+    if (!access(oldpath, R_OK) && (omd5 = cli_hashfile(oldpath, NULL, CLI_HASH_MD5))) {
+        if (!(nmd5 = cli_hashfile(newpath, NULL, CLI_HASH_MD5))) {
             mprintf(LOGG_ERROR, "compare: Can't get MD5 checksum of %s\n", newpath);
             free(omd5);
             return -1;
@@ -2738,7 +2738,7 @@ static void matchsig(char *sig, const char *offset, int fd)
 
     ctx.fmap = ctx.recursion_stack[ctx.recursion_level].fmap;
 
-    (void)cli_scan_fmap(&ctx, CL_TYPE_ANY, false, NULL, AC_SCAN_VIR, &acres, NULL);
+    (void)cli_scan_fmap(&ctx, CL_TYPE_ANY, false, NULL, AC_SCAN_VIR, &acres);
 
     res = acres;
     while (res) {
@@ -4021,8 +4021,8 @@ static void help(void)
     mprintf(LOGG_INFO, "                                           or MD5 sigs for FILES\n");
     mprintf(LOGG_INFO, "    --sha1 [FILES]                         Generate SHA1 hash from stdin\n");
     mprintf(LOGG_INFO, "                                           or SHA1 sigs for FILES\n");
-    mprintf(LOGG_INFO, "    --sha256 [FILES]                       Generate SHA256 hash from stdin\n");
-    mprintf(LOGG_INFO, "                                           or SHA256 sigs for FILES\n");
+    mprintf(LOGG_INFO, "    --sha2-256 [FILES]                     Generate SHA2-256 hash from stdin\n");
+    mprintf(LOGG_INFO, "                                           or SHA2-256 sigs for FILES\n");
     mprintf(LOGG_INFO, "    --mdb [FILES]                          Generate .mdb (section hash) sigs\n");
     mprintf(LOGG_INFO, "    --imp [FILES]                          Generate .imp (import table hash) sigs\n");
     mprintf(LOGG_INFO, "    --fuzzy-img FILE(S)                    Generate image fuzzy hash for each file\n");
@@ -4209,15 +4209,15 @@ int main(int argc, char **argv)
     if (optget(opts, "hex-dump")->enabled)
         ret = hexdump();
     else if (optget(opts, "md5")->enabled)
-        ret = hashsig(opts, 0, 1);
+        ret = hashsig(opts, 0, CLI_HASH_MD5);
     else if (optget(opts, "sha1")->enabled)
-        ret = hashsig(opts, 0, 2);
-    else if (optget(opts, "sha256")->enabled)
-        ret = hashsig(opts, 0, 3);
+        ret = hashsig(opts, 0, CLI_HASH_SHA1);
+    else if (optget(opts, "sha2-256")->enabled || optget(opts, "sha256")->enabled)
+        ret = hashsig(opts, 0, CLI_HASH_SHA2_256);
     else if (optget(opts, "mdb")->enabled)
-        ret = hashsig(opts, 1, 1);
+        ret = hashsig(opts, 1, CLI_HASH_MD5);
     else if (optget(opts, "imp")->enabled)
-        ret = hashsig(opts, 2, 1);
+        ret = hashsig(opts, 2, CLI_HASH_MD5);
     else if (optget(opts, "fuzzy-img")->enabled)
         ret = fuzzy_img(opts);
     else if (optget(opts, "html-normalise")->enabled)

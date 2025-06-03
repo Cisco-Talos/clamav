@@ -164,7 +164,7 @@ const struct clam_option __clam_options[] = {
     {NULL, "hex-dump", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_SIGTOOL, "", ""},
     {NULL, "md5", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_SIGTOOL, "", ""},
     {NULL, "sha1", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_SIGTOOL, "", ""},
-    {NULL, "sha256", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_SIGTOOL, "", ""},
+    {NULL, "sha2-256", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_SIGTOOL, "", ""},
     {NULL, "mdb", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_SIGTOOL, "", ""},
     {NULL, "imp", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_SIGTOOL, "", ""},
     {NULL, "fuzzy-img", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_SIGTOOL, "", ""},
@@ -252,6 +252,7 @@ const struct clam_option __clam_options[] = {
     {NULL, "tar", 0, CLOPT_TYPE_STRING, NULL, -1, "foo", 0, OPT_CLAMSCAN | OPT_DEPRECATED, "", ""},
     {NULL, "tgz", 0, CLOPT_TYPE_STRING, NULL, -1, "foo", 0, OPT_CLAMSCAN | OPT_DEPRECATED, "", ""},
     {NULL, "deb", 0, CLOPT_TYPE_STRING, NULL, -1, "foo", 0, OPT_CLAMSCAN | OPT_DEPRECATED, "", ""},
+    {NULL, "sha256", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_SIGTOOL, "", ""}, // OPT_DEPRECATED not used so that it will still function for now.
 
 #ifdef _WIN32
     {NULL, "memory", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN | OPT_CLAMDSCAN, "", ""},
@@ -378,6 +379,8 @@ const struct clam_option __clam_options[] = {
     {"JsonStoreHTMLURIs", "json-store-html-uris", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "When GenerateMetadataJson enabled: store URLs found in HTML <form and <a tags.", "yes"},
 
     {"JsonStorePDFURIs", "json-store-pdf-uris", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "When GenerateMetadataJson enabled: store uris found in pdf /URI tags.", "yes"},
+
+    {"JsonStoreExtraHashes", "json-store-extra-hashes", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "When GenerateMetadataJson enabled: calculate and store each type of supported file hash.", "yes"},
 
     {"User", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMD | OPT_MILTER, "Run the daemon as a specified user (the process must be started by root).", "clamav"},
 
@@ -544,9 +547,6 @@ const struct clam_option __clam_options[] = {
 
     {"DevACDepth", "dev-ac-depth", 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, -1, NULL, FLAG_HIDDEN, OPT_CLAMD | OPT_CLAMSCAN, "", ""},
 
-#ifdef HAVE__INTERNAL__SHA_COLLECT
-    {"DevCollectHashes", "dev-collect-hashes", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, -1, NULL, FLAG_HIDDEN, OPT_CLAMD | OPT_CLAMSCAN, "", ""},
-#endif
     {"DevPerformance", "dev-performance", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, -1, NULL, FLAG_HIDDEN, OPT_CLAMD | OPT_CLAMSCAN, "", ""},
     {"DevLiblog", "dev-liblog", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, -1, NULL, FLAG_HIDDEN, OPT_CLAMD, "", ""},
 

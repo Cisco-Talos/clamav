@@ -286,8 +286,8 @@ unsigned char *cl_hash_file_fd(int fd, const char *alg, unsigned int *olen)
 
 unsigned char *cl_hash_file_fd_ctx(EVP_MD_CTX *ctx, int fd, unsigned int *olen)
 {
-    unsigned char *buf;
-    unsigned char *hash;
+    uint8_t *buf;
+    uint8_t *hash;
     int mdsz;
     unsigned int hashlen;
     STATBUF sb;
@@ -313,12 +313,12 @@ unsigned char *cl_hash_file_fd_ctx(EVP_MD_CTX *ctx, int fd, unsigned int *olen)
     blocksize = sb.st_blksize;
 #endif
 
-    buf = (unsigned char *)malloc(blocksize);
+    buf = (uint8_t *)malloc(blocksize);
     if (!(buf)) {
         return NULL;
     }
 
-    hash = (unsigned char *)malloc(mdsz);
+    hash = (uint8_t *)malloc(mdsz);
     if (!(hash)) {
         free(buf);
         return NULL;
@@ -368,17 +368,17 @@ unsigned char *cl_hash_file_fp(FILE *fp, const char *alg, unsigned int *olen)
 
 unsigned char *cl_sha512(const void *buf, size_t len, unsigned char *obuf, unsigned int *olen)
 {
-    return cl_hash_data("sha512", buf, len, obuf, olen);
+    return cl_hash_data("sha2-512", buf, len, obuf, olen);
 }
 
 unsigned char *cl_sha384(const void *buf, size_t len, unsigned char *obuf, unsigned int *olen)
 {
-    return cl_hash_data("sha384", buf, len, obuf, olen);
+    return cl_hash_data("sha2-384", buf, len, obuf, olen);
 }
 
 unsigned char *cl_sha256(const void *buf, size_t len, unsigned char *obuf, unsigned int *olen)
 {
-    return cl_hash_data("sha256", buf, len, obuf, olen);
+    return cl_hash_data("sha2-256", buf, len, obuf, olen);
 }
 
 unsigned char *cl_sha1(const void *buf, size_t len, unsigned char *obuf, unsigned int *olen)
@@ -431,7 +431,7 @@ int cl_verify_signature_fd(EVP_PKEY *pkey, const char *alg, unsigned char *sig, 
     EVP_MD_CTX *ctx;
     const EVP_MD *md;
     size_t mdsz;
-    unsigned char *digest;
+    uint8_t *digest;
 
     digest = cl_hash_file_fd(fd, alg, NULL);
     if (!(digest))
@@ -782,7 +782,7 @@ unsigned char *cl_sign_data(EVP_PKEY *pkey, const char *alg, unsigned char *hash
 
 unsigned char *cl_sign_file_fd(int fd, EVP_PKEY *pkey, const char *alg, unsigned int *olen, int encode)
 {
-    unsigned char *hash, *res;
+    uint8_t *hash, *res;
     unsigned int hashlen;
 
     hash = cl_hash_file_fd(fd, alg, &hashlen);

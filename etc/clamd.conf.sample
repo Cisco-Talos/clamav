@@ -296,6 +296,11 @@ Example
 # Default: yes (if GenerateMetadataJson is used)
 #JsonStorePDFURIs no
 
+# Calculate MD5 and SHA1 hashes (in addition to SHA2-256) and store to the json metadata.
+# GenerateMetadataJson is required for this feature.
+# Default: no
+#JsonStoreExtraHashes yes
+
 # Permit use of the ALLMATCHSCAN command. If set to no, clamd will reject
 # any ALLMATCHSCAN command as invalid.
 # Default: yes

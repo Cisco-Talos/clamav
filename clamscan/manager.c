@@ -1252,6 +1252,10 @@ int scanmanager(const struct optstruct *opts)
         options.general |= CL_SCAN_GENERAL_STORE_PDF_URIS;
     }
 
+    if (optget(opts, "json-store-extra-hashes")->enabled) {
+        options.general |= CL_SCAN_GENERAL_STORE_EXTRA_HASHES;
+    }
+
     if ((opt = optget(opts, "tempdir"))->enabled) {
         if ((ret = cl_engine_set_str(engine, CL_ENGINE_TMPDIR, opt->strarg))) {
             logg(LOGG_ERROR, "cli_engine_set_str(CL_ENGINE_TMPDIR) failed: %s\n", cl_strerror(ret));
@@ -1611,11 +1615,6 @@ int scanmanager(const struct optstruct *opts)
         (optget(opts, "alert-exceeds-max")->enabled)) {
         options.heuristic |= CL_SCAN_HEURISTIC_EXCEEDS_MAX;
     }
-
-#ifdef HAVE__INTERNAL__SHA_COLLECT
-    if (optget(opts, "dev-collect-hashes")->enabled)
-        options.dev |= CL_SCAN_DEV_COLLECT_SHA;
-#endif
 
     if (optget(opts, "dev-performance")->enabled)
         options.dev |= CL_SCAN_DEV_COLLECT_PERFORMANCE_INFO;

@@ -44,14 +44,14 @@ struct cli_hash_wild {
     struct cli_sz_hash hashes[CLI_HASH_AVAIL_TYPES];
 };
 
-int hm_addhash_str(struct cli_matcher *root, const char *strhash, uint32_t size, const char *virusname);
-int hm_addhash_bin(struct cli_matcher *root, const void *binhash, cli_hash_type_t type, uint32_t size, const char *virusname);
+cl_error_t hm_addhash_str(struct cli_matcher *root, const char *strhash, uint32_t size, const char *virusname);
+cl_error_t hm_addhash_bin(struct cli_matcher *root, const void *binhash, cli_hash_type_t type, uint32_t size, const char *virusname);
 void hm_flush(struct cli_matcher *root);
-int cli_hm_scan(const unsigned char *digest, uint32_t size, const char **virname, const struct cli_matcher *root, cli_hash_type_t type);
-int cli_hm_scan_wild(const unsigned char *digest, const char **virname, const struct cli_matcher *root, cli_hash_type_t type);
-int cli_hm_have_size(const struct cli_matcher *root, cli_hash_type_t type, uint32_t size);
-int cli_hm_have_wild(const struct cli_matcher *root, cli_hash_type_t type);
-int cli_hm_have_any(const struct cli_matcher *root, cli_hash_type_t type);
+cl_error_t cli_hm_scan(const uint8_t *digest, uint32_t size, const char **virname, const struct cli_matcher *root, cli_hash_type_t type);
+cl_error_t cli_hm_scan_wild(const uint8_t *digest, const char **virname, const struct cli_matcher *root, cli_hash_type_t type);
+bool cli_hm_have_size(const struct cli_matcher *root, cli_hash_type_t type, uint32_t size);
+bool cli_hm_have_wild(const struct cli_matcher *root, cli_hash_type_t type);
+bool cli_hm_have_any(const struct cli_matcher *root, cli_hash_type_t type);
 void hm_free(struct cli_matcher *root);
 
 #endif

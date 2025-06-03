@@ -37,7 +37,7 @@
 #include <libxml/xmlreader.h>
 
 struct openioc_hash {
-    unsigned char *hash;
+    uint8_t *hash;
     void *next;
 };
 

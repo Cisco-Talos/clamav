@@ -287,9 +287,8 @@ fmap_t *fmap_duplicate(cl_fmap_t *map, size_t offset, size_t length, const char 
         /* This also means the hash will be different.
          * Clear the have_<hash> flags.
          * It will be calculated when next it is needed. */
-        duplicate_map->have_md5    = false;
-        duplicate_map->have_sha1   = false;
-        duplicate_map->have_sha256 = false;
+        memset(duplicate_map->will_need_hash, 0, sizeof(duplicate_map->will_need_hash));
+        memset(duplicate_map->have_hash, 0, sizeof(duplicate_map->have_hash));
     }
 
     if (NULL != name) {
@@ -431,9 +430,9 @@ extern cl_fmap_t *cl_fmap_open_handle(void *handle, size_t offset, size_t len,
     m->gets            = handle_gets;
     m->unneed_off      = handle_unneed_off;
     m->handle_is_fd    = true;
-    m->have_md5        = false;
-    m->have_sha1       = false;
-    m->have_sha256     = false;
+
+    memset(m->will_need_hash, 0, sizeof(m->will_need_hash));
+    memset(m->have_hash, 0, sizeof(m->have_hash));
 
     status = CL_SUCCESS;
 
@@ -1086,9 +1085,9 @@ extern void cl_fmap_close(cl_fmap_t *map)
     funmap(map);
 }
 
-cl_error_t fmap_set_hash(fmap_t *map, unsigned char *hash, cli_hash_type_t type)
+cl_error_t fmap_set_hash(fmap_t *map, uint8_t *hash, cli_hash_type_t type)
 {
-    cl_error_t status = CL_SUCCESS;
+    cl_error_t status = CL_ERROR;
 
     if (NULL == map) {
         cli_errmsg("fmap_set_hash: Attempted to set hash for NULL fmap\n");
@@ -1101,24 +1100,39 @@ cl_error_t fmap_set_hash(fmap_t *map, unsigned char *hash, cli_hash_type_t type)
         goto done;
     }
 
-    switch (type) {
-        case CLI_HASH_MD5:
-            memcpy(map->md5, hash, CLI_HASHLEN_MD5);
-            map->have_md5 = true;
-            break;
-        case CLI_HASH_SHA1:
-            memcpy(map->sha1, hash, CLI_HASHLEN_SHA1);
-            map->have_sha1 = true;
-            break;
-        case CLI_HASH_SHA256:
-            memcpy(map->sha256, hash, CLI_HASHLEN_SHA256);
-            map->have_sha256 = true;
-            break;
-        default:
-            cli_errmsg("fmap_set_hash: Unsupported hash type %u\n", type);
-            status = CL_EARG;
-            goto done;
+    if (type >= CLI_HASH_AVAIL_TYPES) {
+        cli_errmsg("fmap_set_hash: Unsupported hash type %u\n", type);
+        status = CL_EARG;
+        goto done;
     }
+
+    memcpy(map->hash[type], hash, cli_hash_len(type));
+    map->have_hash[type] = true;
+    status               = CL_SUCCESS;
+
+done:
+    return status;
+}
+
+cl_error_t fmap_will_need_hash_later(fmap_t *map, cli_hash_type_t type)
+{
+    cl_error_t status = CL_ERROR;
+
+    if (NULL == map) {
+        cli_errmsg("fmap_will_need_hash_later: Attempted to set hash for NULL fmap\n");
+        status = CL_EARG;
+        goto done;
+    }
+
+    if (type >= CLI_HASH_AVAIL_TYPES) {
+        cli_errmsg("fmap_will_need_hash_later: Unsupported hash type %u\n", type);
+        status = CL_EARG;
+        goto done;
+    }
+
+    /* set flags */
+    map->will_need_hash[type] = true;
+    status                    = CL_SUCCESS;
 
 done:
     return status;
@@ -1128,54 +1142,40 @@ cl_error_t fmap_get_hash(fmap_t *map, unsigned char **hash, cli_hash_type_t type
 {
     cl_error_t status = CL_ERROR;
     size_t todo, at = 0;
-    void *hashctx = NULL;
+    void *hashctx[CLI_HASH_AVAIL_TYPES] = {NULL};
+    cli_hash_type_t hash_type;
 
     todo = map->len;
 
-    switch (type) {
-        case CLI_HASH_MD5:
-            if (map->have_md5) {
-                goto complete;
-            }
-            break;
-        case CLI_HASH_SHA1:
-            if (map->have_sha1) {
-                goto complete;
-            }
-            break;
-        case CLI_HASH_SHA256:
-            if (map->have_sha256) {
-                goto complete;
-            }
-            break;
-        default:
-            cli_errmsg("fmap_get_hash: Unsupported hash type %u\n", type);
-            status = CL_EARG;
-            goto done;
+    if (type >= CLI_HASH_AVAIL_TYPES) {
+        cli_errmsg("fmap_get_hash: Unsupported hash type %u\n", type);
+        status = CL_EARG;
+        goto done;
     }
+
+    /* If we already have the hash, just return it */
+    if (map->have_hash[type]) {
+        goto complete;
+    }
+
+    map->will_need_hash[type] = true;
 
     /*
-     * Need to calculate the hash.
+     * Need to calculate the requested hash and maybe others, as well.
      */
 
-    switch (type) {
-        case CLI_HASH_MD5:
-            hashctx = cl_hash_init("md5");
-            break;
-        case CLI_HASH_SHA1:
-            hashctx = cl_hash_init("sha1");
-            break;
-        case CLI_HASH_SHA256:
-            hashctx = cl_hash_init("sha256");
-            break;
-        default:
-            cli_errmsg("fmap_get_hash: Unsupported hash type %u\n", type);
-            status = CL_EARG;
-            goto done;
-    }
-    if (!(hashctx)) {
-        cli_errmsg("fmap_get_hash: error initializing new md5 hash!\n");
-        goto done;
+    /* Initialize hash contexts for all needed hash types */
+    for (hash_type = CLI_HASH_MD5; hash_type < CLI_HASH_AVAIL_TYPES; hash_type++) {
+        if (map->will_need_hash[hash_type] && !map->have_hash[hash_type]) {
+            const char *hash_name = cli_hash_name(hash_type);
+
+            hashctx[hash_type] = cl_hash_init(hash_name);
+            if (NULL == hashctx[hash_type]) {
+                cli_errmsg("fmap_get_hash: error initializing %s hash context\n", hash_name);
+                status = CL_EARG;
+                goto done;
+            }
+        }
     }
 
     while (todo) {
@@ -1191,57 +1191,39 @@ cl_error_t fmap_get_hash(fmap_t *map, unsigned char **hash, cli_hash_type_t type
         todo -= readme;
         at += readme;
 
-        if (cl_update_hash(hashctx, (void *)buf, readme)) {
-            cli_errmsg("fmap_get_hash: error calculating hash!\n");
-            status = CL_EREAD;
-            goto done;
+        for (hash_type = CLI_HASH_MD5; hash_type < CLI_HASH_AVAIL_TYPES; hash_type++) {
+            if (map->will_need_hash[hash_type] && !map->have_hash[hash_type]) {
+                if (cl_update_hash(hashctx[hash_type], buf, readme)) {
+                    const char *hash_name = cli_hash_name(hash_type);
+                    cli_errmsg("fmap_get_hash: error calculating %s hash!\n", hash_name);
+                    status = CL_EREAD;
+                    goto done;
+                }
+            }
         }
     }
 
-    switch (type) {
-        case CLI_HASH_MD5:
-            cl_finish_hash(hashctx, map->md5);
-            map->have_md5 = true;
-            break;
-        case CLI_HASH_SHA1:
-            cl_finish_hash(hashctx, map->sha1);
-            map->have_sha1 = true;
-            break;
-        case CLI_HASH_SHA256:
-            cl_finish_hash(hashctx, map->sha256);
-            map->have_sha256 = true;
-            break;
-        default:
-            cli_errmsg("fmap_get_hash: Unsupported hash type %u\n", type);
-            status = CL_EARG;
-            goto done;
+    for (hash_type = CLI_HASH_MD5; hash_type < CLI_HASH_AVAIL_TYPES; hash_type++) {
+        if (map->will_need_hash[hash_type] && !map->have_hash[hash_type]) {
+            cl_finish_hash(hashctx[hash_type], map->hash[hash_type]);
+            map->have_hash[hash_type] = true;
+
+            /* hashctx is finished, don't need to destroy it later */
+            hashctx[hash_type] = NULL;
+        }
     }
-    hashctx = NULL;
 
 complete:
 
-    switch (type) {
-        case CLI_HASH_MD5:
-            *hash = map->md5;
-            break;
-        case CLI_HASH_SHA1:
-            *hash = map->sha1;
-            break;
-        case CLI_HASH_SHA256:
-            *hash = map->sha256;
-            break;
-        default:
-            cli_errmsg("fmap_get_hash: Unsupported hash type %u\n", type);
-            status = CL_EARG;
-            goto done;
-    }
-
+    *hash  = map->hash[type];
     status = CL_SUCCESS;
 
 done:
 
-    if (NULL != hashctx) {
-        cl_hash_destroy(hashctx);
+    for (hash_type = CLI_HASH_MD5; hash_type < CLI_HASH_AVAIL_TYPES; hash_type++) {
+        if (NULL != hashctx[hash_type]) {
+            cl_hash_destroy(hashctx[hash_type]);
+        }
     }
 
     return status;

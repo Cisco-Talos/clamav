@@ -325,6 +325,26 @@ A metadata.json file will be written to the scan temp directory if LeaveTemporar
 .br
 Default: no
 .TP
+\fBJsonStoreHTMLURIs BOOL\fR
+Store URIs found in html files to the json metadata.
+URIs will be stored in an array with the tag 'URIs'.
+GenerateMetadataJson is required for this feature.
+.br
+Default: yes (if GenerateMetadataJson is used)
+.TP
+\fBJsonStorePDFURIs BOOL\fR
+Store URIs found in pdf files to the json metadata.
+URIs will be stored in an array with the tag 'URIs'.
+GenerateMetadataJson is required for this feature.
+.br
+Default: yes (if GenerateMetadataJson is used)
+.TP
+\fBJsonStoreExtraHashes BOOL\fR
+Calculate MD5 and SHA1 hashes (in addition to SHA2-256) and store to the json metadata.
+GenerateMetadataJson is required for this feature.
+.br
+Default: no
+.TP
 \fBUser STRING\fR
 Run the daemon as a specified user (the process must be started by root).
 .br

@@ -62,20 +62,20 @@ rename()
 
         # Generate hash of the zipped file.
         # Since we generated the zip in python, we don't know the hash in advance.
-        hash_sha256 = hashlib.sha256()
+        hash_sha2_256 = hashlib.sha256()
         with TC.test_file_zipped.open("rb") as f:
             for chunk in iter(lambda: f.read(4096), b""):
-                hash_sha256.update(chunk)
-        hash_sha256 = hash_sha256.hexdigest()
+                hash_sha2_256.update(chunk)
+        hash_sha2_256 = hash_sha2_256.hexdigest()
 
         TC.test_file_zipped_hash_fp = TC.path_tmp / 'test_file.zip.hash.fp'
         TC.test_file_zipped_hash_fp.write_text('{hash}:{size}:test_file.zip'.format(
-            hash=hash_sha256,
+            hash=hash_sha2_256,
             size=TC.test_file_zipped.stat().st_size))
 
         TC.test_file_zipped_hash_wild_fp = TC.path_tmp / 'test_file.zip.hash.wild.fp'
         TC.test_file_zipped_hash_wild_fp.write_text('{hash}:*:test_file.zip.wild:73'.format(
-            hash=hash_sha256))
+            hash=hash_sha2_256))
 
     @classmethod
     def tearDownClass(cls):
