@@ -1756,7 +1756,7 @@ static fc_error_t downloadPatchAndApply(
 
     if (FC_SUCCESS != (ret = downloadFile(sign_url, patch_sign_file, 1, logerr, 1, 0))) {
         // No sign file is not an error.
-        // Just means we'll have to fall back to the legacy sha256-based rsa method for verifying CDIFFs.
+        // Just means we'll have to fall back to the legacy sha2-256-based rsa method for verifying CDIFFs.
         logg(LOGG_DEBUG, "No external .sign digital signature file for %s\n", patch);
     } else {
         logg(LOGG_DEBUG, "Downloaded digital signature file: %s\n", patch_sign_file);

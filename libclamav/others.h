@@ -207,14 +207,10 @@ typedef struct cli_ctx_tag {
     uint32_t recursion_stack_size;      /* stack size must == engine->max_recursion_level */
     uint32_t recursion_level;           /* Index into recursion_stack; current fmap recursion level from start of scan. */
     fmap_t *fmap;                       /* Pointer to current fmap in recursion_stack, varies with recursion depth. For convenience. */
-    unsigned char handlertype_hash[16];
     struct cli_dconf *dconf;
     bitset_t *hook_lsig_matches;
     void *cb_ctx;
     cli_events_t *perf;
-#ifdef HAVE__INTERNAL__SHA_COLLECT
-    int sha_collect;
-#endif
     struct json_object *properties;
     struct json_object *wrkproperty;
     struct timeval time_limit;
@@ -556,6 +552,7 @@ extern LIBCLAMAV_EXPORT int have_rar;
 #define SCAN_UNPRIVILEGED (ctx->options->general & CL_SCAN_GENERAL_UNPRIVILEGED)
 #define SCAN_STORE_HTML_URIS (ctx->options->general & CL_SCAN_GENERAL_STORE_HTML_URIS)
 #define SCAN_STORE_PDF_URIS (ctx->options->general & CL_SCAN_GENERAL_STORE_PDF_URIS)
+#define SCAN_STORE_EXTRA_HASHES (ctx->options->general & CL_SCAN_GENERAL_STORE_EXTRA_HASHES)
 
 #define SCAN_PARSE_ARCHIVE (ctx->options->parse & CL_SCAN_PARSE_ARCHIVE)
 #define SCAN_PARSE_ELF (ctx->options->parse & CL_SCAN_PARSE_ELF)
@@ -586,21 +583,20 @@ extern LIBCLAMAV_EXPORT int have_rar;
 
 #define SCAN_MAIL_PARTIAL_MESSAGE (ctx->options->mail & CL_SCAN_MAIL_PARTIAL_MESSAGE)
 
-#define SCAN_DEV_COLLECT_SHA (ctx->options->dev & CL_SCAN_DEV_COLLECT_SHA)
 #define SCAN_DEV_COLLECT_PERF_INFO (ctx->options->dev & CL_SCAN_DEV_COLLECT_PERFORMANCE_INFO)
 
 /* based on macros from A. Melnikoff */
 #define cbswap16(v) (((v & 0xff) << 8) | (((v) >> 8) & 0xff))
-#define cbswap32(v) ((((v)&0x000000ff) << 24) | (((v)&0x0000ff00) << 8) | \
-                     (((v)&0x00ff0000) >> 8) | (((v)&0xff000000) >> 24))
-#define cbswap64(v) ((((v)&0x00000000000000ffULL) << 56) | \
-                     (((v)&0x000000000000ff00ULL) << 40) | \
-                     (((v)&0x0000000000ff0000ULL) << 24) | \
-                     (((v)&0x00000000ff000000ULL) << 8) |  \
-                     (((v)&0x000000ff00000000ULL) >> 8) |  \
-                     (((v)&0x0000ff0000000000ULL) >> 24) | \
-                     (((v)&0x00ff000000000000ULL) >> 40) | \
-                     (((v)&0xff00000000000000ULL) >> 56))
+#define cbswap32(v) ((((v) & 0x000000ff) << 24) | (((v) & 0x0000ff00) << 8) | \
+                     (((v) & 0x00ff0000) >> 8) | (((v) & 0xff000000) >> 24))
+#define cbswap64(v) ((((v) & 0x00000000000000ffULL) << 56) | \
+                     (((v) & 0x000000000000ff00ULL) << 40) | \
+                     (((v) & 0x0000000000ff0000ULL) << 24) | \
+                     (((v) & 0x00000000ff000000ULL) << 8) |  \
+                     (((v) & 0x000000ff00000000ULL) >> 8) |  \
+                     (((v) & 0x0000ff0000000000ULL) >> 24) | \
+                     (((v) & 0x00ff000000000000ULL) >> 40) | \
+                     (((v) & 0xff00000000000000ULL) >> 56))
 
 #ifndef HAVE_ATTRIB_PACKED
 #define __attribute__(x)
@@ -826,8 +822,8 @@ size_t cli_recursion_stack_get_size(cli_ctx *ctx, int index);
 /* used by: spin, yc (C) aCaB */
 #define __SHIFTBITS(a) (sizeof(a) << 3)
 #define __SHIFTMASK(a) (__SHIFTBITS(a) - 1)
-#define CLI_ROL(a, b) a = (a << ((b)&__SHIFTMASK(a))) | (a >> ((__SHIFTBITS(a) - (b)) & __SHIFTMASK(a)))
-#define CLI_ROR(a, b) a = (a >> ((b)&__SHIFTMASK(a))) | (a << ((__SHIFTBITS(a) - (b)) & __SHIFTMASK(a)))
+#define CLI_ROL(a, b) a = (a << ((b) & __SHIFTMASK(a))) | (a >> ((__SHIFTBITS(a) - (b)) & __SHIFTMASK(a)))
+#define CLI_ROR(a, b) a = (a >> ((b) & __SHIFTMASK(a))) | (a << ((__SHIFTBITS(a) - (b)) & __SHIFTMASK(a)))
 
 /* Implementation independent sign-extended signed right shift */
 #ifdef HAVE_SAR
@@ -1029,8 +1025,25 @@ void *cli_safer_realloc_or_free(void *ptr, size_t size);
 char *cli_safer_strdup(const char *s);
 
 int cli_rmdirs(const char *dirname);
-char *cli_hashstream(FILE *fs, unsigned char *digcpy, int type);
-char *cli_hashfile(const char *filename, int type);
+
+/**
+ * @brief Calculate a hash of a stream.
+ * @param fs        The file stream to read from.
+ * @param[out] hash (Optional) The buffer to store the calculated raw binary hash.
+ * @param type      The type of hash to calculate.
+ * @return char*    Returns the allocated hash string or NULL if allocation failed.
+ */
+char *cli_hashstream(FILE *fs, uint8_t *hash, cli_hash_type_t type);
+
+/**
+ * @brief Calculate a hash of a file.
+ *
+ * @param filename  The file to read from.
+ * @param[out] hash (Optional) The buffer to store the calculated raw binary hash.
+ * @param type      The type of hash to calculate.
+ * @return char*    Returns the allocated hash string or NULL if allocation failed.
+ */
+char *cli_hashfile(const char *filename, uint8_t *hash, cli_hash_type_t type);
 
 /**
  * @brief unlink() with error checking

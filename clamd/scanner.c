@@ -94,7 +94,7 @@ void msg_callback(enum cl_msg severity, const char *fullmsg, const char *msg, vo
     }
 }
 
-void hash_callback(int fd, unsigned long long size, const unsigned char *md5, const char *virname, void *ctx)
+void hash_callback(int fd, unsigned long long size, const char *md5, const char *virname, void *ctx)
 {
     struct cb_context *c = ctx;
     UNUSEDPARAM(fd);
@@ -103,8 +103,8 @@ void hash_callback(int fd, unsigned long long size, const unsigned char *md5, co
     if (!c)
         return;
     c->virsize = size;
-    strncpy(c->virhash, (const char *)md5, 32);
-    c->virhash[32] = '\0';
+    strncpy(c->virhash, md5, MD5_HASH_SIZE * 2);
+    c->virhash[MD5_HASH_SIZE * 2] = '\0';
 }
 
 void clamd_virus_found_cb(int fd, const char *virname, void *ctx)

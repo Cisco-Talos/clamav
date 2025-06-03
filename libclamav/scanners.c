@@ -1516,12 +1516,12 @@ static cl_error_t vba_scandata(const unsigned char *data, size_t len, cli_ctx *c
 
     must_pop_stack = true;
 
-    ret = cli_exp_eval(ctx, target_ac_root, &tmdata, NULL, NULL);
+    ret = cli_exp_eval(ctx, target_ac_root, &tmdata, NULL);
     if (CL_SUCCESS != ret) {
         goto done;
     }
 
-    ret = cli_exp_eval(ctx, generic_ac_root, &gmdata, NULL, NULL);
+    ret = cli_exp_eval(ctx, generic_ac_root, &gmdata, NULL);
 
 done:
 
@@ -2758,7 +2758,7 @@ static cl_error_t cli_scanscript(cli_ctx *ctx)
         }
 
         /* scan map */
-        ret = cli_scan_fmap(ctx, CL_TYPE_TEXT_ASCII, false, NULL, AC_SCAN_VIR, NULL, NULL);
+        ret = cli_scan_fmap(ctx, CL_TYPE_TEXT_ASCII, false, NULL, AC_SCAN_VIR, NULL);
 
         (void)cli_recursion_stack_pop(ctx); /* Restore the parent fmap */
 
@@ -2813,12 +2813,12 @@ static cl_error_t cli_scanscript(cli_ctx *ctx)
         }
     }
 
-    ret = cli_exp_eval(ctx, target_ac_root, &tmdata, NULL, NULL);
+    ret = cli_exp_eval(ctx, target_ac_root, &tmdata, NULL);
     if (CL_SUCCESS != ret) {
         goto done;
     }
 
-    ret = cli_exp_eval(ctx, generic_ac_root, &gmdata, NULL, NULL);
+    ret = cli_exp_eval(ctx, generic_ac_root, &gmdata, NULL);
     if (CL_SUCCESS != ret) {
         goto done;
     }
@@ -3717,10 +3717,9 @@ static inline void perf_done(cli_ctx *ctx)
  *                      If 0, will be a regular ac-mode scan.
  * @param[out] dettype  If typercg enabled and scan detects HTML or MAIL types,
  *                      will output HTML or MAIL types after performing HTML/MAIL scans
- * @param refhash       Hash of current fmap
  * @return cl_error_t
  */
-static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_file_t *dettype, unsigned char *refhash)
+static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_file_t *dettype)
 {
     cl_error_t ret = CL_CLEAN, nret = CL_CLEAN;
     struct cli_matched_type *ftoffset = NULL, *fpt;
@@ -3751,7 +3750,7 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
     }
 
     perf_start(ctx, PERFT_RAW);
-    ret = cli_scan_fmap(ctx, type == CL_TYPE_TEXT_ASCII ? CL_TYPE_ANY : type, false, &ftoffset, acmode, NULL, refhash);
+    ret = cli_scan_fmap(ctx, type == CL_TYPE_TEXT_ASCII ? CL_TYPE_ANY : type, false, &ftoffset, acmode, NULL);
     perf_stop(ctx, PERFT_RAW);
 
     // In allmatch-mode, ret will never be CL_VIRUS, so ret may be used exclusively for file type detection and for terminal errors.
@@ -4311,6 +4310,7 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
                         free_duplicate_fmap(new_map);
                     }
                 } // end check for embedded files
+
             } // end if (fpt->offset > 0)
 
             if ((nret == CL_EMEM) ||
@@ -4675,8 +4675,6 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
     cl_error_t verdict_at_this_level;
     cli_file_t dettype              = 0;
     uint8_t typercg                 = 1;
-    size_t hashed_size              = 0;
-    unsigned char *hash             = NULL;
     bitset_t *old_hook_lsig_matches = NULL;
     const char *filetype;
 
@@ -4860,20 +4858,8 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
     }
 
     /*
-     * Get the maphash, if necessary
+     * Run the file inspection callback.
      */
-    if (cache_enabled || (SCAN_COLLECT_METADATA)) {
-        if (CL_SUCCESS != fmap_get_hash(ctx->fmap, &hash, CLI_HASH_MD5)) {
-            cli_dbgmsg("cli_magic_scan: Failed to get a hash for the current fmap.\n");
-
-            // It may be that the file was truncated between the time we started the scan and the time we got the hash.
-            // Not a reason to print an error message.
-            ret = CL_SUCCESS;
-            goto done;
-        }
-        hashed_size = ctx->fmap->len;
-    }
-
     ret = dispatch_file_inspection_callback(ctx->engine->cb_file_inspection, ctx, filetype);
     if (CL_CLEAN != ret) {
         if (ret == CL_VIRUS) {
@@ -4885,25 +4871,68 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
     }
 
     /*
+     * Record the file hash(es) in the JSON metadata before we do the cache check.
+     */
+    if (SCAN_COLLECT_METADATA) {
+        uint8_t *hash = NULL;
+        char hash_string[SHA256_HASH_SIZE * 2 + 1];
+        bool need_hash[CLI_HASH_AVAIL_TYPES] = {false};
+        cli_hash_type_t hash_type;
+
+        need_hash[CLI_HASH_SHA2_256] = true;
+        if (SCAN_COLLECT_METADATA && SCAN_STORE_EXTRA_HASHES) {
+            need_hash[CLI_HASH_MD5]  = true;
+            need_hash[CLI_HASH_SHA1] = true;
+        }
+
+        /* Set fmap to need hash later if required.
+         * This is an optimization so we can calculate all needed hashes in one pass. */
+        for (hash_type = CLI_HASH_MD5; hash_type < CLI_HASH_AVAIL_TYPES; hash_type++) {
+            if (need_hash[hash_type]) {
+                ret = fmap_will_need_hash_later(ctx->fmap, hash_type);
+                if (CL_SUCCESS != ret) {
+                    cli_dbgmsg("cli_check_fp: Failed to set fmap to need MD5 hash later\n");
+                    goto done;
+                }
+            }
+        }
+
+        for (hash_type = CLI_HASH_MD5; hash_type < CLI_HASH_AVAIL_TYPES; hash_type++) {
+            if (need_hash[hash_type]) {
+                size_t i;
+                size_t hash_len = cli_hash_len(hash_type);
+
+                /* If we need a hash, we will calculate it now */
+                ret = fmap_get_hash(ctx->fmap, &hash, hash_type);
+                if (CL_SUCCESS != ret || hash == NULL) {
+                    cli_dbgmsg("cli_magic_scan: Failed to get a hash for the current fmap.\n");
+                    // It may be that the file was truncated between the time we started the scan and the time we got the hash.
+                    // Not a reason to print an error message.
+                    ret = CL_SUCCESS;
+                    goto done;
+                }
+
+                /* Convert hash to string */
+                for (i = 0; i < hash_len; i++)
+                    sprintf(hash_string + i * 2, "%02x", hash[i]);
+                hash_string[hash_len * 2] = 0;
+
+                ret = cli_jsonstr(ctx->wrkproperty, cli_hash_name(hash_type), hash_string);
+                if (ret != CL_SUCCESS) {
+                    cli_dbgmsg("cli_magic_scan: returning %d %s (no post, no cache)\n", ret, __AT__);
+                    goto early_ret;
+                }
+            }
+        }
+    }
+
+    /*
      * Check if we've already scanned this file before.
      */
     if (cache_enabled) {
         perf_start(ctx, PERFT_CACHE);
-        cache_check_result = clean_cache_check(hash, hashed_size, ctx);
+        cache_check_result = clean_cache_check(ctx);
         perf_stop(ctx, PERFT_CACHE);
-    }
-
-    if (SCAN_COLLECT_METADATA) {
-        char hashstr[CLI_HASHLEN_MD5 * 2 + 1];
-        snprintf(hashstr, CLI_HASHLEN_MD5 * 2 + 1, "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
-                 hash[0], hash[1], hash[2], hash[3], hash[4], hash[5], hash[6], hash[7],
-                 hash[8], hash[9], hash[10], hash[11], hash[12], hash[13], hash[14], hash[15]);
-
-        ret = cli_jsonstr(ctx->wrkproperty, "FileMD5", hashstr);
-        if (ret != CL_SUCCESS) {
-            cli_dbgmsg("cli_magic_scan: returning %d %s (no post, no cache)\n", ret, __AT__);
-            goto early_ret;
-        }
     }
 
     if (cache_enabled && (cache_check_result != CL_VIRUS)) {
@@ -4926,18 +4955,10 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
     // If none of the scan options are enabled, then we can skip parsing and just do a raw pattern match.
     // For this check, we don't care if the CL_SCAN_GENERAL_ALLMATCHES option is enabled, hence the `~`.
     if (!((ctx->options->general & ~CL_SCAN_GENERAL_ALLMATCHES) || (ctx->options->parse) || (ctx->options->heuristic) || (ctx->options->mail) || (ctx->options->dev))) {
-        /*
-         * Scanning in raw mode (stdin, etc.)
-         */
-        ret = cli_scan_fmap(ctx, CL_TYPE_ANY, false, NULL, AC_SCAN_VIR, NULL, hash);
+        ret = cli_scan_fmap(ctx, CL_TYPE_ANY, false, NULL, AC_SCAN_VIR, NULL);
         // It doesn't matter what was returned, always go to the end after this. Raw mode! No parsing files!
         goto done;
     }
-
-#ifdef HAVE__INTERNAL__SHA_COLLECT
-    if (!ctx->sha_collect && type == CL_TYPE_MSEXE)
-        ctx->sha_collect = 1;
-#endif
 
     // We already saved the hook_lsig_matches (above)
     // The ctx one is NULL at present.
@@ -4952,7 +4973,7 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
          * If self protection mechanism enabled, do the scanraw() scan first
          * before extracting with a file type parser.
          */
-        ret = scanraw(ctx, type, 0, &dettype, hash);
+        ret = scanraw(ctx, type, 0, &dettype);
 
         // Evaluate the result from the scan to see if it end the scan of this layer early,
         // and to decid if we should propagate an error or not.
@@ -5389,7 +5410,7 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
 
     /* CL_TYPE_HTML: raw HTML files are not scanned, unless safety measure activated via DCONF */
     if (type != CL_TYPE_IGNORED && (type != CL_TYPE_HTML || !(SCAN_PARSE_HTML) || !(DCONF_DOC & DOC_CONF_HTML_SKIPRAW)) && !ctx->engine->sdb) {
-        ret = scanraw(ctx, type, typercg, &dettype, hash);
+        ret = scanraw(ctx, type, typercg, &dettype);
 
         // Evaluate the result from the scan to see if it end the scan of this layer early,
         // and to decid if we should propagate an error or not.
@@ -5415,7 +5436,8 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
             }
             if (((dettype == CL_TYPE_MAIL) || (cli_recursion_stack_get_type(ctx, -1) == CL_TYPE_MAIL)) &&
                 SCAN_PARSE_MAIL && (DCONF_MAIL & MAIL_CONF_MBOX) && (ret != CL_VIRUS)) {
-                ret = cli_scan_fmap(ctx, CL_TYPE_MAIL, false, NULL, AC_SCAN_VIR, NULL, NULL);
+
+                ret = cli_scan_fmap(ctx, CL_TYPE_MAIL, false, NULL, AC_SCAN_VIR, NULL);
             }
             perf_nested_stop(ctx, PERFT_SCRIPT, PERFT_SCAN);
             break;
@@ -5451,7 +5473,7 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
         case CL_TYPE_AI_MODEL:
         case CL_TYPE_PYTHON_COMPILED:
         case CL_TYPE_BINARY_DATA:
-            ret = cli_scan_fmap(ctx, CL_TYPE_OTHER, false, NULL, AC_SCAN_VIR, NULL, NULL);
+            ret = cli_scan_fmap(ctx, CL_TYPE_OTHER, false, NULL, AC_SCAN_VIR, NULL);
             break;
 
         case CL_TYPE_PDF: /* FIXMELIMITS: pdf should be an archive! */
@@ -5531,12 +5553,14 @@ done:
 
     /*
      * If the verdict for this layer is "clean", we can cache it.
+     *
+     * Note: clean_cache_add() will check the fmap->dont_cache_flag,
+     * so this may not actually cache if we exceeded limits earlier.
+     * It will also check if caching is disabled.
      */
     if (verdict_at_this_level == CL_CLEAN) {
-        // clean_cache_add() will check the fmap->dont_cache_flag,
-        // so this may not actually cache if we exceeded limits earlier.
         perf_start(ctx, PERFT_CACHE);
-        clean_cache_add(hash, hashed_size, ctx);
+        clean_cache_add(ctx);
         perf_stop(ctx, PERFT_CACHE);
     }
 
@@ -5570,11 +5594,6 @@ cl_error_t cli_magic_scan_desc_type(int desc, const char *filepath, cli_ctx *ctx
 
     const char *parent_filepath = ctx->sub_filepath;
     ctx->sub_filepath           = filepath;
-
-#ifdef HAVE__INTERNAL__SHA_COLLECT
-    if (ctx->sha_collect > 0)
-        ctx->sha_collect = 0;
-#endif
 
     cli_dbgmsg("in cli_magic_scan_desc_type (recursion_level: %u/%u)\n", ctx->recursion_level, ctx->engine->max_recursion_level);
 

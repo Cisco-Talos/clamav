@@ -216,7 +216,7 @@ static int cli_tgzload(cvd_t *cvd, struct cl_engine *engine, unsigned int *signo
         dbio->bufpt    = NULL;
         dbio->readpt   = dbio->buf;
         if (!(dbio->hashctx)) {
-            dbio->hashctx = cl_hash_init("sha256");
+            dbio->hashctx = cl_hash_init("sha2-256");
             if (!(dbio->hashctx)) {
                 cli_tgzload_cleanup(compr, dbio, fdd);
                 return CL_EMALFDB;
@@ -256,7 +256,7 @@ static int cli_tgzload(cvd_t *cvd, struct cl_engine *engine, unsigned int *signo
                         return CL_EMALFDB;
                     }
                     cl_finish_hash(dbio->hashctx, hash);
-                    dbio->hashctx = cl_hash_init("sha256");
+                    dbio->hashctx = cl_hash_init("sha2-256");
                     if (!(dbio->hashctx)) {
                         cli_tgzload_cleanup(compr, dbio, fdd);
                         return CL_EMALFDB;

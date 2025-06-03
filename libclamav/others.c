@@ -652,6 +652,8 @@ done:
 
 cl_error_t cl_engine_set_num(struct cl_engine *engine, enum cl_engine_field field, long long num)
 {
+    cl_error_t ret;
+
     if (!engine)
         return CL_ENULLARG;
 
@@ -780,8 +782,13 @@ cl_error_t cl_engine_set_num(struct cl_engine *engine, enum cl_engine_field fiel
                 engine->engine_options |= ENGINE_OPTIONS_DISABLE_CACHE;
             } else {
                 engine->engine_options &= ~(ENGINE_OPTIONS_DISABLE_CACHE);
-                if (!(engine->cache))
-                    clean_cache_init(engine);
+                if (!(engine->cache)) {
+                    ret = clean_cache_init(engine);
+                    if (ret != CL_SUCCESS) {
+                        cli_errmsg("cl_engine_set_num: clean_cache_init failed with error %s\n", cl_strerror(ret));
+                        return ret;
+                    }
+                }
             }
             break;
         case CL_ENGINE_CACHE_SIZE:
@@ -1292,58 +1299,69 @@ done:
     return ret;
 }
 
-/*
- * Type: 1 = MD5, 2 = SHA1, 3 = SHA256
- */
-char *cli_hashstream(FILE *fs, unsigned char *digcpy, int type)
+char *cli_hashstream(FILE *fs, uint8_t *hash, cli_hash_type_t type)
 {
-    unsigned char digest[32];
+    uint8_t digest[CLI_HASHLEN_MAX];
     char buff[FILEBUFF];
-    char *hashstr, *pt;
-    const char *alg = NULL;
-    int i, bytes, size;
-    void *ctx;
+    char *hashstr = NULL;
+    char *pt;
+    size_t i, bytes;
+    const char *hash_alg = NULL;
+    size_t hash_len;
+    void *ctx = NULL;
 
-    switch (type) {
-        case 1:
-            alg  = "md5";
-            size = 16;
-            break;
-        case 2:
-            alg  = "sha1";
-            size = 20;
-            break;
-        default:
-            alg  = "sha256";
-            size = 32;
-            break;
+    if (!fs) {
+        cli_errmsg("cli_hashstream: NULL file stream\n");
+        goto done;
     }
 
-    ctx = cl_hash_init(alg);
-    if (!(ctx))
-        return NULL;
+    if (type < CLI_HASH_MD5 || type >= CLI_HASH_AVAIL_TYPES) {
+        cli_errmsg("cli_hashstream: Unsupported hash type %d\n", type);
+        goto done;
+    }
 
-    while ((bytes = fread(buff, 1, FILEBUFF, fs)))
-        cl_update_hash(ctx, buff, bytes);
+    hash_alg = cli_hash_name(type);
+    hash_len = cli_hash_len(type);
 
+    ctx = cl_hash_init(hash_alg);
+    if (!(ctx)) {
+        cli_errmsg("cli_hashstream: Unable to initialize hash context for %s\n", hash_alg);
+        goto done;
+    }
+
+    while (0 != (bytes = fread(buff, 1, FILEBUFF, fs))) {
+        if (cl_update_hash(ctx, buff, bytes) != 0) {
+            cli_errmsg("cli_hashstream: Failed to update hash for %s\n", hash_alg);
+            goto done;
+        }
+    }
     cl_finish_hash(ctx, digest);
+    ctx = NULL;
 
-    if (!(hashstr = (char *)calloc(size * 2 + 1, sizeof(char))))
-        return NULL;
+    if (!(hashstr = (char *)calloc(hash_len * 2 + 1, sizeof(char)))) {
+        cli_errmsg("cli_hashstream: Unable to allocate memory for hash string\n");
+        goto done;
+    }
 
     pt = hashstr;
-    for (i = 0; i < size; i++) {
+    for (i = 0; i < hash_len; i++) {
         sprintf(pt, "%02x", digest[i]);
         pt += 2;
     }
 
-    if (digcpy)
-        memcpy(digcpy, digest, size);
+    if (hash) {
+        memcpy(hash, digest, hash_len);
+    }
+
+done:
+    if (ctx) {
+        cl_hash_destroy(ctx);
+    }
 
     return hashstr;
 }
 
-char *cli_hashfile(const char *filename, int type)
+char *cli_hashfile(const char *filename, uint8_t *hash, cli_hash_type_t type)
 {
     FILE *fs;
     char *hashstr;
@@ -1353,7 +1371,7 @@ char *cli_hashfile(const char *filename, int type)
         return NULL;
     }
 
-    hashstr = cli_hashstream(fs, NULL, type);
+    hashstr = cli_hashstream(fs, hash, type);
 
     fclose(fs);
     return hashstr;

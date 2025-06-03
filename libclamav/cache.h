@@ -26,22 +26,20 @@
 #include "others.h"
 
 /**
- * @brief Add a hash to the cache of clean files.
+ * @brief Add a hash of the current layer to the cache of clean files.
  *
- * @param md5   The file to add.
- * @param size  The size of the file.
- * @param ctx   The scanning context.
+ * @param ctx The scanning context.
  */
-void clean_cache_add(unsigned char *md5, size_t size, cli_ctx *ctx);
+void clean_cache_add(cli_ctx *ctx);
 
 /**
  * @brief Removes a hash from the clean cache
  *
- * @param md5   The file to remove.
- * @param size  The size of the file.
- * @param ctx   The scanning context.
+ * @param sha2_256 The file to remove.
+ * @param size     The size of the file.
+ * @param ctx      The scanning context.
  */
-void clean_cache_remove(unsigned char *md5, size_t size, const struct cl_engine *engine);
+void clean_cache_remove(uint8_t *sha2_256, size_t size, const struct cl_engine *engine);
 
 /**
  * @brief Hashes a file onto the provided buffer and looks it up the clean cache.
@@ -51,7 +49,7 @@ void clean_cache_remove(unsigned char *md5, size_t size, const struct cl_engine 
  * @return CL_VIRUS if found, CL_CLEAN if not FIXME or a recoverable error.
    @return CL_EREAD if unrecoverable.
  */
-cl_error_t clean_cache_check(unsigned char *md5, size_t size, cli_ctx *ctx);
+cl_error_t clean_cache_check(cli_ctx *ctx);
 
 /**
  * @brief Allocates the trees for the clean cache.
@@ -59,7 +57,7 @@ cl_error_t clean_cache_check(unsigned char *md5, size_t size, cli_ctx *ctx);
  * @param engine
  * @return int
  */
-int clean_cache_init(struct cl_engine *engine);
+cl_error_t clean_cache_init(struct cl_engine *engine);
 
 /**
  * @brief Frees the clean cache

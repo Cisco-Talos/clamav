@@ -129,8 +129,8 @@ static void xar_get_checksum_values(xmlTextReaderPtr reader, unsigned char **cks
         xmlval = xmlTextReaderConstValue(reader);
         if (xmlval) {
             cli_dbgmsg("cli_scanxar: checksum value is %s.\n", xmlval);
-            if (((*hash == XAR_CKSUM_SHA1) && (xmlStrlen(xmlval) == 2 * CLI_HASHLEN_SHA1)) ||
-                ((*hash == XAR_CKSUM_MD5) && (xmlStrlen(xmlval) == 2 * CLI_HASHLEN_MD5))) {
+            if (((*hash == XAR_CKSUM_SHA1) && (xmlStrlen(xmlval) == 2 * SHA1_HASH_SIZE)) ||
+                ((*hash == XAR_CKSUM_MD5) && (xmlStrlen(xmlval) == 2 * MD5_HASH_SIZE))) {
                 *cksum = xmlStrdup(xmlval);
             } else {
                 cli_dbgmsg("cli_scanxar: checksum type is unknown or length is invalid.\n");
@@ -395,10 +395,10 @@ static int xar_hash_check(int hash, const void *result, const void *expected)
         return 1;
     switch (hash) {
         case XAR_CKSUM_SHA1:
-            len = CLI_HASHLEN_SHA1;
+            len = SHA1_HASH_SIZE;
             break;
         case XAR_CKSUM_MD5:
-            len = CLI_HASHLEN_MD5;
+            len = MD5_HASH_SIZE;
             break;
         case XAR_CKSUM_OTHER:
         case XAR_CKSUM_NONE:

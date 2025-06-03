@@ -25,15 +25,31 @@
 typedef enum cli_hash_type {
     CLI_HASH_MD5 = 0,
     CLI_HASH_SHA1,
-    CLI_HASH_SHA256,
-
-    /* new hash types go above this line */
-    CLI_HASH_AVAIL_TYPES
+    CLI_HASH_SHA2_256,
+    CLI_HASH_SHA2_384,
+    CLI_HASH_SHA2_512,
 } cli_hash_type_t;
 
-#define CLI_HASHLEN_MD5 16
-#define CLI_HASHLEN_SHA1 20
-#define CLI_HASHLEN_SHA256 32
-#define CLI_HASHLEN_MAX 32
+#define CLI_HASH_AVAIL_TYPES (CLI_HASH_SHA2_256 + 1)
+
+/**
+ * @brief Get the name of the hash type as a string.
+ *
+ * Note: using the name OpenSSL uses for the hash type.
+ *
+ * @param type The hash type.
+ * @return char* The name of the hash type.
+ */
+const char* cli_hash_name(cli_hash_type_t type);
+
+/**
+ * @brief Get the size of the hash type.
+ *
+ * @param type The hash type.
+ * @return size_t The size of the hash type.
+ */
+size_t cli_hash_len(cli_hash_type_t type);
+
+#define CLI_HASHLEN_MAX SHA256_HASH_SIZE
 
 #endif

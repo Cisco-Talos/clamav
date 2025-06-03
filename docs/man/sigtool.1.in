@@ -63,8 +63,9 @@ Generate MD5 checksum from stdin or MD5 sigs for FILES.
 \fB\-\-sha1 [FILES]\fR
 Generate SHA1 checksum from stdin or SHA1 sigs for FILES.
 .TP
-\fB\-\-sha256 [FILES]\fR
-Generate SHA256 checksum from stdin or SHA256 sigs for FILES.
+\fB\-\-sha2-256 [FILES]\fR
+Generate SHA2-256 checksum from stdin or SHA2-256 sigs for FILES.
+The previous option \-\-sha256 is deprecated and may be removed in a future version.
 .TP
 \fB\-\-mdb [FILES]\fR
 Generate .mdb (PE section hash) signatures for FILES.

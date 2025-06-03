@@ -84,12 +84,16 @@ struct cl_fmap {
     void (*unneed_off)(fmap_t *, size_t at, size_t len);
     void *windows_file_handle;
     void *windows_map_handle;
-    bool have_md5;
-    unsigned char md5[CLI_HASHLEN_MD5];
-    bool have_sha1;
-    unsigned char sha1[CLI_HASHLEN_SHA1];
-    bool have_sha256;
-    unsigned char sha256[CLI_HASHLEN_SHA256];
+
+    /* flags to indicate if we should calculate a hash next time we calculate any hashes */
+    bool will_need_hash[CLI_HASH_AVAIL_TYPES];
+
+    /* flags to indicate if we have calculated a hash */
+    bool have_hash[CLI_HASH_AVAIL_TYPES];
+
+    /* hash values */
+    uint8_t hash[CLI_HASH_AVAIL_TYPES][CLI_HASHLEN_MAX];
+
     uint64_t *bitmap;
     char *name;
 };
@@ -430,6 +434,22 @@ cl_error_t fmap_dump_to_file(fmap_t *map, const char *filepath, const char *tmpd
 int fmap_fd(fmap_t *m);
 
 /**
+ * @brief Indicate that we will want to calculate this hash later.asm
+ *
+ * Set a flag to provide advanced notice that the next time we get a hash and
+ * it has to calculate the hash, it will also calculate this hash.
+ *
+ * This is an optimization so that all hashes may be calculated in one pass
+ * of the file rather than doing multiple passes of the file for each
+ * needed hash.
+ *
+ * @param map       The map in question.
+ * @param type      The type of hash we'll need.
+ * @return cl_error_t CL_SUCCESS if was able to set the flag, else some error.
+ */
+cl_error_t fmap_will_need_hash_later(fmap_t *map, cli_hash_type_t type);
+
+/**
  * @brief Get a pointer to the fmap hash.
  *
  * Will calculate the hash if not already previously calculated.
@@ -439,7 +459,7 @@ int fmap_fd(fmap_t *m);
  * @param type      The type of hash to calculate.
  * @return cl_error_t CL_SUCCESS if was able to get the hash, else some error.
  */
-cl_error_t fmap_get_hash(fmap_t *map, unsigned char **hash, cli_hash_type_t type);
+cl_error_t fmap_get_hash(fmap_t *map, uint8_t **hash, cli_hash_type_t type);
 
 /**
  * @brief Set the hash for the fmap that was previously calculated.
@@ -449,6 +469,6 @@ cl_error_t fmap_get_hash(fmap_t *map, unsigned char **hash, cli_hash_type_t type
  * @param type      The type of hash to calculate.
  * @return cl_error_t CL_SUCCESS if was able to set the hash, else some error.
  */
-cl_error_t fmap_set_hash(fmap_t *map, unsigned char *hash, cli_hash_type_t type);
+cl_error_t fmap_set_hash(fmap_t *map, uint8_t *hash, cli_hash_type_t type);
 
 #endif

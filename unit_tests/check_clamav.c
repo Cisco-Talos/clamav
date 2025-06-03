@@ -1507,28 +1507,28 @@ static uint8_t res256[3][SHA256_HASH_SIZE] = {
      0x84, 0xd7, 0x3e, 0x67, 0xf1, 0x80, 0x9a, 0x48, 0xa4, 0x97, 0x20, 0x0e,
      0x04, 0x6d, 0x39, 0xcc, 0xc7, 0x11, 0x2c, 0xd0}};
 
-START_TEST(test_sha256)
+START_TEST(test_sha2_256)
 {
-    void *sha256;
-    uint8_t hsha256[SHA256_HASH_SIZE];
+    void *sha2_256;
+    uint8_t h_sha2_256[SHA256_HASH_SIZE];
     uint8_t buf[1000];
     int i;
 
     memset(buf, 0x61, sizeof(buf));
 
-    cl_sha256(tv1, sizeof(tv1), hsha256, NULL);
-    ck_assert_msg(!memcmp(hsha256, res256[0], sizeof(hsha256)), "sha256 test vector #1 failed");
+    cl_sha256(tv1, sizeof(tv1), h_sha2_256, NULL);
+    ck_assert_msg(!memcmp(h_sha2_256, res256[0], sizeof(h_sha2_256)), "sha2-256 test vector #1 failed");
 
-    cl_sha256(tv2, sizeof(tv2), hsha256, NULL);
-    ck_assert_msg(!memcmp(hsha256, res256[1], sizeof(hsha256)), "sha256 test vector #2 failed");
+    cl_sha256(tv2, sizeof(tv2), h_sha2_256, NULL);
+    ck_assert_msg(!memcmp(h_sha2_256, res256[1], sizeof(h_sha2_256)), "sha2-256 test vector #2 failed");
 
-    sha256 = cl_hash_init("sha256");
-    ck_assert_msg(sha256 != NULL, "Could not create EVP_MD_CTX for sha256");
+    sha2_256 = cl_hash_init("sha2-256");
+    ck_assert_msg(sha2_256 != NULL, "Could not create EVP_MD_CTX for sha2-256");
 
     for (i = 0; i < 1000; i++)
-        cl_update_hash(sha256, buf, sizeof(buf));
-    cl_finish_hash(sha256, hsha256);
-    ck_assert_msg(!memcmp(hsha256, res256[2], sizeof(hsha256)), "sha256 test vector #3 failed");
+        cl_update_hash(sha2_256, buf, sizeof(buf));
+    cl_finish_hash(sha2_256, h_sha2_256);
+    ck_assert_msg(!memcmp(h_sha2_256, res256[2], sizeof(h_sha2_256)), "sha2-256 test vector #3 failed");
 }
 END_TEST
 
@@ -1879,7 +1879,7 @@ static Suite *test_cli_suite(void)
 
     suite_add_tcase(s, tc_cli_dsig);
     tcase_add_loop_test(tc_cli_dsig, test_cli_dsig, 0, dsig_tests_cnt);
-    tcase_add_test(tc_cli_dsig, test_sha256);
+    tcase_add_test(tc_cli_dsig, test_sha2_256);
 
     suite_add_tcase(s, tc_cli_assorted);
     tcase_add_test(tc_cli_assorted, test_sanitize_path);

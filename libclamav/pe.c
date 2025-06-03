@@ -146,24 +146,6 @@
         }                           \
     }
 
-#ifdef HAVE__INTERNAL__SHA_COLLECT
-#define SHA_OFF                \
-    do {                       \
-        ctx->sha_collect = -1; \
-    } while (0)
-#define SHA_RESET                       \
-    do {                                \
-        ctx->sha_collect = sha_collect; \
-    } while (0)
-#else
-#define SHA_OFF \
-    do {        \
-    } while (0)
-#define SHA_RESET \
-    do {          \
-    } while (0)
-#endif
-
 #define FSGCASE(NAME, FREESEC)                            \
     case 0: /* Unpacked and NOT rebuilt */                \
         cli_dbgmsg(NAME ": Successfully decompressed\n"); \
@@ -201,15 +183,12 @@
             cli_exe_info_destroy(peinfo);                                                                       \
             lseek(ndesc, 0, SEEK_SET);                                                                          \
             cli_dbgmsg("***** Scanning rebuilt PE file *****\n");                                               \
-            SHA_OFF;                                                                                            \
             if (CL_SUCCESS != (ret = cli_magic_scan_desc(ndesc, tempfile, ctx, NULL, LAYER_ATTRIBUTES_NONE))) { \
                 close(ndesc);                                                                                   \
-                SHA_RESET;                                                                                      \
                 CLI_TMPUNLK();                                                                                  \
                 free(tempfile);                                                                                 \
                 return ret;                                                                                     \
             }                                                                                                   \
-            SHA_RESET;                                                                                          \
             close(ndesc);                                                                                       \
             CLI_TMPUNLK();                                                                                      \
             free(tempfile);                                                                                     \
@@ -240,8 +219,6 @@
 #define CLI_UNPRESULTSFSG2(NAME, EXPR, GOOD, FREEME) CLI_UNPRESULTS_(NAME, FSGCASE(NAME, (void)0), EXPR, GOOD, FREEME)
 
 #define DETECT_BROKEN_PE (SCAN_HEURISTIC_BROKEN && !ctx->corrupted_input)
-
-extern const unsigned int hashlen[];
 
 struct offset_list {
     uint32_t offset;
@@ -530,49 +507,49 @@ static void cli_parseres_special(uint32_t base, uint32_t rva, fmap_t *map, struc
     fmap_unneed_ptr(map, oentry, entries * 8);
 }
 
-static unsigned int cli_hashsect(fmap_t *map, struct cli_exe_section *s, unsigned char **digest, int *foundhash, int *foundwild)
+static bool cli_hashsect(fmap_t *map, struct cli_exe_section *s, uint8_t **digest, bool *foundhash, bool *foundwild)
 {
     const void *hashme;
 
     if (s->rsz > CLI_MAX_ALLOCATION) {
         cli_dbgmsg("cli_hashsect: skipping hash calculation for too big section\n");
-        return 0;
+        return false;
     }
 
-    if (!s->rsz) return 0;
+    if (!s->rsz) return false;
     if (!(hashme = fmap_need_off_once(map, s->raw, s->rsz))) {
         cli_dbgmsg("cli_hashsect: unable to read section data\n");
-        return 0;
+        return false;
     }
 
     if (foundhash[CLI_HASH_MD5] || foundwild[CLI_HASH_MD5])
         cl_hash_data("md5", hashme, s->rsz, digest[CLI_HASH_MD5], NULL);
     if (foundhash[CLI_HASH_SHA1] || foundwild[CLI_HASH_SHA1])
         cl_sha1(hashme, s->rsz, digest[CLI_HASH_SHA1], NULL);
-    if (foundhash[CLI_HASH_SHA256] || foundwild[CLI_HASH_SHA256])
-        cl_sha256(hashme, s->rsz, digest[CLI_HASH_SHA256], NULL);
+    if (foundhash[CLI_HASH_SHA2_256] || foundwild[CLI_HASH_SHA2_256])
+        cl_sha256(hashme, s->rsz, digest[CLI_HASH_SHA2_256], NULL);
 
-    return 1;
+    return true;
 }
 
 /* check hash section sigs */
 static cl_error_t scan_pe_mdb(cli_ctx *ctx, struct cli_exe_section *exe_section)
 {
     struct cli_matcher *mdb_sect = ctx->engine->hm_mdb;
-    unsigned char *hashset[CLI_HASH_AVAIL_TYPES];
+    uint8_t *hashset[CLI_HASH_AVAIL_TYPES];
     const char *virname = NULL;
-    int foundsize[CLI_HASH_AVAIL_TYPES];
-    int foundwild[CLI_HASH_AVAIL_TYPES];
+    bool foundsize[CLI_HASH_AVAIL_TYPES];
+    bool foundwild[CLI_HASH_AVAIL_TYPES];
     cli_hash_type_t type;
-    cl_error_t ret     = CL_CLEAN;
-    unsigned char *md5 = NULL;
+    cl_error_t ret = CL_CLEAN;
+    uint8_t *md5   = NULL;
 
     /* pick hashtypes to generate */
     for (type = CLI_HASH_MD5; type < CLI_HASH_AVAIL_TYPES; type++) {
         foundsize[type] = cli_hm_have_size(mdb_sect, type, exe_section->rsz);
         foundwild[type] = cli_hm_have_wild(mdb_sect, type);
         if (foundsize[type] || foundwild[type]) {
-            hashset[type] = malloc(hashlen[type]);
+            hashset[type] = malloc(cli_hash_len(type));
             if (!hashset[type]) {
                 cli_errmsg("scan_pe_mdb: malloc failed!\n");
                 for (; type > 0;)
@@ -639,7 +616,7 @@ static cl_error_t scan_pe_mdb(cli_ctx *ctx, struct cli_exe_section *exe_section)
     }
 
 end:
-    for (type = CLI_HASH_AVAIL_TYPES; type > 0;)
+    for (type = CLI_HASH_AVAIL_TYPES; type > CLI_HASH_MD5;)
         free(hashset[--type]);
     return ret;
 }
@@ -2405,7 +2382,7 @@ static inline int hash_impfns(cli_ctx *ctx, void **hashctx, uint32_t *impsz, str
     return CL_SUCCESS;
 }
 
-static cl_error_t hash_imptbl(cli_ctx *ctx, unsigned char **digest, uint32_t *impsz, int *genhash, struct cli_exe_info *peinfo)
+static cl_error_t hash_imptbl(cli_ctx *ctx, uint8_t **digest, uint32_t *impsz, bool *genhash, struct cli_exe_info *peinfo)
 {
     cl_error_t status = CL_ERROR;
     cl_error_t ret;
@@ -2415,7 +2392,7 @@ static cl_error_t hash_imptbl(cli_ctx *ctx, unsigned char **digest, uint32_t *im
     size_t left, fsize = map->len;
     uint32_t impoff, offset;
     const char *buffer;
-    void *hashctx[CLI_HASH_AVAIL_TYPES] = {0};
+    void *hashctx[CLI_HASH_AVAIL_TYPES] = {NULL};
     cli_hash_type_t type;
     int nimps = 0;
     unsigned int err;
@@ -2451,25 +2428,14 @@ static cl_error_t hash_imptbl(cli_ctx *ctx, unsigned char **digest, uint32_t *im
      * would have failed if the size exceeds the end of the fmap. */
     left = peinfo->dirs[1].Size;
 
-    if (genhash[CLI_HASH_MD5]) {
-        hashctx[CLI_HASH_MD5] = cl_hash_init("md5");
-        if (hashctx[CLI_HASH_MD5] == NULL) {
-            status = CL_EMEM;
-            goto done;
-        }
-    }
-    if (genhash[CLI_HASH_SHA1]) {
-        hashctx[CLI_HASH_SHA1] = cl_hash_init("sha1");
-        if (hashctx[CLI_HASH_SHA1] == NULL) {
-            status = CL_EMEM;
-            goto done;
-        }
-    }
-    if (genhash[CLI_HASH_SHA256]) {
-        hashctx[CLI_HASH_SHA256] = cl_hash_init("sha256");
-        if (hashctx[CLI_HASH_SHA256] == NULL) {
-            status = CL_EMEM;
-            goto done;
+    for (type = CLI_HASH_MD5; type < CLI_HASH_AVAIL_TYPES; type++) {
+        if (genhash[type]) {
+            hashctx[type] = cl_hash_init(cli_hash_name(type));
+            if (hashctx[type] == NULL) {
+                cli_dbgmsg("scan_pe: cannot initialize hash context for %s\n", cli_hash_name(type));
+                status = CL_EMEM;
+                goto done;
+            }
         }
     }
 
@@ -2570,11 +2536,11 @@ done:
 
 static cl_error_t scan_pe_imp(cli_ctx *ctx, struct cli_exe_info *peinfo)
 {
-    struct cli_matcher *imp = ctx->engine->hm_imp;
-    unsigned char *hashset[CLI_HASH_AVAIL_TYPES];
-    const char *virname = NULL;
-    int genhash[CLI_HASH_AVAIL_TYPES];
-    uint32_t impsz = 0;
+    struct cli_matcher *imp                = ctx->engine->hm_imp;
+    uint8_t *hashset[CLI_HASH_AVAIL_TYPES] = {NULL};
+    bool genhash[CLI_HASH_AVAIL_TYPES]     = {false};
+    const char *virname                    = NULL;
+    uint32_t impsz                         = 0;
     cli_hash_type_t type;
     cl_error_t ret = CL_CLEAN;
 
@@ -2582,7 +2548,7 @@ static cl_error_t scan_pe_imp(cli_ctx *ctx, struct cli_exe_info *peinfo)
     for (type = CLI_HASH_MD5; type < CLI_HASH_AVAIL_TYPES; type++) {
         genhash[type] = cli_hm_have_any(imp, type);
         if (genhash[type]) {
-            hashset[type] = malloc(hashlen[type]);
+            hashset[type] = malloc(cli_hash_len(type));
             if (!hashset[type]) {
                 cli_errmsg("scan_pe: malloc failed!\n");
                 for (; type > 0;)
@@ -2596,8 +2562,8 @@ static cl_error_t scan_pe_imp(cli_ctx *ctx, struct cli_exe_info *peinfo)
 
     /* Force md5 hash generation for debug and preclass */
     if ((cli_debug_flag || ctx->wrkproperty) && !genhash[CLI_HASH_MD5]) {
-        genhash[CLI_HASH_MD5] = 1;
-        hashset[CLI_HASH_MD5] = calloc(hashlen[CLI_HASH_MD5], sizeof(char));
+        genhash[CLI_HASH_MD5] = true;
+        hashset[CLI_HASH_MD5] = calloc(cli_hash_len(CLI_HASH_MD5), sizeof(char));
         if (!hashset[CLI_HASH_MD5]) {
             cli_errmsg("scan_pe: calloc failed!\n");
             for (type = CLI_HASH_MD5; type < CLI_HASH_AVAIL_TYPES; type++)
@@ -2620,7 +2586,7 @@ static cl_error_t scan_pe_imp(cli_ctx *ctx, struct cli_exe_info *peinfo)
 
     /* Print hash */
     if (cli_debug_flag || ctx->wrkproperty) {
-        char *dstr = cli_str2hex((char *)hashset[CLI_HASH_MD5], hashlen[CLI_HASH_MD5]);
+        char *dstr = cli_str2hex((char *)hashset[CLI_HASH_MD5], cli_hash_len(CLI_HASH_MD5));
         cli_dbgmsg("IMP: %s:%u\n", dstr ? (char *)dstr : "(NULL)", impsz);
 
         if (ctx->wrkproperty)
@@ -2781,9 +2747,6 @@ int cli_scanpe(cli_ctx *ctx)
     struct cli_bc_ctx *bc_ctx;
     fmap_t *map;
     struct cli_pe_hook_data pedata;
-#ifdef HAVE__INTERNAL__SHA_COLLECT
-    int sha_collect = ctx->sha_collect;
-#endif
     int toval                   = 0;
     struct json_object *pe_json = NULL;
 
@@ -3932,7 +3895,6 @@ int cli_scanpe(cli_ctx *ctx)
         if (lseek(ndesc, 0, SEEK_SET) == -1) {
             cli_dbgmsg("cli_scanpe: UPX/FSG: lseek() failed\n");
             close(ndesc);
-            SHA_RESET;
             CLI_TMPUNLK();
             free(tempfile);
             return CL_ESEEK;
@@ -3942,17 +3904,14 @@ int cli_scanpe(cli_ctx *ctx)
             cli_dbgmsg("cli_scanpe: UPX/FSG: Decompressed data saved in %s\n", tempfile);
 
         cli_dbgmsg("***** Scanning decompressed file *****\n");
-        SHA_OFF;
         ret = cli_magic_scan_desc(ndesc, tempfile, ctx, NULL, LAYER_ATTRIBUTES_NONE);
         if (CL_SUCCESS != ret) {
             close(ndesc);
-            SHA_RESET;
             CLI_TMPUNLK();
             free(tempfile);
             return ret;
         }
 
-        SHA_RESET;
         close(ndesc);
         CLI_TMPUNLK();
         free(tempfile);
@@ -5436,7 +5395,8 @@ cl_error_t cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts,
                 } /* look for stringfileinfo - NOT RESUMABLE */
                 break;
             } /* look for version_info - NOT RESUMABLE */
-        }     /* enum all version_information res - RESUMABLE */
+
+        } /* enum all version_information res - RESUMABLE */
         break;
     } /* while(dirs[2].Size) */
 
@@ -5525,7 +5485,7 @@ cl_error_t cli_check_auth_header(cli_ctx *ctx, struct cli_exe_info *peinfo)
     // for the 'PE' .cat Authenticode hash file type.
     if (sec_dir_size < 8 &&
         !cli_hm_have_size(ctx->engine->hm_fp, CLI_HASH_SHA1, 2) &&
-        !cli_hm_have_size(ctx->engine->hm_fp, CLI_HASH_SHA256, 2)) {
+        !cli_hm_have_size(ctx->engine->hm_fp, CLI_HASH_SHA2_256, 2)) {
         ret = CL_BREAK;
         goto finish;
     }
@@ -5656,7 +5616,7 @@ cl_error_t cli_check_auth_header(cli_ctx *ctx, struct cli_exe_info *peinfo)
         const char *hashctx_name;
     } supported_hashes[] = {
         {CLI_HASH_SHA1, "sha1"},
-        {CLI_HASH_SHA256, "sha256"},
+        {CLI_HASH_SHA2_256, "sha2-256"},
     };
 
     for (i = 0; i < (sizeof(supported_hashes) / sizeof(supported_hashes[0])); i++) {
@@ -5718,7 +5678,7 @@ finish:
     return ret;
 }
 
-/* Print out either the MD5, SHA1, or SHA256 associated with the imphash or
+/* Print out either the MD5, SHA1, or SHA2-256 associated with the imphash or
  * the individual sections. Also, this function computes the hashes of each
  * section (sorted based on the RVAs of the sections) if hashes is non-NULL.
  *
@@ -5737,15 +5697,16 @@ finish:
  *  - If a section exists completely outside of the file, it won't be included
  *    in the list of sections, and nsections will be adjusted accordingly.
  */
-cl_error_t cli_genhash_pe(cli_ctx *ctx, unsigned int class, int type, stats_section_t *hashes)
+cl_error_t cli_genhash_pe(cli_ctx *ctx, unsigned int class, cli_hash_type_t type, stats_section_t *hashes)
 {
     unsigned int i;
     struct cli_exe_info _peinfo;
     struct cli_exe_info *peinfo = &_peinfo;
 
-    unsigned char *hash, *hashset[CLI_HASH_AVAIL_TYPES];
-    int genhash[CLI_HASH_AVAIL_TYPES];
-    int hlen = 0;
+    uint8_t *hash                          = NULL;
+    uint8_t *hashset[CLI_HASH_AVAIL_TYPES] = {NULL};
+    bool genhash[CLI_HASH_AVAIL_TYPES]     = {false};
+    int hlen                               = 0;
 
     if (hashes) {
         hashes->sections = NULL;
@@ -5771,26 +5732,16 @@ cl_error_t cli_genhash_pe(cli_ctx *ctx, unsigned int class, int type, stats_sect
     cli_qsort(peinfo->sections, peinfo->nsections, sizeof(*(peinfo->sections)), sort_sects);
 
     /* pick hashtypes to generate */
-    memset(genhash, 0, sizeof(genhash));
-    memset(hashset, 0, sizeof(hashset));
-    switch (type) {
-        case 1:
-            genhash[CLI_HASH_MD5] = 1;
-            hlen                  = hashlen[CLI_HASH_MD5];
-            hash = hashset[CLI_HASH_MD5] = calloc(hlen, sizeof(char));
-            break;
-        case 2:
-            genhash[CLI_HASH_SHA1] = 1;
-            hlen                   = hashlen[CLI_HASH_SHA1];
-            hash = hashset[CLI_HASH_SHA1] = calloc(hlen, sizeof(char));
-            break;
-        default:
-            genhash[CLI_HASH_SHA256] = 1;
-            hlen                     = hashlen[CLI_HASH_SHA256];
-            hash = hashset[CLI_HASH_SHA256] = calloc(hlen, sizeof(char));
-            break;
+    genhash[type] = true;
+
+    hlen = cli_hash_len(type);
+    if (hlen <= 0) {
+        cli_dbgmsg("cli_genhash_pe: Invalid hash type %u\n", type);
+        cli_exe_info_destroy(peinfo);
+        return CL_EARG;
     }
 
+    hash = hashset[type] = calloc(hlen, sizeof(char));
     if (!hash) {
         cli_errmsg("cli_genhash_pe: calloc failed!\n");
         cli_exe_info_destroy(peinfo);
@@ -5813,7 +5764,7 @@ cl_error_t cli_genhash_pe(cli_ctx *ctx, unsigned int class, int type, stats_sect
 
         for (i = 0; i < peinfo->nsections; i++) {
             /* Generate hashes */
-            if (cli_hashsect(ctx->fmap, &peinfo->sections[i], hashset, genhash, genhash) == 1) {
+            if (cli_hashsect(ctx->fmap, &peinfo->sections[i], hashset, genhash, genhash)) {
                 if (cli_debug_flag) {
                     dstr = cli_str2hex((char *)hash, hlen);
                     cli_dbgmsg("Section{%u}: %u:%s\n", i, peinfo->sections[i].rsz, dstr ? (char *)dstr : "(NULL)");

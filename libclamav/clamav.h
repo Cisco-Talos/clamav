@@ -119,8 +119,6 @@ typedef enum cl_error_t {
     CL_EPARSE,
     CL_EBYTECODE,          /* may be reported in testmode */
     CL_EBYTECODE_TESTFAIL, /* may be reported in testmode */
-
-    /* c4w error codes */
     CL_ELOCK,
     CL_EBUSY,
     CL_ESTATE,
@@ -171,10 +169,11 @@ struct cl_scan_options {
 #define CL_SCAN_GENERAL_ALLMATCHES                  0x1  /* scan in all-match mode */
 #define CL_SCAN_GENERAL_COLLECT_METADATA            0x2  /* collect metadata (--gen-json) */
 #define CL_SCAN_GENERAL_HEURISTICS                  0x4  /* option to enable heuristic alerts */
-#define CL_SCAN_GENERAL_HEURISTIC_PRECEDENCE        0x8  /* allow heuristic match to take precedence. */
-#define CL_SCAN_GENERAL_UNPRIVILEGED                0x10 /* scanner will not have read access to files. */
+#define CL_SCAN_GENERAL_HEURISTIC_PRECEDENCE        0x8  /* allow heuristic match to take precedence */
+#define CL_SCAN_GENERAL_UNPRIVILEGED                0x10 /* scanner will not have read access to files */
 #define CL_SCAN_GENERAL_STORE_HTML_URIS             0x20 /* when collect-metadata enabled: store uris found in html <a and <form tags */
 #define CL_SCAN_GENERAL_STORE_PDF_URIS              0x40 /* when collect-metadata enabled: store uris found in pdf /URI tags */
+#define CL_SCAN_GENERAL_STORE_EXTRA_HASHES          0x80 /* when collect-metadata enabled: calculate and store each type of supported file hash */
 
 /* parsing capabilities options */
 #define CL_SCAN_PARSE_ARCHIVE                       0x1
@@ -210,7 +209,7 @@ struct cl_scan_options {
 #define CL_SCAN_MAIL_PARTIAL_MESSAGE                0x1
 
 /* dev options */
-#define CL_SCAN_DEV_COLLECT_SHA                     0x1 /* Enables hash output in sha-collect builds - for internal use only */
+#define CL_SCAN_DEV_COLLECT_SHA                     0x1 /* deprecated (functionality removed) */
 #define CL_SCAN_DEV_COLLECT_PERFORMANCE_INFO        0x2 /* collect performance timings */
 
 /* cl_countsigs options */
@@ -507,6 +506,7 @@ extern void cl_engine_set_clcb_pre_cache(struct cl_engine *engine, clcb_pre_cach
 #define LAYER_ATTRIBUTES_NONE 0x0
 #define LAYER_ATTRIBUTES_NORMALIZED 0x1 /** This layer was modified to make matching more generic, reliable. */
 #define LAYER_ATTRIBUTES_DECRYPTED 0x2  /** Decryption was used to extract this layer. I.e. had to decrypt some previous layer. */
+#define LAYER_ATTRIBUTES_RETYPED 0x4    /** This layer is a duplicate of the parent layer but as a new type (e.g. using HandlerType). */
 
 /**
  * @brief File inspection callback.
@@ -759,11 +759,11 @@ extern void cl_set_clcb_msg(clcb_msg callback);
  *
  * @param fd        File descriptor if available, else -1.
  * @param size      Sample size
- * @param md5       Sample md5 hash
+ * @param md5       Sample md5 hash (string)
  * @param virname   Signature name that the sample matched against
  * @param context   Opaque application provided data
  */
-typedef void (*clcb_hash)(int fd, unsigned long long size, const unsigned char *md5, const char *virname, void *context);
+typedef void (*clcb_hash)(int fd, unsigned long long size, const char *md5, const char *virname, void *context);
 /**
  * @brief Set a custom hash stats callback function.
  *
@@ -1424,7 +1424,7 @@ unsigned char *cl_hash_file_fd(int fd, const char *alg, unsigned int *olen);
 unsigned char *cl_hash_file_fp(FILE *fp, const char *alg, unsigned int *olen);
 
 /**
- * @brief Generate a sha256 hash of data.
+ * @brief Generate a sha2-256 hash of data.
  *
  * @param buf       The data to hash.
  * @param len       The length of the to-be-hashed data.
@@ -1435,7 +1435,7 @@ unsigned char *cl_hash_file_fp(FILE *fp, const char *alg, unsigned int *olen);
 unsigned char *cl_sha256(const void *buf, size_t len, unsigned char *obuf, unsigned int *olen);
 
 /**
- * @brief Generate a sha384 hash of data.
+ * @brief Generate a sha2-384 hash of data.
  *
  * @param buf       The data to hash.
  * @param len       The length of the to-be-hashed data.
@@ -1446,7 +1446,7 @@ unsigned char *cl_sha256(const void *buf, size_t len, unsigned char *obuf, unsig
 unsigned char *cl_sha384(const void *buf, size_t len, unsigned char *obuf, unsigned int *olen);
 
 /**
- * @brief Generate a sha512 hash of data.
+ * @brief Generate a sha2-512 hash of data.
  *
  * @param buf       The data to hash.
  * @param len       The length of the to-be-hashed data.

@@ -26,11 +26,47 @@
 #include "others.h"
 #include "str.h"
 
-int hm_addhash_str(struct cli_matcher *root, const char *strhash, uint32_t size, const char *virusname)
+const char *cli_hash_name(cli_hash_type_t type)
+{
+    switch (type) {
+        case CLI_HASH_MD5:
+            return "md5";
+        case CLI_HASH_SHA1:
+            return "sha1";
+        case CLI_HASH_SHA2_256:
+            return "sha2-256";
+        case CLI_HASH_SHA2_384:
+            return "sha2-384";
+        case CLI_HASH_SHA2_512:
+            return "sha2-512";
+        default:
+            return "unknown";
+    }
+}
+
+size_t cli_hash_len(cli_hash_type_t type)
+{
+    switch (type) {
+        case CLI_HASH_MD5:
+            return MD5_HASH_SIZE;
+        case CLI_HASH_SHA1:
+            return SHA1_HASH_SIZE;
+        case CLI_HASH_SHA2_256:
+            return SHA256_HASH_SIZE;
+        case CLI_HASH_SHA2_384:
+            return SHA384_HASH_SIZE;
+        case CLI_HASH_SHA2_512:
+            return SHA512_HASH_SIZE;
+        default:
+            return 0; // Invalid type
+    }
+}
+
+cl_error_t hm_addhash_str(struct cli_matcher *root, const char *strhash, uint32_t size, const char *virusname)
 {
     cli_hash_type_t type;
-    char binhash[CLI_HASHLEN_MAX];
-    int hlen;
+    char binhash[SHA256_HASH_SIZE];
+    size_t hlen;
 
     if (!root || !strhash) {
         cli_errmsg("hm_addhash_str: NULL root or hash\n");
@@ -45,14 +81,14 @@ int hm_addhash_str(struct cli_matcher *root, const char *strhash, uint32_t size,
 
     hlen = strlen(strhash);
     switch (hlen) {
-        case 32:
+        case (MD5_HASH_SIZE * 2):
             type = CLI_HASH_MD5;
             break;
-        case 40:
+        case (SHA1_HASH_SIZE * 2):
             type = CLI_HASH_SHA1;
             break;
-        case 64:
-            type = CLI_HASH_SHA256;
+        case (SHA256_HASH_SIZE * 2):
+            type = CLI_HASH_SHA2_256;
             break;
         default:
             cli_errmsg("hm_addhash_str: invalid hash %s -- FIXME!\n", strhash);
@@ -66,14 +102,9 @@ int hm_addhash_str(struct cli_matcher *root, const char *strhash, uint32_t size,
     return hm_addhash_bin(root, binhash, type, size, virusname);
 }
 
-const unsigned int hashlen[] = {
-    CLI_HASHLEN_MD5,
-    CLI_HASHLEN_SHA1,
-    CLI_HASHLEN_SHA256};
-
-int hm_addhash_bin(struct cli_matcher *root, const void *binhash, cli_hash_type_t type, uint32_t size, const char *virusname)
+cl_error_t hm_addhash_bin(struct cli_matcher *root, const void *binhash, cli_hash_type_t type, uint32_t size, const char *virusname)
 {
-    const unsigned int hlen = hashlen[type];
+    size_t hlen = cli_hash_len(type);
     const struct cli_htu32_element *item;
     struct cli_sz_hash *szh;
     struct cli_htu32 *ht;
@@ -84,7 +115,10 @@ int hm_addhash_bin(struct cli_matcher *root, const void *binhash, cli_hash_type_
         ht = &root->hm.sizehashes[type];
         if (!root->hm.sizehashes[type].capacity) {
             i = CLI_HTU32_INIT(ht, 64, root->mempool);
-            if (i) return i;
+            if (i) {
+                cli_errmsg("hm_addhash_bin: failed to initialize hash table\n");
+                return CL_ERROR;
+            }
         }
 
         item = cli_htu32_find(ht, size);
@@ -102,10 +136,11 @@ int hm_addhash_bin(struct cli_matcher *root, const void *binhash, cli_hash_type_
             if (i) {
                 cli_errmsg("hm_addhash_bin: failed to add item to hashtab");
                 MPOOL_FREE(root->mempool, szh);
-                return i;
+                return CL_ERROR;
             }
-        } else
+        } else {
             szh = (struct cli_sz_hash *)item->data.as_ptr;
+        }
     } else {
         /* size 0 = wildcard */
         szh = &root->hwild.hashes[type];
@@ -133,7 +168,7 @@ int hm_addhash_bin(struct cli_matcher *root, const void *binhash, cli_hash_type_
     memcpy(&szh->hash_array[(szh->items - 1) * hlen], binhash, hlen);
     szh->virusnames[(szh->items - 1)] = virusname;
 
-    return 0;
+    return CL_SUCCESS;
 }
 
 static inline int hm_cmp(const uint8_t *itm, const uint8_t *ref, unsigned int keylen)
@@ -209,7 +244,7 @@ void hm_flush(struct cli_matcher *root)
 
         while ((item = cli_htu32_next(ht, item))) {
             szh    = (struct cli_sz_hash *)item->data.as_ptr;
-            keylen = hashlen[type];
+            keylen = cli_hash_len(type);
 
             if (szh->items > 1)
                 hm_sort(szh, 0, szh->items, keylen);
@@ -218,29 +253,29 @@ void hm_flush(struct cli_matcher *root)
 
     for (type = CLI_HASH_MD5; type < CLI_HASH_AVAIL_TYPES; type++) {
         szh    = &root->hwild.hashes[type];
-        keylen = hashlen[type];
+        keylen = cli_hash_len(type);
 
         if (szh->items > 1)
             hm_sort(szh, 0, szh->items, keylen);
     }
 }
 
-int cli_hm_have_size(const struct cli_matcher *root, cli_hash_type_t type, uint32_t size)
+bool cli_hm_have_size(const struct cli_matcher *root, cli_hash_type_t type, uint32_t size)
 {
     return (size && size != 0xffffffff && root && root->hm.sizehashes[type].capacity && cli_htu32_find(&root->hm.sizehashes[type], size));
 }
 
-int cli_hm_have_wild(const struct cli_matcher *root, cli_hash_type_t type)
+bool cli_hm_have_wild(const struct cli_matcher *root, cli_hash_type_t type)
 {
     return (root && root->hwild.hashes[type].items);
 }
 
-int cli_hm_have_any(const struct cli_matcher *root, cli_hash_type_t type)
+bool cli_hm_have_any(const struct cli_matcher *root, cli_hash_type_t type)
 {
     return (root && (root->hwild.hashes[type].items || root->hm.sizehashes[type].capacity));
 }
 
-static int hm_scan(const unsigned char *digest, const char **virname, const struct cli_sz_hash *szh, cli_hash_type_t type)
+static cl_error_t hm_scan(const uint8_t *digest, const char **virname, const struct cli_sz_hash *szh, cli_hash_type_t type)
 {
     unsigned int keylen;
     size_t l, r;
@@ -248,7 +283,7 @@ static int hm_scan(const unsigned char *digest, const char **virname, const stru
     if (!digest || !szh || !szh->items)
         return CL_CLEAN;
 
-    keylen = hashlen[type];
+    keylen = cli_hash_len(type);
 
     l = 0;
     r = szh->items - 1;
@@ -272,7 +307,7 @@ static int hm_scan(const unsigned char *digest, const char **virname, const stru
 }
 
 /* cli_hm_scan will scan only size-specific hashes, if any */
-int cli_hm_scan(const unsigned char *digest, uint32_t size, const char **virname, const struct cli_matcher *root, cli_hash_type_t type)
+cl_error_t cli_hm_scan(const uint8_t *digest, uint32_t size, const char **virname, const struct cli_matcher *root, cli_hash_type_t type)
 {
     const struct cli_htu32_element *item;
     struct cli_sz_hash *szh;
@@ -290,7 +325,7 @@ int cli_hm_scan(const unsigned char *digest, uint32_t size, const char **virname
 }
 
 /* cli_hm_scan_wild will scan only size-agnostic hashes, if any */
-int cli_hm_scan_wild(const unsigned char *digest, const char **virname, const struct cli_matcher *root, cli_hash_type_t type)
+cl_error_t cli_hm_scan_wild(const uint8_t *digest, const char **virname, const struct cli_matcher *root, cli_hash_type_t type)
 {
     if (!digest || !root || !root->hwild.hashes[type].items)
         return CL_CLEAN;

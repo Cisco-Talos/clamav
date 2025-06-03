@@ -154,12 +154,12 @@ pub type clcb_progress = ::std::option::Option<
         context: *mut ::std::os::raw::c_void,
     ) -> cl_error_t,
 >;
-#[doc = " @brief LibClamAV hash stats callback.\n\n Callback that provides the hash of a scanned sample if a signature alerted.\n Provides a mechanism to record detection statistics.\n\n @param fd        File descriptor if available, else -1.\n @param size      Sample size\n @param md5       Sample md5 hash\n @param virname   Signature name that the sample matched against\n @param context   Opaque application provided data"]
+#[doc = " @brief LibClamAV hash stats callback.\n\n Callback that provides the hash of a scanned sample if a signature alerted.\n Provides a mechanism to record detection statistics.\n\n @param fd        File descriptor if available, else -1.\n @param size      Sample size\n @param md5       Sample md5 hash (string)\n @param virname   Signature name that the sample matched against\n @param context   Opaque application provided data"]
 pub type clcb_hash = ::std::option::Option<
     unsafe extern "C" fn(
         fd: ::std::os::raw::c_int,
         size: ::std::os::raw::c_ulonglong,
-        md5: *const ::std::os::raw::c_uchar,
+        md5: *const ::std::os::raw::c_char,
         virname: *const ::std::os::raw::c_char,
         context: *mut ::std::os::raw::c_void,
     ),
@@ -317,12 +317,9 @@ pub struct cl_fmap {
         ::std::option::Option<unsafe extern "C" fn(arg1: *mut fmap_t, at: usize, len: usize)>,
     pub windows_file_handle: *mut ::std::os::raw::c_void,
     pub windows_map_handle: *mut ::std::os::raw::c_void,
-    pub have_md5: bool,
-    pub md5: [::std::os::raw::c_uchar; 16usize],
-    pub have_sha1: bool,
-    pub sha1: [::std::os::raw::c_uchar; 20usize],
-    pub have_sha256: bool,
-    pub sha256: [::std::os::raw::c_uchar; 32usize],
+    pub will_need_hash: [bool; 3usize],
+    pub have_hash: [bool; 3usize],
+    pub hash: [[u8; 32usize]; 3usize],
     pub bitmap: *mut u64,
     pub name: *mut ::std::os::raw::c_char,
 }
@@ -650,7 +647,6 @@ pub struct cli_ctx_tag {
     pub recursion_stack_size: u32,
     pub recursion_level: u32,
     pub fmap: *mut fmap_t,
-    pub handlertype_hash: [::std::os::raw::c_uchar; 16usize],
     pub dconf: *mut cli_dconf,
     pub hook_lsig_matches: *mut bitset_t,
     pub cb_ctx: *mut ::std::os::raw::c_void,
@@ -1097,7 +1093,7 @@ pub struct cli_lsig_tdb {
     pub icongrp1: *const ::std::os::raw::c_char,
     pub icongrp2: *const ::std::os::raw::c_char,
     pub macro_ptids: *mut u32,
-    pub mempool: *mut mpool_t,
+    pub _padding_mempool: *mut ::std::os::raw::c_void,
 }
 pub const lsig_type_CLI_LSIG_NORMAL: lsig_type = 0;
 pub const lsig_type_CLI_YARA_NORMAL: lsig_type = 1;
@@ -1166,7 +1162,7 @@ pub struct cli_matcher {
     pub trans_array: *mut *mut *mut cli_ac_node,
     pub trans_cnt: usize,
     pub trans_capacity: usize,
-    pub mempool: *mut mpool_t,
+    pub _padding_mempool: *mut ::std::os::raw::c_void,
 }
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -1202,11 +1198,11 @@ extern "C" {
 }
 extern "C" {
     pub fn cli_versig2(
-        sha256: *const ::std::os::raw::c_uchar,
+        sha2_256: *const ::std::os::raw::c_uchar,
         dsig_str: *const ::std::os::raw::c_char,
         n_str: *const ::std::os::raw::c_char,
         e_str: *const ::std::os::raw::c_char,
-    ) -> ::std::os::raw::c_int;
+    ) -> cl_error_t;
 }
 extern "C" {
     #[doc = " @brief Connect to a signing server, send the data to be signed, and return the digital signature.\n\n Caller is responsible for freeing the returned dsig.\n\n @param host\n @param user\n @param data\n @param datalen\n @param mode\n @return char*"]

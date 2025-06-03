@@ -343,10 +343,9 @@ cl_error_t cli_scan_desc(int desc, cli_ctx *ctx, cli_file_t ftype, bool filetype
  * @param[out] ftoffset (optional) A list of file type signature matches with their corresponding offsets. If provided, will output the file type signature matches.
  * @param acmode        Use AC_SCAN_VIR and AC_SCAN_FT to set scanning modes.
  * @param[out] acres    A list of cli_ac_result AC pattern matching results.
- * @param refhash       MD5 hash of the current file, used to save time creating hashes and to limit scan recursion for the HandlerType logical signature FTM feature.
  * @return cl_error_t
  */
-cl_error_t cli_scan_fmap(cli_ctx *ctx, cli_file_t ftype, bool filetype_only, struct cli_matched_type **ftoffset, unsigned int acmode, struct cli_ac_result **acres, unsigned char *refhash);
+cl_error_t cli_scan_fmap(cli_ctx *ctx, cli_file_t ftype, bool filetype_only, struct cli_matched_type **ftoffset, unsigned int acmode, struct cli_ac_result **acres);
 
 /**
  * @brief Evaluate logical signatures and yara rules given the AC matching results
@@ -359,12 +358,12 @@ cl_error_t cli_scan_fmap(cli_ctx *ctx, cli_file_t ftype, bool filetype_only, str
  * @param hash          Reference hash of the current file, used to limit recursion for the HandlerType logical signature FTM feature.
  * @return cl_error_t
  */
-cl_error_t cli_exp_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_ac_data *acdata, struct cli_target_info *target_info, const char *hash);
+cl_error_t cli_exp_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_ac_data *acdata, struct cli_target_info *target_info);
 
 cl_error_t cli_caloff(const char *offstr, const struct cli_target_info *info, unsigned int target, uint32_t *offdata, uint32_t *offset_min, uint32_t *offset_max);
 
 /**
- * @brief Determine if an alert is a known false positive, using each fmap in the ctx->container stack to check MD5, SHA1, and SHA256 hashes.
+ * @brief Determine if an alert is a known false positive, using each fmap in the ctx->container stack to check MD5, SHA1, and SHA2-256 hashes.
  *
  * @param ctx           The scanning context.
  * @param vname         (Optional) The name of the signature alert.
