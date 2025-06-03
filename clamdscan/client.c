@@ -357,6 +357,15 @@ int get_clamd_version(const struct optstruct *opts)
             logg(LOGG_ERROR, "Error occurred while receiving version information.\n");
             break;
         }
+
+        /* Check if the response was "COMMAND UNAVAILABLE", which means that
+           clamd has the VERSION command disabled. */
+        if (len >= 19 && memcmp(buff, "COMMAND UNAVAILABLE", 19) == 0) {
+            logg(LOGG_WARNING, "VERSION command disabled in clamd, printing the local version.\n");
+            closesocket(sockd);
+            return 2;
+        }
+
         printf("%s\n", buff);
     }
 
