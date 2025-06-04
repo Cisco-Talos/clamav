@@ -173,8 +173,8 @@ struct cl_scan_options {
 #define CL_SCAN_GENERAL_HEURISTICS                  0x4  /* option to enable heuristic alerts */
 #define CL_SCAN_GENERAL_HEURISTIC_PRECEDENCE        0x8  /* allow heuristic match to take precedence. */
 #define CL_SCAN_GENERAL_UNPRIVILEGED                0x10 /* scanner will not have read access to files. */
-#define CL_SCAN_GENERAL_STORE_HTML_URIS             0x20 /* Store uris found in html <a and <form tags when recording JSON metadata */
-#define CL_SCAN_GENERAL_STORE_PDF_URIS              0x40 /* Store uris found in pdf /URI tags when recording JSON metadata */
+#define CL_SCAN_GENERAL_STORE_HTML_URIS             0x20 /* when collect-metadata enabled: store uris found in html <a and <form tags */
+#define CL_SCAN_GENERAL_STORE_PDF_URIS              0x40 /* when collect-metadata enabled: store uris found in pdf /URI tags */
 
 /* parsing capabilities options */
 #define CL_SCAN_PARSE_ARCHIVE                       0x1
