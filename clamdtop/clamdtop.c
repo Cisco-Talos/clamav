@@ -110,6 +110,7 @@ static void cleanup(void);
 static int send_string_noreconn(conn_t *conn, const char *cmd);
 static void send_string(conn_t *conn, const char *cmd);
 static int read_version(conn_t *conn);
+static int check_stats_available(conn_t *conn);
 char *get_ip(const char *ip);
 char *get_port(const char *ip);
 char *make_ip(const char *host, const char *port);
@@ -790,6 +791,7 @@ done:
 static int make_connection(const char *soname, conn_t *conn)
 {
     int rc;
+    int rv;
 
     if (!soname) {
         return -1;
@@ -801,8 +803,20 @@ static int make_connection(const char *soname, conn_t *conn)
     send_string(conn, "nIDSESSION\nnVERSION\n");
     free(conn->version);
     conn->version = NULL;
-    if (!read_version(conn))
-        return 0;
+
+    rv = read_version(conn);
+    if (rv == -3) {
+        print_con_info(conn, "VERSION command unavailable, consider enabling it in the clamd configuration.\n");
+        EXIT_PROGRAM(FAIL_INITIAL_CONN);
+    } else if (!rv) {
+        // check if STATS command is available
+        if (check_stats_available(conn)) {
+            return 0;
+        } else {
+            print_con_info(conn, "STATS command unavailable, consider enabling it in the clamd configuration.\n");
+            EXIT_PROGRAM(FAIL_INITIAL_CONN);
+        }
+    }
 
     /* clamd < 0.95 */
     if ((rc = make_connection_real(soname, conn)))
@@ -1328,6 +1342,9 @@ static int read_version(conn_t *conn)
         return -1;
     if (!strcmp(buf, "UNKNOWN COMMAND\n"))
         return -2;
+    // check if VERSION command is available
+    if (!strcmp(strchr(buf, ':'), ": COMMAND UNAVAILABLE\n"))
+        return -3;
 
     conn->version = strdup(buf);
     OOM_CHECK(conn->version);
@@ -1335,6 +1352,17 @@ static int read_version(conn_t *conn)
         if (conn->version[i] == '\n')
             conn->version[i] = ' ';
     return 0;
+}
+
+static int check_stats_available(conn_t *conn)
+{
+    char buf[1024];
+    send_string(conn, "nSTATS\n");
+    if (!recv_line(conn, buf, sizeof(buf)))
+        return 0;
+    if (!strcmp(strchr(buf, ':'), ": COMMAND UNAVAILABLE\n"))
+        return 0;
+    return 1;
 }
 
 static void sigint(int a)

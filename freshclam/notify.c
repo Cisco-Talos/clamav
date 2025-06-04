@@ -62,6 +62,11 @@ int clamd_connect(const char *cfgfile, const char *option)
         return -11;
     }
 
+    if (!optget(opts, "EnableReloadCommand")->enabled) {
+        logg(LOGG_WARNING, "Clamd was NOT notified: The RELOAD command is disabled. Consider enabling it in the clamd configuration!\n");
+        return -1;
+    }
+
 #ifndef _WIN32
     if ((opt = optget(opts, "LocalSocket"))->enabled) {
         memset(&server, 0x00, sizeof(server));
@@ -163,6 +168,12 @@ int notify(const char *cfgfile)
 
     memset(buff, 0, sizeof(buff));
     if ((bread = recv(sockd, buff, sizeof(buff), 0)) > 0) {
+        if (strstr(buff, "COMMAND UNAVAILABLE")) {
+            // this will only happen when the running clamd instance has EnableReloadCommand set to no,
+            // but the config on disk differs (e.g. after a config change without clamd restart)
+            logg(LOGG_ERROR, "NotifyClamd: RELOAD command unavailable, consider enabling it in the clamd configuration and restarting clamd.\n");
+            return -1;
+        }
         if (!strstr(buff, "RELOADING")) {
             logg(LOGG_ERROR, "NotifyClamd: Unknown answer from clamd: '%s'\n", buff);
             closesocket(sockd);

@@ -144,6 +144,34 @@ This option allows you to restrict the TCP address and provide some degree of pr
 .br
 Default: disabled
 .TP
+\fBEnableShutdownCommand BOOL\fR
+Enables the SHUTDOWN command. Setting this to no prevents a client to stop clamd via the protocol.
+.br
+When disabled, clamd responds to this command with COMMAND UNAVAILABLE.
+.br
+Default: yes
+.TP
+\fBEnableReloadCommand BOOL\fR
+Enables the RELOAD command. Setting this to no prevents a client to reload the database.
+.br
+When disabled, clamd responds to this command with COMMAND UNAVAILABLE.
+.br
+Default: yes
+.TP
+\fBEnableVersionCommand BOOL\fR
+Enables the VERSION command. Setting this to no prevents a client from querying version information.
+.br
+When disabled, clamd responds to this command with COMMAND UNAVAILABLE.
+.br
+Default: yes
+.TP
+\fBEnableStatsCommand BOOL\fR
+Enables the STATS command. Setting this to no prevents a client from querying statistics.
+.br
+When disabled, clamd responds to this command with COMMAND UNAVAILABLE.
+.br
+Default: yes
+.TP
 \fBMaxConnectionQueueLength NUMBER\fR
 Maximum length the queue of pending connections may grow to.
 .br
