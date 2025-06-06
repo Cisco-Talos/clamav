@@ -1384,9 +1384,17 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
         options.dev |= CL_SCAN_DEV_COLLECT_SHA;
 #endif
 
-    /* JSON check to prevent engine loading if specified without libjson-c */
-    if (optget(opts, "GenerateMetadataJson")->enabled)
+    if (optget(opts, "GenerateMetadataJson")->enabled) {
         options.general |= CL_SCAN_GENERAL_COLLECT_METADATA;
+    }
+
+    if (optget(opts, "JsonStoreHTMLURIs")->enabled) {
+        options.general |= CL_SCAN_GENERAL_STORE_HTML_URIS;
+    }
+
+    if (optget(opts, "JsonStorePDFURIs")->enabled) {
+        options.general |= CL_SCAN_GENERAL_STORE_PDF_URIS;
+    }
 
     selfchk = optget(opts, "SelfCheck")->numarg;
     if (!selfchk) {

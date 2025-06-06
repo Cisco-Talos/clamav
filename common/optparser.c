@@ -375,6 +375,10 @@ const struct clam_option __clam_options[] = {
 
     {"GenerateMetadataJson", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD, "Record metadata about the file being scanned.\nScan metadata is useful for file analysis purposes and for debugging scan behavior.\nThe JSON metadata will be printed after the scan is complete if Debug is enabled.\nA metadata.json file will be written to the scan temp directory if LeaveTemporaryFiles is enabled.", "no"},
 
+    {"JsonStoreHTMLURIs", "json-store-html-uris", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "When GenerateMetadataJson enabled: store URLs found in HTML <form and <a tags.", "yes"},
+
+    {"JsonStorePDFURIs", "json-store-pdf-uris", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "When GenerateMetadataJson enabled: store uris found in pdf /URI tags.", "yes"},
+
     {"User", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMD | OPT_MILTER, "Run the daemon as a specified user (the process must be started by root).", "clamav"},
 
     /* Scan options */
@@ -413,8 +417,6 @@ const struct clam_option __clam_options[] = {
     {"PhishingScanURLs", "phishing-scan-urls", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Scan URLs found in mails for phishing attempts using heuristics.", "yes"},
 
     {"HeuristicAlerts", "heuristic-alerts", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "In some cases (eg. complex malware, exploits in graphic files, and others),\nClamAV uses special algorithms to provide accurate detection. This option\ncontrols the algorithmic detection.", "yes"},
-    {"JsonStoreHTMLURIs", "json-store-html-uris", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Store URLs found in HTML <form and <a tags.", "yes"},
-    {"JsonStorePDFURIs", "json-store-pdf-uris", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Store URLs found in PDF /URI tags.", "yes"},
 
     {"HeuristicScanPrecedence", "heuristic-scan-precedence", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Allow heuristic match to take precedence.\nWhen enabled, if a heuristic scan (such as phishingScan) detects\na possible virus/phish it will stop scan immediately. Recommended, saves CPU\nscan-time.\nWhen disabled, virus/phish detected by heuristic scans will be reported only\nat the end of a scan. If an archive contains both a heuristically detected\nvirus/phish, and a real malware, the real malware will be reported.\nKeep this disabled if you intend to handle \"Heuristics.*\" viruses\ndifferently from \"real\" malware.\nIf a non-heuristically-detected virus (signature-based) is found first,\nthe scan is interrupted immediately, regardless of this config option.", "yes"},
 

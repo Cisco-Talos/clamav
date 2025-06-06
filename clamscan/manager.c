@@ -1240,8 +1240,17 @@ int scanmanager(const struct optstruct *opts)
         }
     }
 
-    if (optget(opts, "gen-json")->enabled)
+    if (optget(opts, "gen-json")->enabled) {
         options.general |= CL_SCAN_GENERAL_COLLECT_METADATA;
+    }
+
+    if (optget(opts, "json-store-html-uris")->enabled) {
+        options.general |= CL_SCAN_GENERAL_STORE_HTML_URIS;
+    }
+
+    if (optget(opts, "json-store-pdf-uris")->enabled) {
+        options.general |= CL_SCAN_GENERAL_STORE_PDF_URIS;
+    }
 
     if ((opt = optget(opts, "tempdir"))->enabled) {
         if ((ret = cl_engine_set_str(engine, CL_ENGINE_TMPDIR, opt->strarg))) {
@@ -1595,14 +1604,6 @@ int scanmanager(const struct optstruct *opts)
     if ((optget(opts, "algorithmic-detection")->enabled) && /* && used due to default-yes for both options */
         (optget(opts, "heuristic-alerts")->enabled)) {
         options.general |= CL_SCAN_GENERAL_HEURISTICS;
-    }
-
-    if (optget(opts, "json-store-html-uris")->enabled) {
-        options.general |= CL_SCAN_GENERAL_STORE_HTML_URIS;
-    }
-
-    if (optget(opts, "json-store-pdf-uris")->enabled) {
-        options.general |= CL_SCAN_GENERAL_STORE_PDF_URIS;
     }
 
     /* TODO: Remove deprecated option in a future feature release */
