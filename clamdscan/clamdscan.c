@@ -68,7 +68,9 @@ int main(int argc, char **argv)
     struct optstruct *opts;
     const struct optstruct *opt;
     char buffer[26];
-#ifndef _WIN32
+#ifdef _WIN32
+    SetConsoleOutputCP(CP_UTF8);
+#else /* !_WIN32 */
     struct sigaction sigact;
 #endif
 

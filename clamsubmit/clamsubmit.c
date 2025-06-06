@@ -204,6 +204,10 @@ int main(int argc, char *argv[])
     char *url_for_auth_token;
     char *url_for_presigned_cookie;
 
+#ifdef _WIN32
+    SetConsoleOutputCP(CP_UTF8);
+#endif
+
     curl_global_init(CURL_GLOBAL_ALL);
 
     clam_curl = curl_easy_init();

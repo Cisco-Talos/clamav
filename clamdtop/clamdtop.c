@@ -1577,6 +1577,10 @@ int main(int argc, char *argv[])
     struct timeval tv_last, tv;
     unsigned i;
 
+#ifdef _WIN32
+    SetConsoleOutputCP(CP_UTF8);
+#endif
+
     atexit(cleanup);
     setup_connections(argc, argv);
     init_ncurses(global.num_clamd, default_colors);

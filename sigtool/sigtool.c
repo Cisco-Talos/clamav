@@ -4122,6 +4122,10 @@ int main(int argc, char **argv)
     struct optstruct *opts;
     STATBUF sb;
 
+#ifdef _WIN32
+    SetConsoleOutputCP(CP_UTF8);
+#endif
+
     if (check_flevel())
         exit(1);
 
