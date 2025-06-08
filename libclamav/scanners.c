@@ -2491,10 +2491,6 @@ static void save_urls(cli_ctx *ctx, tag_arguments_t *hrefs, form_data_t *form_da
         return;
     }
 
-    if (ctx->this_layer_metadata_json != ctx->metadata_json) {
-        return;
-    }
-
     if (!(SCAN_STORE_HTML_URIS && SCAN_COLLECT_METADATA && (ctx->this_layer_metadata_json != NULL))) {
         return;
     }
