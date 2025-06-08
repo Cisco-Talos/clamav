@@ -554,7 +554,7 @@ cl_error_t cli_msxml_parse_document(cli_ctx *ctx, xmlTextReaderPtr reader, const
     ictx.num_keys = num_keys;
 
     if (flags & MSXML_FLAG_JSON) {
-        ictx.root = ctx->wrkproperty;
+        ictx.root = ctx->this_layer_metadata_json;
         /* JSON Sanity Check */
         if (!ictx.root)
             ictx.flags &= ~MSXML_FLAG_JSON;

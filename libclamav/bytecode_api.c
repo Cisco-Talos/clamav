@@ -1737,7 +1737,7 @@ int32_t cli_bcapi_input_switch(struct cli_bc_ctx *ctx, int32_t extracted_file)
         }
 
         /* Free the fmap used for the extracted file */
-        funmap(ctx->fmap);
+        fmap_free(ctx->fmap);
 
         /* Restore pointer to original fmap */
         cli_bytecode_context_setfile(ctx, ctx->save_map);
@@ -1761,7 +1761,7 @@ int32_t cli_bcapi_input_switch(struct cli_bc_ctx *ctx, int32_t extracted_file)
         }
 
         /* Create fmap for the extracted file */
-        map = fmap(ctx->outfd, 0, 0, NULL);
+        map = fmap_new(ctx->outfd, 0, 0, NULL, ctx->tempfile);
         if (!map) {
             cli_warnmsg("can't mmap() extracted temporary file %s\n", ctx->tempfile);
             return -1;
@@ -2006,7 +2006,7 @@ int32_t cli_bcapi_get_file_reliability(struct cli_bc_ctx *ctx)
 int32_t cli_bcapi_json_is_active(struct cli_bc_ctx *ctx)
 {
     cli_ctx *cctx = (cli_ctx *)ctx->ctx;
-    if (cctx->properties != NULL) {
+    if (cctx->metadata_json != NULL) {
         return 1;
     }
     return 0;
@@ -2025,7 +2025,7 @@ static int32_t cli_bcapi_json_objs_init(struct cli_bc_ctx *ctx)
     }
     ctx->jsonobjs  = (void **)j;
     ctx->njsonobjs = n;
-    j[n - 1]       = cctx->properties;
+    j[n - 1]       = cctx->metadata_json;
 
     return 0;
 }

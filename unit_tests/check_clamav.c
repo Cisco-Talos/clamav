@@ -1192,7 +1192,7 @@ START_TEST(test_fmap_assorted_api)
     ck_assert_msg(fmap_dump_fd != -1, "fmap_dump_fd failed");
     cli_dbgmsg("dumped map to %s\n", fmap_dump_filepath);
 
-    fd_based_map = fmap(fmap_dump_fd, 0, 0, NULL); // using fmap() instead of cl_fmap_open_handle() because I don't want to have to stat the file to figure out the len. fmap() does that for us.
+    fd_based_map = fmap_new(fmap_dump_fd, 0, 0, NULL, NULL); // using fmap_new() instead of cl_fmap_open_handle() because I don't want to have to stat the file to figure out the len. fmap_new() does that for us.
     ck_assert_msg(!!fd_based_map, "cl_fmap_open_handle failed");
     cli_dbgmsg("created fmap from file descriptor\n");
 
@@ -1274,7 +1274,7 @@ START_TEST(test_fmap_assorted_api)
     /*
      * Let's make an fmap of the dumped nested map, and run the tests to verify that everything is as expected.
      */
-    fd_based_dup_map = fmap(dup_fmap_dump_fd, 0, 0, NULL); // using fmap() instead of cl_fmap_open_handle() because I don't want to have to stat the file to figure out the len. fmap() does that for us.
+    fd_based_dup_map = fmap_new(dup_fmap_dump_fd, 0, 0, NULL, NULL); // using fmap_new() instead of cl_fmap_open_handle() because I don't want to have to stat the file to figure out the len. fmap_new() does that for us.
     ck_assert_msg(!!fd_based_dup_map, "cl_fmap_open_handle failed");
     cli_dbgmsg("created fmap from file descriptor\n");
 

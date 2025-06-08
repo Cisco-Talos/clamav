@@ -757,13 +757,13 @@ int32_t cli_bcapi_matchicon(struct cli_bc_ctx *ctx, const uint8_t *grp1, int32_t
     return (int32_t)ret;
 }
 
-cl_error_t cli_scan_desc(int desc, cli_ctx *ctx, cli_file_t ftype, bool filetype_only, struct cli_matched_type **ftoffset, unsigned int acmode, struct cli_ac_result **acres, const char *name, uint32_t attributes)
+cl_error_t cli_scan_desc(int desc, cli_ctx *ctx, cli_file_t ftype, bool filetype_only, struct cli_matched_type **ftoffset, unsigned int acmode, struct cli_ac_result **acres, const char *name, const char *path, uint32_t attributes)
 {
     cl_error_t status = CL_CLEAN;
     int empty;
     fmap_t *new_map = NULL;
 
-    new_map = fmap_check_empty(desc, 0, 0, &empty, name);
+    new_map = fmap_check_empty(desc, 0, 0, &empty, name, path);
     if (NULL == new_map) {
         if (!empty) {
             cli_dbgmsg("cli_scan_desc: Failed to allocate new map for file descriptor scan.\n");
@@ -784,7 +784,7 @@ cl_error_t cli_scan_desc(int desc, cli_ctx *ctx, cli_file_t ftype, bool filetype
 
 done:
     if (NULL != new_map) {
-        funmap(new_map);
+        fmap_free(new_map);
     }
 
     return status;

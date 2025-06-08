@@ -3536,7 +3536,7 @@ static int cli_loadmscat(FILE *fs, const char *dbname, struct cl_engine *engine,
         return 0;
     }
 
-    if (!(map = fmap(fileno(fs), 0, 0, dbname))) {
+    if (!(map = fmap_new(fileno(fs), 0, 0, dbname, NULL))) {
         cli_dbgmsg("Can't map cat: %s\n", dbname);
         return 0;
     }
@@ -3545,7 +3545,7 @@ static int cli_loadmscat(FILE *fs, const char *dbname, struct cl_engine *engine,
         cli_dbgmsg("Failed to load certificates from cat: %s\n", dbname);
     }
 
-    funmap(map);
+    fmap_free(map);
     return 0;
 }
 

@@ -132,7 +132,7 @@ static void runtest(const char *file, uint64_t expected, int fail, int nojit,
         if (fdin < 0 && errno == ENOENT)
             fdin = open_testfile(infile, O_RDONLY | O_BINARY);
         ck_assert_msg(fdin >= 0, "failed to open infile");
-        map = fmap(fdin, 0, 0, filestr);
+        map = fmap_new(fdin, 0, 0, filestr, NULL);
         ck_assert_msg(!!map, "unable to fmap infile");
         if (pedata)
             ctx->hooks.pedata = pedata;
@@ -157,7 +157,7 @@ static void runtest(const char *file, uint64_t expected, int fail, int nojit,
     }
     cli_bytecode_context_destroy(ctx);
     if (map)
-        funmap(map);
+        fmap_free(map);
     cli_bytecode_destroy(&bc);
     cli_bytecode_done(&bcs);
     free(cctx.recursion_stack);

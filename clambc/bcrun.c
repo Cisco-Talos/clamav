@@ -453,7 +453,7 @@ int main(int argc, char *argv[])
                 optfree(opts);
                 exit(5);
             }
-            map = fmap(fd, 0, 0, opt->strarg);
+            map = fmap_new(fd, 0, 0, opt->strarg, opt->strarg);
             if (!map) {
                 fprintf(stderr, "Unable to map input file %s\n", opt->strarg);
                 exit(5);
@@ -481,7 +481,7 @@ int main(int argc, char *argv[])
         }
         cli_bytecode_context_destroy(ctx);
         if (map)
-            funmap(map);
+            fmap_free(map);
         cl_engine_free(engine);
         free(cctx.recursion_stack);
         evidence_free(cctx.evidence);

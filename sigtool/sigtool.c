@@ -184,7 +184,7 @@ static int hashpe(const char *filename, unsigned int class, cli_hash_type_t type
     lseek(fd, 0, SEEK_SET);
     FSTAT(fd, &sb);
 
-    new_map = fmap(fd, 0, sb.st_size, filename);
+    new_map = fmap_new(fd, 0, sb.st_size, filename, filename);
     if (NULL == new_map) {
         mprintf(LOGG_ERROR, "hashpe: Can't create fmap for open file\n");
         goto done;
@@ -278,7 +278,7 @@ static int hashpe(const char *filename, unsigned int class, cli_hash_type_t type
 done:
     /* Cleanup */
     if (NULL != new_map) {
-        funmap(new_map);
+        fmap_free(new_map);
     }
     if (NULL != ctx.recursion_stack) {
         free(ctx.recursion_stack);
@@ -437,7 +437,7 @@ done:
     return status;
 }
 
-static cli_ctx *convenience_ctx(int fd)
+static cli_ctx *convenience_ctx(int fd, const char *filepath)
 {
     cl_error_t status        = CL_EMEM;
     cli_ctx *ctx             = NULL;
@@ -469,7 +469,7 @@ static cli_ctx *convenience_ctx(int fd)
     }
 
     /* fake input fmap */
-    new_map = fmap(fd, 0, 0, NULL);
+    new_map = fmap_new(fd, 0, 0, NULL, filepath);
     if (NULL == new_map) {
         printf("convenience_ctx: fmap failed\n");
         goto done;
@@ -515,7 +515,7 @@ static cli_ctx *convenience_ctx(int fd)
 done:
     if (CL_SUCCESS != status) {
         if (NULL != new_map) {
-            funmap(new_map);
+            fmap_free(new_map);
         }
         if (NULL != ctx) {
             if (NULL != ctx->options) {
@@ -542,13 +542,13 @@ static void destroy_ctx(cli_ctx *ctx)
             /* Clean up any fmaps */
             while (ctx->recursion_level > 0) {
                 if (NULL != ctx->recursion_stack[ctx->recursion_level].fmap) {
-                    funmap(ctx->recursion_stack[ctx->recursion_level].fmap);
+                    fmap_free(ctx->recursion_stack[ctx->recursion_level].fmap);
                     ctx->recursion_stack[ctx->recursion_level].fmap = NULL;
                 }
                 ctx->recursion_level -= 1;
             }
             if (NULL != ctx->recursion_stack[0].fmap) {
-                funmap(ctx->recursion_stack[0].fmap);
+                fmap_free(ctx->recursion_stack[0].fmap);
                 ctx->recursion_stack[0].fmap = NULL;
             }
 
@@ -584,9 +584,9 @@ static int htmlnorm(const struct optstruct *opts)
         return -1;
     }
 
-    if (NULL != (ctx = convenience_ctx(fd))) {
+    if (NULL != (ctx = convenience_ctx(fd, optget(opts, "html-normalise")->strarg))) {
         html_normalise_map(ctx, ctx->fmap, ".", NULL, NULL);
-        funmap(ctx->fmap);
+        fmap_free(ctx->fmap);
     } else
         mprintf(LOGG_ERROR, "fmap failed\n");
 
@@ -620,7 +620,7 @@ static int asciinorm(const struct optstruct *opts)
         return -1;
     }
 
-    if (!(map = fmap(fd, 0, 0, fname))) {
+    if (!(map = fmap_new(fd, 0, 0, fname, fname))) {
         mprintf(LOGG_ERROR, "fmap: Could not map fd %d\n", fd);
         close(fd);
         free(norm_buff);
@@ -631,7 +631,7 @@ static int asciinorm(const struct optstruct *opts)
         mprintf(LOGG_ERROR, "asciinorm: File size of %zu too large\n", map->len);
         close(fd);
         free(norm_buff);
-        funmap(map);
+        fmap_free(map);
         return -1;
     }
 
@@ -640,7 +640,7 @@ static int asciinorm(const struct optstruct *opts)
         mprintf(LOGG_ERROR, "asciinorm: Can't open file ./normalised_text\n");
         close(fd);
         free(norm_buff);
-        funmap(map);
+        fmap_free(map);
         return -1;
     }
 
@@ -657,7 +657,7 @@ static int asciinorm(const struct optstruct *opts)
             close(fd);
             close(ofd);
             free(norm_buff);
-            funmap(map);
+            fmap_free(map);
             return -1;
         }
         text_normalize_reset(&state);
@@ -666,7 +666,7 @@ static int asciinorm(const struct optstruct *opts)
     close(fd);
     close(ofd);
     free(norm_buff);
-    funmap(map);
+    fmap_free(map);
     return 0;
 }
 
@@ -2690,7 +2690,7 @@ static void matchsig(char *sig, const char *offset, int fd)
     lseek(fd, 0, SEEK_SET);
     FSTAT(fd, &sb);
 
-    new_map = fmap(fd, 0, sb.st_size, NULL);
+    new_map = fmap_new(fd, 0, sb.st_size, NULL, NULL);
     if (NULL == new_map) {
         goto done;
     }
@@ -2767,7 +2767,7 @@ done:
         free(res);
     }
     if (NULL != new_map) {
-        funmap(new_map);
+        fmap_free(new_map);
     }
     if (NULL != ctx.recursion_stack) {
         free(ctx.recursion_stack);
@@ -3892,7 +3892,7 @@ static int dumpcerts(const struct optstruct *opts)
     lseek(fd, 0, SEEK_SET);
     FSTAT(fd, &sb);
 
-    new_map = fmap(fd, 0, sb.st_size, filename);
+    new_map = fmap_new(fd, 0, sb.st_size, filename, filename);
     if (NULL == new_map) {
         mprintf(LOGG_ERROR, "dumpcerts: Can't create fmap for open file\n");
         goto done;
@@ -3972,7 +3972,7 @@ static int dumpcerts(const struct optstruct *opts)
 done:
     /* Cleanup */
     if (NULL != new_map) {
-        funmap(new_map);
+        fmap_free(new_map);
     }
     if (NULL != ctx.recursion_stack) {
         free(ctx.recursion_stack);

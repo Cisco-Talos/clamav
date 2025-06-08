@@ -4950,7 +4950,7 @@ cl_error_t cli_extract_xlm_macros_and_images(const char *dir, cli_ctx *ctx, char
     }
 
     if (CL_VIRUS == cli_scan_desc(out_fd, ctx, CL_TYPE_SCRIPT, false, NULL, AC_SCAN_VIR,
-                                  NULL, NULL, LAYER_ATTRIBUTES_NONE)) {
+                                  NULL, "xlm-macro", tempfile, LAYER_ATTRIBUTES_NORMALIZED)) {
         status = CL_VIRUS;
         goto done;
     }

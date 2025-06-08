@@ -326,10 +326,10 @@ static void rarload(void)
     if (NULL == rhandle)
         return;
 
-    if ((NULL == (cli_unrar_open = (cl_unrar_error_t(*)(const char *, void **, char **, uint32_t *, uint8_t))get_module_function(rhandle, "libclamunrar_iface_LTX_unrar_open"))) ||
-        (NULL == (cli_unrar_peek_file_header = (cl_unrar_error_t(*)(void *, unrar_metadata_t *))get_module_function(rhandle, "libclamunrar_iface_LTX_unrar_peek_file_header"))) ||
-        (NULL == (cli_unrar_extract_file = (cl_unrar_error_t(*)(void *, const char *, char *))get_module_function(rhandle, "libclamunrar_iface_LTX_unrar_extract_file"))) ||
-        (NULL == (cli_unrar_skip_file = (cl_unrar_error_t(*)(void *))get_module_function(rhandle, "libclamunrar_iface_LTX_unrar_skip_file"))) ||
+    if ((NULL == (cli_unrar_open = (cl_unrar_error_t (*)(const char *, void **, char **, uint32_t *, uint8_t))get_module_function(rhandle, "libclamunrar_iface_LTX_unrar_open"))) ||
+        (NULL == (cli_unrar_peek_file_header = (cl_unrar_error_t (*)(void *, unrar_metadata_t *))get_module_function(rhandle, "libclamunrar_iface_LTX_unrar_peek_file_header"))) ||
+        (NULL == (cli_unrar_extract_file = (cl_unrar_error_t (*)(void *, const char *, char *))get_module_function(rhandle, "libclamunrar_iface_LTX_unrar_extract_file"))) ||
+        (NULL == (cli_unrar_skip_file = (cl_unrar_error_t (*)(void *))get_module_function(rhandle, "libclamunrar_iface_LTX_unrar_skip_file"))) ||
         (NULL == (cli_unrar_close = (void (*)(void *))get_module_function(rhandle, "libclamunrar_iface_LTX_unrar_close")))) {
 
         cli_warnmsg("Failed to load function from UnRAR module\n");
@@ -1182,8 +1182,8 @@ void cli_append_potentially_unwanted_if_heur_exceedsmax(cli_ctx *ctx, char *vnam
         }
 
         /* Also record the event in the scan metadata, under "ParseErrors" */
-        if (SCAN_COLLECT_METADATA && ctx->wrkproperty) {
-            cli_json_parse_error(ctx->wrkproperty, vname);
+        if (SCAN_COLLECT_METADATA && ctx->this_layer_metadata_json) {
+            cli_json_parse_error(ctx->this_layer_metadata_json, vname);
         }
     }
 }
@@ -1463,16 +1463,16 @@ static cl_error_t append_virus(cli_ctx *ctx, const char *virname, IndicatorType 
         cli_virus_found_cb(ctx, virname);
     }
 
-    if (SCAN_COLLECT_METADATA && ctx->wrkproperty) {
+    if (SCAN_COLLECT_METADATA && ctx->this_layer_metadata_json) {
         json_object *arrobj, *virobj;
-        if (!json_object_object_get_ex(ctx->wrkproperty, "Viruses", &arrobj)) {
+        if (!json_object_object_get_ex(ctx->this_layer_metadata_json, "Viruses", &arrobj)) {
             arrobj = json_object_new_array();
             if (NULL == arrobj) {
                 cli_errmsg("cli_append_virus: no memory for json virus array\n");
                 status = CL_EMEM;
                 goto done;
             }
-            json_object_object_add(ctx->wrkproperty, "Viruses", arrobj);
+            json_object_object_add(ctx->this_layer_metadata_json, "Viruses", arrobj);
         }
         virobj = json_object_new_string(virname);
         if (NULL == virobj) {
@@ -1607,6 +1607,95 @@ cl_error_t cli_recursion_stack_push(cli_ctx *ctx, cl_fmap_t *map, cli_file_t typ
         new_container->attributes |= LAYER_ATTRIBUTES_DECRYPTED;
     }
 
+    // Assign a unique object_id to the new container.
+    new_container->object_id = ctx->object_count;
+    ctx->object_count++;
+
+    if (SCAN_COLLECT_METADATA) {
+        /*
+         * Create JSON object to record metadata during the scan.
+         * Add this new layer's metadata JSON object to the parent layer's "ContainedObjects" array.
+         */
+        json_object *arrobj;
+        struct json_object *parent_object;
+        struct json_object *new_object;
+
+        parent_object = ctx->this_layer_metadata_json;
+        if (!json_object_object_get_ex(parent_object, "ContainedObjects", &arrobj)) {
+            arrobj = json_object_new_array();
+            if (NULL == arrobj) {
+                cli_errmsg("cli_recursion_stack_push: no memory for json properties object\n");
+                status = CL_EMEM;
+                goto done;
+            }
+            json_object_object_add(parent_object, "ContainedObjects", arrobj);
+        }
+        new_object = json_object_new_object();
+        if (NULL == new_object) {
+            cli_errmsg("cli_recursion_stack_push: no memory for json properties object\n");
+            status = CL_EMEM;
+            goto done;
+        }
+        json_object_array_add(arrobj, new_object);
+
+        ctx->recursion_stack[ctx->recursion_level].metadata_json = new_object;
+        ctx->this_layer_metadata_json = new_object;
+
+        /*
+         * Add basic file metadata to the JSON object.
+         */
+        if (new_container->fmap->name) {
+            status = cli_jsonstr(ctx->this_layer_metadata_json, "FileName", new_container->fmap->name);
+            if (status != CL_SUCCESS) {
+                cli_errmsg("cli_recursion_stack_push: no memory for json FileName object\n");
+                goto done;
+            }
+        }
+        if (new_container->fmap->path) {
+            status = cli_jsonstr(ctx->this_layer_metadata_json, "FilePath", new_container->fmap->path);
+            if (status != CL_SUCCESS) {
+                cli_errmsg("cli_recursion_stack_push: no memory for json FilePath object\n");
+                goto done;
+            }
+        }
+        status = cli_jsonint(ctx->this_layer_metadata_json, "FileSize", new_container->fmap->len);
+        if (status != CL_SUCCESS) {
+            goto done;
+        }
+
+        status = cli_jsonint(ctx->this_layer_metadata_json, "ObjectID", new_container->object_id);
+        if (status != CL_SUCCESS) {
+            goto done;
+        }
+
+        /*
+         * Record layer attributes in the JSON object.
+         */
+        if (new_container->attributes & LAYER_ATTRIBUTES_DECRYPTED) {
+            status = cli_jsonbool(ctx->this_layer_metadata_json, "Decrypted", true);
+            if (status != CL_SUCCESS) {
+                cli_errmsg("cli_recursion_stack_push: no memory for json Decrypted object\n");
+                goto done;
+            }
+        }
+
+        if (new_container->attributes & LAYER_ATTRIBUTES_NORMALIZED) {
+            status = cli_jsonbool(ctx->this_layer_metadata_json, "Normalized", true);
+            if (status != CL_SUCCESS) {
+                cli_errmsg("cli_recursion_stack_push: no memory for json Normalized object\n");
+                goto done;
+            }
+        }
+
+        if (new_container->attributes & LAYER_ATTRIBUTES_RETYPED) {
+            status = cli_jsonbool(ctx->this_layer_metadata_json, "Retyped", true);
+            if (status != CL_SUCCESS) {
+                cli_errmsg("cli_recursion_stack_push: no memory for json Retyped object\n");
+                goto done;
+            }
+        }
+    }
+
     ctx->fmap = new_container->fmap;
 
 done:
@@ -1632,6 +1721,9 @@ cl_fmap_t *cli_recursion_stack_pop(cli_ctx *ctx)
 
     /* Set the ctx->fmap convenience pointer to the current layer's fmap */
     ctx->fmap = ctx->recursion_stack[ctx->recursion_level].fmap;
+
+    /* Set the ctx->this_layer_metadata_json convenience pointer to the current layer's metadata_json */
+    ctx->this_layer_metadata_json = ctx->recursion_stack[ctx->recursion_level].metadata_json;
 
 done:
     return popped_map;

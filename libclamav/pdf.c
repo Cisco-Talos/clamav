@@ -1058,7 +1058,7 @@ static size_t find_length(struct pdf_struct *pdf, struct pdf_obj *obj, const cha
 
 #define DUMP_MASK ((1 << OBJ_CONTENTS) | (1 << OBJ_FILTER_FLATE) | (1 << OBJ_FILTER_DCT) | (1 << OBJ_FILTER_AH) | (1 << OBJ_FILTER_A85) | (1 << OBJ_EMBEDDED_FILE) | (1 << OBJ_JAVASCRIPT) | (1 << OBJ_OPENACTION) | (1 << OBJ_LAUNCHACTION))
 
-static int run_pdf_hooks(struct pdf_struct *pdf, enum pdf_phase phase, int fd)
+static int run_pdf_hooks(struct pdf_struct *pdf, enum pdf_phase phase, int fd, const char *filepath)
 {
     int ret;
     struct cli_bc_ctx *bc_ctx;
@@ -1078,7 +1078,8 @@ static int run_pdf_hooks(struct pdf_struct *pdf, enum pdf_phase phase, int fd)
 
     map = ctx->fmap;
     if (fd != -1) {
-        map = fmap(fd, 0, 0, NULL);
+        /* The fmap in this bytecode context is an extracted pdf object. */
+        map = fmap_new(fd, 0, 0, NULL, filepath);
         if (!map) {
             cli_dbgmsg("run_pdf_hooks: can't mmap pdf extracted obj\n");
             map = ctx->fmap;
@@ -1092,7 +1093,7 @@ static int run_pdf_hooks(struct pdf_struct *pdf, enum pdf_phase phase, int fd)
     cli_bytecode_context_destroy(bc_ctx);
 
     if (fd != -1)
-        funmap(map);
+        fmap_free(map);
 
     return ret;
 }
@@ -1802,10 +1803,10 @@ cl_error_t pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t
                     }
                 }
 
-                if ((pdf->ctx->options->general & CL_SCAN_GENERAL_COLLECT_METADATA) && pdf->ctx->wrkproperty != NULL) {
+                if ((pdf->ctx->options->general & CL_SCAN_GENERAL_COLLECT_METADATA) && pdf->ctx->this_layer_metadata_json != NULL) {
                     struct json_object *pdfobj, *jbig2arr;
 
-                    if (NULL == (pdfobj = cli_jsonobj(pdf->ctx->wrkproperty, "PDFStats"))) {
+                    if (NULL == (pdfobj = cli_jsonobj(pdf->ctx->this_layer_metadata_json, "PDFStats"))) {
                         cli_errmsg("pdf_extract_obj: failed to get PDFStats JSON object\n");
                     } else if (NULL == (jbig2arr = cli_jsonarray(pdfobj, "JavascriptObjects"))) {
                         cli_errmsg("pdf_extract_obj: failed to get JavascriptObjects JSON object\n");
@@ -1886,7 +1887,7 @@ scan_extracted_objects:
         }
 
         if ((status == CL_CLEAN) || (status == CL_VIRUS)) {
-            ret = run_pdf_hooks(pdf, PDF_PHASE_POSTDUMP, fout);
+            ret = run_pdf_hooks(pdf, PDF_PHASE_POSTDUMP, fout, fullname);
             if (ret == CL_VIRUS) {
                 status = ret;
                 goto done;
@@ -2238,8 +2239,8 @@ void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
         if (!nextobj || bytesleft < 0) {
             cli_dbgmsg("pdf_parseobj: %u %u obj: no dictionary\n", obj->id >> 8, obj->id & 0xff);
 
-            if (!(pdfobj) && pdf->ctx->wrkproperty != NULL) {
-                pdfobj = cli_jsonobj(pdf->ctx->wrkproperty, "PDFStats");
+            if (!(pdfobj) && pdf->ctx->this_layer_metadata_json != NULL) {
+                pdfobj = cli_jsonobj(pdf->ctx->this_layer_metadata_json, "PDFStats");
                 if (!(pdfobj))
                     return;
             }
@@ -2285,8 +2286,8 @@ void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
     if (bytesleft < 0) {
         cli_dbgmsg("pdf_parseobj: %u %u obj: broken dictionary\n", obj->id >> 8, obj->id & 0xff);
 
-        if (!(pdfobj) && pdf->ctx->wrkproperty != NULL) {
-            pdfobj = cli_jsonobj(pdf->ctx->wrkproperty, "PDFStats");
+        if (!(pdfobj) && pdf->ctx->this_layer_metadata_json != NULL) {
+            pdfobj = cli_jsonobj(pdf->ctx->this_layer_metadata_json, "PDFStats");
             if (!(pdfobj))
                 return;
         }
@@ -2334,8 +2335,8 @@ void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
         /* probably truncated */
         cli_dbgmsg("pdf_parseobj: %u %u obj broken dictionary\n", obj->id >> 8, obj->id & 0xff);
 
-        if (!(pdfobj) && pdf->ctx->wrkproperty != NULL) {
-            pdfobj = cli_jsonobj(pdf->ctx->wrkproperty, "PDFStats");
+        if (!(pdfobj) && pdf->ctx->this_layer_metadata_json != NULL) {
+            pdfobj = cli_jsonobj(pdf->ctx->this_layer_metadata_json, "PDFStats");
             if (!(pdfobj))
                 return;
         }
@@ -3692,7 +3693,7 @@ static cl_error_t pdf_find_and_extract_objs(struct pdf_struct *pdf)
     }
 
     if (CL_SUCCESS == status) {
-        status = run_pdf_hooks(pdf, PDF_PHASE_PARSED, -1);
+        status = run_pdf_hooks(pdf, PDF_PHASE_PARSED, -1, NULL);
         cli_dbgmsg("pdf_find_and_extract_objs: (parsed hooks) returned %d\n", status);
     }
 
@@ -3776,8 +3777,8 @@ cl_error_t cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
         goto done;
     }
 
-    if (ctx->wrkproperty)
-        pdfobj = cli_jsonobj(ctx->wrkproperty, "PDFStats");
+    if (ctx->this_layer_metadata_json)
+        pdfobj = cli_jsonobj(ctx->this_layer_metadata_json, "PDFStats");
 
     /* offset is 0 when coming from filetype2 */
     tmp = cli_memstr(pdfver, versize, "%PDF-", 5);
@@ -3919,7 +3920,7 @@ cl_error_t cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
 
     pdf.startoff = offset;
 
-    rc = run_pdf_hooks(&pdf, PDF_PHASE_PRE, -1);
+    rc = run_pdf_hooks(&pdf, PDF_PHASE_PRE, -1, NULL);
     if (CL_SUCCESS != rc) {
         cli_dbgmsg("cli_pdf: (pre hooks) returning %d\n", rc);
 
@@ -3948,7 +3949,7 @@ cl_error_t cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
 
     if (pdf.flags && CL_SUCCESS == rc) {
         cli_dbgmsg("cli_pdf: flags 0x%02x\n", pdf.flags);
-        rc = run_pdf_hooks(&pdf, PDF_PHASE_END, -1);
+        rc = run_pdf_hooks(&pdf, PDF_PHASE_END, -1, NULL);
 
         if (CL_SUCCESS == rc && SCAN_HEURISTICS && (ctx->dconf->other & OTHER_CONF_PDFNAMEOBJ)) {
             if (pdf.flags & (1 << ESCAPED_COMMON_PDFNAME)) {
@@ -4222,10 +4223,10 @@ static void JBIG2Decode_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct p
     if (!(SCAN_COLLECT_METADATA))
         return;
 
-    if (!(pdf->ctx->wrkproperty))
+    if (!(pdf->ctx->this_layer_metadata_json))
         return;
 
-    pdfobj = cli_jsonobj(pdf->ctx->wrkproperty, "PDFStats");
+    pdfobj = cli_jsonobj(pdf->ctx->this_layer_metadata_json, "PDFStats");
     if (!(pdfobj))
         return;
 
@@ -4612,7 +4613,7 @@ static void Pages_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname
 
     UNUSEDPARAM(act);
 
-    if (!(pdf) || !(pdf->ctx->wrkproperty))
+    if (!(pdf) || !(pdf->ctx->this_layer_metadata_json))
         return;
 
     ctx = pdf->ctx;
@@ -4620,7 +4621,7 @@ static void Pages_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname
     if (!(SCAN_COLLECT_METADATA))
         return;
 
-    pdfobj = cli_jsonobj(pdf->ctx->wrkproperty, "PDFStats");
+    pdfobj = cli_jsonobj(pdf->ctx->this_layer_metadata_json, "PDFStats");
     if (!(pdfobj))
         return;
 
@@ -4688,7 +4689,7 @@ static void Colors_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfnam
 
     UNUSEDPARAM(act);
 
-    if (!(pdf) || !(pdf->ctx) || !(pdf->ctx->wrkproperty))
+    if (!(pdf) || !(pdf->ctx) || !(pdf->ctx->this_layer_metadata_json))
         return;
 
     ctx = pdf->ctx;
@@ -4723,7 +4724,7 @@ static void Colors_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfnam
     if (ncolors < 1 << 24)
         return;
 
-    pdfobj = cli_jsonobj(pdf->ctx->wrkproperty, "PDFStats");
+    pdfobj = cli_jsonobj(pdf->ctx->this_layer_metadata_json, "PDFStats");
     if (!(pdfobj))
         return;
 
@@ -4745,7 +4746,7 @@ static void URI_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname_a
 
     UNUSEDPARAM(act);
 
-    if (!(pdf) || !(pdf->ctx) || !(pdf->ctx->wrkproperty) || !obj) {
+    if (!(pdf) || !(pdf->ctx) || !(pdf->ctx->this_layer_metadata_json) || !obj) {
         return;
     }
 
@@ -4796,7 +4797,7 @@ static void URI_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname_a
     strncpy(uri_heap, uri_start, end);
     uri_heap[end] = '\0';
 
-    uriarr = cli_jsonarray(pdf->ctx->wrkproperty, "URIs");
+    uriarr = cli_jsonarray(pdf->ctx->this_layer_metadata_json, "URIs");
     if (!uriarr) {
         cli_errmsg("cli_pdf: malloc() failed (URI array)\n");
         goto done;
@@ -4885,11 +4886,11 @@ static void pdf_export_json(struct pdf_struct *pdf)
 
     ctx = pdf->ctx;
 
-    if (!(SCAN_COLLECT_METADATA) || !(pdf->ctx->wrkproperty)) {
+    if (!(SCAN_COLLECT_METADATA) || !(pdf->ctx->this_layer_metadata_json)) {
         goto cleanup;
     }
 
-    pdfobj = cli_jsonobj(pdf->ctx->wrkproperty, "PDFStats");
+    pdfobj = cli_jsonobj(pdf->ctx->this_layer_metadata_json, "PDFStats");
     if (!(pdfobj)) {
         goto cleanup;
     }
