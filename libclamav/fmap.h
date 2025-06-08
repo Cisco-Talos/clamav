@@ -95,7 +95,8 @@ struct cl_fmap {
     uint8_t hash[CLI_HASH_AVAIL_TYPES][CLI_HASHLEN_MAX];
 
     uint64_t *bitmap;
-    char *name;
+    char *name;  /* name of the file, e.g. as recorded in a zip file entry record */
+    char *path;  /* path to the file/tempfile, if fmap was created from a file descriptor */
 };
 
 /**
@@ -105,14 +106,15 @@ struct cl_fmap {
  * @param offset    Offset into file for start of map.
  * @param len       Length from offset for size of map.
  * @param name      (optional) Original name of the file (to set fmap name metadata)
- * @return fmap_t*  The newly created fmap.  Free it with `funmap()`
+ * @param path      (optional) Original path of the file (to set fmap path metadata)
+ * @return fmap_t*  The newly created fmap.  Free it with `fmap_free()`
  */
-fmap_t *fmap(int fd, off_t offset, size_t len, const char *name);
+fmap_t *fmap_new(int fd, off_t offset, size_t len, const char *name, const char *path);
 
 /**
  * @brief Create  new fmap given a file descriptor.
  *
- * This variant of fmap() provides a boolean output variable to indicate on
+ * This variant of fmap_new() provides a boolean output variable to indicate on
  * failure if the failure was because the file is empty (not really a failure).
  *
  * @param fd            File descriptor of file to be mapped.
@@ -120,9 +122,10 @@ fmap_t *fmap(int fd, off_t offset, size_t len, const char *name);
  * @param len           Length from offset for size of map.
  * @param[out] empty    Boolean will be non-zero if the file couldn't be mapped because it is empty.
  * @param name          (optional) Original name of the file (to set fmap name metadata)
- * @return fmap_t*      The newly created fmap.  Free it with `funmap()`
+ * @param path          (optional) Original path of the file (to set fmap path metadata)
+ * @return fmap_t*      The newly created fmap.  Free it with `fmap_free()`
  */
-fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty, const char *name);
+fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty, const char *name, const char *path);
 
 /**
  * @brief Create a new fmap given a buffer.
@@ -159,7 +162,7 @@ void free_duplicate_fmap(cl_fmap_t *map);
  *
  * @param m The map to be free'd.
  */
-static inline void funmap(fmap_t *m)
+static inline void fmap_free(fmap_t *m)
 {
     m->unmap(m);
 }

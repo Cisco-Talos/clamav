@@ -322,7 +322,7 @@ cl_error_t cli_scan_buff(const unsigned char *buffer, uint32_t length, uint32_t 
  * @param attributes    Layer attributes for the thing to be scanned.
  * @return cl_error_t
  */
-cl_error_t cli_scan_desc(int desc, cli_ctx *ctx, cli_file_t ftype, bool filetype_only, struct cli_matched_type **ftoffset, unsigned int acmode, struct cli_ac_result **acres, const char *name, uint32_t attributes);
+cl_error_t cli_scan_desc(int desc, cli_ctx *ctx, cli_file_t ftype, bool filetype_only, struct cli_matched_type **ftoffset, unsigned int acmode, struct cli_ac_result **acres, const char *name, const char *path, uint32_t attributes);
 
 /**
  * @brief Non-magic scan matching of the current fmap in the scan context.  Newer API.

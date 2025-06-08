@@ -322,6 +322,7 @@ pub struct cl_fmap {
     pub hash: [[u8; 32usize]; 3usize],
     pub bitmap: *mut u64,
     pub name: *mut ::std::os::raw::c_char,
+    pub path: *mut ::std::os::raw::c_char,
 }
 pub const cli_file_CL_TYPE_ANY: cli_file = 0;
 pub const cli_file_CL_TYPE_TEXT_ASCII: cli_file = 500;
@@ -624,6 +625,8 @@ pub struct recursion_level_tag {
     pub attributes: u32,
     pub image_fuzzy_hash: image_fuzzy_hash_t,
     pub calculated_image_fuzzy_hash: bool,
+    pub object_id: usize,
+    pub json: *mut json_object,
 }
 pub type recursion_level_t = recursion_level_tag;
 pub type evidence_t = *mut ::std::os::raw::c_void;
@@ -633,7 +636,6 @@ pub type cvd_t = *mut ::std::os::raw::c_void;
 #[derive(Debug, Copy, Clone)]
 pub struct cli_ctx_tag {
     pub target_filepath: *mut ::std::os::raw::c_char,
-    pub sub_filepath: *const ::std::os::raw::c_char,
     pub sub_tmpdir: *mut ::std::os::raw::c_char,
     pub evidence: evidence_t,
     pub scanned: *mut ::std::os::raw::c_ulong,
@@ -647,12 +649,13 @@ pub struct cli_ctx_tag {
     pub recursion_stack_size: u32,
     pub recursion_level: u32,
     pub fmap: *mut fmap_t,
+    pub object_count: usize,
     pub dconf: *mut cli_dconf,
     pub hook_lsig_matches: *mut bitset_t,
     pub cb_ctx: *mut ::std::os::raw::c_void,
     pub perf: *mut cli_events_t,
     pub properties: *mut json_object,
-    pub wrkproperty: *mut json_object,
+    pub this_layer_metadata_json: *mut json_object,
     pub time_limit: timeval,
     pub limit_exceeded: bool,
     pub abort_scan: bool,

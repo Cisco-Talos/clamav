@@ -2235,8 +2235,8 @@ static inline int hash_impfns(cli_ctx *ctx, void **hashctx, uint32_t *impsz, str
         return CL_EFORMAT;
     }
 
-    if (ctx->wrkproperty) {
-        imptbl = cli_jsonarray(ctx->wrkproperty, "ImportTable");
+    if (ctx->this_layer_metadata_json) {
+        imptbl = cli_jsonarray(ctx->this_layer_metadata_json, "ImportTable");
         if (!imptbl) {
             cli_dbgmsg("scan_pe: cannot allocate import table json object\n");
             return CL_EMEM;
@@ -2561,7 +2561,7 @@ static cl_error_t scan_pe_imp(cli_ctx *ctx, struct cli_exe_info *peinfo)
     }
 
     /* Force md5 hash generation for debug and preclass */
-    if ((cli_debug_flag || ctx->wrkproperty) && !genhash[CLI_HASH_MD5]) {
+    if ((cli_debug_flag || ctx->this_layer_metadata_json) && !genhash[CLI_HASH_MD5]) {
         genhash[CLI_HASH_MD5] = true;
         hashset[CLI_HASH_MD5] = calloc(cli_hash_len(CLI_HASH_MD5), sizeof(char));
         if (!hashset[CLI_HASH_MD5]) {
@@ -2585,12 +2585,12 @@ static cl_error_t scan_pe_imp(cli_ctx *ctx, struct cli_exe_info *peinfo)
     }
 
     /* Print hash */
-    if (cli_debug_flag || ctx->wrkproperty) {
+    if (cli_debug_flag || ctx->this_layer_metadata_json) {
         char *dstr = cli_str2hex((char *)hashset[CLI_HASH_MD5], cli_hash_len(CLI_HASH_MD5));
         cli_dbgmsg("IMP: %s:%u\n", dstr ? (char *)dstr : "(NULL)", impsz);
 
-        if (ctx->wrkproperty)
-            cli_jsonstr(ctx->wrkproperty, "Imphash", dstr ? dstr : "(NULL)");
+        if (ctx->this_layer_metadata_json)
+            cli_jsonstr(ctx->this_layer_metadata_json, "Imphash", dstr ? dstr : "(NULL)");
 
         if (dstr)
             free(dstr);
@@ -2621,15 +2621,15 @@ static struct json_object *get_pe_property(cli_ctx *ctx)
 {
     struct json_object *pe;
 
-    if (!(ctx) || !(ctx->wrkproperty))
+    if (!(ctx) || !(ctx->this_layer_metadata_json))
         return NULL;
 
-    if (!json_object_object_get_ex(ctx->wrkproperty, "PE", &pe)) {
+    if (!json_object_object_get_ex(ctx->this_layer_metadata_json, "PE", &pe)) {
         pe = json_object_new_object();
         if (!(pe))
             return NULL;
 
-        json_object_object_add(ctx->wrkproperty, "PE", pe);
+        json_object_object_add(ctx->this_layer_metadata_json, "PE", pe);
     }
 
     return pe;
@@ -2863,7 +2863,7 @@ int cli_scanpe(cli_ctx *ctx)
 
     /* CLI_UNPTEMP("cli_scanpe: DISASM",(peinfo->sections,0)); */
     /* if(disasmbuf((unsigned char*)epbuff, epsize, ndesc)) */
-    /*  ret = cli_scan_desc(ndesc, ctx, CL_TYPE_PE_DISASM, true, NULL, AC_SCAN_VIR); */
+    /*  ret = cli_scan_desc(ndesc, ctx, CL_TYPE_PE_DISASM, true, NULL, NULL, AC_SCAN_VIR); */
     /* close(ndesc); */
     /* if(ret == CL_VIRUS) { */
     /*  cli_exe_info_destroy(peinfo); */
@@ -2925,7 +2925,7 @@ int cli_scanpe(cli_ctx *ctx)
 
     /* Attempt to run scans on import table */
     /* Run if there are existing signatures and/or preclassing */
-    if (DCONF & PE_CONF_IMPTBL && (ctx->engine->hm_imp || ctx->wrkproperty)) {
+    if (DCONF & PE_CONF_IMPTBL && (ctx->engine->hm_imp || ctx->this_layer_metadata_json)) {
         ret = scan_pe_imp(ctx, peinfo);
         switch (ret) {
             case CL_SUCCESS:

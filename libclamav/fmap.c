@@ -108,7 +108,7 @@ static off_t pread_cb(void *handle, void *buf, size_t count, off_t offset)
     return pread((int)(ssize_t)handle, buf, count, offset);
 }
 
-fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty, const char *name)
+fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty, const char *name, const char *path)
 {
     STATBUF st;
     fmap_t *m = NULL;
@@ -137,7 +137,15 @@ fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty, const cha
     if (NULL != name) {
         m->name = cli_safer_strdup(name);
         if (NULL == m->name) {
-            funmap(m);
+            fmap_free(m);
+            return NULL;
+        }
+    }
+
+    if (NULL != path) {
+        m->path = cli_safer_strdup(path);
+        if (NULL == m->path) {
+            fmap_free(m);
             return NULL;
         }
     }
@@ -158,11 +166,14 @@ static void unmap_win32(fmap_t *m)
         if (NULL != m->name) {
             free(m->name);
         }
+        if (NULL != m->path) {
+            free(m->path);
+        }
         free((void *)m);
     }
 }
 
-fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty, const char *name)
+fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty, const char *name, const char *path)
 { /* WIN32 */
     uint64_t pages, mapsz;
     int pgsz = cli_getpagesize();
@@ -222,7 +233,15 @@ fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty, const cha
     if (NULL != name) {
         m->name = cli_safer_strdup(name);
         if (NULL == m->name) {
-            funmap(m);
+            fmap_free(m);
+            return NULL;
+        }
+    }
+
+    if (NULL != path) {
+        m->path = cli_safer_strdup(path);
+        if (NULL == m->path) {
+            fmap_free(m);
             return NULL;
         }
     }
@@ -301,6 +320,17 @@ fmap_t *fmap_duplicate(cl_fmap_t *map, size_t offset, size_t length, const char 
         duplicate_map->name = NULL;
     }
 
+    /* Duplicate the path if it exists */
+    if (NULL != map->path) {
+        duplicate_map->path = cli_safer_strdup(map->path);
+        if (NULL == duplicate_map->path) {
+            status = CL_EMEM;
+            goto done;
+        }
+    } else {
+        duplicate_map->path = NULL;
+    }
+
     status = CL_SUCCESS;
 
 done:
@@ -320,6 +350,10 @@ void free_duplicate_fmap(cl_fmap_t *map)
         if (NULL != map->name) {
             free(map->name);
             map->name = NULL;
+        }
+        if (NULL != map->path) {
+            free(map->path);
+            map->path = NULL;
         }
         free(map);
     }
@@ -342,6 +376,9 @@ static void unmap_handle(fmap_t *m)
         }
         if (NULL != m->name) {
             free(m->name);
+        }
+        if (NULL != m->path) {
+            free(m->path);
         }
         free((void *)m);
     }
@@ -722,7 +759,7 @@ static void unmap_mmap(fmap_t *m)
     size_t len = m->pages * m->pgsz;
     fmap_lock;
     if (munmap((void *)m->data, len) == -1) /* munmap() failed */
-        cli_warnmsg("funmap: unable to unmap memory segment at address: %p with length: %zu\n", (void *)m->data, len);
+        cli_warnmsg("fmap_free: unable to unmap memory segment at address: %p with length: %zu\n", (void *)m->data, len);
     fmap_unlock;
 #else
     UNUSEDPARAM(m);
@@ -734,6 +771,9 @@ static void unmap_malloc(fmap_t *m)
     if (NULL != m) {
         if (NULL != m->name) {
             free(m->name);
+        }
+        if (NULL != m->path) {
+            free(m->path);
         }
         free((void *)m);
     }
@@ -950,10 +990,10 @@ static const void *mem_gets(fmap_t *m, char *dst, size_t *at, size_t max_len)
     return dst;
 }
 
-fmap_t *fmap(int fd, off_t offset, size_t len, const char *name)
+fmap_t *fmap_new(int fd, off_t offset, size_t len, const char *name, const char *path)
 {
     int unused;
-    return fmap_check_empty(fd, offset, len, &unused, name);
+    return fmap_check_empty(fd, offset, len, &unused, name, path);
 }
 
 static inline uint64_t fmap_align_items(uint64_t sz, uint64_t al)
@@ -1082,7 +1122,7 @@ int fmap_fd(fmap_t *m)
 
 extern void cl_fmap_close(cl_fmap_t *map)
 {
-    funmap(map);
+    fmap_free(map);
 }
 
 cl_error_t fmap_set_hash(fmap_t *map, uint8_t *hash, cli_hash_type_t type)

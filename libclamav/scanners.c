@@ -536,12 +536,12 @@ static cl_error_t cli_scanrar(cli_ctx *ctx)
     int tmpfd     = -1;
 
 #ifdef _WIN32
-    if ((SCAN_UNPRIVILEGED) || (NULL == ctx->sub_filepath) || (0 != _access_s(ctx->sub_filepath, R_OK))) {
+    if ((SCAN_UNPRIVILEGED) || (NULL == ctx->fmap->path) || (0 != _access_s(ctx->fmap->path, R_OK))) {
 #else
-    if ((SCAN_UNPRIVILEGED) || (NULL == ctx->sub_filepath) || (0 != access(ctx->sub_filepath, R_OK))) {
+    if ((SCAN_UNPRIVILEGED) || (NULL == ctx->fmap->path) || (0 != access(ctx->fmap->path, R_OK))) {
 #endif
         /* If map is not file-backed have to dump to file for scanrar. */
-        status = fmap_dump_to_file(ctx->fmap, ctx->sub_filepath, ctx->sub_tmpdir, &tmpname, &tmpfd, 0, SIZE_MAX);
+        status = fmap_dump_to_file(ctx->fmap, ctx->fmap->path, ctx->sub_tmpdir, &tmpname, &tmpfd, 0, SIZE_MAX);
         if (status != CL_SUCCESS) {
             cli_dbgmsg("cli_magic_scan: failed to generate temporary file.\n");
             goto done;
@@ -550,7 +550,7 @@ static cl_error_t cli_scanrar(cli_ctx *ctx)
         fd       = tmpfd;
     } else {
         /* Use the original file and file descriptor. */
-        filepath = ctx->sub_filepath;
+        filepath = ctx->fmap->path;
         fd       = fmap_fd(ctx->fmap);
     }
 
@@ -562,7 +562,7 @@ static cl_error_t cli_scanrar(cli_ctx *ctx)
          * Failed to open the file using the original filename.
          * Try writing the file descriptor to a temp file and try again.
          */
-        status = fmap_dump_to_file(ctx->fmap, ctx->sub_filepath, ctx->sub_tmpdir, &tmpname, &tmpfd, 0, SIZE_MAX);
+        status = fmap_dump_to_file(ctx->fmap, ctx->fmap->path, ctx->sub_tmpdir, &tmpname, &tmpfd, 0, SIZE_MAX);
         if (status != CL_SUCCESS) {
             cli_dbgmsg("cli_magic_scan: failed to generate temporary file.\n");
             goto done;
@@ -1530,7 +1530,7 @@ done:
     }
 
     if (NULL != new_map) {
-        funmap(new_map);
+        fmap_free(new_map);
     }
 
     if (tmdata_initialized) {
@@ -1647,9 +1647,9 @@ static cl_error_t cli_ole2_tempdir_scan_vba_new(const char *dir, cli_ctx *ctx, s
                 continue;
             }
 
-            if (*has_macros && SCAN_COLLECT_METADATA && (ctx->wrkproperty != NULL)) {
-                cli_jsonbool(ctx->wrkproperty, "HasMacros", 1);
-                json_object *macro_languages = cli_jsonarray(ctx->wrkproperty, "MacroLanguages");
+            if (*has_macros && SCAN_COLLECT_METADATA && (ctx->this_layer_metadata_json != NULL)) {
+                cli_jsonbool(ctx->this_layer_metadata_json, "HasMacros", 1);
+                json_object *macro_languages = cli_jsonarray(ctx->this_layer_metadata_json, "MacroLanguages");
                 if (macro_languages) {
                     cli_jsonstr(macro_languages, NULL, "VBA");
                 } else {
@@ -1673,7 +1673,7 @@ static cl_error_t cli_ole2_tempdir_scan_vba_new(const char *dir, cli_ctx *ctx, s
                 goto done;
             }
 
-            ret = cli_scan_desc(tempfd, ctx, CL_TYPE_SCRIPT, false, NULL, AC_SCAN_VIR, NULL, NULL, LAYER_ATTRIBUTES_NONE);
+            ret = cli_scan_desc(tempfd, ctx, CL_TYPE_SCRIPT, false, NULL, AC_SCAN_VIR, NULL, "extracted-vba-project", tempfile, LAYER_ATTRIBUTES_NORMALIZED);
             if (CL_SUCCESS != ret) {
                 goto done;
             }
@@ -1741,7 +1741,7 @@ static cl_error_t cli_ole2_tempdir_scan_summary(const char *dir, cli_ctx *ctx, s
         if (fd >= 0) {
             cli_dbgmsg("cli_ole2_tempdir_scan_summary: detected a '_5_summaryinformation' stream\n");
             /* JSONOLE2 - what to do if something breaks? */
-            cli_ole2_summary_json(ctx, fd, 0);
+            cli_ole2_summary_json(ctx, fd, 0, summary_filename);
             close(fd);
         }
         hashcnt--;
@@ -1762,7 +1762,7 @@ static cl_error_t cli_ole2_tempdir_scan_summary(const char *dir, cli_ctx *ctx, s
         if (fd >= 0) {
             cli_dbgmsg("cli_ole2_tempdir_scan_summary: detected a '_5_documentsummaryinformation' stream\n");
             /* JSONOLE2 - what to do if something breaks? */
-            cli_ole2_summary_json(ctx, fd, 1);
+            cli_ole2_summary_json(ctx, fd, 1, summary_filename);
             close(fd);
         }
         hashcnt--;
@@ -2007,9 +2007,9 @@ static cl_error_t cli_ole2_tempdir_scan_vba(const char *dir, cli_ctx *ctx, struc
 done:
 
     if (*has_macros) {
-        if (SCAN_COLLECT_METADATA && (ctx->wrkproperty != NULL)) {
-            cli_jsonbool(ctx->wrkproperty, "HasMacros", 1);
-            json_object *macro_languages = cli_jsonarray(ctx->wrkproperty, "MacroLanguages");
+        if (SCAN_COLLECT_METADATA && (ctx->this_layer_metadata_json != NULL)) {
+            cli_jsonbool(ctx->this_layer_metadata_json, "HasMacros", 1);
+            json_object *macro_languages = cli_jsonarray(ctx->this_layer_metadata_json, "MacroLanguages");
             if (macro_languages) {
                 cli_jsonstr(macro_languages, NULL, "VBA");
             } else {
@@ -2491,11 +2491,11 @@ static void save_urls(cli_ctx *ctx, tag_arguments_t *hrefs, form_data_t *form_da
         return;
     }
 
-    if (ctx->wrkproperty != ctx->properties) {
+    if (ctx->this_layer_metadata_json != ctx->metadata_json) {
         return;
     }
 
-    if (!(SCAN_STORE_HTML_URIS && SCAN_COLLECT_METADATA && (ctx->wrkproperty != NULL))) {
+    if (!(SCAN_STORE_HTML_URIS && SCAN_COLLECT_METADATA && (ctx->this_layer_metadata_json != NULL))) {
         return;
     }
 
@@ -2503,7 +2503,7 @@ static void save_urls(cli_ctx *ctx, tag_arguments_t *hrefs, form_data_t *form_da
     for (i = 0; i < hrefs->count; i++) {
         if (is_url((const char *)hrefs->value[i], strlen((const char *)hrefs->value[i]))) {
             if (NULL == ary) {
-                ary = cli_jsonarray(ctx->wrkproperty, HTML_URIS_JSON_KEY);
+                ary = cli_jsonarray(ctx->this_layer_metadata_json, HTML_URIS_JSON_KEY);
                 if (!ary) {
                     cli_dbgmsg("[cli_scanhtml] Failed to add \"%s\" entry JSON array\n", HTML_URIS_JSON_KEY);
                     return;
@@ -2517,7 +2517,7 @@ static void save_urls(cli_ctx *ctx, tag_arguments_t *hrefs, form_data_t *form_da
     for (i = 0; i < (int)form_data->count; i++) {
         if (is_url((const char *)form_data->urls[i], strlen((const char *)form_data->urls[i]))) {
             if (NULL == ary) {
-                ary = cli_jsonarray(ctx->wrkproperty, HTML_URIS_JSON_KEY);
+                ary = cli_jsonarray(ctx->this_layer_metadata_json, HTML_URIS_JSON_KEY);
                 if (!ary) {
                     cli_dbgmsg("[cli_scanhtml] Failed to add \"%s\" entry JSON array\n", HTML_URIS_JSON_KEY);
                     return;
@@ -2560,7 +2560,7 @@ static cl_error_t cli_scanhtml(cli_ctx *ctx)
     cli_dbgmsg("cli_scanhtml: using tempdir %s\n", tempname);
 
     /* Output JSON Summary Information */
-    if (SCAN_STORE_HTML_URIS && SCAN_COLLECT_METADATA && (ctx->wrkproperty != NULL)) {
+    if (SCAN_STORE_HTML_URIS && SCAN_COLLECT_METADATA && (ctx->this_layer_metadata_json != NULL)) {
         tag_arguments_t hrefs = {0};
         hrefs.scanContents    = 1;
         form_data_t form_data = {0};
@@ -2577,7 +2577,7 @@ static cl_error_t cli_scanhtml(cli_ctx *ctx)
     if (fd >= 0) {
         // nocomment.html file exists, so lets scan it.
 
-        status = cli_scan_desc(fd, ctx, CL_TYPE_HTML, false, NULL, AC_SCAN_VIR, NULL, NULL, LAYER_ATTRIBUTES_NORMALIZED);
+        status = cli_scan_desc(fd, ctx, CL_TYPE_HTML, false, NULL, AC_SCAN_VIR, NULL, "no-comment", fullname, LAYER_ATTRIBUTES_NORMALIZED);
         if (CL_SUCCESS != status) {
             goto done;
         }
@@ -2599,7 +2599,7 @@ static cl_error_t cli_scanhtml(cli_ctx *ctx)
         if (fd >= 0) {
             // notags.html file exists, so lets scan it.
 
-            status = cli_scan_desc(fd, ctx, CL_TYPE_HTML, false, NULL, AC_SCAN_VIR, NULL, NULL, LAYER_ATTRIBUTES_NORMALIZED);
+            status = cli_scan_desc(fd, ctx, CL_TYPE_HTML, false, NULL, AC_SCAN_VIR, NULL, "no-tags", fullname, LAYER_ATTRIBUTES_NORMALIZED);
             if (CL_SUCCESS != status) {
                 goto done;
             }
@@ -2614,12 +2614,12 @@ static cl_error_t cli_scanhtml(cli_ctx *ctx)
     if (fd >= 0) {
         // javascript file exists, so lets scan it (twice, as different types).
 
-        status = cli_scan_desc(fd, ctx, CL_TYPE_HTML, false, NULL, AC_SCAN_VIR, NULL, NULL, LAYER_ATTRIBUTES_NORMALIZED);
+        status = cli_scan_desc(fd, ctx, CL_TYPE_HTML, false, NULL, AC_SCAN_VIR, NULL, "javascript-as-html", fullname, LAYER_ATTRIBUTES_NORMALIZED);
         if (CL_SUCCESS != status) {
             goto done;
         }
 
-        status = cli_scan_desc(fd, ctx, CL_TYPE_TEXT_ASCII, false, NULL, AC_SCAN_VIR, NULL, NULL, LAYER_ATTRIBUTES_NORMALIZED);
+        status = cli_scan_desc(fd, ctx, CL_TYPE_TEXT_ASCII, false, NULL, AC_SCAN_VIR, NULL, "javascript-as-text-ascii", fullname, LAYER_ATTRIBUTES_NORMALIZED);
         if (CL_SUCCESS != status) {
             goto done;
         }
@@ -2744,7 +2744,7 @@ static cl_error_t cli_scanscript(cli_ctx *ctx)
         }
 
         /* Temporarily store the normalized file map in the context. */
-        new_map = fmap(ofd, 0, 0, NULL);
+        new_map = fmap_new(ofd, 0, 0, NULL, tmpname);
         if (new_map == NULL) {
             cli_dbgmsg("cli_scanscript: could not map file %s\n", tmpname);
             goto done;
@@ -2825,7 +2825,7 @@ static cl_error_t cli_scanscript(cli_ctx *ctx)
 
 done:
     if (NULL != new_map) {
-        funmap(new_map);
+        fmap_free(new_map);
     }
 
     cli_targetinfo_destroy(&info);
@@ -2901,7 +2901,7 @@ static cl_error_t cli_scanhtml_utf16(cli_ctx *ctx)
         }
     }
 
-    new_map = fmap(fd, 0, 0, NULL);
+    new_map = fmap_new(fd, 0, 0, NULL, tempname);
     if (NULL == new_map) {
         cli_errmsg("cli_scanhtml_utf16: failed to create fmap for ascii HTML file decoded from utf16: %s\n.", tempname);
         status = CL_EMEM;
@@ -2925,7 +2925,7 @@ static cl_error_t cli_scanhtml_utf16(cli_ctx *ctx)
 
 done:
     if (NULL != new_map) {
-        funmap(new_map);
+        fmap_free(new_map);
     }
     if (-1 != fd) {
         close(fd);
@@ -2967,7 +2967,7 @@ static cl_error_t cli_ole2_scan_tempdir(
     cli_dbgmsg("cli_ole2_scan_tempdir: %s\n", dir);
 
     /* Output JSON Summary Information */
-    if (SCAN_COLLECT_METADATA && (ctx->wrkproperty != NULL)) {
+    if (SCAN_COLLECT_METADATA && (ctx->this_layer_metadata_json != NULL)) {
         (void)cli_ole2_tempdir_scan_summary(dir, ctx, files);
     }
 
@@ -3770,10 +3770,10 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
                 /*
                  * Add embedded file to metadata JSON.
                  */
-                if (SCAN_COLLECT_METADATA && ctx->wrkproperty) {
+                if (SCAN_COLLECT_METADATA && ctx->this_layer_metadata_json) {
                     json_object *arrobj;
 
-                    parent_property = ctx->wrkproperty;
+                    parent_property = ctx->this_layer_metadata_json;
                     if (!json_object_object_get_ex(parent_property, "EmbeddedObjects", &arrobj)) {
                         arrobj = json_object_new_array();
                         if (NULL == arrobj) {
@@ -3783,22 +3783,22 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
                         }
                         json_object_object_add(parent_property, "EmbeddedObjects", arrobj);
                     }
-                    ctx->wrkproperty = json_object_new_object();
-                    if (NULL == ctx->wrkproperty) {
+                    ctx->this_layer_metadata_json = json_object_new_object();
+                    if (NULL == ctx->this_layer_metadata_json) {
                         cli_errmsg("scanraw: no memory for json properties object\n");
                         nret = CL_EMEM;
                         break;
                     }
-                    json_object_array_add(arrobj, ctx->wrkproperty);
+                    json_object_array_add(arrobj, ctx->this_layer_metadata_json);
 
-                    ret = cli_jsonstr(ctx->wrkproperty, "FileType", cli_ftname(fpt->type));
+                    ret = cli_jsonstr(ctx->this_layer_metadata_json, "FileType", cli_ftname(fpt->type));
                     if (ret != CL_SUCCESS) {
                         cli_errmsg("scanraw: failed to add string to json object\n");
                         nret = CL_EMEM;
                         break;
                     }
 
-                    ret = cli_jsonint64(ctx->wrkproperty, "Offset", (int64_t)fpt->offset);
+                    ret = cli_jsonint64(ctx->this_layer_metadata_json, "Offset", (int64_t)fpt->offset);
                     if (ret != CL_SUCCESS) {
                         cli_errmsg("scanraw: failed to add int to json object\n");
                         nret = CL_EMEM;
@@ -4322,8 +4322,8 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
             fpt = fpt->next;
 
             if (NULL != parent_property) {
-                ctx->wrkproperty = (struct json_object *)(parent_property);
-                parent_property  = NULL;
+                ctx->this_layer_metadata_json = (struct json_object *)(parent_property);
+                parent_property               = NULL;
             }
         } // end while (fpt) loop
 
@@ -4365,7 +4365,7 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
     } // end if (ret >= CL_TYPENO)
 
     if (NULL != parent_property) {
-        ctx->wrkproperty = (struct json_object *)(parent_property);
+        ctx->this_layer_metadata_json = (struct json_object *)(parent_property);
     }
 
     while (ftoffset) {
@@ -4529,8 +4529,8 @@ static cl_error_t calculate_fuzzy_image_hash(cli_ctx *ctx, cli_file_t type)
 
     offset = fmap_need_off(ctx->fmap, 0, ctx->fmap->real_len);
 
-    if (SCAN_COLLECT_METADATA && (NULL != ctx->wrkproperty)) {
-        if (NULL == (header = cli_jsonobj(ctx->wrkproperty, "ImageFuzzyHash"))) {
+    if (SCAN_COLLECT_METADATA && (NULL != ctx->this_layer_metadata_json)) {
+        if (NULL == (header = cli_jsonobj(ctx->this_layer_metadata_json, "ImageFuzzyHash"))) {
             cli_errmsg("Failed to allocate ImageFuzzyHash JSON object\n");
             status = CL_EMEM;
             goto done;
@@ -4678,8 +4678,6 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
     bitset_t *old_hook_lsig_matches = NULL;
     const char *filetype;
 
-    struct json_object *parent_property = NULL;
-
     char *old_temp_path = NULL;
     char *new_temp_path = NULL;
 
@@ -4776,73 +4774,9 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
 
     if (SCAN_COLLECT_METADATA) {
         /*
-         * Create JSON object to record metadata during the scan.
+         * Add file type to the JSON object.
          */
-        if (NULL == ctx->properties) {
-            ctx->properties = json_object_new_object();
-            if (NULL == ctx->properties) {
-                cli_errmsg("cli_magic_scan: no memory for json properties object\n");
-                ret = CL_EMEM;
-                cli_dbgmsg("cli_magic_scan: returning %d %s (no post, no cache)\n", ret, __AT__);
-                goto early_ret;
-            }
-            ctx->wrkproperty = ctx->properties;
-
-            ret = cli_jsonstr(ctx->properties, "Magic", "CLAMJSONv0");
-            if (ret != CL_SUCCESS) {
-                cli_dbgmsg("cli_magic_scan: returning %d %s (no post, no cache)\n", ret, __AT__);
-                goto early_ret;
-            }
-            ret = cli_jsonstr(ctx->properties, "RootFileType", filetype);
-            if (ret != CL_SUCCESS) {
-                cli_dbgmsg("cli_magic_scan: returning %d %s (no post, no cache)\n", ret, __AT__);
-                goto early_ret;
-            }
-
-        } else {
-            json_object *arrobj;
-
-            parent_property = ctx->wrkproperty;
-            if (!json_object_object_get_ex(parent_property, "ContainedObjects", &arrobj)) {
-                arrobj = json_object_new_array();
-                if (NULL == arrobj) {
-                    cli_errmsg("cli_magic_scan: no memory for json properties object\n");
-                    ret = CL_EMEM;
-                    cli_dbgmsg("cli_magic_scan: returning %d %s (no post, no cache)\n", ret, __AT__);
-                    goto early_ret;
-                }
-                json_object_object_add(parent_property, "ContainedObjects", arrobj);
-            }
-            ctx->wrkproperty = json_object_new_object();
-            if (NULL == ctx->wrkproperty) {
-                cli_errmsg("cli_magic_scan: no memory for json properties object\n");
-                ret = CL_EMEM;
-                cli_dbgmsg("cli_magic_scan: returning %d %s (no post, no cache)\n", ret, __AT__);
-                goto early_ret;
-            }
-            json_object_array_add(arrobj, ctx->wrkproperty);
-        }
-
-        if (ctx->fmap->name) {
-            ret = cli_jsonstr(ctx->wrkproperty, "FileName", ctx->fmap->name);
-            if (ret != CL_SUCCESS) {
-                cli_dbgmsg("cli_magic_scan: returning %d %s (no post, no cache)\n", ret, __AT__);
-                goto early_ret;
-            }
-        }
-        if (ctx->sub_filepath) {
-            ret = cli_jsonstr(ctx->wrkproperty, "FilePath", ctx->sub_filepath);
-            if (ret != CL_SUCCESS) {
-                cli_dbgmsg("cli_magic_scan: returning %d %s (no post, no cache)\n", ret, __AT__);
-                goto early_ret;
-            }
-        }
-        ret = cli_jsonstr(ctx->wrkproperty, "FileType", filetype);
-        if (ret != CL_SUCCESS) {
-            cli_dbgmsg("cli_magic_scan: returning %d %s (no post, no cache)\n", ret, __AT__);
-            goto early_ret;
-        }
-        ret = cli_jsonint(ctx->wrkproperty, "FileSize", ctx->fmap->len);
+        ret = cli_jsonstr(ctx->this_layer_metadata_json, "FileType", filetype);
         if (ret != CL_SUCCESS) {
             cli_dbgmsg("cli_magic_scan: returning %d %s (no post, no cache)\n", ret, __AT__);
             goto early_ret;
@@ -4917,7 +4851,7 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
                     sprintf(hash_string + i * 2, "%02x", hash[i]);
                 hash_string[hash_len * 2] = 0;
 
-                ret = cli_jsonstr(ctx->wrkproperty, cli_hash_name(hash_type), hash_string);
+                ret = cli_jsonstr(ctx->this_layer_metadata_json, cli_hash_name(hash_type), hash_string);
                 if (ret != CL_SUCCESS) {
                     cli_dbgmsg("cli_magic_scan: returning %d %s (no post, no cache)\n", ret, __AT__);
                     goto early_ret;
@@ -5051,7 +4985,7 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
         case CL_TYPE_OOXML_XL:
         case CL_TYPE_OOXML_HWP:
             if (SCAN_PARSE_XMLDOCS && (DCONF_DOC & DOC_CONF_OOXML)) {
-                if (SCAN_COLLECT_METADATA && (ctx->wrkproperty != NULL)) {
+                if (SCAN_COLLECT_METADATA && (ctx->this_layer_metadata_json != NULL)) {
                     ret = cli_process_ooxml(ctx, type);
 
                     if (ret == CL_EMEM || ret == CL_ENULLARG) {
@@ -5496,8 +5430,6 @@ done:
         ctx->hook_lsig_matches = old_hook_lsig_matches;
     }
 
-    ctx->wrkproperty = (struct json_object *)(parent_property);
-
     /*
      * Determine if there was an alert for this layer (or its children).
      */
@@ -5574,10 +5506,6 @@ early_ret:
         ctx->sub_tmpdir = old_temp_path;
     }
 
-    if (NULL != parent_property) {
-        ctx->wrkproperty = (struct json_object *)(parent_property);
-    }
-
     return ret;
 }
 
@@ -5591,9 +5519,6 @@ cl_error_t cli_magic_scan_desc_type(int desc, const char *filepath, cli_ctx *ctx
     if (!ctx) {
         return CL_EARG;
     }
-
-    const char *parent_filepath = ctx->sub_filepath;
-    ctx->sub_filepath           = filepath;
 
     cli_dbgmsg("in cli_magic_scan_desc_type (recursion_level: %u/%u)\n", ctx->recursion_level, ctx->engine->max_recursion_level);
 
@@ -5613,10 +5538,10 @@ cl_error_t cli_magic_scan_desc_type(int desc, const char *filepath, cli_ctx *ctx
     }
 
     perf_start(ctx, PERFT_MAP);
-    new_map = fmap(desc, 0, sb.st_size, name);
+    new_map = fmap_new(desc, 0, sb.st_size, name, filepath);
     perf_stop(ctx, PERFT_MAP);
     if (NULL == new_map) {
-        cli_errmsg("CRITICAL: fmap() failed\n");
+        cli_errmsg("CRITICAL: fmap_new() failed\n");
         status = CL_EMEM;
         cli_dbgmsg("cli_magic_scan_desc_type: returning %d %s (no post, no cache)\n", status, __AT__);
         goto done;
@@ -5634,10 +5559,8 @@ cl_error_t cli_magic_scan_desc_type(int desc, const char *filepath, cli_ctx *ctx
 
 done:
     if (NULL != new_map) {
-        funmap(new_map);
+        fmap_free(new_map);
     }
-
-    ctx->sub_filepath = parent_filepath;
 
     return status;
 }
@@ -5813,7 +5736,7 @@ cl_error_t cli_magic_scan_buff(const void *buffer, size_t length, cli_ctx *ctx, 
 
     ret = cli_magic_scan_nested_fmap_type(map, 0, length, ctx, CL_TYPE_ANY, name, attributes);
 
-    funmap(map);
+    fmap_free(map);
 
     return ret;
 }
@@ -5972,29 +5895,75 @@ static cl_error_t scan_common(cl_fmap_t *map, const char *filepath, const char *
     cli_logg_setup(&ctx);
     logg_initialized = true;
 
+    // Assign a unique object_id to the new container.
+    ctx.recursion_stack[ctx.recursion_level].object_id = ctx.object_count;
+    ctx.object_count++;
+
+    if (ctx.options->general & CL_SCAN_GENERAL_COLLECT_METADATA) {
+        ctx.metadata_json = json_object_new_object();
+        if (NULL == ctx.metadata_json) {
+            cli_errmsg("scan_common: no memory for json properties object\n");
+            status = CL_EMEM;
+            goto done;
+        }
+        /* Set the convenience pointer to the current properties object */
+        ctx.recursion_stack[ctx.recursion_level].metadata_json = ctx.metadata_json;
+        ctx.this_layer_metadata_json = ctx.metadata_json;
+
+        status = cli_jsonstr(ctx.metadata_json, "Magic", "CLAMJSONv0");
+        if (status != CL_SUCCESS) {
+            cli_errmsg("scan_common: error setting Magic property in metadata.json\n");
+            goto done;
+        }
+        if (ctx.fmap->name) {
+            status = cli_jsonstr(ctx.metadata_json, "FileName", ctx.fmap->name);
+            if (status != CL_SUCCESS) {
+                cli_errmsg("scan_common: error setting FileName property in metadata.json\n");
+                goto done;
+            }
+        }
+        if (ctx.fmap->path) {
+            status = cli_jsonstr(ctx.metadata_json, "FilePath", ctx.fmap->path);
+            if (status != CL_SUCCESS) {
+                cli_errmsg("scan_common: error setting FilePath property in metadata.json\n");
+                goto done;
+            }
+        }
+        status = cli_jsonint(ctx.metadata_json, "FileSize", ctx.fmap->len);
+        if (status != CL_SUCCESS) {
+            cli_errmsg("scan_common: error setting FileSize property in metadata.json\n");
+            goto done;
+        }
+        status = cli_jsonint(ctx.metadata_json, "ObjectID", ctx.recursion_stack[ctx.recursion_level].object_id);
+        if (status != CL_SUCCESS) {
+            cli_errmsg("scan_common: error setting ObjectID property in metadata.json\n");
+            goto done;
+        }
+    }
+
     status = cli_magic_scan(&ctx, CL_TYPE_ANY);
 
-    if (ctx.options->general & CL_SCAN_GENERAL_COLLECT_METADATA && (ctx.properties != NULL)) {
+    if (ctx.options->general & CL_SCAN_GENERAL_COLLECT_METADATA && (ctx.metadata_json != NULL)) {
         json_object *jobj;
         const char *jstring;
 
         /* set value of unique root object tag */
-        if (json_object_object_get_ex(ctx.properties, "FileType", &jobj)) {
+        if (json_object_object_get_ex(ctx.metadata_json, "FileType", &jobj)) {
             enum json_type type;
             const char *jstr;
 
             type = json_object_get_type(jobj);
             if (type == json_type_string) {
                 jstr = json_object_get_string(jobj);
-                cli_jsonstr(ctx.properties, "RootFileType", jstr);
+                cli_jsonstr(ctx.metadata_json, "RootFileType", jstr);
             }
         }
 
         /* serialize json properties to string */
 #ifdef JSON_C_TO_STRING_NOSLASHESCAPE
-        jstring = json_object_to_json_string_ext(ctx.properties, JSON_C_TO_STRING_PRETTY | JSON_C_TO_STRING_NOSLASHESCAPE);
+        jstring = json_object_to_json_string_ext(ctx.metadata_json, JSON_C_TO_STRING_PRETTY | JSON_C_TO_STRING_NOSLASHESCAPE);
 #else
-        jstring = json_object_to_json_string_ext(ctx.properties, JSON_C_TO_STRING_PRETTY);
+        jstring = json_object_to_json_string_ext(ctx.metadata_json, JSON_C_TO_STRING_PRETTY);
 #endif
         if (NULL == jstring) {
             cli_errmsg("scan_common: no memory for json serialization.\n");
@@ -6129,8 +6098,8 @@ done:
         cli_logg_unsetup();
     }
 
-    if (NULL != ctx.properties) {
-        cli_json_delobj(ctx.properties);
+    if (NULL != ctx.metadata_json) {
+        cli_json_delobj(ctx.metadata_json);
     }
 
     if (NULL != ctx.sub_tmpdir) {
@@ -6208,8 +6177,8 @@ cl_error_t cl_scandesc_callback(int desc, const char *filename, const char **vir
         (void)cli_basename(filename, strlen(filename), &filename_base, true /* posix_support_backslash_pathsep */);
     }
 
-    if (NULL == (map = fmap(desc, 0, sb.st_size, filename_base))) {
-        cli_errmsg("CRITICAL: fmap() failed\n");
+    if (NULL == (map = fmap_new(desc, 0, sb.st_size, filename_base, filename))) {
+        cli_errmsg("CRITICAL: fmap_new() failed\n");
         status = CL_EMEM;
         goto done;
     }
@@ -6218,7 +6187,7 @@ cl_error_t cl_scandesc_callback(int desc, const char *filename, const char **vir
 
 done:
     if (NULL != map) {
-        funmap(map);
+        fmap_free(map);
     }
     if (NULL != filename_base) {
         free(filename_base);

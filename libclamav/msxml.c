@@ -241,7 +241,7 @@ cl_error_t cli_scanmsxml(cli_ctx *ctx)
     if (!reader) {
         cli_dbgmsg("cli_scanmsxml: cannot initialize xmlReader\n");
 
-        ret = cli_json_parse_error(ctx->wrkproperty, "OOXML_ERROR_XML_READER_IO");
+        ret = cli_json_parse_error(ctx->this_layer_metadata_json, "OOXML_ERROR_XML_READER_IO");
 
         return ret; // libxml2 failed!
     }

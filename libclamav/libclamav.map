@@ -224,7 +224,7 @@ CLAMAV_PRIVATE {
     cli_bytecode_done;
     cli_bytecode_debug;
     cli_hex2ui;
-    fmap;
+    fmap_new;
     cli_bytecode_context_set_trace;
     cli_bytecode_debug_printsrc;
     cli_bytecode_printversion;

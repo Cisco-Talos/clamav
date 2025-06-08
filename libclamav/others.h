@@ -184,6 +184,8 @@ typedef struct recursion_level_tag {
     uint32_t attributes;                  /* layer attributes. */
     image_fuzzy_hash_t image_fuzzy_hash;  /* Used for image/graphics files to store a fuzzy hash. */
     bool calculated_image_fuzzy_hash;     /* Used for image/graphics files to store a fuzzy hash. */
+    size_t object_id;                     /* Unique ID for this object. */
+    json_object *metadata_json;           /* JSON object for this recursion level, e.g. for JSON metadata. */
 } recursion_level_t;
 
 typedef void *evidence_t;
@@ -193,7 +195,6 @@ typedef void *cvd_t;
 /* internal clamav context */
 typedef struct cli_ctx_tag {
     char *target_filepath;    /* (optional) The filepath of the original scan target. */
-    const char *sub_filepath; /* (optional) The filepath of the current file being parsed. May be a temp file. */
     char *sub_tmpdir;         /* The directory to store tmp files at this recursion depth. */
     evidence_t evidence;      /* Stores the evidence for this scan to alert (alerting indicators). */
     unsigned long int *scanned;
@@ -207,12 +208,13 @@ typedef struct cli_ctx_tag {
     uint32_t recursion_stack_size;      /* stack size must == engine->max_recursion_level */
     uint32_t recursion_level;           /* Index into recursion_stack; current fmap recursion level from start of scan. */
     fmap_t *fmap;                       /* Pointer to current fmap in recursion_stack, varies with recursion depth. For convenience. */
+    size_t object_count;                /* Counter for number of unique entities/contained files (including normalized files) processed. */
     struct cli_dconf *dconf;
     bitset_t *hook_lsig_matches;
     void *cb_ctx;
     cli_events_t *perf;
-    struct json_object *properties;
-    struct json_object *wrkproperty;
+    struct json_object *metadata_json;  /* JSON object for the whole scan, e.g. for JSON metadata. */
+    struct json_object *this_layer_metadata_json; /* JSON object for the current recursion level, e.g. for JSON metadata. */
     struct timeval time_limit;
     bool limit_exceeded; /* To guard against alerting on limits exceeded more than once, or storing that in the JSON metadata more than once. */
     bool abort_scan;     /* So we can guarantee a scan is aborted, even if CL_ETIMEOUT/etc. status is lost in the scan recursion stack. */
@@ -224,7 +226,7 @@ typedef struct cli_ctx_tag {
 
 typedef struct cli_flagged_sample {
     char **virus_name;
-    char md5[16];
+    char md5[MD5_HASH_SIZE];
     uint32_t size; /* A size of zero means size is unavailable (why would this ever happen?) */
     uint32_t hits;
     stats_section_t *sections;
@@ -766,7 +768,7 @@ cl_error_t cli_recursion_stack_push(cli_ctx *ctx, cl_fmap_t *map, cli_file_t typ
 /**
  * @brief Pop off a layer of our scan recursion stack.
  *
- * Returns the fmap for the popped layer. Does NOT funmap() the fmap for you.
+ * Returns the fmap for the popped layer. Does NOT fmap_free() the fmap for you.
  *
  * @param ctx           The scanning context.
  * @return cl_fmap_t*   A pointer to the fmap for the popped layer, may return NULL instead if the stack is empty.
