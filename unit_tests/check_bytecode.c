@@ -78,8 +78,6 @@ static void runtest(const char *file, uint64_t expected, int fail, int nojit,
     rc = cl_engine_compile(engine);
     ck_assert_msg(!rc, "cannot compile engine");
 
-    cctx.evidence = evidence_new();
-
     cctx.dconf = cctx.engine->dconf;
 
     cctx.recursion_stack_size = cctx.engine->max_recursion_level;
@@ -160,9 +158,11 @@ static void runtest(const char *file, uint64_t expected, int fail, int nojit,
         fmap_free(map);
     cli_bytecode_destroy(&bc);
     cli_bytecode_done(&bcs);
+    if (cctx.recursion_stack[cctx.recursion_level].evidence) {
+        evidence_free(cctx.recursion_stack[cctx.recursion_level].evidence);
+    }
     free(cctx.recursion_stack);
     cl_engine_free(engine);
-    evidence_free(cctx.evidence);
     if (fdin >= 0)
         close(fdin);
 }

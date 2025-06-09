@@ -614,6 +614,9 @@ pub struct image_fuzzy_hash {
     pub hash: [u8; 8usize],
 }
 pub type image_fuzzy_hash_t = image_fuzzy_hash;
+pub type evidence_t = *mut ::std::os::raw::c_void;
+pub type onedump_t = *mut ::std::os::raw::c_void;
+pub type cvd_t = *mut ::std::os::raw::c_void;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct recursion_level_tag {
@@ -626,18 +629,15 @@ pub struct recursion_level_tag {
     pub image_fuzzy_hash: image_fuzzy_hash_t,
     pub calculated_image_fuzzy_hash: bool,
     pub object_id: usize,
-    pub json: *mut json_object,
+    pub metadata_json: *mut json_object,
+    pub evidence: evidence_t,
 }
 pub type recursion_level_t = recursion_level_tag;
-pub type evidence_t = *mut ::std::os::raw::c_void;
-pub type onedump_t = *mut ::std::os::raw::c_void;
-pub type cvd_t = *mut ::std::os::raw::c_void;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct cli_ctx_tag {
     pub target_filepath: *mut ::std::os::raw::c_char,
     pub sub_tmpdir: *mut ::std::os::raw::c_char,
-    pub evidence: evidence_t,
     pub scanned: *mut ::std::os::raw::c_ulong,
     pub root: *const cli_matcher,
     pub engine: *const cl_engine,
@@ -648,13 +648,14 @@ pub struct cli_ctx_tag {
     pub recursion_stack: *mut recursion_level_t,
     pub recursion_stack_size: u32,
     pub recursion_level: u32,
+    pub this_layer_evidence: evidence_t,
     pub fmap: *mut fmap_t,
     pub object_count: usize,
     pub dconf: *mut cli_dconf,
     pub hook_lsig_matches: *mut bitset_t,
     pub cb_ctx: *mut ::std::os::raw::c_void,
     pub perf: *mut cli_events_t,
-    pub properties: *mut json_object,
+    pub metadata_json: *mut json_object,
     pub this_layer_metadata_json: *mut json_object,
     pub time_limit: timeval,
     pub limit_exceeded: bool,

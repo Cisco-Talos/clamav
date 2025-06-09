@@ -407,8 +407,11 @@ static void do_phishing_test(const struct rtest *rtest)
     hrefs.tag[0]      = (unsigned char *)cli_safer_strdup("href");
     hrefs.contents[0] = (unsigned char *)cli_safer_strdup(rtest->displayurl);
 
-    ctx.engine   = engine;
-    ctx.evidence = evidence_new();
+    ctx.engine = engine;
+
+    ctx.recursion_stack_size = ctx.engine->max_recursion_level;
+    ctx.recursion_stack      = calloc(sizeof(recursion_level_t), ctx.recursion_stack_size);
+    ck_assert_msg(!!ctx.recursion_stack, "calloc() for recursion_stack failed");
 
     rc = phishingScan(&ctx, &hrefs);
 
@@ -416,29 +419,29 @@ static void do_phishing_test(const struct rtest *rtest)
     ck_assert_msg(rc == CL_CLEAN, "phishingScan");
     switch (rtest->result) {
         case RTR_PHISH:
-            ck_assert_msg(evidence_num_indicators_type(ctx.evidence, IndicatorType_PotentiallyUnwanted),
+            ck_assert_msg(evidence_num_indicators_type(ctx.this_layer_evidence, IndicatorType_PotentiallyUnwanted),
                           "this should be phishing, realURL: %s, displayURL: %s",
                           rtest->realurl, rtest->displayurl);
             break;
         case RTR_ALLOWED:
-            ck_assert_msg(!evidence_num_indicators_type(ctx.evidence, IndicatorType_PotentiallyUnwanted),
+            ck_assert_msg(!evidence_num_indicators_type(ctx.this_layer_evidence, IndicatorType_PotentiallyUnwanted),
                           "this should be allowed, realURL: %s, displayURL: %s",
                           rtest->realurl, rtest->displayurl);
             break;
         case RTR_CLEAN:
-            ck_assert_msg(!evidence_num_indicators_type(ctx.evidence, IndicatorType_PotentiallyUnwanted),
+            ck_assert_msg(!evidence_num_indicators_type(ctx.this_layer_evidence, IndicatorType_PotentiallyUnwanted),
                           "this should be clean, realURL: %s, displayURL: %s",
                           rtest->realurl, rtest->displayurl);
             break;
         case RTR_BLOCKED:
             if (!loaded_2)
-                ck_assert_msg(!evidence_num_indicators_type(ctx.evidence, IndicatorType_PotentiallyUnwanted),
+                ck_assert_msg(!evidence_num_indicators_type(ctx.this_layer_evidence, IndicatorType_PotentiallyUnwanted),
                               "this should be clean, realURL: %s, displayURL: %s",
                               rtest->realurl, rtest->displayurl);
             else {
                 const char *viruname = NULL;
 
-                ck_assert_msg(evidence_num_indicators_type(ctx.evidence, IndicatorType_PotentiallyUnwanted),
+                ck_assert_msg(evidence_num_indicators_type(ctx.this_layer_evidence, IndicatorType_PotentiallyUnwanted),
                               "this should be blocked, realURL: %s, displayURL: %s",
                               rtest->realurl, rtest->displayurl);
 
@@ -463,7 +466,12 @@ static void do_phishing_test(const struct rtest *rtest)
             break;
     }
 
-    evidence_free(ctx.evidence);
+    if (NULL != ctx.recursion_stack[ctx.recursion_level].evidence) {
+        evidence_free(ctx.recursion_stack[ctx.recursion_level].evidence);
+    }
+    if (ctx.recursion_stack) {
+        free(ctx.recursion_stack);
+    }
 }
 
 static void do_phishing_test_allscan(const struct rtest *rtest)
@@ -494,8 +502,11 @@ static void do_phishing_test_allscan(const struct rtest *rtest)
     hrefs.tag[0]      = (unsigned char *)cli_safer_strdup("href");
     hrefs.contents[0] = (unsigned char *)cli_safer_strdup(rtest->displayurl);
 
-    ctx.engine   = engine;
-    ctx.evidence = evidence_new();
+    ctx.engine = engine;
+
+    ctx.recursion_stack_size = ctx.engine->max_recursion_level;
+    ctx.recursion_stack      = calloc(sizeof(recursion_level_t), ctx.recursion_stack_size);
+    ck_assert_msg(!!ctx.recursion_stack, "calloc() for recursion_stack failed");
 
     rc = phishingScan(&ctx, &hrefs);
     ck_assert_msg(rc == CL_SUCCESS || rc == CL_VIRUS, "phishingScan failed with error code: %s (%u)",
@@ -505,7 +516,7 @@ static void do_phishing_test_allscan(const struct rtest *rtest)
     // phishingScan() doesn't check the number of alerts. When using CL_SCAN_GENERAL_ALLMATCHES
     // or if using `CL_SCAN_GENERAL_HEURISTIC_PRECEDENCE` and `cli_append_potentially_unwanted()`
     // we need to count the number of alerts manually to determine the verdict.
-    if (0 < evidence_num_alerts(ctx.evidence)) {
+    if (0 < evidence_num_alerts(ctx.this_layer_evidence)) {
         verdict = CL_VIRUS;
     }
 
@@ -523,29 +534,29 @@ static void do_phishing_test_allscan(const struct rtest *rtest)
 
     switch (rtest->result) {
         case RTR_PHISH:
-            ck_assert_msg(evidence_num_alerts(ctx.evidence),
+            ck_assert_msg(evidence_num_alerts(ctx.this_layer_evidence),
                           "this should be phishing, realURL: %s, displayURL: %s",
                           rtest->realurl, rtest->displayurl);
             break;
         case RTR_ALLOWED:
-            ck_assert_msg(!evidence_num_alerts(ctx.evidence),
+            ck_assert_msg(!evidence_num_alerts(ctx.this_layer_evidence),
                           "this should be allowed, realURL: %s, displayURL: %s",
                           rtest->realurl, rtest->displayurl);
             break;
         case RTR_CLEAN:
-            ck_assert_msg(!evidence_num_alerts(ctx.evidence),
+            ck_assert_msg(!evidence_num_alerts(ctx.this_layer_evidence),
                           "this should be clean, realURL: %s, displayURL: %s",
                           rtest->realurl, rtest->displayurl);
             break;
         case RTR_BLOCKED:
             if (!loaded_2) {
-                ck_assert_msg(!evidence_num_alerts(ctx.evidence),
+                ck_assert_msg(!evidence_num_alerts(ctx.this_layer_evidence),
                               "this should be clean, realURL: %s, displayURL: %s",
                               rtest->realurl, rtest->displayurl);
             } else {
                 const char *viruname = NULL;
 
-                ck_assert_msg(evidence_num_alerts(ctx.evidence),
+                ck_assert_msg(evidence_num_alerts(ctx.this_layer_evidence),
                               "this should be blocked, realURL: %s, displayURL: %s",
                               rtest->realurl, rtest->displayurl);
 
@@ -572,7 +583,12 @@ static void do_phishing_test_allscan(const struct rtest *rtest)
 
     html_tag_arg_free(&hrefs);
 
-    evidence_free(ctx.evidence);
+    if (NULL != ctx.recursion_stack[ctx.recursion_level].evidence) {
+        evidence_free(ctx.recursion_stack[ctx.recursion_level].evidence);
+    }
+    if (ctx.recursion_stack) {
+        free(ctx.recursion_stack);
+    }
 }
 
 START_TEST(phishingScan_test)

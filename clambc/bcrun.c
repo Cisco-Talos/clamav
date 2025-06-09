@@ -400,7 +400,6 @@ int main(int argc, char *argv[])
         }
         ctx->ctx      = &cctx;
         cctx.engine   = engine;
-        cctx.evidence = evidence_new();
 
         cctx.recursion_stack_size = cctx.engine->max_recursion_level;
         cctx.recursion_stack      = calloc(sizeof(recursion_level_t), cctx.recursion_stack_size);
@@ -483,8 +482,14 @@ int main(int argc, char *argv[])
         if (map)
             fmap_free(map);
         cl_engine_free(engine);
+
+        if (cctx.recursion_stack[cctx.recursion_level].evidence) {
+            evidence_free(cctx.recursion_stack[cctx.recursion_level].evidence);
+        }
+        if (cctx.recursion_stack[cctx.recursion_level].fmap) {
+            fmap_free(cctx.recursion_stack[cctx.recursion_level].fmap);
+        }
         free(cctx.recursion_stack);
-        evidence_free(cctx.evidence);
     }
     cli_bytecode_destroy(bc);
     cli_bytecode_done(&bcs);

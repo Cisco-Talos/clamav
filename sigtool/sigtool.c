@@ -215,8 +215,6 @@ static int hashpe(const char *filename, unsigned int class, cli_hash_type_t type
     /* prepare context */
     ctx.engine = engine;
 
-    ctx.evidence = evidence_new();
-
     ctx.options        = &options;
     ctx.options->parse = ~0;
     ctx.dconf          = (struct cli_dconf *)engine->dconf;
@@ -280,11 +278,11 @@ done:
     if (NULL != new_map) {
         fmap_free(new_map);
     }
+    if (ctx.recursion_stack[ctx.recursion_level].evidence) {
+        evidence_free(ctx.recursion_stack[ctx.recursion_level].evidence);
+    }
     if (NULL != ctx.recursion_stack) {
         free(ctx.recursion_stack);
-    }
-    if (NULL != ctx.evidence) {
-        evidence_free(ctx.evidence);
     }
     if (NULL != engine) {
         cl_engine_free(engine);
@@ -484,8 +482,6 @@ static cli_ctx *convenience_ctx(int fd, const char *filepath)
 
     ctx->engine = (const struct cl_engine *)engine;
 
-    ctx->evidence = evidence_new();
-
     ctx->dconf = (struct cli_dconf *)engine->dconf;
 
     ctx->recursion_stack_size = ctx->engine->max_recursion_level;
@@ -521,6 +517,9 @@ done:
             if (NULL != ctx->options) {
                 free(ctx->options);
             }
+            if (ctx->recursion_stack[ctx->recursion_level].evidence) {
+                evidence_free(ctx->recursion_stack[ctx->recursion_level].evidence);
+            }
             if (NULL != ctx->recursion_stack) {
                 free(ctx->recursion_stack);
             }
@@ -547,9 +546,15 @@ static void destroy_ctx(cli_ctx *ctx)
                 }
                 ctx->recursion_level -= 1;
             }
+
             if (NULL != ctx->recursion_stack[0].fmap) {
                 fmap_free(ctx->recursion_stack[0].fmap);
                 ctx->recursion_stack[0].fmap = NULL;
+            }
+
+            if (NULL != ctx->recursion_stack[0].evidence) {
+                evidence_free(ctx->recursion_stack[0].evidence);
+                ctx->recursion_stack[0].evidence = NULL;
             }
 
             free(ctx->recursion_stack);
@@ -564,10 +569,6 @@ static void destroy_ctx(cli_ctx *ctx)
         if (NULL != ctx->options) {
             free(ctx->options);
             ctx->options = NULL;
-        }
-
-        if (NULL != ctx->evidence) {
-            evidence_free(ctx->evidence);
         }
 
         free(ctx);
@@ -2719,8 +2720,6 @@ static void matchsig(char *sig, const char *offset, int fd)
 
     ctx.engine = engine;
 
-    ctx.evidence = evidence_new();
-
     ctx.options        = &options;
     ctx.options->parse = ~0;
     ctx.dconf          = (struct cli_dconf *)engine->dconf;
@@ -2769,11 +2768,11 @@ done:
     if (NULL != new_map) {
         fmap_free(new_map);
     }
+    if (ctx.recursion_stack[ctx.recursion_level].evidence) {
+        evidence_free(ctx.recursion_stack[ctx.recursion_level].evidence);
+    }
     if (NULL != ctx.recursion_stack) {
         free(ctx.recursion_stack);
-    }
-    if (NULL != ctx.evidence) {
-        evidence_free(ctx.evidence);
     }
     if (NULL != engine) {
         cl_engine_free(engine);
@@ -3926,8 +3925,6 @@ static int dumpcerts(const struct optstruct *opts)
     /* prepare context */
     ctx.engine = engine;
 
-    ctx.evidence = evidence_new();
-
     ctx.options        = &options;
     ctx.options->parse = ~0;
     ctx.dconf          = (struct cli_dconf *)engine->dconf;
@@ -3974,11 +3971,11 @@ done:
     if (NULL != new_map) {
         fmap_free(new_map);
     }
+    if (ctx.recursion_stack[ctx.recursion_level].evidence) {
+        evidence_free(ctx.recursion_stack[ctx.recursion_level].evidence);
+    }
     if (NULL != ctx.recursion_stack) {
         free(ctx.recursion_stack);
-    }
-    if (NULL != ctx.evidence) {
-        evidence_free(ctx.evidence);
     }
     if (NULL != engine) {
         cl_engine_free(engine);

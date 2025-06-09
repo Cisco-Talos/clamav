@@ -46,6 +46,8 @@ include = [
   "ffi_util::ffi_cstring_free",
   "logging::clrs_eprint",
   "evidence::evidence_new",
+  "evidence::evidence_new_from_child",
+  "evidence::evidence_add_child_evidence",
   "evidence::evidence_free",
   "evidence::evidence_render_verdict",
   "evidence::evidence_get_last_alert",
