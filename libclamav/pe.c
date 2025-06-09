@@ -4078,7 +4078,7 @@ int cli_scanpe(cli_ctx *ctx)
                 cli_jsonstr(pe_json, "Packer", "yC");
 
             // record number of alerts before unpacking and scanning
-            num_alerts = evidence_num_alerts(ctx->evidence);
+            num_alerts = evidence_num_alerts(ctx->this_layer_evidence);
 
             cli_dbgmsg("%d,%d,%d,%d\n", peinfo->nsections - 1, peinfo->e_lfanew, ecx, offset);
             CLI_UNPTEMP("cli_scanpe: yC", (spinned, 0));
@@ -4090,7 +4090,7 @@ int cli_scanpe(cli_ctx *ctx)
             //
             // This preserves the intention of https://github.com/Cisco-Talos/clamav/commit/771c23099893f02f1316960fbe84f62b115a3556
             // although that commit had it bailing if a match occurred even in allmatch-mode, which we do not want to do.
-            if (!SCAN_ALLMATCHES && num_alerts != evidence_num_alerts(ctx->evidence)) {
+            if (!SCAN_ALLMATCHES && num_alerts != evidence_num_alerts(ctx->this_layer_evidence)) {
                 cli_exe_info_destroy(peinfo);
                 return CL_VIRUS;
             }

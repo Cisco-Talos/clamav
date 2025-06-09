@@ -5429,14 +5429,7 @@ done:
     /*
      * Determine if there was an alert for this layer (or its children).
      */
-    if ((evidence_num_alerts(ctx->evidence) > 0)) {
-        // TODO: Bug here.
-        //       If there was a PUA match in a previous file in a zip, all subsequent files will
-        //       think they have a match.
-        //       In allmatch mode, this affects strong sigs too, not just PUA sigs.
-        //       The only way to solve this is to keep track of the # of alerts for each layer,
-        //       including only children layers and propagating the evidence up to the parent layer
-        //       only at the end, after the cache_add.
+    if (0 < evidence_num_alerts(ctx->this_layer_evidence)) {
         verdict_at_this_level = CL_VIRUS;
     } else {
         verdict_at_this_level = ret;
@@ -5781,8 +5774,6 @@ static cl_error_t scan_common(cl_fmap_t *map, const char *filepath, const char *
 
     memcpy(ctx.options, scanoptions, sizeof(struct cl_scan_options));
 
-    ctx.evidence = evidence_new();
-
     ctx.dconf  = (struct cli_dconf *)engine->dconf;
     ctx.cb_ctx = context;
 
@@ -6029,7 +6020,7 @@ static cl_error_t scan_common(cl_fmap_t *map, const char *filepath, const char *
     }
 
     // If any alerts occurred, set the output pointer to the "latest" alert signature name.
-    if (0 < evidence_num_alerts(ctx.evidence)) {
+    if (0 < evidence_num_alerts(ctx.this_layer_evidence)) {
         *virname = cli_get_last_virus_str(&ctx);
         verdict  = CL_VIRUS;
     }
@@ -6038,7 +6029,7 @@ static cl_error_t scan_common(cl_fmap_t *map, const char *filepath, const char *
      * Report PUA alerts here.
      */
     num_potentially_unwanted_indicators = evidence_num_indicators_type(
-        ctx.evidence,
+        ctx.this_layer_evidence,
         IndicatorType_PotentiallyUnwanted);
     if (0 != num_potentially_unwanted_indicators) {
         // We have "potentially unwanted" indicators that would not have been reported yet.
@@ -6051,9 +6042,12 @@ static cl_error_t scan_common(cl_fmap_t *map, const char *filepath, const char *
 
             for (i = 0; i < num_potentially_unwanted_indicators; i++) {
                 const char *pua_alert = evidence_get_indicator(
-                    ctx.evidence,
+                    ctx.this_layer_evidence,
                     IndicatorType_PotentiallyUnwanted,
-                    i);
+                    i,
+                    NULL, // Don't need to get the depth here.
+                    NULL  // Don't need to get the object ID here.
+                );
 
                 if (NULL != pua_alert) {
                     // We don't know exactly which layer the alert happened at.
@@ -6072,8 +6066,9 @@ static cl_error_t scan_common(cl_fmap_t *map, const char *filepath, const char *
 
         } else {
             // Not allmatch mode. Only want to report one thing...
-            if (0 == evidence_num_indicators_type(ctx.evidence, IndicatorType_Strong)) {
+            if (0 == evidence_num_indicators_type(ctx.this_layer_evidence, IndicatorType_Strong)) {
                 // And it looks like we haven't reported anything else, so report the last "potentially unwanted" one.
+                // cli_get_last_virus() will do that, grabbing the last alerting indicator of any type.
                 cli_virus_found_cb(&ctx, cli_get_last_virus(&ctx));
             }
         }
@@ -6121,16 +6116,16 @@ done:
         cli_bitset_free(ctx.hook_lsig_matches);
     }
 
+    if (NULL != ctx.recursion_stack[ctx.recursion_level].evidence) {
+        evidence_free(ctx.recursion_stack[ctx.recursion_level].evidence);
+    }
+
     if (NULL != ctx.recursion_stack) {
         free(ctx.recursion_stack);
     }
 
     if (NULL != ctx.options) {
         free(ctx.options);
-    }
-
-    if (NULL != ctx.evidence) {
-        evidence_free(ctx.evidence);
     }
 
     return status;

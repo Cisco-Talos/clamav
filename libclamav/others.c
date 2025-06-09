@@ -1433,11 +1433,16 @@ static cl_error_t append_virus(cli_ctx *ctx, const char *virname, IndicatorType 
 
     char *location = NULL;
 
-    if (ctx->evidence == NULL) {
-        // evidence storage not initialized, cannot continue.
-        status = CL_SUCCESS;
-        goto done;
+    if (NULL == ctx->recursion_stack[ctx->recursion_level].evidence) {
+        // evidence storage for this layer not initialized, initialize a new evidence store.
+        ctx->recursion_stack[ctx->recursion_level].evidence = evidence_new();
+        if (NULL == ctx->recursion_stack[ctx->recursion_level].evidence) {
+            cli_errmsg("cli_append_virus: no memory for evidence store\n");
+            status = CL_EMEM;
+            goto done;
+        }
     }
+    ctx->this_layer_evidence = ctx->recursion_stack[ctx->recursion_level].evidence;
 
     if ((ctx->fmap != NULL) &&
         (ctx->recursion_stack != NULL) &&
@@ -1448,9 +1453,10 @@ static cl_error_t append_virus(cli_ctx *ctx, const char *virname, IndicatorType 
     }
 
     add_successful = evidence_add_indicator(
-        ctx->evidence,
+        ctx->this_layer_evidence,
         virname,
         type,
+        ctx->recursion_stack[ctx->recursion_level].object_id,
         &add_indicator_error);
     if (!add_successful) {
         cli_errmsg("Failed to add indicator to scan evidence: %s\n", ffierror_fmt(add_indicator_error));
@@ -1464,23 +1470,46 @@ static cl_error_t append_virus(cli_ctx *ctx, const char *virname, IndicatorType 
     }
 
     if (SCAN_COLLECT_METADATA && ctx->this_layer_metadata_json) {
-        json_object *arrobj, *virobj;
-        if (!json_object_object_get_ex(ctx->this_layer_metadata_json, "Viruses", &arrobj)) {
-            arrobj = json_object_new_array();
-            if (NULL == arrobj) {
-                cli_errmsg("cli_append_virus: no memory for json virus array\n");
+        if (type == IndicatorType_Weak) {
+            // If this is a weak indicator, we don't add it to the "Viruses" array.
+            // Instead, we add it to the "WeakIndicators" array.
+            json_object *arrobj, *virobj;
+            if (!json_object_object_get_ex(ctx->this_layer_metadata_json, "WeakIndicators", &arrobj)) {
+                arrobj = json_object_new_array();
+                if (NULL == arrobj) {
+                    cli_errmsg("cli_append_virus: no memory for json weak indicators array\n");
+                    status = CL_EMEM;
+                    goto done;
+                }
+                json_object_object_add(ctx->this_layer_metadata_json, "WeakIndicators", arrobj);
+            }
+            virobj = json_object_new_string(virname);
+            if (NULL == virobj) {
+                cli_errmsg("cli_append_virus: no memory for json weak indicator name object\n");
                 status = CL_EMEM;
                 goto done;
             }
-            json_object_object_add(ctx->this_layer_metadata_json, "Viruses", arrobj);
+            json_object_array_add(arrobj, virobj);
+        } else {
+            // If this is a strong or potentially unwanted indicator, we add it to the "Viruses" array.
+            json_object *arrobj, *virobj;
+            if (!json_object_object_get_ex(ctx->this_layer_metadata_json, "Viruses", &arrobj)) {
+                arrobj = json_object_new_array();
+                if (NULL == arrobj) {
+                    cli_errmsg("cli_append_virus: no memory for json virus array\n");
+                    status = CL_EMEM;
+                    goto done;
+                }
+                json_object_object_add(ctx->this_layer_metadata_json, "Viruses", arrobj);
+            }
+            virobj = json_object_new_string(virname);
+            if (NULL == virobj) {
+                cli_errmsg("cli_append_virus: no memory for json virus name object\n");
+                status = CL_EMEM;
+                goto done;
+            }
+            json_object_array_add(arrobj, virobj);
         }
-        virobj = json_object_new_string(virname);
-        if (NULL == virobj) {
-            cli_errmsg("cli_append_virus: no memory for json virus name object\n");
-            status = CL_EMEM;
-            goto done;
-        }
-        json_object_array_add(arrobj, virobj);
     }
 
     if (SCAN_ALLMATCHES) {
@@ -1528,6 +1557,8 @@ cl_error_t cli_append_virus(cli_ctx *ctx, const char *virname)
         (strncmp(virname, "Heuristics.", 11) == 0) ||
         (strncmp(virname, "BC.Heuristics.", 14) == 0)) {
         return cli_append_potentially_unwanted(ctx, virname);
+    } else if (strncmp(virname, "Weak.", 5) == 0) {
+        return append_virus(ctx, virname, IndicatorType_Weak);
     } else {
         return append_virus(ctx, virname, IndicatorType_Strong);
     }
@@ -1535,11 +1566,11 @@ cl_error_t cli_append_virus(cli_ctx *ctx, const char *virname)
 
 const char *cli_get_last_virus(const cli_ctx *ctx)
 {
-    if (!ctx || !ctx->evidence) {
+    if (!ctx || !ctx->this_layer_evidence) {
         return NULL;
     }
 
-    return evidence_get_last_alert(ctx->evidence);
+    return evidence_get_last_alert(ctx->this_layer_evidence);
 }
 
 const char *cli_get_last_virus_str(const cli_ctx *ctx)
@@ -1611,6 +1642,12 @@ cl_error_t cli_recursion_stack_push(cli_ctx *ctx, cl_fmap_t *map, cli_file_t typ
     new_container->object_id = ctx->object_count;
     ctx->object_count++;
 
+    // Set the current layer's fmap to the new container's fmap.
+    ctx->fmap = new_container->fmap;
+
+    // Skip initializing a new evidence object because we only need it if there are indicators found.
+    // See append_virus()
+
     if (SCAN_COLLECT_METADATA) {
         /*
          * Create JSON object to record metadata during the scan.
@@ -1639,7 +1676,7 @@ cl_error_t cli_recursion_stack_push(cli_ctx *ctx, cl_fmap_t *map, cli_file_t typ
         json_object_array_add(arrobj, new_object);
 
         ctx->recursion_stack[ctx->recursion_level].metadata_json = new_object;
-        ctx->this_layer_metadata_json = new_object;
+        ctx->this_layer_metadata_json                            = new_object;
 
         /*
          * Add basic file metadata to the JSON object.
@@ -1696,8 +1733,6 @@ cl_error_t cli_recursion_stack_push(cli_ctx *ctx, cl_fmap_t *map, cli_file_t typ
         }
     }
 
-    ctx->fmap = new_container->fmap;
-
 done:
 
     return status;
@@ -1712,6 +1747,156 @@ cl_fmap_t *cli_recursion_stack_pop(cli_ctx *ctx)
         goto done;
     }
 
+    /* If evidence (i.e. a collection of indicators / matches) were found for the popped layer, add it to the parents evidence */
+    if (ctx->recursion_stack[ctx->recursion_level].evidence) {
+
+        /*
+         * Record contained matches in the parent layer's evidence.
+         */
+        if (SCAN_COLLECT_METADATA) {
+            size_t num_indicators;
+            size_t i;
+            json_object *parent_object = ctx->recursion_stack[ctx->recursion_level - 1].metadata_json;
+
+            /* Get "ContainedIndicators" array */
+            json_object *contained_indicators = NULL;
+            if (!json_object_object_get_ex(parent_object, "ContainedIndicators", &contained_indicators)) {
+                contained_indicators = json_object_new_array();
+                if (NULL == contained_indicators) {
+                    cli_errmsg("cli_recursion_stack_pop: no memory for json ContainedIndicators array\n");
+                } else {
+                    json_object_object_add(parent_object, "ContainedIndicators", contained_indicators);
+                }
+            }
+
+            if (NULL != contained_indicators) {
+                /* Get each Strong indicator and add it */
+                num_indicators = evidence_num_indicators_type(
+                    ctx->this_layer_evidence,
+                    IndicatorType_Strong);
+                for (i = 0; i < num_indicators; i++) {
+                    size_t depth, object_id;
+                    const char *indicator = evidence_get_indicator(
+                        ctx->this_layer_evidence,
+                        IndicatorType_Strong,
+                        i,
+                        &depth,
+                        &object_id);
+
+                    if (NULL != indicator) {
+                        // Create json object containing name, type, depth, and object_id
+                        json_object *match_obj = json_object_new_object();
+                        if (NULL == match_obj) {
+                            cli_errmsg("cli_recursion_stack_pop: no memory for json match object\n");
+                        } else {
+                            json_object_object_add(match_obj, "Name", json_object_new_string(indicator));
+                            json_object_object_add(match_obj, "Type", json_object_new_string("Strong"));
+                            json_object_object_add(match_obj, "Depth", json_object_new_int((int)depth + 1)); // depth + 1 because this is a child of the parent layer
+                            json_object_object_add(match_obj, "ObjectID", json_object_new_int((int)object_id));
+                            json_object_array_add(contained_indicators, match_obj);
+                        }
+                    }
+                }
+
+                /* Get each Potentially Unwanted indicator and add it */
+                num_indicators = evidence_num_indicators_type(
+                    ctx->this_layer_evidence,
+                    IndicatorType_PotentiallyUnwanted);
+                for (i = 0; i < num_indicators; i++) {
+                    size_t depth, object_id;
+                    const char *indicator = evidence_get_indicator(
+                        ctx->this_layer_evidence,
+                        IndicatorType_PotentiallyUnwanted,
+                        i,
+                        &depth,
+                        &object_id);
+
+                    if (NULL != indicator) {
+                        // Create json object containing name, type, depth, and object_id
+                        json_object *match_obj = json_object_new_object();
+                        if (NULL == match_obj) {
+                            cli_errmsg("cli_recursion_stack_pop: no memory for json match object\n");
+                        } else {
+                            json_object_object_add(match_obj, "Name", json_object_new_string(indicator));
+                            json_object_object_add(match_obj, "Type", json_object_new_string("PotentiallyUnwanted"));
+                            json_object_object_add(match_obj, "Depth", json_object_new_int((int)depth + 1)); // depth + 1 because this is a child of the parent layer
+                            json_object_object_add(match_obj, "ObjectID", json_object_new_int((int)object_id));
+                            json_object_array_add(contained_indicators, match_obj);
+                        }
+                    }
+                }
+
+                /* Get each Weak indicator and add it */
+                num_indicators = evidence_num_indicators_type(
+                    ctx->this_layer_evidence,
+                    IndicatorType_Weak);
+                for (i = 0; i < num_indicators; i++) {
+                    size_t depth, object_id;
+                    const char *indicator = evidence_get_indicator(
+                        ctx->this_layer_evidence,
+                        IndicatorType_Weak,
+                        i,
+                        &depth,
+                        &object_id);
+
+                    if (NULL != indicator) {
+                        // Create json object containing name, type, depth, and object_id
+                        json_object *match_obj = json_object_new_object();
+                        if (NULL == match_obj) {
+                            cli_errmsg("cli_recursion_stack_pop: no memory for json match object\n");
+                        } else {
+                            json_object_object_add(match_obj, "Name", json_object_new_string(indicator));
+                            json_object_object_add(match_obj, "Type", json_object_new_string("Weak"));
+                            json_object_object_add(match_obj, "Depth", json_object_new_int((int)depth + 1)); // depth + 1 because this is a child of the parent layer
+                            json_object_object_add(match_obj, "ObjectID", json_object_new_int((int)object_id));
+                            json_object_array_add(contained_indicators, match_obj);
+                        }
+                    }
+                }
+            }
+        }
+
+        if (ctx->recursion_stack[ctx->recursion_level - 1].evidence == NULL) {
+            evidence_t parent_evidence   = NULL;
+            FFIError *new_evidence_error = NULL;
+
+            if (!evidence_new_from_child(
+                    // child
+                    ctx->recursion_stack[ctx->recursion_level].evidence,
+                    // new parent evidence
+                    &parent_evidence,
+                    ctx->recursion_stack[ctx->recursion_level].attributes & LAYER_ATTRIBUTES_NORMALIZED,
+                    &new_evidence_error)) {
+                cli_errmsg("Failed create evidence for parent layer given child's evidence: %s\n",
+                           ffierror_fmt(new_evidence_error));
+                if (NULL != new_evidence_error) {
+                    ffierror_free(new_evidence_error);
+                }
+            }
+
+            ctx->recursion_stack[ctx->recursion_level - 1].evidence = parent_evidence;
+        } else {
+            FFIError *add_evidence_error = NULL;
+
+            if (!evidence_add_child_evidence(
+                    // parent
+                    ctx->recursion_stack[ctx->recursion_level - 1].evidence,
+                    // child
+                    ctx->recursion_stack[ctx->recursion_level].evidence,
+                    ctx->recursion_stack[ctx->recursion_level].attributes & LAYER_ATTRIBUTES_NORMALIZED,
+                    &add_evidence_error)) {
+                cli_errmsg("Failed add child's evidence to parent's evidence: %s\n",
+                           ffierror_fmt(add_evidence_error));
+                if (NULL != add_evidence_error) {
+                    ffierror_free(add_evidence_error);
+                }
+            }
+        }
+
+        evidence_free(ctx->recursion_stack[ctx->recursion_level].evidence);
+        ctx->recursion_stack[ctx->recursion_level].evidence = NULL;
+    }
+
     /* save off the fmap to return it to the caller, in case they need it */
     popped_map = ctx->recursion_stack[ctx->recursion_level].fmap;
 
@@ -1722,8 +1907,13 @@ cl_fmap_t *cli_recursion_stack_pop(cli_ctx *ctx)
     /* Set the ctx->fmap convenience pointer to the current layer's fmap */
     ctx->fmap = ctx->recursion_stack[ctx->recursion_level].fmap;
 
-    /* Set the ctx->this_layer_metadata_json convenience pointer to the current layer's metadata_json */
-    ctx->this_layer_metadata_json = ctx->recursion_stack[ctx->recursion_level].metadata_json;
+    /* Set the ctx->this_layer_evidence convenience pointer to the current layer's evidence */
+    ctx->this_layer_evidence = ctx->recursion_stack[ctx->recursion_level].evidence;
+
+    if (SCAN_COLLECT_METADATA) {
+        /* Set the ctx->this_layer_metadata_json convenience pointer to the current layer's metadata_json */
+        ctx->this_layer_metadata_json = ctx->recursion_stack[ctx->recursion_level].metadata_json;
+    }
 
 done:
     return popped_map;

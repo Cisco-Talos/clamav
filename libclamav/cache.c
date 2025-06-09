@@ -683,7 +683,7 @@ void clean_cache_add(cli_ctx *ctx)
         goto done;
     }
 
-    if (0 < evidence_num_alerts(ctx->evidence)) {
+    if (0 < evidence_num_alerts(ctx->this_layer_evidence)) {
         // TODO: The dont cache flag should take care of preventing caching of files with embedded files that alert.
         //       Consider removing this check to allow caching of other actually clean files found within archives.
         //       It would be a (very) minor optimization.

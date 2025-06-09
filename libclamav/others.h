@@ -175,6 +175,10 @@ typedef struct image_fuzzy_hash {
     uint8_t hash[8];
 } image_fuzzy_hash_t;
 
+typedef void *evidence_t;
+typedef void *onedump_t;
+typedef void *cvd_t;
+
 typedef struct recursion_level_tag {
     cli_file_t type;
     size_t size;
@@ -186,17 +190,13 @@ typedef struct recursion_level_tag {
     bool calculated_image_fuzzy_hash;     /* Used for image/graphics files to store a fuzzy hash. */
     size_t object_id;                     /* Unique ID for this object. */
     json_object *metadata_json;           /* JSON object for this recursion level, e.g. for JSON metadata. */
+    evidence_t evidence;                  /* Store signature matches for this layer and its children. */
 } recursion_level_t;
-
-typedef void *evidence_t;
-typedef void *onedump_t;
-typedef void *cvd_t;
 
 /* internal clamav context */
 typedef struct cli_ctx_tag {
-    char *target_filepath;    /* (optional) The filepath of the original scan target. */
-    char *sub_tmpdir;         /* The directory to store tmp files at this recursion depth. */
-    evidence_t evidence;      /* Stores the evidence for this scan to alert (alerting indicators). */
+    char *target_filepath; /* (optional) The filepath of the original scan target. */
+    char *sub_tmpdir;      /* The directory to store tmp files at this recursion depth. */
     unsigned long int *scanned;
     const struct cli_matcher *root;
     const struct cl_engine *engine;
@@ -207,14 +207,15 @@ typedef struct cli_ctx_tag {
     recursion_level_t *recursion_stack; /* Array of recursion levels used as a stack. */
     uint32_t recursion_stack_size;      /* stack size must == engine->max_recursion_level */
     uint32_t recursion_level;           /* Index into recursion_stack; current fmap recursion level from start of scan. */
+    evidence_t this_layer_evidence;     /* Pointer to current evidence in recursion_stack, varies with recursion depth. For convenience. */
     fmap_t *fmap;                       /* Pointer to current fmap in recursion_stack, varies with recursion depth. For convenience. */
     size_t object_count;                /* Counter for number of unique entities/contained files (including normalized files) processed. */
     struct cli_dconf *dconf;
     bitset_t *hook_lsig_matches;
     void *cb_ctx;
     cli_events_t *perf;
-    struct json_object *metadata_json;  /* JSON object for the whole scan, e.g. for JSON metadata. */
-    struct json_object *this_layer_metadata_json; /* JSON object for the current recursion level, e.g. for JSON metadata. */
+    struct json_object *metadata_json;            /* Top level metadata JSON object for the whole scan. */
+    struct json_object *this_layer_metadata_json; /* Pointer to current metadata JSON object in recursion_stack, varies with recursion depth. For convenience. */
     struct timeval time_limit;
     bool limit_exceeded; /* To guard against alerting on limits exceeded more than once, or storing that in the JSON metadata more than once. */
     bool abort_scan;     /* So we can guarantee a scan is aborted, even if CL_ETIMEOUT/etc. status is lost in the scan recursion stack. */
