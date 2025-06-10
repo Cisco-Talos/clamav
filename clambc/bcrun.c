@@ -408,13 +408,6 @@ int main(int argc, char *argv[])
             exit(3);
         }
 
-        // ctx was memset, so recursion_level starts at 0.
-        cctx.recursion_stack[cctx.recursion_level].fmap = map;
-        cctx.recursion_stack[cctx.recursion_level].type = CL_TYPE_ANY; /* ANY for the top level, because we don't yet know the type. */
-        cctx.recursion_stack[cctx.recursion_level].size = map->len;
-
-        cctx.fmap = cctx.recursion_stack[cctx.recursion_level].fmap;
-
         memset(&dbg_state, 0, sizeof(dbg_state));
         dbg_state.file     = "<libclamav>";
         dbg_state.line     = 0;
@@ -452,11 +445,18 @@ int main(int argc, char *argv[])
                 optfree(opts);
                 exit(5);
             }
+
             map = fmap_new(fd, 0, 0, opt->strarg, opt->strarg);
             if (!map) {
                 fprintf(stderr, "Unable to map input file %s\n", opt->strarg);
                 exit(5);
             }
+
+            // ctx was memset, so recursion_level starts at 0.
+            cctx.recursion_stack[cctx.recursion_level].fmap = map;
+            cctx.recursion_stack[cctx.recursion_level].type = CL_TYPE_ANY; /* ANY for the top level, because we don't yet know the type. */
+            cctx.recursion_stack[cctx.recursion_level].size = map->len;
+
             rc = cli_bytecode_context_setfile(ctx, map);
             if (rc != CL_SUCCESS) {
                 fprintf(stderr, "Unable to set file %s: %s\n", opt->strarg, cl_strerror(rc));
@@ -464,10 +464,15 @@ int main(int argc, char *argv[])
                 exit(5);
             }
         }
+
         /* for testing */
         ctx->hooks.match_counts  = deadbeefcounts;
         ctx->hooks.match_offsets = deadbeefcounts;
-        rc                       = cli_bytecode_run(&bcs, bc, ctx);
+
+        /*
+         * Run the bytecode.
+         */
+        rc = cli_bytecode_run(&bcs, bc, ctx);
         if (rc != CL_SUCCESS) {
             fprintf(stderr, "Unable to run bytecode: %s\n", cl_strerror(rc));
         } else {
@@ -478,18 +483,15 @@ int main(int argc, char *argv[])
             if (debug_flag)
                 printf("[clambc] Bytecode returned: 0x%llx\n", (long long)v);
         }
+
         cli_bytecode_context_destroy(ctx);
         if (map)
             fmap_free(map);
-        cl_engine_free(engine);
-
         if (cctx.recursion_stack[cctx.recursion_level].evidence) {
             evidence_free(cctx.recursion_stack[cctx.recursion_level].evidence);
         }
-        if (cctx.recursion_stack[cctx.recursion_level].fmap) {
-            fmap_free(cctx.recursion_stack[cctx.recursion_level].fmap);
-        }
         free(cctx.recursion_stack);
+        cl_engine_free(engine);
     }
     cli_bytecode_destroy(bc);
     cli_bytecode_done(&bcs);
