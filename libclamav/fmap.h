@@ -95,8 +95,8 @@ struct cl_fmap {
     uint8_t hash[CLI_HASH_AVAIL_TYPES][CLI_HASHLEN_MAX];
 
     uint64_t *bitmap;
-    char *name;  /* name of the file, e.g. as recorded in a zip file entry record */
-    char *path;  /* path to the file/tempfile, if fmap was created from a file descriptor */
+    char *name; /* name of the file, e.g. as recorded in a zip file entry record */
+    char *path; /* path to the file/tempfile, if fmap was created from a file descriptor */
 };
 
 /**

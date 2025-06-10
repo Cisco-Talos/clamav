@@ -2159,13 +2159,15 @@ static int vbadump(const struct optstruct *opts)
 
     options.general |= CL_SCAN_GENERAL_COLLECT_METADATA;
 
-    /*Have the engine unpack everything so that we don't miss anything.  We'll clean it up later.*/
+    /* Have the engine unpack everything so that we don't miss anything.  We'll clean it up later. */
     options.parse = ~0;
 
-    /*Need to explicitly set this to always keep temps, since we are scanning extracted ooxml/ole2 files
-     * from our scan directory to print all the vba content.  Remove it later if leave-temps was not
-     * specified */
+    /*
+     * Need to explicitly set this to always keep temps, since we are scanning extracted ooxml/ole2 files
+     * from our scan directory to print all the vba content. Remove it later if leave-temps was not specified.
+     */
     cl_engine_set_num(engine, CL_ENGINE_KEEPTMP, 1);
+    cl_engine_set_num(engine, CL_ENGINE_TMPDIR_RECURSION, 1);
 
     filename = optget(opts, "vba")->strarg;
     if (NULL == filename) {

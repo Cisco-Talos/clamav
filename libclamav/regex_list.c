@@ -320,8 +320,8 @@ cl_error_t init_regex_list(struct regex_matcher *matcher, uint8_t dconf_prefilte
         goto done;
     }
 #ifdef USE_MPOOL
-    matcher->sha2_256_hashes.mempool  = mp;
-    matcher->hostkey_prefix.mempool = mp;
+    matcher->sha2_256_hashes.mempool = mp;
+    matcher->hostkey_prefix.mempool  = mp;
 #endif
     if ((rc = cli_bm_init(&matcher->sha2_256_hashes))) {
         goto done;

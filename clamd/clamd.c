@@ -616,8 +616,12 @@ int main(int argc, char **argv)
 
         cl_engine_set_clcb_virus_found(engine, clamd_virus_found_cb);
 
-        if (optget(opts, "LeaveTemporaryFiles")->enabled)
+        if (optget(opts, "LeaveTemporaryFiles")->enabled) {
+            /* Set the engine to keep temporary files */
             cl_engine_set_num(engine, CL_ENGINE_KEEPTMP, 1);
+            /* Also set the engine to create temporary directory structure */
+            cl_engine_set_num(engine, CL_ENGINE_TMPDIR_RECURSION, 1);
+        }
 
         if (optget(opts, "ForceToDisk")->enabled)
             cl_engine_set_num(engine, CL_ENGINE_FORCETODISK, 1);

@@ -398,8 +398,8 @@ int main(int argc, char *argv[])
             fprintf(stderr, "Out of memory\n");
             exit(3);
         }
-        ctx->ctx      = &cctx;
-        cctx.engine   = engine;
+        ctx->ctx    = &cctx;
+        cctx.engine = engine;
 
         cctx.recursion_stack_size = cctx.engine->max_recursion_level;
         cctx.recursion_stack      = calloc(sizeof(recursion_level_t), cctx.recursion_stack_size);

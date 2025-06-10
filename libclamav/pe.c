@@ -125,7 +125,7 @@
     }
 
 #define CLI_UNPTEMP(NAME, FREEME)                                                                 \
-    if (!(tempfile = cli_gentemp(ctx->sub_tmpdir))) {                                             \
+    if (!(tempfile = cli_gentemp(ctx->this_layer_tmpdir))) {                                      \
         cli_exe_info_destroy(peinfo);                                                             \
         cli_multifree FREEME;                                                                     \
         return CL_EMEM;                                                                           \

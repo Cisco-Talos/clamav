@@ -224,6 +224,7 @@ struct cl_scan_options {
 #define ENGINE_OPTIONS_DISABLE_PE_STATS 0x4
 #define ENGINE_OPTIONS_DISABLE_PE_CERTS 0x8
 #define ENGINE_OPTIONS_PE_DUMPCERTS     0x10
+#define ENGINE_OPTIONS_TMPDIR_RECURSION 0x20
 // clang-format on
 
 struct cl_engine;
@@ -324,6 +325,7 @@ enum cl_engine_field {
     CL_ENGINE_DISABLE_PE_CERTS,    /* uint32_t */
     CL_ENGINE_PE_DUMPCERTS,        /* uint32_t */
     CL_ENGINE_CVDCERTSDIR,         /* (char *) */
+    CL_ENGINE_TMPDIR_RECURSION,    /* uint32_t */
 };
 
 enum bytecode_security {
@@ -507,6 +509,7 @@ extern void cl_engine_set_clcb_pre_cache(struct cl_engine *engine, clcb_pre_cach
 #define LAYER_ATTRIBUTES_NORMALIZED 0x1 /** This layer was modified to make matching more generic, reliable. */
 #define LAYER_ATTRIBUTES_DECRYPTED 0x2  /** Decryption was used to extract this layer. I.e. had to decrypt some previous layer. */
 #define LAYER_ATTRIBUTES_RETYPED 0x4    /** This layer is a duplicate of the parent layer but as a new type (e.g. using HandlerType). */
+#define LAYER_ATTRIBUTES_EMBEDDED 0x8   /** This layer was found within the parent layer using FTM signatures (e.g. like ZIP entries found within an executable). */
 
 /**
  * @brief File inspection callback.

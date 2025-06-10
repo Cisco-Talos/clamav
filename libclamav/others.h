@@ -191,12 +191,13 @@ typedef struct recursion_level_tag {
     size_t object_id;                     /* Unique ID for this object. */
     json_object *metadata_json;           /* JSON object for this recursion level, e.g. for JSON metadata. */
     evidence_t evidence;                  /* Store signature matches for this layer and its children. */
+    char *tmpdir;                         /* The directory to store tmp files created when processing this layer. */
 } recursion_level_t;
 
 /* internal clamav context */
 typedef struct cli_ctx_tag {
-    char *target_filepath; /* (optional) The filepath of the original scan target. */
-    char *sub_tmpdir;      /* The directory to store tmp files at this recursion depth. */
+    char *target_filepath;   /* (optional) The filepath of the original scan target. */
+    char *this_layer_tmpdir; /* Pointer to current temporary directory, MAY vary with recursion depth. For convenience. */
     unsigned long int *scanned;
     const struct cli_matcher *root;
     const struct cl_engine *engine;

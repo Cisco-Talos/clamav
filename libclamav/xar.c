@@ -311,7 +311,7 @@ static int xar_scan_subdocuments(xmlTextReaderPtr reader, cli_ctx *ctx)
 
             /* make a file to leave if --leave-temps in effect */
             if (ctx->engine->keeptmp) {
-                if ((rc = cli_gentempfd(ctx->sub_tmpdir, &tmpname, &fd)) != CL_SUCCESS) {
+                if ((rc = cli_gentempfd(ctx->this_layer_tmpdir, &tmpname, &fd)) != CL_SUCCESS) {
                     cli_dbgmsg("cli_scanxar: Can't create temporary file for subdocument.\n");
                 } else {
                     cli_dbgmsg("cli_scanxar: Writing subdoc to temp file %s.\n", tmpname);
@@ -519,7 +519,7 @@ int cli_scanxar(cli_ctx *ctx)
 
     /* make a file to leave if --leave-temps in effect */
     if (ctx->engine->keeptmp) {
-        if ((rc = cli_gentempfd(ctx->sub_tmpdir, &tmpname, &fd)) != CL_SUCCESS) {
+        if ((rc = cli_gentempfd(ctx->this_layer_tmpdir, &tmpname, &fd)) != CL_SUCCESS) {
             cli_dbgmsg("cli_scanxar: Can't create temporary file for TOC.\n");
             goto exit_toc;
         }
@@ -568,7 +568,7 @@ int cli_scanxar(cli_ctx *ctx)
 
         at = offset + hdr.toc_length_compressed + hdr.size;
 
-        if ((rc = cli_gentempfd(ctx->sub_tmpdir, &tmpname, &fd)) != CL_SUCCESS) {
+        if ((rc = cli_gentempfd(ctx->this_layer_tmpdir, &tmpname, &fd)) != CL_SUCCESS) {
             cli_dbgmsg("cli_scanxar: Can't generate temporary file.\n");
             goto exit_reader;
         }

@@ -631,13 +631,14 @@ pub struct recursion_level_tag {
     pub object_id: usize,
     pub metadata_json: *mut json_object,
     pub evidence: evidence_t,
+    pub tmpdir: *mut ::std::os::raw::c_char,
 }
 pub type recursion_level_t = recursion_level_tag;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct cli_ctx_tag {
     pub target_filepath: *mut ::std::os::raw::c_char,
-    pub sub_tmpdir: *mut ::std::os::raw::c_char,
+    pub this_layer_tmpdir: *mut ::std::os::raw::c_char,
     pub scanned: *mut ::std::os::raw::c_ulong,
     pub root: *const cli_matcher,
     pub engine: *const cl_engine,

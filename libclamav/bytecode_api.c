@@ -215,7 +215,7 @@ int32_t cli_bcapi_write(struct cli_bc_ctx *ctx, uint8_t *data, int32_t len)
         return -1;
     }
     if (-1 == ctx->outfd) {
-        ctx->tempfile = cli_gentemp_with_prefix(cctx ? cctx->sub_tmpdir : NULL, "bcapi_write");
+        ctx->tempfile = cli_gentemp_with_prefix(cctx ? cctx->this_layer_tmpdir : NULL, "bcapi_write");
         if (!ctx->tempfile) {
             cli_dbgmsg("Bytecode API: Unable to allocate memory for tempfile\n");
             cli_event_error_oom(EV, 0);
