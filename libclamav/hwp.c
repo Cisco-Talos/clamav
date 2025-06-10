@@ -87,7 +87,7 @@ static cl_error_t decompress_and_callback(cli_ctx *ctx, fmap_t *input, size_t at
         remain = len;
 
     /* reserve tempfile for output and callback */
-    if ((ret = cli_gentempfd(ctx->sub_tmpdir, &tmpname, &ofd)) != CL_SUCCESS) {
+    if ((ret = cli_gentempfd(ctx->this_layer_tmpdir, &tmpname, &ofd)) != CL_SUCCESS) {
         cli_errmsg("%s: Can't generate temporary file\n", parent);
         return ret;
     }
@@ -2013,7 +2013,7 @@ static cl_error_t hwpml_binary_cb(int fd, const char *filepath, cli_ctx *ctx, in
         }
 
         /* open file for writing and scanning */
-        if ((ret = cli_gentempfd(ctx->sub_tmpdir, &tempfile, &df)) != CL_SUCCESS) {
+        if ((ret = cli_gentempfd(ctx->this_layer_tmpdir, &tempfile, &df)) != CL_SUCCESS) {
             cli_warnmsg("HWPML: Failed to create temporary file for decoded stream scanning\n");
             return ret;
         }

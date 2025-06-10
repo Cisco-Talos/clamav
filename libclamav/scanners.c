@@ -272,7 +272,7 @@ static cl_error_t cli_scanrar_file(const char *filepath, int desc, cli_ctx *ctx)
 
         if (ctx->engine->keeptmp) {
             int comment_fd = -1;
-            if (!(comment_fullpath = cli_gentemp_with_prefix(ctx->sub_tmpdir, "comments"))) {
+            if (!(comment_fullpath = cli_gentemp_with_prefix(ctx->this_layer_tmpdir, "comments"))) {
                 status = CL_EMEM;
                 goto done;
             }
@@ -394,9 +394,9 @@ static cl_error_t cli_scanrar_file(const char *filepath, int desc, cli_ctx *ctx)
 
                 if (!(ctx->engine->keeptmp) ||
                     (NULL == filename_base)) {
-                    extract_fullpath = cli_gentemp(ctx->sub_tmpdir);
+                    extract_fullpath = cli_gentemp(ctx->this_layer_tmpdir);
                 } else {
-                    extract_fullpath = cli_gentemp_with_prefix(ctx->sub_tmpdir, filename_base);
+                    extract_fullpath = cli_gentemp_with_prefix(ctx->this_layer_tmpdir, filename_base);
                 }
                 if (NULL == extract_fullpath) {
                     cli_dbgmsg("RAR: Memory error allocating filename for extracted file.");
@@ -541,7 +541,7 @@ static cl_error_t cli_scanrar(cli_ctx *ctx)
     if ((SCAN_UNPRIVILEGED) || (NULL == ctx->fmap->path) || (0 != access(ctx->fmap->path, R_OK))) {
 #endif
         /* If map is not file-backed have to dump to file for scanrar. */
-        status = fmap_dump_to_file(ctx->fmap, ctx->fmap->path, ctx->sub_tmpdir, &tmpname, &tmpfd, 0, SIZE_MAX);
+        status = fmap_dump_to_file(ctx->fmap, ctx->fmap->path, ctx->this_layer_tmpdir, &tmpname, &tmpfd, 0, SIZE_MAX);
         if (status != CL_SUCCESS) {
             cli_dbgmsg("cli_magic_scan: failed to generate temporary file.\n");
             goto done;
@@ -562,7 +562,7 @@ static cl_error_t cli_scanrar(cli_ctx *ctx)
          * Failed to open the file using the original filename.
          * Try writing the file descriptor to a temp file and try again.
          */
-        status = fmap_dump_to_file(ctx->fmap, ctx->fmap->path, ctx->sub_tmpdir, &tmpname, &tmpfd, 0, SIZE_MAX);
+        status = fmap_dump_to_file(ctx->fmap, ctx->fmap->path, ctx->this_layer_tmpdir, &tmpname, &tmpfd, 0, SIZE_MAX);
         if (status != CL_SUCCESS) {
             cli_dbgmsg("cli_magic_scan: failed to generate temporary file.\n");
             goto done;
@@ -686,7 +686,7 @@ static cl_error_t cli_scanegg(cli_ctx *ctx)
                 snprintf(prefix, prefixLen, "comments_%u", i);
                 prefix[prefixLen] = '\0';
 
-                if (!(comment_fullpath = cli_gentemp_with_prefix(ctx->sub_tmpdir, prefix))) {
+                if (!(comment_fullpath = cli_gentemp_with_prefix(ctx->this_layer_tmpdir, prefix))) {
                     free(prefix);
                     status = CL_EMEM;
                     goto done;
@@ -843,9 +843,9 @@ static cl_error_t cli_scanegg(cli_ctx *ctx)
                     if (ctx->engine->keeptmp) {
                         int extracted_fd = -1;
                         if (NULL == filename_base) {
-                            extract_fullpath = cli_gentemp(ctx->sub_tmpdir);
+                            extract_fullpath = cli_gentemp(ctx->this_layer_tmpdir);
                         } else {
-                            extract_fullpath = cli_gentemp_with_prefix(ctx->sub_tmpdir, filename_base);
+                            extract_fullpath = cli_gentemp_with_prefix(ctx->this_layer_tmpdir, filename_base);
                         }
                         if (NULL == extract_fullpath) {
                             cli_dbgmsg("EGG: Memory error allocating filename for extracted file.");
@@ -980,7 +980,7 @@ static cl_error_t cli_scanarj(cli_ctx *ctx)
     memset(&metadata, 0, sizeof(arj_metadata_t));
 
     /* generate the temporary directory */
-    if (!(dir = cli_gentemp_with_prefix(ctx->sub_tmpdir, "arj-tmp")))
+    if (!(dir = cli_gentemp_with_prefix(ctx->this_layer_tmpdir, "arj-tmp")))
         return CL_EMEM;
 
     if (mkdir(dir, 0700)) {
@@ -1089,7 +1089,7 @@ static cl_error_t cli_scangzip_with_zib_from_the_80s(cli_ctx *ctx, unsigned char
         return CL_EOPEN;
     }
 
-    if ((ret = cli_gentempfd(ctx->sub_tmpdir, &tmpname, &fd)) != CL_SUCCESS) {
+    if ((ret = cli_gentempfd(ctx->this_layer_tmpdir, &tmpname, &fd)) != CL_SUCCESS) {
         cli_dbgmsg("GZip: Can't generate temporary file.\n");
         gzclose(gz);
         close(fd);
@@ -1150,7 +1150,7 @@ static cl_error_t cli_scangzip(cli_ctx *ctx)
         return cli_scangzip_with_zib_from_the_80s(ctx, buff);
     }
 
-    if ((ret = cli_gentempfd(ctx->sub_tmpdir, &tmpname, &fd)) != CL_SUCCESS) {
+    if ((ret = cli_gentempfd(ctx->this_layer_tmpdir, &tmpname, &fd)) != CL_SUCCESS) {
         cli_dbgmsg("GZip: Can't generate temporary file.\n");
         inflateEnd(&z);
         return ret;
@@ -1260,7 +1260,7 @@ static cl_error_t cli_scanbzip(cli_ctx *ctx)
         return CL_EOPEN;
     }
 
-    if ((ret = cli_gentempfd(ctx->sub_tmpdir, &tmpname, &fd))) {
+    if ((ret = cli_gentempfd(ctx->this_layer_tmpdir, &tmpname, &fd))) {
         cli_dbgmsg("Bzip: Can't generate temporary file.\n");
         BZ2_bzDecompressEnd(&strm);
         return ret;
@@ -1357,7 +1357,7 @@ static cl_error_t cli_scanxz(cli_ctx *ctx)
         return CL_EOPEN;
     }
 
-    if ((ret = cli_gentempfd(ctx->sub_tmpdir, &tmpname, &fd))) {
+    if ((ret = cli_gentempfd(ctx->this_layer_tmpdir, &tmpname, &fd))) {
         cli_errmsg("cli_scanxz: Can't generate temporary file.\n");
         cli_XzShutdown(&strm);
         free(buf);
@@ -1440,7 +1440,7 @@ static cl_error_t cli_scanszdd(cli_ctx *ctx)
 
     cli_dbgmsg("in cli_scanszdd()\n");
 
-    if ((ret = cli_gentempfd(ctx->sub_tmpdir, &tmpname, &ofd))) {
+    if ((ret = cli_gentempfd(ctx->this_layer_tmpdir, &tmpname, &ofd))) {
         cli_dbgmsg("MSEXPAND: Can't generate temporary file/descriptor\n");
         return ret;
     }
@@ -1880,7 +1880,7 @@ static cl_error_t cli_ole2_tempdir_scan_vba(const char *dir, cli_ctx *ctx, struc
                     if (ctx->scanned)
                         *ctx->scanned += data_len / CL_COUNT_PRECISION;
                     if (ctx->engine->keeptmp) {
-                        if (CL_SUCCESS != (status = cli_gentempfd(ctx->sub_tmpdir, &proj_contents_fname, &proj_contents_fd))) {
+                        if (CL_SUCCESS != (status = cli_gentempfd(ctx->this_layer_tmpdir, &proj_contents_fname, &proj_contents_fd))) {
                             cli_warnmsg("WARNING: VBA project '%s_%u' cannot be dumped to file\n", vba_project->name[i], j);
                             goto done;
                         }
@@ -2542,7 +2542,7 @@ static cl_error_t cli_scanhtml(cli_ctx *ctx)
         goto done;
     }
 
-    if (NULL == (tempname = cli_gentemp_with_prefix(ctx->sub_tmpdir, "html-tmp"))) {
+    if (NULL == (tempname = cli_gentemp_with_prefix(ctx->this_layer_tmpdir, "html-tmp"))) {
         status = CL_EMEM;
         goto done;
     }
@@ -2711,7 +2711,7 @@ static cl_error_t cli_scanscript(cli_ctx *ctx)
      * or if necessary to check relative offsets,
      * otherwise we can process just in-memory */
     if (ctx->engine->keeptmp || (target_ac_root && (target_ac_root->ac_reloff_num > 0 || target_ac_root->linked_bcs))) {
-        if ((ret = cli_gentempfd(ctx->sub_tmpdir, &tmpname, &ofd))) {
+        if ((ret = cli_gentempfd(ctx->this_layer_tmpdir, &tmpname, &ofd))) {
             cli_dbgmsg("cli_scanscript: Can't generate temporary file/descriptor\n");
             goto done;
         }
@@ -2865,7 +2865,7 @@ static cl_error_t cli_scanhtml_utf16(cli_ctx *ctx)
 
     cli_dbgmsg("in cli_scanhtml_utf16()\n");
 
-    if (!(tempname = cli_gentemp_with_prefix(ctx->sub_tmpdir, "html-utf16-tmp"))) {
+    if (!(tempname = cli_gentemp_with_prefix(ctx->this_layer_tmpdir, "html-utf16-tmp"))) {
         status = CL_EMEM;
         goto done;
     }
@@ -3078,7 +3078,7 @@ static cl_error_t cli_scanole2(cli_ctx *ctx)
     cli_dbgmsg("in cli_scanole2()\n");
 
     /* generate the temporary directory */
-    if (NULL == (dir = cli_gentemp_with_prefix(ctx->sub_tmpdir, "ole2-tmp"))) {
+    if (NULL == (dir = cli_gentemp_with_prefix(ctx->this_layer_tmpdir, "ole2-tmp"))) {
         ret = CL_EMEM;
         goto done;
     }
@@ -3139,7 +3139,7 @@ static cl_error_t cli_scantar(cli_ctx *ctx, unsigned int posix)
     cli_dbgmsg("in cli_scantar()\n");
 
     /* generate temporary directory */
-    if (!(dir = cli_gentemp_with_prefix(ctx->sub_tmpdir, "tar-tmp")))
+    if (!(dir = cli_gentemp_with_prefix(ctx->this_layer_tmpdir, "tar-tmp")))
         return CL_EMEM;
 
     if (mkdir(dir, 0700)) {
@@ -3164,7 +3164,7 @@ static cl_error_t cli_scanscrenc(cli_ctx *ctx)
 
     cli_dbgmsg("in cli_scanscrenc()\n");
 
-    if (!(tempname = cli_gentemp_with_prefix(ctx->sub_tmpdir, "screnc-tmp")))
+    if (!(tempname = cli_gentemp_with_prefix(ctx->this_layer_tmpdir, "screnc-tmp")))
         return CL_EMEM;
 
     if (mkdir(tempname, 0700)) {
@@ -3211,7 +3211,7 @@ static cl_error_t cli_scancryptff(cli_ctx *ctx)
         return CL_EMEM;
     }
 
-    if (!(tempfile = cli_gentemp_with_prefix(ctx->sub_tmpdir, "cryptff"))) {
+    if (!(tempfile = cli_gentemp_with_prefix(ctx->this_layer_tmpdir, "cryptff"))) {
         free(dest);
         return CL_EMEM;
     }
@@ -3258,7 +3258,7 @@ static cl_error_t cli_scancryptff(cli_ctx *ctx)
 static cl_error_t cli_scanpdf(cli_ctx *ctx, off_t offset)
 {
     cl_error_t ret;
-    char *dir = cli_gentemp_with_prefix(ctx->sub_tmpdir, "pdf-tmp");
+    char *dir = cli_gentemp_with_prefix(ctx->this_layer_tmpdir, "pdf-tmp");
 
     if (!dir)
         return CL_EMEM;
@@ -3281,7 +3281,7 @@ static cl_error_t cli_scanpdf(cli_ctx *ctx, off_t offset)
 static cl_error_t cli_scantnef(cli_ctx *ctx)
 {
     cl_error_t ret;
-    char *dir = cli_gentemp_with_prefix(ctx->sub_tmpdir, "tnef-tmp");
+    char *dir = cli_gentemp_with_prefix(ctx->this_layer_tmpdir, "tnef-tmp");
 
     if (!dir)
         return CL_EMEM;
@@ -3307,7 +3307,7 @@ static cl_error_t cli_scantnef(cli_ctx *ctx)
 static cl_error_t cli_scanuuencoded(cli_ctx *ctx)
 {
     cl_error_t ret;
-    char *dir = cli_gentemp_with_prefix(ctx->sub_tmpdir, "uuencoded-tmp");
+    char *dir = cli_gentemp_with_prefix(ctx->this_layer_tmpdir, "uuencoded-tmp");
 
     if (!dir)
         return CL_EMEM;
@@ -3338,7 +3338,7 @@ static cl_error_t cli_scanmail(cli_ctx *ctx)
     cli_dbgmsg("Starting cli_scanmail()\n");
 
     /* generate the temporary directory */
-    if (NULL == (dir = cli_gentemp_with_prefix(ctx->sub_tmpdir, "mail-tmp"))) {
+    if (NULL == (dir = cli_gentemp_with_prefix(ctx->this_layer_tmpdir, "mail-tmp"))) {
         ret = CL_EMEM;
         goto done;
     }
@@ -3463,7 +3463,7 @@ static cl_error_t cli_scanembpe(cli_ctx *ctx, off_t offset)
     fmap_t *map = ctx->fmap;
     unsigned int corrupted_input;
 
-    tmpname = cli_gentemp_with_prefix(ctx->sub_tmpdir, "embedded-pe");
+    tmpname = cli_gentemp_with_prefix(ctx->this_layer_tmpdir, "embedded-pe");
     if (!tmpname)
         return CL_EMEM;
 
@@ -3764,45 +3764,6 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
                 bool type_has_been_handled = true;
 
                 /*
-                 * Add embedded file to metadata JSON.
-                 */
-                if (SCAN_COLLECT_METADATA && ctx->this_layer_metadata_json) {
-                    json_object *arrobj;
-
-                    parent_property = ctx->this_layer_metadata_json;
-                    if (!json_object_object_get_ex(parent_property, "EmbeddedObjects", &arrobj)) {
-                        arrobj = json_object_new_array();
-                        if (NULL == arrobj) {
-                            cli_errmsg("scanraw: no memory for json properties object\n");
-                            nret = CL_EMEM;
-                            break;
-                        }
-                        json_object_object_add(parent_property, "EmbeddedObjects", arrobj);
-                    }
-                    ctx->this_layer_metadata_json = json_object_new_object();
-                    if (NULL == ctx->this_layer_metadata_json) {
-                        cli_errmsg("scanraw: no memory for json properties object\n");
-                        nret = CL_EMEM;
-                        break;
-                    }
-                    json_object_array_add(arrobj, ctx->this_layer_metadata_json);
-
-                    ret = cli_jsonstr(ctx->this_layer_metadata_json, "FileType", cli_ftname(fpt->type));
-                    if (ret != CL_SUCCESS) {
-                        cli_errmsg("scanraw: failed to add string to json object\n");
-                        nret = CL_EMEM;
-                        break;
-                    }
-
-                    ret = cli_jsonint64(ctx->this_layer_metadata_json, "Offset", (int64_t)fpt->offset);
-                    if (ret != CL_SUCCESS) {
-                        cli_errmsg("scanraw: failed to add int to json object\n");
-                        nret = CL_EMEM;
-                        break;
-                    }
-                }
-
-                /*
                  * First, use "embedded type recognition" to identify a file's actual type.
                  * (a.k.a. not embedded files, but file type detection corrections)
                  *
@@ -3934,7 +3895,7 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
                             // if ((ctx->recursion_stack[ctx->recursion_level].type == CL_TYPE_???) ||  ...))
                             {
                                 // First check if actually a GPT, not MBR.
-                                int iret = cli_mbr_check2(ctx, 0);
+                                cl_error_t iret = cli_mbr_check2(ctx, 0);
 
                                 if ((iret == CL_TYPE_GPT) && (DCONF_ARCH & ARCH_CONF_GPT)) {
                                     // Reassign type of current layer based on what we discovered
@@ -3985,8 +3946,6 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
                         case CL_TYPE_RARSFX:
                             if (type != CL_TYPE_RAR && have_rar && SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_RAR)) {
 
-                                /// TODO: This is extremely expensive because it has to hash the fpt->offset -> len!
-                                /// We need to find a way to not hash every time!!!!
                                 new_map = fmap_duplicate(ctx->fmap, fpt->offset, ctx->fmap->len - fpt->offset, NULL);
                                 if (NULL == new_map) {
                                     ret = nret = CL_EMEM;
@@ -3995,7 +3954,7 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
                                 }
 
                                 /* Perform scan with child fmap */
-                                nret = cli_recursion_stack_push(ctx, new_map, CL_TYPE_RAR, false, LAYER_ATTRIBUTES_NONE);
+                                nret = cli_recursion_stack_push(ctx, new_map, CL_TYPE_RAR, false, LAYER_ATTRIBUTES_EMBEDDED);
                                 if (CL_SUCCESS != nret) {
                                     ret = nret;
                                     cli_dbgmsg("scanraw: Failed to add map to recursion stack to scan embedded file.\n");
@@ -4019,7 +3978,7 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
                                 }
 
                                 /* Perform scan with child fmap */
-                                nret = cli_recursion_stack_push(ctx, new_map, CL_TYPE_EGG, false, LAYER_ATTRIBUTES_NONE);
+                                nret = cli_recursion_stack_push(ctx, new_map, CL_TYPE_EGG, false, LAYER_ATTRIBUTES_EMBEDDED);
                                 if (CL_SUCCESS != nret) {
                                     ret = nret;
                                     cli_dbgmsg("scanraw: Failed to add map to recursion stack to scan embedded file.\n");
@@ -4043,7 +4002,7 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
                                 }
 
                                 /* Perform scan with child fmap */
-                                nret = cli_recursion_stack_push(ctx, new_map, CL_TYPE_ZIP, false, LAYER_ATTRIBUTES_NONE);
+                                nret = cli_recursion_stack_push(ctx, new_map, CL_TYPE_ZIP, false, LAYER_ATTRIBUTES_EMBEDDED);
                                 if (CL_SUCCESS != nret) {
                                     ret = nret;
                                     cli_dbgmsg("scanraw: Failed to add map to recursion stack to scan embedded file.\n");
@@ -4067,7 +4026,7 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
                                 }
 
                                 /* Perform scan with child fmap */
-                                nret = cli_recursion_stack_push(ctx, new_map, CL_TYPE_MSCAB, false, LAYER_ATTRIBUTES_NONE);
+                                nret = cli_recursion_stack_push(ctx, new_map, CL_TYPE_MSCAB, false, LAYER_ATTRIBUTES_EMBEDDED);
                                 if (CL_SUCCESS != nret) {
                                     ret = nret;
                                     cli_dbgmsg("scanraw: Failed to add map to recursion stack to scan embedded file.\n");
@@ -4091,7 +4050,7 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
                                 }
 
                                 /* Perform scan with child fmap */
-                                nret = cli_recursion_stack_push(ctx, new_map, CL_TYPE_ARJ, false, LAYER_ATTRIBUTES_NONE);
+                                nret = cli_recursion_stack_push(ctx, new_map, CL_TYPE_ARJ, false, LAYER_ATTRIBUTES_EMBEDDED);
                                 if (CL_SUCCESS != nret) {
                                     ret = nret;
                                     cli_dbgmsg("scanraw: Failed to add map to recursion stack to scan embedded file.\n");
@@ -4115,7 +4074,7 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
                                 }
 
                                 /* Perform scan with child fmap */
-                                nret = cli_recursion_stack_push(ctx, new_map, CL_TYPE_7Z, false, LAYER_ATTRIBUTES_NONE);
+                                nret = cli_recursion_stack_push(ctx, new_map, CL_TYPE_7Z, false, LAYER_ATTRIBUTES_EMBEDDED);
                                 if (CL_SUCCESS != nret) {
                                     ret = nret;
                                     cli_dbgmsg("scanraw: Failed to add map to recursion stack to scan embedded file.\n");
@@ -4139,7 +4098,7 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
                                 }
 
                                 /* Perform scan with child fmap */
-                                nret = cli_recursion_stack_push(ctx, new_map, CL_TYPE_NULSFT, false, LAYER_ATTRIBUTES_NONE);
+                                nret = cli_recursion_stack_push(ctx, new_map, CL_TYPE_NULSFT, false, LAYER_ATTRIBUTES_EMBEDDED);
                                 if (CL_SUCCESS != nret) {
                                     ret = nret;
                                     cli_dbgmsg("scanraw: Failed to add map to recursion stack to scan embedded file.\n");
@@ -4163,7 +4122,7 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
                                 }
 
                                 /* Perform scan with child fmap */
-                                nret = cli_recursion_stack_push(ctx, new_map, CL_TYPE_AUTOIT, false, LAYER_ATTRIBUTES_NONE);
+                                nret = cli_recursion_stack_push(ctx, new_map, CL_TYPE_AUTOIT, false, LAYER_ATTRIBUTES_EMBEDDED);
                                 if (CL_SUCCESS != nret) {
                                     ret = nret;
                                     cli_dbgmsg("scanraw: Failed to add map to recursion stack to scan embedded file.\n");
@@ -4187,7 +4146,7 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
                                 }
 
                                 /* Perform scan with child fmap */
-                                nret = cli_recursion_stack_push(ctx, new_map, CL_TYPE_ISHIELD_MSI, false, LAYER_ATTRIBUTES_NONE);
+                                nret = cli_recursion_stack_push(ctx, new_map, CL_TYPE_ISHIELD_MSI, false, LAYER_ATTRIBUTES_EMBEDDED);
                                 if (CL_SUCCESS != nret) {
                                     ret = nret;
                                     cli_dbgmsg("scanraw: Failed to add map to recursion stack to scan embedded file.\n");
@@ -4211,7 +4170,7 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
                                 }
 
                                 /* Perform scan with child fmap */
-                                nret = cli_recursion_stack_push(ctx, new_map, CL_TYPE_PDF, false, LAYER_ATTRIBUTES_NONE);
+                                nret = cli_recursion_stack_push(ctx, new_map, CL_TYPE_PDF, false, LAYER_ATTRIBUTES_EMBEDDED);
                                 if (CL_SUCCESS != nret) {
                                     ret = nret;
                                     cli_dbgmsg("scanraw: Failed to add map to recursion stack to scan embedded file.\n");
@@ -4240,7 +4199,7 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
                                 }
 
                                 /* Perform scan with child fmap */
-                                nret = cli_recursion_stack_push(ctx, new_map, CL_TYPE_MSEXE, false, LAYER_ATTRIBUTES_NONE);
+                                nret = cli_recursion_stack_push(ctx, new_map, CL_TYPE_MSEXE, false, LAYER_ATTRIBUTES_EMBEDDED);
                                 if (CL_SUCCESS != nret) {
                                     ret = nret;
                                     cli_dbgmsg("scanraw: Failed to add map to recursion stack to scan embedded file.\n");
@@ -4674,9 +4633,6 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
     bitset_t *old_hook_lsig_matches = NULL;
     const char *filetype;
 
-    char *old_temp_path = NULL;
-    char *new_temp_path = NULL;
-
     if (!ctx->engine) {
         cli_errmsg("CRITICAL: engine == NULL\n");
         ret = CL_ENULLARG;
@@ -4700,45 +4656,6 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
         ret = CL_CLEAN;
         cli_dbgmsg("cli_magic_scan: returning %d %s (no post, no cache)\n", ret, __AT__);
         goto early_ret;
-    }
-
-    if (ctx->engine->keeptmp) {
-        char *fmap_basename = NULL;
-        /*
-         * Keep-temp enabled, so create a sub-directory to provide extraction directory recursion.
-         */
-        if ((NULL != ctx->fmap->name) &&
-            (CL_SUCCESS == cli_basename(ctx->fmap->name, strlen(ctx->fmap->name), &fmap_basename, true /* posix_support_backslash_pathsep */))) {
-            /*
-             * The fmap has a name, lets include it in the new sub-directory.
-             */
-            new_temp_path = cli_gentemp_with_prefix(ctx->sub_tmpdir, fmap_basename);
-            free(fmap_basename);
-            if (NULL == new_temp_path) {
-                cli_errmsg("cli_magic_scan: Failed to generate temp directory name.\n");
-                ret = CL_EMEM;
-                goto early_ret;
-            }
-        } else {
-            /*
-             * The fmap has no name or we failed to get the basename.
-             */
-            new_temp_path = cli_gentemp(ctx->sub_tmpdir);
-            if (NULL == new_temp_path) {
-                cli_errmsg("cli_magic_scan: Failed to generate temp directory name.\n");
-                ret = CL_EMEM;
-                goto early_ret;
-            }
-        }
-
-        old_temp_path   = ctx->sub_tmpdir;
-        ctx->sub_tmpdir = new_temp_path;
-
-        if (mkdir(ctx->sub_tmpdir, 0700)) {
-            cli_errmsg("cli_magic_scan: Can't create tmp sub-directory for scan: %s.\n", ctx->sub_tmpdir);
-            ret = CL_EACCES;
-            goto early_ret;
-        }
     }
 
     if (type == CL_TYPE_PART_ANY) {
@@ -4767,17 +4684,6 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
 
     /* set current layer to the type we found */
     cli_recursion_stack_change_type(ctx, type);
-
-    if (SCAN_COLLECT_METADATA) {
-        /*
-         * Add file type to the JSON object.
-         */
-        ret = cli_jsonstr(ctx->this_layer_metadata_json, "FileType", filetype);
-        if (ret != CL_SUCCESS) {
-            cli_dbgmsg("cli_magic_scan: returning %d %s (no post, no cache)\n", ret, __AT__);
-            goto early_ret;
-        }
-    }
 
     /*
      * Run the pre_scan callback.
@@ -5487,14 +5393,6 @@ done:
 
 early_ret:
 
-    if ((ctx->engine->keeptmp) && (NULL != old_temp_path)) {
-        /* Use rmdir to remove empty tmp subdirectories. If rmdir fails, it wasn't empty. */
-        (void)rmdir(ctx->sub_tmpdir);
-
-        free((void *)ctx->sub_tmpdir);
-        ctx->sub_tmpdir = old_temp_path;
-    }
-
     return ret;
 }
 
@@ -5677,7 +5575,7 @@ cl_error_t cli_magic_scan_nested_fmap_type(cl_fmap_t *map, size_t offset, size_t
             return CL_EMAP;
         }
 
-        ret = cli_gentempfd(ctx->sub_tmpdir, &tempfile, &fd);
+        ret = cli_gentempfd(ctx->this_layer_tmpdir, &tempfile, &fd);
         if (ret != CL_SUCCESS) {
             return ret;
         }
@@ -5837,46 +5735,56 @@ static cl_error_t scan_common(cl_fmap_t *map, const char *filepath, const char *
         goto done;
     }
 
-    if ((ctx.engine->keeptmp) &&
-        (NULL != ctx.target_filepath) &&
-        (CL_SUCCESS == cli_basename(ctx.target_filepath, strlen(ctx.target_filepath), &target_basename, true /* posix_support_backslash_pathsep */))) {
-        /* Include the basename in the temp directory */
-        new_temp_prefix_len = strlen("YYYYMMDD_HHMMSS-") + strlen(target_basename);
-        new_temp_prefix     = cli_max_calloc(1, new_temp_prefix_len + 1);
-        if (!new_temp_prefix) {
-            cli_errmsg("scan_common: Failed to allocate memory for temp directory name.\n");
+    if ((ctx.engine->engine_options & ENGINE_OPTIONS_TMPDIR_RECURSION)) {
+        if ((ctx.engine->keeptmp) &&
+            (NULL != ctx.target_filepath) &&
+            (CL_SUCCESS == cli_basename(ctx.target_filepath, strlen(ctx.target_filepath), &target_basename, true /* posix_support_backslash_pathsep */))) {
+            /* Include the basename in the temp directory */
+            new_temp_prefix_len = strlen("YYYYMMDD_HHMMSS-") + strlen(target_basename);
+            new_temp_prefix     = cli_max_calloc(1, new_temp_prefix_len + 1);
+            if (!new_temp_prefix) {
+                cli_errmsg("scan_common: Failed to allocate memory for temp directory name.\n");
+                status = CL_EMEM;
+                goto done;
+            }
+            strftime(new_temp_prefix, new_temp_prefix_len + 1, "%Y%m%d_%H%M%S-", &tm_struct);
+            strcpy(new_temp_prefix + strlen("YYYYMMDD_HHMMSS-"), target_basename);
+        } else {
+            /* Just use date */
+            new_temp_prefix_len = strlen("YYYYMMDD_HHMMSS-scantemp");
+            new_temp_prefix     = cli_max_calloc(1, new_temp_prefix_len + 1);
+            if (!new_temp_prefix) {
+                cli_errmsg("scan_common: Failed to allocate memory for temp directory name.\n");
+                status = CL_EMEM;
+                goto done;
+            }
+            strftime(new_temp_prefix, new_temp_prefix_len + 1, "%Y%m%d_%H%M%S-scantemp", &tm_struct);
+        }
+
+        /* Place the new temp sub-directory within the configured temp directory */
+        new_temp_path = cli_gentemp_with_prefix(ctx.engine->tmpdir, new_temp_prefix);
+        free(new_temp_prefix);
+        if (NULL == new_temp_path) {
+            cli_errmsg("scan_common: Failed to generate temp directory name.\n");
             status = CL_EMEM;
             goto done;
         }
-        strftime(new_temp_prefix, new_temp_prefix_len + 1, "%Y%m%d_%H%M%S-", &tm_struct);
-        strcpy(new_temp_prefix + strlen("YYYYMMDD_HHMMSS-"), target_basename);
+
+        ctx.recursion_stack[ctx.recursion_level].tmpdir = new_temp_path;
+        ctx.this_layer_tmpdir                           = new_temp_path;
+
+        if (mkdir(ctx.this_layer_tmpdir, 0700)) {
+            cli_errmsg("Can't create temporary directory for scan: %s.\n", ctx.this_layer_tmpdir);
+            status = CL_EACCES;
+            goto done;
+        }
     } else {
-        /* Just use date */
-        new_temp_prefix_len = strlen("YYYYMMDD_HHMMSS-scantemp");
-        new_temp_prefix     = cli_max_calloc(1, new_temp_prefix_len + 1);
-        if (!new_temp_prefix) {
-            cli_errmsg("scan_common: Failed to allocate memory for temp directory name.\n");
-            status = CL_EMEM;
-            goto done;
-        }
-        strftime(new_temp_prefix, new_temp_prefix_len + 1, "%Y%m%d_%H%M%S-scantemp", &tm_struct);
-    }
-
-    /* Place the new temp sub-directory within the configured temp directory */
-    new_temp_path = cli_gentemp_with_prefix(ctx.engine->tmpdir, new_temp_prefix);
-    free(new_temp_prefix);
-    if (NULL == new_temp_path) {
-        cli_errmsg("scan_common: Failed to generate temp directory name.\n");
-        status = CL_EMEM;
-        goto done;
-    }
-
-    ctx.sub_tmpdir = new_temp_path;
-
-    if (mkdir(ctx.sub_tmpdir, 0700)) {
-        cli_errmsg("Can't create temporary directory for scan: %s.\n", ctx.sub_tmpdir);
-        status = CL_EACCES;
-        goto done;
+        /*
+         * Use the configured temp directory.
+         * Making a unique subdirectory per scan is slower, and particularly slow on Windows.
+         */
+        ctx.recursion_stack[ctx.recursion_level].tmpdir = ctx.engine->tmpdir;
+        ctx.this_layer_tmpdir                           = ctx.engine->tmpdir;
     }
 
     cli_logg_setup(&ctx);
@@ -5895,7 +5803,7 @@ static cl_error_t scan_common(cl_fmap_t *map, const char *filepath, const char *
         }
         /* Set the convenience pointer to the current properties object */
         ctx.recursion_stack[ctx.recursion_level].metadata_json = ctx.metadata_json;
-        ctx.this_layer_metadata_json = ctx.metadata_json;
+        ctx.this_layer_metadata_json                           = ctx.metadata_json;
 
         status = cli_jsonstr(ctx.metadata_json, "Magic", "CLAMJSONv0");
         if (status != CL_SUCCESS) {
@@ -5995,13 +5903,16 @@ static cl_error_t scan_common(cl_fmap_t *map, const char *filepath, const char *
         }
 
         /*
-         * Write the file properties metadata JSON to metadata.json if keeptmp is enabled.
+         * Write the file properties metadata JSON to metadata.json if keeptmp is enabled and temp-dir recursion is enabled.
+         * At present, the `metadata.json` filename is hardcoded, and cannot be written to a directory containing temp files from other scans.
          */
-        if (ctx.engine->keeptmp) {
+        if ((ctx.engine->keeptmp) &&
+            (ctx.engine->engine_options & ENGINE_OPTIONS_TMPDIR_RECURSION)) {
+
             int fd        = -1;
             char *tmpname = NULL;
 
-            if ((ret = cli_newfilepathfd(ctx.sub_tmpdir, "metadata.json", &tmpname, &fd)) != CL_SUCCESS) {
+            if ((ret = cli_newfilepathfd(ctx.this_layer_tmpdir, "metadata.json", &tmpname, &fd)) != CL_SUCCESS) {
                 cli_dbgmsg("scan_common: Can't create json properties file, ret = %i.\n", ret);
             } else {
                 if ((size_t)-1 == cli_writen(fd, jstring, strlen(jstring))) {
@@ -6093,11 +6004,16 @@ done:
         cli_json_delobj(ctx.metadata_json);
     }
 
-    if (NULL != ctx.sub_tmpdir) {
+    if ((ctx.engine->engine_options & ENGINE_OPTIONS_TMPDIR_RECURSION) &&
+        (NULL != ctx.this_layer_tmpdir)) {
+
         if (!ctx.engine->keeptmp) {
-            (void)cli_rmdirs(ctx.sub_tmpdir);
+            (void)cli_rmdirs(ctx.this_layer_tmpdir);
         }
-        free(ctx.sub_tmpdir);
+        free(ctx.this_layer_tmpdir);
+    } else {
+        // If we didn't create a temp directory, we don't need to free it,
+        // and have to trust that all temp files were cleaned up by their respective modules.
     }
 
     if (NULL != target_basename) {

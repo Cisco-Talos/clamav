@@ -521,7 +521,7 @@ int cli_scannulsft(cli_ctx *ctx, off_t offset)
     memset(&nsist, 0, sizeof(struct nsis_st));
 
     nsist.off = offset;
-    if (!(nsist.dir = cli_gentemp_with_prefix(ctx->sub_tmpdir, "nulsft-tmp")))
+    if (!(nsist.dir = cli_gentemp_with_prefix(ctx->this_layer_tmpdir, "nulsft-tmp")))
         return CL_ETMPDIR;
     if (mkdir(nsist.dir, 0700)) {
         cli_dbgmsg("NSIS: Can't create temporary directory %s\n", nsist.dir);

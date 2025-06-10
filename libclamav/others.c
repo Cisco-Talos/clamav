@@ -748,6 +748,12 @@ cl_error_t cl_engine_set_num(struct cl_engine *engine, enum cl_engine_field fiel
         case CL_ENGINE_KEEPTMP:
             engine->keeptmp = num;
             break;
+        case CL_ENGINE_TMPDIR_RECURSION:
+            if (num)
+                engine->engine_options |= ENGINE_OPTIONS_TMPDIR_RECURSION;
+            else
+                engine->engine_options &= ~(ENGINE_OPTIONS_TMPDIR_RECURSION);
+            break;
         case CL_ENGINE_FORCETODISK:
             if (num)
                 engine->engine_options |= ENGINE_OPTIONS_FORCE_TO_DISK;
@@ -902,6 +908,8 @@ long long cl_engine_get_num(const struct cl_engine *engine, enum cl_engine_field
             return engine->ac_maxdepth;
         case CL_ENGINE_KEEPTMP:
             return engine->keeptmp;
+        case CL_ENGINE_TMPDIR_RECURSION:
+            return engine->engine_options & ENGINE_OPTIONS_TMPDIR_RECURSION;
         case CL_ENGINE_FORCETODISK:
             return engine->engine_options & ENGINE_OPTIONS_FORCE_TO_DISK;
         case CL_ENGINE_BYTECODE_SECURITY:
@@ -1648,24 +1656,81 @@ cl_error_t cli_recursion_stack_push(cli_ctx *ctx, cl_fmap_t *map, cli_file_t typ
     // Skip initializing a new evidence object because we only need it if there are indicators found.
     // See append_virus()
 
+    if (ctx->engine->engine_options & ENGINE_OPTIONS_TMPDIR_RECURSION) {
+        char *new_temp_path = NULL;
+        char *fmap_basename = NULL;
+        char *parent_tmpdir = ctx->recursion_stack[ctx->recursion_level - 1].tmpdir;
+
+        /*
+         * Keep-temp enabled, so create a sub-directory to provide extraction directory recursion.
+         */
+        if ((NULL != ctx->fmap->name) &&
+            (CL_SUCCESS == cli_basename(ctx->fmap->name, strlen(ctx->fmap->name), &fmap_basename, true /* posix_support_backslash_pathsep */))) {
+            /*
+             * The fmap has a name, lets include it in the new sub-directory.
+             */
+            new_temp_path = cli_gentemp_with_prefix(parent_tmpdir, fmap_basename);
+            free(fmap_basename);
+            if (NULL == new_temp_path) {
+                cli_errmsg("cli_magic_scan: Failed to generate temp directory name.\n");
+                status = CL_EMEM;
+                goto done;
+            }
+        } else {
+            /*
+             * The fmap has no name or we failed to get the basename.
+             */
+            new_temp_path = cli_gentemp(parent_tmpdir);
+            if (NULL == new_temp_path) {
+                cli_errmsg("cli_magic_scan: Failed to generate temp directory name.\n");
+                status = CL_EMEM;
+                goto done;
+            }
+        }
+
+        if (mkdir(new_temp_path, 0700)) {
+            cli_errmsg("cli_magic_scan: Can't create tmp sub-directory for scan: %s.\n", new_temp_path);
+            status = CL_EACCES;
+            goto done;
+        }
+
+        ctx->recursion_stack[ctx->recursion_level].tmpdir = new_temp_path;
+        ctx->this_layer_tmpdir                            = new_temp_path;
+    } else {
+        /*
+         * Keep-temp disabled, so use the parent layer's tmpdir.
+         */
+        char *parent_tmpdir = ctx->recursion_stack[ctx->recursion_level - 1].tmpdir;
+
+        ctx->recursion_stack[ctx->recursion_level].tmpdir = parent_tmpdir;
+        // Don't need to set ctx->this_layer_tmpdir, it is already set to the parent layer's tmpdir.
+    }
+
     if (SCAN_COLLECT_METADATA) {
         /*
          * Create JSON object to record metadata during the scan.
-         * Add this new layer's metadata JSON object to the parent layer's "ContainedObjects" array.
+         * Add this new layer's metadata JSON object to the parent layer's "ContainedObjects" array or "EmbeddedObjects" array.
          */
         json_object *arrobj;
         struct json_object *parent_object;
         struct json_object *new_object;
+        const char *array_name;
+
+        if (new_container->attributes & LAYER_ATTRIBUTES_EMBEDDED) {
+            array_name = "EmbeddedObjects";
+        } else {
+            array_name = "ContainedObjects";
+        }
 
         parent_object = ctx->this_layer_metadata_json;
-        if (!json_object_object_get_ex(parent_object, "ContainedObjects", &arrobj)) {
+        if (!json_object_object_get_ex(parent_object, array_name, &arrobj)) {
             arrobj = json_object_new_array();
             if (NULL == arrobj) {
                 cli_errmsg("cli_recursion_stack_push: no memory for json properties object\n");
                 status = CL_EMEM;
                 goto done;
             }
-            json_object_object_add(parent_object, "ContainedObjects", arrobj);
+            json_object_object_add(parent_object, array_name, arrobj);
         }
         new_object = json_object_new_object();
         if (NULL == new_object) {
@@ -1688,11 +1753,28 @@ cl_error_t cli_recursion_stack_push(cli_ctx *ctx, cl_fmap_t *map, cli_file_t typ
                 goto done;
             }
         }
-        if (new_container->fmap->path) {
-            status = cli_jsonstr(ctx->this_layer_metadata_json, "FilePath", new_container->fmap->path);
+        if (new_container->attributes & LAYER_ATTRIBUTES_EMBEDDED) {
+            /* For embedded files, we can just say it's at some offset in the parent file.
+             * Offset is calculated from fmap->real_len - fmap->len */
+            status = cli_jsonint64(ctx->this_layer_metadata_json, "Offset", (int64_t)(new_container->fmap->real_len - new_container->fmap->len));
             if (status != CL_SUCCESS) {
-                cli_errmsg("cli_recursion_stack_push: no memory for json FilePath object\n");
+                cli_errmsg("cli_recursion_stack_push: no memory for json Offset object\n");
                 goto done;
+            }
+            /* Add the file type as well, since embedded files are identifed by file type signatures. */
+            status = cli_jsonstr(ctx->this_layer_metadata_json, "FileType", cli_ftname(new_container->type));
+            if (status != CL_SUCCESS) {
+                cli_errmsg("cli_recursion_stack_push: no memory for json FileType object\n");
+                goto done;
+            }
+        } else {
+            /* For non-embedded files, there may be a file path. */
+            if (new_container->fmap->path) {
+                status = cli_jsonstr(ctx->this_layer_metadata_json, "FilePath", new_container->fmap->path);
+                if (status != CL_SUCCESS) {
+                    cli_errmsg("cli_recursion_stack_push: no memory for json FilePath object\n");
+                    goto done;
+                }
             }
         }
         status = cli_jsonint(ctx->this_layer_metadata_json, "FileSize", new_container->fmap->len);
@@ -1897,6 +1979,14 @@ cl_fmap_t *cli_recursion_stack_pop(cli_ctx *ctx)
         ctx->recursion_stack[ctx->recursion_level].evidence = NULL;
     }
 
+    if ((ctx->engine->engine_options & ENGINE_OPTIONS_TMPDIR_RECURSION)) {
+        /* Delete the layer's temporary directory.
+         * Use rmdir to remove empty tmp subdirectories. If rmdir fails, it wasn't empty. */
+        (void)rmdir(ctx->this_layer_tmpdir);
+        /* Free the temporary directory path */
+        free(ctx->this_layer_tmpdir);
+    }
+
     /* save off the fmap to return it to the caller, in case they need it */
     popped_map = ctx->recursion_stack[ctx->recursion_level].fmap;
 
@@ -1910,6 +2000,11 @@ cl_fmap_t *cli_recursion_stack_pop(cli_ctx *ctx)
     /* Set the ctx->this_layer_evidence convenience pointer to the current layer's evidence */
     ctx->this_layer_evidence = ctx->recursion_stack[ctx->recursion_level].evidence;
 
+    if ((ctx->engine->engine_options & ENGINE_OPTIONS_TMPDIR_RECURSION)) {
+        /* Set the ctx->this_layer_tmpdir convenience pointer to the current layer's tmpdir */
+        ctx->this_layer_tmpdir = ctx->recursion_stack[ctx->recursion_level].tmpdir;
+    }
+
     if (SCAN_COLLECT_METADATA) {
         /* Set the ctx->this_layer_metadata_json convenience pointer to the current layer's metadata_json */
         ctx->this_layer_metadata_json = ctx->recursion_stack[ctx->recursion_level].metadata_json;
@@ -1919,9 +2014,29 @@ done:
     return popped_map;
 }
 
+/**
+ * @brief Reassign the type of the current recursion stack layer.
+ *
+ * This is used in two places:
+ * 1. Immediately after determining the file type at the top of cli_magic_scan().
+ * 2. When scanraw matches with a filetype signature designed to retype the file.
+ *    TODO: Consider removing reassigning the type in this second case the same way we do for HandlerType
+ *          logical signatures. That is, by using `cli_recursion_stack_push()` with the new type.
+ *
+ * @param ctx  The scanning context.
+ * @param type The new file type for the current recursion stack layer.
+ */
 void cli_recursion_stack_change_type(cli_ctx *ctx, cli_file_t type)
 {
     ctx->recursion_stack[ctx->recursion_level].type = type;
+
+    // If metadata is being collected, update the type in the metadata JSON object as well.
+    if (SCAN_COLLECT_METADATA && ctx->this_layer_metadata_json) {
+        cl_error_t ret = cli_jsonstr(ctx->this_layer_metadata_json, "FileType", cli_ftname(type));
+        if (ret != CL_SUCCESS) {
+            cli_errmsg("cli_recursion_stack_change_type: failed to reassign the FileType in metadata JSON: %s\n", cl_strerror(ret));
+        }
+    }
 }
 
 /**

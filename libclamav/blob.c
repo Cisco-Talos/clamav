@@ -518,7 +518,7 @@ void fileblobPartialSet(fileblob *fb, const char *fullname, const char *arg)
         close(fb->fd);
         return;
     }
-    blobSetFilename(&fb->b, fb->ctx ? fb->ctx->sub_tmpdir : NULL, fullname);
+    blobSetFilename(&fb->b, fb->ctx ? fb->ctx->this_layer_tmpdir : NULL, fullname);
     if (fb->b.data)
         if (fileblobAddData(fb, fb->b.data, fb->b.len) == 0) {
             free(fb->b.data);

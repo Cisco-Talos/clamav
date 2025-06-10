@@ -60,7 +60,7 @@ static cl_error_t iso_scan_file(const iso9660_t *iso, unsigned int block, unsign
     int fd         = -1;
     cl_error_t ret = CL_SUCCESS;
 
-    if (cli_gentempfd(iso->ctx->sub_tmpdir, &tmpf, &fd) != CL_SUCCESS) {
+    if (cli_gentempfd(iso->ctx->this_layer_tmpdir, &tmpf, &fd) != CL_SUCCESS) {
         return CL_ETMPFILE;
     }
 

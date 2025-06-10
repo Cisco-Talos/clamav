@@ -287,7 +287,7 @@ START_TEST(test_ac_scanbuff_allscan)
             // Reset evidence for the next scan.
             evidence_free(ctx.recursion_stack[ctx.recursion_level].evidence);
             ctx.recursion_stack[ctx.recursion_level].evidence = NULL;
-            ctx.this_layer_evidence = NULL;
+            ctx.this_layer_evidence                           = NULL;
         }
     }
 
@@ -390,7 +390,7 @@ START_TEST(test_ac_scanbuff_allscan_ex)
             // Reset evidence for the next scan.
             evidence_free(ctx.recursion_stack[ctx.recursion_level].evidence);
             ctx.recursion_stack[ctx.recursion_level].evidence = NULL;
-            ctx.this_layer_evidence = NULL;
+            ctx.this_layer_evidence                           = NULL;
         }
     }
 
@@ -568,7 +568,7 @@ START_TEST(test_pcre_scanbuff_allscan)
             // Reset evidence for the next scan.
             evidence_free(ctx.recursion_stack[ctx.recursion_level].evidence);
             ctx.recursion_stack[ctx.recursion_level].evidence = NULL;
-            ctx.this_layer_evidence = NULL;
+            ctx.this_layer_evidence                           = NULL;
         }
     }
 

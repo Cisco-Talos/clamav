@@ -1712,7 +1712,7 @@ static cl_error_t scan_mso_stream(int fd, const char *filepath, cli_ctx *ctx)
     }
 
     /* reserve tempfile for output and scanning */
-    if ((ret = cli_gentempfd(ctx->sub_tmpdir, &tmpname, &ofd)) != CL_SUCCESS) {
+    if ((ret = cli_gentempfd(ctx->this_layer_tmpdir, &tmpname, &ofd)) != CL_SUCCESS) {
         cli_errmsg("scan_mso_stream: Can't generate temporary file\n");
         fmap_free(input);
         return ret;
@@ -1841,7 +1841,7 @@ static cl_error_t handler_otf(ole2_header_t *hdr, property_t *prop, const char *
     }
     print_ole2_property(prop);
 
-    if (!(tempfile = cli_gentemp(ctx->sub_tmpdir))) {
+    if (!(tempfile = cli_gentemp(ctx->this_layer_tmpdir))) {
         ret = CL_EMEM;
         goto done;
     }
@@ -2045,7 +2045,7 @@ static cl_error_t handler_otf_encrypted(ole2_header_t *hdr, property_t *prop, co
 
     nrounds = rijndaelSetupDecrypt(rk, key->key, key->key_length_bits);
 
-    if (!(tempfile = cli_gentemp(ctx->sub_tmpdir))) {
+    if (!(tempfile = cli_gentemp(ctx->this_layer_tmpdir))) {
         ret = CL_EMEM;
         goto done;
     }

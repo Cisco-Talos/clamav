@@ -383,7 +383,7 @@ static cl_error_t msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr 
 
                             cli_msxmlmsg("BINARY CALLBACK DATA!\n");
 
-                            if ((ret = cli_gentempfd(ctx->sub_tmpdir, &tempfile, &of)) != CL_SUCCESS) {
+                            if ((ret = cli_gentempfd(ctx->this_layer_tmpdir, &tempfile, &of)) != CL_SUCCESS) {
                                 cli_warnmsg("msxml_parse_element: failed to create temporary file %s\n", tempfile);
                                 return ret;
                             }
@@ -426,7 +426,7 @@ static cl_error_t msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr 
                                 break;
                             }
 
-                            if ((ret = cli_gentempfd(ctx->sub_tmpdir, &tempfile, &of)) != CL_SUCCESS) {
+                            if ((ret = cli_gentempfd(ctx->this_layer_tmpdir, &tempfile, &of)) != CL_SUCCESS) {
                                 cli_warnmsg("msxml_parse_element: failed to create temporary file %s\n", tempfile);
                                 free(decoded);
                                 return ret;

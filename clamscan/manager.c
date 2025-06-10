@@ -1196,8 +1196,12 @@ int scanmanager(const struct optstruct *opts)
     if (optget(opts, "dev-ac-depth")->enabled)
         cl_engine_set_num(engine, CL_ENGINE_AC_MAXDEPTH, optget(opts, "dev-ac-depth")->numarg);
 
-    if (optget(opts, "leave-temps")->enabled)
+    if (optget(opts, "leave-temps")->enabled) {
+        /* Set the engine to keep temporary files */
         cl_engine_set_num(engine, CL_ENGINE_KEEPTMP, 1);
+        /* Also set the engine to create temporary directory structure */
+        cl_engine_set_num(engine, CL_ENGINE_TMPDIR_RECURSION, 1);
+    }
 
     if (optget(opts, "force-to-disk")->enabled)
         cl_engine_set_num(engine, CL_ENGINE_FORCETODISK, 1);

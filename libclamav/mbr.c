@@ -279,7 +279,6 @@ static cl_error_t mbr_scanextprtn(cli_ctx *ctx, unsigned *prtncount, size_t extl
         /* EBR checks */
         status = mbr_check_ebr(&ebr);
         if (status != CL_SUCCESS) {
-            status = status;
             goto done;
         }
 
@@ -379,7 +378,6 @@ static cl_error_t mbr_scanextprtn(cli_ctx *ctx, unsigned *prtncount, size_t extl
 
                     status = cli_magic_scan_nested_fmap_type(ctx->fmap, partoff, partsize, ctx, CL_TYPE_PART_ANY, NULL, LAYER_ATTRIBUTES_NONE);
                     if (status != CL_SUCCESS) {
-                        status = status;
                         goto done;
                     }
                 }
