@@ -506,10 +506,13 @@ extern void cl_engine_set_clcb_pre_cache(struct cl_engine *engine, clcb_pre_cach
  * Attributes of each layer in scan.
  */
 #define LAYER_ATTRIBUTES_NONE 0x0
-#define LAYER_ATTRIBUTES_NORMALIZED 0x1 /** This layer was modified to make matching more generic, reliable. */
-#define LAYER_ATTRIBUTES_DECRYPTED 0x2  /** Decryption was used to extract this layer. I.e. had to decrypt some previous layer. */
-#define LAYER_ATTRIBUTES_RETYPED 0x4    /** This layer is a duplicate of the parent layer but as a new type (e.g. using HandlerType). */
-#define LAYER_ATTRIBUTES_EMBEDDED 0x8   /** This layer was found within the parent layer using FTM signatures (e.g. like ZIP entries found within an executable). */
+#define LAYER_ATTRIBUTES_NORMALIZED 0x1 /* This layer was modified to make matching more generic, reliable. */
+#define LAYER_ATTRIBUTES_DECRYPTED 0x2  /* Decryption was used to extract this layer. E.g. ClamAV was able to decrypt an \
+                                         * encrypted file entry in the parent layer. */
+#define LAYER_ATTRIBUTES_RETYPED 0x4    /* This layer is a duplicate of the parent layer but as a new type \
+                                         * (e.g. using HandlerType). */
+#define LAYER_ATTRIBUTES_EMBEDDED 0x8   /* This layer was found within the parent layer using FTM signatures \
+                                         * (e.g. like ZIP entries found within an executable). */
 
 /**
  * @brief File inspection callback.
@@ -534,9 +537,17 @@ extern void cl_engine_set_clcb_pre_cache(struct cl_engine *engine, clcb_pre_cach
  * @return                    CL_BREAK = Whitelisted by callback - file is skipped and marked as clean.
  * @return                    CL_VIRUS = Blacklisted by callback - file is skipped and marked as infected.
  */
-typedef cl_error_t (*clcb_file_inspection)(int fd, const char *type, const char **ancestors, size_t parent_file_size,
-                                           const char *file_name, size_t file_size, const char *file_buffer,
-                                           uint32_t recursion_level, uint32_t layer_attributes, void *context);
+typedef cl_error_t (*clcb_file_inspection)(
+    int fd,
+    const char *type,
+    const char **ancestors,
+    size_t parent_file_size,
+    const char *file_name,
+    size_t file_size,
+    const char *file_buffer,
+    uint32_t recursion_level,
+    uint32_t layer_attributes,
+    void *context);
 /**
  * @brief Set a custom file inspection callback function.
  *
@@ -796,8 +807,14 @@ extern void cl_engine_set_clcb_hash(struct cl_engine *engine, clcb_hash callback
  * @return                  CL_VIRUS to block (alert on)
  * @return                  CL_CLEAN to continue scanning
  */
-typedef cl_error_t (*clcb_meta)(const char *container_type, unsigned long fsize_container, const char *filename,
-                                unsigned long fsize_real, int is_encrypted, unsigned int filepos_container, void *context);
+typedef cl_error_t (*clcb_meta)(
+    const char *container_type,
+    unsigned long fsize_container,
+    const char *filename,
+    unsigned long fsize_real,
+    int is_encrypted,
+    unsigned int filepos_container,
+    void *context);
 /**
  * @brief Set a custom archive metadata matching callback function.
  *
@@ -882,7 +899,12 @@ extern void cl_engine_set_stats_set_cbdata(struct cl_engine *engine, void *cbdat
  * @param sections  PE section data, if applicable.
  * @param cbdata    The statistics data. Probably a pointer to a malloc'd struct.
  */
-typedef void (*clcb_stats_add_sample)(const char *virname, const unsigned char *md5, size_t size, stats_section_t *sections, void *cbdata);
+typedef void (*clcb_stats_add_sample)(
+    const char *virname,
+    const unsigned char *md5,
+    size_t size,
+    stats_section_t *sections,
+    void *cbdata);
 /**
  * @brief Set a custom callback function to add sample metadata to a statistics report.
  *
@@ -1035,7 +1057,13 @@ extern void cl_engine_stats_enable(struct cl_engine *engine);
  * @param scanoptions       Scanning options.
  * @return cl_error_t       CL_CLEAN, CL_VIRUS, or an error code if an error occurred during the scan.
  */
-extern cl_error_t cl_scandesc(int desc, const char *filename, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, struct cl_scan_options *scanoptions);
+extern cl_error_t cl_scandesc(
+    int desc,
+    const char *filename,
+    const char **virname,
+    unsigned long int *scanned,
+    const struct cl_engine *engine,
+    struct cl_scan_options *scanoptions);
 
 /**
  * @brief Scan a file, given a file descriptor.
@@ -1051,7 +1079,14 @@ extern cl_error_t cl_scandesc(int desc, const char *filename, const char **virna
  * @param[in,out] context   An opaque context structure allowing the caller to record details about the sample being scanned.
  * @return cl_error_t       CL_CLEAN, CL_VIRUS, or an error code if an error occurred during the scan.
  */
-extern cl_error_t cl_scandesc_callback(int desc, const char *filename, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, struct cl_scan_options *scanoptions, void *context);
+extern cl_error_t cl_scandesc_callback(
+    int desc,
+    const char *filename,
+    const char **virname,
+    unsigned long int *scanned,
+    const struct cl_engine *engine,
+    struct cl_scan_options *scanoptions,
+    void *context);
 
 /**
  * @brief Scan a file, given a filename.
@@ -1063,7 +1098,12 @@ extern cl_error_t cl_scandesc_callback(int desc, const char *filename, const cha
  * @param scanoptions       Scanning options.
  * @return cl_error_t       CL_CLEAN, CL_VIRUS, or an error code if an error occurred during the scan.
  */
-extern cl_error_t cl_scanfile(const char *filename, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, struct cl_scan_options *scanoptions);
+extern cl_error_t cl_scanfile(
+    const char *filename,
+    const char **virname,
+    unsigned long int *scanned,
+    const struct cl_engine *engine,
+    struct cl_scan_options *scanoptions);
 
 /**
  * @brief Scan a file, given a filename.
@@ -1078,7 +1118,13 @@ extern cl_error_t cl_scanfile(const char *filename, const char **virname, unsign
  * @param[in,out] context   An opaque context structure allowing the caller to record details about the sample being scanned.
  * @return cl_error_t       CL_CLEAN, CL_VIRUS, or an error code if an error occurred during the scan.
  */
-extern cl_error_t cl_scanfile_callback(const char *filename, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, struct cl_scan_options *scanoptions, void *context);
+extern cl_error_t cl_scanfile_callback(
+    const char *filename,
+    const char **virname,
+    unsigned long int *scanned,
+    const struct cl_engine *engine,
+    struct cl_scan_options *scanoptions,
+    void *context);
 
 /* ----------------------------------------------------------------------------
  * Database handling.
@@ -1329,8 +1375,12 @@ typedef off_t (*clcb_pread)(void *handle, void *buf, size_t count, off_t offset)
  * @param use_aging     Set to a non-zero value to enable aging.
  * @return cl_fmap_t*   A map representing the handle interface.
  */
-extern cl_fmap_t *cl_fmap_open_handle(void *handle, size_t offset, size_t len,
-                                      clcb_pread pread_cb, int use_aging);
+extern cl_fmap_t *cl_fmap_open_handle(
+    void *handle,
+    size_t offset,
+    size_t len,
+    clcb_pread pread_cb,
+    int use_aging);
 
 /**
  * @brief Open a map given a buffer.
@@ -1373,7 +1423,14 @@ extern void cl_fmap_close(cl_fmap_t *);
  *                      signature matched. Another CL_E* error code if an
  *                      error occurred.
  */
-extern cl_error_t cl_scanmap_callback(cl_fmap_t *map, const char *filename, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, struct cl_scan_options *scanoptions, void *context);
+extern cl_error_t cl_scanmap_callback(
+    cl_fmap_t *map,
+    const char *filename,
+    const char **virname,
+    unsigned long int *scanned,
+    const struct cl_engine *engine,
+    struct cl_scan_options *scanoptions,
+    void *context);
 
 /* ----------------------------------------------------------------------------
  * Crypto/hashing functions
@@ -1482,7 +1539,14 @@ unsigned char *cl_sha1(const void *buf, size_t len, unsigned char *obuf, unsigne
  * @param decode    Whether or not to base64-decode the signature prior to verification. 1 for yes, 0 for no.
  * @return          0 for success, -1 for error or invalid signature.
  */
-int cl_verify_signature(EVP_PKEY *pkey, const char *alg, unsigned char *sig, unsigned int siglen, unsigned char *data, size_t datalen, int decode);
+int cl_verify_signature(
+    EVP_PKEY *pkey,
+    const char *alg,
+    unsigned char *sig,
+    unsigned int siglen,
+    unsigned char *data,
+    size_t datalen,
+    int decode);
 
 /**
  * @brief Verify validity of signed data.
@@ -1494,7 +1558,12 @@ int cl_verify_signature(EVP_PKEY *pkey, const char *alg, unsigned char *sig, uns
  * @param digest    The hash of the signed data.
  * @return          0 for success, -1 for error or invalid signature.
  */
-int cl_verify_signature_hash(EVP_PKEY *pkey, const char *alg, unsigned char *sig, unsigned int siglen, unsigned char *digest);
+int cl_verify_signature_hash(
+    EVP_PKEY *pkey,
+    const char *alg,
+    unsigned char *sig,
+    unsigned int siglen,
+    unsigned char *digest);
 
 /**
  * @brief Verify validity of signed data.
@@ -1506,7 +1575,12 @@ int cl_verify_signature_hash(EVP_PKEY *pkey, const char *alg, unsigned char *sig
  * @param fd        The file descriptor.
  * @return          0 for success, -1 for error or invalid signature.
  */
-int cl_verify_signature_fd(EVP_PKEY *pkey, const char *alg, unsigned char *sig, unsigned int siglen, int fd);
+int cl_verify_signature_fd(
+    EVP_PKEY *pkey,
+    const char *alg,
+    unsigned char *sig,
+    unsigned int siglen,
+    int fd);
 
 /**
  * @brief Verify validity of signed data.
@@ -1518,7 +1592,12 @@ int cl_verify_signature_fd(EVP_PKEY *pkey, const char *alg, unsigned char *sig, 
  * @param digest    The hash of the signed data.
  * @return          0 for success, -1 for error or invalid signature.
  */
-int cl_verify_signature_hash_x509_keyfile(char *x509path, const char *alg, unsigned char *sig, unsigned int siglen, unsigned char *digest);
+int cl_verify_signature_hash_x509_keyfile(
+    char *x509path,
+    const char *alg,
+    unsigned char *sig,
+    unsigned int siglen,
+    unsigned char *digest);
 
 /**
  * @brief Verify validity of signed data.
@@ -1530,7 +1609,12 @@ int cl_verify_signature_hash_x509_keyfile(char *x509path, const char *alg, unsig
  * @param fd        The file descriptor.
  * @return          0 for success, -1 for error or invalid signature.
  */
-int cl_verify_signature_fd_x509_keyfile(char *x509path, const char *alg, unsigned char *sig, unsigned int siglen, int fd);
+int cl_verify_signature_fd_x509_keyfile(
+    char *x509path,
+    const char *alg,
+    unsigned char *sig,
+    unsigned int siglen,
+    int fd);
 
 /**
  * @brief Verify validity of signed data.
@@ -1544,7 +1628,14 @@ int cl_verify_signature_fd_x509_keyfile(char *x509path, const char *alg, unsigne
  * @param decode    Whether or not to base64-decode the signature prior to verification. 1 for yes, 0 for no.
  * @return          0 for success, -1 for error or invalid signature.
  */
-int cl_verify_signature_x509_keyfile(char *x509path, const char *alg, unsigned char *sig, unsigned int siglen, unsigned char *data, size_t datalen, int decode);
+int cl_verify_signature_x509_keyfile(
+    char *x509path,
+    const char *alg,
+    unsigned char *sig,
+    unsigned int siglen,
+    unsigned char *data,
+    size_t datalen,
+    int decode);
 
 /**
  * @brief Verify validity of signed data
@@ -1556,7 +1647,12 @@ int cl_verify_signature_x509_keyfile(char *x509path, const char *alg, unsigned c
  * @param digest    The hash of the signed data.
  * @return          0 for success, -1 for error or invalid signature.
  */
-int cl_verify_signature_hash_x509(X509 *x509, const char *alg, unsigned char *sig, unsigned int siglen, unsigned char *digest);
+int cl_verify_signature_hash_x509(
+    X509 *x509,
+    const char *alg,
+    unsigned char *sig,
+    unsigned int siglen,
+    unsigned char *digest);
 
 /**
  * @brief Verify validity of signed data.
@@ -1582,7 +1678,14 @@ int cl_verify_signature_fd_x509(X509 *x509, const char *alg, unsigned char *sig,
  * @param decode    Whether or not to base64-decode the signature prior to verification. 1 for yes, 0 for no.
  * @return          0 for success, -1 for error or invalid signature.
  */
-int cl_verify_signature_x509(X509 *x509, const char *alg, unsigned char *sig, unsigned int siglen, unsigned char *data, size_t datalen, int decode);
+int cl_verify_signature_x509(
+    X509 *x509,
+    const char *alg,
+    unsigned char *sig,
+    unsigned int siglen,
+    unsigned char *data,
+    size_t datalen,
+    int decode);
 
 /**
  * @brief Get an X509 object from memory.
@@ -1645,7 +1748,12 @@ X509_CRL *cl_load_crl(const char *timeobj);
  * @param           Whether or not to base64-encode the signature. 1 for yes, 0 for no.
  * @return          The generated signature.
  */
-unsigned char *cl_sign_data_keyfile(char *keypath, const char *alg, unsigned char *hash, unsigned int *olen, int encode);
+unsigned char *cl_sign_data_keyfile(
+    char *keypath,
+    const char *alg,
+    unsigned char *hash,
+    unsigned int *olen,
+    int encode);
 
 /**
  * @brief Sign data with an RSA private key object.
