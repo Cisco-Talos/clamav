@@ -3,6 +3,55 @@
 Note: This file refers to the official packages. Things described here may
 differ slightly from third-party binary packages.
 
+## 1.4.3
+
+ClamAV 1.4.3 is a patch release with the following fixes:
+
+- [CVE-2025-20260](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2025-20260):
+  Fixed a possible buffer overflow write bug in the PDF file parser that could
+  cause a denial-of-service (DoS) condition or enable remote code execution.
+
+  This issue only affects configurations where both:
+  1. The max file-size scan limit is set greater than or equal to 1024MB.
+  2. The max scan-size scan limit is set greater than or equal to 1025MB.
+
+  The code flaw was present prior to version 1.0.0, but a change in version
+  1.0.0 that enables larger allocations based on untrusted data made it
+  possible to trigger this bug.
+
+  This issue affects all currently supported versions. It will be fixed in:
+  - 1.4.3
+  - 1.0.9
+
+  Thank you to Greg Walkup at Sandia National Labs for identifying this issue.
+
+- [CVE-2025-20234](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2025-20234):
+  Fixed a possible buffer overflow read bug in the UDF file parser that may
+  write to a temp file and thus disclose information, or it may crash and
+  cause a denial-of-service (DoS) condition.
+
+  This issue was introduced in version 1.2.0. It will be fixed in 1.4.3.
+
+  Thank you to volticks (@movx64 on Twitter/X), working with Trend Micro Zero
+  Day Initiative, for identifying this issue.
+
+- Fixed a possible use-after-free bug in the Xz decompression module in the
+  bundled lzma-sdk library.
+
+  This issue was fixed in the lzma-sdk version 18.03. ClamAV bundles a copy
+  of the lzma-sdk with some performance changes specific to libclamav, plus
+  select bug fixes like this one in lieu of a full upgrade to newer lzma-sdk.
+
+  This issue affects all ClamAV versions at least as far back as 0.99.4.
+  It will be fixed in:
+  - 1.4.3
+  - 1.0.9
+
+  Thank you to OSS-Fuzz for identifying this issue.
+
+- Windows: Fixed a build install issue when a DLL dependency such as libcrypto
+  has the exact same name as one provided by the Windows operating system.
+
 ## 1.4.2
 
 ClamAV 1.4.2 is a patch release with the following fixes:
