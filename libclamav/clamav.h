@@ -1049,13 +1049,13 @@ extern void cl_engine_stats_enable(struct cl_engine *engine);
 /**
  * @brief Scan a file, given a file descriptor.
  *
- * @param desc              File descriptor of an open file. The caller must provide this or the map.
- * @param filename          (optional) Filepath of the open file descriptor or file map.
- * @param[out] virname      Will be set to a statically allocated (i.e. needs not be freed) signature name if the scan matches against a signature.
- * @param[out] scanned      The number of bytes scanned.
- * @param engine            The scanning engine.
- * @param scanoptions       Scanning options.
- * @return cl_error_t       CL_CLEAN, CL_VIRUS, or an error code if an error occurred during the scan.
+ * @param desc            File descriptor of an open file. The caller must provide this or the map.
+ * @param filename        (optional) Filepath of the open file descriptor or file map.
+ * @param[out] virname    Will be set to a statically allocated (i.e. needs not be freed) signature name if the scan matches against a signature.
+ * @param[out] scanned    The number of bytes scanned.
+ * @param engine          The scanning engine.
+ * @param scanoptions     Scanning options.
+ * @return cl_error_t     CL_CLEAN, CL_VIRUS, or an error code if an error occurred during the scan.
  */
 extern cl_error_t cl_scandesc(
     int desc,
@@ -1068,16 +1068,18 @@ extern cl_error_t cl_scandesc(
 /**
  * @brief Scan a file, given a file descriptor.
  *
- * This callback variant allows the caller to provide a context structure that caller provided callback functions can interpret.
+ * This callback variant allows the caller to provide a context structure that
+ * caller provided callback functions can interpret.
  *
- * @param desc              File descriptor of an open file. The caller must provide this or the map.
- * @param filename          (optional) Filepath of the open file descriptor or file map.
- * @param[out] virname      Will be set to a statically allocated (i.e. needs not be freed) signature name if the scan matches against a signature.
- * @param[out] scanned      The number of bytes scanned.
- * @param engine            The scanning engine.
- * @param scanoptions       Scanning options.
- * @param[in,out] context   An opaque context structure allowing the caller to record details about the sample being scanned.
- * @return cl_error_t       CL_CLEAN, CL_VIRUS, or an error code if an error occurred during the scan.
+ * @param desc            File descriptor of an open file. The caller must provide this or the map.
+ * @param filename        (optional) Filepath of the open file descriptor or file map.
+ * @param[out] virname    Will be set to a statically allocated (i.e. needs not be freed) signature name if the scan matches against a signature.
+ * @param[out] scanned    The number of bytes scanned.
+ * @param engine          The scanning engine.
+ * @param scanoptions     Scanning options.
+ * @param[in,out] context (Optional) An application-defined context struct, opaque to libclamav.
+ *                        May be used within your callback functions.
+ * @return cl_error_t     CL_CLEAN, CL_VIRUS, or an error code if an error occurred during the scan.
  */
 extern cl_error_t cl_scandesc_callback(
     int desc,
@@ -1089,34 +1091,87 @@ extern cl_error_t cl_scandesc_callback(
     void *context);
 
 /**
+ * @brief Scan a file, given a file descriptor.
+ *
+ * This callback variant allows the caller to provide a context structure that
+ * caller provided callback functions can interpret.
+ *
+ * This extended version of cl_scanmap_callback allows the caller to provide
+ * additional hints to the scanning engine, such as a file hash and file type.
+ *
+ * @param desc            File descriptor of an open file. The caller must provide this or the map.
+ * @param filename        (optional) Filepath of the open file descriptor or file map.
+ * @param[out] virname    Will be set to a statically allocated (i.e. needs not be freed) signature name if the scan matches against a signature.
+ * @param[out] scanned    The number of bytes scanned.
+ * @param engine          The scanning engine.
+ * @param scanoptions     Scanning options.
+ * @param[in,out] context (Optional) An application-defined context struct, opaque to libclamav.
+ *                        May be used within your callback functions.
+ * @param hash_hint       (Optional) A NULL terminated string of the file hash so that
+ *                        libclamav does not need to calculate it.
+ * @param[out] hash_out   (Optional) A NULL terminated string of the file hash.
+ *                        The caller is responsible for freeing the string.
+ * @param hash_alg        The hashing algorithm used for either `hash_hint` or `hash_out`.
+ *                        Supported algorithms are "md5", "sha1", "sha2-256".
+ *                        If not specified, the default is "sha2-256".
+ * @param file_type_hint  (Optional) A NULL terminated string of the file type hint.
+ *                        E.g. "pe", "elf", "zip", etc.
+ *                        You may also use ClamAV type names such as "CL_TYPE_PE".
+ *                        ClamAV will ignore the hint if it is not familiar with the specified type.
+ *                        See also: https://docs.clamav.net/appendix/FileTypes.html#file-types
+ * @param file_type_out   (Optional) A NULL terminated string of the file type
+ *                        of the top layer as determined by ClamAV.
+ *                        Will take the form of the standard ClamAV file type format. E.g. "CL_TYPE_PE".
+ *                        See also: https://docs.clamav.net/appendix/FileTypes.html#file-types
+ * @return cl_error_t     CL_CLEAN if no signature matched.
+ *                        CL_VIRUS if a signature matched.
+ *                        Another CL_E* error code if an error occurred.
+ */
+extern cl_error_t cl_scandesc_ex(
+    int desc,
+    const char *filename,
+    const char **virname,
+    unsigned long int *scanned,
+    const struct cl_engine *engine,
+    struct cl_scan_options *scanoptions,
+    void *context,
+    const char *hash_hint,
+    char **hash_out,
+    const char *hash_alg,
+    const char *file_type_hint,
+    char **file_type_out);
+
+/**
  * @brief Scan a file, given a filename.
  *
- * @param filename          Filepath of the file to be scanned.
- * @param[out] virname      Will be set to a statically allocated (i.e. needs not be freed) signature name if the scan matches against a signature.
- * @param[out] scanned      The number of bytes scanned.
- * @param engine            The scanning engine.
- * @param scanoptions       Scanning options.
- * @return cl_error_t       CL_CLEAN, CL_VIRUS, or an error code if an error occurred during the scan.
+ * @param filename        Filepath of the file to be scanned.
+ * @param[out] virname    Will be set to a statically allocated (i.e. needs not be freed) signature name if the scan matches against a signature.
+ * @param[out] scanned    The number of bytes scanned.
+ * @param engine          The scanning engine.
+ * @param scanoptions     Scanning options.
+ * @return cl_error_t     CL_CLEAN, CL_VIRUS, or an error code if an error occurred during the scan.
  */
 extern cl_error_t cl_scanfile(
     const char *filename,
     const char **virname,
-    unsigned long int *scanned,
+    uint64_t *scanned,
     const struct cl_engine *engine,
     struct cl_scan_options *scanoptions);
 
 /**
  * @brief Scan a file, given a filename.
  *
- * This callback variant allows the caller to provide a context structure that caller provided callback functions can interpret.
+ * This callback variant allows the caller to provide a context structure that
+ * caller provided callback functions can interpret.
  *
- * @param filename          Filepath of the file to be scanned.
- * @param[out] virname      Will be set to a statically allocated (i.e. needs not be freed) signature name if the scan matches against a signature.
- * @param[out] scanned      The number of bytes scanned.
- * @param engine            The scanning engine.
- * @param scanoptions       Scanning options.
- * @param[in,out] context   An opaque context structure allowing the caller to record details about the sample being scanned.
- * @return cl_error_t       CL_CLEAN, CL_VIRUS, or an error code if an error occurred during the scan.
+ * @param filename        Filepath of the file to be scanned.
+ * @param[out] virname    Will be set to a statically allocated (i.e. needs not be freed) signature name if the scan matches against a signature.
+ * @param[out] scanned    The number of bytes scanned.
+ * @param engine          The scanning engine.
+ * @param scanoptions     Scanning options.
+ * @param[in,out] context (Optional) An application-defined context struct, opaque to libclamav.
+ *                        May be used within your callback functions.
+ * @return cl_error_t     CL_CLEAN, CL_VIRUS, or an error code if an error occurred during the scan.
  */
 extern cl_error_t cl_scanfile_callback(
     const char *filename,
@@ -1125,6 +1180,55 @@ extern cl_error_t cl_scanfile_callback(
     const struct cl_engine *engine,
     struct cl_scan_options *scanoptions,
     void *context);
+
+/**
+ * @brief Scan a file, given a filename.
+ *
+ * This callback variant allows the caller to provide a context structure that
+ * caller provided callback functions can interpret.
+ *
+ * This extended version of cl_scanmap_callback allows the caller to provide
+ * additional hints to the scanning engine, such as a file hash and file type.
+ *
+ * @param filename        Filepath of the file to be scanned.
+ * @param[out] virname    Will be set to a statically allocated (i.e. needs not be freed) signature name if the scan matches against a signature.
+ * @param[out] scanned    The number of bytes scanned.
+ * @param engine          The scanning engine.
+ * @param scanoptions     Scanning options.
+ * @param[in,out] context (Optional) An application-defined context struct, opaque to libclamav.
+ *                        May be used within your callback functions.
+ * @param hash_hint       (Optional) A NULL terminated string of the file hash so that
+ *                        libclamav does not need to calculate it.
+ * @param[out] hash_out   (Optional) A NULL terminated string of the file hash.
+ *                        The caller is responsible for freeing the string.
+ * @param hash_alg        The hashing algorithm used for either `hash_hint` or `hash_out`.
+ *                        Supported algorithms are "md5", "sha1", "sha2-256".
+ *                        If not specified, the default is "sha2-256".
+ * @param file_type_hint  (Optional) A NULL terminated string of the file type hint.
+ *                        E.g. "pe", "elf", "zip", etc.
+ *                        You may also use ClamAV type names such as "CL_TYPE_PE".
+ *                        ClamAV will ignore the hint if it is not familiar with the specified type.
+ *                        See also: https://docs.clamav.net/appendix/FileTypes.html#file-types
+ * @param file_type_out   (Optional) A NULL terminated string of the file type
+ *                        of the top layer as determined by ClamAV.
+ *                        Will take the form of the standard ClamAV file type format. E.g. "CL_TYPE_PE".
+ *                        See also: https://docs.clamav.net/appendix/FileTypes.html#file-types
+ * @return cl_error_t     CL_CLEAN if no signature matched.
+ *                        CL_VIRUS if a signature matched.
+ *                        Another CL_E* error code if an error occurred.
+ */
+extern cl_error_t cl_scanfile_ex(
+    const char *filename,
+    const char **virname,
+    uint64_t *scanned,
+    const struct cl_engine *engine,
+    struct cl_scan_options *scanoptions,
+    void *context,
+    const char *hash_hint,
+    char **hash_out,
+    const char *hash_alg,
+    const char *file_type_hint,
+    char **file_type_out);
 
 /* ----------------------------------------------------------------------------
  * Database handling.
@@ -1407,7 +1511,10 @@ extern cl_fmap_t *cl_fmap_open_memory(const void *start, size_t len);
 extern void cl_fmap_close(cl_fmap_t *);
 
 /**
- * @brief Scan custom data.
+ * @brief Scan custom data, given a map.
+ *
+ * Use `cl_fmap_open_handle()` or `cl_fmap_open_memory()` to create the map
+ * from a file handle or a memory buffer, respectively.
  *
  * @param map           Buffer to be scanned, in form of a cl_fmap_t.
  * @param filename      Name of data origin. Does not need to be an actual
@@ -1431,6 +1538,59 @@ extern cl_error_t cl_scanmap_callback(
     const struct cl_engine *engine,
     struct cl_scan_options *scanoptions,
     void *context);
+
+/**
+ * @brief Scan custom data, given a map.
+ *
+ * Use `cl_fmap_open_handle()` or `cl_fmap_open_memory()` to create the map
+ * from a file handle or a memory buffer, respectively.
+ *
+ * This extended version of cl_scanmap_callback allows the caller to provide
+ * additional hints to the scanning engine, such as a file hash and file type.
+ *
+ * @param map             Buffer to be scanned, in form of a cl_fmap_t.
+ * @param filename        Name of data origin. Does not need to be an actual
+ *                        file on disk. May be NULL if a name is not available.
+ * @param[out] virname    Pointer to receive the signature match name name if a
+ *                        signature matched.
+ * @param[out] scanned    Number of bytes scanned.
+ * @param engine          The scanning engine.
+ * @param scanoptions     The scanning options struct.
+ * @param[in,out] context (Optional) An application-defined context struct, opaque to libclamav.
+ *                        May be used within your callback functions.
+ * @param hash_hint       (Optional) A NULL terminated string of the file hash so that
+ *                        libclamav does not need to calculate it.
+ * @param[out] hash_out   (Optional) A NULL terminated string of the file hash.
+ *                        The caller is responsible for freeing the string.
+ * @param hash_alg        The hashing algorithm used for either `hash_hint` or `hash_out`.
+ *                        Supported algorithms are "md5", "sha1", "sha2-256".
+ *                        If not specified, the default is "sha2-256".
+ * @param file_type_hint  (Optional) A NULL terminated string of the file type hint.
+ *                        E.g. "pe", "elf", "zip", etc.
+ *                        You may also use ClamAV type names such as "CL_TYPE_PE".
+ *                        ClamAV will ignore the hint if it is not familiar with the specified type.
+ *                        See also: https://docs.clamav.net/appendix/FileTypes.html#file-types
+ * @param file_type_out   (Optional) A NULL terminated string of the file type
+ *                        of the top layer as determined by ClamAV.
+ *                        Will take the form of the standard ClamAV file type format. E.g. "CL_TYPE_PE".
+ *                        See also: https://docs.clamav.net/appendix/FileTypes.html#file-types
+ * @return cl_error_t     CL_CLEAN if no signature matched.
+ *                        CL_VIRUS if a signature matched.
+ *                        Another CL_E* error code if an error occurred.
+ */
+extern cl_error_t cl_scanmap_ex(
+    cl_fmap_t *map,
+    const char *filename,
+    const char **virname,
+    uint64_t *scanned,
+    const struct cl_engine *engine,
+    struct cl_scan_options *scanoptions,
+    void *context,
+    const char *hash_hint,
+    char **hash_out,
+    const char *hash_alg,
+    const char *file_type_hint,
+    char **file_type_out);
 
 /* ----------------------------------------------------------------------------
  * Crypto/hashing functions

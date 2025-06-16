@@ -4686,7 +4686,7 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
     cli_recursion_stack_change_type(ctx, type);
 
     /*
-     * Run the pre_scan callback.
+     * Run the pre_cache callback.
      */
     ret = dispatch_prescan_callback(ctx->engine->cb_pre_cache, ctx, filetype);
     if (CL_VERIFIED == ret || CL_VIRUS == ret) {
@@ -4749,8 +4749,9 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
                 }
 
                 /* Convert hash to string */
-                for (i = 0; i < hash_len; i++)
+                for (i = 0; i < hash_len; i++) {
                     sprintf(hash_string + i * 2, "%02x", hash[i]);
+                }
                 hash_string[hash_len * 2] = 0;
 
                 ret = cli_jsonstr(ctx->this_layer_metadata_json, cli_hash_name(hash_type), hash_string);
@@ -5244,8 +5245,16 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
         }
     }
 
-    /* CL_TYPE_HTML: raw HTML files are not scanned, unless safety measure activated via DCONF */
-    if (type != CL_TYPE_IGNORED && (type != CL_TYPE_HTML || !(SCAN_PARSE_HTML) || !(DCONF_DOC & DOC_CONF_HTML_SKIPRAW)) && !ctx->engine->sdb) {
+    /*
+     * Perform pattern matching for malware detections AND embedded file type recognition.
+     * Embedded file type recognition may re-assign the current file as a new type, or
+     * it may detect embedded files. E.g. ZIP entries in a PE file (i.e. self-extracting ZIP).
+     */
+    if ((type != CL_TYPE_IGNORED) &&
+        /* CL_TYPE_HTML: raw HTML files are not scanned, unless safety measure activated via DCONF */
+        (type != CL_TYPE_HTML || !(SCAN_PARSE_HTML) || !(DCONF_DOC & DOC_CONF_HTML_SKIPRAW)) &&
+        (!ctx->engine->sdb)) {
+
         ret = scanraw(ctx, type, typercg, &dettype);
 
         // Evaluate the result from the scan to see if it end the scan of this layer early,
@@ -5457,11 +5466,6 @@ cl_error_t cli_magic_scan_desc(int desc, const char *filepath, cli_ctx *ctx, con
     return cli_magic_scan_desc_type(desc, filepath, ctx, CL_TYPE_ANY, name, attributes);
 }
 
-cl_error_t cl_scandesc(int desc, const char *filename, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, struct cl_scan_options *scanoptions)
-{
-    return cl_scandesc_callback(desc, filename, virname, scanned, engine, scanoptions, NULL);
-}
-
 /**
  * @brief   Scan an offset/length into a file map.
  *
@@ -5631,16 +5635,46 @@ cl_error_t cli_magic_scan_buff(const void *buffer, size_t length, cli_ctx *ctx, 
 /**
  * @brief   The main function to initiate a scan of an fmap.
  *
- * @param map               File map.
- * @param filepath          (optional, recommended) filepath of the open file descriptor or file map.
- * @param[out] virname      Will be set to a statically allocated (i.e. needs not be freed) signature name if the scan matches against a signature.
- * @param[out] scanned      The number of bytes scanned.
- * @param engine            The scanning engine.
- * @param scanoptions       Scanning options.
- * @param[in,out] context   An opaque context structure allowing the caller to record details about the sample being scanned.
- * @return int              CL_CLEAN, CL_VIRUS, or an error code if an error occurred during the scan.
+ * @param map             File map.
+ * @param filepath        (optional, recommended) filepath of the open file descriptor or file map.
+ * @param[out] virname    Will be set to a statically allocated (i.e. needs not be freed) signature name if the scan matches against a signature.
+ * @param[out] scanned    (Optional) The number of bytes scanned.
+ * @param engine          The scanning engine.
+ * @param scanoptions     Scanning options.
+ * @param[in,out] context (Optional) An application-defined context struct, opaque to libclamav.
+ *                        May be used within your callback functions.
+ * @param hash_hint       (Optional) A NULL terminated string of the file hash so that
+ *                        libclamav does not need to calculate it.
+ * @param[out] hash_out   (Optional) A NULL terminated string of the file hash.
+ *                        The caller is responsible for freeing this string.
+ * @param hash_alg        The hashing algorithm used for either `hash_hint` or `hash_out`.
+ *                        Supported algorithms are "md5", "sha1", "sha2-256".
+ *                        Required only if you provide a `hash_hint` or want to receive a `hash_out`.
+ * @param file_type_hint  (Optional) A NULL terminated string of the file type hint.
+ *                        E.g. "pe", "elf", "zip", etc.
+ *                        You may also use ClamAV type names such as "CL_TYPE_PE".
+ *                        ClamAV will ignore the hint if it is not familiar with the specified type.
+ * @param file_type_out   (Optional) A NULL terminated string of the file type
+ *                        of the top layer as determined by ClamAV.
+ *                        Will take the form of the standard ClamAV file type format. E.g. "CL_TYPE_PE".
+ *                        The caller is responsible for freeing this string.
+ * @return cl_error_t     CL_CLEAN if no signature matched.
+ *                        CL_VIRUS if a signature matched.
+ *                        Another CL_E* error code if an error occurred.
  */
-static cl_error_t scan_common(cl_fmap_t *map, const char *filepath, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, struct cl_scan_options *scanoptions, void *context)
+static cl_error_t scan_common(
+    cl_fmap_t *map,
+    const char *filepath,
+    const char **virname,
+    uint64_t *scanned,
+    const struct cl_engine *engine,
+    struct cl_scan_options *scanoptions,
+    void *context,
+    const char *hash_hint,
+    char **hash_out,
+    const char *hash_alg,
+    const char *file_type_hint,
+    char **file_type_out)
 {
     cl_error_t status = CL_SUCCESS;
     cl_error_t ret;
@@ -5658,13 +5692,77 @@ static cl_error_t scan_common(cl_fmap_t *map, const char *filepath, const char *
     time_t current_time;
     struct tm tm_struct;
 
-    if (NULL == map || NULL == scanoptions) {
+    size_t num_potentially_unwanted_indicators = 0;
+
+    // The default type is SHA2-256.
+    cli_hash_type_t requested_hash_type = CLI_HASH_SHA2_256;
+    // The type of the file being scanned.
+    cli_file_t file_type = CL_TYPE_ANY;
+
+    if (NULL == map || NULL == scanoptions || NULL == virname) {
         return CL_ENULLARG;
     }
 
-    size_t num_potentially_unwanted_indicators = 0;
-
+    /* Initialize output variables */
     *virname = NULL;
+
+    // If the caller provided a file type hint, we make a best effort to use it.
+    if (file_type_hint) {
+        file_type = cli_ftcode_human_friendly(file_type_hint);
+        if (CL_TYPE_ERROR == file_type) {
+            cli_dbgmsg("scan_common: Unsupported file type hint: %s. Will treat it as unknown (CL_TYPE_ANY)\n", file_type_hint);
+            file_type = CL_TYPE_ANY;
+        }
+    }
+
+    if (NULL != hash_out) {
+        *hash_out = NULL;
+    }
+
+    if (NULL != hash_alg) {
+        // Set the fmap hash for the given algorithm.
+        if (0 == strncmp(hash_alg, "md5", 3) || (0 == strncmp(hash_alg, "MD5", 3))) {
+            requested_hash_type = CLI_HASH_MD5;
+        } else if (0 == strncmp(hash_alg, "sha1", 4) || (0 == strncmp(hash_alg, "SHA1", 4))) {
+            requested_hash_type = CLI_HASH_SHA1;
+        } else if ((0 == strncmp(hash_alg, "sha2-256", 8)) || (0 == strncmp(hash_alg, "SHA2-256", 8)) ||
+                   (0 == strncmp(hash_alg, "sha256", 6)) || (0 == strncmp(hash_alg, "SHA256", 6))) {
+            requested_hash_type = CLI_HASH_SHA2_256;
+        } else {
+            cli_errmsg("scan_common: Unsupported hash algorithm: %s\n", hash_alg);
+            status = CL_EARG;
+            goto done;
+        }
+    }
+
+    // If hash_hint is provided, we need to check if the hash_alg is valid.
+    if (NULL != hash_hint) {
+        uint8_t hash[CLI_HASHLEN_MAX] = {0};
+        size_t hash_string_len        = strlen(hash_hint);
+
+        if (hash_string_len != cli_hash_len(requested_hash_type) * 2) {
+            cli_errmsg("scan_common: hash_hint provided, but its length (%zu) does not match the expected length for %s (%zu).\n",
+                       hash_string_len, hash_alg, cli_hash_len(requested_hash_type) * 2);
+            status = CL_EARG;
+            goto done;
+        }
+
+        // Convert the hash_hint string to a binary hash.
+        ret = cli_hexstr_to_bytes(hash_hint, hash_string_len, hash);
+        if (ret != CL_SUCCESS) {
+            cli_errmsg("scan_common: hash_hint provided, but it is not a valid hex string.\n");
+            status = CL_EARG;
+            goto done;
+        }
+        // Set the fmap hash for the given algorithm.
+        if (CL_SUCCESS != fmap_set_hash(map, hash, requested_hash_type)) {
+            cli_errmsg("scan_common: Failed to set fmap hash for %s.\n", hash_alg);
+            status = CL_EARG;
+            goto done;
+        }
+
+        cli_dbgmsg("scan_common: recorded %s hash hint: %s\n", cli_hash_name(requested_hash_type), hash_hint);
+    }
 
     ctx.engine  = engine;
     ctx.scanned = scanned;
@@ -5689,10 +5787,9 @@ static cl_error_t scan_common(cl_fmap_t *map, const char *filepath, const char *
 
     // ctx was memset, so recursion_level starts at 0.
     ctx.recursion_stack[ctx.recursion_level].fmap = map;
-    ctx.recursion_stack[ctx.recursion_level].type = CL_TYPE_ANY; // ANY for the top level, because we don't yet know the type.
     ctx.recursion_stack[ctx.recursion_level].size = map->len;
-
-    ctx.fmap = ctx.recursion_stack[ctx.recursion_level].fmap;
+    ctx.recursion_stack[ctx.recursion_level].type = CL_TYPE_ANY;
+    ctx.fmap                                      = ctx.recursion_stack[ctx.recursion_level].fmap;
 
     perf_init(&ctx);
 
@@ -5836,7 +5933,10 @@ static cl_error_t scan_common(cl_fmap_t *map, const char *filepath, const char *
         }
     }
 
-    status = cli_magic_scan(&ctx, CL_TYPE_ANY);
+    /*
+     * DO THE SCAN!
+     */
+    status = cli_magic_scan(&ctx, file_type);
 
     if (ctx.options->general & CL_SCAN_GENERAL_COLLECT_METADATA && (ctx.metadata_json != NULL)) {
         json_object *jobj;
@@ -5985,6 +6085,52 @@ static cl_error_t scan_common(cl_fmap_t *map, const char *filepath, const char *
         }
     }
 
+    /*
+     * If the caller requested a hash, we need to get it from the fmap.
+     */
+    if (NULL != hash_out) {
+        // Allocate a buffer for the hash
+        size_t hash_len   = cli_hash_len(requested_hash_type);
+        char *hash_string = malloc(hash_len * 2 + 1); // +1 for the null terminator
+        if (NULL == hash_string) {
+            cli_errmsg("scan_common: no memory for hash string buffer\n");
+            status = CL_EMEM;
+        } else {
+            // Get the hash from the fmap.
+            uint8_t *hash = NULL;
+            ret           = fmap_get_hash(map, &hash, requested_hash_type);
+            if (CL_SUCCESS != ret || hash == NULL) {
+                cli_errmsg("scan_common: fmap_get_hash failed: %d\n", ret);
+                status = ret;
+            } else {
+                // Convert hash to string.
+                size_t i;
+                for (i = 0; i < hash_len; i++) {
+                    sprintf(hash_string + i * 2, "%02x", hash[i]);
+                }
+                hash_string[hash_len * 2] = 0;
+
+                *hash_out = hash_string;
+            }
+        }
+    }
+
+    /*
+     * If the caller requested a file type, we need to get it from the fmap.
+     */
+    if (NULL != file_type_out) {
+        const char *ftname = cli_ftname(ctx.recursion_stack[ctx.recursion_level].type);
+        if ((NULL == ftname) ||
+            (strcmp(ftname, "CL_TYPE_ANY") == 0)) {
+            cli_dbgmsg("scan_common: unknown file type.\n");
+            // Default to CL_TYPE_BINARY_DATA if we never determined the type.
+            *file_type_out = cli_safer_strdup("CL_TYPE_BINARY_DATA");
+        } else {
+            // Set the output pointer to the file type name.
+            *file_type_out = cli_safer_strdup(ftname);
+        }
+    }
+
     if (verdict != CL_CLEAN) {
         // Reporting "VIRUS" is more important than reporting and error,
         // because... unfortunately we can only do one with the current API.
@@ -5992,9 +6138,6 @@ static cl_error_t scan_common(cl_fmap_t *map, const char *filepath, const char *
     }
 
 done:
-    // Filter the result from the post-scan hooks and stuff, so we don't propagate non-fatal errors.
-    // And to convert CL_VERIFIED -> CL_CLEAN
-    (void)result_should_goto_done(&ctx, status, &status);
 
     if (logg_initialized) {
         cli_logg_unsetup();
@@ -6004,7 +6147,8 @@ done:
         cli_json_delobj(ctx.metadata_json);
     }
 
-    if ((ctx.engine->engine_options & ENGINE_OPTIONS_TMPDIR_RECURSION) &&
+    if ((NULL != ctx.engine) &&
+        (ctx.engine->engine_options & ENGINE_OPTIONS_TMPDIR_RECURSION) &&
         (NULL != ctx.this_layer_tmpdir)) {
 
         if (!ctx.engine->keeptmp) {
@@ -6032,11 +6176,11 @@ done:
         cli_bitset_free(ctx.hook_lsig_matches);
     }
 
-    if (NULL != ctx.recursion_stack[ctx.recursion_level].evidence) {
-        evidence_free(ctx.recursion_stack[ctx.recursion_level].evidence);
-    }
-
     if (NULL != ctx.recursion_stack) {
+        if (NULL != ctx.recursion_stack[ctx.recursion_level].evidence) {
+            evidence_free(ctx.recursion_stack[ctx.recursion_level].evidence);
+        }
+
         free(ctx.recursion_stack);
     }
 
@@ -6047,7 +6191,94 @@ done:
     return status;
 }
 
-cl_error_t cl_scandesc_callback(int desc, const char *filename, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, struct cl_scan_options *scanoptions, void *context)
+cl_error_t cl_scandesc(
+    int desc,
+    const char *filename,
+    const char **virname,
+    unsigned long int *scanned,
+    const struct cl_engine *engine,
+    struct cl_scan_options *scanoptions)
+{
+    cl_error_t status;
+    uint64_t scanned_out;
+
+    status = cl_scandesc_ex(
+        desc,
+        filename,
+        virname,
+        &scanned_out,
+        engine,
+        scanoptions,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL);
+
+    if (NULL != scanned) {
+        if (SIZEOF_LONG == 4 && scanned_out > UINT32_MAX) {
+            cli_warnmsg("cl_scanfile_callback: scanned_out exceeds UINT32_MAX, setting to UINT32_MAX\n");
+            *scanned = UINT32_MAX;
+        } else {
+            *scanned = (unsigned long int)scanned_out;
+        }
+    }
+
+    return status;
+}
+
+cl_error_t cl_scandesc_callback(
+    int desc,
+    const char *filename,
+    const char **virname,
+    unsigned long int *scanned,
+    const struct cl_engine *engine,
+    struct cl_scan_options *scanoptions,
+    void *context)
+{
+    cl_error_t status;
+    uint64_t scanned_out;
+
+    status = cl_scandesc_ex(
+        desc,
+        filename,
+        virname,
+        &scanned_out,
+        engine,
+        scanoptions,
+        context,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL);
+
+    if (NULL != scanned) {
+        if (SIZEOF_LONG == 4 && scanned_out > UINT32_MAX) {
+            cli_warnmsg("cl_scanfile_callback: scanned_out exceeds UINT32_MAX, setting to UINT32_MAX\n");
+            *scanned = UINT32_MAX;
+        } else {
+            *scanned = (unsigned long int)scanned_out;
+        }
+    }
+
+    return status;
+}
+
+cl_error_t cl_scandesc_ex(
+    int desc,
+    const char *filename,
+    const char **virname,
+    uint64_t *scanned,
+    const struct cl_engine *engine,
+    struct cl_scan_options *scanoptions,
+    void *context,
+    const char *hash_hint,
+    char **hash_out,
+    const char *hash_alg,
+    const char *file_type_hint,
+    char **file_type_out)
 {
     cl_error_t status = CL_SUCCESS;
     cl_fmap_t *map    = NULL;
@@ -6090,7 +6321,19 @@ cl_error_t cl_scandesc_callback(int desc, const char *filename, const char **vir
         goto done;
     }
 
-    status = scan_common(map, filename, virname, scanned, engine, scanoptions, context);
+    status = scan_common(
+        map,
+        filename,
+        virname,
+        scanned,
+        engine,
+        scanoptions,
+        context,
+        hash_hint,
+        hash_out,
+        hash_alg,
+        file_type_hint,
+        file_type_out);
 
 done:
     if (NULL != map) {
@@ -6103,7 +6346,57 @@ done:
     return status;
 }
 
-cl_error_t cl_scanmap_callback(cl_fmap_t *map, const char *filename, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, struct cl_scan_options *scanoptions, void *context)
+cl_error_t cl_scanmap_callback(
+    cl_fmap_t *map,
+    const char *filename,
+    const char **virname,
+    unsigned long int *scanned,
+    const struct cl_engine *engine,
+    struct cl_scan_options *scanoptions,
+    void *context)
+{
+    cl_error_t status;
+    uint64_t scanned_out;
+
+    status = cl_scanmap_ex(
+        map,
+        filename,
+        virname,
+        &scanned_out,
+        engine,
+        scanoptions,
+        context,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL);
+
+    if (NULL != scanned) {
+        if (SIZEOF_LONG == 4 && scanned_out > UINT32_MAX) {
+            cli_warnmsg("cl_scanfile_callback: scanned_out exceeds UINT32_MAX, setting to UINT32_MAX\n");
+            *scanned = UINT32_MAX;
+        } else {
+            *scanned = (unsigned long int)scanned_out;
+        }
+    }
+
+    return status;
+}
+
+cl_error_t cl_scanmap_ex(
+    cl_fmap_t *map,
+    const char *filename,
+    const char **virname,
+    uint64_t *scanned,
+    const struct cl_engine *engine,
+    struct cl_scan_options *scanoptions,
+    void *context,
+    const char *hash_hint,
+    char **hash_out,
+    const char *hash_alg,
+    const char *file_type_hint,
+    char **file_type_out)
 {
     if ((engine->maxfilesize > 0) && (map->len > engine->maxfilesize)) {
         cli_dbgmsg("cl_scandesc_callback: File too large (%zu bytes), ignoring\n", map->len);
@@ -6124,7 +6417,19 @@ cl_error_t cl_scanmap_callback(cl_fmap_t *map, const char *filename, const char 
         cli_basename(filename, strlen(filename), &map->name, true /* posix_support_backslash_pathsep */);
     }
 
-    return scan_common(map, filename, virname, scanned, engine, scanoptions, context);
+    return scan_common(
+        map,
+        filename,
+        virname,
+        scanned,
+        engine,
+        scanoptions,
+        context,
+        hash_hint,
+        hash_out,
+        hash_alg,
+        file_type_hint,
+        file_type_out);
 }
 
 cl_error_t cli_magic_scan_file(const char *filename, cli_ctx *ctx, const char *original_name, uint32_t attributes)
@@ -6148,12 +6453,89 @@ done:
     return ret;
 }
 
-cl_error_t cl_scanfile(const char *filename, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, struct cl_scan_options *scanoptions)
+cl_error_t cl_scanfile(
+    const char *filename,
+    const char **virname,
+    unsigned long int *scanned,
+    const struct cl_engine *engine,
+    struct cl_scan_options *scanoptions)
 {
-    return cl_scanfile_callback(filename, virname, scanned, engine, scanoptions, NULL);
+    cl_error_t status;
+    uint64_t scanned_out;
+
+    status = cl_scanfile_ex(
+        filename,
+        virname,
+        &scanned_out,
+        engine,
+        scanoptions,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL);
+
+    if (NULL != scanned) {
+        if (SIZEOF_LONG == 4 && scanned_out > UINT32_MAX) {
+            cli_warnmsg("cl_scanfile_callback: scanned_out exceeds UINT32_MAX, setting to UINT32_MAX\n");
+            *scanned = UINT32_MAX;
+        } else {
+            *scanned = (unsigned long int)scanned_out;
+        }
+    }
+
+    return status;
 }
 
-cl_error_t cl_scanfile_callback(const char *filename, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, struct cl_scan_options *scanoptions, void *context)
+cl_error_t cl_scanfile_callback(
+    const char *filename,
+    const char **virname,
+    unsigned long int *scanned,
+    const struct cl_engine *engine,
+    struct cl_scan_options *scanoptions,
+    void *context)
+{
+    cl_error_t status;
+    uint64_t scanned_out;
+
+    status = cl_scanfile_ex(
+        filename,
+        virname,
+        &scanned_out,
+        engine,
+        scanoptions,
+        context,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL);
+
+    if (NULL != scanned) {
+        if (SIZEOF_LONG == 4 && scanned_out > UINT32_MAX) {
+            cli_warnmsg("cl_scanfile_callback: scanned_out exceeds UINT32_MAX, setting to UINT32_MAX\n");
+            *scanned = UINT32_MAX;
+        } else {
+            *scanned = (unsigned long int)scanned_out;
+        }
+    }
+
+    return status;
+}
+
+cl_error_t cl_scanfile_ex(
+    const char *filename,
+    const char **virname,
+    uint64_t *scanned,
+    const struct cl_engine *engine,
+    struct cl_scan_options *scanoptions,
+    void *context,
+    const char *hash_hint,
+    char **hash_out,
+    const char *hash_alg,
+    const char *file_type_hint,
+    char **file_type_out)
 {
     int fd;
     cl_error_t ret;
@@ -6173,7 +6555,20 @@ cl_error_t cl_scanfile_callback(const char *filename, const char **virname, unsi
     if (fname != filename)
         free((char *)fname);
 
-    ret = cl_scandesc_callback(fd, filename, virname, scanned, engine, scanoptions, context);
+    ret = cl_scandesc_ex(
+        fd,
+        filename,
+        virname,
+        scanned,
+        engine,
+        scanoptions,
+        context,
+        hash_hint,
+        hash_out,
+        hash_alg,
+        file_type_hint,
+        file_type_out);
+
     close(fd);
 
     return ret;

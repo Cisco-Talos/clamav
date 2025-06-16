@@ -627,8 +627,9 @@ cl_error_t cli_check_fp(cli_ctx *ctx, const char *vname)
                 }
 
                 /* Convert hash to string */
-                for (i = 0; i < hash_len; i++)
+                for (i = 0; i < hash_len; i++) {
                     sprintf(hash_string + i * 2, "%02x", hash[i]);
+                }
                 hash_string[hash_len * 2] = 0;
 
                 if (cli_debug_flag || ctx->engine->cb_hash) {
