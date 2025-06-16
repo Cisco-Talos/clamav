@@ -60,7 +60,7 @@
 #define CLAMKEY "Software\\ClamAV"
 #endif
 
-#define MAXCMDOPTS 150
+#define MAXCMDOPTS 200
 #define MAX_OPTION_LINE_LENGTH 1024
 
 #define MATCH_NUMBER "^[0-9]+((( +)?#(.*))?)$"
@@ -161,6 +161,11 @@ const struct clam_option __clam_options[] = {
     {NULL, "include", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_CLAMSCAN, "", ""},
     {NULL, "include-dir", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_CLAMSCAN, "", ""},
     {NULL, "structured-ssn-format", 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 0, NULL, 0, OPT_CLAMSCAN, "", ""},
+    {NULL, "hash-hint", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMSCAN, "", ""},
+    {NULL, "hash-alg", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMSCAN, "", ""},
+    {NULL, "file-type-hint", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMSCAN, "", ""},
+    {NULL, "log-hash", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN, "", ""},
+    {NULL, "log-file-type", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN, "", ""},
     {NULL, "hex-dump", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_SIGTOOL, "", ""},
     {NULL, "md5", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_SIGTOOL, "", ""},
     {NULL, "sha1", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_SIGTOOL, "", ""},
