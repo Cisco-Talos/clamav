@@ -295,13 +295,21 @@ static void clamscan_virus_found_cb(int fd, const char *virname, void *context)
 static void scanfile(const char *filename, struct cl_engine *engine, const struct optstruct *opts, struct cl_scan_options *options)
 {
     cl_error_t ret = CL_SUCCESS;
-    int fd, included;
+    int fd         = -1;
+    int included   = 0;
     unsigned i;
     const struct optstruct *opt;
     const char *virname = NULL;
     STATBUF sb;
-    struct metachain chain;
-    struct clamscan_cb_data data;
+    struct metachain chain       = {0};
+    struct clamscan_cb_data data = {0};
+    const char *hash_hint        = NULL;
+    char **hash_out              = NULL;
+    char *hash                   = NULL;
+    const char *hash_alg         = NULL;
+    const char *file_type_hint   = NULL;
+    char **file_type_out         = NULL;
+    char *file_type              = NULL;
 
     char *real_filename = NULL;
 
@@ -399,6 +407,22 @@ static void scanfile(const char *filename, struct cl_engine *engine, const struc
         }
     }
 
+    if ((opt = optget(opts, "hash-alg"))->enabled) {
+        hash_alg = opt->strarg;
+    }
+    if ((opt = optget(opts, "hash-hint"))->enabled) {
+        hash_hint = opt->strarg;
+    }
+    if ((opt = optget(opts, "log-hash"))->enabled) {
+        hash_out = &hash;
+    }
+    if ((opt = optget(opts, "file-type-hint"))->enabled) {
+        file_type_hint = opt->strarg;
+    }
+    if ((opt = optget(opts, "log-file-type"))->enabled) {
+        file_type_out = &file_type;
+    }
+
     logg(LOGG_DEBUG, "Scanning %s\n", filename);
 
     if ((fd = safe_open(filename, O_RDONLY | O_BINARY)) == -1) {
@@ -409,7 +433,18 @@ static void scanfile(const char *filename, struct cl_engine *engine, const struc
 
     data.chain    = &chain;
     data.filename = filename;
-    if ((ret = cl_scandesc_callback(fd, filename, &virname, &info.blocks, engine, options, &data)) == CL_VIRUS) {
+    if (CL_VIRUS == (ret = cl_scandesc_ex(
+                         fd,
+                         filename,
+                         &virname,
+                         &info.blocks,
+                         engine, options,
+                         &data,
+                         hash_hint,
+                         hash_out,
+                         hash_alg,
+                         file_type_hint,
+                         file_type_out))) {
         if (optget(opts, "archive-verbose")->enabled) {
             if (chain.nchains > 1) {
                 char str[128];
@@ -437,19 +472,45 @@ static void scanfile(const char *filename, struct cl_engine *engine, const struc
         info.errors++;
     }
 
-    for (i = 0; i < chain.nchains; i++)
-        free(chain.chains[i]);
+    if (NULL != hash) {
+        if (hash_alg == NULL) {
+            // libclamav defaults to sha2-256
+            hash_alg = "sha2-256";
+        }
+        logg(LOGG_INFO, "%s FileHash: %s (%s)\n", filename, hash, hash_alg);
+    }
 
-    free(chain.chains);
-    close(fd);
-
-    if (ret == CL_VIRUS && action)
-        action(filename);
+    if (NULL != file_type) {
+        logg(LOGG_INFO, "%s FileType: %s\n", filename, file_type);
+    }
 
 done:
+    /*
+     * Run the action callback if the file was infected.
+     */
+    if (ret == CL_VIRUS && action) {
+        action(filename);
+    }
+
+    if (NULL != hash) {
+        free(hash);
+    }
+    if (NULL != file_type) {
+        free(file_type);
+    }
+    if (NULL != chain.chains) {
+        for (i = 0; i < chain.nchains; i++) {
+            free(chain.chains[i]);
+        }
+        free(chain.chains);
+    }
+    if (fd != -1) {
+        close(fd);
+    }
     if (NULL != real_filename) {
         free(real_filename);
     }
+
     return;
 }
 
@@ -565,16 +626,25 @@ static void scandirs(const char *dirname, struct cl_engine *engine, const struct
     }
 }
 
-static int scanstdin(const struct cl_engine *engine, struct cl_scan_options *options)
+static int scanstdin(const struct cl_engine *engine, const struct optstruct *opts, struct cl_scan_options *options)
 {
-    int ret;
+    cl_error_t ret;
+
     unsigned int fsize  = 0;
     const char *virname = NULL;
     const char *tmpdir  = NULL;
-    char *file, buff[FILEBUFF];
+    char *filename, buff[FILEBUFF];
     size_t bread;
     FILE *fs;
     struct clamscan_cb_data data;
+    const struct optstruct *opt;
+    const char *hash_hint      = NULL;
+    char **hash_out            = NULL;
+    char *hash                 = NULL;
+    const char *hash_alg       = NULL;
+    const char *file_type_hint = NULL;
+    char **file_type_out       = NULL;
+    char *file_type      = NULL;
 
     tmpdir = cl_engine_get_str(engine, CL_ENGINE_TMPDIR, NULL);
     if (NULL == tmpdir) {
@@ -586,22 +656,22 @@ static int scanstdin(const struct cl_engine *engine, struct cl_scan_options *opt
         return 2;
     }
 
-    if (!(file = cli_gentemp(tmpdir))) {
+    if (!(filename = cli_gentemp(tmpdir))) {
         logg(LOGG_ERROR, "Can't generate tempfile name\n");
         return 2;
     }
 
-    if (!(fs = fopen(file, "wb"))) {
-        logg(LOGG_ERROR, "Can't open %s for writing\n", file);
-        free(file);
+    if (!(fs = fopen(filename, "wb"))) {
+        logg(LOGG_ERROR, "Can't open %s for writing\n", filename);
+        free(filename);
         return 2;
     }
 
     while ((bread = fread(buff, 1, FILEBUFF, stdin))) {
         fsize += bread;
         if (fwrite(buff, 1, bread, fs) < bread) {
-            logg(LOGG_ERROR, "Can't write to %s\n", file);
-            free(file);
+            logg(LOGG_ERROR, "Can't write to %s\n", filename);
+            free(filename);
             fclose(fs);
             return 2;
         }
@@ -609,14 +679,41 @@ static int scanstdin(const struct cl_engine *engine, struct cl_scan_options *opt
 
     fclose(fs);
 
-    logg(LOGG_DEBUG, "Checking %s\n", file);
+    if ((opt = optget(opts, "hash-alg"))->enabled) {
+        hash_alg = opt->strarg;
+    }
+    if ((opt = optget(opts, "hash-hint"))->enabled) {
+        hash_hint = opt->strarg;
+    }
+    if ((opt = optget(opts, "log-hash"))->enabled) {
+        hash_out = &hash;
+    }
+    if ((opt = optget(opts, "file-type-hint"))->enabled) {
+        file_type_hint = opt->strarg;
+    }
+    if ((opt = optget(opts, "log-file-type"))->enabled) {
+        file_type_out = &file_type;
+    }
+
+    logg(LOGG_DEBUG, "Scanning %s\n", filename);
 
     info.files++;
     info.rblocks += fsize / CL_COUNT_PRECISION;
 
     data.filename = "stdin";
     data.chain    = NULL;
-    if ((ret = cl_scanfile_callback(file, &virname, &info.blocks, engine, options, &data)) == CL_VIRUS) {
+    if (CL_VIRUS == (ret = cl_scanfile_ex(
+                         filename,
+                         &virname,
+                         &info.blocks,
+                         engine,
+                         options,
+                         &data,
+                         hash_hint,
+                         hash_out,
+                         hash_alg,
+                         file_type_hint,
+                         file_type_out))) {
         info.ifiles++;
 
         if (bell)
@@ -631,8 +728,28 @@ static int scanstdin(const struct cl_engine *engine, struct cl_scan_options *opt
         info.errors++;
     }
 
-    unlink(file);
-    free(file);
+    if (NULL != hash) {
+        if (hash_alg == NULL) {
+            // libclamav defaults to sha2-256
+            hash_alg = "sha2-256";
+        }
+        logg(LOGG_INFO, "%s FileHash: %s (%s)\n", filename, hash, hash_alg);
+    }
+
+    if (NULL != file_type) {
+        logg(LOGG_INFO, "%s FileType: %s\n", filename, file_type);
+    }
+
+    if (NULL != hash) {
+        free(hash);
+    }
+
+    if (NULL != file_type) {
+        free(file_type);
+    }
+
+    unlink(filename);
+    free(filename);
     return ret;
 }
 
@@ -976,7 +1093,7 @@ static int scan_files(struct cl_engine *engine, const struct optstruct *opts, st
     while ((filename = filelist(opts, &ret)) && (file = strdup(filename))) {
         if (!strcmp(file, "-")) {
             /* scan data from stdin */
-            ret = scanstdin(engine, options);
+            ret = scanstdin(engine, opts, options);
         } else if (LSTAT(file, &sb) == -1) {
             /* Can't access the file */
             perror(file);
