@@ -68,6 +68,9 @@ CLAMAV_PUBLIC {
     cl_engine_set_clcb_vba;
     cl_cvdunpack_ex;
     cl_cvdverify_ex;
+    cl_scandesc_ex;
+    cl_scanmap_ex;
+    cl_scanfile_ex;
 };
 CLAMAV_PRIVATE {
   global:
