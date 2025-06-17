@@ -3728,17 +3728,21 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
 
     if ((typercg) &&
         // We should also omit bzips, but DMG's may be detected in bzips. (type != CL_TYPE_BZ) &&        /* Omit BZ files because they can contain portions of original files like zip file entries that cause invalid extractions and lots of warnings. Decompress first, then scan! */
-        (type != CL_TYPE_GZ) &&        /* Omit GZ files because they can contain portions of original files like zip file entries that cause invalid extractions and lots of warnings. Decompress first, then scan! */
-        (type != CL_TYPE_CPIO_OLD) &&  /* Omit CPIO_OLD files because it's an image format that we can extract and scan manually. */
-        (type != CL_TYPE_ZIP) &&       /* Omit ZIP files because it'll detect each zip file entry as SFXZIP, which is a waste. We'll extract it and then scan. */
-        (type != CL_TYPE_ZIPSFX) &&    /* Omit SFX archive types from being checked for embedded content. They should only be parsed for contained files. Those contained files could be EXE's with more SFX, but that's the nature of containers. */
-        (type != CL_TYPE_ARJSFX) &&    /* " */
-        (type != CL_TYPE_RARSFX) &&    /* " */
-        (type != CL_TYPE_EGGSFX) &&    /* " */
-        (type != CL_TYPE_CABSFX) &&    /* " */
-        (type != CL_TYPE_7ZSFX) &&     /* " */
-        (type != CL_TYPE_OLD_TAR) &&   /* Omit OLD TAR files because it's a raw archive format that we can extract and scan manually. */
-        (type != CL_TYPE_POSIX_TAR)) { /* Omit POSIX TAR files because it's a raw archive format that we can extract and scan manually. */
+        (type != CL_TYPE_GZ) &&         /* Omit GZ files because they can contain portions of original files like zip file entries that cause invalid extractions and lots of warnings. Decompress first, then scan! */
+        (type != CL_TYPE_CPIO_OLD) &&   /* Omit CPIO_OLD files because it's an image format that we can extract and scan manually. */
+        (type != CL_TYPE_ZIP) &&        /* Omit ZIP files because it'll detect each zip file entry as SFXZIP, which is a waste. We'll extract it and then scan. */
+        (type != CL_TYPE_ZIPSFX) &&     /* Omit SFX archive types from being checked for embedded content. They should only be parsed for contained files. Those contained files could be EXE's with more SFX, but that's the nature of containers. */
+        (type != CL_TYPE_ARJSFX) &&     /* " */
+        (type != CL_TYPE_RARSFX) &&     /* " */
+        (type != CL_TYPE_EGGSFX) &&     /* " */
+        (type != CL_TYPE_CABSFX) &&     /* " */
+        (type != CL_TYPE_7ZSFX) &&      /* " */
+        (type != CL_TYPE_OOXML_WORD) && /* Omit OOXML because they are ZIP-based and file-type scanning will double-extract their contents. */
+        (type != CL_TYPE_OOXML_PPT) &&  /* " */
+        (type != CL_TYPE_OOXML_XL) &&   /* " */
+        (type != CL_TYPE_OOXML_HWP) &&  /* " */
+        (type != CL_TYPE_OLD_TAR) &&    /* Omit OLD TAR files because it's a raw archive format that we can extract and scan manually. */
+        (type != CL_TYPE_POSIX_TAR)) {  /* Omit POSIX TAR files because it's a raw archive format that we can extract and scan manually. */
         /*
          * Enable file type recognition scan mode if requested, except for some problematic types (above).
          */
