@@ -1,0 +1,28 @@
+{
+  "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
+  "dependencies": [
+    "boost-system",
+    {
+      "name": "cpprestsdk",
+      "default-features": false
+    },
+    "libxml2",
+    "yajl",
+    {
+      "name": "curl",
+      "features": ["openssl"]
+    },
+    {
+      "name": "openssl",
+      "platform": "(windows & x64 & static)"
+    },
+    "json-c",
+    "libxml2",
+    "pcre2",
+    "check",
+    "pthreads",
+    "zlib",
+    "pdcurses",
+    "bzip2"
+  ]
+}
