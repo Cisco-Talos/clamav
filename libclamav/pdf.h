@@ -27,14 +27,14 @@
 #define PDF_OBJECT_RECURSION_LIMIT 25
 
 struct objstm_struct {
-    uint32_t first;        // offset of first obj
-    uint32_t current;      // offset of current obj
-    uint32_t current_pair; // offset of current pair describing id, location of object
-    uint32_t length;       // total length of all objects (starting at first)
-    uint32_t n;            // number of objects that should be found in the object stream
-    uint32_t nobjs_found;  // number of objects actually found in the object stream
-    char *streambuf;       // address of stream buffer, beginning with first obj pair
-    size_t streambuf_len;  // length of stream buffer, includes pairs followed by actual objects
+    size_t first;         // offset of first obj
+    size_t current;       // offset of current obj
+    size_t current_pair;  // offset of current pair describing id, location of object
+    size_t length;        // total length of all objects (starting at first)
+    size_t n;             // number of objects that should be found in the object stream
+    size_t nobjs_found;   // number of objects actually found in the object stream
+    char *streambuf;      // address of stream buffer, beginning with first obj pair
+    size_t streambuf_len; // length of stream buffer, includes pairs followed by actual objects
 };
 
 struct pdf_obj {
