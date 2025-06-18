@@ -343,8 +343,10 @@ void MixCoder_Free(CMixCoder *p)
   for (i = 0; i < p->numCoders; i++)
   {
     IStateCoder *sc = &p->coders[i];
-    if (p->alloc && sc->p)
+    if (p->alloc && sc->p) {
       sc->Free(sc->p, p->alloc);
+      sc->p = NULL;
+    }
   }
   p->numCoders = 0;
   if (p->buf)
