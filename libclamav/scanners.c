@@ -3719,12 +3719,9 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
 {
     cl_error_t ret = CL_CLEAN, nret = CL_CLEAN;
     struct cli_matched_type *ftoffset = NULL, *fpt;
-    struct cli_exe_info peinfo;
-    unsigned int acmode = AC_SCAN_VIR, break_loop = 0;
+    unsigned int acmode               = AC_SCAN_VIR;
 
     cli_file_t found_type;
-
-    struct json_object *parent_property = NULL;
 
     if ((typercg) &&
         // We should also omit bzips, but DMG's may be detected in bzips. (type != CL_TYPE_BZ) &&        /* Omit BZ files because they can contain portions of original files like zip file entries that cause invalid extractions and lots of warnings. Decompress first, then scan! */
@@ -3766,6 +3763,8 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
         while (fpt) {
             if (fpt->offset > 0) {
                 bool type_has_been_handled = true;
+                bool ancestor_was_embedded = false;
+                size_t i;
 
                 /*
                  * First, use "embedded type recognition" to identify a file's actual type.
@@ -3928,335 +3927,236 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
                 }
 
                 /*
+                 * Only scan embedded files if we are not already in an embedded context.
+                 * That is, if this or a previous layer was identified with embedded file type recognition, then we do
+                 * not scan for embedded files again.
+                 *
+                 * This restriction will prevent detecting the same embedded content more than once when recursing with
+                 * embedded file type recognition deeper within the same buffer.
+                 *
+                 * This is necessary because we have no way of knowing the length of a file and cannot prevent a search
+                 * for embedded files from finding the same embedded content multiple times (like a LOT of times).
+                 *
+                 * E.g. if the file is like this:
+                 *
+                 *          [ data ] [ embedded file ] [ data ] [ embedded file ]
+                 *
+                 * The first time we do it we'll find "two" embedded files, like this:
+                 *
+                 *  Emb. File #1:    [ embedded file ] [ data ] [ embedded file ]
+                 *  Emb. File #2:                               [ embedded file ]
+                 *
+                 * We must not scan Emb. File #1 again for embedded files, because it would double-extract Emb. File #2.
+                 *
+                 * There is a flaw in this logic, though. Suppose that we actually have:
+                 *
+                 *          [ data ] [ compressed file w. recognizable magic bytes ]
+                 *
+                 * A first pass of the above will again identify "two" embedded files:
+                 *
+                 *  Emb. File #1:    [ compressed archive w. recognizable magic bytes ]
+                 *  Emb. File #2:                               [ magic bytes         ] <- Compressed data/Not real file
+                 *
+                 * In this case, the magic bytes of a contained, compressed file is somehow still identifiable despite
+                 * compression. The result is the Emb. File #2 will fail to be parsed and when we decompress Emb. File
+                 * #1, then we maybe get something like this:
+                 *
+                 *  Decompressed:    [ data                   ] [ embedded file ]
+                 *
+                 * So if this happened... then we WOULD want to scan the decompressed file for embedded files.
+                 * The problem is, we have way of knowing how long embedded files are.
+                 * We don't know if we have:
+                 *
+                 * A.       [ data ] [ embedded file ] [ data ] [ embedded file ]
+                 *  or
+                 * B.       [ data ] [ embedded compressed archive w. recognizable magic bytes ]
+                 *  or
+                 * C.       [ data ] [ embedded uncompressed archive w. multiple file entries [ file 1 ] [ file 2 ] [ file 2 ] ]
+                 *
+                 * Some ideas for a more accurate solution:
+                 *
+                 * 1. Record the offset and size of each file extracted by the parsers.
+                 *    Then, when we do embedded file type recognition, we can check if the offset and size of the
+                 *    embedded file matches the offset and size of a file that was extracted by a parser.
+                 *    This falls apart a little bit for multiple layers of archives unless we also compare offsets within
+                 *    each layer. We could do that, but it would be a lot of work. And we'd probably want to take into
+                 *    consideration if files were decompressed or decrypted. ... I don't know a clean solution.
+                 *
+                 * 2. Have all parsers to run before embedded file type recognition and they each determine the length
+                 *    of the file they parsed, so we can differentiate between embedded files and appended files.
+                 *    For appended files, we would know they weren't extracted by a parser module and the parser for
+                 *    each of those would report the length of the file it parsed so we can use that to mitigate
+                 *    overlapping embedded file type recognition.
+                 *    But I highly doubt all file types can be parsed to determine the correct length of the file.
+                 */
+                for (i = ctx->recursion_level; i > 0; i--) {
+                    if (ctx->recursion_stack[i].attributes & LAYER_ATTRIBUTES_EMBEDDED) {
+                        // Found an ancestor that was embedded.
+                        // Do not scan embedded files again.
+                        ancestor_was_embedded = true;
+                        break;
+                    }
+                }
+
+                /*
                  * Next, check for actual embedded files.
                  */
-                if ((ctx->recursion_stack[ctx->recursion_level].recursion_level_buffer_fmap == 0) &&
+                if ((false == ancestor_was_embedded) &&
                     (false == type_has_been_handled)) {
-
-                    fmap_t *new_map = NULL;
-
-                    /*
-                     * Only do this though if we're at the top fmap layer of a buffer.
-                     *
-                     * This restriction will prevent detecting the same embedded content
-                     * more than once when recursing with embedded file type recognition
-                     * deeper within the same buffer.
-                     */
                     cli_dbgmsg("%s signature found at %u\n", cli_ftname(fpt->type), (unsigned int)fpt->offset);
 
                     type_has_been_handled = true;
 
                     switch (fpt->type) {
                         case CL_TYPE_RARSFX:
-                            if (type != CL_TYPE_RAR && have_rar && SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_RAR)) {
-
-                                new_map = fmap_duplicate(ctx->fmap, fpt->offset, ctx->fmap->len - fpt->offset, NULL);
-                                if (NULL == new_map) {
-                                    ret = nret = CL_EMEM;
-                                    cli_dbgmsg("scanraw: Failed to duplicate fmap to scan embedded file.\n");
-                                    break;
-                                }
-
-                                /* Perform scan with child fmap */
-                                nret = cli_recursion_stack_push(ctx, new_map, CL_TYPE_RAR, false, LAYER_ATTRIBUTES_EMBEDDED);
-                                if (CL_SUCCESS != nret) {
-                                    ret = nret;
-                                    cli_dbgmsg("scanraw: Failed to add map to recursion stack to scan embedded file.\n");
-                                    break;
-                                }
-
-                                nret = cli_scanrar(ctx);
-
-                                (void)cli_recursion_stack_pop(ctx);
+                            if (type != CL_TYPE_RAR) {
+                                nret = cli_magic_scan_nested_fmap_type(
+                                    ctx->fmap,
+                                    fpt->offset,
+                                    ctx->fmap->len - fpt->offset,
+                                    ctx,
+                                    CL_TYPE_RAR,
+                                    NULL,
+                                    LAYER_ATTRIBUTES_EMBEDDED);
                             }
                             break;
 
                         case CL_TYPE_EGGSFX:
-                            if (type != CL_TYPE_EGG && SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_EGG)) {
-
-                                new_map = fmap_duplicate(ctx->fmap, fpt->offset, ctx->fmap->len - fpt->offset, NULL);
-                                if (NULL == new_map) {
-                                    ret = nret = CL_EMEM;
-                                    cli_dbgmsg("scanraw: Failed to duplicate fmap to scan embedded file.\n");
-                                    break;
-                                }
-
-                                /* Perform scan with child fmap */
-                                nret = cli_recursion_stack_push(ctx, new_map, CL_TYPE_EGG, false, LAYER_ATTRIBUTES_EMBEDDED);
-                                if (CL_SUCCESS != nret) {
-                                    ret = nret;
-                                    cli_dbgmsg("scanraw: Failed to add map to recursion stack to scan embedded file.\n");
-                                    break;
-                                }
-
-                                nret = cli_scanegg(ctx);
-
-                                (void)cli_recursion_stack_pop(ctx);
+                            if (type != CL_TYPE_EGG) {
+                                nret = cli_magic_scan_nested_fmap_type(
+                                    ctx->fmap,
+                                    fpt->offset,
+                                    ctx->fmap->len - fpt->offset,
+                                    ctx,
+                                    CL_TYPE_EGG,
+                                    NULL,
+                                    LAYER_ATTRIBUTES_EMBEDDED);
                             }
                             break;
 
                         case CL_TYPE_ZIPSFX:
-                            if (type != CL_TYPE_ZIP && SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_ZIP)) {
-
-                                new_map = fmap_duplicate(ctx->fmap, fpt->offset, ctx->fmap->len - fpt->offset, NULL);
-                                if (NULL == new_map) {
-                                    ret = nret = CL_EMEM;
-                                    cli_dbgmsg("scanraw: Failed to duplicate fmap to scan embedded file.\n");
-                                    break;
-                                }
-
-                                /* Perform scan with child fmap */
-                                nret = cli_recursion_stack_push(ctx, new_map, CL_TYPE_ZIP, false, LAYER_ATTRIBUTES_EMBEDDED);
-                                if (CL_SUCCESS != nret) {
-                                    ret = nret;
-                                    cli_dbgmsg("scanraw: Failed to add map to recursion stack to scan embedded file.\n");
-                                    break;
-                                }
-
-                                nret = cli_unzip_single(ctx, 0);
-
-                                (void)cli_recursion_stack_pop(ctx);
+                            if (type != CL_TYPE_ZIP) {
+                                nret = cli_magic_scan_nested_fmap_type(
+                                    ctx->fmap,
+                                    fpt->offset,
+                                    ctx->fmap->len - fpt->offset,
+                                    ctx,
+                                    CL_TYPE_ZIP,
+                                    NULL,
+                                    LAYER_ATTRIBUTES_EMBEDDED);
                             }
                             break;
 
                         case CL_TYPE_CABSFX:
-                            if (type != CL_TYPE_MSCAB && SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_CAB)) {
-
-                                new_map = fmap_duplicate(ctx->fmap, fpt->offset, ctx->fmap->len - fpt->offset, NULL);
-                                if (NULL == new_map) {
-                                    ret = nret = CL_EMEM;
-                                    cli_dbgmsg("scanraw: Failed to duplicate fmap to scan embedded file.\n");
-                                    break;
-                                }
-
-                                /* Perform scan with child fmap */
-                                nret = cli_recursion_stack_push(ctx, new_map, CL_TYPE_MSCAB, false, LAYER_ATTRIBUTES_EMBEDDED);
-                                if (CL_SUCCESS != nret) {
-                                    ret = nret;
-                                    cli_dbgmsg("scanraw: Failed to add map to recursion stack to scan embedded file.\n");
-                                    break;
-                                }
-
-                                nret = cli_scanmscab(ctx, 0);
-
-                                (void)cli_recursion_stack_pop(ctx);
+                            if (type != CL_TYPE_MSCAB) {
+                                nret = cli_magic_scan_nested_fmap_type(
+                                    ctx->fmap,
+                                    fpt->offset,
+                                    ctx->fmap->len - fpt->offset,
+                                    ctx,
+                                    CL_TYPE_MSCAB,
+                                    NULL,
+                                    LAYER_ATTRIBUTES_EMBEDDED);
                             }
                             break;
 
                         case CL_TYPE_ARJSFX:
-                            if (type != CL_TYPE_ARJ && SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_ARJ)) {
-
-                                new_map = fmap_duplicate(ctx->fmap, fpt->offset, ctx->fmap->len - fpt->offset, NULL);
-                                if (NULL == new_map) {
-                                    ret = nret = CL_EMEM;
-                                    cli_dbgmsg("scanraw: Failed to duplicate fmap to scan embedded file.\n");
-                                    break;
-                                }
-
-                                /* Perform scan with child fmap */
-                                nret = cli_recursion_stack_push(ctx, new_map, CL_TYPE_ARJ, false, LAYER_ATTRIBUTES_EMBEDDED);
-                                if (CL_SUCCESS != nret) {
-                                    ret = nret;
-                                    cli_dbgmsg("scanraw: Failed to add map to recursion stack to scan embedded file.\n");
-                                    break;
-                                }
-
-                                nret = cli_scanarj(ctx);
-
-                                (void)cli_recursion_stack_pop(ctx);
+                            if (type != CL_TYPE_ARJ) {
+                                nret = cli_magic_scan_nested_fmap_type(
+                                    ctx->fmap,
+                                    fpt->offset,
+                                    ctx->fmap->len - fpt->offset,
+                                    ctx,
+                                    CL_TYPE_ARJ,
+                                    NULL,
+                                    LAYER_ATTRIBUTES_EMBEDDED);
                             }
                             break;
 
                         case CL_TYPE_7ZSFX:
-                            if (type != CL_TYPE_7Z && SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_7Z)) {
-
-                                new_map = fmap_duplicate(ctx->fmap, fpt->offset, ctx->fmap->len - fpt->offset, NULL);
-                                if (NULL == new_map) {
-                                    ret = nret = CL_EMEM;
-                                    cli_dbgmsg("scanraw: Failed to duplicate fmap to scan embedded file.\n");
-                                    break;
-                                }
-
-                                /* Perform scan with child fmap */
-                                nret = cli_recursion_stack_push(ctx, new_map, CL_TYPE_7Z, false, LAYER_ATTRIBUTES_EMBEDDED);
-                                if (CL_SUCCESS != nret) {
-                                    ret = nret;
-                                    cli_dbgmsg("scanraw: Failed to add map to recursion stack to scan embedded file.\n");
-                                    break;
-                                }
-
-                                nret = cli_7unz(ctx, 0);
-
-                                (void)cli_recursion_stack_pop(ctx);
+                            if (type != CL_TYPE_7Z) {
+                                nret = cli_magic_scan_nested_fmap_type(
+                                    ctx->fmap,
+                                    fpt->offset,
+                                    ctx->fmap->len - fpt->offset,
+                                    ctx,
+                                    CL_TYPE_7Z,
+                                    NULL,
+                                    LAYER_ATTRIBUTES_EMBEDDED);
                             }
                             break;
 
                         case CL_TYPE_NULSFT:
-                            if (SCAN_PARSE_ARCHIVE && type == CL_TYPE_MSEXE && (DCONF_ARCH & ARCH_CONF_NSIS) && fpt->offset > 4) {
+                            if (type == CL_TYPE_MSEXE && fpt->offset > 4) {
                                 // Note: CL_TYPE_NULSFT is special, because the file actually starts 4 bytes before the start of the signature match
-                                new_map = fmap_duplicate(ctx->fmap, fpt->offset - 4, ctx->fmap->len - (fpt->offset - 4), NULL);
-                                if (NULL == new_map) {
-                                    ret = nret = CL_EMEM;
-                                    cli_dbgmsg("scanraw: Failed to duplicate fmap to scan embedded file.\n");
-                                    break;
-                                }
-
-                                /* Perform scan with child fmap */
-                                nret = cli_recursion_stack_push(ctx, new_map, CL_TYPE_NULSFT, false, LAYER_ATTRIBUTES_EMBEDDED);
-                                if (CL_SUCCESS != nret) {
-                                    ret = nret;
-                                    cli_dbgmsg("scanraw: Failed to add map to recursion stack to scan embedded file.\n");
-                                    break;
-                                }
-
-                                nret = cli_scannulsft(ctx, 0);
-
-                                (void)cli_recursion_stack_pop(ctx);
+                                nret = cli_magic_scan_nested_fmap_type(
+                                    ctx->fmap,
+                                    fpt->offset - 4,
+                                    ctx->fmap->len - (fpt->offset - 4),
+                                    ctx,
+                                    CL_TYPE_NULSFT,
+                                    NULL,
+                                    LAYER_ATTRIBUTES_EMBEDDED);
                             }
                             break;
 
                         case CL_TYPE_AUTOIT:
-                            if (SCAN_PARSE_ARCHIVE && type == CL_TYPE_MSEXE && (DCONF_ARCH & ARCH_CONF_AUTOIT)) {
-
-                                new_map = fmap_duplicate(ctx->fmap, fpt->offset, ctx->fmap->len - fpt->offset, NULL);
-                                if (NULL == new_map) {
-                                    ret = nret = CL_EMEM;
-                                    cli_dbgmsg("scanraw: Failed to duplicate fmap to scan embedded file.\n");
-                                    break;
-                                }
-
-                                /* Perform scan with child fmap */
-                                nret = cli_recursion_stack_push(ctx, new_map, CL_TYPE_AUTOIT, false, LAYER_ATTRIBUTES_EMBEDDED);
-                                if (CL_SUCCESS != nret) {
-                                    ret = nret;
-                                    cli_dbgmsg("scanraw: Failed to add map to recursion stack to scan embedded file.\n");
-                                    break;
-                                }
-
-                                nret = cli_scanautoit(ctx, 23);
-
-                                (void)cli_recursion_stack_pop(ctx);
+                            if (type == CL_TYPE_MSEXE) {
+                                nret = cli_magic_scan_nested_fmap_type(
+                                    ctx->fmap,
+                                    fpt->offset,
+                                    ctx->fmap->len - fpt->offset,
+                                    ctx,
+                                    CL_TYPE_AUTOIT,
+                                    NULL,
+                                    LAYER_ATTRIBUTES_EMBEDDED);
                             }
                             break;
 
                         case CL_TYPE_ISHIELD_MSI:
-                            if (SCAN_PARSE_ARCHIVE && type == CL_TYPE_MSEXE && (DCONF_ARCH & ARCH_CONF_ISHIELD)) {
-
-                                new_map = fmap_duplicate(ctx->fmap, fpt->offset, ctx->fmap->len - fpt->offset, NULL);
-                                if (NULL == new_map) {
-                                    ret = nret = CL_EMEM;
-                                    cli_dbgmsg("scanraw: Failed to duplicate fmap to scan embedded file.\n");
-                                    break;
-                                }
-
-                                /* Perform scan with child fmap */
-                                nret = cli_recursion_stack_push(ctx, new_map, CL_TYPE_ISHIELD_MSI, false, LAYER_ATTRIBUTES_EMBEDDED);
-                                if (CL_SUCCESS != nret) {
-                                    ret = nret;
-                                    cli_dbgmsg("scanraw: Failed to add map to recursion stack to scan embedded file.\n");
-                                    break;
-                                }
-
-                                nret = cli_scanishield_msi(ctx, 14);
-
-                                (void)cli_recursion_stack_pop(ctx);
+                            if (type == CL_TYPE_MSEXE) {
+                                nret = cli_magic_scan_nested_fmap_type(
+                                    ctx->fmap,
+                                    fpt->offset,
+                                    ctx->fmap->len - fpt->offset,
+                                    ctx,
+                                    CL_TYPE_ISHIELD_MSI,
+                                    NULL,
+                                    LAYER_ATTRIBUTES_EMBEDDED);
                             }
                             break;
 
                         case CL_TYPE_PDF:
-                            if (type != CL_TYPE_PDF && SCAN_PARSE_PDF && (DCONF_DOC & DOC_CONF_PDF)) {
-
-                                new_map = fmap_duplicate(ctx->fmap, fpt->offset, ctx->fmap->len - fpt->offset, NULL);
-                                if (NULL == new_map) {
-                                    ret = nret = CL_EMEM;
-                                    cli_dbgmsg("scanraw: Failed to duplicate fmap to scan embedded file.\n");
-                                    break;
-                                }
-
-                                /* Perform scan with child fmap */
-                                nret = cli_recursion_stack_push(ctx, new_map, CL_TYPE_PDF, false, LAYER_ATTRIBUTES_EMBEDDED);
-                                if (CL_SUCCESS != nret) {
-                                    ret = nret;
-                                    cli_dbgmsg("scanraw: Failed to add map to recursion stack to scan embedded file.\n");
-                                    break;
-                                }
-
-                                nret = cli_scanpdf(ctx, 0);
-
-                                (void)cli_recursion_stack_pop(ctx);
+                            if (type != CL_TYPE_PDF) {
+                                nret = cli_magic_scan_nested_fmap_type(
+                                    ctx->fmap,
+                                    fpt->offset,
+                                    ctx->fmap->len - fpt->offset,
+                                    ctx,
+                                    CL_TYPE_PDF,
+                                    NULL,
+                                    LAYER_ATTRIBUTES_EMBEDDED);
                             }
                             break;
 
                         case CL_TYPE_MSEXE:
-                            if (SCAN_PARSE_PE && (type == CL_TYPE_MSEXE || type == CL_TYPE_ZIP || type == CL_TYPE_MSOLE2) && ctx->dconf->pe) {
+                            if (type == CL_TYPE_MSEXE || type == CL_TYPE_ZIP || type == CL_TYPE_MSOLE2) {
+
+                                cli_dbgmsg("*** Detected embedded PE file at %u ***\n", (unsigned int)fpt->offset);
 
                                 if ((uint64_t)(ctx->fmap->len - fpt->offset) > ctx->engine->maxembeddedpe) {
                                     cli_dbgmsg("scanraw: MaxEmbeddedPE exceeded\n");
                                     break;
                                 }
 
-                                new_map = fmap_duplicate(ctx->fmap, fpt->offset, ctx->fmap->len - fpt->offset, NULL);
-                                if (NULL == new_map) {
-                                    ret = nret = CL_EMEM;
-                                    cli_dbgmsg("scanraw: Failed to duplicate fmap to scan embedded file.\n");
-                                    break;
-                                }
-
-                                /* Perform scan with child fmap */
-                                nret = cli_recursion_stack_push(ctx, new_map, CL_TYPE_MSEXE, false, LAYER_ATTRIBUTES_EMBEDDED);
-                                if (CL_SUCCESS != nret) {
-                                    ret = nret;
-                                    cli_dbgmsg("scanraw: Failed to add map to recursion stack to scan embedded file.\n");
-                                    break;
-                                }
-                                // IMPORTANT: Must not break or return before cli_recursion_stack_pop!
-
-                                cli_exe_info_init(&peinfo, 0);
-
-                                // TODO We could probably substitute in a quicker
-                                // method of determining whether a PE file exists
-                                // at this offset.
-                                if (cli_peheader(ctx->fmap, &peinfo, CLI_PEHEADER_OPT_NONE, NULL) != 0) {
-                                    cli_dbgmsg("Header check for MSEXE detection failed, probably not actually an embedded PE file.\n");
-
-                                    /* Despite failing, peinfo memory may have been allocated and must be freed. */
-                                    cli_exe_info_destroy(&peinfo);
-
-                                } else {
-                                    cli_dbgmsg("*** Detected embedded PE file at %u ***\n", (unsigned int)fpt->offset);
-
-                                    /* Immediately free up peinfo allocated memory, prior to any recursion */
-                                    cli_exe_info_destroy(&peinfo);
-
-                                    nret       = cli_scanembpe(ctx, 0);
-                                    break_loop = 1; /* we can stop here and other
-                                                     * embedded executables will
-                                                     * be found recursively
-                                                     * through the above call
-                                                     */
-
-                                    // TODO This method of embedded PE extraction
-                                    // is kinda gross in that:
-                                    //   - if you have an executable that contains
-                                    //     20 other exes, the bytes associated with
-                                    //     the last exe will have been included in
-                                    //     hash computations and things 20 times
-                                    //     (as overlay data to the previously
-                                    //     extracted exes).
-                                    //   - if you have a signed embedded exe, it
-                                    //     will fail to validate after extraction
-                                    //     bc it has overlay data, which is a
-                                    //     violation of the Authenticode spec.
-                                    //   - this method of extraction is subject to
-                                    //     the recursion limit, which is fairly
-                                    //     low by default (I think 16)
-                                    //
-                                    // It'd be awesome if we could compute the PE
-                                    // size from the PE header and just extract
-                                    // that.
-                                }
-
-                                (void)cli_recursion_stack_pop(ctx);
+                                nret = cli_magic_scan_nested_fmap_type(
+                                    ctx->fmap,
+                                    fpt->offset,
+                                    ctx->fmap->len - fpt->offset,
+                                    ctx,
+                                    CL_TYPE_MSEXE,
+                                    NULL,
+                                    LAYER_ATTRIBUTES_EMBEDDED);
                             }
                             break;
 
@@ -4265,25 +4165,16 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
                             cli_dbgmsg("scanraw: Type %u not handled in fpt loop\n", fpt->type);
                     }
 
-                    if (NULL != new_map) {
-                        free_duplicate_fmap(new_map);
-                    }
                 } // end check for embedded files
 
             } // end if (fpt->offset > 0)
 
             if ((nret == CL_EMEM) ||
-                (ctx->abort_scan) ||
-                (break_loop)) {
+                (ctx->abort_scan)) {
                 break;
             }
 
             fpt = fpt->next;
-
-            if (NULL != parent_property) {
-                ctx->this_layer_metadata_json = (struct json_object *)(parent_property);
-                parent_property               = NULL;
-            }
         } // end while (fpt) loop
 
         if (!((nret == CL_EMEM) || (ctx->abort_scan))) {
@@ -4322,10 +4213,6 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
         perf_nested_stop(ctx, PERFT_RAWTYPENO, PERFT_SCAN);
         ret = nret;
     } // end if (ret >= CL_TYPENO)
-
-    if (NULL != parent_property) {
-        ctx->this_layer_metadata_json = (struct json_object *)(parent_property);
-    }
 
     while (ftoffset) {
         fpt      = ftoffset;
@@ -4374,9 +4261,6 @@ void emax_reached(cli_ctx *ctx)
  * @param cb
  * @param ctx
  * @param filetype
- * @param old_hook_lsig_matches
- * @param parent_property
- * @param run_cleanup
  * @return cl_error_t
  */
 static cl_error_t dispatch_file_inspection_callback(clcb_file_inspection cb, cli_ctx *ctx, const char *filetype)
@@ -4862,11 +4746,13 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
             break;
 
         case CL_TYPE_RAR:
+        case CL_TYPE_RARSFX:
             if (have_rar && SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_RAR))
                 ret = cli_scanrar(ctx);
             break;
 
         case CL_TYPE_EGG:
+        case CL_TYPE_EGGSFX:
             if (SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_EGG))
                 ret = cli_scanegg(ctx);
             break;
@@ -4909,10 +4795,22 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
                     }
                 }
             }
-            /* fall-through */
-        case CL_TYPE_ZIP:
+
+            /* Extract the OOXML contents */
             if (SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_ZIP))
                 ret = cli_unzip(ctx);
+            break;
+
+        case CL_TYPE_ZIP:
+            if (SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_ZIP)) {
+                if (ctx->recursion_stack[ctx->recursion_level].attributes & LAYER_ATTRIBUTES_EMBEDDED) {
+                    /* If this is an embedded ZIP found by scanraw() with file type detection,
+                     * then we only extract a single zip entry. */
+                    ret = cli_unzip_single(ctx, 0);
+                } else {
+                    ret = cli_unzip(ctx);
+                }
+            }
             break;
 
         case CL_TYPE_GZ:
@@ -5209,6 +5107,11 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
                 ret = cli_scanhfsplus(ctx);
             break;
 
+        case CL_TYPE_ISHIELD_MSI:
+            if (SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_ISHIELD))
+                ret = cli_scanishield_msi(ctx, 14);
+            break;
+
         case CL_TYPE_BINARY_DATA:
         case CL_TYPE_TEXT_UTF16BE:
             if (SCAN_HEURISTICS && (DCONF_OTHER & OTHER_CONF_MYDOOMLOG))
@@ -5220,7 +5123,6 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
                 /* TODO: consider calling this from cli_scanscript() for
                  * a normalised text
                  */
-
                 ret = cli_scan_structured(ctx);
             break;
 
@@ -5297,11 +5199,56 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
         case CL_TYPE_MSEXE:
             perf_nested_start(ctx, PERFT_PE, PERFT_SCAN);
             if (SCAN_PARSE_PE && ctx->dconf->pe) {
-                // Setting ctx->corrupted_input will prevent the PE parser from reporting "broken executable" for unpacked/reconstructed files that may not be 100% to spec.
-                // In here we're just carrying the corrupted_input flag from parent to child, in case the parent's flag was set.
-                unsigned int corrupted_input = ctx->corrupted_input;
-                ret                          = cli_scanpe(ctx);
-                ctx->corrupted_input         = corrupted_input;
+                if (ctx->recursion_stack[ctx->recursion_level].attributes & LAYER_ATTRIBUTES_EMBEDDED) {
+                    /*
+                     * Embedded PE files are PE files that were found within another file using file-type scanning in scanraw()
+                     * They are parsed differently than normal PE files.
+                     */
+                    struct cli_exe_info peinfo;
+
+                    cli_exe_info_init(&peinfo, 0);
+
+                    // TODO We could probably substitute in a quicker
+                    // method of determining whether a PE file exists
+                    // at this offset.
+                    if (cli_peheader(ctx->fmap, &peinfo, CLI_PEHEADER_OPT_NONE, NULL) != 0) {
+                        cli_dbgmsg("Header check for MSEXE detection failed, probably not actually an embedded PE file.\n");
+
+                        /* Despite failing, peinfo memory may have been allocated and must be freed. */
+                        cli_exe_info_destroy(&peinfo);
+
+                    } else {
+                        /* Immediately free up peinfo allocated memory, prior to any recursion */
+                        cli_exe_info_destroy(&peinfo);
+
+                        ret = cli_scanembpe(ctx, 0);
+
+                        // TODO This method of embedded PE extraction
+                        // is kinda gross in that:
+                        //   - if you have an executable that contains
+                        //     20 other exes, the bytes associated with
+                        //     the last exe will have been included in
+                        //     hash computations and things 20 times
+                        //     (as overlay data to the previously
+                        //     extracted exes).
+                        //   - if you have a signed embedded exe, it
+                        //     will fail to validate after extraction
+                        //     bc it has overlay data, which is a
+                        //     violation of the Authenticode spec.
+                        //   - this method of extraction is subject to
+                        //     the recursion limit, which is fairly low.
+                        //
+                        // It'd be awesome if we could compute the PE
+                        // size from the PE header and just extract
+                        // that.
+                    }
+                } else {
+                    // Setting ctx->corrupted_input will prevent the PE parser from reporting "broken executable" for unpacked/reconstructed files that may not be 100% to spec.
+                    // In here we're just carrying the corrupted_input flag from parent to child, in case the parent's flag was set.
+                    unsigned int corrupted_input = ctx->corrupted_input;
+                    ret                          = cli_scanpe(ctx);
+                    ctx->corrupted_input         = corrupted_input;
+                }
             }
             perf_nested_stop(ctx, PERFT_PE, PERFT_SCAN);
             break;
