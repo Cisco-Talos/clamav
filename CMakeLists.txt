@@ -182,6 +182,13 @@ if(APPLE AND NOT DO_NOT_SET_RPATH)
     set(CMAKE_MACOSX_RPATH 1)
 endif()
 
+if(WIN32)
+    set(CMAKE_INSTALL_BINDIR "." CACHE STRING "Installation directory for executables")
+    set(CMAKE_INSTALL_SBINDIR "." CACHE STRING "Installation directory for system executables")
+    set(CMAKE_INSTALL_LIBDIR "." CACHE STRING "Installation directory for libraries")
+    set(CMAKE_INSTALL_INCLUDEDIR "include" CACHE STRING "Installation directory for header files")
+endif()
+
 include(GNUInstallDirs)
 
 if (NOT DEFINED CMAKE_INSTALL_RPATH AND NOT DO_NOT_SET_RPATH)
@@ -339,7 +346,9 @@ set(CPACK_VERBATIM_VARIABLES YES)
 
 if (WIN32)
     set(CMAKE_INSTALL_SYSTEM_RUNTIME_DESTINATION .)
-    include(InstallRequiredSystemLibraries)
+    if(ENABLE_WINDOWS_INSTALL_THIRDPARTY_DEPENDENCIES)
+        include(InstallRequiredSystemLibraries)
+    endif()	
 
     set(CPACK_GENERATOR                  "ZIP;WIX")
     set(CPACK_PACKAGE_VENDOR             "Cisco Systems, Inc.")
@@ -998,7 +1007,7 @@ else()
         ${CMAKE_CURRENT_BINARY_DIR}/clamav-config
         @ONLY)
     install(FILES "${CMAKE_CURRENT_BINARY_DIR}/clamav-config"
-            DESTINATION "${CMAKE_INSTALL_BINDIR}"
+            TYPE BIN
         PERMISSIONS
             OWNER_READ OWNER_WRITE OWNER_EXECUTE
             GROUP_READ             GROUP_EXECUTE

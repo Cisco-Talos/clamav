@@ -39,11 +39,9 @@ target_link_libraries(freshclam-bin
         ClamAV::libfreshclam
         ClamAV::libclamav
         ClamAV::common )
+install(TARGETS freshclam-bin COMPONENT programs)
 if(WIN32)
-    install(TARGETS freshclam-bin DESTINATION . COMPONENT programs)
-    install(FILES $<TARGET_PDB_FILE:freshclam-bin> DESTINATION . OPTIONAL COMPONENT programs)
-else()
-    install(TARGETS freshclam-bin DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT programs)
+    install(FILES $<TARGET_PDB_FILE:freshclam-bin> TYPE BIN OPTIONAL COMPONENT programs)
 endif()
 
 # Now we rename freshclam-bin executable to freshclam using target properties

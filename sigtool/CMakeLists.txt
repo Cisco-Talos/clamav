@@ -40,9 +40,7 @@ target_link_libraries( sigtool
     PRIVATE
         ClamAV::libclamav
         ClamAV::common )
+install(TARGETS sigtool COMPONENT programs)
 if(WIN32)
-    install(TARGETS sigtool DESTINATION . COMPONENT programs)
-    install(FILES $<TARGET_PDB_FILE:sigtool> DESTINATION . OPTIONAL COMPONENT programs)
-else()
-    install(TARGETS sigtool DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT programs)
+    install(FILES $<TARGET_PDB_FILE:sigtool> TYPE BIN OPTIONAL COMPONENT programs)
 endif()

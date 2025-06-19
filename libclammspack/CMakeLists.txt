@@ -79,11 +79,9 @@ if(ENABLE_SHARED_LIB)
         )
     endif()
 
+    install(TARGETS clammspack COMPONENT libraries)
     if(WIN32)
-        install(TARGETS clammspack DESTINATION . COMPONENT libraries)
-        install(FILES $<TARGET_PDB_FILE:clammspack> DESTINATION . OPTIONAL COMPONENT libraries)
-    else()
-        install(TARGETS clammspack DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT libraries)
+        install(FILES $<TARGET_PDB_FILE:clammspack> TYPE BIN OPTIONAL COMPONENT libraries)
     endif()
 
     add_library( ClamAV::libmspack ALIAS clammspack )
@@ -103,11 +101,7 @@ if(ENABLE_STATIC_LIB)
             ${CMAKE_CURRENT_BINARY_DIR}
         PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/mspack )
 
-    if(WIN32)
-        install(TARGETS clammspack_static DESTINATION . COMPONENT libraries)
-    else()
-        install(TARGETS clammspack_static DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT libraries)
-    endif()
+    install(TARGETS clammspack_static COMPONENT libraries)
 
     add_library( ClamAV::libmspack_static ALIAS clammspack_static )
     if(NOT ENABLE_SHARED_LIB)

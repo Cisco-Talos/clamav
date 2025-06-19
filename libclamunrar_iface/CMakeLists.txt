@@ -79,11 +79,9 @@ if(ENABLE_UNRAR)
             PUBLIC
                 ClamAV::libunrar_iface_iface)
 
+        install(TARGETS clamunrar_iface COMPONENT libraries)
         if(WIN32)
-            install(TARGETS clamunrar_iface DESTINATION . COMPONENT libraries)
-            install( FILES $<TARGET_PDB_FILE:clamunrar_iface> DESTINATION . OPTIONAL COMPONENT libraries )
-        else()
-            install(TARGETS clamunrar_iface DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT libraries)
+            install( FILES $<TARGET_PDB_FILE:clamunrar_iface> TYPE BIN OPTIONAL COMPONENT libraries )
         endif()
 
         add_library( ClamAV::libunrar_iface ALIAS clamunrar_iface )
@@ -113,11 +111,7 @@ if(ENABLE_UNRAR)
             PRIVATE
                 ClamAV::libunrar_static )
 
-        if(WIN32)
-            install(TARGETS clamunrar_iface_static DESTINATION . COMPONENT libraries)
-        else()
-            install(TARGETS clamunrar_iface_static DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT libraries)
-        endif()
+        install(TARGETS clamunrar_iface_static COMPONENT libraries)
 
         add_library( ClamAV::libunrar_iface_static ALIAS clamunrar_iface_static )
         if(NOT ENABLE_SHARED_LIB)

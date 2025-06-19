@@ -73,39 +73,39 @@ if(ENABLE_SHARED_LIB)
         COMPILE_FLAGS "${WARNCFLAGS}"
         VERSION ${LIBFRESHCLAM_VERSION} SOVERSION ${LIBFRESHCLAM_SOVERSION}
         LINK_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/libfreshclam.map)
+    install(TARGETS freshclam COMPONENT libraries)
     if(WIN32)
-        install(TARGETS freshclam DESTINATION . COMPONENT libraries)
-        install(FILES $<TARGET_PDB_FILE:freshclam> DESTINATION . OPTIONAL COMPONENT libraries)
-        # Also install shared library (DLL) dependencies
-        install(CODE [[
-            file(GET_RUNTIME_DEPENDENCIES
-                LIBRARIES
-                    $<TARGET_FILE:ClamAV::libfreshclam>
-                RESOLVED_DEPENDENCIES_VAR _r_deps
-                UNRESOLVED_DEPENDENCIES_VAR _u_deps
-                DIRECTORIES
-                    $<TARGET_FILE_DIR:CURL::libcurl>
-                    $<TARGET_FILE_DIR:OpenSSL::SSL>
-                    $<TARGET_FILE_DIR:OpenSSL::Crypto>
-                POST_EXCLUDE_REGEXES
-                   "[cC]:[\\/][wW][iI][nN][dD][oO][wW][sS]"
-            )
-            foreach(_file ${_r_deps})
-                string(TOLOWER ${_file} _file_lower)
-                if(NOT ${_file_lower} MATCHES "c:[\\/]windows[\\/]system32.*")
-                    file(INSTALL
-                        DESTINATION "${CMAKE_INSTALL_PREFIX}"
-                        TYPE SHARED_LIBRARY
-                        FOLLOW_SYMLINK_CHAIN
-                        FILES "${_file}"
-                    )
-                endif()
-            endforeach()
-            #message("UNRESOLVED_DEPENDENCIES_VAR: ${_u_deps}")
-            ]]
-            COMPONENT libraries)
-    else()
-        install(TARGETS freshclam DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT libraries)
+        install(FILES $<TARGET_PDB_FILE:freshclam> TYPE BIN OPTIONAL COMPONENT libraries)
+        if(ENABLE_WINDOWS_INSTALL_THIRDPARTY_DEPENDENCIES)
+            # Also install shared library (DLL) dependencies
+            install(CODE [[
+                file(GET_RUNTIME_DEPENDENCIES
+                    LIBRARIES
+                        $<TARGET_FILE:ClamAV::libfreshclam>
+                    RESOLVED_DEPENDENCIES_VAR _r_deps
+                    UNRESOLVED_DEPENDENCIES_VAR _u_deps
+                    DIRECTORIES
+                        $<TARGET_FILE_DIR:CURL::libcurl>
+                        $<TARGET_FILE_DIR:OpenSSL::SSL>
+                        $<TARGET_FILE_DIR:OpenSSL::Crypto>
+                    POST_EXCLUDE_REGEXES
+                        "[cC]:[\\/][wW][iI][nN][dD][oO][wW][sS]"
+                )
+                foreach(_file ${_r_deps})
+                    string(TOLOWER ${_file} _file_lower)
+                    if(NOT ${_file_lower} MATCHES "c:[\\/]windows[\\/]system32.*")
+                        file(INSTALL
+                            DESTINATION "${CMAKE_INSTALL_PREFIX}"
+                            TYPE SHARED_LIBRARY
+                            FOLLOW_SYMLINK_CHAIN
+                            FILES "${_file}"
+                        )
+                    endif()
+                endforeach()
+                #message("UNRESOLVED_DEPENDENCIES_VAR: ${_u_deps}")
+                ]]
+                COMPONENT libraries)
+        endif()
     endif()
 
     add_library( ClamAV::libfreshclam ALIAS freshclam )
@@ -156,11 +156,7 @@ if(ENABLE_STATIC_LIB)
         COMPILE_FLAGS       "${WARNCFLAGS}"
         VERSION ${LIBFRESHCLAM_VERSION} SOVERSION ${LIBFRESHCLAM_SOVERSION})
     target_compile_definitions(freshclam_static PUBLIC freshclam_staticLIB)
-    if(WIN32)
-        install(TARGETS freshclam_static DESTINATION . COMPONENT libraries)
-    else()
-        install(TARGETS freshclam_static DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT libraries)
-    endif()
+    install(TARGETS freshclam_static COMPONENT libraries)
 
     add_library( ClamAV::libfreshclam_static ALIAS freshclam_static )
     if(NOT ENABLE_SHARED_LIB)
