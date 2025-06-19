@@ -129,3 +129,7 @@ option(RUST_COMPILER_TARGET
 
 option(DO_NOT_SET_RPATH
     "Don't set the RPATH on UNIX systems.")
+
+option(ENABLE_WINDOWS_RUNTIME_INSTALLATION
+    "Install dependency and system runtime libraries on Windows"
+    ON)
