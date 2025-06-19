@@ -54,10 +54,6 @@ if (WIN32)
     target_link_libraries(clamav_rust PUBLIC INTERFACE Userenv)
 endif()
 
-if(WIN32)
-    install(FILES $<TARGET_FILE:clamav_rust> DESTINATION . COMPONENT libraries)
-else()
-    install(FILES $<TARGET_FILE:clamav_rust> DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT libraries)
-endif()
+install(FILES $<TARGET_FILE:clamav_rust> TYPE LIB COMPONENT libraries)
 
 add_library(ClamAV::libclamav_rust ALIAS clamav_rust)
