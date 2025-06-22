@@ -619,7 +619,7 @@ pub type onedump_t = *mut ::std::os::raw::c_void;
 pub type cvd_t = *mut ::std::os::raw::c_void;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
-pub struct recursion_level_tag {
+pub struct cli_scan_layer {
     pub type_: cli_file_t,
     pub size: usize,
     pub fmap: *mut cl_fmap_t,
@@ -633,7 +633,7 @@ pub struct recursion_level_tag {
     pub evidence: evidence_t,
     pub tmpdir: *mut ::std::os::raw::c_char,
 }
-pub type recursion_level_t = recursion_level_tag;
+pub type cli_scan_layer_t = cli_scan_layer;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct cli_ctx_tag {
@@ -646,7 +646,7 @@ pub struct cli_ctx_tag {
     pub options: *mut cl_scan_options,
     pub scannedfiles: ::std::os::raw::c_uint,
     pub corrupted_input: ::std::os::raw::c_uint,
-    pub recursion_stack: *mut recursion_level_t,
+    pub recursion_stack: *mut cli_scan_layer_t,
     pub recursion_stack_size: u32,
     pub recursion_level: u32,
     pub this_layer_evidence: evidence_t,

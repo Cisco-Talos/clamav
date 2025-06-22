@@ -3782,10 +3782,13 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
                                 // misidentified as BINARY_DATA by cli_compare_ftm_file()
 
                                 // Reassign type of current layer based on what we discovered
-                                cli_recursion_stack_change_type(ctx, fpt->type);
-
-                                cli_dbgmsg("MHTML signature found at %u\n", (unsigned int)fpt->offset);
-                                nret = ret = cli_scanmail(ctx);
+                                if (CL_SUCCESS != (ret = cli_recursion_stack_change_type(ctx, fpt->type, true))) {
+                                    cli_dbgmsg("Call to cli_recursion_stack_change_type() returned %s \n", cl_strerror(ret));
+                                    type_has_been_handled = false;
+                                } else {
+                                    cli_dbgmsg("MHTML signature found at %u\n", (unsigned int)fpt->offset);
+                                    nret = ret = cli_scanmail(ctx);
+                                }
                             }
                         }
                         break;
@@ -3798,10 +3801,13 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
                                 // misidentified as BINARY_DATA by cli_compare_ftm_file()
 
                                 // Reassign type of current layer based on what we discovered
-                                cli_recursion_stack_change_type(ctx, fpt->type);
-
-                                cli_dbgmsg("XDP signature found at %u\n", (unsigned int)fpt->offset);
-                                nret = ret = cli_scanxdp(ctx);
+                                if (CL_SUCCESS != (ret = cli_recursion_stack_change_type(ctx, fpt->type, true))) {
+                                    cli_dbgmsg("Call to cli_recursion_stack_change_type() returned %s \n", cl_strerror(ret));
+                                    type_has_been_handled = false;
+                                } else {
+                                    cli_dbgmsg("XDP signature found at %u\n", (unsigned int)fpt->offset);
+                                    nret = ret = cli_scanxdp(ctx);
+                                }
                             }
                         }
                         break;
@@ -3814,10 +3820,13 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
                                 // misidentified as BINARY_DATA by cli_compare_ftm_file()
 
                                 // Reassign type of current layer based on what we discovered
-                                cli_recursion_stack_change_type(ctx, fpt->type);
-
-                                cli_dbgmsg("XML-WORD signature found at %u\n", (unsigned int)fpt->offset);
-                                nret = ret = cli_scanmsxml(ctx);
+                                if (CL_SUCCESS != (ret = cli_recursion_stack_change_type(ctx, fpt->type, true))) {
+                                    cli_dbgmsg("Call to cli_recursion_stack_change_type() returned %s \n", cl_strerror(ret));
+                                    type_has_been_handled = false;
+                                } else {
+                                    cli_dbgmsg("XML-WORD signature found at %u\n", (unsigned int)fpt->offset);
+                                    nret = ret = cli_scanmsxml(ctx);
+                                }
                             }
                         }
                         break;
@@ -3829,10 +3838,13 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
                                 // misidentified as BINARY_DATA by cli_compare_ftm_file()
 
                                 // Reassign type of current layer based on what we discovered
-                                cli_recursion_stack_change_type(ctx, fpt->type);
-
-                                cli_dbgmsg("XML-XL signature found at %u\n", (unsigned int)fpt->offset);
-                                nret = ret = cli_scanmsxml(ctx);
+                                if (CL_SUCCESS != (ret = cli_recursion_stack_change_type(ctx, fpt->type, true))) {
+                                    cli_dbgmsg("Call to cli_recursion_stack_change_type() returned %s \n", cl_strerror(ret));
+                                    type_has_been_handled = false;
+                                } else {
+                                    cli_dbgmsg("XML-XL signature found at %u\n", (unsigned int)fpt->offset);
+                                    nret = ret = cli_scanmsxml(ctx);
+                                }
                             }
                         }
                         break;
@@ -3844,10 +3856,13 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
                                 // misidentified as BINARY_DATA by cli_compare_ftm_file()
 
                                 // Reassign type of current layer based on what we discovered
-                                cli_recursion_stack_change_type(ctx, fpt->type);
-
-                                cli_dbgmsg("XML-HWP signature found at %u\n", (unsigned int)fpt->offset);
-                                nret = ret = cli_scanhwpml(ctx);
+                                if (CL_SUCCESS != (ret = cli_recursion_stack_change_type(ctx, fpt->type, true))) {
+                                    cli_dbgmsg("Call to cli_recursion_stack_change_type() returned %s \n", cl_strerror(ret));
+                                    type_has_been_handled = false;
+                                } else {
+                                    cli_dbgmsg("XML-HWP signature found at %u\n", (unsigned int)fpt->offset);
+                                    nret = ret = cli_scanhwpml(ctx);
+                                }
                             }
                         }
                         break;
@@ -3858,10 +3873,13 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
                             // if ((ctx->recursion_stack[ctx->recursion_level].type == CL_TYPE_BZIP2) || ...))
                             {
                                 // Reassign type of current layer based on what we discovered
-                                cli_recursion_stack_change_type(ctx, fpt->type);
-
-                                cli_dbgmsg("DMG signature found at %u\n", (unsigned int)fpt->offset);
-                                nret = cli_scandmg(ctx);
+                                if (CL_SUCCESS != (ret = cli_recursion_stack_change_type(ctx, fpt->type, true))) {
+                                    cli_dbgmsg("Call to cli_recursion_stack_change_type() returned %s \n", cl_strerror(ret));
+                                    type_has_been_handled = false;
+                                } else {
+                                    cli_dbgmsg("DMG signature found at %u\n", (unsigned int)fpt->offset);
+                                    nret = cli_scandmg(ctx);
+                                }
                             }
                         }
                         break;
@@ -3872,10 +3890,13 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
                             // if ((ctx->recursion_stack[ctx->recursion_level].type == CL_TYPE_ANY) || ...))
                             {
                                 // Reassign type of current layer based on what we discovered
-                                cli_recursion_stack_change_type(ctx, fpt->type);
-
-                                cli_dbgmsg("ISO signature found at %u\n", (unsigned int)fpt->offset);
-                                nret = cli_scaniso(ctx, fpt->offset);
+                                if (CL_SUCCESS != (ret = cli_recursion_stack_change_type(ctx, fpt->type, true))) {
+                                    cli_dbgmsg("Call to cli_recursion_stack_change_type() returned %s \n", cl_strerror(ret));
+                                    type_has_been_handled = false;
+                                } else {
+                                    cli_dbgmsg("ISO signature found at %u\n", (unsigned int)fpt->offset);
+                                    nret = cli_scaniso(ctx, fpt->offset);
+                                }
                             }
                         }
                         break;
@@ -3884,10 +3905,13 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
                         if (SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_UDF)) {
                             {
                                 // Reassign type of current layer based on what we discovered
-                                cli_recursion_stack_change_type(ctx, fpt->type);
-
-                                cli_dbgmsg("UDF signature found at %u\n", (unsigned int)fpt->offset);
-                                nret = cli_scanudf(ctx, fpt->offset);
+                                if (CL_SUCCESS != (ret = cli_recursion_stack_change_type(ctx, fpt->type, true))) {
+                                    cli_dbgmsg("Call to cli_recursion_stack_change_type() returned %s \n", cl_strerror(ret));
+                                    type_has_been_handled = false;
+                                } else {
+                                    cli_dbgmsg("UDF signature found at %u\n", (unsigned int)fpt->offset);
+                                    nret = cli_scanudf(ctx, fpt->offset);
+                                }
                             }
                         }
                         break;
@@ -3902,17 +3926,23 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
 
                                 if ((iret == CL_TYPE_GPT) && (DCONF_ARCH & ARCH_CONF_GPT)) {
                                     // Reassign type of current layer based on what we discovered
-                                    cli_recursion_stack_change_type(ctx, CL_TYPE_GPT);
-
-                                    cli_dbgmsg("Recognized GUID Partition Table file\n");
-                                    cli_dbgmsg("GPT signature found at %u\n", (unsigned int)fpt->offset);
-                                    nret = cli_scangpt(ctx, 0);
+                                    if (CL_SUCCESS != (ret = cli_recursion_stack_change_type(ctx, CL_TYPE_GPT, true))) {
+                                        cli_dbgmsg("Call to cli_recursion_stack_change_type() returned %s \n", cl_strerror(ret));
+                                        type_has_been_handled = false;
+                                    } else {
+                                        cli_dbgmsg("Recognized GUID Partition Table file\n");
+                                        cli_dbgmsg("GPT signature found at %u\n", (unsigned int)fpt->offset);
+                                        nret = cli_scangpt(ctx, 0);
+                                    }
                                 } else if ((iret == CL_CLEAN) && (DCONF_ARCH & ARCH_CONF_MBR)) {
                                     // Reassign type of current layer based on what we discovered
-                                    cli_recursion_stack_change_type(ctx, CL_TYPE_MBR);
-
-                                    cli_dbgmsg("MBR signature found at %u\n", (unsigned int)fpt->offset);
-                                    nret = cli_scanmbr(ctx, 0);
+                                    if (CL_SUCCESS != (ret = cli_recursion_stack_change_type(ctx, CL_TYPE_MBR, true))) {
+                                        cli_dbgmsg("Call to cli_recursion_stack_change_type() returned %s \n", cl_strerror(ret));
+                                        type_has_been_handled = false;
+                                    } else {
+                                        cli_dbgmsg("MBR signature found at %u\n", (unsigned int)fpt->offset);
+                                        nret = cli_scanmbr(ctx, 0);
+                                    }
                                 }
                             }
                         }
@@ -4192,16 +4222,22 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
                                 type == CL_TYPE_GIF) && /* Scan GIFs for embedded HTML/Javascript */
                                (DCONF_DOC & DOC_CONF_HTML)) {
                         *dettype = CL_TYPE_HTML;
-                        cli_recursion_stack_change_type(ctx, CL_TYPE_HTML);
-                        nret = cli_scanhtml(ctx);
+                        if (CL_SUCCESS != (ret = cli_recursion_stack_change_type(ctx, CL_TYPE_HTML, true))) {
+                            cli_dbgmsg("Call to cli_recursion_stack_change_type() returned %s \n", cl_strerror(ret));
+                        } else {
+                            nret = cli_scanhtml(ctx);
+                        }
                     }
                     break;
 
                 case CL_TYPE_MAIL:
                     if (SCAN_PARSE_MAIL && type == CL_TYPE_TEXT_ASCII && (DCONF_MAIL & MAIL_CONF_MBOX)) {
                         *dettype = CL_TYPE_MAIL;
-                        cli_recursion_stack_change_type(ctx, CL_TYPE_MAIL);
-                        nret = cli_scanmail(ctx);
+                        if (CL_SUCCESS != (ret = cli_recursion_stack_change_type(ctx, CL_TYPE_MAIL, true))) {
+                            cli_dbgmsg("Call to cli_recursion_stack_change_type() returned %s \n", cl_strerror(ret));
+                        } else {
+                            nret = cli_scanmail(ctx);
+                        }
                     }
                     break;
 
@@ -4267,8 +4303,8 @@ static cl_error_t dispatch_file_inspection_callback(clcb_file_inspection cb, cli
 {
     cl_error_t status = CL_CLEAN;
 
-    int fd            = -1;
-    size_t fmap_index = ctx->recursion_level; /* index of current file */
+    int fd              = -1;
+    uint32_t fmap_index = ctx->recursion_level; /* index of current file */
 
     cl_fmap_t *fmap         = NULL;
     const char *file_name   = NULL;
@@ -4512,10 +4548,11 @@ done:
 
 cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
 {
-    cl_error_t ret                = CL_CLEAN;
-    cl_error_t cache_check_result = CL_VIRUS;
-    bool cache_enabled            = true;
-    cl_error_t verdict_at_this_level;
+    cl_error_t ret                   = CL_CLEAN;
+    cl_error_t cache_check_result    = CL_VIRUS;
+    cl_error_t verdict_at_this_level = CL_CLEAN;
+
+    bool cache_enabled              = true;
     cli_file_t dettype              = 0;
     uint8_t typercg                 = 1;
     bitset_t *old_hook_lsig_matches = NULL;
@@ -4534,8 +4571,8 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
     }
 
     if (ctx->fmap->len <= 5) {
-        cli_dbgmsg("cli_magic_scan: File is too small (%zu bytes), ignoring.\n", ctx->fmap->len);
         ret = CL_CLEAN;
+        cli_dbgmsg("cli_magic_scan: File is too small (%zu bytes), ignoring.\n", ctx->fmap->len);
         goto early_ret;
     }
 
@@ -4563,18 +4600,31 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
     }
     perf_stop(ctx, PERFT_FT);
     if (type == CL_TYPE_ERROR) {
-        cli_dbgmsg("cli_magic_scan: cli_determine_fmap_type returned CL_TYPE_ERROR\n");
         ret = CL_EREAD;
+        cli_dbgmsg("cli_magic_scan: cli_determine_fmap_type returned CL_TYPE_ERROR\n");
         cli_dbgmsg("cli_magic_scan: returning %d %s (no post, no cache)\n", ret, __AT__);
         goto early_ret;
     }
     filetype = cli_ftname(type);
 
     /* set current layer to the type we found */
-    cli_recursion_stack_change_type(ctx, type);
+    ret = cli_recursion_stack_change_type(ctx, type, true /* ? */);
+    if (CL_SUCCESS != ret) {
+        cli_dbgmsg("cli_magic_scan: cli_recursion_stack_change_type returned %d\n", ret);
+        cli_dbgmsg("cli_magic_scan: returning %d %s (no post, no cache)\n", ret, __AT__);
+        goto early_ret;
+    }
 
     /*
-     * Run the pre_cache callback.
+     * Run the pre_hash callback.
+     */
+    ret = cli_dispatch_scan_callback(ctx, CL_SCAN_CALLBACK_PRE_HASH);
+    if (CL_SUCCESS != ret) {
+        goto done;
+    }
+
+    /*
+     * Run the deprecated pre_cache callback.
      */
     ret = dispatch_prescan_callback(ctx->engine->cb_pre_cache, ctx, filetype);
     if (CL_VERIFIED == ret || CL_VIRUS == ret) {
@@ -4582,7 +4632,7 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
     }
 
     /*
-     * Run the file inspection callback.
+     * Run the deprecated file_inspection callback.
      */
     ret = dispatch_file_inspection_callback(ctx->engine->cb_file_inspection, ctx, filetype);
     if (CL_CLEAN != ret) {
@@ -4615,7 +4665,7 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
             if (need_hash[hash_type]) {
                 ret = fmap_will_need_hash_later(ctx->fmap, hash_type);
                 if (CL_SUCCESS != ret) {
-                    cli_dbgmsg("cli_check_fp: Failed to set fmap to need MD5 hash later\n");
+                    cli_dbgmsg("cli_check_fp: Failed to set fmap to need the %s hash later\n", cli_hash_name(hash_type));
                     goto done;
                 }
             }
@@ -4661,16 +4711,25 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
     }
 
     if (cache_enabled && (cache_check_result != CL_VIRUS)) {
-        cli_dbgmsg("cli_magic_scan: returning %d %s (no post, no cache)\n", ret, __AT__);
         ret = CL_SUCCESS;
+        cli_dbgmsg("cli_magic_scan: returning %d %s (no post, no cache)\n", ret, __AT__);
         goto early_ret;
     }
 
+    /* Save off the hook_lsig_matches */
     old_hook_lsig_matches  = ctx->hook_lsig_matches;
     ctx->hook_lsig_matches = NULL;
 
     /*
      * Run the pre_scan callback.
+     */
+    ret = cli_dispatch_scan_callback(ctx, CL_SCAN_CALLBACK_PRE_SCAN);
+    if (CL_SUCCESS != ret) {
+        goto done;
+    }
+
+    /*
+     * Run the deprecated pre_scan callback.
      */
     ret = dispatch_prescan_callback(ctx->engine->cb_pre_scan, ctx, filetype);
     if (CL_VERIFIED == ret || CL_VIRUS == ret) {
@@ -5132,7 +5191,7 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
     perf_nested_stop(ctx, PERFT_CONTAINER, PERFT_SCAN);
 
     // Evaluate the result from the parsers to see if it end the scan of this layer early,
-    // and to decid if we should propagate an error or not.
+    // and to decide if we should propagate an error or not.
     if (result_should_goto_done(ctx, ret, &ret)) {
         goto done;
     }
@@ -5282,15 +5341,15 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
     }
 
 done:
+
+    /*
+     * Run the post_scan callback.
+     */
+    ret = cli_dispatch_scan_callback(ctx, CL_SCAN_CALLBACK_POST_SCAN);
+
     // Filter the result from the parsers so we don't propagate non-fatal errors.
     // And to convert CL_VERIFIED -> CL_CLEAN
     (void)result_should_goto_done(ctx, ret, &ret);
-
-    if (old_hook_lsig_matches) {
-        /* We need to restore the old hook_lsig_matches */
-        cli_bitset_free(ctx->hook_lsig_matches); // safe to call, even if NULL
-        ctx->hook_lsig_matches = old_hook_lsig_matches;
-    }
 
     /*
      * Determine if there was an alert for this layer (or its children).
@@ -5302,7 +5361,7 @@ done:
     }
 
     /*
-     * Run the post-scan callback (if one exists) and provide the verdict for this layer.
+     * Run the deprecated post-scan callback (if one exists) and provide the verdict for this layer.
      */
     cli_dbgmsg("cli_magic_scan: returning %d %s\n", ret, __AT__);
     if (ctx->engine->cb_post_scan) {
@@ -5353,6 +5412,12 @@ done:
 
 early_ret:
 
+    if (old_hook_lsig_matches) {
+        /* We need to restore the old hook_lsig_matches */
+        cli_bitset_free(ctx->hook_lsig_matches); // safe to call, even if NULL
+        ctx->hook_lsig_matches = old_hook_lsig_matches;
+    }
+
     return ret;
 }
 
@@ -5371,16 +5436,12 @@ cl_error_t cli_magic_scan_desc_type(int desc, const char *filepath, cli_ctx *ctx
 
     if (FSTAT(desc, &sb) == -1) {
         cli_errmsg("cli_magic_scan_desc_type: Can't fstat descriptor %d\n", desc);
-
         status = CL_ESTAT;
-        cli_dbgmsg("cli_magic_scan_desc_type: returning %d %s (no post, no cache)\n", status, __AT__);
         goto done;
     }
     if (sb.st_size <= 5) {
-        cli_dbgmsg("Small data (%u bytes)\n", (unsigned int)sb.st_size);
-
+        cli_dbgmsg("cli_magic_scan_desc_type: Small data (%u bytes)\n", (unsigned int)sb.st_size);
         status = CL_CLEAN;
-        cli_dbgmsg("cli_magic_scan_desc_type: returning %d %s (no post, no cache)\n", status, __AT__);
         goto done;
     }
 
@@ -5388,9 +5449,8 @@ cl_error_t cli_magic_scan_desc_type(int desc, const char *filepath, cli_ctx *ctx
     new_map = fmap_new(desc, 0, sb.st_size, name, filepath);
     perf_stop(ctx, PERFT_MAP);
     if (NULL == new_map) {
-        cli_errmsg("CRITICAL: fmap_new() failed\n");
+        cli_errmsg("cli_magic_scan_desc_type: CRITICAL: fmap_new() failed\n");
         status = CL_EMEM;
-        cli_dbgmsg("cli_magic_scan_desc_type: returning %d %s (no post, no cache)\n", status, __AT__);
         goto done;
     }
 
@@ -5730,7 +5790,7 @@ static cl_error_t scan_common(
     }
 
     ctx.recursion_stack_size = ctx.engine->max_recursion_level;
-    ctx.recursion_stack      = calloc(sizeof(recursion_level_t), ctx.recursion_stack_size);
+    ctx.recursion_stack      = calloc(sizeof(cli_scan_layer_t), ctx.recursion_stack_size);
     if (!ctx.recursion_stack) {
         status = CL_EMEM;
         goto done;
@@ -5872,12 +5932,12 @@ static cl_error_t scan_common(
                 goto done;
             }
         }
-        status = cli_jsonint(ctx.metadata_json, "FileSize", ctx.fmap->len);
+        status = cli_jsonuint64(ctx.metadata_json, "FileSize", (uint64_t)ctx.fmap->len);
         if (status != CL_SUCCESS) {
             cli_errmsg("scan_common: error setting FileSize property in metadata.json\n");
             goto done;
         }
-        status = cli_jsonint(ctx.metadata_json, "ObjectID", ctx.recursion_stack[ctx.recursion_level].object_id);
+        status = cli_jsonuint64(ctx.metadata_json, "ObjectID", (uint64_t)ctx.recursion_stack[ctx.recursion_level].object_id);
         if (status != CL_SUCCESS) {
             cli_errmsg("scan_common: error setting ObjectID property in metadata.json\n");
             goto done;
@@ -6031,7 +6091,17 @@ static cl_error_t scan_common(
             if (0 == evidence_num_indicators_type(ctx.this_layer_evidence, IndicatorType_Strong)) {
                 // And it looks like we haven't reported anything else, so report the last "potentially unwanted" one.
                 // cli_get_last_virus() will do that, grabbing the last alerting indicator of any type.
-                cli_virus_found_cb(&ctx, cli_get_last_virus(&ctx));
+                cl_error_t callback_ret = CL_CLEAN;
+
+                while ((CL_CLEAN == callback_ret) &&
+                       (0 < evidence_num_indicators_type(ctx.this_layer_evidence, IndicatorType_PotentiallyUnwanted))) {
+                    callback_ret = cli_virus_found_cb(
+                        &ctx,
+                        cli_get_last_virus(&ctx),
+                        IndicatorType_PotentiallyUnwanted);
+                    // If the callback returned CL_CLEAN then it will have also removed the indicator from evidence
+                    // And we must loop around and report the next one.
+                }
             }
         }
     }

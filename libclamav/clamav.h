@@ -117,14 +117,14 @@ typedef enum cl_error_t {
     CL_EMAXFILES,
     CL_EFORMAT,
     CL_EPARSE,
-    CL_EBYTECODE,          /* may be reported in testmode */
-    CL_EBYTECODE_TESTFAIL, /* may be reported in testmode */
+    CL_EBYTECODE,          /** may be reported in testmode */
+    CL_EBYTECODE_TESTFAIL, /** may be reported in testmode */
     CL_ELOCK,
     CL_EBUSY,
     CL_ESTATE,
 
-    CL_VERIFIED, /* The binary has been deemed trusted */
-    CL_ERROR,    /* Unspecified / generic error */
+    CL_VERIFIED, /** The binary has been deemed trusted */
+    CL_ERROR,    /** Unspecified / generic error */
 
     /* no error codes below this line please */
     CL_ELAST_ERROR
@@ -135,18 +135,18 @@ typedef enum cl_error_t {
 #define CL_DB_PHISHING          0x2
 #define CL_DB_PHISHING_URLS     0x8
 #define CL_DB_PUA               0x10
-#define CL_DB_CVDNOTMP          0x20    /* obsolete */
-#define CL_DB_OFFICIAL          0x40    /* internal */
+#define CL_DB_CVDNOTMP          0x20    /** @deprecated obsolete */
+#define CL_DB_OFFICIAL          0x40    /** internal */
 #define CL_DB_PUA_MODE          0x80
 #define CL_DB_PUA_INCLUDE       0x100
 #define CL_DB_PUA_EXCLUDE       0x200
-#define CL_DB_COMPILED          0x400   /* internal */
-#define CL_DB_DIRECTORY         0x800   /* internal */
+#define CL_DB_COMPILED          0x400   /** internal */
+#define CL_DB_DIRECTORY         0x800   /** internal */
 #define CL_DB_OFFICIAL_ONLY     0x1000
 #define CL_DB_BYTECODE          0x2000
-#define CL_DB_SIGNED            0x4000  /* internal */
-#define CL_DB_BYTECODE_UNSIGNED 0x8000  /* Caution: You should never run bytecode signatures from untrusted sources. Doing so may result in arbitrary code execution. */
-#define CL_DB_UNSIGNED          0x10000 /* internal */
+#define CL_DB_SIGNED            0x4000  /** internal */
+#define CL_DB_BYTECODE_UNSIGNED 0x8000  /** Caution: You should never run bytecode signatures from untrusted sources. Doing so may result in arbitrary code execution. */
+#define CL_DB_UNSIGNED          0x10000 /** internal */
 #define CL_DB_BYTECODE_STATS    0x20000
 #define CL_DB_ENHANCED          0x40000
 #define CL_DB_PCRE_STATS        0x80000
@@ -166,14 +166,14 @@ struct cl_scan_options {
 };
 
 /* general */
-#define CL_SCAN_GENERAL_ALLMATCHES                  0x1  /* scan in all-match mode */
-#define CL_SCAN_GENERAL_COLLECT_METADATA            0x2  /* collect metadata (--gen-json) */
-#define CL_SCAN_GENERAL_HEURISTICS                  0x4  /* option to enable heuristic alerts */
-#define CL_SCAN_GENERAL_HEURISTIC_PRECEDENCE        0x8  /* allow heuristic match to take precedence */
-#define CL_SCAN_GENERAL_UNPRIVILEGED                0x10 /* scanner will not have read access to files */
-#define CL_SCAN_GENERAL_STORE_HTML_URIS             0x20 /* when collect-metadata enabled: store uris found in html <a and <form tags */
-#define CL_SCAN_GENERAL_STORE_PDF_URIS              0x40 /* when collect-metadata enabled: store uris found in pdf /URI tags */
-#define CL_SCAN_GENERAL_STORE_EXTRA_HASHES          0x80 /* when collect-metadata enabled: calculate and store each type of supported file hash */
+#define CL_SCAN_GENERAL_ALLMATCHES                  0x1  /** scan in all-match mode */
+#define CL_SCAN_GENERAL_COLLECT_METADATA            0x2  /** collect metadata (--gen-json) */
+#define CL_SCAN_GENERAL_HEURISTICS                  0x4  /** option to enable heuristic alerts */
+#define CL_SCAN_GENERAL_HEURISTIC_PRECEDENCE        0x8  /** allow heuristic match to take precedence */
+#define CL_SCAN_GENERAL_UNPRIVILEGED                0x10 /** scanner will not have read access to files */
+#define CL_SCAN_GENERAL_STORE_HTML_URIS             0x20 /** when collect-metadata enabled: store uris found in html <a and <form tags */
+#define CL_SCAN_GENERAL_STORE_PDF_URIS              0x40 /** when collect-metadata enabled: store uris found in pdf /URI tags */
+#define CL_SCAN_GENERAL_STORE_EXTRA_HASHES          0x80 /** when collect-metadata enabled: calculate and store each type of supported file hash */
 
 /* parsing capabilities options */
 #define CL_SCAN_PARSE_ARCHIVE                       0x1
@@ -187,30 +187,30 @@ struct cl_scan_options {
 #define CL_SCAN_PARSE_HTML                          0x100
 #define CL_SCAN_PARSE_PE                            0x200
 #define CL_SCAN_PARSE_ONENOTE                       0x400
-#define CL_SCAN_PARSE_IMAGE                         0x800  /* option to enable/disable parsing images (graphics) */
-#define CL_SCAN_PARSE_IMAGE_FUZZY_HASH              0x1000 /* option to enable/disable image fuzzy hash calculation. */
+#define CL_SCAN_PARSE_IMAGE                         0x800  /** option to enable/disable parsing images (graphics) */
+#define CL_SCAN_PARSE_IMAGE_FUZZY_HASH              0x1000 /** option to enable/disable image fuzzy hash calculation. */
 
 /* heuristic alerting options */
-#define CL_SCAN_HEURISTIC_BROKEN                    0x2    /* alert on broken PE and broken ELF files */
-#define CL_SCAN_HEURISTIC_EXCEEDS_MAX               0x4    /* alert when files exceed scan limits (filesize, max scansize, or max recursion depth) */
-#define CL_SCAN_HEURISTIC_PHISHING_SSL_MISMATCH     0x8    /* alert on SSL mismatches */
-#define CL_SCAN_HEURISTIC_PHISHING_CLOAK            0x10   /* alert on cloaked URLs in emails */
-#define CL_SCAN_HEURISTIC_MACROS                    0x20   /* alert on OLE2 files containing macros */
-#define CL_SCAN_HEURISTIC_ENCRYPTED_ARCHIVE         0x40   /* alert if archive is encrypted (rar, zip, etc) */
-#define CL_SCAN_HEURISTIC_ENCRYPTED_DOC             0x80   /* alert if a document is encrypted (pdf, docx, etc) */
-#define CL_SCAN_HEURISTIC_PARTITION_INTXN           0x100  /* alert if partition table size doesn't make sense */
-#define CL_SCAN_HEURISTIC_STRUCTURED                0x200  /* data loss prevention options, i.e. alert when detecting personal information */
-#define CL_SCAN_HEURISTIC_STRUCTURED_SSN_NORMAL     0x400  /* alert when detecting social security numbers */
-#define CL_SCAN_HEURISTIC_STRUCTURED_SSN_STRIPPED   0x800  /* alert when detecting stripped social security numbers */
-#define CL_SCAN_HEURISTIC_STRUCTURED_CC             0x1000 /* alert when detecting credit card numbers */
-#define CL_SCAN_HEURISTIC_BROKEN_MEDIA              0x2000 /* alert if a file does not match the identified file format, works with JPEG, TIFF, GIF, PNG */
+#define CL_SCAN_HEURISTIC_BROKEN                    0x2    /** alert on broken PE and broken ELF files */
+#define CL_SCAN_HEURISTIC_EXCEEDS_MAX               0x4    /** alert when files exceed scan limits (filesize, max scansize, or max recursion depth) */
+#define CL_SCAN_HEURISTIC_PHISHING_SSL_MISMATCH     0x8    /** alert on SSL mismatches */
+#define CL_SCAN_HEURISTIC_PHISHING_CLOAK            0x10   /** alert on cloaked URLs in emails */
+#define CL_SCAN_HEURISTIC_MACROS                    0x20   /** alert on OLE2 files containing macros */
+#define CL_SCAN_HEURISTIC_ENCRYPTED_ARCHIVE         0x40   /** alert if archive is encrypted (rar, zip, etc) */
+#define CL_SCAN_HEURISTIC_ENCRYPTED_DOC             0x80   /** alert if a document is encrypted (pdf, docx, etc) */
+#define CL_SCAN_HEURISTIC_PARTITION_INTXN           0x100  /** alert if partition table size doesn't make sense */
+#define CL_SCAN_HEURISTIC_STRUCTURED                0x200  /** data loss prevention options, i.e. alert when detecting personal information */
+#define CL_SCAN_HEURISTIC_STRUCTURED_SSN_NORMAL     0x400  /** alert when detecting social security numbers */
+#define CL_SCAN_HEURISTIC_STRUCTURED_SSN_STRIPPED   0x800  /** alert when detecting stripped social security numbers */
+#define CL_SCAN_HEURISTIC_STRUCTURED_CC             0x1000 /** alert when detecting credit card numbers */
+#define CL_SCAN_HEURISTIC_BROKEN_MEDIA              0x2000 /** alert if a file does not match the identified file format, works with JPEG, TIFF, GIF, PNG */
 
 /* mail scanning options */
 #define CL_SCAN_MAIL_PARTIAL_MESSAGE                0x1
 
 /* dev options */
-#define CL_SCAN_DEV_COLLECT_SHA                     0x1 /* deprecated (functionality removed) */
-#define CL_SCAN_DEV_COLLECT_PERFORMANCE_INFO        0x2 /* collect performance timings */
+#define CL_SCAN_DEV_COLLECT_SHA                     0x1 /** @deprecated (functionality removed) */
+#define CL_SCAN_DEV_COLLECT_PERFORMANCE_INFO        0x2 /** collect performance timings */
 
 /* cl_countsigs options */
 #define CL_COUNTSIGS_OFFICIAL                       0x1
@@ -261,10 +261,11 @@ extern void cl_always_gen_section_hash(void);
 int cl_initialize_crypto(void);
 
 /**
- * @brief This is a deprecated function that used to clean up ssl crypto inits.
+ * @brief Clean up ssl crypto inits.
  *
- * Call to EVP_cleanup() has been removed since cleanup is now handled by
- * auto-deinit as of openssl 1.0.2h and 1.1.0
+ * @deprecated This function is deprecated and will be removed in a future release.
+ *             Call to EVP_cleanup() has been removed since cleanup is now handled by
+ *             auto-deinit as of openssl 1.0.2h and 1.1.0.
  */
 void cl_cleanup_crypto(void);
 
@@ -280,66 +281,66 @@ extern cl_error_t cl_init(unsigned int initoptions);
 /**
  * @brief Allocate a new scanning engine and initialize default settings.
  *
- * The engine should be freed with `cl_engine_free()`.
+ * The engine must be freed with `cl_engine_free()`.
  *
  * @return struct cl_engine* Pointer to the scanning engine.
  */
 extern struct cl_engine *cl_engine_new(void);
 
 enum cl_engine_field {
-    CL_ENGINE_MAX_SCANSIZE,        /* uint64_t */
-    CL_ENGINE_MAX_FILESIZE,        /* uint64_t */
-    CL_ENGINE_MAX_RECURSION,       /* uint32_t */
-    CL_ENGINE_MAX_FILES,           /* uint32_t */
-    CL_ENGINE_MIN_CC_COUNT,        /* uint32_t */
-    CL_ENGINE_MIN_SSN_COUNT,       /* uint32_t */
-    CL_ENGINE_PUA_CATEGORIES,      /* (char *) */
-    CL_ENGINE_DB_OPTIONS,          /* uint32_t */
-    CL_ENGINE_DB_VERSION,          /* uint32_t */
-    CL_ENGINE_DB_TIME,             /* time_t */
-    CL_ENGINE_AC_ONLY,             /* uint32_t */
-    CL_ENGINE_AC_MINDEPTH,         /* uint32_t */
-    CL_ENGINE_AC_MAXDEPTH,         /* uint32_t */
-    CL_ENGINE_TMPDIR,              /* (char *) */
-    CL_ENGINE_KEEPTMP,             /* uint32_t */
-    CL_ENGINE_BYTECODE_SECURITY,   /* uint32_t */
-    CL_ENGINE_BYTECODE_TIMEOUT,    /* uint32_t */
-    CL_ENGINE_BYTECODE_MODE,       /* uint32_t */
-    CL_ENGINE_MAX_EMBEDDEDPE,      /* uint64_t */
-    CL_ENGINE_MAX_HTMLNORMALIZE,   /* uint64_t */
-    CL_ENGINE_MAX_HTMLNOTAGS,      /* uint64_t */
-    CL_ENGINE_MAX_SCRIPTNORMALIZE, /* uint64_t */
-    CL_ENGINE_MAX_ZIPTYPERCG,      /* uint64_t */
-    CL_ENGINE_FORCETODISK,         /* uint32_t */
-    CL_ENGINE_CACHE_SIZE,          /* uint32_t */
-    CL_ENGINE_DISABLE_CACHE,       /* uint32_t */
-    CL_ENGINE_DISABLE_PE_STATS,    /* uint32_t */
-    CL_ENGINE_STATS_TIMEOUT,       /* uint32_t */
-    CL_ENGINE_MAX_PARTITIONS,      /* uint32_t */
-    CL_ENGINE_MAX_ICONSPE,         /* uint32_t */
-    CL_ENGINE_MAX_RECHWP3,         /* uint32_t */
-    CL_ENGINE_MAX_SCANTIME,        /* uint32_t */
-    CL_ENGINE_PCRE_MATCH_LIMIT,    /* uint64_t */
-    CL_ENGINE_PCRE_RECMATCH_LIMIT, /* uint64_t */
-    CL_ENGINE_PCRE_MAX_FILESIZE,   /* uint64_t */
-    CL_ENGINE_DISABLE_PE_CERTS,    /* uint32_t */
-    CL_ENGINE_PE_DUMPCERTS,        /* uint32_t */
-    CL_ENGINE_CVDCERTSDIR,         /* (char *) */
-    CL_ENGINE_TMPDIR_RECURSION,    /* uint32_t */
+    CL_ENGINE_MAX_SCANSIZE,        /** uint64_t */
+    CL_ENGINE_MAX_FILESIZE,        /** uint64_t */
+    CL_ENGINE_MAX_RECURSION,       /** uint32_t */
+    CL_ENGINE_MAX_FILES,           /** uint32_t */
+    CL_ENGINE_MIN_CC_COUNT,        /** uint32_t */
+    CL_ENGINE_MIN_SSN_COUNT,       /** uint32_t */
+    CL_ENGINE_PUA_CATEGORIES,      /** (char *) */
+    CL_ENGINE_DB_OPTIONS,          /** uint32_t */
+    CL_ENGINE_DB_VERSION,          /** uint32_t */
+    CL_ENGINE_DB_TIME,             /** time_t */
+    CL_ENGINE_AC_ONLY,             /** uint32_t */
+    CL_ENGINE_AC_MINDEPTH,         /** uint32_t */
+    CL_ENGINE_AC_MAXDEPTH,         /** uint32_t */
+    CL_ENGINE_TMPDIR,              /** (char *) */
+    CL_ENGINE_KEEPTMP,             /** uint32_t */
+    CL_ENGINE_BYTECODE_SECURITY,   /** uint32_t */
+    CL_ENGINE_BYTECODE_TIMEOUT,    /** uint32_t */
+    CL_ENGINE_BYTECODE_MODE,       /** uint32_t */
+    CL_ENGINE_MAX_EMBEDDEDPE,      /** uint64_t */
+    CL_ENGINE_MAX_HTMLNORMALIZE,   /** uint64_t */
+    CL_ENGINE_MAX_HTMLNOTAGS,      /** uint64_t */
+    CL_ENGINE_MAX_SCRIPTNORMALIZE, /** uint64_t */
+    CL_ENGINE_MAX_ZIPTYPERCG,      /** uint64_t */
+    CL_ENGINE_FORCETODISK,         /** uint32_t */
+    CL_ENGINE_CACHE_SIZE,          /** uint32_t */
+    CL_ENGINE_DISABLE_CACHE,       /** uint32_t */
+    CL_ENGINE_DISABLE_PE_STATS,    /** uint32_t */
+    CL_ENGINE_STATS_TIMEOUT,       /** uint32_t */
+    CL_ENGINE_MAX_PARTITIONS,      /** uint32_t */
+    CL_ENGINE_MAX_ICONSPE,         /** uint32_t */
+    CL_ENGINE_MAX_RECHWP3,         /** uint32_t */
+    CL_ENGINE_MAX_SCANTIME,        /** uint32_t */
+    CL_ENGINE_PCRE_MATCH_LIMIT,    /** uint64_t */
+    CL_ENGINE_PCRE_RECMATCH_LIMIT, /** uint64_t */
+    CL_ENGINE_PCRE_MAX_FILESIZE,   /** uint64_t */
+    CL_ENGINE_DISABLE_PE_CERTS,    /** uint32_t */
+    CL_ENGINE_PE_DUMPCERTS,        /** uint32_t */
+    CL_ENGINE_CVDCERTSDIR,         /** (char *) */
+    CL_ENGINE_TMPDIR_RECURSION,    /** uint32_t */
 };
 
 enum bytecode_security {
-    CL_BYTECODE_TRUST_ALL = 0, /* obsolete */
-    CL_BYTECODE_TRUST_SIGNED,  /* default */
-    CL_BYTECODE_TRUST_NOTHING  /* paranoid setting */
+    CL_BYTECODE_TRUST_ALL = 0, /** @deprecated obsolete */
+    CL_BYTECODE_TRUST_SIGNED,  /** default */
+    CL_BYTECODE_TRUST_NOTHING  /** paranoid setting */
 };
 
 enum bytecode_mode {
-    CL_BYTECODE_MODE_AUTO = 0,    /* JIT if possible, fallback to interpreter */
-    CL_BYTECODE_MODE_JIT,         /* force JIT */
-    CL_BYTECODE_MODE_INTERPRETER, /* force interpreter */
-    CL_BYTECODE_MODE_TEST,        /* both JIT and interpreter, compare results, all failures are fatal */
-    CL_BYTECODE_MODE_OFF          /* for query only, not settable */
+    CL_BYTECODE_MODE_AUTO = 0,    /** JIT if possible, fallback to interpreter */
+    CL_BYTECODE_MODE_JIT,         /** force JIT */
+    CL_BYTECODE_MODE_INTERPRETER, /** force interpreter */
+    CL_BYTECODE_MODE_TEST,        /** both JIT and interpreter, compare results, all failures are fatal */
+    CL_BYTECODE_MODE_OFF          /** for query only, not settable */
 };
 
 struct cli_section_hash {
@@ -474,11 +475,513 @@ extern cl_error_t cl_engine_addref(struct cl_engine *engine);
 extern cl_error_t cl_engine_free(struct cl_engine *engine);
 
 /* ----------------------------------------------------------------------------
+ * ClamAV File Map Abstraction Public API.
+ */
+struct cl_fmap;
+typedef struct cl_fmap cl_fmap_t;
+
+/**
+ * @brief Read callback function type.
+ *
+ * A callback function pointer type for reading data from a cl_fmap_t that uses
+ * reads data from a handle interface.
+ *
+ * Read 'count' bytes starting at 'offset' into the buffer 'buf'
+ *
+ * Thread safety: It is guaranteed that only one callback is executing for a
+ * specific handle at any time, but there might be multiple callbacks executing
+ * for different handle at the same time.
+ *
+ * @param handle    The handle passed to cl_fmap_open_handle, its meaning is up
+ *                  to the callback's implementation
+ * @param buf       A buffer to read data into, must be at least offset + count
+ *                  bytes in size.
+ * @param count     The number of bytes to read.
+ * @param offset    The offset into buf to read the data to. If successful,
+ *                  the number of bytes actually read is returned. Upon reading
+ *                  end-of-file, zero is returned. Otherwise, a -1 is returned
+ *                  and the global variable errno is set to indicate the error.
+ */
+typedef off_t (*clcb_pread)(void *handle, void *buf, size_t count, off_t offset);
+
+/**
+ * @brief Open a map given a handle.
+ *
+ * Open a map for scanning custom data accessed by a handle and pread (lseek +
+ * read)-like interface. For example a file descriptor or a WIN32 HANDLE.
+ * By default fmap will use aging to discard old data, unless you tell it not
+ * to.
+ *
+ * The handle will be passed to the callback each time.
+ *
+ * TIP: Check the size limits before calling this function so you don't map a
+ * file that is larger than the maximum size the engine is configured to scan.
+ *
+ * Note that the offset and len is for the start through the end of an _entire_
+ * file, which may be contained within another larger file.
+ * You can't give it parts of a file and expect detection to work.
+ *
+ * @param handle        A handle that may be accessed using lseek + read.
+ * @param offset        Initial offset to start scanning.
+ * @param len           Length of the data from the start (not the offset).
+ * @param pread_cb      A callback function to read data from the handle.
+ * @param use_aging     Set to a non-zero value to enable aging.
+ * @return cl_fmap_t*   A map representing the handle interface.
+ */
+extern cl_fmap_t *cl_fmap_open_handle(
+    void *handle,
+    size_t offset,
+    size_t len,
+    clcb_pread pread_cb,
+    int use_aging);
+
+/**
+ * @brief Open a map given a buffer.
+ *
+ * Open a map for scanning custom data, where the data is already in memory,
+ * either in the form of a buffer, a memory mapped file, etc.
+ *
+ * Note that the memory [start, start+len) must be the _entire_ file,
+ * you can't give it parts of a file and expect detection to work.
+ *
+ * @param start         Pointer to a buffer of data.
+ * @param len           Length in bytes of the data.
+ * @return cl_fmap_t*   A map representing the buffer.
+ */
+extern cl_fmap_t *cl_fmap_open_memory(const void *start, size_t len);
+
+/**
+ * @brief Set the utf8 name of a file map. E.g. "invoice.exe"
+ *
+ * The name is used for debugging and logging purposes.
+ * In a future release, the file extension may help determine refine file type
+ * detection. E.g. ".js" may indicate that something previously identified as
+ * a text file is more specifically a JavaScript file.
+ * That is - at this time setting the name will have no impact on detection,
+ * but it may in the future.
+ *
+ * @param map           The file map to modify.
+ * @param name          The new name for the file map.
+ * @return cl_error_t   CL_SUCCESS if the name was set successfully.
+ */
+extern cl_error_t cl_fmap_set_name(cl_fmap_t *map, const char *name);
+
+/**
+ * @brief Get the utf8 name of a file map.
+ *
+ * The name is used for debugging and logging purposes.
+ *
+ * @param map           The file map to query.
+ * @param[out] name_out Pointer to a variable to receive the name of the file map.
+ * @return const char*  The name of the file map, or NULL if not set.
+ */
+extern cl_error_t cl_fmap_get_name(cl_fmap_t *map, const char **name_out);
+
+/**
+ * @brief Set the utf8 path of a file map. E.g. "/tmp/invoice.exe"
+ *
+ * This is used to set the actual file path of the mapped map.
+ * The path may be used for debugging or logging purposes.
+ *
+ * You might want to set the path if you opened the map with `cl_fmap_open_handle()`.
+ *
+ * @param map           The file map to modify.
+ * @param path          The new path for the file map.
+ * @return cl_error_t   CL_SUCCESS if the path was set successfully.
+ */
+extern cl_error_t cl_fmap_set_path(cl_fmap_t *map, const char *path);
+
+/**
+ * @brief Get the utf8 path of a file map.
+ *
+ * The path is used for debugging and logging purposes.
+ *
+ * This may be NULL even if there is a file descriptor associated with the map.
+ * There is no guarantee that the path was set by whomever created the map.
+ * For example, if the map was created from a file descriptor that was provided
+ * to clamd by clamonacc or clamdscan using fd-passing, then the path may not be
+ * known.
+ *
+ * This of course will be NULL if the map was created from a memory buffer.
+ *
+ * If you need a temp file for each file extracted, you can use ClamAV's
+ * force-to-disk feature. Note: There is no option to force-to-memory.
+ * Many of the parser modules will create temporary files no matter what.
+ *
+ * If the fmap represents a temp file created during the scan, then unless you
+ * use CL_ENGINE_KEEPTMP, it will be deleted when the scan is done with this
+ * layer.
+ *
+ * @param map             The file map to query.
+ * @param[out] path_out   Pointer to a variable to receive the path of the file map.
+ * @param[out] offset_out (optional) Pointer to a variable to receive the offset of the current layer within the given file.
+ * @param[out] len_out    (optional) Pointer to a variable to receive the length of the current layer within the given file.
+ * @return cl_error_t     CL_SUCCESS if the path was successfully retrieved.
+ *                        CL_EACCES if the map does not have a file descriptor.
+ *                        CL_ENULLARG if null arguments were provided.
+ */
+extern cl_error_t cl_fmap_get_path(cl_fmap_t *map, const char **path_out, size_t *offset_out, size_t *len_out);
+
+/**
+ * @brief Get the file descriptor of a file map.
+ *
+ * The file descriptor is used to access the file represented by the file map.
+ * If the file map was created from a file descriptor, this will return that
+ * descriptor. Otherwise, it will return -1.
+ *
+ * If you need a temp file for each file extracted, you can use ClamAV's
+ * force-to-disk feature. Note: There is no option to force-to-memory.
+ * Many of the parser modules will create temporary files no matter what.
+ *
+ * Don't close this file descriptor. Don't dup it either.
+ *
+ * @param map             The file map to query.
+ * @param[out] fd_out     Pointer to a variable to receive the file descriptor.
+ * @param[out] offset_out (optional) Pointer to a variable to receive the offset of the current layer within the given file.
+ * @param[out] len_out    (optional) Pointer to a variable to receive the length of the current layer within the given file.
+ * @return cl_error_t     CL_SUCCESS if the file descriptor was successfully retrieved.
+ *                        CL_EACCES if the map does not have a file descriptor.
+ *                        CL_ENULLARG if null arguments were provided.
+ */
+extern cl_error_t cl_fmap_get_fd(const cl_fmap_t *map, int *fd_out, size_t *offset_out, size_t *len_out);
+
+/**
+ * @brief Get the file size of the current layer from a file map.
+ *
+ * This function retrieves the size of the file represented by the file map.
+ * If the file map was created from a handle, it will use the pread callback
+ * to determine the size.
+ *
+ * @param map           The file map to query.
+ * @param[out] size_out Pointer to a variable to receive the size of the file.
+ * @return cl_error_t   CL_SUCCESS if the file size was successfully retrieved.
+ */
+extern cl_error_t cl_fmap_get_size(const cl_fmap_t *map, size_t *size_out);
+
+/**
+ * @brief Set the file hash for a file map.
+ *
+ * This function sets the hash of the file represented by the file map.
+ * If a hash of the requested type has already been calculated, it will be
+ * overwritten with the new value.
+ *
+ * @param map           The file map to modify.
+ * @param hash_alg      The hash algorithm to use (e.g., "md5", "sha1", "sha2-256").
+ * @param hash          The hash value to set.
+ * @return cl_error_t   CL_SUCCESS if the hash was successfully set.
+ */
+extern cl_error_t cl_fmap_set_hash(const cl_fmap_t *map, const char *hash_alg, char hash);
+
+/**
+ * @brief Check if we already calculated a file hash of a specific type.
+ *
+ * This function checks if the file represented by the file map has a hash
+ * of the requested type already calculated.
+ *
+ * @param map                A file map.
+ * @param hash_alg           The hash algorithm to check (e.g., "md5", "sha1", "sha2-256").
+ * @param[out] have_hash_out Pointer to a boolean that will be set to true if the hash exists, false otherwise.
+ * @return cl_error_t        CL_SUCCESS if the check was successful.
+ */
+extern cl_error_t cl_fmap_have_hash(const cl_fmap_t *map, const char *hash_alg, bool *have_hash_out);
+
+/**
+ * @brief Indicate that we will need a file hash of a specific type later.
+ *
+ * This function indicates that we will need the file hash of the requested
+ * type in the future. The next time a hash is calculated, (e.g. when you run
+ * `cl_fmap_get_hash()`, it will also calculate the requested hash type.
+ *
+ * This is an optimization to avoid iterating over the file contents multiple times
+ * which might happen if you call `cl_fmap_get_hash()` without calling this first.
+ *
+ * @param map           A file map.
+ * @param hash_alg      The hash algorithm to indicate (e.g., "md5", "sha1", "sha2-256").
+ * @return cl_error_t   CL_SUCCESS if the indication was successful.
+ */
+extern cl_error_t cl_fmap_will_need_hash_later(const cl_fmap_t *map, const char *hash_alg);
+
+/**
+ * @brief Get the file hash from a file map.
+ *
+ * This function retrieves the hash of the file represented by the file map.
+ * If a hash of the requested type has NOT already been calculated then it will
+ * be calculated when you call this function, and stored for future use.
+ *
+ * You are responsible for freeing the hash string when you're done with it.
+ *
+ * @param map           A file map.
+ * @param hash_alg      The hash algorithm to use (e.g., "md5", "sha1", "sha2-256").
+ * @param[out] hash_out Malloced string containing the hash value.
+ * @return cl_error_t   CL_SUCCESS if the hash was successfully retrieved.
+ */
+extern cl_error_t cl_fmap_get_hash(const cl_fmap_t *map, const char *hash_alg, const char **hash_out);
+
+/**
+ * @brief Get the file contents from a file map.
+ *
+ * This function will get you a pointer to the contents of the file represented
+ * by the file map. This is read-only and is not malloced.
+ * If you want a copy to keep, you must copy it yourself.
+ *
+ * Use the offset and length parameters to specify the range of the file you
+ * want to retrieve. If you don't need the whole file, don't ask for the whole file.
+ *
+ * @param map               A file map.
+ * @param offset            The offset in the file from which to access.
+ * @param len               The length of the data to read.
+ *                          If 0, then the rest of the file will be provided.
+ * @param[out] data_out     A valid pointer to data file contents. Will be NULL if failed.
+ * @param[out] data_len_out The length of the file contents. May be less than requested if the end of file is reached.
+ * @return cl_error_t       CL_SUCCESS if the contents were successfully retrieved.
+ */
+extern cl_error_t cl_fmap_get_data(
+    const cl_fmap_t *map,
+    size_t offset,
+    size_t len,
+    const uint8_t **data_out,
+    size_t *data_len_out);
+
+/**
+ * @brief Releases resources associated with the map.
+ *
+ * You must release any resources you hold only after (handles, maps) calling
+ * this function.
+ *
+ * @param map           Map to be closed.
+ */
+extern void cl_fmap_close(cl_fmap_t *);
+
+/* ----------------------------------------------------------------------------
+ * ClamAV Recursive Scan Layer Public API.
+ */
+struct cl_scan_layer;
+typedef struct cl_scan_layer cl_scan_layer_t;
+
+/**
+ * @brief Get the file map associated with a scan layer.
+ *
+ * @param layer                 The scan layer to query.
+ * @param[out] fmap_out         Pointer to a variable to receive the file map.
+ * @return cl_error_t           CL_SUCCESS if successful.
+ */
+extern cl_error_t cl_scan_layer_get_fmap(
+    cl_scan_layer_t *layer,
+    cl_fmap_t **fmap_out);
+
+/**
+ * @brief Get the parent layer of a scan layer.
+ *
+ * You may use this in a loop/recursively to walk the scan layers.
+ * Also consider using `cl_scan_layer_get_recursion_level()` to determine the
+ * depth of the current layer.
+ *
+ * @param layer                 The scan layer to query.
+ * @param[out] parent_layer_out Pointer to a variable to receive the parent layer.
+ *                              Will be NULL if the layer has no parent.
+ *                              For example, the root layer has no parent.
+ * @return cl_error_t           CL_SUCCESS if successful.
+ */
+extern cl_error_t cl_scan_layer_get_parent_layer(
+    cl_scan_layer_t *layer,
+    cl_scan_layer_t **parent_layer_out);
+
+/**
+ * @brief Get the file type of a scan layer.
+ *
+ * The file type as clamav currently believes it to be.
+ * It may change later in the scan, so consider using `clcb_file_type_correction`
+ * callback to access the file again if it is re-typed.
+ *
+ * @param layer                 The scan layer to query.
+ * @param[out] type_out         Pointer to a variable to receive the file type.
+ *                              This is a static reference and must not be freed.
+ * @return cl_error_t           CL_SUCCESS if successful.
+ */
+extern cl_error_t cl_scan_layer_get_type(
+    cl_scan_layer_t *layer,
+    const char **type_out);
+
+/**
+ * @brief Get the recursion level of a scan layer.
+ *
+ * @param layer                    The scan layer to query.
+ * @param[out] recursion_level_out Pointer to a variable to receive the recursion level.
+ * @return cl_error_t              CL_SUCCESS if successful.
+ */
+extern cl_error_t cl_scan_layer_get_recursion_level(
+    cl_scan_layer_t *layer,
+    uint32_t *recursion_level_out);
+
+/**
+ * @brief Get the object ID of a scan layer.
+ *
+ * Object ID is a unique identifier for the scan layer. It counts up from 0, although the callback interface
+ * may skip some IDs if the scan layer is processed immediately rather than being handled as distinct file type.
+ * For example, HTML may be normalized several ways and they're each given an Object ID, but we immediately
+ * pattern match them and do not handle them as distinct file types that were contained within the HTML.
+ *
+ * @param layer                 The scan layer to query.
+ * @param[out] object_id_out    Pointer to a variable to receive the object ID.
+ * @return cl_error_t           CL_SUCCESS if successful.
+ */
+extern cl_error_t cl_scan_layer_get_object_id(
+    cl_scan_layer_t *layer,
+    uint64_t *object_id_out);
+
+/**
+ * @brief Get the last detected alert name from a scan layer.
+ *
+ * Do not free the alert name, and make a copy if you need one.
+ *
+ * @param layer                 The scan layer to query.
+ * @param[out] alert_name_out   Pointer to a variable to receive the alert name.
+ *                              If the layer has no alerts, this will be set to NULL.
+ * @return cl_error_t           CL_SUCCESS if successful.
+ */
+extern cl_error_t cl_scan_layer_get_last_alert(
+    cl_scan_layer_t *layer,
+    const char **alert_name_out);
+
+/*
+ * Attributes of each layer in scan.
+ */
+#define LAYER_ATTRIBUTES_NONE 0x0       /**< No attributes set. */
+#define LAYER_ATTRIBUTES_NORMALIZED 0x1 /**< This layer was modified to make matching more generic, reliable. */
+#define LAYER_ATTRIBUTES_DECRYPTED 0x2  /**< Decryption was used to extract this layer. \
+                                         *   E.g. ClamAV was able to decrypt an encrypted file entry in the parent layer. */
+#define LAYER_ATTRIBUTES_RETYPED 0x4    /**< This layer is a re-scan of the parent layer but as a new type (e.g. using HandlerType). */
+#define LAYER_ATTRIBUTES_EMBEDDED 0x8   /**< This layer was found within the parent layer using FTM signatures \
+                                         *   (e.g. like ZIP entries found within an executable). */
+
+/**
+ * @brief Get the attributes of a scan layer.
+ *
+ * @param layer                 The scan layer to query.
+ * @param[out] attributes_out    Pointer to a variable to receive the layer attributes.
+ * @return cl_error_t           CL_SUCCESS if successful.
+ */
+extern cl_error_t cl_scan_layer_get_attributes(
+    cl_scan_layer_t *layer,
+    uint32_t *attributes_out);
+
+/* ----------------------------------------------------------------------------
  * Callback function type definitions.
  */
 
+typedef enum scan_callback {
+    /** Pre-hash
+     *
+     * Occurs just after basic file-type detection and before any hashes have been calculated either for the cache or
+     * the gen-json metadata.
+     * If you want any hashes other than SHA2-256, the most efficient option is to run the
+     * `cl_fmap_will_need_hash_later()` function in this callback for each and then run the `cl_fmap_get_hash()`
+     * function afterwards (now or later) to gather the hashes.
+     *
+     * Using this callback will appear in-order for ClamAV's depth-first approach.
+     */
+    CL_SCAN_CALLBACK_PRE_HASH,
+
+    /** Pre-scan
+     *
+     * Occurs before parser modules run and before pattern matching.
+     *
+     * Using this callback will appear in-order for ClamAV's depth-first approach.
+     */
+    CL_SCAN_CALLBACK_PRE_SCAN,
+
+    /** Post-scan
+     *
+     * Occurs after pattern matching and after running parser modules (i.e. scan complete for this layer).
+     * This callback is useful for post-processing the results of the scan, but is the most likely of the callbacks to
+     * be skipped if something goes critically wrong or the hash for the layer appeared in the clean-cache.
+     *
+     * Using this callback will appear in REVERSE-order for ClamAV's depth-first approach.
+     */
+    CL_SCAN_CALLBACK_POST_SCAN,
+
+    /** Alert
+     *
+     * Occurs each time an alert (detection) would be triggered during a scan.
+     * In all-match mode, you may receive multiple alerts for the same file, and even the same layer, corresponding with
+     * each signature that matched.
+     */
+    CL_SCAN_CALLBACK_ALERT,
+
+    /** File type
+     *
+     * Occurs each time the file type determination is refined.
+     * This may happen more than once per LAYER!
+     *
+     * Outside of using this callback, The most accurate time to check the file type would be:
+     * - For each layer: Use `cl_scan_layer_get_type()` in the `CL_SCAN_CALLBACK_POST_SCAN` callback.
+     * - For just the top layer: Use the `file_type_out` parameter provided by the `cl_scan*ex()` functions.
+     */
+    CL_SCAN_CALLBACK_FILE_TYPE
+} cl_scan_callback_t;
+
+/**
+ * @brief Callback interface to get access to the current layer using the scan-
+ * layer abstraction. This grants access to file content and attributes as well
+ * as those of each ancestor layers (if any).
+ *
+ * Called for each processed file including both the top level file (i.e. the
+ * zeroeth layer) and all contained files (recursively).
+ *
+ * @param layer          Scan layer (abstraction) for the current layer being scanned.
+ *                       Use the `cl_scan_layer_*` functions to access layer data and metadata.
+ *                       You may want to use `cl_scan_layer_get_fmap()` to get the file map for the current layer.
+ *                       You may also use it to access ancestor layers using `cl_scan_layer_get_parent_layer()`.
+ *
+ * @param context        The application context pointer passed in to the `cl_scan*()` function.
+ *
+ * @return CL_BREAK
+ *
+ *         Scan aborted by callback (the rest of the scan is skipped).
+ *         This does not mark the file as clean or infected, it just skips the rest of the scan.
+ *
+ * @return CL_SUCCESS / CL_CLEAN
+ *
+ *         File scan will continue.
+ *
+ *         For CL_SCAN_CALLBACK_ALERT: Means you want to ignore this specific alert and keep scanning.
+ *         This is different than CL_VERIFIED because it does not affect prior or future alerts.
+ *         Return CL_VERIFIED instead if you want to remove prior alerts for this layer and skip
+ *         the rest of the scan for this layer.
+ *
+ * @return CL_VIRUS
+ *
+ *         This will mark the file as infected. A new alert will be added.
+ *
+ *         For CL_SCAN_CALLBACK_ALERT: Means you agree with the alert (no extra alert needed).
+ *                                     Remember that CL_SUCCESS means you want to ignore the alert.
+ *
+ * @return CL_VERIFIED
+ *
+ *         Layer explicitly trusted by the callback and previous alerts removed FOR THIS layer.
+ *         You might want to do this if you trust the hash or verified a digital signature.
+ *         The rest of the scan will be skipped FOR THIS layer.
+ *         For contained files, this does NOT mean that the parent or adjacent layers are trusted.
+ */
+typedef cl_error_t (*clcb_scan)(cl_scan_layer_t *layer, void *context);
+/**
+ * @brief Set a callback function using the clcb_scan callback type.
+ *
+ * Select the callback location using the `cl_scan_callback_t` enum.
+ *
+ * Caution: changing options for an engine that is in-use is not thread-safe!
+ *
+ * @param engine    The initialized scanning engine.
+ * @param callback  The callback function pointer.
+ * @param location  The location of the callback.
+ */
+extern void cl_engine_set_scan_callback(struct cl_engine *engine, clcb_scan callback, cl_scan_callback_t location);
+
 /**
  * @brief Pre-cache callback.
+ *
+ * @deprecated This function is deprecated and will be removed in a future release.
+ * Use `CL_SCAN_CALLBACK_PRE_HASH` with `cl_engine_set_scan_callback()` instead.
  *
  * Called for each processed file (both the entry level - AKA 'outer' - file and
  * inner files - those generated when processing archive and container files), before
@@ -495,6 +998,9 @@ typedef cl_error_t (*clcb_pre_cache)(int fd, const char *type, void *context);
 /**
  * @brief Set a custom pre-cache callback function.
  *
+ * @deprecated This function is deprecated and will be removed in a future release.
+ * Use `CL_SCAN_CALLBACK_PRE_HASH` with `cl_engine_set_scan_callback()` instead.
+ *
  * Caution: changing options for an engine that is in-use is not thread-safe!
  *
  * @param engine    The initialized scanning engine.
@@ -502,23 +1008,14 @@ typedef cl_error_t (*clcb_pre_cache)(int fd, const char *type, void *context);
  */
 extern void cl_engine_set_clcb_pre_cache(struct cl_engine *engine, clcb_pre_cache callback);
 
-/*
- * Attributes of each layer in scan.
- */
-#define LAYER_ATTRIBUTES_NONE 0x0
-#define LAYER_ATTRIBUTES_NORMALIZED 0x1 /* This layer was modified to make matching more generic, reliable. */
-#define LAYER_ATTRIBUTES_DECRYPTED 0x2  /* Decryption was used to extract this layer. E.g. ClamAV was able to decrypt an \
-                                         * encrypted file entry in the parent layer. */
-#define LAYER_ATTRIBUTES_RETYPED 0x4    /* This layer is a duplicate of the parent layer but as a new type \
-                                         * (e.g. using HandlerType). */
-#define LAYER_ATTRIBUTES_EMBEDDED 0x8   /* This layer was found within the parent layer using FTM signatures \
-                                         * (e.g. like ZIP entries found within an executable). */
-
 /**
  * @brief File inspection callback.
  *
- * DISCLAIMER: This interface is to be considered unstable while we continue to evaluate it.
- * We may change this interface in the future.
+ * @deprecated This function is deprecated and will be removed in a future release.
+ * Use `CL_SCAN_CALLBACK_PRE_SCAN` with `cl_engine_set_scan_callback()` instead.
+ *
+ * You can use the `cl_fmap_*` functions to access the file map, file name, file size, file contents,
+ * and those of each ancestor layers (if any).
  *
  * Called for each NEW file (inner and outer).
  * Provides capability to record embedded file information during a scan.
@@ -551,6 +1048,9 @@ typedef cl_error_t (*clcb_file_inspection)(
 /**
  * @brief Set a custom file inspection callback function.
  *
+ * @deprecated This function is deprecated and will be removed in a future release.
+ * Use `CL_SCAN_CALLBACK_PRE_SCAN` with `cl_engine_set_scan_callback()` instead.
+ *
  * DISCLAIMER: This interface is to be considered unstable while we continue to evaluate it.
  * We may change this interface in the future.
  *
@@ -563,6 +1063,8 @@ extern void cl_engine_set_clcb_file_inspection(struct cl_engine *engine, clcb_fi
 
 /**
  * @brief Pre-scan callback.
+ *
+ * @deprecated This function is deprecated and will be removed in a future release.
  *
  * Called for each NEW file (inner and outer) before the scanning takes place. This is
  * roughly the same as clcb_before_cache, but it is affected by clean file caching.
@@ -579,6 +1081,7 @@ extern void cl_engine_set_clcb_file_inspection(struct cl_engine *engine, clcb_fi
 typedef cl_error_t (*clcb_pre_scan)(int fd, const char *type, void *context);
 /**
  * @brief Set a custom pre-scan callback function.
+ * Use `CL_SCAN_CALLBACK_PRE_SCAN` with `cl_engine_set_scan_callback()` instead.
  *
  * Caution: changing options for an engine that is in-use is not thread-safe!
  *
@@ -589,6 +1092,9 @@ extern void cl_engine_set_clcb_pre_scan(struct cl_engine *engine, clcb_pre_scan 
 
 /**
  * @brief Post-scan callback.
+ *
+ * @deprecated This function is deprecated and will be removed in a future release.
+ * Use `CL_SCAN_CALLBACK_PRE_SCAN` with `cl_engine_set_scan_callback()` instead.
  *
  * Called for each processed file (inner and outer), after the scanning is complete.
  * In all-match mode, the virname will be one of the matches, but there is no
@@ -617,6 +1123,9 @@ extern void cl_engine_set_clcb_post_scan(struct cl_engine *engine, clcb_post_sca
 /**
  * @brief Virus-found callback.
  *
+ * @deprecated This function is deprecated and will be removed in a future release.
+ * Use `CL_SCAN_CALLBACK_ALERT` with `cl_engine_set_scan_callback()` instead.
+ *
  * Called for each signature match.
  * If all-match is enabled, clcb_virus_found() may be called multiple times per
  * scan.
@@ -631,6 +1140,7 @@ extern void cl_engine_set_clcb_post_scan(struct cl_engine *engine, clcb_post_sca
 typedef void (*clcb_virus_found)(int fd, const char *virname, void *context);
 /**
  * @brief Set a custom virus-found callback function.
+ * Use `CL_SCAN_CALLBACK_ALERT` with `cl_engine_set_scan_callback()` instead.
  *
  * Caution: changing options for an engine that is in-use is not thread-safe!
  *
@@ -768,6 +1278,10 @@ extern void cl_set_clcb_msg(clcb_msg callback);
 /**
  * @brief LibClamAV hash stats callback.
  *
+ * @deprecated This function is deprecated and will be removed in a future release.
+ * Use `CL_SCAN_CALLBACK_ALERT` with `cl_engine_set_scan_callback()` instead.
+ * Then use the `cl_scan_layer_get_fmap()` and `cl_fmap_get_hash()` functions.
+ *
  * Callback that provides the hash of a scanned sample if a signature alerted.
  * Provides a mechanism to record detection statistics.
  *
@@ -780,6 +1294,10 @@ extern void cl_set_clcb_msg(clcb_msg callback);
 typedef void (*clcb_hash)(int fd, unsigned long long size, const char *md5, const char *virname, void *context);
 /**
  * @brief Set a custom hash stats callback function.
+ *
+ * @deprecated This function is deprecated and will be removed in a future release.
+ * Use `CL_SCAN_CALLBACK_ALERT` with `cl_engine_set_scan_callback()` instead.
+ * Then use the `cl_scan_layer_get_fmap()` and `cl_fmap_get_hash()` functions.
  *
  * Caution: changing options for an engine that is in-use is not thread-safe!
  *
@@ -1049,6 +1567,8 @@ extern void cl_engine_stats_enable(struct cl_engine *engine);
 /**
  * @brief Scan a file, given a file descriptor.
  *
+ * @deprecated This function is deprecated and will be removed in a future release. Use `cl_scandesc_ex()` instead.
+ *
  * @param desc            File descriptor of an open file. The caller must provide this or the map.
  * @param filename        (optional) Filepath of the open file descriptor or file map.
  * @param[out] virname    Will be set to a statically allocated (i.e. needs not be freed) signature name if the scan matches against a signature.
@@ -1067,6 +1587,8 @@ extern cl_error_t cl_scandesc(
 
 /**
  * @brief Scan a file, given a file descriptor.
+ *
+ * @deprecated This function is deprecated and will be removed in a future release. Use `cl_scandesc_ex()` instead.
  *
  * This callback variant allows the caller to provide a context structure that
  * caller provided callback functions can interpret.
@@ -1099,33 +1621,35 @@ extern cl_error_t cl_scandesc_callback(
  * This extended version of cl_scanmap_callback allows the caller to provide
  * additional hints to the scanning engine, such as a file hash and file type.
  *
- * @param desc            File descriptor of an open file. The caller must provide this or the map.
- * @param filename        (optional) Filepath of the open file descriptor or file map.
- * @param[out] virname    Will be set to a statically allocated (i.e. needs not be freed) signature name if the scan matches against a signature.
- * @param[out] scanned    The number of bytes scanned.
- * @param engine          The scanning engine.
- * @param scanoptions     Scanning options.
- * @param[in,out] context (Optional) An application-defined context struct, opaque to libclamav.
- *                        May be used within your callback functions.
- * @param hash_hint       (Optional) A NULL terminated string of the file hash so that
- *                        libclamav does not need to calculate it.
- * @param[out] hash_out   (Optional) A NULL terminated string of the file hash.
- *                        The caller is responsible for freeing the string.
- * @param hash_alg        The hashing algorithm used for either `hash_hint` or `hash_out`.
- *                        Supported algorithms are "md5", "sha1", "sha2-256".
- *                        If not specified, the default is "sha2-256".
- * @param file_type_hint  (Optional) A NULL terminated string of the file type hint.
- *                        E.g. "pe", "elf", "zip", etc.
- *                        You may also use ClamAV type names such as "CL_TYPE_PE".
- *                        ClamAV will ignore the hint if it is not familiar with the specified type.
- *                        See also: https://docs.clamav.net/appendix/FileTypes.html#file-types
- * @param file_type_out   (Optional) A NULL terminated string of the file type
- *                        of the top layer as determined by ClamAV.
- *                        Will take the form of the standard ClamAV file type format. E.g. "CL_TYPE_PE".
- *                        See also: https://docs.clamav.net/appendix/FileTypes.html#file-types
- * @return cl_error_t     CL_CLEAN if no signature matched.
- *                        CL_VIRUS if a signature matched.
- *                        Another CL_E* error code if an error occurred.
+ * This variant also upgrades the `scanned` output parameter to a 64-bit integer.
+ *
+ * @param desc               File descriptor of an open file. The caller must provide this or the map.
+ * @param filename           (optional) Filepath of the open file descriptor or file map.
+ * @param[out] virname       Will be set to a statically allocated (i.e. needs not be freed) signature name if the scan matches against a signature.
+ * @param[out] scanned       The number of bytes scanned.
+ * @param engine             The scanning engine.
+ * @param scanoptions        Scanning options.
+ * @param[in,out] context    (Optional) An application-defined context struct, opaque to libclamav.
+ *                           May be used within your callback functions.
+ * @param hash_hint          (Optional) A NULL terminated string of the file hash so that
+ *                           libclamav does not need to calculate it.
+ * @param[out] hash_out      (Optional) A NULL terminated string of the file hash.
+ *                           The caller is responsible for freeing the string.
+ * @param hash_alg           The hashing algorithm used for either `hash_hint` or `hash_out`.
+ *                           Supported algorithms are "md5", "sha1", "sha2-256".
+ *                           If not specified, the default is "sha2-256".
+ * @param file_type_hint     (Optional) A NULL terminated string of the file type hint.
+ *                           E.g. "pe", "elf", "zip", etc.
+ *                           You may also use ClamAV type names such as "CL_TYPE_PE".
+ *                           ClamAV will ignore the hint if it is not familiar with the specified type.
+ *                           See also: https://docs.clamav.net/appendix/FileTypes.html#file-types
+ * @param[out] file_type_out (Optional) A NULL terminated string of the file type
+ *                           of the top layer as determined by ClamAV.
+ *                           Will take the form of the standard ClamAV file type format. E.g. "CL_TYPE_PE".
+ *                           See also: https://docs.clamav.net/appendix/FileTypes.html#file-types
+ * @return cl_error_t        CL_CLEAN if no signature matched.
+ *                           CL_VIRUS if a signature matched.
+ *                           Another CL_E* error code if an error occurred.
  */
 extern cl_error_t cl_scandesc_ex(
     int desc,
@@ -1144,6 +1668,8 @@ extern cl_error_t cl_scandesc_ex(
 /**
  * @brief Scan a file, given a filename.
  *
+ * @deprecated This function is deprecated and will be removed in a future release. Use `cl_scanfile_ex()` instead.
+ *
  * @param filename        Filepath of the file to be scanned.
  * @param[out] virname    Will be set to a statically allocated (i.e. needs not be freed) signature name if the scan matches against a signature.
  * @param[out] scanned    The number of bytes scanned.
@@ -1160,6 +1686,8 @@ extern cl_error_t cl_scanfile(
 
 /**
  * @brief Scan a file, given a filename.
+ *
+ * @deprecated This function is deprecated and will be removed in a future release. Use `cl_scanfile_ex()` instead.
  *
  * This callback variant allows the caller to provide a context structure that
  * caller provided callback functions can interpret.
@@ -1190,34 +1718,132 @@ extern cl_error_t cl_scanfile_callback(
  * This extended version of cl_scanmap_callback allows the caller to provide
  * additional hints to the scanning engine, such as a file hash and file type.
  *
- * @param filename        Filepath of the file to be scanned.
- * @param[out] virname    Will be set to a statically allocated (i.e. needs not be freed) signature name if the scan matches against a signature.
- * @param[out] scanned    The number of bytes scanned.
- * @param engine          The scanning engine.
- * @param scanoptions     Scanning options.
- * @param[in,out] context (Optional) An application-defined context struct, opaque to libclamav.
- *                        May be used within your callback functions.
- * @param hash_hint       (Optional) A NULL terminated string of the file hash so that
- *                        libclamav does not need to calculate it.
- * @param[out] hash_out   (Optional) A NULL terminated string of the file hash.
- *                        The caller is responsible for freeing the string.
- * @param hash_alg        The hashing algorithm used for either `hash_hint` or `hash_out`.
- *                        Supported algorithms are "md5", "sha1", "sha2-256".
- *                        If not specified, the default is "sha2-256".
- * @param file_type_hint  (Optional) A NULL terminated string of the file type hint.
- *                        E.g. "pe", "elf", "zip", etc.
- *                        You may also use ClamAV type names such as "CL_TYPE_PE".
- *                        ClamAV will ignore the hint if it is not familiar with the specified type.
- *                        See also: https://docs.clamav.net/appendix/FileTypes.html#file-types
- * @param file_type_out   (Optional) A NULL terminated string of the file type
- *                        of the top layer as determined by ClamAV.
- *                        Will take the form of the standard ClamAV file type format. E.g. "CL_TYPE_PE".
- *                        See also: https://docs.clamav.net/appendix/FileTypes.html#file-types
- * @return cl_error_t     CL_CLEAN if no signature matched.
- *                        CL_VIRUS if a signature matched.
- *                        Another CL_E* error code if an error occurred.
+ * This variant also upgrades the `scanned` output parameter to a 64-bit integer.
+ *
+ * @param filename           Filepath of the file to be scanned.
+ * @param[out] virname       Will be set to a statically allocated (i.e. needs not be freed) signature name if the scan matches against a signature.
+ * @param[out] scanned       The number of bytes scanned.
+ * @param engine             The scanning engine.
+ * @param scanoptions        Scanning options.
+ * @param[in,out] context    (Optional) An application-defined context struct, opaque to libclamav.
+ *                           May be used within your callback functions.
+ * @param hash_hint          (Optional) A NULL terminated string of the file hash so that
+ *                           libclamav does not need to calculate it.
+ * @param[out] hash_out      (Optional) A NULL terminated string of the file hash.
+ *                           The caller is responsible for freeing the string.
+ * @param hash_alg           The hashing algorithm used for either `hash_hint` or `hash_out`.
+ *                           Supported algorithms are "md5", "sha1", "sha2-256".
+ *                           If not specified, the default is "sha2-256".
+ * @param file_type_hint     (Optional) A NULL terminated string of the file type hint.
+ *                           E.g. "pe", "elf", "zip", etc.
+ *                           You may also use ClamAV type names such as "CL_TYPE_PE".
+ *                           ClamAV will ignore the hint if it is not familiar with the specified type.
+ *                           See also: https://docs.clamav.net/appendix/FileTypes.html#file-types
+ * @param[out] file_type_out (Optional) A NULL terminated string of the file type
+ *                           of the top layer as determined by ClamAV.
+ *                           Will take the form of the standard ClamAV file type format. E.g. "CL_TYPE_PE".
+ *                           See also: https://docs.clamav.net/appendix/FileTypes.html#file-types
+ * @return cl_error_t        CL_CLEAN if no signature matched.
+ *                           CL_VIRUS if a signature matched.
+ *                           Another CL_E* error code if an error occurred.
  */
 extern cl_error_t cl_scanfile_ex(
+    const char *filename,
+    const char **virname,
+    uint64_t *scanned,
+    const struct cl_engine *engine,
+    struct cl_scan_options *scanoptions,
+    void *context,
+    const char *hash_hint,
+    char **hash_out,
+    const char *hash_alg,
+    const char *file_type_hint,
+    char **file_type_out);
+
+/**
+ * @brief Scan custom data, given a fmap.
+ *
+ * @deprecated This function is deprecated and will be removed in a future release. Use `cl_scanmap_ex()` instead.
+ *
+ * Fmaps are an abstraction representing a file or memory buffer.
+ *
+ * Create one using:
+ * - `cl_fmap_open_handle()` for a file handle, or
+ * - `cl_fmap_open_memory()` for a memory buffer.
+ *
+ * After the scan, you can also get the file hash with `cl_fmap_get_file_hash()`.
+ *
+ * @param map           Buffer to be scanned, in form of a cl_fmap_t.
+ * @param filename      Name of data origin. Does not need to be an actual
+ *                      file on disk. May be NULL if a name is not available.
+ * @param[out] virname  Pointer to receive the signature match name name if a
+ *                      signature matched.
+ * @param[out] scanned  Number of bytes scanned.
+ * @param engine        The scanning engine.
+ * @param scanoptions   The scanning options struct.
+ * @param context       An application-defined context struct, opaque to
+ *                      libclamav. May be used within your callback functions.
+ * @return cl_error_t   CL_CLEAN if no signature matched. CL_VIRUS if a
+ *                      signature matched. Another CL_E* error code if an
+ *                      error occurred.
+ */
+extern cl_error_t cl_scanmap_callback(
+    cl_fmap_t *map,
+    const char *filename,
+    const char **virname,
+    unsigned long int *scanned,
+    const struct cl_engine *engine,
+    struct cl_scan_options *scanoptions,
+    void *context);
+
+/**
+ * @brief Scan custom data, given a map.
+ *
+ * Fmaps are an abstraction representing a file or memory buffer.
+ *
+ * Create one using:
+ * - `cl_fmap_open_handle()` for a file handle, or
+ * - `cl_fmap_open_memory()` for a memory buffer.
+ *
+ * After the scan, you can also get the file hash with `cl_fmap_get_file_hash()`.
+ *
+ * This extended version of cl_scanmap_callback allows the caller to provide
+ * additional hints to the scanning engine, such as a file hash and file type.
+ *
+ * This variant also upgrades the `scanned` output parameter to a 64-bit integer.
+ *
+ * @param map                Buffer to be scanned, in form of a cl_fmap_t.
+ * @param filename           Name of data origin. Does not need to be an actual
+ *                           file on disk. May be NULL if a name is not available.
+ * @param[out] virname       Pointer to receive the signature match name name if a
+ *                           signature matched.
+ * @param[out] scanned       Number of bytes scanned.
+ * @param engine             The scanning engine.
+ * @param scanoptions        The scanning options struct.
+ * @param[in,out] context    (Optional) An application-defined context struct, opaque to libclamav.
+ *                           May be used within your callback functions.
+ * @param hash_hint          (Optional) A NULL terminated string of the file hash so that
+ *                           libclamav does not need to calculate it.
+ * @param[out] hash_out      (Optional) A NULL terminated string of the file hash.
+ *                           The caller is responsible for freeing the string.
+ * @param hash_alg           The hashing algorithm used for either `hash_hint` or `hash_out`.
+ *                           Supported algorithms are "md5", "sha1", "sha2-256".
+ *                           If not specified, the default is "sha2-256".
+ * @param file_type_hint     (Optional) A NULL terminated string of the file type hint.
+ *                           E.g. "pe", "elf", "zip", etc.
+ *                           You may also use ClamAV type names such as "CL_TYPE_PE".
+ *                           ClamAV will ignore the hint if it is not familiar with the specified type.
+ *                           See also: https://docs.clamav.net/appendix/FileTypes.html#file-types
+ * @param[out] file_type_out (Optional) A NULL terminated string of the file type
+ *                           of the top layer as determined by ClamAV.
+ *                           Will take the form of the standard ClamAV file type format. E.g. "CL_TYPE_PE".
+ *                           See also: https://docs.clamav.net/appendix/FileTypes.html#file-types
+ * @return cl_error_t        CL_CLEAN if no signature matched.
+ *                           CL_VIRUS if a signature matched.
+ *                           Another CL_E* error code if an error occurred.
+ */
+extern cl_error_t cl_scanmap_ex(
+    cl_fmap_t *map,
     const char *filename,
     const char **virname,
     uint64_t *scanned,
@@ -1294,7 +1920,7 @@ extern struct cl_cvd *cl_cvdparse(const char *head);
 /**
  * @brief Verify a CVD file by loading and unloading it.
  *
- * This function is deprecated. Use cl_cvdverify_ex() instead.
+ * @deprecated This function is deprecated and will be removed in a future release. Use cl_cvdverify_ex() instead.
  *
  * @param file          Filepath of CVD file.
  * @return cl_error_t   CL_SUCCESS if success, else a CL_E* error code.
@@ -1318,7 +1944,9 @@ extern cl_error_t cl_cvdverify_ex(const char *file, const char *certs_directory)
 extern void cl_cvdfree(struct cl_cvd *cvd);
 
 /**
- * @brief Unpack a CVD file. (deprecated)
+ * @brief Unpack a CVD file.
+ *
+ * @deprecated This function is deprecated and will be removed in a future release. Use cl_cvdunpack_ex() instead.
  *
  * Will verify the CVD is correctly signed unless the `dont_verify` parameter is true.
  *
@@ -1433,166 +2061,6 @@ extern const char *cl_retver(void);
 extern const char *cl_strerror(cl_error_t clerror);
 
 /* ----------------------------------------------------------------------------
- * Custom data scanning.
- */
-struct cl_fmap;
-typedef struct cl_fmap cl_fmap_t;
-
-/**
- * @brief Read callback function type.
- *
- * A callback function pointer type for reading data from a cl_fmap_t that uses
- * reads data from a handle interface.
- *
- * Read 'count' bytes starting at 'offset' into the buffer 'buf'
- *
- * Thread safety: It is guaranteed that only one callback is executing for a
- * specific handle at any time, but there might be multiple callbacks executing
- * for different handle at the same time.
- *
- * @param handle    The handle passed to cl_fmap_open_handle, its meaning is up
- *                  to the callback's implementation
- * @param buf       A buffer to read data into, must be at least offset + count
- *                  bytes in size.
- * @param count     The number of bytes to read.
- * @param offset    The offset into buf to read the data to. If successful,
- *                  the number of bytes actually read is returned. Upon reading
- *                  end-of-file, zero is returned. Otherwise, a -1 is returned
- *                  and the global variable errno is set to indicate the error.
- */
-typedef off_t (*clcb_pread)(void *handle, void *buf, size_t count, off_t offset);
-
-/**
- * @brief Open a map given a handle.
- *
- * Open a map for scanning custom data accessed by a handle and pread (lseek +
- * read)-like interface. For example a file descriptor or a WIN32 HANDLE.
- * By default fmap will use aging to discard old data, unless you tell it not
- * to.
- *
- * The handle will be passed to the callback each time.
- *
- * @param handle        A handle that may be accessed using lseek + read.
- * @param offset        Initial offset to start scanning.
- * @param len           Length of the data from the start (not the offset).
- * @param pread_cb      A callback function to read data from the handle.
- * @param use_aging     Set to a non-zero value to enable aging.
- * @return cl_fmap_t*   A map representing the handle interface.
- */
-extern cl_fmap_t *cl_fmap_open_handle(
-    void *handle,
-    size_t offset,
-    size_t len,
-    clcb_pread pread_cb,
-    int use_aging);
-
-/**
- * @brief Open a map given a buffer.
- *
- * Open a map for scanning custom data, where the data is already in memory,
- * either in the form of a buffer, a memory mapped file, etc.
- * Note that the memory [start, start+len) must be the _entire_ file,
- * you can't give it parts of a file and expect detection to work.
- *
- * @param start         Pointer to a buffer of data.
- * @param len           Length in bytes of the data.
- * @return cl_fmap_t*   A map representing the buffer.
- */
-extern cl_fmap_t *cl_fmap_open_memory(const void *start, size_t len);
-
-/**
- * @brief Releases resources associated with the map.
- *
- * You should release any resources you hold only after (handles, maps) calling
- * this function.
- *
- * @param map           Map to be closed.
- */
-extern void cl_fmap_close(cl_fmap_t *);
-
-/**
- * @brief Scan custom data, given a map.
- *
- * Use `cl_fmap_open_handle()` or `cl_fmap_open_memory()` to create the map
- * from a file handle or a memory buffer, respectively.
- *
- * @param map           Buffer to be scanned, in form of a cl_fmap_t.
- * @param filename      Name of data origin. Does not need to be an actual
- *                      file on disk. May be NULL if a name is not available.
- * @param[out] virname  Pointer to receive the signature match name name if a
- *                      signature matched.
- * @param[out] scanned  Number of bytes scanned.
- * @param engine        The scanning engine.
- * @param scanoptions   The scanning options struct.
- * @param context       An application-defined context struct, opaque to
- *                      libclamav. May be used within your callback functions.
- * @return cl_error_t   CL_CLEAN if no signature matched. CL_VIRUS if a
- *                      signature matched. Another CL_E* error code if an
- *                      error occurred.
- */
-extern cl_error_t cl_scanmap_callback(
-    cl_fmap_t *map,
-    const char *filename,
-    const char **virname,
-    unsigned long int *scanned,
-    const struct cl_engine *engine,
-    struct cl_scan_options *scanoptions,
-    void *context);
-
-/**
- * @brief Scan custom data, given a map.
- *
- * Use `cl_fmap_open_handle()` or `cl_fmap_open_memory()` to create the map
- * from a file handle or a memory buffer, respectively.
- *
- * This extended version of cl_scanmap_callback allows the caller to provide
- * additional hints to the scanning engine, such as a file hash and file type.
- *
- * @param map             Buffer to be scanned, in form of a cl_fmap_t.
- * @param filename        Name of data origin. Does not need to be an actual
- *                        file on disk. May be NULL if a name is not available.
- * @param[out] virname    Pointer to receive the signature match name name if a
- *                        signature matched.
- * @param[out] scanned    Number of bytes scanned.
- * @param engine          The scanning engine.
- * @param scanoptions     The scanning options struct.
- * @param[in,out] context (Optional) An application-defined context struct, opaque to libclamav.
- *                        May be used within your callback functions.
- * @param hash_hint       (Optional) A NULL terminated string of the file hash so that
- *                        libclamav does not need to calculate it.
- * @param[out] hash_out   (Optional) A NULL terminated string of the file hash.
- *                        The caller is responsible for freeing the string.
- * @param hash_alg        The hashing algorithm used for either `hash_hint` or `hash_out`.
- *                        Supported algorithms are "md5", "sha1", "sha2-256".
- *                        If not specified, the default is "sha2-256".
- * @param file_type_hint  (Optional) A NULL terminated string of the file type hint.
- *                        E.g. "pe", "elf", "zip", etc.
- *                        You may also use ClamAV type names such as "CL_TYPE_PE".
- *                        ClamAV will ignore the hint if it is not familiar with the specified type.
- *                        See also: https://docs.clamav.net/appendix/FileTypes.html#file-types
- * @param file_type_out   (Optional) A NULL terminated string of the file type
- *                        of the top layer as determined by ClamAV.
- *                        Will take the form of the standard ClamAV file type format. E.g. "CL_TYPE_PE".
- *                        See also: https://docs.clamav.net/appendix/FileTypes.html#file-types
- * @return cl_error_t     CL_CLEAN if no signature matched.
- *                        CL_VIRUS if a signature matched.
- *                        Another CL_E* error code if an error occurred.
- */
-extern cl_error_t cl_scanmap_ex(
-    cl_fmap_t *map,
-    const char *filename,
-    const char **virname,
-    uint64_t *scanned,
-    const struct cl_engine *engine,
-    struct cl_scan_options *scanoptions,
-    void *context,
-    const char *hash_hint,
-    char **hash_out,
-    const char *hash_alg,
-    const char *file_type_hint,
-    char **file_type_out);
-
-/* ----------------------------------------------------------------------------
  * Crypto/hashing functions
  */
 #define MD5_HASH_SIZE 16
@@ -1611,7 +2079,7 @@ extern cl_error_t cl_scanmap_ex(
  * @param[out] olen (optional) A pointer that stores how long the generated hash is.
  * @return          A pointer to the generated hash or obuf if obuf is not NULL.
  */
-unsigned char *cl_hash_data(const char *alg, const void *buf, size_t len, unsigned char *obuf, unsigned int *olen);
+extern unsigned char *cl_hash_data(const char *alg, const void *buf, size_t len, unsigned char *obuf, unsigned int *olen);
 
 /**
  * @brief Generate a hash of a file.
@@ -1621,7 +2089,7 @@ unsigned char *cl_hash_data(const char *alg, const void *buf, size_t len, unsign
  * @param[out] olen (optional) The length of the generated hash.
  * @return          A pointer to a malloc'd buffer that holds the generated hash.
  */
-unsigned char *cl_hash_file_fd_ctx(EVP_MD_CTX *ctx, int fd, unsigned int *olen);
+extern unsigned char *cl_hash_file_fd_ctx(EVP_MD_CTX *ctx, int fd, unsigned int *olen);
 
 /**
  * @brief Generate a hash of a file.
@@ -1631,7 +2099,7 @@ unsigned char *cl_hash_file_fd_ctx(EVP_MD_CTX *ctx, int fd, unsigned int *olen);
  * @param[out] olen (optional) The length of the generated hash.
  * @return          A pointer to a malloc'd buffer that holds the generated hash.
  */
-unsigned char *cl_hash_file_fd(int fd, const char *alg, unsigned int *olen);
+extern unsigned char *cl_hash_file_fd(int fd, const char *alg, unsigned int *olen);
 
 /**
  * @brief Generate a hash of a file.
@@ -1641,7 +2109,7 @@ unsigned char *cl_hash_file_fd(int fd, const char *alg, unsigned int *olen);
  * @param[out] olen (optional) The length of the generated hash.
  * @return          A pointer to a malloc'd buffer that holds the generated hash.
  */
-unsigned char *cl_hash_file_fp(FILE *fp, const char *alg, unsigned int *olen);
+extern unsigned char *cl_hash_file_fp(FILE *fp, const char *alg, unsigned int *olen);
 
 /**
  * @brief Generate a sha2-256 hash of data.
@@ -1652,7 +2120,7 @@ unsigned char *cl_hash_file_fp(FILE *fp, const char *alg, unsigned int *olen);
  * @param[out] olen (optional) The length of the generated hash.
  * @return          A pointer to a malloc'd buffer that holds the generated hash.
  */
-unsigned char *cl_sha256(const void *buf, size_t len, unsigned char *obuf, unsigned int *olen);
+extern unsigned char *cl_sha256(const void *buf, size_t len, unsigned char *obuf, unsigned int *olen);
 
 /**
  * @brief Generate a sha2-384 hash of data.
@@ -1663,7 +2131,7 @@ unsigned char *cl_sha256(const void *buf, size_t len, unsigned char *obuf, unsig
  * @param[out] olen (optional) The length of the generated hash.
  * @return          A pointer to a malloc'd buffer that holds the generated hash.
  */
-unsigned char *cl_sha384(const void *buf, size_t len, unsigned char *obuf, unsigned int *olen);
+extern unsigned char *cl_sha384(const void *buf, size_t len, unsigned char *obuf, unsigned int *olen);
 
 /**
  * @brief Generate a sha2-512 hash of data.
@@ -1674,7 +2142,7 @@ unsigned char *cl_sha384(const void *buf, size_t len, unsigned char *obuf, unsig
  * @param[out] olen (optional) The length of the generated hash.
  * @return          A pointer to a malloc'd buffer that holds the generated hash.
  */
-unsigned char *cl_sha512(const void *buf, size_t len, unsigned char *obuf, unsigned int *olen);
+extern unsigned char *cl_sha512(const void *buf, size_t len, unsigned char *obuf, unsigned int *olen);
 
 /**
  * @brief Generate a sha1 hash of data.
@@ -1685,7 +2153,7 @@ unsigned char *cl_sha512(const void *buf, size_t len, unsigned char *obuf, unsig
  * @param[out] olen (optional) The length of the generated hash.
  * @return          A pointer to a malloc'd buffer that holds the generated hash.
  */
-unsigned char *cl_sha1(const void *buf, size_t len, unsigned char *obuf, unsigned int *olen);
+extern unsigned char *cl_sha1(const void *buf, size_t len, unsigned char *obuf, unsigned int *olen);
 
 /**
  * @brief Verify validity of signed data.
@@ -1699,7 +2167,7 @@ unsigned char *cl_sha1(const void *buf, size_t len, unsigned char *obuf, unsigne
  * @param decode    Whether or not to base64-decode the signature prior to verification. 1 for yes, 0 for no.
  * @return          0 for success, -1 for error or invalid signature.
  */
-int cl_verify_signature(
+extern int cl_verify_signature(
     EVP_PKEY *pkey,
     const char *alg,
     unsigned char *sig,
@@ -1718,7 +2186,7 @@ int cl_verify_signature(
  * @param digest    The hash of the signed data.
  * @return          0 for success, -1 for error or invalid signature.
  */
-int cl_verify_signature_hash(
+extern int cl_verify_signature_hash(
     EVP_PKEY *pkey,
     const char *alg,
     unsigned char *sig,
@@ -1735,7 +2203,7 @@ int cl_verify_signature_hash(
  * @param fd        The file descriptor.
  * @return          0 for success, -1 for error or invalid signature.
  */
-int cl_verify_signature_fd(
+extern int cl_verify_signature_fd(
     EVP_PKEY *pkey,
     const char *alg,
     unsigned char *sig,
@@ -1752,7 +2220,7 @@ int cl_verify_signature_fd(
  * @param digest    The hash of the signed data.
  * @return          0 for success, -1 for error or invalid signature.
  */
-int cl_verify_signature_hash_x509_keyfile(
+extern int cl_verify_signature_hash_x509_keyfile(
     char *x509path,
     const char *alg,
     unsigned char *sig,
@@ -1769,7 +2237,7 @@ int cl_verify_signature_hash_x509_keyfile(
  * @param fd        The file descriptor.
  * @return          0 for success, -1 for error or invalid signature.
  */
-int cl_verify_signature_fd_x509_keyfile(
+extern int cl_verify_signature_fd_x509_keyfile(
     char *x509path,
     const char *alg,
     unsigned char *sig,
@@ -1788,7 +2256,7 @@ int cl_verify_signature_fd_x509_keyfile(
  * @param decode    Whether or not to base64-decode the signature prior to verification. 1 for yes, 0 for no.
  * @return          0 for success, -1 for error or invalid signature.
  */
-int cl_verify_signature_x509_keyfile(
+extern int cl_verify_signature_x509_keyfile(
     char *x509path,
     const char *alg,
     unsigned char *sig,
@@ -1807,7 +2275,7 @@ int cl_verify_signature_x509_keyfile(
  * @param digest    The hash of the signed data.
  * @return          0 for success, -1 for error or invalid signature.
  */
-int cl_verify_signature_hash_x509(
+extern int cl_verify_signature_hash_x509(
     X509 *x509,
     const char *alg,
     unsigned char *sig,
@@ -1824,7 +2292,7 @@ int cl_verify_signature_hash_x509(
  * @param fd        The file descriptor.
  * @return          0 for success, -1 for error or invalid signature.
  */
-int cl_verify_signature_fd_x509(X509 *x509, const char *alg, unsigned char *sig, unsigned int siglen, int fd);
+extern int cl_verify_signature_fd_x509(X509 *x509, const char *alg, unsigned char *sig, unsigned int siglen, int fd);
 
 /**
  * @brief Verify validity of signed data.
@@ -1838,7 +2306,7 @@ int cl_verify_signature_fd_x509(X509 *x509, const char *alg, unsigned char *sig,
  * @param decode    Whether or not to base64-decode the signature prior to verification. 1 for yes, 0 for no.
  * @return          0 for success, -1 for error or invalid signature.
  */
-int cl_verify_signature_x509(
+extern int cl_verify_signature_x509(
     X509 *x509,
     const char *alg,
     unsigned char *sig,
@@ -1854,7 +2322,7 @@ int cl_verify_signature_x509(
  * @param len       The length of the data.
  * @return          A pointer to the X509 object on success, NULL on error.
  */
-X509 *cl_get_x509_from_mem(void *data, unsigned int len);
+extern X509 *cl_get_x509_from_mem(void *data, unsigned int len);
 
 /**
  * @brief Validate an X509 certificate chain, with the chain being located in a directory.
@@ -1863,7 +2331,7 @@ X509 *cl_get_x509_from_mem(void *data, unsigned int len);
  * @param certpath  The path to the X509 certificate to be validated.
  * @return          0 for success, -1 for error or invalid certificate.
  */
-int cl_validate_certificate_chain_ts_dir(char *tsdir, char *certpath);
+extern int cl_validate_certificate_chain_ts_dir(char *tsdir, char *certpath);
 
 /**
  * @brief Validate an X509 certificate chain with support for a CRL.
@@ -1873,14 +2341,14 @@ int cl_validate_certificate_chain_ts_dir(char *tsdir, char *certpath);
  * @param certpath      The path to the X509 certificate to be validated.
  * @return              0 for success, -1 for error or invalid certificate.
  */
-int cl_validate_certificate_chain(char **authorities, char *crlpath, char *certpath);
+extern int cl_validate_certificate_chain(char **authorities, char *crlpath, char *certpath);
 
 /**
  * @brief Load an X509 certificate from a file.
  *
  * @param certpath  The path to the X509 certificate.
  */
-X509 *cl_load_cert(const char *certpath);
+extern X509 *cl_load_cert(const char *certpath);
 
 /**
  * @brief Parse an ASN1_TIME object.
@@ -1888,7 +2356,7 @@ X509 *cl_load_cert(const char *certpath);
  * @param timeobj   The ASN1_TIME object.
  * @return          A pointer to a (struct tm). Adjusted for time zone and daylight savings time.
  */
-struct tm *cl_ASN1_GetTimeT(ASN1_TIME *timeobj);
+extern struct tm *cl_ASN1_GetTimeT(ASN1_TIME *timeobj);
 
 /**
  * @brief Load a CRL file into an X509_CRL object.
@@ -1896,7 +2364,7 @@ struct tm *cl_ASN1_GetTimeT(ASN1_TIME *timeobj);
  * @param file  The path to the CRL.
  * @return      A pointer to an X509_CRL object or NULL on error.
  */
-X509_CRL *cl_load_crl(const char *timeobj);
+extern X509_CRL *cl_load_crl(const char *timeobj);
 
 /**
  * @brief Sign data with a key stored on disk.
@@ -1908,7 +2376,7 @@ X509_CRL *cl_load_crl(const char *timeobj);
  * @param           Whether or not to base64-encode the signature. 1 for yes, 0 for no.
  * @return          The generated signature.
  */
-unsigned char *cl_sign_data_keyfile(
+extern unsigned char *cl_sign_data_keyfile(
     char *keypath,
     const char *alg,
     unsigned char *hash,
@@ -1925,7 +2393,7 @@ unsigned char *cl_sign_data_keyfile(
  * @param           Whether or not to base64-encode the signature. 1 for yes, 0 for no.
  * @return          The generated signature.
  */
-unsigned char *cl_sign_data(EVP_PKEY *pkey, const char *alg, unsigned char *hash, unsigned int *olen, int encode);
+extern unsigned char *cl_sign_data(EVP_PKEY *pkey, const char *alg, unsigned char *hash, unsigned int *olen, int encode);
 
 /**
  * @brief Sign a file with an RSA private key object.
@@ -1937,7 +2405,7 @@ unsigned char *cl_sign_data(EVP_PKEY *pkey, const char *alg, unsigned char *hash
  * @param encode    Whether or not to base64-encode the signature. 1 for yes, 0 for no.
  * @return          The generated signature.
  */
-unsigned char *cl_sign_file_fd(int fd, EVP_PKEY *pkey, const char *alg, unsigned int *olen, int encode);
+extern unsigned char *cl_sign_file_fd(int fd, EVP_PKEY *pkey, const char *alg, unsigned int *olen, int encode);
 
 /**
  * @brief Sign a file with an RSA private key object.
@@ -1949,7 +2417,7 @@ unsigned char *cl_sign_file_fd(int fd, EVP_PKEY *pkey, const char *alg, unsigned
  * @param encode    Whether or not to base64-encode the signature. 1 for yes, 0 for no.
  * @return          The generated signature.
  */
-unsigned char *cl_sign_file_fp(FILE *fp, EVP_PKEY *pkey, const char *alg, unsigned int *olen, int encode);
+extern unsigned char *cl_sign_file_fp(FILE *fp, EVP_PKEY *pkey, const char *alg, unsigned int *olen, int encode);
 
 /**
  * @brief Get the Private Key stored on disk.
@@ -1957,12 +2425,41 @@ unsigned char *cl_sign_file_fp(FILE *fp, EVP_PKEY *pkey, const char *alg, unsign
  * @param keypath   The path on disk where the private key is stored.
  * @return          A pointer to the EVP_PKEY object that contains the private key in memory.
  */
-EVP_PKEY *cl_get_pkey_file(char *keypath);
+extern EVP_PKEY *cl_get_pkey_file(char *keypath);
 
-void *cl_hash_init(const char *alg);
-int cl_update_hash(void *ctx, const void *data, size_t sz);
-int cl_finish_hash(void *ctx, void *buf);
-void cl_hash_destroy(void *ctx);
+/**
+ * @brief Initialize a hash context.
+ *
+ * @param alg       The hash algorithm to use.
+ * @return void*
+ */
+extern void *cl_hash_init(const char *alg);
+
+/**
+ * @brief Update a hash context with new data.
+ *
+ * @param ctx       The hash context.
+ * @param data      The data to hash.
+ * @param sz        The size of the data.
+ * @return int      0 on success, -1 on error.
+ */
+extern int cl_update_hash(void *ctx, const void *data, size_t sz);
+
+/**
+ * @brief Finalize a hash context and get the resulting hash.
+ *
+ * @param ctx       The hash context.
+ * @param buf       A buffer to store the resulting hash. Must be large enough to hold the hash.
+ * @return int      0 on success, -1 on error.
+ */
+extern int cl_finish_hash(void *ctx, void *buf);
+
+/**
+ * @brief Destroy a hash context.
+ *
+ * @param ctx   The hash context.
+ */
+extern void cl_hash_destroy(void *ctx);
 
 #ifdef __cplusplus
 }

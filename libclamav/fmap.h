@@ -55,18 +55,20 @@ struct cl_fmap {
     uint64_t pages;
     uint64_t pgsz;
     uint64_t paged;
-    bool aging;           /** indicates if we should age off memory mapped pages */
-    bool dont_cache_flag; /** indicates if we should not cache scan results for this fmap. Used if limits exceeded */
-    bool handle_is_fd;    /** non-zero if map->handle is an fd. */
-    size_t offset;        /** file offset representing start of original fmap, if the fmap created reading from a file starting at offset other than 0 */
-    size_t nested_offset; /** offset from start of original fmap (data) for nested scan. 0 for orig fmap. */
-    size_t real_len;      /** len from start of original fmap (data) to end of current (possibly nested) map. */
-                          /* real_len == nested_offset + len.
-                             real_len is needed for nested maps because we only reference the original mapping data.
-                             We convert caller's fmap offsets & lengths to real data offsets using nested_offset & real_len. */
+    bool aging;           /** Indicates if we should age off memory mapped pages */
+    bool dont_cache_flag; /** Indicates if we should not cache scan results for this fmap. Used if limits exceeded */
+    bool handle_is_fd;    /** Non-zero if `map->handle` is an fd. This is needed so that `fmap_fd()` knows if it can
+                              return a file descriptor. If it's some other kind of handle, then `fmap_fd()` has to return -1. */
+    size_t offset;        /** File offset representing start of original fmap, if the fmap created reading from a file starting at offset other than 0.
+                              `offset` & `len` are critical information for anyone using the file descriptor/handle */
+    size_t nested_offset; /** Offset from start of original fmap (data) for nested scan. 0 for orig fmap. */
+    size_t real_len;      /** Length from start of original fmap (data) to end of current (possibly nested) map.
+                              `real_len == nested_offset + len`.
+                              `real_len` is needed for nested maps because we only reference the original mapping data.
+                              We convert caller's fmap offsets & lengths to real data offsets using `nested_offset` & `real_len`. */
 
     /* external */
-    size_t len; /** length of data from nested_offset, accessible via current fmap */
+    size_t len; /** Length of data from nested_offset, accessible via current fmap */
 
     /* real_len = nested_offset + len
      * file_offset = offset + nested_offset + need_offset

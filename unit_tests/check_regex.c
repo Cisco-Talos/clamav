@@ -410,7 +410,7 @@ static void do_phishing_test(const struct rtest *rtest)
     ctx.engine = engine;
 
     ctx.recursion_stack_size = ctx.engine->max_recursion_level;
-    ctx.recursion_stack      = calloc(sizeof(recursion_level_t), ctx.recursion_stack_size);
+    ctx.recursion_stack      = calloc(sizeof(cli_scan_layer_t), ctx.recursion_stack_size);
     ck_assert_msg(!!ctx.recursion_stack, "calloc() for recursion_stack failed");
 
     rc = phishingScan(&ctx, &hrefs);
@@ -505,7 +505,7 @@ static void do_phishing_test_allscan(const struct rtest *rtest)
     ctx.engine = engine;
 
     ctx.recursion_stack_size = ctx.engine->max_recursion_level;
-    ctx.recursion_stack      = calloc(sizeof(recursion_level_t), ctx.recursion_stack_size);
+    ctx.recursion_stack      = calloc(sizeof(cli_scan_layer_t), ctx.recursion_stack_size);
     ck_assert_msg(!!ctx.recursion_stack, "calloc() for recursion_stack failed");
 
     rc = phishingScan(&ctx, &hrefs);

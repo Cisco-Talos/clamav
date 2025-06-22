@@ -71,6 +71,25 @@ CLAMAV_PUBLIC {
     cl_scandesc_ex;
     cl_scanmap_ex;
     cl_scanfile_ex;
+    cl_fmap_set_name;
+    cl_fmap_get_name;
+    cl_fmap_set_path;
+    cl_fmap_get_path;
+    cl_fmap_get_fd;
+    cl_fmap_get_size;
+    cl_fmap_set_hash;
+    cl_fmap_have_hash;
+    cl_fmap_will_need_hash_later;
+    cl_fmap_get_hash;
+    cl_fmap_get_data;
+    cl_scan_layer_get_fmap;
+    cl_scan_layer_get_parent_layer;
+    cl_scan_layer_get_type;
+    cl_scan_layer_get_recursion_level;
+    cl_scan_layer_get_object_id;
+    cl_scan_layer_get_last_alert;
+    cl_scan_layer_get_attributes;
+    cl_engine_set_scan_callback;
 };
 CLAMAV_PRIVATE {
   global:

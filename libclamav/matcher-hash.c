@@ -62,6 +62,28 @@ size_t cli_hash_len(cli_hash_type_t type)
     }
 }
 
+cl_error_t cli_hash_type_from_name(const char* name, cli_hash_type_t *type_out){
+    if (!name || !type_out) {
+        return CL_ENULLARG;
+    }
+
+    if (strcmp(name, "md5") == 0) {
+        *type_out = CLI_HASH_MD5;
+    } else if (strcmp(name, "sha1") == 0) {
+        *type_out = CLI_HASH_SHA1;
+    } else if ((strcmp(name, "sha2-256") == 0) || (strcmp(name, "sha256") == 0)) {
+        *type_out = CLI_HASH_SHA2_256;
+    } else if ((strcmp(name, "sha2-384") == 0) || (strcmp(name, "sha384") == 0)) {
+        *type_out = CLI_HASH_SHA2_384;
+    } else if ((strcmp(name, "sha2-512") == 0) || (strcmp(name, "sha512") == 0)) {
+        *type_out = CLI_HASH_SHA2_512;
+    } else {
+        return CL_EARG; // Unknown hash type name
+    }
+
+    return CL_SUCCESS;
+}
+
 cl_error_t hm_addhash_str(struct cli_matcher *root, const char *strhash, uint32_t size, const char *virusname)
 {
     cli_hash_type_t type;
