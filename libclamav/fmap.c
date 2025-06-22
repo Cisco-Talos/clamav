@@ -225,7 +225,7 @@ fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty, const cha
         return NULL;
     }
     m->handle              = (void *)(size_t)fd;
-    m->handle_is_fd        = true; /* This is probably(?) needed so `fmap_fd()` can return the file descriptor. */
+    m->handle_is_fd        = true;
     m->windows_file_handle = (void *)windows_file_handle;
     m->windows_map_handle  = (void *)windows_map_handle;
     m->unmap               = unmap_win32;
@@ -384,8 +384,8 @@ static void unmap_handle(fmap_t *m)
     }
 }
 
-extern cl_fmap_t *cl_fmap_open_handle(void *handle, size_t offset, size_t len,
-                                      clcb_pread pread_cb, int use_aging)
+cl_fmap_t *fmap_open_handle(void *handle, size_t offset, size_t len,
+                            clcb_pread pread_cb, int use_aging)
 {
     cl_error_t status = CL_EMEM;
     uint64_t pages;
@@ -924,11 +924,6 @@ done:
     return m;
 }
 
-extern cl_fmap_t *cl_fmap_open_memory(const void *start, size_t len)
-{
-    return (cl_fmap_t *)fmap_open_memory(start, len, NULL);
-}
-
 static const void *mem_need(fmap_t *m, size_t at, size_t len, int lock)
 {
     UNUSEDPARAM(lock);
@@ -1120,11 +1115,6 @@ int fmap_fd(fmap_t *m)
     return fd;
 }
 
-extern void cl_fmap_close(cl_fmap_t *map)
-{
-    fmap_free(map);
-}
-
 cl_error_t fmap_set_hash(fmap_t *map, uint8_t *hash, cli_hash_type_t type)
 {
     cl_error_t status = CL_ERROR;
@@ -1267,4 +1257,364 @@ done:
     }
 
     return status;
+}
+
+/*
+ * Public API functions.
+ */
+
+extern cl_fmap_t *cl_fmap_open_handle(
+    void *handle,
+    size_t offset,
+    size_t len,
+    clcb_pread pread_cb,
+    int use_aging)
+{
+    return fmap_open_handle(handle, offset, len, pread_cb, use_aging);
+}
+
+extern cl_fmap_t *cl_fmap_open_memory(const void *start, size_t len)
+{
+    return (cl_fmap_t *)fmap_open_memory(start, len, NULL);
+}
+
+extern cl_error_t cl_fmap_set_name(cl_fmap_t *map, const char *name)
+{
+    cl_error_t status = CL_ERROR;
+
+    if (!map || !name) {
+        status = CL_ENULLARG;
+        goto done;
+    }
+
+    free(map->name);
+
+    map->name = cli_safer_strdup(name);
+    if (!map->name) {
+        status = CL_EMEM;
+        goto done;
+    }
+
+    status = CL_SUCCESS;
+
+done:
+    return status;
+}
+
+extern cl_error_t cl_fmap_get_name(cl_fmap_t *map, const char **name_out)
+{
+    cl_error_t status = CL_ERROR;
+
+    if (!map || !name_out) {
+        status = CL_ENULLARG;
+        goto done;
+    }
+
+    *name_out = map->name;
+    status    = CL_SUCCESS;
+
+done:
+    return status;
+}
+
+extern cl_error_t cl_fmap_set_path(cl_fmap_t *map, const char *path)
+{
+    cl_error_t status = CL_ERROR;
+
+    if (!map || !path) {
+        status = CL_ENULLARG;
+        goto done;
+    }
+
+    free(map->path);
+
+    map->path = cli_safer_strdup(path);
+    if (!map->path) {
+        status = CL_EMEM;
+        goto done;
+    }
+
+    status = CL_SUCCESS;
+
+done:
+    return status;
+}
+
+extern cl_error_t cl_fmap_get_path(cl_fmap_t *map, const char **path_out, size_t *offset_out, size_t *len_out)
+{
+    cl_error_t status = CL_ERROR;
+
+    if (!map || !path_out) {
+        status = CL_ENULLARG;
+        goto done;
+    }
+
+    *path_out = map->path;
+    if (NULL == *path_out) {
+        status = CL_EACCES;
+        goto done;
+    }
+
+    if (offset_out) {
+        *offset_out = map->offset;
+    }
+
+    if (len_out) {
+        *len_out = map->len;
+    }
+
+    status = CL_SUCCESS;
+
+done:
+    return status;
+}
+
+extern cl_error_t cl_fmap_get_fd(const cl_fmap_t *map, int *fd_out, size_t *offset_out, size_t *len_out)
+{
+    cl_error_t status = CL_ERROR;
+
+    if (!map || !fd_out) {
+        status = CL_ENULLARG;
+        goto done;
+    }
+
+    *fd_out = fmap_fd((fmap_t *)map);
+    if (*fd_out == -1) {
+        status = CL_EACCES;
+        goto done;
+    }
+
+    if (offset_out) {
+        *offset_out = map->offset;
+    }
+
+    if (len_out) {
+        *len_out = map->len;
+    }
+
+    status = CL_SUCCESS;
+
+done:
+    return status;
+}
+
+extern cl_error_t cl_fmap_get_size(const cl_fmap_t *map, size_t *size_out)
+{
+    cl_error_t status = CL_ERROR;
+
+    if (!map || !size_out) {
+        status = CL_ENULLARG;
+        goto done;
+    }
+
+    *size_out = map->len;
+    status    = CL_SUCCESS;
+
+done:
+    return status;
+}
+
+extern cl_error_t cl_fmap_set_hash(const cl_fmap_t *map, const char *hash_alg, char hash)
+{
+    cl_error_t status = CL_ERROR;
+    cli_hash_type_t type;
+
+    if (!map || !hash_alg) {
+        status = CL_ENULLARG;
+        goto done;
+    }
+
+    status = cli_hash_type_from_name(hash_alg, &type);
+    if (status != CL_SUCCESS) {
+        cli_errmsg("cl_fmap_set_hash: Unknown hash algorithm: %s\n", hash_alg);
+        goto done;
+    }
+
+    if (type >= CLI_HASH_AVAIL_TYPES) {
+        cli_errmsg("cl_fmap_set_hash: Unsupported hash algorithm: %s\n", hash_alg);
+        status = CL_EARG;
+        goto done;
+    }
+
+    status = fmap_set_hash((fmap_t *)map, (uint8_t *)&hash, type);
+    if (status != CL_SUCCESS) {
+        cli_errmsg("cl_fmap_set_hash: Failed to set hash for algorithm: %s\n", hash_alg);
+        goto done;
+    }
+
+done:
+    return status;
+}
+
+extern cl_error_t cl_fmap_have_hash(const cl_fmap_t *map, const char *hash_alg, bool *have_hash_out)
+{
+    cl_error_t status = CL_ERROR;
+    cli_hash_type_t type;
+
+    if (!map || !hash_alg || !have_hash_out) {
+        status = CL_ENULLARG;
+        goto done;
+    }
+
+    status = cli_hash_type_from_name(hash_alg, &type);
+    if (status != CL_SUCCESS) {
+        cli_errmsg("cl_fmap_have_hash: Unknown hash algorithm: %s\n", hash_alg);
+        goto done;
+    }
+
+    if (type >= CLI_HASH_AVAIL_TYPES) {
+        cli_errmsg("cl_fmap_have_hash: Unsupported hash algorithm: %s\n", hash_alg);
+        status = CL_EARG;
+        goto done;
+    }
+
+    *have_hash_out = map->have_hash[type];
+    status         = CL_SUCCESS;
+
+done:
+    return status;
+}
+
+extern cl_error_t cl_fmap_will_need_hash_later(const cl_fmap_t *map, const char *hash_alg)
+{
+    cl_error_t status = CL_ERROR;
+    cli_hash_type_t type;
+
+    if (!map || !hash_alg) {
+        status = CL_ENULLARG;
+        goto done;
+    }
+
+    status = cli_hash_type_from_name(hash_alg, &type);
+    if (status != CL_SUCCESS) {
+        cli_errmsg("cl_fmap_will_need_hash_later: Unknown hash algorithm: %s\n", hash_alg);
+        goto done;
+    }
+
+    if (type >= CLI_HASH_AVAIL_TYPES) {
+        cli_errmsg("cl_fmap_will_need_hash_later: Unsupported hash algorithm: %s\n", hash_alg);
+        status = CL_EARG;
+        goto done;
+    }
+
+    status = fmap_will_need_hash_later((fmap_t *)map, type);
+    if (status != CL_SUCCESS) {
+        cli_errmsg("cl_fmap_will_need_hash_later: Failed to indicate need for hash algorithm: %s\n", hash_alg);
+        goto done;
+    }
+
+    status = CL_SUCCESS;
+
+done:
+    return status;
+}
+
+extern cl_error_t cl_fmap_get_hash(const cl_fmap_t *map, const char *hash_alg, const char **hash_out)
+{
+    cl_error_t status = CL_ERROR;
+    cli_hash_type_t type;
+    unsigned char *hash;
+    char *hash_string = NULL;
+    size_t hash_len;
+    size_t i;
+
+    if (!map || !hash_alg || !hash_out) {
+        status = CL_ENULLARG;
+        goto done;
+    }
+
+    status = cli_hash_type_from_name(hash_alg, &type);
+    if (status != CL_SUCCESS) {
+        cli_errmsg("cl_fmap_get_hash: Unknown hash algorithm: %s\n", hash_alg);
+        goto done;
+    }
+
+    if (type >= CLI_HASH_AVAIL_TYPES) {
+        cli_errmsg("cl_fmap_get_hash: Unsupported hash algorithm: %s\n", hash_alg);
+        status = CL_EARG;
+        goto done;
+    }
+
+    status = fmap_get_hash((fmap_t *)map, &hash, type);
+    if (status != CL_SUCCESS) {
+        cli_errmsg("cl_fmap_get_hash: Failed to get hash for algorithm: %s\n", hash_alg);
+        goto done;
+    }
+
+    hash_len = cli_hash_len(type);
+
+    /* Convert hash to string */
+    hash_string = malloc(hash_len * 2 + 1);
+    if (!hash_string) {
+        cli_errmsg("cl_fmap_get_hash: Failed to allocate memory for hash string\n");
+        status = CL_EMEM;
+        goto done;
+    }
+
+    for (i = 0; i < hash_len; i++) {
+        sprintf(hash_string + i * 2, "%02x", hash[i]);
+    }
+    hash_string[hash_len * 2] = 0;
+
+    *hash_out = hash_string;
+    status    = CL_SUCCESS;
+
+done:
+    if (status != CL_SUCCESS) {
+        if (NULL != hash_string) {
+            free(hash_string);
+            hash_string = NULL;
+        }
+    }
+
+    return status;
+}
+
+extern cl_error_t cl_fmap_get_data(const cl_fmap_t *map, size_t offset, size_t len, const uint8_t **data_out, size_t *data_len_out)
+{
+    cl_error_t status = CL_ERROR;
+    const uint8_t *data;
+
+    if (!map || !data_out) {
+        status = CL_ENULLARG;
+        goto done;
+    }
+
+    if (offset > map->len) {
+        cli_errmsg("cl_fmap_get_data: Offset %zu is beyond end of file (file length %zu)\n", offset, map->len);
+        status = CL_EARG;
+        goto done;
+    }
+
+    if (len == 0) {
+        // If len is 0, we want to read to the end of the file.
+        len = map->len - offset;
+    }
+
+    if (offset + len > map->len) {
+        // Adjust len to read only to the end of the file if they asked for too much.
+        len = map->len - offset;
+    }
+
+    data = fmap_need_off_once_len((fmap_t *)map, offset, len, &len);
+    if (!data) {
+        cli_errmsg("cl_fmap_get_data: Failed to get data from fmap\n");
+        status = CL_EREAD;
+        goto done;
+    }
+
+    *data_out = data;
+    if (data_len_out) {
+        *data_len_out = len;
+    }
+
+    status = CL_SUCCESS;
+
+done:
+    return status;
+}
+
+extern void cl_fmap_close(cl_fmap_t *map)
+{
+    fmap_free(map);
 }

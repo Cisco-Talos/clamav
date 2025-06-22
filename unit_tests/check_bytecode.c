@@ -81,7 +81,7 @@ static void runtest(const char *file, uint64_t expected, int fail, int nojit,
     cctx.dconf = cctx.engine->dconf;
 
     cctx.recursion_stack_size = cctx.engine->max_recursion_level;
-    cctx.recursion_stack      = calloc(sizeof(recursion_level_t), cctx.recursion_stack_size);
+    cctx.recursion_stack      = calloc(sizeof(cli_scan_layer_t), cctx.recursion_stack_size);
     ck_assert_msg(!!cctx.recursion_stack, "calloc() for recursion_stack failed");
 
     // ctx was memset, so recursion_level starts at 0.

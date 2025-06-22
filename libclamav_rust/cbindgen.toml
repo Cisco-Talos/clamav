@@ -54,6 +54,7 @@ include = [
   "evidence::evidence_num_alerts",
   "evidence::evidence_num_indicators_type",
   "evidence::evidence_add_indicator",
+  "evidence::evidence_remove_indicator",
   "evidence::IndicatorType",
   "scanners::scan_onenote",
   "scanners::cli_scanalz",

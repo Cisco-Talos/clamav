@@ -43,6 +43,7 @@
 #include <json.h>
 
 #include "clamav.h"
+#include "other_types.h"
 #include "dconf.h"
 #include "filetypes.h"
 #include "fmap.h"
@@ -51,6 +52,7 @@
 #include "bytecode_api.h"
 #include "events.h"
 #include "crtmgr.h"
+#include "scan_layer.h"
 
 #include "unrar_iface.h"
 
@@ -171,29 +173,6 @@ typedef struct bitset_tag {
     unsigned long length;
 } bitset_t;
 
-typedef struct image_fuzzy_hash {
-    uint8_t hash[8];
-} image_fuzzy_hash_t;
-
-typedef void *evidence_t;
-typedef void *onedump_t;
-typedef void *cvd_t;
-
-typedef struct recursion_level_tag {
-    cli_file_t type;
-    size_t size;
-    cl_fmap_t *fmap;                      /* The fmap for this layer. This used to be in an array in the ctx. */
-    uint32_t recursion_level_buffer;      /* Which buffer layer in scan recursion. */
-    uint32_t recursion_level_buffer_fmap; /* Which fmap layer in this buffer. */
-    uint32_t attributes;                  /* layer attributes. */
-    image_fuzzy_hash_t image_fuzzy_hash;  /* Used for image/graphics files to store a fuzzy hash. */
-    bool calculated_image_fuzzy_hash;     /* Used for image/graphics files to store a fuzzy hash. */
-    size_t object_id;                     /* Unique ID for this object. */
-    json_object *metadata_json;           /* JSON object for this recursion level, e.g. for JSON metadata. */
-    evidence_t evidence;                  /* Store signature matches for this layer and its children. */
-    char *tmpdir;                         /* The directory to store tmp files created when processing this layer. */
-} recursion_level_t;
-
 /* internal clamav context */
 typedef struct cli_ctx_tag {
     char *target_filepath;   /* (optional) The filepath of the original scan target. */
@@ -204,13 +183,13 @@ typedef struct cli_ctx_tag {
     uint64_t scansize;
     struct cl_scan_options *options;
     unsigned int scannedfiles;
-    unsigned int corrupted_input;       /* Setting this flag will prevent the PE parser from reporting "broken executable" for unpacked/reconstructed files that may not be 100% to spec. */
-    recursion_level_t *recursion_stack; /* Array of recursion levels used as a stack. */
-    uint32_t recursion_stack_size;      /* stack size must == engine->max_recursion_level */
-    uint32_t recursion_level;           /* Index into recursion_stack; current fmap recursion level from start of scan. */
-    evidence_t this_layer_evidence;     /* Pointer to current evidence in recursion_stack, varies with recursion depth. For convenience. */
-    fmap_t *fmap;                       /* Pointer to current fmap in recursion_stack, varies with recursion depth. For convenience. */
-    size_t object_count;                /* Counter for number of unique entities/contained files (including normalized files) processed. */
+    unsigned int corrupted_input;      /* Setting this flag will prevent the PE parser from reporting "broken executable" for unpacked/reconstructed files that may not be 100% to spec. */
+    cli_scan_layer_t *recursion_stack; /* Array of recursion levels used as a stack. */
+    uint32_t recursion_stack_size;     /* stack size must == engine->max_recursion_level */
+    uint32_t recursion_level;          /* Index into recursion_stack; current fmap recursion level from start of scan. */
+    evidence_t this_layer_evidence;    /* Pointer to current evidence in recursion_stack, varies with recursion depth. For convenience. */
+    fmap_t *fmap;                      /* Pointer to current fmap in recursion_stack, varies with recursion depth. For convenience. */
+    size_t object_count;               /* Counter for number of unique entities/contained files (including normalized files) processed. */
     struct cli_dconf *dconf;
     bitset_t *hook_lsig_matches;
     void *cb_ctx;
@@ -405,8 +384,13 @@ struct cl_engine {
     crtmgr cmgr;
 
     /* Callback(s) */
-    clcb_file_inspection cb_file_inspection;
+    clcb_scan cb_scan_pre_hash;
+    clcb_scan cb_scan_pre_scan;
+    clcb_scan cb_scan_post_scan;
+    clcb_scan cb_scan_alert;
+    clcb_scan cb_scan_file_type;
     clcb_pre_cache cb_pre_cache;
+    clcb_file_inspection cb_file_inspection;
     clcb_pre_scan cb_pre_scan;
     clcb_post_scan cb_post_scan;
     clcb_virus_found cb_virus_found;
@@ -751,7 +735,18 @@ void cli_append_potentially_unwanted_if_heur_exceedsmax(cli_ctx *ctx, char *virn
 
 const char *cli_get_last_virus(const cli_ctx *ctx);
 const char *cli_get_last_virus_str(const cli_ctx *ctx);
-void cli_virus_found_cb(cli_ctx *ctx, const char *virname);
+
+/**
+ * @brief Dispatch the alert / virus found callbacks.
+ *
+ * AKA for clamscan it will print FOUND message.
+ *
+ * @param ctx                     The scan context.
+ * @param virname                 The name of the virus.
+ * @param is_potentially_unwanted true if the alert is for a potentially unwanted application (PUA).
+ * @return cl_error_t
+ */
+cl_error_t cli_virus_found_cb(cli_ctx *ctx, const char *virname, bool is_potentially_unwanted);
 
 /**
  * @brief Push a new fmap onto our scan recursion stack.
@@ -780,10 +775,13 @@ cl_fmap_t *cli_recursion_stack_pop(cli_ctx *ctx);
 /**
  * @brief Re-assign the type for the current layer.
  *
- * @param ctx   The scanning context.
- * @param type  The new file type.
+ * @param ctx           The scanning context.
+ * @param type          The new file type.
+ * @param run_callback  Whether to run the scan callback for file type corrections.
+ *
+ * @return cl_error_t   CL_SUCCESS if successful, else an error code.
  */
-void cli_recursion_stack_change_type(cli_ctx *ctx, cli_file_t type);
+cl_error_t cli_recursion_stack_change_type(cli_ctx *ctx, cli_file_t type, bool run_callback);
 
 /**
  * @brief Get the type of a specific layer.
@@ -822,6 +820,15 @@ cli_file_t cli_recursion_stack_get_type(cli_ctx *ctx, int index);
  *                      or returns 0 if requested layer too high.
  */
 size_t cli_recursion_stack_get_size(cli_ctx *ctx, int index);
+
+/**
+ * @brief Dispatch scan callback based on location.
+ *
+ * @param ctx           Current scan context.
+ * @param location      Callback location.
+ * @return cl_error_t
+ */
+cl_error_t cli_dispatch_scan_callback(cli_ctx *ctx, cl_scan_callback_t location);
 
 /* used by: spin, yc (C) aCaB */
 #define __SHIFTBITS(a) (sizeof(a) << 3)

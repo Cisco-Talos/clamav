@@ -1413,14 +1413,66 @@ cl_error_t cli_unlink(const char *pathname)
     return CL_SUCCESS;
 }
 
-void cli_virus_found_cb(cli_ctx *ctx, const char *virname)
+cl_error_t cli_virus_found_cb(cli_ctx *ctx, const char *virname, bool is_potentially_unwanted)
 {
+    cl_error_t status = CL_VIRUS;
+
+    if (!ctx || !virname) {
+        return CL_ENULLARG;
+    }
+
+    /* Run deprecated legacy virus callback */
     if (ctx->engine->cb_virus_found) {
         ctx->engine->cb_virus_found(
             fmap_fd(ctx->fmap),
             virname,
             ctx->cb_ctx);
     }
+
+    /* Run the alert callback */
+    status = cli_dispatch_scan_callback(ctx, CL_SCAN_CALLBACK_ALERT);
+
+    if (CL_CLEAN == status) {
+        // An alert callback returning CL_CLEAN means to ignore this alert and keep scanning.
+        // We need to remove the last alerting indicator from the evidence.
+        bool remove_successful;
+        FFIError *remove_indicator_error = NULL;
+
+        remove_successful = evidence_remove_indicator(
+            ctx->this_layer_evidence,
+            virname,
+            is_potentially_unwanted ? IndicatorType_PotentiallyUnwanted : IndicatorType_Strong,
+            &remove_indicator_error);
+        if (!remove_successful) {
+            cli_errmsg("Failed to remove indicator from scan evidence: %s\n", ffierror_fmt(remove_indicator_error));
+            status = CL_ERROR;
+            goto done;
+        }
+
+        if (SCAN_COLLECT_METADATA && ctx->this_layer_metadata_json) {
+            // Note alerts ignored by callback in metadata.
+            json_object *arrobj, *virobj;
+            if (!json_object_object_get_ex(ctx->this_layer_metadata_json, "IgnoredAlerts", &arrobj)) {
+                arrobj = json_object_new_array();
+                if (NULL == arrobj) {
+                    cli_errmsg("cli_append_virus: no memory for json ignored alerts array\n");
+                    status = CL_EMEM;
+                    goto done;
+                }
+            }
+            virobj = json_object_new_string(virname);
+            if (NULL == virobj) {
+                cli_errmsg("cli_append_virus: no memory for json ignored alert name object\n");
+                status = CL_EMEM;
+                goto done;
+            }
+            json_object_array_add(arrobj, virobj);
+            json_object_object_add(ctx->this_layer_metadata_json, "IgnoredAlerts", arrobj);
+        }
+    }
+
+done:
+    return status;
 }
 
 /**
@@ -1436,9 +1488,9 @@ void cli_virus_found_cb(cli_ctx *ctx, const char *virname)
 static cl_error_t append_virus(cli_ctx *ctx, const char *virname, IndicatorType type)
 {
     cl_error_t status             = CL_ERROR;
+    cl_error_t callback_ret       = CL_VIRUS;
     FFIError *add_indicator_error = NULL;
     bool add_successful;
-
     char *location = NULL;
 
     if (NULL == ctx->recursion_stack[ctx->recursion_level].evidence) {
@@ -1473,8 +1525,24 @@ static cl_error_t append_virus(cli_ctx *ctx, const char *virname, IndicatorType 
     }
 
     if (type == IndicatorType_Strong) {
-        // Run that virus callback which in clamscan says "<signature name> FOUND"
-        cli_virus_found_cb(ctx, virname);
+        // Run the virus callbacks which in clamscan says "<signature name> FOUND"
+        callback_ret = cli_virus_found_cb(ctx, virname, type);
+
+        switch (callback_ret) {
+            case CL_SUCCESS:
+            case CL_VERIFIED: {
+                /* Caller says this thing is clean! */
+                status = callback_ret;
+                goto done;
+            }
+            default: {
+                /*
+                 * Keep this alert!
+                 * In case of CL_BREAK, we'll handle it after we add metadata.
+                 */
+                break;
+            }
+        }
     }
 
     if (SCAN_COLLECT_METADATA && ctx->this_layer_metadata_json) {
@@ -1518,6 +1586,13 @@ static cl_error_t append_virus(cli_ctx *ctx, const char *virname, IndicatorType 
             }
             json_object_array_add(arrobj, virobj);
         }
+    }
+
+    if (callback_ret == CL_BREAK) {
+        // Callback requested to break the scan.
+        // Do that now that we've added the indicator to the evidence and metadata.
+        status = CL_BREAK;
+        goto done;
     }
 
     if (SCAN_ALLMATCHES) {
@@ -1596,8 +1671,8 @@ cl_error_t cli_recursion_stack_push(cli_ctx *ctx, cl_fmap_t *map, cli_file_t typ
 {
     cl_error_t status = CL_SUCCESS;
 
-    recursion_level_t *current_container = NULL;
-    recursion_level_t *new_container     = NULL;
+    cli_scan_layer_t *current_layer = NULL;
+    cli_scan_layer_t *new_layer     = NULL;
 
     // Check the regular limits
     if (CL_SUCCESS != (status = cli_checklimits("cli_recursion_stack_push", ctx, map->len, 0, 0))) {
@@ -1616,21 +1691,28 @@ cl_error_t cli_recursion_stack_push(cli_ctx *ctx, cl_fmap_t *map, cli_file_t typ
         goto done;
     }
 
-    current_container = &ctx->recursion_stack[ctx->recursion_level];
+    current_layer = &ctx->recursion_stack[ctx->recursion_level];
     ctx->recursion_level++;
-    new_container = &ctx->recursion_stack[ctx->recursion_level];
+    new_layer = &ctx->recursion_stack[ctx->recursion_level];
 
-    memset(new_container, 0, sizeof(recursion_level_t));
+    memset(new_layer, 0, sizeof(cli_scan_layer_t));
 
-    new_container->fmap = map;
-    new_container->type = type;
-    new_container->size = map->len;
+    new_layer->fmap            = map;
+    new_layer->type            = type;
+    new_layer->size            = map->len;
+    new_layer->parent          = current_layer;
+    new_layer->recursion_level = current_layer->recursion_level + 1; // same as ctx->recursion_level
 
+    // Keep track of if this is a new buffer or not.
+    // And if not, how many layers deep we are in the same buffer.
     if (is_new_buffer) {
-        new_container->recursion_level_buffer      = current_container->recursion_level_buffer + 1;
-        new_container->recursion_level_buffer_fmap = 0;
+        // This the first layer in a new buffer, so we increment the number of buffer levels.
+        // And reset the buffer fmap level (because it's now the zeroeth level in this new buffer).
+        new_layer->recursion_level_buffer      = current_layer->recursion_level_buffer + 1;
+        new_layer->recursion_level_buffer_fmap = 0;
     } else {
-        new_container->recursion_level_buffer_fmap = current_container->recursion_level_buffer_fmap + 1;
+        // This another layer in the same buffer, so we increment the buffer fmap level.
+        new_layer->recursion_level_buffer_fmap = current_layer->recursion_level_buffer_fmap + 1;
     }
 
     // Apply the requested next-layer attributes.
@@ -1639,19 +1721,19 @@ cl_error_t cli_recursion_stack_push(cli_ctx *ctx, cl_fmap_t *map, cli_file_t typ
     // Normalized layers should be ignored when using the get_type() and get_intermediate_type()
     // functions so that signatures that specify the container or intermediates need not account
     // for normalized layers "contained in" HTML / Javascript / etc.
-    new_container->attributes = attributes;
+    new_layer->attributes = attributes;
 
     // If the current layer is marked "decrypted", all child-layers are also marked "decrypted".
-    if (current_container->attributes & LAYER_ATTRIBUTES_DECRYPTED) {
-        new_container->attributes |= LAYER_ATTRIBUTES_DECRYPTED;
+    if (current_layer->attributes & LAYER_ATTRIBUTES_DECRYPTED) {
+        new_layer->attributes |= LAYER_ATTRIBUTES_DECRYPTED;
     }
 
     // Assign a unique object_id to the new container.
-    new_container->object_id = ctx->object_count;
+    new_layer->object_id = ctx->object_count;
     ctx->object_count++;
 
     // Set the current layer's fmap to the new container's fmap.
-    ctx->fmap = new_container->fmap;
+    ctx->fmap = new_layer->fmap;
 
     // Skip initializing a new evidence object because we only need it if there are indicators found.
     // See append_virus()
@@ -1716,7 +1798,7 @@ cl_error_t cli_recursion_stack_push(cli_ctx *ctx, cl_fmap_t *map, cli_file_t typ
         struct json_object *new_object;
         const char *array_name;
 
-        if (new_container->attributes & LAYER_ATTRIBUTES_EMBEDDED) {
+        if (new_layer->attributes & LAYER_ATTRIBUTES_EMBEDDED) {
             array_name = "EmbeddedObjects";
         } else {
             array_name = "ContainedObjects";
@@ -1746,43 +1828,43 @@ cl_error_t cli_recursion_stack_push(cli_ctx *ctx, cl_fmap_t *map, cli_file_t typ
         /*
          * Add basic file metadata to the JSON object.
          */
-        if (new_container->fmap->name) {
-            status = cli_jsonstr(ctx->this_layer_metadata_json, "FileName", new_container->fmap->name);
+        if (new_layer->fmap->name) {
+            status = cli_jsonstr(ctx->this_layer_metadata_json, "FileName", new_layer->fmap->name);
             if (status != CL_SUCCESS) {
                 cli_errmsg("cli_recursion_stack_push: no memory for json FileName object\n");
                 goto done;
             }
         }
-        if (new_container->attributes & LAYER_ATTRIBUTES_EMBEDDED) {
+        if (new_layer->attributes & LAYER_ATTRIBUTES_EMBEDDED) {
             /* For embedded files, we can just say it's at some offset in the parent file.
              * Offset is calculated from fmap->real_len - fmap->len */
-            status = cli_jsonint64(ctx->this_layer_metadata_json, "Offset", (int64_t)(new_container->fmap->real_len - new_container->fmap->len));
+            status = cli_jsonuint64(ctx->this_layer_metadata_json, "Offset", (uint64_t)(new_layer->fmap->real_len - new_layer->fmap->len));
             if (status != CL_SUCCESS) {
                 cli_errmsg("cli_recursion_stack_push: no memory for json Offset object\n");
                 goto done;
             }
             /* Add the file type as well, since embedded files are identifed by file type signatures. */
-            status = cli_jsonstr(ctx->this_layer_metadata_json, "FileType", cli_ftname(new_container->type));
+            status = cli_jsonstr(ctx->this_layer_metadata_json, "FileType", cli_ftname(new_layer->type));
             if (status != CL_SUCCESS) {
                 cli_errmsg("cli_recursion_stack_push: no memory for json FileType object\n");
                 goto done;
             }
         } else {
             /* For non-embedded files, there may be a file path. */
-            if (new_container->fmap->path) {
-                status = cli_jsonstr(ctx->this_layer_metadata_json, "FilePath", new_container->fmap->path);
+            if (new_layer->fmap->path) {
+                status = cli_jsonstr(ctx->this_layer_metadata_json, "FilePath", new_layer->fmap->path);
                 if (status != CL_SUCCESS) {
                     cli_errmsg("cli_recursion_stack_push: no memory for json FilePath object\n");
                     goto done;
                 }
             }
         }
-        status = cli_jsonint(ctx->this_layer_metadata_json, "FileSize", new_container->fmap->len);
+        status = cli_jsonuint64(ctx->this_layer_metadata_json, "FileSize", (uint64_t)new_layer->fmap->len);
         if (status != CL_SUCCESS) {
             goto done;
         }
 
-        status = cli_jsonint(ctx->this_layer_metadata_json, "ObjectID", new_container->object_id);
+        status = cli_jsonuint64(ctx->this_layer_metadata_json, "ObjectID", (uint64_t)new_layer->object_id);
         if (status != CL_SUCCESS) {
             goto done;
         }
@@ -1790,7 +1872,7 @@ cl_error_t cli_recursion_stack_push(cli_ctx *ctx, cl_fmap_t *map, cli_file_t typ
         /*
          * Record layer attributes in the JSON object.
          */
-        if (new_container->attributes & LAYER_ATTRIBUTES_DECRYPTED) {
+        if (new_layer->attributes & LAYER_ATTRIBUTES_DECRYPTED) {
             status = cli_jsonbool(ctx->this_layer_metadata_json, "Decrypted", true);
             if (status != CL_SUCCESS) {
                 cli_errmsg("cli_recursion_stack_push: no memory for json Decrypted object\n");
@@ -1798,7 +1880,7 @@ cl_error_t cli_recursion_stack_push(cli_ctx *ctx, cl_fmap_t *map, cli_file_t typ
             }
         }
 
-        if (new_container->attributes & LAYER_ATTRIBUTES_NORMALIZED) {
+        if (new_layer->attributes & LAYER_ATTRIBUTES_NORMALIZED) {
             status = cli_jsonbool(ctx->this_layer_metadata_json, "Normalized", true);
             if (status != CL_SUCCESS) {
                 cli_errmsg("cli_recursion_stack_push: no memory for json Normalized object\n");
@@ -1806,7 +1888,7 @@ cl_error_t cli_recursion_stack_push(cli_ctx *ctx, cl_fmap_t *map, cli_file_t typ
             }
         }
 
-        if (new_container->attributes & LAYER_ATTRIBUTES_RETYPED) {
+        if (new_layer->attributes & LAYER_ATTRIBUTES_RETYPED) {
             status = cli_jsonbool(ctx->this_layer_metadata_json, "Retyped", true);
             if (status != CL_SUCCESS) {
                 cli_errmsg("cli_recursion_stack_push: no memory for json Retyped object\n");
@@ -1873,8 +1955,8 @@ cl_fmap_t *cli_recursion_stack_pop(cli_ctx *ctx)
                         } else {
                             json_object_object_add(match_obj, "Name", json_object_new_string(indicator));
                             json_object_object_add(match_obj, "Type", json_object_new_string("Strong"));
-                            json_object_object_add(match_obj, "Depth", json_object_new_int((int)depth + 1)); // depth + 1 because this is a child of the parent layer
-                            json_object_object_add(match_obj, "ObjectID", json_object_new_int((int)object_id));
+                            json_object_object_add(match_obj, "Depth", json_object_new_uint64((uint64_t)depth + 1)); // depth + 1 because this is a child of the parent layer
+                            json_object_object_add(match_obj, "ObjectID", json_object_new_uint64((uint64_t)object_id));
                             json_object_array_add(contained_indicators, match_obj);
                         }
                     }
@@ -1901,8 +1983,8 @@ cl_fmap_t *cli_recursion_stack_pop(cli_ctx *ctx)
                         } else {
                             json_object_object_add(match_obj, "Name", json_object_new_string(indicator));
                             json_object_object_add(match_obj, "Type", json_object_new_string("PotentiallyUnwanted"));
-                            json_object_object_add(match_obj, "Depth", json_object_new_int((int)depth + 1)); // depth + 1 because this is a child of the parent layer
-                            json_object_object_add(match_obj, "ObjectID", json_object_new_int((int)object_id));
+                            json_object_object_add(match_obj, "Depth", json_object_new_uint64((uint64_t)depth + 1)); // depth + 1 because this is a child of the parent layer
+                            json_object_object_add(match_obj, "ObjectID", json_object_new_uint64((uint64_t)object_id));
                             json_object_array_add(contained_indicators, match_obj);
                         }
                     }
@@ -1929,8 +2011,8 @@ cl_fmap_t *cli_recursion_stack_pop(cli_ctx *ctx)
                         } else {
                             json_object_object_add(match_obj, "Name", json_object_new_string(indicator));
                             json_object_object_add(match_obj, "Type", json_object_new_string("Weak"));
-                            json_object_object_add(match_obj, "Depth", json_object_new_int((int)depth + 1)); // depth + 1 because this is a child of the parent layer
-                            json_object_object_add(match_obj, "ObjectID", json_object_new_int((int)object_id));
+                            json_object_object_add(match_obj, "Depth", json_object_new_uint64((uint64_t)depth + 1)); // depth + 1 because this is a child of the parent layer
+                            json_object_object_add(match_obj, "ObjectID", json_object_new_uint64((uint64_t)object_id));
                             json_object_array_add(contained_indicators, match_obj);
                         }
                     }
@@ -1991,7 +2073,7 @@ cl_fmap_t *cli_recursion_stack_pop(cli_ctx *ctx)
     popped_map = ctx->recursion_stack[ctx->recursion_level].fmap;
 
     /* We're done with this layer, clear it */
-    memset(&ctx->recursion_stack[ctx->recursion_level], 0, sizeof(recursion_level_t));
+    memset(&ctx->recursion_stack[ctx->recursion_level], 0, sizeof(cli_scan_layer_t));
     ctx->recursion_level--;
 
     /* Set the ctx->fmap convenience pointer to the current layer's fmap */
@@ -2020,23 +2102,56 @@ done:
  * This is used in two places:
  * 1. Immediately after determining the file type at the top of cli_magic_scan().
  * 2. When scanraw matches with a filetype signature designed to retype the file.
- *    TODO: Consider removing reassigning the type in this second case the same way we do for HandlerType
- *          logical signatures. That is, by using `cli_recursion_stack_push()` with the new type.
+ *    TODO: Consider removing reassigning the type in this second case so that it would work the same way it does for
+ *          HandlerType logical signatures. That is, by using `cli_recursion_stack_push()` with the new type.
  *
  * @param ctx  The scanning context.
  * @param type The new file type for the current recursion stack layer.
+ *
+ * @return CL_SUCCESS on success, or an error code on failure.
  */
-void cli_recursion_stack_change_type(cli_ctx *ctx, cli_file_t type)
+cl_error_t cli_recursion_stack_change_type(cli_ctx *ctx, cli_file_t type, bool run_callback)
 {
+    cl_error_t status = CL_ERROR;
+
+    if ((NULL == ctx) ||
+        (NULL == ctx->recursion_stack) ||
+        (ctx->recursion_level >= ctx->recursion_stack_size)) {
+        cli_errmsg("cli_recursion_stack_change_type: invalid context or recursion stack\n");
+        status = CL_EARG;
+        goto done;
+    }
+
     ctx->recursion_stack[ctx->recursion_level].type = type;
+
+    if (run_callback) {
+        /*
+         * Run the file_type callback.
+         */
+        status = cli_dispatch_scan_callback(ctx, CL_SCAN_CALLBACK_FILE_TYPE);
+        if (CL_SUCCESS != status) {
+            goto done;
+        }
+    }
 
     // If metadata is being collected, update the type in the metadata JSON object as well.
     if (SCAN_COLLECT_METADATA && ctx->this_layer_metadata_json) {
         cl_error_t ret = cli_jsonstr(ctx->this_layer_metadata_json, "FileType", cli_ftname(type));
         if (ret != CL_SUCCESS) {
             cli_errmsg("cli_recursion_stack_change_type: failed to reassign the FileType in metadata JSON: %s\n", cl_strerror(ret));
+            status = ret;
+            goto done;
         }
     }
+
+    status = CL_SUCCESS;
+
+done:
+    if (status == CL_ERROR) {
+        cli_errmsg("cli_recursion_stack_change_type: failed to change type for current recursion stack layer\n");
+    }
+
+    return status;
 }
 
 /**
@@ -2345,6 +2460,173 @@ int cli_bitset_test(bitset_t *bs, unsigned long bit_offset)
         return FALSE;
     }
     return (bs->bitset[char_offset] & ((unsigned char)1 << bit_offset));
+}
+
+void cl_engine_set_scan_callback(struct cl_engine *engine, clcb_scan callback, cl_scan_callback_t location)
+{
+    switch (location) {
+        case CL_SCAN_CALLBACK_PRE_HASH:
+            engine->cb_scan_pre_hash = callback;
+            break;
+        case CL_SCAN_CALLBACK_PRE_SCAN:
+            engine->cb_scan_pre_scan = callback;
+            break;
+        case CL_SCAN_CALLBACK_POST_SCAN:
+            engine->cb_scan_post_scan = callback;
+            break;
+        case CL_SCAN_CALLBACK_ALERT:
+            engine->cb_scan_alert = callback;
+            break;
+        case CL_SCAN_CALLBACK_FILE_TYPE:
+            engine->cb_scan_file_type = callback;
+            break;
+        default:
+            cli_errmsg("cl_engine_set_scan_callback: Invalid scan callback location %d\n", location);
+            break;
+    }
+}
+
+#define PRE_HASH_NAME "PreHash"
+#define PRE_SCAN_NAME "PreScan"
+#define POST_SCAN_NAME "PostScan"
+#define ALERT_NAME "Alert"
+#define FILE_TYPE_NAME "FileType"
+
+cl_error_t cli_dispatch_scan_callback(cli_ctx *ctx, cl_scan_callback_t location)
+{
+    cl_error_t status = CL_ERROR;
+    cl_scan_layer_t *current_layer;
+    clcb_scan callback = NULL;
+
+    if (!ctx) {
+        status = CL_ENULLARG;
+        goto done;
+    }
+
+    /*
+     * Determine which callback to use.
+     */
+    switch (location) {
+        case CL_SCAN_CALLBACK_PRE_HASH:
+            callback = ctx->engine->cb_scan_pre_hash;
+            break;
+        case CL_SCAN_CALLBACK_PRE_SCAN:
+            callback = ctx->engine->cb_scan_pre_scan;
+            break;
+        case CL_SCAN_CALLBACK_POST_SCAN:
+            callback = ctx->engine->cb_scan_post_scan;
+            break;
+        case CL_SCAN_CALLBACK_ALERT:
+            callback = ctx->engine->cb_scan_alert;
+            break;
+        case CL_SCAN_CALLBACK_FILE_TYPE:
+            callback = ctx->engine->cb_scan_file_type;
+            break;
+        default:
+            status = CL_EARG;
+            cli_errmsg("dispatch_scan_callback: Invalid callback location\n");
+            goto done;
+    }
+
+    if (NULL == callback) {
+        /*
+         * Callback is not set.
+         */
+        if (location == CL_SCAN_CALLBACK_ALERT) {
+            // Accept the alert.
+            status = CL_VIRUS;
+        } else {
+            // Keep scanning.
+            status = CL_SUCCESS;
+        }
+        goto done;
+    }
+
+    current_layer = (cl_scan_layer_t *)&ctx->recursion_stack[ctx->recursion_level];
+
+    /*
+     * Call the callback function.
+     */
+    // TODO: Add performance measurements around the new callback specific to each callback location.
+    // perf_start(ctx, PERFT_PRECB);
+    status = callback(
+        current_layer, // current scan layer
+        ctx->cb_ctx    // application context
+    );
+    // perf_stop(ctx, PERFT_PRECB);
+
+    /*
+     * Interpret the return code from the callback.
+     */
+    switch (status) {
+        case CL_BREAK: {
+            cli_dbgmsg("dispatch_scan_callback: scan aborted by callback\n");
+            ctx->abort_scan = true;
+        } break;
+
+        case CL_SUCCESS /* aka CL_CLEAN */: {
+            // An alert callback returning CL_SUCCESS/CL_CLEAN means to ignore this alert and keep scanning.
+            // Other scan callbacks returning CL_SUCCESS means to keep scanning.
+            // Regardless, we return CL_SUCCESS here. The calling function will decide what to do next.
+            status = CL_SUCCESS;
+        } break;
+
+        case CL_VIRUS: {
+            if (location == CL_SCAN_CALLBACK_ALERT) {
+                // An alert callback returning CL_VIRUS means to accept the alert.
+            } else {
+                // Other scan callbacks returning CL_VIRUS the application wants to alert on the file.
+                const char *virus_name = NULL;
+                switch (location) {
+                    case CL_SCAN_CALLBACK_PRE_HASH:
+                        virus_name = "Detected.By.Callback." PRE_HASH_NAME;
+                        break;
+                    case CL_SCAN_CALLBACK_PRE_SCAN:
+                        virus_name = "Detected.By.Callback." PRE_SCAN_NAME;
+                        break;
+                    case CL_SCAN_CALLBACK_POST_SCAN:
+                        virus_name = "Detected.By.Callback." POST_SCAN_NAME;
+                        break;
+                    case CL_SCAN_CALLBACK_ALERT:
+                        virus_name = "Detected.By.Callback." ALERT_NAME;
+                        break;
+                    case CL_SCAN_CALLBACK_FILE_TYPE:
+                        virus_name = "Detected.By.Callback." FILE_TYPE_NAME;
+                        break;
+                }
+                status = cli_append_virus(ctx, virus_name);
+
+                cli_dbgmsg("dispatch_scan_callback: Alert added by callback\n");
+            }
+        } break;
+
+        case CL_VERIFIED: {
+            // An alert callback returning CL_VERIFIED means the application verified the current layer as clean.
+            // So we need to remove any alerts for this layer and return CL_VERIFIED (will stop scanning this layer).
+            cli_dbgmsg("dispatch_scan_callback: Layer verified clean by callback\n");
+
+            evidence_free(ctx->recursion_stack[ctx->recursion_level].evidence);
+            ctx->recursion_stack[ctx->recursion_level].evidence = NULL;
+            ctx->this_layer_evidence                            = NULL;
+
+            status = CL_VERIFIED;
+        } break;
+
+        default: {
+            cli_warnmsg("dispatch_scan_callback: Ignoring bad return code from callback\n");
+            if (location == CL_SCAN_CALLBACK_ALERT) {
+                // Accept the alert.
+                status = CL_VIRUS;
+            } else {
+                // Keep scanning.
+                status = CL_SUCCESS;
+            }
+        }
+    }
+
+done:
+
+    return status;
 }
 
 void cl_engine_set_clcb_pre_cache(struct cl_engine *engine, clcb_pre_cache callback)

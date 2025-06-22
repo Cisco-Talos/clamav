@@ -347,6 +347,35 @@ pub unsafe extern "C" fn _evidence_add_indicator(
     )
 }
 
+/// C interface for Evidence::remove_indicator().
+/// Handles all the unsafe ffi stuff.
+///
+/// Remove an indicator from the evidence.
+///
+/// # Safety
+///
+/// `hexsig` and `err` must not be NULL
+#[export_name = "evidence_remove_indicator"]
+pub unsafe extern "C" fn _evidence_remove_indicator(
+    evidence: sys::evidence_t,
+    name: *const c_char,
+    indicator_type: IndicatorType,
+    err: *mut *mut FFIError,
+) -> bool {
+    let name_str = validate_str_param!(name, err = err);
+
+    let mut evidence = ManuallyDrop::new(Box::from_raw(evidence as *mut Evidence));
+
+    rrf_call!(
+        err = err,
+        evidence.remove_indicator(
+            name_str,
+            indicator_type
+        )
+    )
+}
+
+
 impl Evidence {
     /// Check if we have any indicators that should alert the user.
     pub fn render_verdict(&self) -> bool {
@@ -462,4 +491,43 @@ impl Evidence {
 
         Ok(())
     }
+
+    /// Remove an indicator from the evidence.
+    pub fn remove_indicator(
+        &mut self,
+        name: &str,
+        indicator_type: IndicatorType,
+    ) -> Result<(), Error> {
+        match indicator_type {
+            IndicatorType::Strong => {
+                if let Some(metas) = self.strong.get_mut(name) {
+                    metas.pop();
+                    if metas.is_empty() {
+                        self.strong.remove(name);
+                    }
+                }
+            }
+
+            IndicatorType::PotentiallyUnwanted => {
+                if let Some(metas) = self.pua.get_mut(name) {
+                    metas.pop();
+                    if metas.is_empty() {
+                        self.pua.remove(name);
+                    }
+                }
+            }
+
+            IndicatorType::Weak => {
+                if let Some(metas) = self.weak.get_mut(name) {
+                    metas.pop();
+                    if metas.is_empty() {
+                        self.weak.remove(name);
+                    }
+                }
+            }
+        }
+
+        Ok(())
+    }
+
 }

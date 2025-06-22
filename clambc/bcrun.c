@@ -402,7 +402,7 @@ int main(int argc, char *argv[])
         cctx.engine = engine;
 
         cctx.recursion_stack_size = cctx.engine->max_recursion_level;
-        cctx.recursion_stack      = calloc(sizeof(recursion_level_t), cctx.recursion_stack_size);
+        cctx.recursion_stack      = calloc(sizeof(cli_scan_layer_t), cctx.recursion_stack_size);
         if (!cctx.recursion_stack) {
             fprintf(stderr, "Out of memory\n");
             exit(3);
