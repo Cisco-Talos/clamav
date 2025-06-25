@@ -1878,7 +1878,7 @@ static cl_error_t cli_ole2_tempdir_scan_vba(const char *dir, cli_ctx *ctx, struc
                 if (NULL != data) {
                     /* cli_dbgmsg("Project content:\n%s", data); */
                     if (ctx->scanned)
-                        *ctx->scanned += data_len / CL_COUNT_PRECISION;
+                        *ctx->scanned += data_len;
                     if (ctx->engine->keeptmp) {
                         if (CL_SUCCESS != (status = cli_gentempfd(ctx->this_layer_tmpdir, &proj_contents_fname, &proj_contents_fd))) {
                             cli_warnmsg("WARNING: VBA project '%s_%u' cannot be dumped to file\n", vba_project->name[i], j);
@@ -1982,7 +1982,7 @@ static cl_error_t cli_ole2_tempdir_scan_vba(const char *dir, cli_ctx *ctx, struc
                 cli_dbgmsg("cli_ole2_tempdir_scan_vba: Project content:\n%s", data);
 
                 if (ctx->scanned) {
-                    *ctx->scanned += vba_project->length[i] / CL_COUNT_PRECISION;
+                    *ctx->scanned += vba_project->length[i];
                 }
 
                 status = vba_scandata(data, vba_project->length[i], ctx);
@@ -2792,7 +2792,7 @@ static cl_error_t cli_scanscript(cli_ctx *ctx)
                 }
 
                 if (ctx->scanned)
-                    *ctx->scanned += state.out_pos / CL_COUNT_PRECISION;
+                    *ctx->scanned += state.out_pos;
                 offset += state.out_pos;
 
                 /* carry over maxpatlen from previous buffer */
@@ -6238,11 +6238,12 @@ cl_error_t cl_scandesc(
         NULL);
 
     if (NULL != scanned) {
-        if (SIZEOF_LONG == 4 && scanned_out > UINT32_MAX) {
+        if ((SIZEOF_LONG == 4) &&
+            (scanned_out / CL_COUNT_PRECISION > UINT32_MAX)) {
             cli_warnmsg("cl_scanfile_callback: scanned_out exceeds UINT32_MAX, setting to UINT32_MAX\n");
             *scanned = UINT32_MAX;
         } else {
-            *scanned = (unsigned long int)scanned_out;
+            *scanned = (unsigned long int)(scanned_out / CL_COUNT_PRECISION);
         }
     }
 
@@ -6276,11 +6277,12 @@ cl_error_t cl_scandesc_callback(
         NULL);
 
     if (NULL != scanned) {
-        if (SIZEOF_LONG == 4 && scanned_out > UINT32_MAX) {
+        if ((SIZEOF_LONG == 4) &&
+            (scanned_out / CL_COUNT_PRECISION > UINT32_MAX)) {
             cli_warnmsg("cl_scanfile_callback: scanned_out exceeds UINT32_MAX, setting to UINT32_MAX\n");
             *scanned = UINT32_MAX;
         } else {
-            *scanned = (unsigned long int)scanned_out;
+            *scanned = (unsigned long int)(scanned_out / CL_COUNT_PRECISION);
         }
     }
 
@@ -6394,11 +6396,12 @@ cl_error_t cl_scanmap_callback(
         NULL);
 
     if (NULL != scanned) {
-        if (SIZEOF_LONG == 4 && scanned_out > UINT32_MAX) {
+        if ((SIZEOF_LONG == 4) &&
+            (scanned_out / CL_COUNT_PRECISION > UINT32_MAX)) {
             cli_warnmsg("cl_scanfile_callback: scanned_out exceeds UINT32_MAX, setting to UINT32_MAX\n");
             *scanned = UINT32_MAX;
         } else {
-            *scanned = (unsigned long int)scanned_out;
+            *scanned = (unsigned long int)(scanned_out / CL_COUNT_PRECISION);
         }
     }
 

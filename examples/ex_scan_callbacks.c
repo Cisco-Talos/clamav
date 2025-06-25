@@ -141,9 +141,22 @@ static bool check_hash(const uint8_t *data, size_t len, const char *hash_type, c
 
     char computed_hash_string[SHA256_HASH_SIZE * 2 + 1] = {0};
 
-    if (strcmp(hash_type, "sha1") == 0) {
+    if (strcmp(hash_type, "md5") == 0) {
+        // Compute MD5 hash of data
+        (void)cl_hash_data(hash_type, data, len, computed_hash, &computed_hash_len);
+        if (computed_hash_len != MD5_HASH_SIZE) {
+            printf("Unexpected MD5 hash length: %u\n", computed_hash_len);
+            goto done;
+        }
+
+        // Convert computed hash to hex string
+        for (i = 0; i < MD5_HASH_SIZE; i++) {
+            snprintf(&computed_hash_string[i * 2], 3, "%02x", computed_hash[i]);
+        }
+
+    } else if (strcmp(hash_type, "sha1") == 0) {
         // Compute SHA1 hash of data
-        (void)cl_sha1(data, len, computed_hash, &computed_hash_len);
+        (void)cl_hash_data(hash_type, data, len, computed_hash, &computed_hash_len);
         if (computed_hash_len != SHA1_HASH_SIZE) {
             printf("Unexpected SHA1 hash length: %u\n", computed_hash_len);
             goto done;
@@ -156,7 +169,7 @@ static bool check_hash(const uint8_t *data, size_t len, const char *hash_type, c
 
     } else if (strcmp(hash_type, "sha256") == 0) {
         // Compute SHA256 hash of data and compare with provided hash
-        (void)cl_sha256(data, len, computed_hash, &computed_hash_len);
+        (void)cl_hash_data(hash_type, data, len, computed_hash, &computed_hash_len);
         if (computed_hash_len != SHA256_HASH_SIZE) {
             printf("Unexpected SHA256 hash length: %u\n", computed_hash_len);
             goto done;
@@ -362,6 +375,12 @@ static cl_error_t print_layer_info(cl_scan_layer_t *layer)
         }
 
         /* Verify the data using the hashes (skip md5 because clamav.h does not provide it 🤭) */
+        if (have_md5) {
+            if (!check_hash(file_data, file_size, "md5", md5_hash)) {
+                printf("❌ MD5 hash verification failed!\n");
+                goto done;
+            }
+        }
         if (have_sha1) {
             if (!check_hash(file_data, file_size, "sha1", sha1_hash)) {
                 printf("❌ SHA1 hash verification failed!\n");
@@ -430,6 +449,12 @@ static cl_error_t print_layer_info(cl_scan_layer_t *layer)
             }
 
             /* verify the data using the hashes (skip md5 because clamav.h does not provide it 🤭) */
+            if (have_md5) {
+                if (!check_hash(file_data_from_path, file_size, "md5", md5_hash)) {
+                    printf("❌ MD5 hash verification failed!\n");
+                    goto done;
+                }
+            }
             if (have_sha1) {
                 if (!check_hash(file_data_from_path, file_size, "sha1", sha1_hash)) {
                     printf("❌ SHA1 hash verification failed!\n");
@@ -501,6 +526,12 @@ static cl_error_t print_layer_info(cl_scan_layer_t *layer)
             }
 
             /* Verify the data using the hashes (skip md5 because clamav.h does not provide it 🤭) */
+            if (have_md5) {
+                if (!check_hash(file_data_from_fd, file_size, "md5", md5_hash)) {
+                    printf("❌ MD5 hash verification failed!\n");
+                    goto done;
+                }
+            }
             if (have_sha1) {
                 if (!check_hash(file_data_from_fd, file_size, "sha1", sha1_hash)) {
                     printf("❌ SHA1 hash verification failed!\n");
@@ -642,6 +673,19 @@ cl_error_t file_type_callback(cl_scan_layer_t *layer, void *context)
     return prompt_user_for_what_to_do(layer, false);
 }
 
+static void printBytes(uint64_t bytes)
+{
+    if (bytes >= (1024 * 1024 * 1024)) {
+        printf("%.02f GiB", bytes / (double)(1024 * 1024 * 1024));
+    } else if (bytes >= (1024 * 1024)) {
+        printf("%.02f MiB", bytes / (double)(1024 * 1024));
+    } else if (bytes >= 1024) {
+        printf("%.02f KiB", bytes / (double)(1024));
+    } else {
+        printf("%" PRIu64 " B", bytes);
+    }
+}
+
 /*
  * Exit codes:
  *  0: clean
@@ -657,7 +701,6 @@ int main(int argc, char **argv)
     int target_fd = -1;
 
     unsigned long int size = 0;
-    long double mb;
     const char *virname;
     const char *filename;
     const char *db_filepath;
@@ -759,8 +802,9 @@ int main(int argc, char **argv)
     }
 
     /* Calculate size of scanned data */
-    mb = size * (CL_COUNT_PRECISION / 1024) / 1024.0;
-    printf("Data scanned: %2.2Lf MB\n", mb);
+    printf("Data scanned: ");
+    printBytes(size);
+    printf("\n");
 
     status = ret == CL_VIRUS ? 1 : 0;
 

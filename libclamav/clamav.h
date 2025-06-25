@@ -1572,7 +1572,7 @@ extern void cl_engine_stats_enable(struct cl_engine *engine);
  * @param desc            File descriptor of an open file. The caller must provide this or the map.
  * @param filename        (optional) Filepath of the open file descriptor or file map.
  * @param[out] virname    Will be set to a statically allocated (i.e. needs not be freed) signature name if the scan matches against a signature.
- * @param[out] scanned    The number of bytes scanned.
+ * @param[out] scanned    The number of bytes scanned / CL_COUNT_PRECISION.
  * @param engine          The scanning engine.
  * @param scanoptions     Scanning options.
  * @return cl_error_t     CL_CLEAN, CL_VIRUS, or an error code if an error occurred during the scan.
@@ -1596,7 +1596,7 @@ extern cl_error_t cl_scandesc(
  * @param desc            File descriptor of an open file. The caller must provide this or the map.
  * @param filename        (optional) Filepath of the open file descriptor or file map.
  * @param[out] virname    Will be set to a statically allocated (i.e. needs not be freed) signature name if the scan matches against a signature.
- * @param[out] scanned    The number of bytes scanned.
+ * @param[out] scanned    The number of bytes scanned / CL_COUNT_PRECISION.
  * @param engine          The scanning engine.
  * @param scanoptions     Scanning options.
  * @param[in,out] context (Optional) An application-defined context struct, opaque to libclamav.
@@ -1626,7 +1626,7 @@ extern cl_error_t cl_scandesc_callback(
  * @param desc               File descriptor of an open file. The caller must provide this or the map.
  * @param filename           (optional) Filepath of the open file descriptor or file map.
  * @param[out] virname       Will be set to a statically allocated (i.e. needs not be freed) signature name if the scan matches against a signature.
- * @param[out] scanned       The number of bytes scanned.
+ * @param[out] scanned       The (exact) number of bytes scanned.
  * @param engine             The scanning engine.
  * @param scanoptions        Scanning options.
  * @param[in,out] context    (Optional) An application-defined context struct, opaque to libclamav.
@@ -1655,7 +1655,7 @@ extern cl_error_t cl_scandesc_ex(
     int desc,
     const char *filename,
     const char **virname,
-    unsigned long int *scanned,
+    uint64_t *scanned,
     const struct cl_engine *engine,
     struct cl_scan_options *scanoptions,
     void *context,
@@ -1672,7 +1672,7 @@ extern cl_error_t cl_scandesc_ex(
  *
  * @param filename        Filepath of the file to be scanned.
  * @param[out] virname    Will be set to a statically allocated (i.e. needs not be freed) signature name if the scan matches against a signature.
- * @param[out] scanned    The number of bytes scanned.
+ * @param[out] scanned    The number of bytes scanned / CL_COUNT_PRECISION.
  * @param engine          The scanning engine.
  * @param scanoptions     Scanning options.
  * @return cl_error_t     CL_CLEAN, CL_VIRUS, or an error code if an error occurred during the scan.
@@ -1680,7 +1680,7 @@ extern cl_error_t cl_scandesc_ex(
 extern cl_error_t cl_scanfile(
     const char *filename,
     const char **virname,
-    uint64_t *scanned,
+    unsigned long int *scanned,
     const struct cl_engine *engine,
     struct cl_scan_options *scanoptions);
 
@@ -1694,7 +1694,7 @@ extern cl_error_t cl_scanfile(
  *
  * @param filename        Filepath of the file to be scanned.
  * @param[out] virname    Will be set to a statically allocated (i.e. needs not be freed) signature name if the scan matches against a signature.
- * @param[out] scanned    The number of bytes scanned.
+ * @param[out] scanned    The number of bytes scanned / CL_COUNT_PRECISION.
  * @param engine          The scanning engine.
  * @param scanoptions     Scanning options.
  * @param[in,out] context (Optional) An application-defined context struct, opaque to libclamav.
@@ -1722,7 +1722,7 @@ extern cl_error_t cl_scanfile_callback(
  *
  * @param filename           Filepath of the file to be scanned.
  * @param[out] virname       Will be set to a statically allocated (i.e. needs not be freed) signature name if the scan matches against a signature.
- * @param[out] scanned       The number of bytes scanned.
+ * @param[out] scanned       The exact number of bytes scanned.
  * @param engine             The scanning engine.
  * @param scanoptions        Scanning options.
  * @param[in,out] context    (Optional) An application-defined context struct, opaque to libclamav.
@@ -1778,7 +1778,7 @@ extern cl_error_t cl_scanfile_ex(
  *                      file on disk. May be NULL if a name is not available.
  * @param[out] virname  Pointer to receive the signature match name name if a
  *                      signature matched.
- * @param[out] scanned  Number of bytes scanned.
+ * @param[out] scanned  Number of bytes scanned / CL_COUNT_PRECISION.
  * @param engine        The scanning engine.
  * @param scanoptions   The scanning options struct.
  * @param context       An application-defined context struct, opaque to
@@ -1817,7 +1817,7 @@ extern cl_error_t cl_scanmap_callback(
  *                           file on disk. May be NULL if a name is not available.
  * @param[out] virname       Pointer to receive the signature match name name if a
  *                           signature matched.
- * @param[out] scanned       Number of bytes scanned.
+ * @param[out] scanned       The exact number of bytes scanned.
  * @param engine             The scanning engine.
  * @param scanoptions        The scanning options struct.
  * @param[in,out] context    (Optional) An application-defined context struct, opaque to libclamav.

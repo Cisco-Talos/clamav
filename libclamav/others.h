@@ -177,12 +177,12 @@ typedef struct bitset_tag {
 typedef struct cli_ctx_tag {
     char *target_filepath;   /* (optional) The filepath of the original scan target. */
     char *this_layer_tmpdir; /* Pointer to current temporary directory, MAY vary with recursion depth. For convenience. */
-    unsigned long int *scanned;
+    uint64_t *scanned;
     const struct cli_matcher *root;
     const struct cl_engine *engine;
     uint64_t scansize;
     struct cl_scan_options *options;
-    unsigned int scannedfiles;
+    uint32_t scannedfiles;
     unsigned int corrupted_input;      /* Setting this flag will prevent the PE parser from reporting "broken executable" for unpacked/reconstructed files that may not be 100% to spec. */
     cli_scan_layer_t *recursion_stack; /* Array of recursion levels used as a stack. */
     uint32_t recursion_stack_size;     /* stack size must == engine->max_recursion_level */

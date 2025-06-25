@@ -377,7 +377,7 @@ static void scanfile(const char *filename, struct cl_engine *engine, const struc
             goto done;
         }
 
-        info.rblocks += sb.st_size / CL_COUNT_PRECISION;
+        info.bytes_read += sb.st_size;
     }
 
 #ifndef _WIN32
@@ -437,7 +437,7 @@ static void scanfile(const char *filename, struct cl_engine *engine, const struc
                          fd,
                          filename,
                          &virname,
-                         &info.blocks,
+                         &info.bytes_scanned,
                          engine, options,
                          &data,
                          hash_hint,
@@ -630,7 +630,7 @@ static int scanstdin(const struct cl_engine *engine, const struct optstruct *opt
 {
     cl_error_t ret;
 
-    unsigned int fsize  = 0;
+    size_t fsize        = 0;
     const char *virname = NULL;
     const char *tmpdir  = NULL;
     char *filename, buff[FILEBUFF];
@@ -644,7 +644,7 @@ static int scanstdin(const struct cl_engine *engine, const struct optstruct *opt
     const char *hash_alg       = NULL;
     const char *file_type_hint = NULL;
     char **file_type_out       = NULL;
-    char *file_type      = NULL;
+    char *file_type            = NULL;
 
     tmpdir = cl_engine_get_str(engine, CL_ENGINE_TMPDIR, NULL);
     if (NULL == tmpdir) {
@@ -698,14 +698,14 @@ static int scanstdin(const struct cl_engine *engine, const struct optstruct *opt
     logg(LOGG_DEBUG, "Scanning %s\n", filename);
 
     info.files++;
-    info.rblocks += fsize / CL_COUNT_PRECISION;
+    info.bytes_read += fsize;
 
     data.filename = "stdin";
     data.chain    = NULL;
     if (CL_VIRUS == (ret = cl_scanfile_ex(
                          filename,
                          &virname,
-                         &info.blocks,
+                         &info.bytes_scanned,
                          engine,
                          options,
                          &data,
@@ -1044,18 +1044,18 @@ static int scan_memory(struct cl_engine *engine, const struct optstruct *opts, s
     int ret = 0;
     struct mem_info minfo;
 
-    minfo.d       = 0;
-    minfo.files   = info.files;
-    minfo.ifiles  = info.ifiles;
-    minfo.blocks  = info.blocks;
-    minfo.engine  = engine;
-    minfo.opts    = opts;
-    minfo.options = options;
-    ret           = scanmem(&minfo);
+    minfo.d             = 0;
+    minfo.files         = info.files;
+    minfo.ifiles        = info.ifiles;
+    minfo.bytes_scanned = info.bytes_scanned;
+    minfo.engine        = engine;
+    minfo.opts          = opts;
+    minfo.options       = options;
+    ret                 = scanmem(&minfo);
 
-    info.files  = minfo.files;
-    info.ifiles = minfo.ifiles;
-    info.blocks = minfo.blocks;
+    info.files         = minfo.files;
+    info.ifiles        = minfo.ifiles;
+    info.bytes_scanned = minfo.bytes_scanned;
 
     return ret;
 }

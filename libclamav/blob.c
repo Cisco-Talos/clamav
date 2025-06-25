@@ -594,8 +594,8 @@ int fileblobAddData(fileblob *fb, const unsigned char *data, size_t len)
                 do_scan = 0;
             if (do_scan) {
                 if (ctx->scanned)
-                    *ctx->scanned += (unsigned long)len / CL_COUNT_PRECISION;
-                fb->bytes_scanned += (unsigned long)len;
+                    *ctx->scanned += len;
+                fb->bytes_scanned += len;
 
                 if ((len > 5) && cli_updatelimits(ctx, len) == CL_CLEAN && (cli_scan_buff(data, (unsigned int)len, 0, ctx->virname, ctx->engine, CL_TYPE_BINARY_DATA, NULL) == CL_VIRUS)) {
                     fb->isInfected = 1;
