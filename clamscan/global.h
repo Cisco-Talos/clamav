@@ -23,13 +23,13 @@
 #define __GLOBAL_H
 
 struct s_info {
-    unsigned int sigs;         /* number of signatures */
-    unsigned int dirs;         /* number of scanned directories */
-    unsigned int files;        /* number of scanned files */
-    unsigned int ifiles;       /* number of infected files */
-    unsigned int errors;       /* number of errors */
-    unsigned long int blocks;  /* number of *scanned* 16kb blocks */
-    unsigned long int rblocks; /* number of *read* 16kb blocks */
+    unsigned int sigs;      /* number of signatures */
+    unsigned int dirs;      /* number of scanned directories */
+    unsigned int files;     /* number of scanned files */
+    unsigned int ifiles;    /* number of infected files */
+    unsigned int errors;    /* number of errors */
+    uint64_t bytes_scanned; /* number of *scanned* bytes */
+    uint64_t bytes_read;    /* number of *read* bytes */
 };
 
 extern struct s_info info;

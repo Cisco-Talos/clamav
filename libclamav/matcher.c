@@ -1248,7 +1248,7 @@ cl_error_t cli_scan_fmap(cli_ctx *ctx, cli_file_t ftype, bool filetype_only, str
         if (!(buff = fmap_need_off_once(ctx->fmap, offset, bytes)))
             break;
         if (ctx->scanned)
-            *ctx->scanned += bytes / CL_COUNT_PRECISION;
+            *ctx->scanned += bytes;
 
         if (target_ac_root) {
             const char *virname = NULL;

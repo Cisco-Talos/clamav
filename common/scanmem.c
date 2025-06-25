@@ -562,7 +562,20 @@ int scanfile(const char *filename, scanmem_data *scan_data, struct mem_info *inf
             ret = CL_VIRUS;
         }
     } else { // clamscan
-        ret = cl_scandesc(fd, filename, &virname, &info->blocks, info->engine, info->options);
+        ret = cl_scandesc_ex(
+            fd,
+            filename,
+            &virname,
+            &info->bytes_scanned,
+            info->engine,
+            info->options,
+            NULL,
+            NULL,
+            NULL,
+            NULL,
+            NULL,
+            NULL,
+            NULL);
         if (ret == CL_VIRUS) {
             logg(LOGG_INFO, "%s: %s FOUND\n", filename, virname);
             info->ifiles++;
