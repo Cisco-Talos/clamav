@@ -177,7 +177,9 @@ int main(int argc, char **argv)
     if (check_flevel())
         exit(1);
 
-#ifndef _WIN32
+#ifdef _WIN32
+    SetConsoleOutputCP(CP_UTF8);
+#else /* !_WIN32 */
     memset(&sa, 0, sizeof(sa));
     sa.sa_handler = SIG_IGN;
     sigaction(SIGHUP, &sa, NULL);
