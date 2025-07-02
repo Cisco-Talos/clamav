@@ -311,7 +311,7 @@ int openioc_parse(const char *fname, int fd, struct cl_engine *engine, unsigned 
 
         free(vp);
 
-        rc = hm_addhash_str(engine->hm_hdb, hash, 0, virusname);
+        rc = hm_addhash_str(engine, HASH_PURPOSE_WHOLE_FILE_DETECT, hash, 0, virusname);
         if (rc != CL_SUCCESS)
             cli_dbgmsg("openioc_parse: hm_addhash_str failed with %i hash len %i for %s.\n",
                        rc, hashlen, virusname);

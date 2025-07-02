@@ -102,6 +102,11 @@ Path to a directory containing ClamAV CA certificate files used to verify signed
 .br
 Default: @CERTSDIR@
 .TP
+\fBFIPSCryptoHashLimits BOOL\fR
+Enforce FIPS\-like limits on using hash algorithms for cryptographic purposes. Will disable MD5 & SHA1 FP sigs and will require '.sign' files to verify CVD authenticity.
+.br
+Default: no
+.TP
 \fBOfficialDatabaseOnly BOOL\fR
 Only load the official signatures published by the ClamAV project.
 .br

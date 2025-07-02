@@ -434,7 +434,7 @@ START_TEST(test_cl_load)
 }
 END_TEST
 
-/* cl_error_t cl_cvdverify(const char *file) */
+/* cl_error_t cl_cvdverify_ex(const char *file, const char *certs_directory, uint32_t dboptions) */
 START_TEST(test_cl_cvdverify)
 {
     cl_error_t ret;
@@ -450,22 +450,22 @@ START_TEST(test_cl_cvdverify)
 
     // Should be able to verify this cvd
     testfile = SRCDIR "/input/freshclam_testfiles/test-1.cvd";
-    ret      = cl_cvdverify_ex(testfile, cvdcertsdir);
+    ret      = cl_cvdverify_ex(testfile, cvdcertsdir, 0);
     ck_assert_msg(CL_SUCCESS == ret, "cl_cvdverify_ex failed for: %s -- %s", testfile, cl_strerror(ret));
 
     // Can't verify a cvd that doesn't exist
     testfile = SRCDIR "/input/freshclam_testfiles/test-na.cvd";
-    ret      = cl_cvdverify_ex(testfile, cvdcertsdir);
+    ret      = cl_cvdverify_ex(testfile, cvdcertsdir, 0);
     ck_assert_msg(CL_ECVD == ret, "cl_cvdverify_ex should have failed for: %s -- %s", testfile, cl_strerror(ret));
 
     // A cdiff is not a cvd. Cannot verify with cl_cvdverify_ex!
     testfile = SRCDIR "/input/freshclam_testfiles/test-2.cdiff";
-    ret      = cl_cvdverify_ex(testfile, cvdcertsdir);
+    ret      = cl_cvdverify_ex(testfile, cvdcertsdir, 0);
     ck_assert_msg(CL_ECVD == ret, "cl_cvdverify_ex should have failed for: %s -- %s", testfile, cl_strerror(ret));
 
     // Can't verify an hdb file
     testfile = SRCDIR "/input/clamav.hdb";
-    ret      = cl_cvdverify_ex(testfile, cvdcertsdir);
+    ret      = cl_cvdverify_ex(testfile, cvdcertsdir, 0);
     ck_assert_msg(CL_ECVD == ret, "cl_cvdverify_ex should have failed for: %s -- %s", testfile, cl_strerror(ret));
 
     // Modify the cvd to make it invalid
@@ -485,12 +485,12 @@ START_TEST(test_cl_cvdverify)
     fclose(new_fs);
 
     // Now verify the modified cvd
-    ret = cl_cvdverify(newtestfile);
-    ck_assert_msg(CL_EVERIFY == ret, "cl_cvdverify should have failed for: %s -- %s", newtestfile, cl_strerror(ret));
+    ret = cl_cvdverify_ex(newtestfile, cvdcertsdir, 0);
+    ck_assert_msg(CL_EVERIFY == ret, "cl_cvdverify_ex should have failed for: %s -- %s", newtestfile, cl_strerror(ret));
 }
 END_TEST
 
-/* cl_error_t cl_cvdunpack_ex(const char *file, const char *dir, bool dont_verify, const char* certs_directory) */
+/* cl_error_t cl_cvdunpack_ex(const char *file, const char *dir, const char *certs_directory, uint32_t dboptions) */
 START_TEST(test_cl_cvdunpack_ex)
 {
     cl_error_t ret;
@@ -499,12 +499,12 @@ START_TEST(test_cl_cvdunpack_ex)
     const char *testfile;
 
     testfile = SRCDIR "/input/freshclam_testfiles/test-1.cvd";
-    ret      = cl_cvdunpack_ex(testfile, tmpdir, true, NULL);
+    ret      = cl_cvdunpack_ex(testfile, tmpdir, NULL, CL_DB_UNSIGNED);
     ck_assert_msg(CL_SUCCESS == ret, "cl_cvdunpack_ex: failed for: %s -- %s", testfile, cl_strerror(ret));
 
     // Can't unpack a cdiff
     testfile = SRCDIR "/input/freshclam_testfiles/test-2.cdiff";
-    ret      = cl_cvdunpack_ex(testfile, tmpdir, true, NULL);
+    ret      = cl_cvdunpack_ex(testfile, tmpdir, NULL, CL_DB_UNSIGNED);
     ck_assert_msg(CL_ECVD == ret, "cl_cvdunpack_ex: should have failed for: %s -- %s", testfile, cl_strerror(ret));
 }
 END_TEST

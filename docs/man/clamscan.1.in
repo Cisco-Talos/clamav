@@ -291,6 +291,9 @@ Print the file type after each file scanned.
 .TP
 \fB\-\-cvdcertsdir=DIR\fR
 Specify a directory containing the root CA cert needed to verify detached CVD digital signatures. If not provided, then clamscan will look in the default directory.
+.TP
+\fB\-\-fips\-limits\fR
+Enforce FIPS\-like limits on using hash algorithms for cryptographic purposes. Will disable MD5 & SHA1 FP sigs and will require '.sign' files to verify CVD authenticity.
 
 .SH "ENVIRONMENT VARIABLES"
 .LP

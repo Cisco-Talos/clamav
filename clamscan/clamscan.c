@@ -379,6 +379,10 @@ void help(void)
     mprintf(LOGG_INFO, "    --cvdcertsdir=DIRECTORY              Specify a directory containing the root\n");
     mprintf(LOGG_INFO, "                                         CA cert needed to verify detached CVD digital signatures.\n");
     mprintf(LOGG_INFO, "                                         If not provided, then clamscan will look in the default directory.\n");
+    mprintf(LOGG_INFO, "    --fips-limits                        Enforce FIPS-like limits on using hash algorithms for\n");
+    mprintf(LOGG_INFO, "                                         cryptographic purposes. Will disable MD5 & SHA1\n");
+    mprintf(LOGG_INFO, "                                         FP sigs and will require '.sign' files to verify CVD\n");
+    mprintf(LOGG_INFO, "                                         authenticity.\n");
     mprintf(LOGG_INFO, "\n");
     mprintf(LOGG_INFO, "Environment Variables:\n");
     mprintf(LOGG_INFO, "\n");
