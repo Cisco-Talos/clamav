@@ -395,7 +395,9 @@ struct cl_cvd *cl_cvdhead(const char *file)
     if ((pt = strpbrk(head, "\n\r")))
         *pt = 0;
 
-    for (i = bread - 1; i > 0 && (head[i] == ' ' || head[i] == '\n' || head[i] == '\r'); head[i] = 0, i--);
+    for (i = bread - 1; i > 0 && (head[i] == ' ' || head[i] == '\n' || head[i] == '\r'); head[i] = 0, i--) {
+        continue;
+    }
 
     return cl_cvdparse(head);
 }

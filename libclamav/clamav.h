@@ -2087,10 +2087,10 @@ extern const char *cl_strerror(cl_error_t clerror);
                                        * If this flag is set, the function will allocate a buffer for the hash and return it. \
                                        * The caller is responsible for freeing the buffer using free().                       \
                                        * If this flag is not set, the caller must provide a buffer to store the hash. */
-#define CL_HASH_FLAG_FIPS_BYPASS 0x02 /* Use CL_HASH_FLAG_FIPS_BYPASS to bypass FIPS restrictions on which algorithms can be  \
-                                       * used. This is useful if you want to use algorithms that are not FIPS-approved.   \
-                                       * For example, you might want to use this flag if you want to use "md5" or "sha1". \
-                                       * You should only do this when the hash is used for non-cryptographic purposes.    \
+#define CL_HASH_FLAG_FIPS_BYPASS 0x02 /* Use CL_HASH_FLAG_FIPS_BYPASS to bypass FIPS restrictions on which algorithms can be \
+                                       * used. This is useful if you want to use algorithms that are not FIPS-approved.      \
+                                       * For example, you might want to use this flag if you want to use "md5" or "sha1".    \
+                                       * You should only do this when the hash is used for non-cryptographic purposes.       \
                                        * Note: If OpenSSL's FIPS provider is not available, this flag has no effect. */
 
 /**
