@@ -281,6 +281,8 @@ fc_error_t fc_initialize(fc_config *fcConfig)
 
     g_bCompressLocalDatabase = fcConfig->bCompressLocalDatabase;
 
+    g_bFipsLimits = fcConfig->bFipsLimits;
+
     /* Load or create freshclam.dat */
     if (FC_SUCCESS != load_freshclam_dat()) {
         logg(LOGG_DEBUG, "Failed to load freshclam.dat; will create a new freshclam.dat\n");
@@ -464,6 +466,7 @@ fc_error_t fc_test_database(const char *dbFilename, int bBytecodeEnabled)
     struct cl_engine *engine = NULL;
     unsigned newsigs         = 0;
     cl_error_t cl_ret;
+    unsigned int dboptions = 0;
 
     if ((NULL == dbFilename)) {
         logg(LOGG_WARNING, "fc_test_database: Invalid arguments.\n");
@@ -482,10 +485,16 @@ fc_error_t fc_test_database(const char *dbFilename, int bBytecodeEnabled)
 
     cl_engine_set_clcb_stats_submit(engine, NULL);
 
+    dboptions = CL_DB_PHISHING | CL_DB_PHISHING_URLS | CL_DB_BYTECODE | CL_DB_PUA | CL_DB_ENHANCED;
+    if (g_bFipsLimits) {
+        dboptions |= CL_DB_FIPS_LIMITS;
+    }
+
     if (CL_SUCCESS != (cl_ret = cl_load(
-                           dbFilename, engine, &newsigs,
-                           CL_DB_PHISHING | CL_DB_PHISHING_URLS | CL_DB_BYTECODE |
-                               CL_DB_PUA | CL_DB_ENHANCED))) {
+                           dbFilename,
+                           engine,
+                           &newsigs,
+                           dboptions))) {
         logg(LOGG_ERROR, "Failed to load new database: %s\n", cl_strerror(cl_ret));
         status = FC_ETESTFAIL;
         goto done;

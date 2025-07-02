@@ -709,6 +709,12 @@ int main(int argc, char **argv)
             }
         }
 
+        if (optget(opts, "FIPSCryptoHashLimits")->enabled) {
+            dboptions |= CL_DB_FIPS_LIMITS;
+            cl_engine_set_num(engine, CL_ENGINE_FIPS_LIMITS, 1);
+            logg(LOGG_INFO_NF, "FIPS crypto hash limits enabled.\n");
+        }
+
         if ((ret = cl_load(dbdir, engine, &sigs, dboptions))) {
             logg(LOGG_ERROR, "%s\n", cl_strerror(ret));
             ret = 1;

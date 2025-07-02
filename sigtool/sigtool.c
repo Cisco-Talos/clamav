@@ -1155,6 +1155,7 @@ static int build(const struct optstruct *opts)
     unsigned int dblist2cnt = 0;
     DIR *dd;
     struct dirent *dent;
+    unsigned int dboptions = 0;
 
 #define FREE_LS(x)                   \
     for (i = 0; i < dblist2cnt; i++) \
@@ -1194,7 +1195,13 @@ static int build(const struct optstruct *opts)
         }
     }
 
-    if ((ret = cl_load(".", engine, &sigs, CL_DB_STDOPT | CL_DB_PUA | CL_DB_SIGNED))) {
+    dboptions = CL_DB_STDOPT | CL_DB_PUA | CL_DB_SIGNED;
+
+    if (optget(opts, "fips-limits")->enabled) {
+        dboptions |= CL_DB_FIPS_LIMITS;
+    }
+
+    if ((ret = cl_load(".", engine, &sigs, dboptions))) {
         mprintf(LOGG_ERROR, "build: Can't load database: %s\n", cl_strerror(ret));
         cl_engine_free(engine);
         return -1;
@@ -1541,7 +1548,7 @@ static int build(const struct optstruct *opts)
         return -1;
     }
 
-    if (CL_SUCCESS != cl_cvdunpack_ex(olddb, pt, true, NULL)) {
+    if (CL_SUCCESS != cl_cvdunpack_ex(olddb, pt, NULL, CL_DB_UNSIGNED)) {
         mprintf(LOGG_ERROR, "build: Can't unpack CVD file %s\n", olddb);
         removeTempDir(opts, pt);
         free(pt);
@@ -1556,7 +1563,7 @@ static int build(const struct optstruct *opts)
         return -1;
     }
 
-    if (CL_SUCCESS != cl_cvdunpack_ex(newcvd, pt, true, NULL)) {
+    if (CL_SUCCESS != cl_cvdunpack_ex(newcvd, pt, NULL, CL_DB_UNSIGNED)) {
         mprintf(LOGG_ERROR, "build: Can't unpack CVD file %s\n", newcvd);
         removeTempDir(opts, pt);
         free(pt);
@@ -1605,7 +1612,9 @@ static int build(const struct optstruct *opts)
 static int unpack(const struct optstruct *opts)
 {
     char name[512], *dbdir;
-    const char *localdbdir = NULL;
+    const char *localdbdir      = NULL;
+    const char *certs_directory = NULL;
+    uint32_t dboptions          = 0;
 
     if (optget(opts, "datadir")->active)
         localdbdir = optget(opts, "datadir")->strarg;
@@ -1628,12 +1637,27 @@ static int unpack(const struct optstruct *opts)
         name[sizeof(name) - 1] = '\0';
     }
 
-    if (cl_cvdverify_ex(name, g_cvdcertsdir) != CL_SUCCESS) {
+    certs_directory = optget(opts, "cvdcertsdir")->strarg;
+    if (NULL == certs_directory) {
+        // Check if the CVD_CERTS_DIR environment variable is set
+        certs_directory = getenv("CVD_CERTS_DIR");
+
+        // If not, use the default value
+        if (NULL == certs_directory) {
+            certs_directory = OPT_CERTSDIR;
+        }
+    }
+
+    if (optget(opts, "fips-limits")->enabled) {
+        dboptions |= CL_DB_FIPS_LIMITS;
+    }
+
+    if (cl_cvdverify_ex(name, g_cvdcertsdir, dboptions) != CL_SUCCESS) {
         mprintf(LOGG_ERROR, "unpack: %s is not a valid CVD\n", name);
         return -1;
     }
 
-    if (CL_SUCCESS != cl_cvdunpack_ex(name, ".", true, NULL)) {
+    if (CL_SUCCESS != cl_cvdunpack_ex(name, ".", NULL, CL_DB_UNSIGNED)) {
         mprintf(LOGG_ERROR, "unpack: Can't unpack file %s\n", name);
         return -1;
     }
@@ -1646,6 +1670,8 @@ static int cvdinfo(const struct optstruct *opts)
     struct cl_cvd *cvd;
     char *pt;
     int ret;
+    const char *certs_directory = NULL;
+    uint32_t dboptions          = 0;
 
     pt = optget(opts, "info")->strarg;
     if ((cvd = cl_cvdhead(pt)) == NULL) {
@@ -1672,13 +1698,32 @@ static int cvdinfo(const struct optstruct *opts)
         mprintf(LOGG_INFO, "Digital signature: %s\n", cvd->dsig);
     }
     cl_cvdfree(cvd);
-    if (cli_strbcasestr(pt, ".cud"))
+
+    certs_directory = optget(opts, "cvdcertsdir")->strarg;
+    if (NULL == certs_directory) {
+        // Check if the CVD_CERTS_DIR environment variable is set
+        certs_directory = getenv("CVD_CERTS_DIR");
+
+        // If not, use the default value
+        if (NULL == certs_directory) {
+            certs_directory = OPT_CERTSDIR;
+        }
+    }
+
+    if (optget(opts, "fips-limits")->enabled) {
+        dboptions |= CL_DB_FIPS_LIMITS;
+    }
+
+    if (cli_strbcasestr(pt, ".cud")) {
         mprintf(LOGG_INFO, "Verification: Unsigned container\n");
-    else if ((ret = cl_cvdverify(pt))) {
+
+    } else if ((ret = cl_cvdverify_ex(pt, certs_directory, dboptions))) {
         mprintf(LOGG_ERROR, "cvdinfo: Verification: %s\n", cl_strerror(ret));
         return -1;
-    } else
+
+    } else {
         mprintf(LOGG_INFO, "Verification OK.\n");
+    }
 
     return 0;
 }
@@ -1780,7 +1825,7 @@ static int listdb(const struct optstruct *opts, const char *filename, const rege
             return -1;
         }
 
-        if (CL_SUCCESS != cl_cvdunpack_ex(filename, dir, true, NULL)) {
+        if (CL_SUCCESS != cl_cvdunpack_ex(filename, dir, NULL, CL_DB_UNSIGNED)) {
             mprintf(LOGG_ERROR, "listdb: Can't unpack CVD file %s\n", filename);
             removeTempDir(opts, dir);
             free(dir);
@@ -2582,7 +2627,7 @@ static int verifydiff(const struct optstruct *opts, const char *diff, const char
     created_temp_dir = true;
 
     if (cvd) {
-        if (CL_SUCCESS != cl_cvdunpack_ex(cvd, tempdir, true, NULL)) {
+        if (CL_SUCCESS != cl_cvdunpack_ex(cvd, tempdir, NULL, CL_DB_UNSIGNED)) {
             mprintf(LOGG_ERROR, "verifydiff: Can't unpack CVD file %s\n", cvd);
             goto done;
         }
@@ -3818,7 +3863,7 @@ static int makediff(const struct optstruct *opts)
         return -1;
     }
 
-    if (CL_SUCCESS != cl_cvdunpack_ex(optget(opts, "diff")->strarg, odir, true, NULL)) {
+    if (CL_SUCCESS != cl_cvdunpack_ex(optget(opts, "diff")->strarg, odir, NULL, CL_DB_UNSIGNED)) {
         mprintf(LOGG_ERROR, "makediff: Can't unpack CVD file %s\n", optget(opts, "diff")->strarg);
         removeTempDir(opts, odir);
         free(odir);
@@ -3829,7 +3874,7 @@ static int makediff(const struct optstruct *opts)
         return -1;
     }
 
-    if (CL_SUCCESS != cl_cvdunpack_ex(opts->filename[0], ndir, true, NULL)) {
+    if (CL_SUCCESS != cl_cvdunpack_ex(opts->filename[0], ndir, NULL, CL_DB_UNSIGNED)) {
         mprintf(LOGG_ERROR, "makediff: Can't unpack CVD file %s\n", opts->filename[0]);
         removeTempDir(opts, odir);
         removeTempDir(opts, ndir);
@@ -4073,6 +4118,11 @@ static void help(void)
     mprintf(LOGG_INFO, "    --unpack=FILE          -u FILE         Unpack a CVD/CLD file\n");
     mprintf(LOGG_INFO, "\n");
     mprintf(LOGG_INFO, "    --unpack-current=SHORTNAME             Unpack local CVD/CLD into cwd\n");
+    mprintf(LOGG_INFO, "\n");
+    mprintf(LOGG_INFO, "    --fips-limits                          Enforce FIPS-like limits on using hash algorithms for\n");
+    mprintf(LOGG_INFO, "                                           cryptographic purposes. Will disable MD5 & SHA1\n");
+    mprintf(LOGG_INFO, "                                           FP sigs and will require '.sign' files to verify CVD\n");
+    mprintf(LOGG_INFO, "                                           authenticity.\n");
     mprintf(LOGG_INFO, "\n");
     mprintf(LOGG_INFO, "  Commands for working with CDIFF patch files:\n");
     mprintf(LOGG_INFO, "\n");

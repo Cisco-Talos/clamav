@@ -2333,7 +2333,7 @@ int asn1_load_mscat(fmap_t *map, struct cl_engine *engine)
             /* Load the trusted hashes into hm_fp, using the size values
              * 1 and 2 as sentinel values corresponding to CAB and PE hashes
              * from .cat files respectively. */
-            if (CL_SUCCESS != hm_addhash_bin(engine->hm_fp, tagval3.content, hm_hashtype, hashed_obj_type, NULL)) {
+            if (CL_SUCCESS != hm_addhash_bin(engine, HASH_PURPOSE_WHOLE_FILE_FP_CHECK, tagval3.content, hm_hashtype, hashed_obj_type, NULL)) {
                 cli_warnmsg("asn1_load_mscat: failed to add hash\n");
                 return 1;
             }

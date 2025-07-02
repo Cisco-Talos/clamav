@@ -437,7 +437,7 @@ impl CVD {
     pub fn verify(
         &mut self,
         verifier: Option<&Verifier>,
-        disable_md5: bool,
+        disable_legacy_dsig: bool,
     ) -> Result<String, Error> {
         // First try to verify the CVD with the detached signature file.
         // If that fails, fall back to verifying with the MD5-based attached RSA digital signature.
@@ -464,7 +464,7 @@ impl CVD {
             debug!("No certs directory provided. Skipping external signature verification.");
         }
 
-        if disable_md5 {
+        if disable_legacy_dsig {
             warn!("Unable to verify CVD with detached signature file and MD5 verification is disabled");
             return Err(Error::CannotVerify("Unable to verify CVD with detached signature file and MD5 verification is disabled".to_string()));
         }
@@ -497,7 +497,7 @@ pub unsafe extern "C" fn cvd_check(
     cvd_file_path_str: *const c_char,
     certs_directory_str: *const c_char,
     skip_sign_verify: bool,
-    disable_md5: bool,
+    disable_legacy_dsig: bool,
     signer_name: *mut *mut c_char,
     err: *mut *mut FFIError,
 ) -> bool {
@@ -537,7 +537,7 @@ pub unsafe extern "C" fn cvd_check(
                 return true;
             }
 
-            match cvd.verify(Some(&verifier), disable_md5) {
+            match cvd.verify(Some(&verifier), disable_legacy_dsig) {
                 Ok(signer) => {
                     let signer_cstr = std::ffi::CString::new(signer).unwrap();
                     *signer_name = signer_cstr.into_raw();
@@ -644,14 +644,14 @@ pub unsafe extern "C" fn cvd_open(
 pub unsafe extern "C" fn cvd_verify(
     cvd: *const c_void,
     verifier_ptr: *const c_void,
-    disable_md5: bool,
+    disable_legacy_dsig: bool,
     signer_name: *mut *mut c_char,
     err: *mut *mut FFIError,
 ) -> bool {
     let mut cvd = ManuallyDrop::new(Box::from_raw(cvd as *mut CVD));
 
     if verifier_ptr.is_null() {
-        match cvd.verify(None, disable_md5) {
+        match cvd.verify(None, disable_legacy_dsig) {
             Ok(signer) => {
                 let signer_cstr = std::ffi::CString::new(signer).unwrap();
                 *signer_name = signer_cstr.into_raw();
@@ -664,7 +664,7 @@ pub unsafe extern "C" fn cvd_verify(
     } else {
         let verifier = ManuallyDrop::new(Box::from_raw(verifier_ptr as *mut Verifier));
 
-        match cvd.verify(Some(&verifier), disable_md5) {
+        match cvd.verify(Some(&verifier), disable_legacy_dsig) {
             Ok(signer) => {
                 let signer_cstr = std::ffi::CString::new(signer).unwrap();
                 *signer_name = signer_cstr.into_raw();

@@ -505,6 +505,13 @@ struct cl_engine *cl_engine_new(void)
     new->ac_mindepth      = CLI_DEFAULT_AC_MINDEPTH;
     new->ac_maxdepth      = CLI_DEFAULT_AC_MAXDEPTH;
 
+    /* Enable FIPS limits if the linked OpenSSL library is in FIPS mode. */
+#if OPENSSL_VERSION_MAJOR >= 3
+    if (EVP_default_properties_is_fips_enabled(NULL)) new->engine_options |= ENGINE_OPTIONS_FIPS_LIMITS;
+#else
+    if (FIPS_mode()) new->engine_options |= ENGINE_OPTIONS_FIPS_LIMITS;
+#endif
+
 #ifdef USE_MPOOL
     if (!(new->mempool = mpool_create())) {
         cli_errmsg("cl_engine_new: Can't allocate memory for memory pool\n");
@@ -849,6 +856,13 @@ cl_error_t cl_engine_set_num(struct cl_engine *engine, enum cl_engine_field fiel
                 engine->engine_options |= ENGINE_OPTIONS_PE_DUMPCERTS;
             } else {
                 engine->engine_options &= ~(ENGINE_OPTIONS_PE_DUMPCERTS);
+            }
+            break;
+        case CL_ENGINE_FIPS_LIMITS:
+            if (num) {
+                engine->engine_options |= ENGINE_OPTIONS_FIPS_LIMITS;
+            } else {
+                engine->engine_options &= ~(ENGINE_OPTIONS_FIPS_LIMITS);
             }
             break;
         default:

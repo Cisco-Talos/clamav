@@ -1361,6 +1361,11 @@ int scanmanager(const struct optstruct *opts)
         }
     }
 
+    if (optget(opts, "fips-limits")->enabled) {
+        dboptions |= CL_DB_FIPS_LIMITS;
+        cl_engine_set_num(engine, CL_ENGINE_FIPS_LIMITS, 1);
+    }
+
     if (optget(opts, "gen-json")->enabled) {
         options.general |= CL_SCAN_GENERAL_COLLECT_METADATA;
     }

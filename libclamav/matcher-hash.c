@@ -62,7 +62,8 @@ size_t cli_hash_len(cli_hash_type_t type)
     }
 }
 
-cl_error_t cli_hash_type_from_name(const char* name, cli_hash_type_t *type_out){
+cl_error_t cli_hash_type_from_name(const char *name, cli_hash_type_t *type_out)
+{
     if (!name || !type_out) {
         return CL_ENULLARG;
     }
@@ -84,14 +85,14 @@ cl_error_t cli_hash_type_from_name(const char* name, cli_hash_type_t *type_out){
     return CL_SUCCESS;
 }
 
-cl_error_t hm_addhash_str(struct cli_matcher *root, const char *strhash, uint32_t size, const char *virusname)
+cl_error_t hm_addhash_str(struct cl_engine *engine, hash_purpose_t purpose, const char *strhash, uint32_t size, const char *virusname)
 {
     cli_hash_type_t type;
     char binhash[SHA256_HASH_SIZE];
     size_t hlen;
 
-    if (!root || !strhash) {
-        cli_errmsg("hm_addhash_str: NULL root or hash\n");
+    if (!engine || !strhash) {
+        cli_errmsg("hm_addhash_str: NULL engine or hash\n");
         return CL_ENULLARG;
     }
 
@@ -116,30 +117,64 @@ cl_error_t hm_addhash_str(struct cli_matcher *root, const char *strhash, uint32_
             cli_errmsg("hm_addhash_str: invalid hash %s -- FIXME!\n", strhash);
             return CL_EARG;
     }
+
     if (cli_hex2str_to(strhash, (char *)binhash, hlen)) {
         cli_errmsg("hm_addhash_str: invalid hash %s\n", strhash);
         return CL_EARG;
     }
 
-    return hm_addhash_bin(root, binhash, type, size, virusname);
+    return hm_addhash_bin(engine, purpose, binhash, type, size, virusname);
 }
 
-cl_error_t hm_addhash_bin(struct cli_matcher *root, const void *binhash, cli_hash_type_t type, uint32_t size, const char *virusname)
+cl_error_t hm_addhash_bin(struct cl_engine *engine, hash_purpose_t purpose, const void *binhash, cli_hash_type_t type, uint32_t size, const char *virusname)
 {
     size_t hlen = cli_hash_len(type);
     const struct cli_htu32_element *item;
     struct cli_sz_hash *szh;
     struct cli_htu32 *ht;
-    int i;
+    cl_error_t ret;
+    struct cli_matcher *root;
+
+    if (purpose == HASH_PURPOSE_PE_SECTION_DETECT) {
+        root = engine->hm_mdb;
+    } else if (purpose == HASH_PURPOSE_WHOLE_FILE_DETECT) {
+        root = engine->hm_hdb;
+    } else if (purpose == HASH_PURPOSE_PE_IMPORT_DETECT) {
+        root = engine->hm_imp;
+    } else if (purpose == HASH_PURPOSE_WHOLE_FILE_FP_CHECK) {
+        if ((type == CLI_HASH_MD5 || type == CLI_HASH_SHA1) &&
+            (engine->engine_options & ENGINE_OPTIONS_FIPS_LIMITS)) {
+            return CL_SUCCESS; // No error, just skip adding MD5/SHA1 FP hashes in FIPS mode
+        }
+        root = engine->hm_fp;
+    }
+
+    if (NULL == root) {
+        if (NULL == (root = MPOOL_CALLOC(engine->mempool, 1, sizeof(*root)))) {
+            return CL_EMEM;
+        }
+#ifdef USE_MPOOL
+        root->mempool = engine->mempool;
+#endif
+        if (purpose == HASH_PURPOSE_WHOLE_FILE_DETECT) {
+            engine->hm_hdb = root;
+        } else if (purpose == HASH_PURPOSE_PE_SECTION_DETECT) {
+            engine->hm_mdb = root;
+        } else if (purpose == HASH_PURPOSE_PE_IMPORT_DETECT) {
+            engine->hm_imp = root;
+        } else if (purpose == HASH_PURPOSE_WHOLE_FILE_FP_CHECK) {
+            engine->hm_fp = root;
+        }
+    }
 
     if (size) {
         /* size non-zero, find sz_hash element in size-driven hashtable  */
         ht = &root->hm.sizehashes[type];
         if (!root->hm.sizehashes[type].capacity) {
-            i = CLI_HTU32_INIT(ht, 64, root->mempool);
-            if (i) {
+            ret = CLI_HTU32_INIT(ht, 64, root->mempool);
+            if (CL_SUCCESS != ret) {
                 cli_errmsg("hm_addhash_bin: failed to initialize hash table\n");
-                return CL_ERROR;
+                return ret;
             }
         }
 
@@ -154,11 +189,11 @@ cl_error_t hm_addhash_bin(struct cli_matcher *root, const void *binhash, cli_has
 
             htitem.key         = size;
             htitem.data.as_ptr = szh;
-            i                  = CLI_HTU32_INSERT(ht, &htitem, root->mempool);
-            if (i) {
+            ret                = CLI_HTU32_INSERT(ht, &htitem, root->mempool);
+            if (CL_SUCCESS != ret) {
                 cli_errmsg("hm_addhash_bin: failed to add item to hashtab");
                 MPOOL_FREE(root->mempool, szh);
-                return CL_ERROR;
+                return ret;
             }
         } else {
             szh = (struct cli_sz_hash *)item->data.as_ptr;

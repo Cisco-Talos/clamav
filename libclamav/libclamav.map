@@ -318,6 +318,7 @@ CLAMAV_PRIVATE {
     cli_checklimits;
     cli_matchmeta;
     cli_cvdunpack_and_verify;
+    cli_cvdverify;
 
     __cli_strcasestr;
     __cli_strndup;
