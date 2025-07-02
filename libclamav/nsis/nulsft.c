@@ -539,18 +539,31 @@ int cli_scannulsft(cli_ctx *ctx, off_t offset)
             continue;
         }
         if (ret == CL_SUCCESS) {
+            char *name = NULL;
             cli_dbgmsg("NSIS: Successfully extracted file #%u\n", nsist.fno);
             if (lseek(nsist.ofd, 0, SEEK_SET) == -1) {
                 cli_dbgmsg("NSIS: call to lseek() failed\n");
                 free(nsist.dir);
                 return CL_ESEEK;
             }
-            if (nsist.fno == 1) {
-                ret = cli_scan_desc(nsist.ofd, ctx, CL_TYPE_ANY, false, NULL, AC_SCAN_VIR, NULL, nsist.ofn, nsist.ofn, LAYER_ATTRIBUTES_NONE); /// TODO: Extract file names
-            } else {
-                ret = cli_magic_scan_desc(nsist.ofd, nsist.ofn, ctx, nsist.ofn, LAYER_ATTRIBUTES_NONE); /// TODO: Extract file names
+
+            // Get basename of the file from nsist.ofn
+            ret = cli_basename(nsist.ofn, strlen(nsist.ofn), &name, true /* posix_support_backslash_pathsep */);
+            if (CL_SUCCESS != ret || NULL == name) {
+                cli_dbgmsg("NSIS: Failed to get basename of the file\n");
+                // If it fails, the name will just be NULL. That's okay.
             }
+
+            if (nsist.fno == 1) {
+                ret = cli_scan_desc(nsist.ofd, ctx, CL_TYPE_ANY, false, NULL, AC_SCAN_VIR, NULL, name, nsist.ofn, LAYER_ATTRIBUTES_NONE); /// TODO: Extract file names
+            } else {
+                ret = cli_magic_scan_desc(nsist.ofd, nsist.ofn, ctx, name, LAYER_ATTRIBUTES_NONE); /// TODO: Extract file names
+            }
+
+            CLI_FREE_AND_SET_NULL(name);
+
             close(nsist.ofd);
+
             if (!ctx->engine->keeptmp) {
                 if (cli_unlink(nsist.ofn)) {
                     ret = CL_EUNLINK;
