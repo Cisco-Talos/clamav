@@ -368,13 +368,9 @@ pub unsafe extern "C" fn _evidence_remove_indicator(
 
     rrf_call!(
         err = err,
-        evidence.remove_indicator(
-            name_str,
-            indicator_type
-        )
+        evidence.remove_indicator(name_str, indicator_type)
     )
 }
-
 
 impl Evidence {
     /// Check if we have any indicators that should alert the user.
@@ -440,7 +436,11 @@ impl Evidence {
     }
 
     /// Add evidence from a child layer to this evidence instance.
-    pub fn add_child_evidence(&mut self, child: &Evidence, from_normalized: bool) -> Result<(), Error> {
+    pub fn add_child_evidence(
+        &mut self,
+        child: &Evidence,
+        from_normalized: bool,
+    ) -> Result<(), Error> {
         if child.strong.is_empty() && child.pua.is_empty() && child.weak.is_empty() {
             return Err(Error::InvalidParameter(
                 "Child evidence must contain at least one indicator".to_string(),
@@ -529,5 +529,4 @@ impl Evidence {
 
         Ok(())
     }
-
 }

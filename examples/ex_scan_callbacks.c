@@ -66,7 +66,9 @@ static cl_error_t prompt_user_for_what_to_do(cl_scan_layer_t *layer, bool is_ale
     if (scanf("%d", &choice) != 1) {
         // clear stdin
         int c;
-        while ((c = getchar()) != '\n' && c != EOF);
+        while ((c = getchar()) != '\n' && c != EOF) {
+            continue;
+        }
         printf("Invalid input. Please enter a number between 1 and 5.\n");
         return prompt_user_for_what_to_do(layer, is_alert_callback);
     }
@@ -584,6 +586,7 @@ static cl_error_t print_layer_info(cl_scan_layer_t *layer)
         layer = parent;
 
         printf("\n"); // print empty line between layers
+
     } // while layer != NULL
 
     status = CL_SUCCESS;

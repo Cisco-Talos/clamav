@@ -56,7 +56,7 @@ size_t cli_hash_len(cli_hash_type_t type);
  * @param name The name of the hash type.
  * @return cli_hash_type_t The hash type.
  */
-cl_error_t cli_hash_type_from_name(const char* name, cli_hash_type_t *type_out);
+cl_error_t cli_hash_type_from_name(const char* name, cli_hash_type_t* type_out);
 
 #define CLI_HASHLEN_MAX SHA256_HASH_SIZE
 

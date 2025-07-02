@@ -35,7 +35,7 @@ typedef struct cli_scan_layer {
     cli_file_t type;
     size_t size;
     cl_fmap_t *fmap;                      /* The fmap for this layer. This used to be in an array in the ctx. */
-    uint32_t recursion_level;               /* The recursion level of this layer in the scan stack. */
+    uint32_t recursion_level;             /* The recursion level of this layer in the scan stack. */
     uint32_t recursion_level_buffer;      /* Which buffer layer in scan recursion. */
     uint32_t recursion_level_buffer_fmap; /* Which fmap layer in this buffer. */
     uint32_t attributes;                  /* layer attributes. */
