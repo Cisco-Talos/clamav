@@ -209,13 +209,17 @@ extern cl_error_t cl_hash_data_ex(
         goto done;
     }
 
-    if (flags & CL_HASH_FLAG_FIPS_BYPASS && OPENSSL_VERSION_NUMBER >= 0x30000000L) {
+#if OPENSSL_VERSION_MAJOR >= 3
+    if (flags & CL_HASH_FLAG_FIPS_BYPASS) {
         /* Bypass FIPS restrictions the OpenSSL 3.0 way */
         md = EVP_MD_fetch(NULL, alg, "-fips");
     } else {
         /* Use FIPS compliant algorithms */
         md = EVP_MD_fetch(NULL, alg, NULL);
     }
+#else
+    md = EVP_get_digestbyname(alg);
+#endif
     if (NULL == md) {
         cli_errmsg("cl_hash_data_ex: Unsupported hash algorithm: %s\n", alg);
         status = CL_EARG;
@@ -305,9 +309,11 @@ done:
     if (NULL != ctx) {
         EVP_MD_CTX_free(ctx);
     }
+#if OPENSSL_VERSION_MAJOR >= 3
     if (NULL != md) {
         EVP_MD_free(md);
     }
+#endif
     return status;
 }
 
@@ -337,13 +343,17 @@ extern cl_error_t cl_hash_init_ex(
         goto done;
     }
 
-    if (flags & CL_HASH_FLAG_FIPS_BYPASS && OPENSSL_VERSION_NUMBER >= 0x30000000L) {
+#if OPENSSL_VERSION_MAJOR >= 3
+    if (flags & CL_HASH_FLAG_FIPS_BYPASS) {
         /* Bypass FIPS restrictions the OpenSSL 3.0 way */
         md = EVP_MD_fetch(NULL, alg, "-fips");
     } else {
         /* Use FIPS compliant algorithms */
         md = EVP_MD_fetch(NULL, alg, NULL);
     }
+#else
+    md = EVP_get_digestbyname(alg);
+#endif
     if (NULL == md) {
         cli_errmsg("cl_hash_data_ex: Unsupported hash algorithm: %s\n", alg);
         status = CL_EARG;
@@ -379,9 +389,11 @@ done:
     if (NULL != ctx) {
         EVP_MD_CTX_free(ctx);
     }
+#if OPENSSL_VERSION_MAJOR >= 3
     if (NULL != md) {
         EVP_MD_free(md);
     }
+#endif
     return status;
 }
 
@@ -581,13 +593,17 @@ extern cl_error_t cl_hash_file_fd_ex(
         goto done;
     }
 
-    if (flags & CL_HASH_FLAG_FIPS_BYPASS && OPENSSL_VERSION_NUMBER >= 0x30000000L) {
+#if OPENSSL_VERSION_MAJOR >= 3
+    if (flags & CL_HASH_FLAG_FIPS_BYPASS) {
         /* Bypass FIPS restrictions the OpenSSL 3.0 way */
         md = EVP_MD_fetch(NULL, alg, "-fips");
     } else {
         /* Use FIPS compliant algorithms */
         md = EVP_MD_fetch(NULL, alg, NULL);
     }
+#else
+    md = EVP_get_digestbyname(alg);
+#endif
     if (NULL == md) {
         cli_errmsg("cl_hash_data_ex: Unsupported hash algorithm: %s\n", alg);
         status = CL_EARG;
@@ -694,9 +710,11 @@ done:
     if (NULL != ctx) {
         EVP_MD_CTX_free(ctx);
     }
+#if OPENSSL_VERSION_MAJOR >= 3
     if (NULL != md) {
         EVP_MD_free(md);
     }
+#endif
     return status;
 }
 
@@ -710,12 +728,12 @@ unsigned char *cl_hash_data(const char *alg, const void *buf, size_t len, unsign
     size_t cur;
     bool win_exception = false;
 
-    if (OPENSSL_VERSION_NUMBER >= 0x30000000L) {
-        /* Bypass FIPS restrictions the OpenSSL 3.0 way */
-        md = EVP_MD_fetch(NULL, alg, "-fips");
-    } else {
-        md = EVP_MD_fetch(NULL, alg, NULL);
-    }
+#if OPENSSL_VERSION_MAJOR >= 3
+    /* Bypass FIPS restrictions the OpenSSL 3.0 way */
+    md = EVP_MD_fetch(NULL, alg, "-fips");
+#else
+    md = EVP_get_digestbyname(alg);
+#endif
     if (!(md))
         return NULL;
 
@@ -723,7 +741,9 @@ unsigned char *cl_hash_data(const char *alg, const void *buf, size_t len, unsign
 
     ret = (obuf != NULL) ? obuf : (unsigned char *)malloc(mdsz);
     if (!(ret)) {
+#if OPENSSL_VERSION_MAJOR >= 3
         EVP_MD_free(md);
+#endif
         return NULL;
     }
 
@@ -732,7 +752,9 @@ unsigned char *cl_hash_data(const char *alg, const void *buf, size_t len, unsign
         if (!(obuf))
             free(ret);
 
+#if OPENSSL_VERSION_MAJOR >= 3
         EVP_MD_free(md);
+#endif
         return NULL;
     }
 
@@ -750,7 +772,9 @@ unsigned char *cl_hash_data(const char *alg, const void *buf, size_t len, unsign
         if ((olen))
             *olen = 0;
 
+#if OPENSSL_VERSION_MAJOR >= 3
         EVP_MD_free(md);
+#endif
         EVP_MD_CTX_destroy(ctx);
         return NULL;
     }
@@ -767,7 +791,9 @@ unsigned char *cl_hash_data(const char *alg, const void *buf, size_t len, unsign
             if ((olen))
                 *olen = 0;
 
+#if OPENSSL_VERSION_MAJOR >= 3
             EVP_MD_free(md);
+#endif
             EVP_MD_CTX_destroy(ctx);
             return NULL;
         }
@@ -780,7 +806,9 @@ unsigned char *cl_hash_data(const char *alg, const void *buf, size_t len, unsign
             if ((olen))
                 *olen = 0;
 
+#if OPENSSL_VERSION_MAJOR >= 3
             EVP_MD_free(md);
+#endif
             EVP_MD_CTX_destroy(ctx);
             return NULL;
         }
@@ -795,12 +823,16 @@ unsigned char *cl_hash_data(const char *alg, const void *buf, size_t len, unsign
         if ((olen))
             *olen = 0;
 
+#if OPENSSL_VERSION_MAJOR >= 3
         EVP_MD_free(md);
+#endif
         EVP_MD_CTX_destroy(ctx);
         return NULL;
     }
 
+#if OPENSSL_VERSION_MAJOR >= 3
     EVP_MD_free(md);
+#endif
     EVP_MD_CTX_destroy(ctx);
 
     if ((olen))
@@ -815,18 +847,20 @@ unsigned char *cl_hash_file_fd(int fd, const char *alg, unsigned int *olen)
     EVP_MD *md;
     unsigned char *res;
 
-    if (OPENSSL_VERSION_NUMBER >= 0x30000000L) {
-        /* Bypass FIPS restrictions the OpenSSL 3.0 way */
-        md = EVP_MD_fetch(NULL, alg, "-fips");
-    } else {
-        md = EVP_MD_fetch(NULL, alg, NULL);
-    }
+#if OPENSSL_VERSION_MAJOR >= 3
+    /* Bypass FIPS restrictions the OpenSSL 3.0 way */
+    md = EVP_MD_fetch(NULL, alg, "-fips");
+#else
+    md = EVP_get_digestbyname(alg);
+#endif
     if (!(md))
         return NULL;
 
     ctx = EVP_MD_CTX_new();
     if (!(ctx)) {
+#if OPENSSL_VERSION_MAJOR >= 3
         EVP_MD_free(md);
+#endif
         return NULL;
     }
 
@@ -838,13 +872,17 @@ unsigned char *cl_hash_file_fd(int fd, const char *alg, unsigned int *olen)
 #endif
 
     if (!EVP_DigestInit_ex(ctx, md, NULL)) {
+#if OPENSSL_VERSION_MAJOR >= 3
         EVP_MD_free(md);
+#endif
         EVP_MD_CTX_free(ctx);
         return NULL;
     }
 
     res = cl_hash_file_fd_ctx(ctx, fd, olen);
+#if OPENSSL_VERSION_MAJOR >= 3
     EVP_MD_free(md);
+#endif
     EVP_MD_CTX_free(ctx);
 
     return res;
@@ -1694,18 +1732,20 @@ void *cl_hash_init(const char *alg)
     EVP_MD_CTX *ctx;
     EVP_MD *md;
 
-    if (OPENSSL_VERSION_NUMBER >= 0x30000000L) {
-        /* Bypass FIPS restrictions the OpenSSL 3.0 way */
-        md = EVP_MD_fetch(NULL, alg, "-fips");
-    } else {
-        md = EVP_MD_fetch(NULL, alg, NULL);
-    }
+#if OPENSSL_VERSION_MAJOR >= 3
+    /* Bypass FIPS restrictions the OpenSSL 3.0 way */
+    md = EVP_MD_fetch(NULL, alg, "-fips");
+#else
+    md = EVP_get_digestbyname(alg);
+#endif
     if (!(md))
         return NULL;
 
     ctx = EVP_MD_CTX_new();
     if (!(ctx)) {
+#if OPENSSL_VERSION_MAJOR >= 3
         EVP_MD_free(md);
+#endif
         return NULL;
     }
 
@@ -1717,12 +1757,16 @@ void *cl_hash_init(const char *alg)
 #endif
 
     if (!EVP_DigestInit_ex(ctx, md, NULL)) {
+#if OPENSSL_VERSION_MAJOR >= 3
         EVP_MD_free(md);
+#endif
         EVP_MD_CTX_free(ctx);
         return NULL;
     }
 
+#if OPENSSL_VERSION_MAJOR >= 3
     EVP_MD_free(md);
+#endif
     return (void *)ctx;
 }
 
