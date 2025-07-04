@@ -166,6 +166,6 @@ typedef struct summary_ctx {
 } summary_ctx_t;
 
 /* Summary and Document Information Parsing to JSON */
-int cli_ole2_summary_json(cli_ctx *ctx, int fd, int mode);
+int cli_ole2_summary_json(cli_ctx *ctx, int fd, int mode, const char *filepath);
 
 #endif /* __MSDOC_H_ */

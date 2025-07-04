@@ -60,10 +60,22 @@ struct s_info info;
 short recursion = 0, bell = 0;
 short printinfected = 0, printclean = 1;
 
+static void loggBytes(uint64_t bytes)
+{
+    if (bytes >= (1024 * 1024 * 1024)) {
+        logg(LOGG_INFO, "%.02f GiB", bytes / (double)(1024 * 1024 * 1024));
+    } else if (bytes >= (1024 * 1024)) {
+        logg(LOGG_INFO, "%.02f MiB", bytes / (double)(1024 * 1024));
+    } else if (bytes >= 1024) {
+        logg(LOGG_INFO, "%.02f KiB", bytes / (double)(1024));
+    } else {
+        logg(LOGG_INFO, "%" PRIu64 " B", bytes);
+    }
+}
+
 int main(int argc, char **argv)
 {
     int ds, dms, ret;
-    double mb, rmb;
     struct timeval t1, t2;
     time_t date_start, date_end;
 
@@ -193,10 +205,15 @@ int main(int argc, char **argv)
         if (notmoved) {
             logg(LOGG_INFO, "Not %s: %u\n", optget(opts, "copy")->enabled ? "moved" : "copied", notmoved);
         }
-        mb = info.blocks * (CL_COUNT_PRECISION / 1024) / 1024.0;
-        logg(LOGG_INFO, "Data scanned: %2.2lf MB\n", mb);
-        rmb = info.rblocks * (CL_COUNT_PRECISION / 1024) / 1024.0;
-        logg(LOGG_INFO, "Data read: %2.2lf MB (ratio %.2f:1)\n", rmb, info.rblocks ? (double)info.blocks / (double)info.rblocks : 0);
+
+        logg(LOGG_INFO, "Data scanned: ");
+        loggBytes(info.bytes_scanned);
+        logg(LOGG_INFO, "\n");
+
+        logg(LOGG_INFO, "Data read: ");
+        loggBytes(info.bytes_read);
+        logg(LOGG_INFO, " (ratio %.2f:1)\n", info.bytes_read ? (double)info.bytes_scanned / (double)info.bytes_read : 0);
+
         logg(LOGG_INFO, "Time: %u.%3.3u sec (%u m %u s)\n", ds, dms / 1000, ds / 60, ds % 60);
 
 #ifdef _WIN32
@@ -344,9 +361,26 @@ void help(void)
     mprintf(LOGG_INFO, "    --pcre-recmatch-limit=#n             Maximum recursive calls to the PCRE match function.\n");
     mprintf(LOGG_INFO, "    --pcre-max-filesize=#n               Maximum size file to perform PCRE subsig matching.\n");
     mprintf(LOGG_INFO, "    --disable-cache                      Disable caching and cache checks for hash sums of scanned files.\n");
+    mprintf(LOGG_INFO, "    --hash-hint                          The file hash so that libclamav does not need to calculate it.\n");
+    mprintf(LOGG_INFO, "                                         The type of hash must match the '--hash-alg'.\n");
+    mprintf(LOGG_INFO, "    --log-hash                           Print the file hash after each file scanned.\n");
+    mprintf(LOGG_INFO, "                                         The type of hash printed will match the '--hash-alg'.\n");
+    mprintf(LOGG_INFO, "    --hash-alg                           The hashing algorithm used for either '--hash-hint' or '--log-hash'.\n");
+    mprintf(LOGG_INFO, "                                         Supported algorithms are 'md5', 'sha1', 'sha2-256'.\n");
+    mprintf(LOGG_INFO, "                                         If not specified, the default is 'sha2-256'.\n");
+    mprintf(LOGG_INFO, "    --file-type-hint                     The file type hint so that libclamav can optimize scanning.\n");
+    mprintf(LOGG_INFO, "                                         E.g. 'pe', 'elf', 'zip', etc.\n");
+    mprintf(LOGG_INFO, "                                         You may also use ClamAV type names such as 'CL_TYPE_PE'.\n");
+    mprintf(LOGG_INFO, "                                         ClamAV will ignore the hint if it is not familiar with the specified type.\n");
+    mprintf(LOGG_INFO, "                                         See also: https://docs.clamav.net/appendix/FileTypes.html#file-types\n");
+    mprintf(LOGG_INFO, "    --log-file-type                      Print the file type after each file scanned.\n");
     mprintf(LOGG_INFO, "    --cvdcertsdir=DIRECTORY              Specify a directory containing the root\n");
     mprintf(LOGG_INFO, "                                         CA cert needed to verify detached CVD digital signatures.\n");
     mprintf(LOGG_INFO, "                                         If not provided, then clamscan will look in the default directory.\n");
+    mprintf(LOGG_INFO, "    --fips-limits                        Enforce FIPS-like limits on using hash algorithms for\n");
+    mprintf(LOGG_INFO, "                                         cryptographic purposes. Will disable MD5 & SHA1\n");
+    mprintf(LOGG_INFO, "                                         FP sigs and will require '.sign' files to verify CVD\n");
+    mprintf(LOGG_INFO, "                                         authenticity.\n");
     mprintf(LOGG_INFO, "\n");
     mprintf(LOGG_INFO, "Environment Variables:\n");
     mprintf(LOGG_INFO, "\n");

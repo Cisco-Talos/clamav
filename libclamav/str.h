@@ -107,4 +107,14 @@ size_t cli_strlcat(char *dst, const char *src, size_t sz); /* libclamav/strlcat.
  */
 cl_error_t cli_basename(const char *filepath, size_t filepath_len, char **filebase);
 
+/**
+ * @brief Convert a hex string to an appropriately sized byte array.
+ *
+ * @param hexstr   The input hex string (not null-terminated, length must be even).
+ * @param hexlen   The length of the hex string.
+ * @param outbuf   The output buffer (must be at least hexlen/2 bytes).
+ * @return CL_SUCCESS on success, CL_EFORMAT on error.
+ */
+cl_error_t cli_hexstr_to_bytes(const char *hexstr, size_t hexlen, uint8_t *outbuf);
+
 #endif

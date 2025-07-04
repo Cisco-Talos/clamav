@@ -69,7 +69,7 @@ cl_error_t scanfd(const client_conn_t *conn, unsigned long int *scanned, const s
 int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *engine, struct cl_scan_options *options, const struct optstruct *opts, char term);
 cl_error_t scan_callback(STATBUF *sb, char *filename, const char *msg, enum cli_ftw_reason reason, struct cli_ftw_cbdata *data);
 int scan_pathchk(const char *path, struct cli_ftw_cbdata *data);
-void hash_callback(int fd, unsigned long long size, const unsigned char *md5, const char *virname, void *ctx);
+void hash_callback(int fd, unsigned long long size, const char *md5, const char *virname, void *ctx);
 void msg_callback(enum cl_msg severity, const char *fullmsg, const char *msg, void *ctx);
 void clamd_virus_found_cb(int fd, const char *virname, void *context);
 

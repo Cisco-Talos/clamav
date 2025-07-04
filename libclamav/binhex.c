@@ -68,10 +68,10 @@ int cli_binhex(cli_ctx *ctx)
     cli_dbgmsg("in cli_binhex\n");
     if (!map->len) return CL_CLEAN;
 
-    if ((ret = cli_gentempfd(ctx->sub_tmpdir, &dname, &datafd)) != CL_SUCCESS)
+    if ((ret = cli_gentempfd(ctx->this_layer_tmpdir, &dname, &datafd)) != CL_SUCCESS)
         return ret;
 
-    if ((ret = cli_gentempfd(ctx->sub_tmpdir, &rname, &resfd)) != CL_SUCCESS) {
+    if ((ret = cli_gentempfd(ctx->this_layer_tmpdir, &rname, &resfd)) != CL_SUCCESS) {
         close(datafd);
         if (cli_unlink(dname)) ret = CL_EUNLINK;
         free(dname);

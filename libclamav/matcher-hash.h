@@ -30,6 +30,13 @@
 #include "matcher-hash-types.h"
 #include "hashtab.h"
 
+typedef enum {
+    HASH_PURPOSE_PE_SECTION_DETECT = 0, /** PE section hash malware detection (aka .mdb, .mdu, .msb, .msu) */
+    HASH_PURPOSE_WHOLE_FILE_DETECT,     /** Whole file hash malware detection (aka .hdb, .hdu, .hsb, .hsu) */
+    HASH_PURPOSE_WHOLE_FILE_FP_CHECK,   /** Whole file false positive prevention (aka .fp, .sfp) */
+    HASH_PURPOSE_PE_IMPORT_DETECT       /** PE import hash malware detection (aka .imp) */
+} hash_purpose_t;
+
 struct cli_sz_hash {
     uint8_t *hash_array;
     const char **virusnames;
@@ -44,14 +51,14 @@ struct cli_hash_wild {
     struct cli_sz_hash hashes[CLI_HASH_AVAIL_TYPES];
 };
 
-int hm_addhash_str(struct cli_matcher *root, const char *strhash, uint32_t size, const char *virusname);
-int hm_addhash_bin(struct cli_matcher *root, const void *binhash, cli_hash_type_t type, uint32_t size, const char *virusname);
+cl_error_t hm_addhash_str(struct cl_engine *engine, hash_purpose_t purpose, const char *strhash, uint32_t size, const char *virusname);
+cl_error_t hm_addhash_bin(struct cl_engine *engine, hash_purpose_t purpose, const void *binhash, cli_hash_type_t type, uint32_t size, const char *virusname);
 void hm_flush(struct cli_matcher *root);
-int cli_hm_scan(const unsigned char *digest, uint32_t size, const char **virname, const struct cli_matcher *root, cli_hash_type_t type);
-int cli_hm_scan_wild(const unsigned char *digest, const char **virname, const struct cli_matcher *root, cli_hash_type_t type);
-int cli_hm_have_size(const struct cli_matcher *root, cli_hash_type_t type, uint32_t size);
-int cli_hm_have_wild(const struct cli_matcher *root, cli_hash_type_t type);
-int cli_hm_have_any(const struct cli_matcher *root, cli_hash_type_t type);
+cl_error_t cli_hm_scan(const uint8_t *digest, uint32_t size, const char **virname, const struct cli_matcher *root, cli_hash_type_t type);
+cl_error_t cli_hm_scan_wild(const uint8_t *digest, const char **virname, const struct cli_matcher *root, cli_hash_type_t type);
+bool cli_hm_have_size(const struct cli_matcher *root, cli_hash_type_t type, uint32_t size);
+bool cli_hm_have_wild(const struct cli_matcher *root, cli_hash_type_t type);
+bool cli_hm_have_any(const struct cli_matcher *root, cli_hash_type_t type);
 void hm_free(struct cli_matcher *root);
 
 #endif

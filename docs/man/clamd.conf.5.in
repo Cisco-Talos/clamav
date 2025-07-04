@@ -102,6 +102,11 @@ Path to a directory containing ClamAV CA certificate files used to verify signed
 .br
 Default: @CERTSDIR@
 .TP
+\fBFIPSCryptoHashLimits BOOL\fR
+Enforce FIPS\-like limits on using hash algorithms for cryptographic purposes. Will disable MD5 & SHA1 FP sigs and will require '.sign' files to verify CVD authenticity.
+.br
+Default: no
+.TP
 \fBOfficialDatabaseOnly BOOL\fR
 Only load the official signatures published by the ClamAV project.
 .br
@@ -322,6 +327,26 @@ Record metadata about the file being scanned.
 Scan metadata is useful for file analysis purposes and for debugging scan behavior.
 The JSON metadata will be printed after the scan is complete if Debug is enabled.
 A metadata.json file will be written to the scan temp directory if LeaveTemporaryFiles is enabled.
+.br
+Default: no
+.TP
+\fBJsonStoreHTMLURIs BOOL\fR
+Store URIs found in html files to the json metadata.
+URIs will be stored in an array with the tag 'URIs'.
+GenerateMetadataJson is required for this feature.
+.br
+Default: yes (if GenerateMetadataJson is used)
+.TP
+\fBJsonStorePDFURIs BOOL\fR
+Store URIs found in pdf files to the json metadata.
+URIs will be stored in an array with the tag 'URIs'.
+GenerateMetadataJson is required for this feature.
+.br
+Default: yes (if GenerateMetadataJson is used)
+.TP
+\fBJsonStoreExtraHashes BOOL\fR
+Calculate MD5 and SHA1 hashes (in addition to SHA2-256) and store to the json metadata.
+GenerateMetadataJson is required for this feature.
 .br
 Default: no
 .TP
