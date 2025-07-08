@@ -616,10 +616,10 @@ static unsigned int parse_local_file_header(
     zip_cb zcb,
     struct zip_record *record)
 {
-    const uint8_t *local_header, *zip;
-    char name[256];
+    const uint8_t *local_header = NULL, *zip = NULL;
+    char name[256] = {0};
     char *original_filename = NULL;
-    uint32_t csize, usize;
+    uint32_t csize = 0, usize = 0;
     unsigned int size_of_fileheader_and_data = 0;
 
     uint32_t nsize  = 0;
@@ -641,30 +641,26 @@ static unsigned int parse_local_file_header(
     zip = local_header + SIZEOF_LOCAL_HEADER;
     zsize -= SIZEOF_LOCAL_HEADER;
 
-    memset(name, '\0', 256);
-
     if (zsize <= LOCAL_HEADER_flen) {
         cli_dbgmsg("cli_unzip: local header - fname out of file\n");
         fmap_unneed_off(map, loff, SIZEOF_LOCAL_HEADER);
         goto done;
     }
 
-    nsize = (LOCAL_HEADER_flen >= sizeof(name)) ? sizeof(name) - 1 : LOCAL_HEADER_flen;
+    nsize = LOCAL_HEADER_flen >= (sizeof(name) - 1) ? sizeof(name) - 1 : LOCAL_HEADER_flen;
+    cli_dbgmsg("cli_unzip: nsize %u\n", nsize);
     src   = fmap_need_ptr_once(map, zip, nsize);
     if (nsize && (NULL != src)) {
         memcpy(name, zip, nsize);
-        name[nsize] = '\0';
         if (CL_SUCCESS != cli_basename(name, nsize, &original_filename)) {
             original_filename = NULL;
         }
-    } else {
-        name[0] = '\0';
     }
 
     zip += LOCAL_HEADER_flen;
     zsize -= LOCAL_HEADER_flen;
 
-    cli_dbgmsg("cli_unzip: local header - ZMDNAME:%d:%s:%u:%u:%x:%u:%u:%u\n",
+    cli_dbgmsg("cli_unzip: local header - ZMDNAME:%d:%.255s:%u:%u:%x:%u:%u:%u\n",
                ((LOCAL_HEADER_flags & F_ENCR) != 0), name, LOCAL_HEADER_usize, LOCAL_HEADER_csize, LOCAL_HEADER_crc32, LOCAL_HEADER_method, file_count, ctx->recursion_level);
     /* ZMDfmt virname:encrypted(0-1):filename(exact|*):usize(exact|*):csize(exact|*):crc32(exact|*):method(exact|*):fileno(exact|*):maxdepth(exact|*) */
 
