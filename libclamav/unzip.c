@@ -776,6 +776,11 @@ done:
         free(original_filename);
     }
 
+    if (size_of_fileheader_and_data == 0) {
+        size_of_fileheader_and_data = zip - local_header;
+        *ret = CL_EPARSE;
+    }
+
     return size_of_fileheader_and_data;
 }
 
