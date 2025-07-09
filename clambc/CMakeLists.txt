@@ -16,7 +16,9 @@ target_sources( clambc
     PRIVATE
         bcrun.c )
 if(WIN32)
-    target_sources( clambc PRIVATE ${CMAKE_SOURCE_DIR}/win32/res/clambc.rc )
+    target_sources( clambc PRIVATE 
+    ${CMAKE_SOURCE_DIR}/win32/res/clambc.rc
+    ${CMAKE_SOURCE_DIR}/win32/res/clam.manifest )
 endif()
 target_include_directories( clambc
     PRIVATE ${CMAKE_BINARY_DIR} # For clamav-config.h

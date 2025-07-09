@@ -16,7 +16,9 @@ target_sources( clamdtop
     PRIVATE
         clamdtop.c )
 if(WIN32)
-    target_sources( clamdtop PRIVATE ${CMAKE_SOURCE_DIR}/win32/res/clamdtop.rc )
+    target_sources( clamdtop PRIVATE 
+    ${CMAKE_SOURCE_DIR}/win32/res/clamdtop.rc
+    ${CMAKE_SOURCE_DIR}/win32/res/clam.manifest )
 endif()
 target_include_directories( clamdtop
     PRIVATE ${CMAKE_BINARY_DIR} # For clamav-config.h

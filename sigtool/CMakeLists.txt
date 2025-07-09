@@ -18,7 +18,9 @@ target_sources( sigtool
         vba.c
         vba.h )
 if(WIN32)
-    target_sources( sigtool PRIVATE ${CMAKE_SOURCE_DIR}/win32/res/sigtool.rc )
+    target_sources( sigtool PRIVATE 
+    ${CMAKE_SOURCE_DIR}/win32/res/sigtool.rc
+    ${CMAKE_SOURCE_DIR}/win32/res/clam.manifest )
 endif()
 target_include_directories( sigtool
     PRIVATE
