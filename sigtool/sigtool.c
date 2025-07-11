@@ -70,6 +70,9 @@
 
 #define MAX_DEL_LOOKAHEAD 5000
 
+// global variable for the absolute path of the --cvdcertsdir option
+char *g_cvdcertsdir = NULL;
+
 // struct s_info info;
 short recursion = 0, bell = 0;
 short printinfected = 0, printclean = 1;
@@ -1069,8 +1072,6 @@ static int verify(const struct optstruct *opts)
     char *target         = NULL;
     char *sign_file_name = NULL;
 
-    char *cvdcertsdir = NULL;
-
     char *signer_name           = NULL;
     bool verify_result          = false;
     FFIError *verify_file_error = NULL;
@@ -1081,8 +1082,9 @@ static int verify(const struct optstruct *opts)
     target = optget(opts, "verify")->strarg;
     if (NULL == target) {
         mprintf(LOGG_ERROR, "verify: No target file specified.\n");
-        mprintf(LOGG_ERROR, "To verify a file signed with sigtool, you must specify a target file. You may also override the default certificates directory using --cvdcertsdir.\n");
-        mprintf(LOGG_ERROR, "For example:  sigtool --verify myfile.cvd --cvdcertsdir /path/to/certs/\n");
+        mprintf(LOGG_ERROR, "To verify a file signed with sigtool, you must specify a target file. "
+                            "You may also override the default certificates directory using --cvdcertsdir. "
+                            "For example:  sigtool --verify myfile.cvd --cvdcertsdir /path/to/certs/\n");
         goto done;
     }
 
@@ -1092,18 +1094,7 @@ static int verify(const struct optstruct *opts)
         goto done;
     }
 
-    cvdcertsdir = optget(opts, "cvdcertsdir")->strarg;
-    if (NULL == cvdcertsdir) {
-        // Check if the CVD_CERTS_DIR environment variable is set
-        cvdcertsdir = getenv("CVD_CERTS_DIR");
-
-        // If not, use the default value
-        if (NULL == cvdcertsdir) {
-            cvdcertsdir = OPT_CERTSDIR;
-        }
-    }
-
-    if (!codesign_verifier_new(cvdcertsdir, &verifier, &new_verifier_error)) {
+    if (!codesign_verifier_new(g_cvdcertsdir, &verifier, &new_verifier_error)) {
         mprintf(LOGG_ERROR, "verify: Failed to create verifier: %s\n", ffierror_fmt(new_verifier_error));
         goto done;
     }
@@ -1192,6 +1183,14 @@ static int build(const struct optstruct *opts)
     if (!(engine = cl_engine_new())) {
         mprintf(LOGG_ERROR, "build: Can't initialize antivirus engine\n");
         return 50;
+    }
+
+    if (NULL != g_cvdcertsdir) {
+        if ((ret = cl_engine_set_str(engine, CL_ENGINE_CVDCERTSDIR, g_cvdcertsdir))) {
+            logg(LOGG_ERROR, "cli_engine_set_str(CL_ENGINE_CVDCERTSDIR) failed: %s\n", cl_strerror(ret));
+            cl_engine_free(engine);
+            return -1;
+        }
     }
 
     if ((ret = cl_load(".", engine, &sigs, CL_DB_STDOPT | CL_DB_PUA | CL_DB_SIGNED))) {
@@ -1531,9 +1530,6 @@ static int build(const struct optstruct *opts)
 
     mprintf(LOGG_INFO, "Created %s\n", newcvd);
 
-    if (optget(opts, "unsigned")->enabled)
-        return 0;
-
     if (!oldcvd || optget(opts, "no-cdiff")->enabled) {
         mprintf(LOGG_INFO, "Skipping .cdiff creation\n");
         return 0;
@@ -1590,12 +1586,16 @@ static int build(const struct optstruct *opts)
         } else {
             mprintf(LOGG_ERROR, "Generated file is incorrect, renamed to %s\n", broken);
         }
+        return ret;
+    }
+
+    if (optget(opts, "unsigned")->enabled)
+        return 0;
+
+    if (!script2cdiff(patch, builder, optget(opts, "server")->strarg)) {
+        ret = -1;
     } else {
-        if (!script2cdiff(patch, builder, optget(opts, "server")->strarg)) {
-            ret = -1;
-        } else {
-            ret = 0;
-        }
+        ret = 0;
     }
 
     return ret;
@@ -1604,8 +1604,7 @@ static int build(const struct optstruct *opts)
 static int unpack(const struct optstruct *opts)
 {
     char name[512], *dbdir;
-    const char *localdbdir      = NULL;
-    const char *certs_directory = NULL;
+    const char *localdbdir = NULL;
 
     if (optget(opts, "datadir")->active)
         localdbdir = optget(opts, "datadir")->strarg;
@@ -1628,18 +1627,7 @@ static int unpack(const struct optstruct *opts)
         name[sizeof(name) - 1] = '\0';
     }
 
-    certs_directory = optget(opts, "cvdcertsdir")->strarg;
-    if (NULL == certs_directory) {
-        // Check if the CVD_CERTS_DIR environment variable is set
-        certs_directory = getenv("CVD_CERTS_DIR");
-
-        // If not, use the default value
-        if (NULL == certs_directory) {
-            certs_directory = OPT_CERTSDIR;
-        }
-    }
-
-    if (cl_cvdverify_ex(name, certs_directory) != CL_SUCCESS) {
+    if (cl_cvdverify_ex(name, g_cvdcertsdir) != CL_SUCCESS) {
         mprintf(LOGG_ERROR, "unpack: %s is not a valid CVD\n", name);
         return -1;
     }
@@ -2265,8 +2253,8 @@ static int rundiff(const struct optstruct *opts)
     int ret;
     unsigned short mode;
     const char *diff;
-    FFIError *cdiff_apply_error  = NULL;
-    char *cvdcertsdir            = NULL;
+    FFIError *cdiff_apply_error = NULL;
+
     void *verifier               = NULL;
     FFIError *new_verifier_error = NULL;
 
@@ -2280,18 +2268,7 @@ static int rundiff(const struct optstruct *opts)
         return -1;
     }
 
-    cvdcertsdir = optget(opts, "cvdcertsdir")->strarg;
-    if (NULL == cvdcertsdir) {
-        // Check if the CVD_CERTS_DIR environment variable is set
-        cvdcertsdir = getenv("CVD_CERTS_DIR");
-
-        // If not, use the default value
-        if (NULL == cvdcertsdir) {
-            cvdcertsdir = OPT_CERTSDIR;
-        }
-    }
-
-    if (!codesign_verifier_new(cvdcertsdir, &verifier, &new_verifier_error)) {
+    if (!codesign_verifier_new(g_cvdcertsdir, &verifier, &new_verifier_error)) {
         cli_errmsg("rundiff: Failed to create a new code-signature verifier: %s\n", ffierror_fmt(new_verifier_error));
         ret = -1;
         goto done;
@@ -2577,8 +2554,15 @@ static int verifydiff(const struct optstruct *opts, const char *diff, const char
     int ret = -1;
     unsigned short mode;
     FFIError *cdiff_apply_error = NULL;
-    char *cvdcertsdir           = NULL;
-    bool created_temp_dir       = false;
+
+    void *verifier               = NULL;
+    FFIError *new_verifier_error = NULL;
+
+    bool created_temp_dir = false;
+
+    cl_error_t cl_ret;
+
+    char *real_diff = NULL;
 
     if (strstr(diff, ".cdiff")) {
         mode = 1;
@@ -2611,17 +2595,31 @@ static int verifydiff(const struct optstruct *opts, const char *diff, const char
         goto done;
     }
 
+    cl_ret = cli_realpath((const char *)diff, &real_diff);
+    if (CL_SUCCESS != cl_ret) {
+        mprintf(LOGG_ERROR, "verifydiff: Failed to determine real filename of %s: %s\n", diff, cl_strerror(cl_ret));
+        goto done;
+    }
+
+    diff = real_diff;
+
     if (chdir(tempdir) == -1) {
         mprintf(LOGG_ERROR, "verifydiff: Can't chdir to %s\n", tempdir);
         goto done;
     }
 
+    if (!codesign_verifier_new(g_cvdcertsdir, &verifier, &new_verifier_error)) {
+        cli_errmsg("verifydiff: Failed to create a new code-signature verifier: %s\n", ffierror_fmt(new_verifier_error));
+        ret = -1;
+        goto done;
+    }
+
     if (!cdiff_apply(
             diff,
-            cvdcertsdir,
+            verifier,
             mode,
             &cdiff_apply_error)) {
-        mprintf(LOGG_ERROR, "verifydiff: Can't apply %s\n", diff);
+        mprintf(LOGG_ERROR, "verifydiff: Can't apply %s: %s\n", diff, ffierror_fmt(cdiff_apply_error));
         if (chdir(cwd) == -1) {
             mprintf(LOGG_WARNING, "verifydiff: Can't chdir to %s\n", cwd);
         }
@@ -2651,6 +2649,15 @@ done:
     }
     if (NULL != cdiff_apply_error) {
         ffierror_free(cdiff_apply_error);
+    }
+    if (NULL != real_diff) {
+        free(real_diff);
+    }
+    if (NULL != verifier) {
+        codesign_verifier_free(verifier);
+    }
+    if (NULL != new_verifier_error) {
+        ffierror_free(new_verifier_error);
     }
 
     return ret;
@@ -3777,7 +3784,7 @@ static int diffdirs(const char *old, const char *new, const char *patch)
 
 static int makediff(const struct optstruct *opts)
 {
-    char *odir, *ndir, name[32], broken[39], dbname[32];
+    char *odir, *ndir, name[PATH_MAX], broken[PATH_MAX + 8], dbname[PATH_MAX];
     struct cl_cvd *cvd;
     unsigned int oldver, newver;
     int ret;
@@ -4122,6 +4129,9 @@ int main(int argc, char **argv)
     struct optstruct *opts;
     STATBUF sb;
 
+    const char *cvdcertsdir = NULL;
+    STATBUF statbuf;
+
     if (check_flevel())
         exit(1);
 
@@ -4162,6 +4172,34 @@ int main(int argc, char **argv)
         optfree(opts);
         help();
         return 0;
+    }
+
+    // Evaluate the absolute path for cvdcertsdir in case we change directories later.
+    cvdcertsdir = optget(opts, "cvdcertsdir")->strarg;
+    if (NULL == cvdcertsdir) {
+        // If not set, check the environment variable.
+        cvdcertsdir = getenv("CVD_CERTS_DIR");
+        if (NULL == cvdcertsdir) {
+            // If not set, use the default path.
+            cvdcertsdir = OPT_CERTSDIR;
+        }
+    }
+
+    // Command line option must override the engine defaults
+    // (which would've used the env var or hardcoded path)
+    if (LSTAT(cvdcertsdir, &statbuf) == -1) {
+        logg(LOGG_ERROR,
+             "ClamAV CA certificates directory is missing: %s"
+             " - It should have been provided as a part of installation.\n",
+             cvdcertsdir);
+        return -1;
+    }
+
+    // Convert certs dir to real path.
+    ret = cli_realpath((const char *)cvdcertsdir, &g_cvdcertsdir);
+    if (CL_SUCCESS != ret) {
+        logg(LOGG_ERROR, "Failed to determine absolute path of '%s' for the CVD certs directory.\n", cvdcertsdir);
+        return -1;
     }
 
     if (optget(opts, "hex-dump")->enabled)

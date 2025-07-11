@@ -219,3 +219,100 @@ class TC(testcase.TestCase):
         ]
         self.verify_output(output.err, expected=expected_results, )
         self.verify_output(output.out, unexpected=unexpected_results)
+
+    def test_sigtool_04_diff(self):
+        self.step_name('sigtool test for --diff')
+        # Verify that you can diff two versions of a CVD.
+
+        # Get two CVD's. The '.script' diff file will be placed in the same
+        # directory as the CVD's, so we'll put them inour temp directory.
+        (TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles'/ 'test-5.cvd')
+        shutil.copy(str(TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles' / 'test-5.cvd'),
+                    str(TC.path_tmp))
+        shutil.copy(str(TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles' / 'test-5.cvd.sign'),
+                    str(TC.path_tmp))
+        shutil.copy(str(TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles' / 'test-6.cvd'),
+                    str(TC.path_tmp / 'test.cvd'))
+        shutil.copy(str(TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles' / 'test-6.cvd.sign'),
+                    str(TC.path_tmp / 'test-6.cvd.sign'))
+
+        # Run the diff command.
+        self.log.warning('VG: {}'.format(os.getenv("VG")))
+
+        command = '{valgrind} {valgrind_args} {sigtool} --diff {old_cvd} {new_cvd}'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, sigtool=TC.sigtool,
+            old_cvd=TC.path_tmp / 'test-5.cvd',
+            new_cvd=TC.path_tmp / 'test.cvd'
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 0  # success
+
+        expected_results = [
+            'Generated diff file',
+            "correctly applies to {}".format(TC.path_tmp / 'test-5.cvd'),
+        ]
+        self.verify_output(output.out, expected=expected_results)
+
+    def test_sigtool_05_build(self):
+        self.step_name('sigtool test for --build')
+        # Verify that you can build a CUD (not signed with legacy-method).
+
+        # This test starts with an existing CVD, adding a new signature to it.
+        # The CVD will be unpacked, a new signature will be added, and then a new CUD will be built.
+
+        # Get a CVD.
+        (TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles'/ 'test-5.cvd')
+        shutil.copy(str(TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles' / 'test-6.cvd'),
+                    str(TC.path_tmp / 'test.cvd'))
+        shutil.copy(str(TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles' / 'test-6.cvd.sign'),
+                    str(TC.path_tmp / 'test-6.cvd.sign'))
+
+        # Unpack it to the tmp directory.
+        self.log.warning('VG: {}'.format(os.getenv("VG")))
+
+        command = '{valgrind} {valgrind_args} {sigtool} --unpack {old_cvd} --debug'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, sigtool=TC.sigtool,
+            old_cvd=TC.path_tmp / 'test.cvd'
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 0  # success
+
+        expected_results = [
+            'CVD unpacked successfully',
+        ]
+        self.verify_output(output.err, expected=expected_results)
+
+        # Add a line to one of the signature files.
+        with (TC.path_tmp / 'test.ldb').open('a') as f:
+            f.write(
+                'What.a.Silly.Sig.Name-123-0;Engine:51-255,Target:0;0;deadbeefcafe\n'
+            )
+
+        # Set 'SIGNDUSER' environment variable to 'pytest' to avoid permission issues.
+        os.environ['SIGNDUSER'] = 'pytest'
+
+        # Build a new CVD.
+        command = '{valgrind} {valgrind_args} {sigtool} --build=test.cud --unsigned --debug --datadir={path_tmp}'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, sigtool=TC.sigtool,
+            path_tmp=TC.path_tmp
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 0  # success
+
+        expected_results = [
+            'Total sigs: 42',
+            'New sigs: 28',
+            'Created test.cud',
+            'Generated diff file test-7.script',
+            "Verification: {path_tmp}/test-7.script correctly applies to the previous version".format(
+                path_tmp=TC.path_tmp
+            ),
+        ]
+        self.verify_output(output.out, expected=expected_results)
+
+        # Check that the new CUD file was created, and that the '.cud.script' file was created.
+        assert (TC.path_tmp / 'test.cud').exists()
+        assert (TC.path_tmp / 'test-7.script').exists()
