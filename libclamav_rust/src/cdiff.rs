@@ -326,7 +326,7 @@ impl<'a> UnlinkOp<'a> {
 
         if !db_name
             .chars()
-            .all(|x: char| x.is_alphanumeric() || x == '.')
+            .all(|x: char| x.is_alphanumeric() || x == '.' || x == '_')
         {
             // DB Name contains invalid characters.
             return Err(InputError::InvalidDBNameForbiddenCharacters(
@@ -601,7 +601,10 @@ pub unsafe extern "C" fn _cdiff_apply(
         Err(e) => {
             return ffi_error!(
                 err = err,
-                Error::CannotVerify(format!("Invalid cdiff file path: {}", e))
+                Error::CannotVerify(format!(
+                    "Invalid cdiff file path '{}': {}",
+                    cdiff_file_path_str, e
+                ))
             );
         }
     };
@@ -758,7 +761,7 @@ fn cmd_open(ctx: &mut Context, db_name: Option<&[u8]>) -> Result<(), InputError>
 
     if !db_name
         .chars()
-        .all(|x: char| x.is_alphanumeric() || x == '.')
+        .all(|x: char| x.is_alphanumeric() || x == '.' || x == '_')
     {
         // DB Name contains invalid characters.
         return Err(InputError::InvalidDBNameForbiddenCharacters(
