@@ -3799,14 +3799,14 @@ static int makediff(const struct optstruct *opts)
         return -1;
     }
     newver = cvd->version;
-    free(cvd);
+    cl_cvdfree(cvd);
 
     if (!(cvd = cl_cvdhead(optget(opts, "diff")->strarg))) {
         mprintf(LOGG_ERROR, "makediff: Can't read CVD header from %s\n", optget(opts, "diff")->strarg);
         return -1;
     }
     oldver = cvd->version;
-    free(cvd);
+    cl_cvdfree(cvd);
 
     if (oldver + 1 != newver) {
         mprintf(LOGG_ERROR, "makediff: The old CVD must be %u\n", newver - 1);
