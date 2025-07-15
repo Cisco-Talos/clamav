@@ -4,7 +4,7 @@
     "build": {
         "dockerfile": "Dockerfile",
         // Context must be the relative path to the project root
-        // project/.devcontainer/mac
+        // project/.devcontainer/clamav-debian
         "context": "../..",
         // "noCache": true,
         "args": {
@@ -41,7 +41,9 @@
                 "eamodio.gitlens",
                 "vadimcn.vscode-lldb",
                 "webfreak.debug",
-                "ms-vscode-remote.remote-containers"
+                "ms-vscode-remote.remote-containers",
+                "ms-vscode.cpptools-extension-pack",
+                "ms-vscode.cpptools"
             ],
             "settings": {
                 "terminal.integrated.shell.linux": "/bin/bash"

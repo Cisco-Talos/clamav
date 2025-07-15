@@ -1,37 +1,32 @@
 # Instructions for using these dev containers
 
-## Assumptions
-1. The host platform is Linux or Apple/MacOS.
-1. Docker and or Docker Desktop are installed and the local user has permissions to use the docker daemon.
-1. ClamAV cvd files are present in $HOME/data/cvd
-    - If you want to change this directory, edit the path in the devcontainer.json file
-    - If you want to install cvd files on the container itself, comment out the line that mounts this directory in the
-    devcontainer.json file.
-1. ssh-agent is running
-    - ```echo $SSH_AUTH_SOCK```
-        - If no agent is running, ```eval $(ssh-agent -s)```
+## Dependencies
 
-## Host Setup
-See: https://code.visualstudio.com/remote/advancedcontainers/sharing-git-credentials
-1. In your $HOME/.bash_profile (or $HOME/.zprofile if your shell is zsh), add:
+1. The host platform is Linux or macOS.
+1. Docker or Docker Desktop are installed and the local user has permissions to use the Docker daemon.
+1. You must have a directory `$HOME/data/cvd` for the Dev Container to mount as the ClamAV database directory. See below for setup instructions.
+1. `ssh-agent` must be running to share Git credentials with the container. See below for setup instructions.
+1. The `UID` environment variable must be set to export your user's ID. See below for setup instructions.
+
+## Set up database directory mount path
+
+Create a database directory for sharing signature files from the host to the dev container:
+```sh
+mkdir -p $HOME/data/cvd
 ```
-if [ -z "$SSH_AUTH_SOCK" ]; then
-   # Check for a currently running instance of the agent
-   RUNNING_AGENT="`ps -ax | grep 'ssh-agent -s' | grep -v grep | wc -l | tr -d '[:space:]'`"
-   if [ "$RUNNING_AGENT" = "0" ]; then
-        # Launch a new instance of the agent
-        ssh-agent -s &> $HOME/.ssh/ssh-agent
-   fi
-   eval `cat $HOME/.ssh/ssh-agent` > /dev/null
-   ssh-add 2> /dev/null
-fi
+
+Place any ClamAV signature files in this directory that you want to make available to the dev container.
+
+> _Tip_: If you want to change this directory, edit the path in the `devcontainer.json` file. Or, if you want to install signature files on the container itself, comment out the line that mounts this directory in the `devcontainer.json` file.
+
+## Set up `UID` user ID environment variable.
+
+For Bash shell, edit `$HOME/.bashrc`. Or for Zsh, edit `$HOME/.zshrc`. Add the following:
+```sh
+export UID=$(id -u)
 ```
-1. In your $HOME/.bashrc (of $HOME/.zshrc if your shell is zsh), add:
-```export UID```
-1. Note that you will need to source the files you modified and run ```code .``` to open VSCode from the shell you
-sourced from to pick up the new environment variables, or reboot. (i.e. ```. ~/.bash_profile```, etc.)
-1. **OPTIONAL** Install and or update cvd files in the appropriate directory on the host, which matches the mountpoint
-in devcontainer.json
+
+Source this file (e.g. run `source $HOME/.bashrc` or `source $HOME/.zshrc`) to apply this change in your current shell. Or open a new terminal.
 
 ## VSCode Setup
 1. Install the following extensions:
@@ -40,5 +35,5 @@ in devcontainer.json
     1. Docker - Microsoft
     1. Remote Development - Microsoft
 1. Click the green icon in the bottom-left corner of the VSCode window (or press F1)
-1. Select ```Dev Containers: Reopen in Container```
+1. Select `Dev Containers: Reopen in Container`
 1. Select the devcontainer.json file for the container you wish to open.
