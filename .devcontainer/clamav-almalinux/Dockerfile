@@ -1,121 +1,116 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 #
-# Copyright (C) 2020 Olliver Schinagl <oliver@schinagl.nl>
-# Copyright (C) 2021-2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+# Copyright (C) 2025 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
 
 FROM index.docker.io/library/almalinux:9.5 AS clamav-almalinux-devcontainer
+
+# Declare the container args
 ARG REMOTE_USER
 ARG REMOTE_UID
+
+# Set working directory
 WORKDIR /src
 
+# Copy current directory contents into the container
 COPY . /src/
 
+# Set environment variables
 ENV CARGO_HOME=/src/build
-
-ENV HOME /home/${REMOTE_USER}
+ENV HOME=/home/${REMOTE_USER}
 
 # Install and enable EPEL and CRB repositories
 RUN dnf -y install epel-release && dnf config-manager --set-enabled crb
 
+# Install necessary packages
 RUN dnf -y --allowerasing install \
-        cmake \
-        bison \
-        check \
-        curl \
-        flex \
-        gcc \
-        gcc-c++ \
-        git \
-        gdb \
-        glibc-all-langpacks \
-        make \
-        man-db \
-        net-tools \
-        psmisc \
-        pkg-config \
-        python3-pip \
-        python3-pytest \
-        sudo \
-        tcpdump \
-        valgrind \
-        wget \
-        zip \
-        bzip2-devel \
-        check-devel \
-        curl-devel \
-        json-c-devel \
-        sendmail-devel \
-        ncurses-devel \
-        pcre2-devel \
-        openssl-devel \
-        libxml2-devel \
-        zlib-devel \
-    && \
-    rm -rf /var/cache/apt/archives \
-    && \
-    # Add the user to the system and to sudoers
-    adduser --uid $REMOTE_UID $REMOTE_USER \
-    && \
-    echo "${REMOTE_USER} ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers \
-    && \
-    # Using rustup to install Rust rather than rust:1.62.1-bullseye, because there is no rust:1.62.1-bullseye image for ppc64le at this time.
-    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y \
-    && \
-    . $CARGO_HOME/env \
-    && \
-    rustup update \
-    && \
-    mkdir -p "./build" && cd "./build" \
-    && \
-    ls /src \
-    && \
-    cmake .. \
-        -DCARGO_HOME=$CARGO_HOME \
-        -DCMAKE_BUILD_TYPE="Release" \
-        -DCMAKE_INSTALL_PREFIX="/usr" \
-        -DCMAKE_INSTALL_LIBDIR="/usr/lib" \
-        -DAPP_CONFIG_DIRECTORY="/etc/clamav" \
-        -DDATABASE_DIRECTORY="/var/lib/clamav" \
-        -DENABLE_CLAMONACC=OFF \
-        -DENABLE_EXAMPLES=OFF \
-        -DENABLE_JSON_SHARED=ON \
-        -DENABLE_MAN_PAGES=OFF \
-        -DENABLE_MILTER=ON \
-        -DENABLE_STATIC_LIB=OFF \
-    && \
-    make DESTDIR="/clamav" -j$(($(nproc) - 1)) install \
-    && \
-    rm -r \
-        "/clamav/usr/include" \
-        "/clamav/usr/lib/pkgconfig/" \
-    && \
-    sed -e "s|^\(Example\)|\# \1|" \
-        -e "s|.*\(LocalSocket\) .*|\1 /tmp/clamd.sock|" \
-        -e "s|.*\(TCPSocket\) .*|\1 3310|" \
-        -e "s|.*\(TCPAddr\) .*|#\1 0.0.0.0|" \
-        -e "s|.*\(User\) .*|\1 clamav|" \
-        -e "s|^\#\(LogFile\) .*|\1 /var/log/clamav/clamd.log|" \
-        -e "s|^\#\(LogTime\).*|\1 yes|" \
-        "/clamav/etc/clamav/clamd.conf.sample" > "/clamav/etc/clamav/clamd.conf" && \
-    sed -e "s|^\(Example\)|\# \1|" \
-        -e "s|.*\(DatabaseOwner\) .*|\1 clamav|" \
-        -e "s|^\#\(UpdateLogFile\) .*|\1 /var/log/clamav/freshclam.log|" \
-        -e "s|^\#\(NotifyClamd\).*|\1 /etc/clamav/clamd.conf|" \
-        -e "s|^\#\(ScriptedUpdates\).*|\1 yes|" \
-        "/clamav/etc/clamav/freshclam.conf.sample" > "/clamav/etc/clamav/freshclam.conf" && \
-    sed -e "s|^\(Example\)|\# \1|" \
-        -e "s|.*\(MilterSocket\) .*|\1 inet:7357|" \
-        -e "s|.*\(User\) .*|\1 clamav|" \
-        -e "s|^\#\(LogFile\) .*|\1 /var/log/clamav/milter.log|" \
-        -e "s|^\#\(LogTime\).*|\1 yes|" \
-        -e "s|.*\(\ClamdSocket\) .*|\1 unix:/tmp/clamd.sock|" \
-        "/clamav/etc/clamav/clamav-milter.conf.sample" > "/clamav/etc/clamav/clamav-milter.conf" || \
-    exit 1
-    # Currently Unit test 1 fails with:
-        # /src/unit_tests/check_clamav.c:1797:F:assorted functions:test_cli_codepage_to_utf8_jis:0: test_cli_codepage_to_utf8: Failed to convert CODEPAGE_JAPANESE_SHIFT_JIS to UTF8: ret != SUCCESS!
-        # Todo: Investigate and fix this issue
-    # \
-    # && \
-    # ctest -V --timeout 3000
+    cmake \
+    bison \
+    check \
+    curl \
+    flex \
+    gcc \
+    gcc-c++ \
+    git \
+    gdb \
+    glibc-all-langpacks \
+    make \
+    man-db \
+    net-tools \
+    psmisc \
+    pkg-config \
+    python3-pip \
+    python3-pytest \
+    sudo \
+    tcpdump \
+    valgrind \
+    wget \
+    zip \
+    bzip2-devel \
+    check-devel \
+    curl-devel \
+    json-c-devel \
+    sendmail-devel \
+    ncurses-devel \
+    pcre2-devel \
+    openssl-devel \
+    libxml2-devel \
+    zlib-devel \
+    && rm -rf /var/cache/apt/archives
 
+RUN echo "REMOTE_USER is ${REMOTE_USER} and REMOTE_UID is ${REMOTE_UID}"
+
+# Create a non-root user
+RUN echo "Creating user ${REMOTE_USER} with UID ${REMOTE_UID}" && \
+    adduser --uid "$REMOTE_UID" "$REMOTE_USER" && \
+    echo "${REMOTE_USER} ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/${REMOTE_USER} && chmod 0440 /etc/sudoers.d/${REMOTE_USER}
+
+# Install Rust
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y \
+    && . $CARGO_HOME/env \
+    && rustup update
+
+# Build ClamAV
+RUN mkdir -p ./build && cd ./build \
+    && cmake .. \
+    -DCARGO_HOME=$CARGO_HOME \
+    -DCMAKE_BUILD_TYPE="Release" \
+    -DCMAKE_INSTALL_PREFIX="/usr" \
+    -DCMAKE_INSTALL_LIBDIR="/usr/lib" \
+    -DAPP_CONFIG_DIRECTORY="/etc/clamav" \
+    -DDATABASE_DIRECTORY="/var/lib/clamav" \
+    -DENABLE_CLAMONACC=OFF \
+    -DENABLE_EXAMPLES=OFF \
+    -DENABLE_JSON_SHARED=ON \
+    -DENABLE_MAN_PAGES=OFF \
+    -DENABLE_MILTER=ON \
+    -DENABLE_STATIC_LIB=OFF \
+    && make DESTDIR="/clamav" -j$(($(nproc) - 1)) install \
+    && rm -r /clamav/usr/include /clamav/usr/lib/pkgconfig/ \
+    && sed -e "s|^\(Example\)|# \1|" \
+    -e "s|.*\(LocalSocket\) .*|\1 /tmp/clamd.sock|" \
+    -e "s|.*\(TCPSocket\) .*|\1 3310|" \
+    -e "s|.*\(TCPAddr\) .*|#\1 0.0.0.0|" \
+    -e "s|.*\(User\) .*|\1 clamav|" \
+    -e "s|^\#\(LogFile\) .*|\1 /var/log/clamav/clamd.log|" \
+    -e "s|^\#\(LogTime\).*|\1 yes|" \
+    /clamav/etc/clamav/clamd.conf.sample > /clamav/etc/clamav/clamd.conf \
+    && sed -e "s|^\(Example\)|# \1|" \
+    -e "s|.*\(DatabaseOwner\) .*|\1 clamav|" \
+    -e "s|^\#\(UpdateLogFile\) .*|\1 /var/log/clamav/freshclam.log|" \
+    -e "s|^\#\(NotifyClamd\).*|\1 /etc/clamav/clamd.conf|" \
+    -e "s|^\#\(ScriptedUpdates\).*|\1 yes|" \
+    /clamav/etc/clamav/freshclam.conf.sample > /clamav/etc/clamav/freshclam.conf \
+    && sed -e "s|^\(Example\)|# \1|" \
+    -e "s|.*\(MilterSocket\) .*|\1 inet:7357|" \
+    -e "s|.*\(User\) .*|\1 clamav|" \
+    -e "s|^\#\(LogFile\) .*|\1 /var/log/clamav/milter.log|" \
+    -e "s|^\#\(LogTime\).*|\1 yes|" \
+    -e "s|.*\(ClamdSocket\) .*|\1 unix:/tmp/clamd.sock|" \
+    /clamav/etc/clamav/clamav-milter.conf.sample > /clamav/etc/clamav/clamav-milter.conf
+# && ctest -V --timeout 3000
+
+# Switch to the non-root user
 USER ${REMOTE_USER}
+
+# Set working directory to user's home
+WORKDIR ${HOME}

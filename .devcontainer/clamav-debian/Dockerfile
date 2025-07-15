@@ -2,7 +2,7 @@
 # Use a slim Debian image
 FROM index.docker.io/library/debian:12-slim AS clamav-debian-devcontainer-macos
 
-# Declare args again after FROM to make them available in this build stage
+# Declare container args
 ARG REMOTE_USER
 ARG REMOTE_UID
 
