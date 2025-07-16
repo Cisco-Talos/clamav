@@ -417,7 +417,7 @@ START_TEST(test_bm_scanbuff)
     ck_assert_msg(ret == CL_SUCCESS, "cli_add_content_match_pattern failed");
 
     ctx.options->general &= ~CL_SCAN_GENERAL_ALLMATCHES; /* make sure all-match is disabled */
-    ret = cli_bm_scanbuff((const unsigned char *)"blah\xde\xad\xbe\xef", 12, &virname, NULL, root, 0, NULL, NULL, NULL);
+    ret = cli_bm_scanbuff((const unsigned char *)"blah\xde\xad\xbe\xef", 8, &virname, NULL, root, 0, NULL, NULL, NULL);
     ck_assert_msg(ret == CL_VIRUS, "cli_bm_scanbuff() failed");
     ck_assert_msg(!strncmp(virname, "Sig2", 4), "Incorrect signature matched in cli_bm_scanbuff()\n");
 }
@@ -446,7 +446,7 @@ START_TEST(test_bm_scanbuff_allscan)
     ck_assert_msg(ret == CL_SUCCESS, "cli_add_content_match_pattern failed");
 
     ctx.options->general |= CL_SCAN_GENERAL_ALLMATCHES; /* enable all-match */
-    ret = cli_bm_scanbuff((const unsigned char *)"blah\xde\xad\xbe\xef", 12, &virname, NULL, root, 0, NULL, NULL, NULL);
+    ret = cli_bm_scanbuff((const unsigned char *)"blah\xde\xad\xbe\xef", 8, &virname, NULL, root, 0, NULL, NULL, NULL);
     ck_assert_msg(ret == CL_VIRUS, "cli_bm_scanbuff() failed");
     ck_assert_msg(!strncmp(virname, "Sig2", 4), "Incorrect signature matched in cli_bm_scanbuff()\n");
 }
