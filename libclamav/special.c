@@ -46,63 +46,6 @@
 #define special_endian_convert_16(v) be16_to_host(v)
 #define special_endian_convert_32(v) be32_to_host(v)
 
-int cli_check_mydoom_log(cli_ctx *ctx)
-{
-    uint32_t record[16];
-    const uint32_t *ptr;
-    uint32_t check, key;
-    fmap_t *map         = ctx->fmap;
-    unsigned int blocks = map->len / (8 * 4);
-
-    cli_dbgmsg("in cli_check_mydoom_log()\n");
-    if (blocks < 2)
-        return CL_CLEAN;
-    if (blocks > 5)
-        blocks = 5;
-
-    /*
-     * The following pointer might not be properly aligned. There there is
-     * memcmp() + memcpy() workaround to avoid performing an unaligned access
-     * while reading the uint32_t.
-     */
-    ptr = fmap_need_off_once(map, 0, 8 * 4 * blocks);
-    if (!ptr)
-        return CL_CLEAN;
-
-    while (blocks) { /* This wasn't probably intended but that's what the current code does anyway */
-        const uint32_t marker_ff = 0xffffffff;
-
-        if (!memcmp(&ptr[--blocks], &marker_ff, sizeof(uint32_t)))
-            return CL_CLEAN;
-    }
-
-    memcpy(record, ptr, sizeof(record));
-
-    key   = ~be32_to_host(record[0]);
-    check = (be32_to_host(record[1]) ^ key) +
-            (be32_to_host(record[2]) ^ key) +
-            (be32_to_host(record[3]) ^ key) +
-            (be32_to_host(record[4]) ^ key) +
-            (be32_to_host(record[5]) ^ key) +
-            (be32_to_host(record[6]) ^ key) +
-            (be32_to_host(record[7]) ^ key);
-    if ((~check) != key)
-        return CL_CLEAN;
-
-    key   = ~be32_to_host(record[8]);
-    check = (be32_to_host(record[9]) ^ key) +
-            (be32_to_host(record[10]) ^ key) +
-            (be32_to_host(record[11]) ^ key) +
-            (be32_to_host(record[12]) ^ key) +
-            (be32_to_host(record[13]) ^ key) +
-            (be32_to_host(record[14]) ^ key) +
-            (be32_to_host(record[15]) ^ key);
-    if ((~check) != key)
-        return CL_CLEAN;
-
-    return cli_append_potentially_unwanted(ctx, "Heuristics.Worm.Mydoom.M.log");
-}
-
 static uint32_t riff_endian_convert_32(uint32_t value, int big_endian)
 {
     if (big_endian)

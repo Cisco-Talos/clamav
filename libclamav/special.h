@@ -34,7 +34,6 @@ struct swizz_stats {
     int entries;
 };
 
-int cli_check_mydoom_log(cli_ctx *ctx);
 int cli_check_riff_exploit(cli_ctx *ctx);
 void cli_detect_swizz_str(const unsigned char *str, uint32_t len, struct swizz_stats *stats, int blob);
 int cli_detect_swizz(struct swizz_stats *stats);
