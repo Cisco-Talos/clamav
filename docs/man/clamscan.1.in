@@ -57,6 +57,15 @@ This option causes memory or nested map scans to dump the content to disk. If yo
 \fB\-\-gen\-json\fR
 Generate JSON description of scanned file(s). JSON will be printed and also dropped to the temp directory if --leave-temps is enabled.
 .TP
+\fB\-\-json\-store\-html\-uris\fR
+Store html URIs in metadata. URIs will be written to the metadata.json file in an array called 'URIs'.
+.TP
+\fB\-\-json\-store\-pdf\-uris\fR
+Store pdf URIs in metadata. URIs will be written to the metadata.json file in an array called 'URIs'.
+.TP
+\fB\-\-json\-store\-extra\-hashes\fR
+Store md5 and sha1 in addition to sha2-256 in metadata.
+.TP
 \fB\-d FILE/DIR, \-\-database=FILE/DIR\fR
 Load virus database from FILE or load all virus database files from DIR.
 .TP
