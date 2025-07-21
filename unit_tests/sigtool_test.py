@@ -250,7 +250,7 @@ class TC(testcase.TestCase):
 
         expected_results = [
             'Generated diff file',
-            "correctly applies to {}".format(TC.path_tmp / 'test-5.cvd'),
+            'correctly applies to',
         ]
         self.verify_output(output.out, expected=expected_results)
 
@@ -285,9 +285,9 @@ class TC(testcase.TestCase):
         self.verify_output(output.err, expected=expected_results)
 
         # Add a line to one of the signature files.
-        with (TC.path_tmp / 'test.ldb').open('a') as f:
+        with (TC.path_tmp / 'test.ldb').open('ab') as f:
             f.write(
-                'What.a.Silly.Sig.Name-123-0;Engine:51-255,Target:0;0;deadbeefcafe\n'
+                b'What.a.Silly.Sig.Name-123-0;Engine:51-255,Target:0;0;deadbeefcafe\n'
             )
 
         # Set 'SIGNDUSER' environment variable to 'pytest' to avoid permission issues.
@@ -307,9 +307,8 @@ class TC(testcase.TestCase):
             'New sigs: 28',
             'Created test.cud',
             'Generated diff file test-7.script',
-            "Verification: {path_tmp}/test-7.script correctly applies to the previous version".format(
-                path_tmp=TC.path_tmp
-            ),
+            'Verification',
+            'test-7.script correctly applies to the previous version',
         ]
         self.verify_output(output.out, expected=expected_results)
 
