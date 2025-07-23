@@ -51,11 +51,19 @@ class TC(testcase.TestCase):
             str(TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles' / 'test-2.cvd'),
             str(TC.path_tmp / 'verify_good.cvd')
         )
+        shutil.copyfile(
+            str(TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles' / 'test-2.cvd.sign'),
+            str(TC.path_tmp / 'verify_good-2.cvd.sign')
+        )
 
         # Also get a corrupted version of the cvd
         shutil.copyfile(
             str(TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles' / 'test-2.cvd'),
             str(TC.path_tmp / 'verify_bad.cvd')
+        )
+        shutil.copyfile(
+            str(TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles' / 'test-2.cvd.sign'),
+            str(TC.path_tmp / 'verify_bad-2.cvd.sign')
         )
         with open(str(TC.path_tmp / 'verify_bad.cvd'), 'r+b') as f:
             f.seek(0, os.SEEK_END)

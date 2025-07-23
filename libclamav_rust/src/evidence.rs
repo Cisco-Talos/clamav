@@ -20,9 +20,11 @@
  *  MA 02110-1301, USA.
  */
 
-use std::{collections::HashMap, ffi::CStr, mem::ManuallyDrop, os::raw::c_char};
+use std::{ffi::CStr, mem::ManuallyDrop, os::raw::c_char};
 
 use log::{debug, error, warn};
+
+use indexmap::IndexMap;
 
 use crate::{ffi_error, ffi_util::FFIError, rrf_call, sys, validate_str_param};
 
@@ -53,9 +55,9 @@ pub enum IndicatorType {
 
 #[derive(Debug, Default, Clone)]
 pub struct Evidence {
-    strong: HashMap<String, Vec<IndicatorMeta>>,
-    pua: HashMap<String, Vec<IndicatorMeta>>,
-    weak: HashMap<String, Vec<IndicatorMeta>>,
+    strong: IndexMap<String, Vec<IndicatorMeta>>,
+    pua: IndexMap<String, Vec<IndicatorMeta>>,
+    weak: IndexMap<String, Vec<IndicatorMeta>>,
 }
 
 #[derive(Debug, Clone)]
@@ -503,7 +505,7 @@ impl Evidence {
                 if let Some(metas) = self.strong.get_mut(name) {
                     metas.pop();
                     if metas.is_empty() {
-                        self.strong.remove(name);
+                        self.strong.shift_remove(name);
                     }
                 }
             }
@@ -512,7 +514,7 @@ impl Evidence {
                 if let Some(metas) = self.pua.get_mut(name) {
                     metas.pop();
                     if metas.is_empty() {
-                        self.pua.remove(name);
+                        self.pua.shift_remove(name);
                     }
                 }
             }
@@ -521,7 +523,7 @@ impl Evidence {
                 if let Some(metas) = self.weak.get_mut(name) {
                     metas.pop();
                     if metas.is_empty() {
-                        self.weak.remove(name);
+                        self.weak.shift_remove(name);
                     }
                 }
             }
