@@ -721,7 +721,7 @@ extern cl_error_t cl_fmap_will_need_hash_later(const cl_fmap_t *map, const char 
  * @param[out] hash_out Malloced string containing the hash value.
  * @return cl_error_t   CL_SUCCESS if the hash was successfully retrieved.
  */
-extern cl_error_t cl_fmap_get_hash(const cl_fmap_t *map, const char *hash_alg, const char **hash_out);
+extern cl_error_t cl_fmap_get_hash(const cl_fmap_t *map, const char *hash_alg, char **hash_out);
 
 /**
  * @brief Get the file contents from a file map.
