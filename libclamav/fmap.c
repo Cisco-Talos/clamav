@@ -1509,7 +1509,7 @@ done:
     return status;
 }
 
-extern cl_error_t cl_fmap_get_hash(const cl_fmap_t *map, const char *hash_alg, const char **hash_out)
+extern cl_error_t cl_fmap_get_hash(const cl_fmap_t *map, const char *hash_alg, char **hash_out)
 {
     cl_error_t status = CL_ERROR;
     cli_hash_type_t type;
