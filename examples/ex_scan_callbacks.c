@@ -40,6 +40,220 @@
 typedef int ssize_t;
 #endif
 
+static cl_error_t get_all_calculated_hashes(
+    cl_fmap_t *fmap,
+    bool *have_md5_out,
+    bool *have_sha1_out,
+    bool *have_sha256_out,
+    char **md5_hash_out,
+    char **sha1_hash_out,
+    char **sha256_hash_out);
+
+const char *command_list =
+    "1  - Return CL_BREAK to abort scanning. Will still encounter POST_SCAN-callbacks on the way out.\n"
+    "2  - Return CL_SUCCESS to keep scanning. Will ignore an alert in the ALERT-callback.\n"
+    "3  - Return CL_VIRUS to create a new alert and keep scanning. Will agree with alert in the ALERT-callback.\n"
+    "4  - Return CL_VERIFIED to trust this layer (discarding all alerts) and skip the rest of this layer.\n"
+    "5  - Request md5 hash when it calculates any hash. Does not return from the callback!\n"
+    "6  - Request sha1 hash when it calculates any hash. Does not return from the callback!\n"
+    "7  - Request sha2-256 hash when it calculates any hash. Does not return from the callback!\n"
+    "8  - Get md5 hash. Does not return from the callback!\n"
+    "9  - Get sha1 hash. Does not return from the callback!\n"
+    "10 - Get sha2-256 hash. Does not return from the callback!\n"
+    "11 - Print all hashes that have already been calculated. Does not return from the callback!\n";
+
+/**
+ * @brief Select an action based on user input.
+ *
+ * @param layer             The current scan layer.
+ * @param is_alert_callback Indicates if this is an alert callback.
+ * @param choice            The user's choice.
+ * @return cl_error_t       The result of the action or else CL_EDUP to indicate the caller should run this again
+ *                          with another choice. This is so that the user can select an action does not return.
+ */
+cl_error_t select_choice(cl_scan_layer_t *layer, int choice)
+{
+    switch (choice) {
+        case 1: {
+            // Return CL_BREAK to abort scanning. Will still encounter POST_SCAN-callbacks on the way out.
+            return CL_BREAK;
+        }
+        case 2: {
+            // Return CL_SUCCESS to keep scanning. Will ignore an alert in the ALERT-callback.
+            return CL_SUCCESS;
+        }
+        case 3: {
+            // Return CL_VIRUS to create a new alert and keep scanning. Will agree with alert in the ALERT-callback.
+            return CL_VIRUS;
+        }
+        case 4: {
+            // Return CL_VERIFIED to trust this layer (discarding all alerts) and skip the rest of this layer.
+            return CL_VERIFIED;
+        }
+        case 5: {
+            // Request md5 hash when it calculates any hash. Does not return from the callback!
+            cl_fmap_t *fmap = NULL;
+            cl_error_t ret;
+
+            /*
+             * Indicate we want this hash calculated later.
+             * We could just get the hash now using cl_fmap_get_hash(),
+             * but this is just an example of how to request hashes
+             * to be calculated later.
+             */
+            if (CL_SUCCESS != (ret = cl_scan_layer_get_fmap(layer, &fmap))) {
+                printf("❌ cl_scan_layer_get_fmap() failed: %s\n", cl_strerror(ret));
+            } else {
+                if (CL_SUCCESS != (ret = cl_fmap_will_need_hash_later(fmap, "md5"))) {
+                    printf("❌ cl_fmap_will_need_hash_later(md5) failed: %s\n", cl_strerror(ret));
+                }
+            }
+
+            printf("\n✅ Requested md5 hash for next time.\n\n");
+
+            return CL_EDUP; // Indicate the caller should run this again with another choice to a return code.
+        }
+        case 6: {
+            // Request sha1 hash when it calculates any hash. Does not return from the callback!
+            cl_fmap_t *fmap = NULL;
+            cl_error_t ret;
+
+            /*
+             * Indicate we want this hash calculated later.
+             * We could just get the hash now using cl_fmap_get_hash(),
+             * but this is just an example of how to request hashes
+             * to be calculated later.
+             */
+            if (CL_SUCCESS != (ret = cl_scan_layer_get_fmap(layer, &fmap))) {
+                printf("❌ cl_scan_layer_get_fmap() failed: %s\n", cl_strerror(ret));
+            } else {
+                if (CL_SUCCESS != (ret = cl_fmap_will_need_hash_later(fmap, "sha1"))) {
+                    printf("❌ cl_fmap_will_need_hash_later(sha1) failed: %s\n", cl_strerror(ret));
+                }
+            }
+
+            printf("\n✅ Requested sha1 hash for next time.\n\n");
+
+            return CL_EDUP; // Indicate the caller should run this again with another choice to a return code.
+        }
+        case 7: {
+            // Request sha2-256 hash when it calculates any hash. Does not return from the callback!
+            cl_fmap_t *fmap = NULL;
+            cl_error_t ret;
+
+            /*
+             * Indicate we want this hash calculated later.
+             * We could just get the hash now using cl_fmap_get_hash(),
+             * but this is just an example of how to request hashes
+             * to be calculated later.
+             */
+            if (CL_SUCCESS != (ret = cl_scan_layer_get_fmap(layer, &fmap))) {
+                printf("❌ cl_scan_layer_get_fmap() failed: %s\n", cl_strerror(ret));
+            } else {
+                if (CL_SUCCESS != (ret = cl_fmap_will_need_hash_later(fmap, "sha256"))) {
+                    printf("❌ cl_fmap_will_need_hash_later(sha256) failed: %s\n", cl_strerror(ret));
+                }
+            }
+
+            printf("\n✅ Requested sha2-256 hash for next time.\n\n");
+
+            return CL_EDUP; // Indicate the caller should run this again with another choice to a return code.
+        }
+        case 8: {
+            // Get md5 hash. Does not return from the callback!
+            cl_fmap_t *fmap = NULL;
+            cl_error_t ret;
+            char *md5_hash = NULL;
+
+            if (CL_SUCCESS != (ret = cl_scan_layer_get_fmap(layer, &fmap))) {
+                printf("❌ cl_scan_layer_get_fmap() failed: %s\n", cl_strerror(ret));
+                return ret;
+            }
+
+            ret = cl_fmap_get_hash(fmap, "md5", &md5_hash);
+            if (CL_SUCCESS != ret || !md5_hash) {
+                printf("❌ Failed to get md5 hash: %s\n", cl_strerror(CL_ECVD));
+                return CL_ECVD;
+            }
+
+            printf("\n✅ MD5 Hash: %s\n\n", md5_hash);
+
+            free(md5_hash); // Free the allocated hash string.
+            return CL_EDUP; // Indicate the caller should run this again with another choice to a return code.
+        }
+        case 9: {
+            // Get sha1 hash. Does not return from the callback!
+            cl_fmap_t *fmap = NULL;
+            cl_error_t ret;
+            char *sha1_hash = NULL;
+
+            if (CL_SUCCESS != (ret = cl_scan_layer_get_fmap(layer, &fmap))) {
+                printf("❌ cl_scan_layer_get_fmap() failed: %s\n", cl_strerror(ret));
+                return ret;
+            }
+
+            ret = cl_fmap_get_hash(fmap, "sha1", &sha1_hash);
+            if (CL_SUCCESS != ret || !sha1_hash) {
+                printf("❌ Failed to get sha1 hash: %s\n", cl_strerror(CL_ECVD));
+                return CL_ECVD;
+            }
+
+            printf("\n✅ SHA1 Hash: %s\n\n", sha1_hash);
+
+            free(sha1_hash); // Free the allocated hash string.
+            return CL_EDUP;  // Indicate the caller should run this again with another choice to a return code.
+        }
+        case 10: {
+            // Get sha2-256 hash. Does not return from the callback!
+            cl_fmap_t *fmap = NULL;
+            cl_error_t ret;
+            char *sha2_256_hash = NULL;
+
+            if (CL_SUCCESS != (ret = cl_scan_layer_get_fmap(layer, &fmap))) {
+                printf("❌ cl_scan_layer_get_fmap() failed: %s\n", cl_strerror(ret));
+                return ret;
+            }
+
+            ret = cl_fmap_get_hash(fmap, "sha2-256", &sha2_256_hash);
+            if (CL_SUCCESS != ret || !sha2_256_hash) {
+                printf("❌ Failed to get sha2-256 hash: %s\n", cl_strerror(CL_ECVD));
+                return CL_ECVD;
+            }
+
+            printf("\n✅ SHA2-256 Hash: %s\n\n", sha2_256_hash);
+
+            free(sha2_256_hash); // Free the allocated hash string.
+            return CL_EDUP;      // Indicate the caller should run this again with another choice to a return code.
+        }
+        case 11: {
+            // Print all hashes that have already been calculated. Does not return from the callback!
+            cl_fmap_t *fmap = NULL;
+            cl_error_t ret;
+
+            if (CL_SUCCESS != (ret = cl_scan_layer_get_fmap(layer, &fmap))) {
+                printf("❌ cl_scan_layer_get_fmap() failed: %s\n", cl_strerror(ret));
+                return ret;
+            }
+
+            get_all_calculated_hashes(
+                fmap,
+                NULL, // have_md5_out
+                NULL, // have_sha1_out
+                NULL, // have_sha256_out
+                NULL, // md5_hash_out
+                NULL, // sha1_hash_out
+                NULL  // sha256_hash_out
+            );
+
+            return CL_EDUP; // Indicate the caller should run this again with another choice to a return code.
+        }
+        default: {
+            printf("Invalid choice. Aborting scan.\n");
+            return CL_BREAK;
+        }
+    }
+}
+
 /**
  * @brief Prompt the user for input on what to do next.
  *
@@ -47,18 +261,11 @@ typedef int ssize_t;
  */
 static cl_error_t prompt_user_for_what_to_do(cl_scan_layer_t *layer, bool is_alert_callback)
 {
-    printf("What do you want to do?\n");
-    printf(" 1) Abort scanning.\n");
-    if (is_alert_callback)
-        printf(" 2) Ignore alert and keep scanning.\n");
-    else
-        printf(" 2) Keep scanning.\n");
-    if (is_alert_callback)
-        printf(" 3) Agree with alert (will keep scanning because all-match mode is on).\n");
-    else
-        printf(" 3) Mark as infected (will keep scanning because all-match mode is on).\n");
-    printf(" 4) Trust this layer (discarding all alerts) and skip the rest of this layer.\n");
-    printf(" 5) Request all hashes for next time (will keep scanning).\n");
+    cl_error_t ret;
+
+    printf("What do you want to do?\n"
+           "%s",
+           command_list);
     printf("👉 ");
 
     int choice = 0;
@@ -73,54 +280,166 @@ static cl_error_t prompt_user_for_what_to_do(cl_scan_layer_t *layer, bool is_ale
         return prompt_user_for_what_to_do(layer, is_alert_callback);
     }
 
-    switch (choice) {
-        case 1: {
-            // Abort scanning
-            return CL_BREAK;
-        }
-        case 2: {
-            // Ignore alert and keep scanning
-            return CL_SUCCESS;
-        }
-        case 3: {
-            // Agree with alert or create new alert (will keep scanning because all-match mode is on)
-            return CL_VIRUS;
-        }
-        case 4: {
-            // Trust this layer (discarding all alerts) and skip the rest of this layer
-            return CL_VERIFIED;
-        }
-        case 5: {
-            // Request all hashes for next time (will keep scanning)
-            cl_fmap_t *fmap = NULL;
-            cl_error_t ret;
+    ret = select_choice(layer, choice);
+    if (CL_EDUP == ret) {
+        // Run this function again to get another choice.
+        return prompt_user_for_what_to_do(layer, is_alert_callback);
+    }
 
-            /*
-             * Indicate we want these hashes calculated later.
-             * We could just get the hashes now using cl_fmap_get_hash(),
-             * but this is just an example of how to request hashes
-             * to be calculated later.
-             */
-            if (CL_SUCCESS != (ret = cl_scan_layer_get_fmap(layer, &fmap))) {
-                printf("❌ cl_scan_layer_get_fmap() failed: %s\n", cl_strerror(ret));
-            } else {
-                if (CL_SUCCESS != (ret = cl_fmap_will_need_hash_later(fmap, "md5"))) {
-                    printf("❌ cl_fmap_will_need_hash_later(md5) failed: %s\n", cl_strerror(ret));
-                }
-                if (CL_SUCCESS != (ret = cl_fmap_will_need_hash_later(fmap, "sha1"))) {
-                    printf("❌ cl_fmap_will_need_hash_later(sha1) failed: %s\n", cl_strerror(ret));
-                }
-                if (CL_SUCCESS != (ret = cl_fmap_will_need_hash_later(fmap, "sha256"))) {
-                    printf("❌ cl_fmap_will_need_hash_later(sha256) failed: %s\n", cl_strerror(ret));
-                }
+    return ret;
+}
+
+typedef struct {
+    int *script_commands;
+    size_t num_script_commands;
+    size_t current_command_index;
+} script_context_t;
+
+void free_script_context(script_context_t *context)
+{
+    if (context) {
+        free(context->script_commands);
+        free(context);
+    }
+}
+
+/**
+ * @brief Get the choice from the script which is a series of commands to run that we stored in the script_context.
+ *
+ * @param context               The script context containing the commands to run.
+ * @param layer                 The scan layer.
+ * @param is_alert_callback     Whether this is an alert callback.
+ * @return cl_error_t
+ */
+static cl_error_t consult_script_for_what_to_do(script_context_t *context, cl_scan_layer_t *layer)
+{
+    cl_error_t ret;
+
+    if (context->current_command_index >= context->num_script_commands) {
+        printf("No more commands in script. Aborting scan.\n");
+        return CL_BREAK;
+    }
+
+    int choice = context->script_commands[context->current_command_index++];
+
+    ret = select_choice(layer, choice);
+    if (CL_EDUP == ret) {
+        // Run this function again to get another choice.
+        return consult_script_for_what_to_do(context, layer);
+    }
+
+    return ret;
+}
+
+/**
+ * @brief Read script commands from a file.
+ *
+ * @param script_filepath    The path to the script file.
+ * @return script_context_t* A context containing the script commands, or NULL on failure.
+ *                           The caller is responsible for freeing the context with free_script_context().
+ */
+script_context_t *read_script_commands(const char *script_filepath)
+{
+    int status = -1;
+
+    script_context_t *context = NULL;
+
+    char *script_contents = NULL;
+    FILE *script_file     = NULL;
+
+    if (NULL == script_filepath) {
+        printf("No script file provided.\n");
+        goto done;
+    }
+
+    // Load script commands from file
+    script_file = fopen(script_filepath, "r");
+    if (!script_file) {
+        printf("Can't open script file %s\n", script_filepath);
+        goto done;
+    }
+
+    // Read the whole file into a string
+    fseek(script_file, 0, SEEK_END);
+    long script_size = ftell(script_file);
+    if (script_size < 0) {
+        printf("Error reading script file %s\n", script_filepath);
+        fclose(script_file);
+        goto done;
+    }
+
+    fseek(script_file, 0, SEEK_SET);
+    script_contents = malloc(script_size + 1);
+    if (!script_contents) {
+        printf("Memory allocation failed for script contents\n");
+        fclose(script_file);
+        goto done;
+    }
+
+    size_t bytes_read = fread(script_contents, 1, script_size, script_file);
+    if (bytes_read != (size_t)script_size) {
+        printf("Error reading script file %s\n", script_filepath);
+        free(script_contents);
+        fclose(script_file);
+        status = 2;
+        goto done;
+    }
+
+    // Allocate context for script commands
+    context = malloc(sizeof(script_context_t));
+    if (NULL == context) {
+        printf("Memory allocation failed for script context\n");
+        goto done;
+    }
+
+    context->script_commands       = NULL;
+    context->num_script_commands   = 0;
+    context->current_command_index = 0;
+
+    // split the script contents into commands
+    char *command = strtok(script_contents, "\n");
+    while (command != NULL) {
+        // Ignore empty lines and comments
+        if (strlen(command) > 0 && command[0] != '#') {
+            // Allocate more space for the commands
+            int *new_commands = realloc(context->script_commands, (context->num_script_commands + 1) * sizeof(int));
+            if (new_commands == NULL) {
+                printf("Memory allocation failed for script commands\n");
+                goto done;
             }
-            return is_alert_callback ? CL_VIRUS : CL_SUCCESS;
+            context->script_commands = new_commands;
+
+            // Get the command as an integer
+            char *endptr;
+            context->script_commands[context->num_script_commands] = strtol(command, &endptr, 10);
+            if (*endptr != '\0') {
+                printf("Invalid command in script: %s\n", command);
+                goto done;
+            }
+
+            context->num_script_commands++;
         }
-        default: {
-            printf("Invalid choice. Continuing scan.\n");
-            return is_alert_callback ? CL_VIRUS : CL_SUCCESS;
+        command = strtok(NULL, "\n");
+    }
+
+    status = 0;
+
+done:
+    if (NULL != script_contents) {
+        free(script_contents);
+    }
+    if (NULL != script_file) {
+        fclose(script_file);
+    }
+
+    if (status != 0) {
+        if (NULL != context) {
+            free_script_context(context);
+            context = NULL;
         }
     }
+
+    return context;
 }
 
 /**
@@ -199,6 +518,133 @@ done:
     return status;
 }
 
+static cl_error_t get_all_calculated_hashes(
+    cl_fmap_t *fmap,
+    bool *have_md5_out,
+    bool *have_sha1_out,
+    bool *have_sha256_out,
+    char **md5_hash_out,
+    char **sha1_hash_out,
+    char **sha256_hash_out)
+{
+    cl_error_t status = CL_ERROR;
+
+    bool have_md5    = false;
+    bool have_sha1   = false;
+    bool have_sha256 = false;
+
+    char *md5_hash    = NULL;
+    char *sha1_hash   = NULL;
+    char *sha256_hash = NULL;
+
+    /*
+     * Get each hash type (if one exists)
+     */
+    status = cl_fmap_have_hash(fmap, "md5", &have_md5);
+    if (status != CL_SUCCESS) {
+        printf("❌ cl_fmap_have_hash(md5) failed: %s\n", cl_strerror(status));
+        goto done;
+    }
+    if (have_md5) {
+        if (have_md5_out) {
+            *have_md5_out = true;
+        }
+
+        status = cl_fmap_get_hash(fmap, "md5", &md5_hash);
+        if (status != CL_SUCCESS) {
+            printf("❌ cl_fmap_get_hash(md5) failed: %s\n", cl_strerror(status));
+            goto done;
+        }
+
+        if (md5_hash_out) {
+            *md5_hash_out = md5_hash;
+        }
+    }
+    printf("MD5 Hash:           %s\n", have_md5 ? md5_hash : "<no hash>");
+
+    status = cl_fmap_have_hash(fmap, "sha1", &have_sha1);
+    if (status != CL_SUCCESS) {
+        printf("❌ cl_fmap_have_hash(sha1) failed: %s\n", cl_strerror(status));
+        goto done;
+    }
+    if (have_sha1) {
+        if (have_sha1_out) {
+            *have_sha1_out = true;
+        }
+
+        status = cl_fmap_get_hash(fmap, "sha1", &sha1_hash);
+        if (status != CL_SUCCESS) {
+            printf("❌ cl_fmap_get_hash(sha1) failed: %s\n", cl_strerror(status));
+            goto done;
+        }
+
+        if (sha1_hash_out) {
+            *sha1_hash_out = sha1_hash;
+        }
+    }
+    printf("SHA1 Hash:          %s\n", have_sha1 ? sha1_hash : "<no hash>");
+
+    status = cl_fmap_have_hash(fmap, "sha256", &have_sha256);
+    if (status != CL_SUCCESS) {
+        printf("❌ cl_fmap_have_hash(sha256) failed: %s\n", cl_strerror(status));
+        goto done;
+    }
+    if (have_sha256) {
+        if (have_sha256_out) {
+            *have_sha256_out = true;
+        }
+
+        status = cl_fmap_get_hash(fmap, "sha256", &sha256_hash);
+        if (status != CL_SUCCESS) {
+            printf("❌ cl_fmap_get_hash(sha256) failed: %s\n", cl_strerror(status));
+            goto done;
+        }
+
+        if (sha256_hash_out) {
+            *sha256_hash_out = sha256_hash;
+        }
+    }
+    printf("SHA256 Hash:        %s\n", have_sha256 ? sha256_hash : "<no hash>");
+
+done:
+    return CL_SUCCESS;
+}
+
+cl_error_t verify_data_using_hashes(
+    const uint8_t *file_data,
+    size_t file_size,
+    bool have_md5,
+    bool have_sha1,
+    bool have_sha256,
+    char *md5_hash,
+    char *sha1_hash,
+    char *sha256_hash)
+{
+    cl_error_t status = CL_ERROR;
+
+    /*
+     * Verify the data using the hashes
+     */
+    if (have_md5 && !check_hash(file_data, file_size, "md5", md5_hash)) {
+        printf("❌ MD5 hash verification failed.\n");
+        goto done;
+    }
+    if (have_sha1 && !check_hash(file_data, file_size, "sha1", sha1_hash)) {
+        printf("❌ SHA1 hash verification failed.\n");
+        goto done;
+    }
+    if (have_sha256 && !check_hash(file_data, file_size, "sha256", sha256_hash)) {
+        printf("❌ SHA256 hash verification failed.\n");
+        goto done;
+    }
+
+    status = CL_SUCCESS;
+
+done:
+
+    return status;
+}
+
 static cl_error_t print_layer_info(cl_scan_layer_t *layer)
 {
     cl_error_t status = CL_ERROR;
@@ -234,9 +680,9 @@ static cl_error_t print_layer_info(cl_scan_layer_t *layer)
     bool have_sha1   = false;
     bool have_sha256 = false;
 
-    const char *md5_hash    = NULL;
-    const char *sha1_hash   = NULL;
-    const char *sha256_hash = NULL;
+    char *md5_hash    = NULL;
+    char *sha1_hash   = NULL;
+    char *sha256_hash = NULL;
 
     while (NULL != layer) {
         /*
@@ -309,50 +755,13 @@ static cl_error_t print_layer_info(cl_scan_layer_t *layer)
             printf("Last Alert:         %s\n", last_alert);
         }
 
-        /*
-         * Get each hash type (if one exists)
-         */
-        status = cl_fmap_have_hash(fmap, "md5", &have_md5);
+        status = get_all_calculated_hashes(
+            fmap, &have_md5, &have_sha1, &have_sha256,
+            &md5_hash, &sha1_hash, &sha256_hash);
         if (status != CL_SUCCESS) {
-            printf("❌ cl_fmap_have_hash(md5) failed: %s\n", cl_strerror(status));
+            printf("❌ Failed to get all calculated hashes: %s\n", cl_strerror(status));
             goto done;
         }
-        if (have_md5) {
-            status = cl_fmap_get_hash(fmap, "md5", &md5_hash);
-            if (status != CL_SUCCESS) {
-                printf("❌ cl_fmap_get_hash(md5) failed: %s\n", cl_strerror(status));
-                goto done;
-            }
-        }
-        printf("MD5 Hash:           %s\n", have_md5 ? md5_hash : "<no hash>");
-
-        status = cl_fmap_have_hash(fmap, "sha1", &have_sha1);
-        if (status != CL_SUCCESS) {
-            printf("❌ cl_fmap_have_hash(sha1) failed: %s\n", cl_strerror(status));
-            goto done;
-        }
-        if (have_sha1) {
-            status = cl_fmap_get_hash(fmap, "sha1", &sha1_hash);
-            if (status != CL_SUCCESS) {
-                printf("❌ cl_fmap_get_hash(sha1) failed: %s\n", cl_strerror(status));
-                goto done;
-            }
-        }
-        printf("SHA1 Hash:          %s\n", have_sha1 ? sha1_hash : "<no hash>");
-
-        status = cl_fmap_have_hash(fmap, "sha256", &have_sha256);
-        if (status != CL_SUCCESS) {
-            printf("❌ cl_fmap_have_hash(sha256) failed: %s\n", cl_strerror(status));
-            goto done;
-        }
-        if (have_sha256) {
-            status = cl_fmap_get_hash(fmap, "sha256", &sha256_hash);
-            if (status != CL_SUCCESS) {
-                printf("❌ cl_fmap_get_hash(sha256) failed: %s\n", cl_strerror(status));
-                goto done;
-            }
-        }
-        printf("SHA256 Hash:        %s\n", have_sha256 ? sha256_hash : "<no hash>");
 
         status = cl_fmap_get_size(fmap, &file_size);
         if (status != CL_SUCCESS) {
@@ -376,27 +785,17 @@ static cl_error_t print_layer_info(cl_scan_layer_t *layer)
             goto done;
         }
 
-        /* Verify the data using the hashes (skip md5 because clamav.h does not provide it 🤭) */
-        if (have_md5) {
-            if (!check_hash(file_data, file_size, "md5", md5_hash)) {
-                printf("❌ MD5 hash verification failed!\n");
-                goto done;
-            }
-        }
-        if (have_sha1) {
-            if (!check_hash(file_data, file_size, "sha1", sha1_hash)) {
-                printf("❌ SHA1 hash verification failed!\n");
-                goto done;
-            }
-        }
-        if (have_sha256) {
-            if (!check_hash(file_data, file_size, "sha256", sha256_hash)) {
-                printf("❌ SHA256 hash verification failed!\n");
-                goto done;
-            }
+        /* verify the data using the hashes */
+        status = verify_data_using_hashes(
+            file_data, file_size,
+            have_md5, have_sha1, have_sha256,
+            md5_hash, sha1_hash, sha256_hash);
+        if (CL_SUCCESS != status) {
+            printf("❌ Hash verification failed for data read from file descriptor.\n");
+            goto done;
         }
 
-        if (have_sha1 || have_sha256) {
+        if (have_md5 || have_sha1 || have_sha256) {
             printf("✔️ Successfully verified data provided by cl_fmap_get_data()\n");
         }
 
@@ -450,24 +849,14 @@ static cl_error_t print_layer_info(cl_scan_layer_t *layer)
                 goto done;
             }
 
-            /* verify the data using the hashes (skip md5 because clamav.h does not provide it 🤭) */
-            if (have_md5) {
-                if (!check_hash(file_data_from_path, file_size, "md5", md5_hash)) {
-                    printf("❌ MD5 hash verification failed!\n");
-                    goto done;
-                }
-            }
-            if (have_sha1) {
-                if (!check_hash(file_data_from_path, file_size, "sha1", sha1_hash)) {
-                    printf("❌ SHA1 hash verification failed!\n");
-                    goto done;
-                }
-            }
-            if (have_sha256) {
-                if (!check_hash(file_data_from_path, file_size, "sha256", sha256_hash)) {
-                    printf("❌ SHA256 hash verification failed!\n");
-                    goto done;
-                }
+            /* verify the data using the hashes */
+            status = verify_data_using_hashes(
+                file_data_from_path, file_size,
+                have_md5, have_sha1, have_sha256,
+                md5_hash, sha1_hash, sha256_hash);
+            if (CL_SUCCESS != status) {
+                printf("❌ Hash verification failed for data read from file descriptor.\n");
+                goto done;
             }
 
             free(file_data_from_path);
@@ -478,7 +867,7 @@ static cl_error_t print_layer_info(cl_scan_layer_t *layer)
 
             printf("File Path:          %s\n", file_path);
             printf("Offset in File:     %zu\n", offset_from_path_fn);
-            if (have_sha1 || have_sha256) {
+            if (have_md5 || have_sha1 || have_sha256) {
                 printf("✔️ Successfully verified data read using cl_fmap_get_path()\n");
             }
         } else {
@@ -527,24 +916,14 @@ static cl_error_t print_layer_info(cl_scan_layer_t *layer)
                 goto done;
             }
 
-            /* Verify the data using the hashes (skip md5 because clamav.h does not provide it 🤭) */
-            if (have_md5) {
-                if (!check_hash(file_data_from_fd, file_size, "md5", md5_hash)) {
-                    printf("❌ MD5 hash verification failed!\n");
-                    goto done;
-                }
-            }
-            if (have_sha1) {
-                if (!check_hash(file_data_from_fd, file_size, "sha1", sha1_hash)) {
-                    printf("❌ SHA1 hash verification failed!\n");
-                    goto done;
-                }
-            }
-            if (have_sha256) {
-                if (!check_hash(file_data_from_fd, file_size, "sha256", sha256_hash)) {
-                    printf("❌ SHA256 hash verification failed!\n");
-                    goto done;
-                }
+            /* verify the data using the hashes */
+            status = verify_data_using_hashes(
+                file_data_from_fd, file_size,
+                have_md5, have_sha1, have_sha256,
+                md5_hash, sha1_hash, sha256_hash);
+            if (CL_SUCCESS != status) {
+                printf("❌ Hash verification failed for data read from file descriptor.\n");
+                goto done;
             }
 
             free(file_data_from_fd);
@@ -552,7 +931,7 @@ static cl_error_t print_layer_info(cl_scan_layer_t *layer)
 
             printf("File Desc:          %d\n", fd);
             printf("Offset in File:     %zu\n", offset_from_fd_fn);
-            if (have_sha1 || have_sha256) {
+            if (have_md5 || have_sha1 || have_sha256) {
                 printf("✔️ Successfully verified data read using cl_fmap_get_fd()\n");
             }
         } else {
@@ -626,54 +1005,156 @@ done:
     return status;
 }
 
+const char *cl_error_t_to_string(cl_error_t clerror)
+{
+    switch (clerror) {
+        case CL_CLEAN: return "CL_CLEAN";
+        case CL_VIRUS: return "CL_VIRUS";
+        case CL_ENULLARG: return "CL_ENULLARG";
+        case CL_EARG: return "CL_EARG";
+        case CL_EMALFDB: return "CL_EMALFDB";
+        case CL_ECVD: return "CL_ECVD";
+        case CL_EVERIFY: return "CL_EVERIFY";
+        case CL_EUNPACK: return "CL_EUNPACK";
+        case CL_EPARSE: return "CL_EPARSE";
+        case CL_EOPEN: return "CL_EOPEN";
+        case CL_ECREAT: return "CL_ECREAT";
+        case CL_EUNLINK: return "CL_EUNLINK";
+        case CL_ESTAT: return "CL_ESTAT";
+        case CL_EREAD: return "CL_EREAD";
+        case CL_ESEEK: return "CL_ESEEK";
+        case CL_EWRITE: return "CL_EWRITE";
+        case CL_EDUP: return "CL_EDUP";
+        case CL_EACCES: return "CL_EACCES";
+        case CL_ETMPFILE: return "CL_ETMPFILE";
+        case CL_ETMPDIR: return "CL_ETMPDIR";
+        case CL_EMAP: return "CL_EMAP";
+        case CL_EMEM: return "CL_EMEM";
+        case CL_ETIMEOUT: return "CL_ETIMEOUT";
+        case CL_EMAXREC: return "CL_EMAXREC";
+        case CL_EMAXSIZE: return "CL_EMAXSIZE";
+        case CL_EMAXFILES: return "CL_EMAXFILES";
+        case CL_EFORMAT: return "CL_EFORMAT";
+        case CL_EBYTECODE: return "CL_EBYTECODE";
+        case CL_EBYTECODE_TESTFAIL: return "CL_EBYTECODE_TESTFAIL";
+        case CL_ELOCK: return "CL_ELOCK";
+        case CL_EBUSY: return "CL_EBUSY";
+        case CL_ESTATE: return "CL_ESTATE";
+        case CL_ERROR: return "CL_ERROR";
+        case CL_VERIFIED: return "CL_VERIFIED";
+        default:
+            return "Unknown error code";
+    }
+}
+
 cl_error_t pre_hash_callback(cl_scan_layer_t *layer, void *context)
 {
-    (void)context; // unused
+    cl_error_t status;
+    script_context_t *script_context = (script_context_t *)context;
 
-    printf("\n⭐In pre-hash callback⭐\n");
+    printf("\n⭐In PRE_HASH callback⭐\n");
     print_layer_info(layer);
 
-    return prompt_user_for_what_to_do(layer, false);
+    if (script_context) {
+        status = consult_script_for_what_to_do(script_context, layer);
+    } else {
+        status = prompt_user_for_what_to_do(layer, false);
+    }
+
+    if (CL_EDUP != status) {
+        // If the script returned CL_EDUP, we should not continue with the scan.
+        printf("↩️Returning: %s\n", cl_error_t_to_string(status));
+    }
+
+    return status;
 }
 
 cl_error_t pre_scan_callback(cl_scan_layer_t *layer, void *context)
 {
-    (void)context; // unused
+    cl_error_t status;
+    script_context_t *script_context = (script_context_t *)context;
 
-    printf("\n⭐In pre-scan callback⭐\n");
+    printf("\n⭐In PRE_SCAN callback⭐\n");
     print_layer_info(layer);
 
-    return prompt_user_for_what_to_do(layer, false);
+    if (script_context) {
+        status = consult_script_for_what_to_do(script_context, layer);
+    } else {
+        status = prompt_user_for_what_to_do(layer, false);
+    }
+
+    if (CL_EDUP != status) {
+        // If the script returned CL_EDUP, we should not continue with the scan.
+        printf("↩️Returning: %s\n", cl_error_t_to_string(status));
+    }
+
+    return status;
 }
 
 cl_error_t post_scan_callback(cl_scan_layer_t *layer, void *context)
 {
-    (void)context; // unused
+    cl_error_t status;
+    script_context_t *script_context = (script_context_t *)context;
 
-    printf("\n⭐In post-scan callback⭐\n");
+    printf("\n⭐In POST_SCAN callback⭐\n");
     print_layer_info(layer);
 
-    return prompt_user_for_what_to_do(layer, false);
+    if (script_context) {
+        status = consult_script_for_what_to_do(script_context, layer);
+    } else {
+        status = prompt_user_for_what_to_do(layer, false);
+    }
+
+    if (CL_EDUP != status) {
+        // If the script returned CL_EDUP, we should not continue with the scan.
+        printf("↩️Returning: %s\n", cl_error_t_to_string(status));
+    }
+
+    return status;
 }
 
 cl_error_t alert_callback(cl_scan_layer_t *layer, void *context)
 {
-    (void)context; // unused
+    cl_error_t status;
+    script_context_t *script_context = (script_context_t *)context;
 
-    printf("\n⭐In alert callback⭐\n");
+    printf("\n⚠️In ALERT callback⚠️\n");
     print_layer_info(layer);
 
-    return prompt_user_for_what_to_do(layer, true);
+    if (script_context) {
+        status = consult_script_for_what_to_do(script_context, layer);
+    } else {
+        status = prompt_user_for_what_to_do(layer, true);
+    }
+
+    if (CL_EDUP != status) {
+        // If the script returned CL_EDUP, we should not continue with the scan.
+        printf("↩️Returning: %s\n", cl_error_t_to_string(status));
+    }
+
+    return status;
 }
 
 cl_error_t file_type_callback(cl_scan_layer_t *layer, void *context)
 {
-    (void)context; // unused
+    cl_error_t status;
+    script_context_t *script_context = (script_context_t *)context;
 
-    printf("\n⭐In file-type callback⭐\n");
+    printf("\n⭐In FILE_TYPE callback⭐\n");
     print_layer_info(layer);
 
-    return prompt_user_for_what_to_do(layer, false);
+    if (script_context) {
+        status = consult_script_for_what_to_do(script_context, layer);
+    } else {
+        status = prompt_user_for_what_to_do(layer, false);
+    }
+
+    if (CL_EDUP != status) {
+        // If the script returned CL_EDUP, we should not continue with the scan.
+        printf("↩️Returning: %s\n", cl_error_t_to_string(status));
+    }
+
+    return status;
 }
 
 static void printBytes(uint64_t bytes)
@@ -703,24 +1184,96 @@ int main(int argc, char **argv)
 
     int target_fd = -1;
 
+    const char *filename        = NULL;
+    const char *db_filepath     = NULL;
+    const char *script_filepath = NULL;
+    const char *hash_hint       = NULL;
+    const char *hash_alg        = NULL;
+    const char *file_type_hint  = NULL;
+
+    script_context_t *script_context = NULL;
+
     unsigned long int size = 0;
     const char *virname;
-    const char *filename;
-    const char *db_filepath;
     struct cl_engine *engine = NULL;
     struct cl_scan_options options;
     unsigned int signo = 0;
 
-    if (argc != 3) {
-        printf("Usage: %s <database> <file>\n", argv[0]);
-        return 2;
+    char *hash_out      = NULL;
+    char *file_type_out = NULL;
+
+    int i = 0;
+
+    const char *help_string =
+        "Usage: %s -d <database> -f <file>\n"
+        "Example: %s -d /path/to/clamav.db -f /path/to/file.txt\n"
+        "\n"
+        "Options:\n"
+        "--help (-h)      : Help message.\n"
+        "--database (-d)  : Path to the ClamAV database.\n"
+        "--file (-f)      : Path to the file to scan.\n"
+        "--hash_hint      : (optional) Hash of file to scan.\n"
+        "--hash_alg       : (optional) Hash algorithm of hash_hint.\n"
+        "                   Will also change the hash algorithm reported at end of scan.\n"
+        "--file_type_hint : (optional) File type hint for the file to scan.\n"
+        "--script         : (optional) Path for non-interactive test script.\n"
+        "                   Script must be a new-line delimited list of integers from 1-to-5\n"
+        "                   Corresponding to the interactive scan options.\n"
+        "\n"
+        "Scripted scan options are:\n"
+        "%s";
+
+    for (i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0) {
+            printf(help_string, argv[0], argv[0], command_list);
+            status = 0;
+            goto done;
+        } else if (strcmp(argv[i], "-d") == 0 || strcmp(argv[i], "--database") == 0) {
+            db_filepath = argv[++i];
+            printf("Database file: %s\n", db_filepath);
+        } else if (strcmp(argv[i], "-f") == 0 || strcmp(argv[i], "--file") == 0) {
+            filename = argv[++i];
+            printf("File to scan: %s\n", filename);
+        } else if (strcmp(argv[i], "--script") == 0) {
+            script_filepath = argv[++i];
+            printf("Script file: %s\n", script_filepath);
+        } else if (strcmp(argv[i], "--hash_hint") == 0) {
+            hash_hint = argv[++i];
+            printf("Hash hint: %s\n", hash_hint);
+        } else if (strcmp(argv[i], "--hash_alg") == 0) {
+            hash_alg = argv[++i];
+            printf("Hash algorithm: %s\n", hash_alg);
+        } else if (strcmp(argv[i], "--file_type_hint") == 0) {
+            file_type_hint = argv[++i];
+            printf("File type hint: %s\n", file_type_hint);
+        } else {
+            printf("Unknown option: %s\n", argv[i]);
+            printf(help_string, argv[0], argv[0], command_list);
+            status = 2;
+            goto done;
+        }
     }
 
-    db_filepath = argv[1];
-    filename    = argv[2];
+    printf("\n");
 
-    if ((target_fd = open(argv[2], O_RDONLY)) == -1) {
-        printf("Can't open file %s\n", argv[2]);
+    if (NULL == db_filepath || NULL == filename) {
+        printf("Usage: %s <database> <file>\n", argv[0]);
+        status = 2;
+        goto done;
+    }
+
+    if (NULL != script_filepath) {
+        printf("Running in non-interactive mode using script: %s\n", script_filepath);
+        script_context = read_script_commands(script_filepath);
+        if (NULL == script_context) {
+            printf("Failed to read script commands from %s\n", script_filepath);
+            status = 2;
+            goto done;
+        }
+    }
+
+    if ((target_fd = open(filename, O_RDONLY)) == -1) {
+        printf("Can't open file %s\n", filename);
         goto done;
     }
 
@@ -789,12 +1342,12 @@ int main(int argc, char **argv)
                          &size,
                          engine,
                          &options,
-                         NULL, // context,
-                         NULL, // hash_hint,
-                         NULL, // hash_out,
-                         NULL, // hash_alg,
-                         NULL, // file_type_hint,
-                         NULL  // file_type_out
+                         script_context, // context,
+                         hash_hint,      // hash_hint,
+                         &hash_out,      // hash_out,
+                         hash_alg,       // hash_alg,
+                         file_type_hint, // file_type_hint,
+                         &file_type_out  // file_type_out
                          ))) {
         printf("Virus detected: %s\n", virname);
     } else {
@@ -805,9 +1358,21 @@ int main(int argc, char **argv)
     }
 
     /* Calculate size of scanned data */
+    printf("\n");
     printf("Data scanned: ");
     printBytes(size);
     printf("\n");
+    if (hash_out) {
+        printf("Hash:         %s\n", hash_out);
+    } else {
+        printf("No hash provided for this file.\n");
+    }
+    if (file_type_out) {
+        printf("File Type:    %s\n", file_type_out);
+    } else {
+        printf("No file type provided for this file.\n");
+    }
+    printf("Return code:  %s (%d)\n", cl_strerror(ret), ret);
 
     status = ret == CL_VIRUS ? 1 : 0;
 
@@ -818,6 +1383,15 @@ done:
     }
     if (NULL != engine) {
         cl_engine_free(engine);
+    }
+    if (NULL != hash_out) {
+        free(hash_out);
+    }
+    if (NULL != file_type_out) {
+        free(file_type_out);
+    }
+    if (NULL != script_context) {
+        free_script_context(script_context);
     }
 
     return status;
