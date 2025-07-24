@@ -42,11 +42,19 @@ static int is_abspath(const char *path)
 wchar_t *uncpath(const char *path)
 {
     DWORD len = 0;
+    size_t i;
+    char fix_path_seps[PATH_MAX + 1] = {0};
     char utf8[PATH_MAX + 1];
     wchar_t *stripme, *strip_from, *dest = malloc((PATH_MAX + 1) * sizeof(wchar_t));
 
     if (!dest)
         return NULL;
+
+    // Fix path separators
+    for (i = 0; i < strlen(path); i++) {
+        fix_path_seps[i] = (path[i] == '/') ? '\\' : path[i];
+    }
+    path = fix_path_seps;
 
     if (strncmp(path, "\\\\", 2)) {
         /* NOT already UNC */
@@ -60,9 +68,9 @@ wchar_t *uncpath(const char *path)
                 errno = (len || (GetLastError() == ERROR_INSUFFICIENT_BUFFER)) ? ENAMETOOLONG : ENOENT;
                 return NULL;
             }
-            if (*path == '\\')
+            if (*path == '\\') {
                 len = 6; /* Current drive root */
-            else {
+            } else {
                 len += 4; /* A 'really' relative path */
                 dest[len] = L'\\';
                 len++;
@@ -105,8 +113,9 @@ wchar_t *uncpath(const char *path)
             *stripme  = L'\0';
             copy_from = &stripme[3];
             copy_to   = wcsrchr(strip_from, L'\\');
-            if (!copy_to)
+            if (!copy_to) {
                 copy_to = stripme;
+            }
         } else {
             strip_from = &stripme[1];
             continue;

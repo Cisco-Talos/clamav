@@ -148,6 +148,8 @@ if(LLVM_FOUND)
     list(JOIN LLVM_LIBRARY_DIRS "," LLVM_DIRS)
 endif()
 
+set(CVD_CERTS_DIR         ${CMAKE_SOURCE_DIR}/unit_tests/input/signing/verify)
+
 if(WIN32)
     file(TO_NATIVE_PATH ${CMAKE_SOURCE_DIR}                                     SOURCE)
     file(TO_NATIVE_PATH ${CMAKE_BINARY_DIR}                                     BUILD)
@@ -194,6 +196,9 @@ if(WIN32)
         file(TO_NATIVE_PATH $<TARGET_FILE_DIR:check_clamav>/freshclam.exe       FRESHCLAM)
         file(TO_NATIVE_PATH $<TARGET_FILE_DIR:check_clamav>/sigtool.exe         SIGTOOL)
     endif()
+
+    # Convert the CVD_CERTS_DIR to a native path for Windows (replacing forward slashes with backslashes).
+    file(TO_NATIVE_PATH ${CVD_CERTS_DIR} CVD_CERTS_DIR)
 else()
     set(LD_LIBRARY_PATH     $<TARGET_FILE_DIR:ClamAV::libclamav>:$<TARGET_FILE_DIR:${LIBMSPACK}>:$ENV{LD_LIBRARY_PATH})
     if(NOT ENABLE_LIBCLAMAV_ONLY)
@@ -264,7 +269,7 @@ set(ENVIRONMENT
     CK_DEFAULT_TIMEOUT=300
     LD_LIBRARY_PATH=${LD_LIBRARY_PATH}
     DYLD_LIBRARY_PATH=${LD_LIBRARY_PATH}
-    CVD_CERTS_DIR=${CMAKE_SOURCE_DIR}/unit_tests/input/signing/verify
+    CVD_CERTS_DIR=${CVD_CERTS_DIR}
     PATH=${NEW_PATH}
     LIBSSL=${LIBSSL}
     LIBCRYPTO=${LIBCRYPTO}

@@ -587,9 +587,7 @@ struct cl_engine *cl_engine_new(void)
 
     // Check if the CVD_CERTS_DIR environment variable is set
     cvdcertsdir = getenv("CVD_CERTS_DIR");
-    if (NULL != cvdcertsdir) {
-        new->certs_directory = CLI_MPOOL_STRDUP(new->mempool, cvdcertsdir);
-    } else {
+    if (NULL == cvdcertsdir) {
 #ifdef _WIN32
         // On Windows, CERTSDIR is NOT defined in clamav-config.h.
         // So instead we'll use the certs directory next to the module file.
@@ -611,11 +609,12 @@ struct cl_engine *cl_engine_new(void)
         // set the certs directory to be the module directory + certs
         snprintf(certs_directory, sizeof(certs_directory), "%s\\certs", dir);
 
-        new->certs_directory = CLI_MPOOL_STRDUP(new->mempool, certs_directory);
+        cvdcertsdir = certs_directory;
 #else
-        new->certs_directory = CLI_MPOOL_STRDUP(new->mempool, CERTSDIR);
+        cvdcertsdir = CERTSDIR;
 #endif
     }
+    new->certs_directory = CLI_MPOOL_STRDUP(new->mempool, cvdcertsdir);
 
     status = CL_SUCCESS;
     cli_dbgmsg("Initialized %s engine\n", cl_retver());
