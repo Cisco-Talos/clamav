@@ -16,7 +16,9 @@ target_sources( clamsubmit
     PRIVATE
         clamsubmit.c )
 if(WIN32)
-    target_sources( clamsubmit PRIVATE ${CMAKE_SOURCE_DIR}/win32/res/clamsubmit.rc )
+    target_sources( clamsubmit PRIVATE 
+    ${CMAKE_SOURCE_DIR}/win32/res/clamsubmit.rc
+    ${CMAKE_SOURCE_DIR}/win32/res/clam.manifest )
 endif()
 target_include_directories( clamsubmit
     PRIVATE ${CMAKE_BINARY_DIR} # For clamav-config.h
