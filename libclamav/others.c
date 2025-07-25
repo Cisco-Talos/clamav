@@ -410,6 +410,8 @@ const char *cl_strerror(cl_error_t clerror)
         case CL_ETIMEOUT:
             return "Exceeded time limit";
         /* internal (needed for debug messages) */
+        case CL_BREAK:
+            return "Process aborted";
         case CL_EMAXREC:
             return "Exceeded max recursion depth";
         case CL_EMAXSIZE:
@@ -428,10 +430,10 @@ const char *cl_strerror(cl_error_t clerror)
             return "Scanner still active";
         case CL_ESTATE:
             return "Bad state (engine not initialized, or already initialized)";
-        case CL_ERROR:
-            return "Unspecified error";
         case CL_VERIFIED:
             return "The scanned object was verified and deemed trusted";
+        case CL_ERROR:
+            return "Unspecified error";
         default:
             return "Unknown error code";
     }

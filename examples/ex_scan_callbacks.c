@@ -369,7 +369,7 @@ script_context_t *read_script_commands(const char *script_filepath)
     }
 
     fseek(script_file, 0, SEEK_SET);
-    script_contents = malloc(script_size + 1);
+    script_contents = calloc(script_size + 1, sizeof(char));
     if (!script_contents) {
         printf("Memory allocation failed for script contents\n");
         fclose(script_file);
@@ -1008,7 +1008,7 @@ done:
 const char *cl_error_t_to_string(cl_error_t clerror)
 {
     switch (clerror) {
-        case CL_CLEAN: return "CL_CLEAN";
+        case CL_SUCCESS: return "CL_SUCCESS";
         case CL_VIRUS: return "CL_VIRUS";
         case CL_ENULLARG: return "CL_ENULLARG";
         case CL_EARG: return "CL_EARG";
@@ -1042,6 +1042,7 @@ const char *cl_error_t_to_string(cl_error_t clerror)
         case CL_ESTATE: return "CL_ESTATE";
         case CL_ERROR: return "CL_ERROR";
         case CL_VERIFIED: return "CL_VERIFIED";
+        case CL_BREAK: return "CL_BREAK";
         default:
             return "Unknown error code";
     }
