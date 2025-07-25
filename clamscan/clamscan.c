@@ -68,7 +68,9 @@ int main(int argc, char **argv)
     time_t date_start, date_end;
 
     char buffer[26];
-#ifndef _WIN32
+#ifdef _WIN32
+    SetConsoleOutputCP(CP_UTF8);
+#else /* !_WIN32 */
     sigset_t sigset;
 #endif
     struct optstruct *opts;
