@@ -159,7 +159,7 @@ int cli_tnef(const char *dir, cli_ctx *ctx)
                  */
                 if (cli_debug_flag) {
                     int fout       = -1;
-                    char *filename = cli_gentemp(ctx->sub_tmpdir);
+                    char *filename = cli_gentemp(ctx->this_layer_tmpdir);
                     char buffer[BUFSIZ];
 
                     if (filename)

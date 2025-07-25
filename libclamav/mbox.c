@@ -381,7 +381,7 @@ cli_parse_mbox(const char *dir, cli_ctx *ctx)
     mctx.subtypeTable = subtype;
     mctx.ctx          = ctx;
     mctx.files        = 0;
-    mctx.wrkobj       = ctx->wrkproperty;
+    mctx.wrkobj       = ctx->this_layer_metadata_json;
 
     /*
      * Is it a UNIX style mbox with more than one
@@ -1457,8 +1457,8 @@ static cl_error_t parseMHTMLComment(const char *comment, cli_ctx *ctx, void *wrk
         if (!reader) {
             cli_dbgmsg("parseMHTMLComment: cannot initialize xmlReader\n");
 
-            if (ctx->wrkproperty != NULL)
-                ret = cli_json_parse_error(ctx->wrkproperty, "MHTML_ERROR_XML_READER_MEM");
+            if (ctx->this_layer_metadata_json != NULL)
+                ret = cli_json_parse_error(ctx->this_layer_metadata_json, "MHTML_ERROR_XML_READER_MEM");
 
             return ret; // libxml2 failed!
         }
@@ -1515,8 +1515,8 @@ parseRootMHTML(mbox_ctx *mctx, message *m, text *t)
     if (htmlDoc == NULL) {
         cli_dbgmsg("parseRootMHTML: cannot initialize read html document\n");
 
-        if (ctx->wrkproperty != NULL)
-            ret = cli_json_parse_error(ctx->wrkproperty, "MHTML_ERROR_HTML_READ");
+        if (ctx->this_layer_metadata_json != NULL)
+            ret = cli_json_parse_error(ctx->this_layer_metadata_json, "MHTML_ERROR_HTML_READ");
         if (ret != CL_SUCCESS)
             rc = FAIL;
 
@@ -1537,8 +1537,8 @@ parseRootMHTML(mbox_ctx *mctx, message *m, text *t)
     if (reader == NULL) {
         cli_dbgmsg("parseRootMHTML: cannot initialize xmlTextReader\n");
 
-        if (ctx->wrkproperty != NULL)
-            ret = cli_json_parse_error(ctx->wrkproperty, "MHTML_ERROR_XML_READER_IO");
+        if (ctx->this_layer_metadata_json != NULL)
+            ret = cli_json_parse_error(ctx->this_layer_metadata_json, "MHTML_ERROR_XML_READER_IO");
         if (ret != CL_SUCCESS)
             rc = FAIL;
 
@@ -2262,7 +2262,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                             cli_dbgmsg("No HTML code found to be scanned\n");
                         } else {
                             /* Send root HTML file for preclassification */
-                            if (mctx->ctx->wrkproperty)
+                            if (mctx->ctx->this_layer_metadata_json)
                                 (void)parseRootMHTML(mctx, messages[htmltextPart], aText);
 
                             rc = parseEmailBody(messages[htmltextPart], aText, mctx, recursion_level + 1);
@@ -4448,7 +4448,7 @@ do_multipart(message *mainMessage, message **messages, int i, mbox_status *rc, m
 
         if (thisobj != NULL) {
             /* attempt to determine container size - prevents incorrect type reporting */
-            if (json_object_object_get_ex(mctx->ctx->wrkproperty, "ContainedObjects", &arrobj)) {
+            if (json_object_object_get_ex(mctx->ctx->this_layer_metadata_json, "ContainedObjects", &arrobj)) {
                 arrlen = json_object_array_length(arrobj);
             }
         }
@@ -4469,7 +4469,7 @@ do_multipart(message *mainMessage, message **messages, int i, mbox_status *rc, m
             const char *dtype  = NULL;
 
             /* attempt to acquire container type */
-            if (json_object_object_get_ex(mctx->ctx->wrkproperty, "ContainedObjects", &arrobj)) {
+            if (json_object_object_get_ex(mctx->ctx->this_layer_metadata_json, "ContainedObjects", &arrobj)) {
                 if (json_object_array_length(arrobj) > arrlen) {
                     entry = json_object_array_get_idx(arrobj, arrlen);
                 }

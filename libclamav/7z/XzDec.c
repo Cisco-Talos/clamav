@@ -701,7 +701,7 @@ SRes XzUnpacker_Code(CXzUnpacker *p, Byte *dest, SizeT *destLen,
         {
           RINOK(Xz_ParseHeader(&p->streamFlags, p->buf));
           p->state = XZ_STATE_BLOCK_HEADER;
-          p->sha = cl_hash_init("sha256");
+          p->sha = cl_hash_init("sha2-256");
           p->indexSize = 0;
           p->numBlocks = 0;
           p->pos = 0;
@@ -722,7 +722,7 @@ SRes XzUnpacker_Code(CXzUnpacker *p, Byte *dest, SizeT *destLen,
             p->indexSize += p->indexPreSize;
             if ((p->sha)) {
                 cl_finish_hash(p->sha, p->shaDigest);
-                p->sha = cl_hash_init("sha256");
+                p->sha = cl_hash_init("sha2-256");
             }
             p->crc = CrcUpdate(CRC_INIT_VAL, p->buf, p->indexPreSize);
             p->state = XZ_STATE_STREAM_INDEX;

@@ -233,6 +233,7 @@ set(LIBCLAMAV_SOURCES
     mpool.c             mpool.h
     others.c
     perflogging.c       perflogging.h
+    scan_layer.c        scan_layer.h
     scanners.c          scanners.h
     textdet.c           textdet.h
     version.c

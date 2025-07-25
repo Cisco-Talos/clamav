@@ -54,7 +54,7 @@ static inline unsigned int getkey(uint8_t *hash, size_t trees)
 
 /* SPLAY --------------------------------------------------------------------- */
 struct node { /* a node */
-    int64_t digest[2];
+    int64_t digest[4];
     struct node *left;
     struct node *right;
     struct node *up;
@@ -201,7 +201,7 @@ static void printnode(const char *prefix, struct cache_set *cs, struct node *n)
         return;
     }
     printf("%s node [%02u]:", prefix, n - cs->data);
-    printf(" size=%lu digest=%llx,%llx\n", (unsigned long)(n->size), n->digest[0], n->digest[1]);
+    printf(" size=%lu digest=%llx,%llx,%llx,%llx\n", (unsigned long)(n->size), n->digest[0], n->digest[1], n->digest[2], n->digest[3]);
     printf("\tleft=");
     if (n->left)
         printf("%02u ", n->left - cs->data);
@@ -265,7 +265,7 @@ static inline void printchain(const char *prefix, struct cache_set *cs)
 #endif
 
 /* Looks up a node and splays it up to the root of the tree */
-static int splay(int64_t *md5, size_t len, struct cache_set *cs)
+static int splay(int64_t *sha2_256, size_t len, struct cache_set *cs)
 {
     struct node next = {{0, 0}, NULL, NULL, NULL, NULL, NULL, 0, 0}, *right = &next, *left = &next, *temp, *root = cs->root;
     int comp, found = 0;
@@ -274,10 +274,10 @@ static int splay(int64_t *md5, size_t len, struct cache_set *cs)
         return 0;
 
     while (1) {
-        comp = cmp(md5, len, root->digest, root->size);
+        comp = cmp(sha2_256, len, root->digest, root->size);
         if (comp < 0) {
             if (!root->left) break;
-            if (cmp(md5, len, root->left->digest, root->left->size) < 0) {
+            if (cmp(sha2_256, len, root->left->digest, root->left->size) < 0) {
                 temp       = root->left;
                 root->left = temp->right;
                 if (temp->right) temp->right->up = root;
@@ -292,7 +292,7 @@ static int splay(int64_t *md5, size_t len, struct cache_set *cs)
             root        = root->left;
         } else if (comp > 0) {
             if (!root->right) break;
-            if (cmp(md5, len, root->right->digest, root->right->size) > 0) {
+            if (cmp(sha2_256, len, root->right->digest, root->right->size) > 0) {
                 temp        = root->right;
                 root->right = temp->left;
                 if (temp->left) temp->left->up = root;
@@ -325,11 +325,11 @@ static int splay(int64_t *md5, size_t len, struct cache_set *cs)
 }
 
 /* Looks up an hash in the tree and maintains the replacement chain */
-static inline int cacheset_lookup(struct cache_set *cs, unsigned char *md5, size_t size, uint32_t recursion_level)
+static inline int cacheset_lookup(struct cache_set *cs, uint8_t *sha2_256, size_t size, uint32_t recursion_level)
 {
-    int64_t hash[2];
+    int64_t hash[4];
 
-    memcpy(hash, md5, 16);
+    memcpy(hash, sha2_256, 32);
     if (splay(hash, size, cs)) {
         struct node *o = cs->root->prev, *p = cs->root, *q = cs->root->next;
 #ifdef PRINT_CHAINS
@@ -367,12 +367,12 @@ static inline int cacheset_lookup(struct cache_set *cs, unsigned char *md5, size
 /* If the hash is present nothing happens.
    Otherwise a new node is created for the hash picking one from the begin of the chain.
    Used nodes are moved to the end of the chain */
-static inline const char *cacheset_add(struct cache_set *cs, unsigned char *md5, size_t size, uint32_t recursion_level)
+static inline const char *cacheset_add(struct cache_set *cs, uint8_t *sha2_256, size_t size, uint32_t recursion_level)
 {
     struct node *newnode;
-    int64_t hash[2];
+    int64_t hash[4];
 
-    memcpy(hash, md5, 16);
+    memcpy(hash, sha2_256, 32);
     if (splay(hash, size, cs)) {
         if (cs->root->minrec > recursion_level)
             cs->root->minrec = recursion_level;
@@ -457,13 +457,13 @@ static inline const char *cacheset_add(struct cache_set *cs, unsigned char *md5,
 /* If the hash is not present nothing happens other than splaying the tree.
    Otherwise the identified node is removed from the tree and then placed back at
    the front of the chain. */
-static inline void cacheset_remove(struct cache_set *cs, unsigned char *md5, size_t size)
+static inline void cacheset_remove(struct cache_set *cs, uint8_t *sha2_256, size_t size)
 {
     struct node *targetnode;
     struct node *reattachnode;
-    int64_t hash[2];
+    int64_t hash[4];
 
-    memcpy(hash, md5, 16);
+    memcpy(hash, sha2_256, 32);
     if (splay(hash, size, cs) != 1) {
         cli_dbgmsg("cacheset_remove: node not found in tree\n");
         return; /* No op */
@@ -498,6 +498,8 @@ static inline void cacheset_remove(struct cache_set *cs, unsigned char *md5, siz
     targetnode->size      = (size_t)0;
     targetnode->digest[0] = 0;
     targetnode->digest[1] = 0;
+    targetnode->digest[2] = 0;
+    targetnode->digest[3] = 0;
     targetnode->up        = NULL;
     targetnode->left      = NULL;
     targetnode->right     = NULL;
@@ -527,50 +529,56 @@ static inline void cacheset_remove(struct cache_set *cs, unsigned char *md5, siz
 }
 
 /* Looks up an hash in the proper tree */
-static int cache_lookup_hash(unsigned char *md5, size_t len, struct CACHE *cache, uint32_t recursion_level)
+static cl_error_t cache_lookup_hash(uint8_t *sha2_256, size_t len, struct CACHE *cache, uint32_t recursion_level)
 {
+    cl_error_t ret   = CL_ERROR;
     unsigned int key = 0;
-    int ret          = CL_VIRUS;
     struct CACHE *c;
 
-    if (!md5) {
+    if (!sha2_256) {
         cli_dbgmsg("cache_lookup: No hash available. Nothing to look up.\n");
-        return ret;
+        ret = CL_ENULLARG;
+        goto done;
     }
 
-    key = getkey(md5, cache->trees);
+    key = getkey(sha2_256, cache->trees);
 
     c = &cache[key];
 
 #ifdef CL_THREAD_SAFE
     if (pthread_mutex_lock(&c->mutex)) {
         cli_errmsg("cache_lookup_hash: cache_lookup_hash: mutex lock fail\n");
-        return ret;
+        ret = CL_ELOCK;
+        goto done;
     }
 #endif
 
-    ret = (cacheset_lookup(&c->cacheset, md5, len, recursion_level)) ? CL_CLEAN : CL_VIRUS;
+    ret = (cacheset_lookup(&c->cacheset, sha2_256, len, recursion_level)) ? CL_CLEAN : CL_VIRUS;
 
 #ifdef CL_THREAD_SAFE
     pthread_mutex_unlock(&c->mutex);
 #endif
 
+done:
     return ret;
 }
 
-int clean_cache_init(struct cl_engine *engine)
+cl_error_t clean_cache_init(struct cl_engine *engine)
 {
+    cl_error_t status = CL_ERROR;
     struct CACHE *cache;
-    unsigned int i, j;
+    uint32_t i;
 
     if (!engine) {
-        cli_errmsg("clean_cache_init: mpool malloc fail\n");
-        return 1;
+        cli_errmsg("clean_cache_init: Engine is NULL.\n");
+        status = CL_ENULLARG;
+        goto done;
     }
 
     if (engine->engine_options & ENGINE_OPTIONS_DISABLE_CACHE) {
         cli_dbgmsg("clean_cache_init: Caching disabled.\n");
-        return 0;
+        status = CL_SUCCESS;
+        goto done;
     }
 
     // The user requested the cache size to be engine->cache_size
@@ -583,8 +591,9 @@ int clean_cache_init(struct cl_engine *engine)
     cli_dbgmsg("clean_cache_init: Requested cache size: %d. Actual cache size: %d. Trees: %d. Nodes per tree: %d.\n", engine->cache_size, trees * nodes_per_tree, trees, nodes_per_tree);
 
     if (!(cache = MPOOL_MALLOC(engine->mempool, sizeof(struct CACHE) * trees))) {
-        cli_errmsg("clean_cache_init: mpool malloc fail\n");
-        return 1;
+        cli_errmsg("clean_cache_init: Failed to allocate memory for cache.\n");
+        status = CL_EMEM;
+        goto done;
     }
 
     cache->trees          = trees;
@@ -593,24 +602,30 @@ int clean_cache_init(struct cl_engine *engine)
     for (i = 0; i < trees; i++) {
 #ifdef CL_THREAD_SAFE
         if (pthread_mutex_init(&cache[i].mutex, NULL)) {
-            cli_errmsg("clean_cache_init: mutex init fail\n");
-            for (j = 0; j < i; j++) cacheset_destroy(&cache[j].cacheset, engine->mempool);
-            for (j = 0; j < i; j++) pthread_mutex_destroy(&cache[j].mutex);
-            MPOOL_FREE(engine->mempool, cache);
-            return 1;
+            cli_errmsg("clean_cache_init: Mutex init failed.\n");
+            status = CL_EMEM;
+            goto done;
         }
 #endif
         if (cacheset_init(&cache[i].cacheset, engine->mempool, cache->nodes_per_tree)) {
-            for (j = 0; j < i; j++) cacheset_destroy(&cache[j].cacheset, engine->mempool);
-#ifdef CL_THREAD_SAFE
-            for (j = 0; j <= i; j++) pthread_mutex_destroy(&cache[j].mutex);
-#endif
-            MPOOL_FREE(engine->mempool, cache);
-            return 1;
+            cli_errmsg("clean_cache_init: Failed to initialize cache set.\n");
+            status = CL_EMEM;
+            goto done;
         }
     }
+
     engine->cache = cache;
-    return 0;
+    status        = CL_SUCCESS;
+
+done:
+    if (status != CL_SUCCESS) {
+        cli_errmsg("clean_cache_init: Failed to initialize cache.\n");
+        clean_cache_destroy(engine);
+    } else {
+        cli_dbgmsg("clean_cache_init: Cache initialized successfully.\n");
+    }
+
+    return status;
 }
 
 void clean_cache_destroy(struct cl_engine *engine)
@@ -634,60 +649,71 @@ void clean_cache_destroy(struct cl_engine *engine)
     MPOOL_FREE(engine->mempool, cache);
 }
 
-void clean_cache_add(unsigned char *md5, size_t size, cli_ctx *ctx)
+void clean_cache_add(cli_ctx *ctx)
 {
+    cl_error_t ret;
+
     const char *errmsg = NULL;
 
     unsigned int key = 0;
     uint32_t level;
     struct CACHE *c;
 
-    if (!ctx || !ctx->engine || !ctx->engine->cache)
-        return;
+    uint8_t *sha2_256 = NULL;
+    size_t size       = 0;
+
+    if (!ctx || !ctx->engine || !ctx->engine->cache) {
+        goto done;
+    }
 
     if (ctx->engine->engine_options & ENGINE_OPTIONS_DISABLE_CACHE) {
         cli_dbgmsg("clean_cache_add: Caching disabled. Not adding sample to cache.\n");
-        return;
-    }
-
-    if (!md5) {
-        cli_dbgmsg("clean_cache_add: No hash available. Nothing to add to cache.\n");
-        return;
+        goto done;
     }
 
     if (SCAN_COLLECT_METADATA) {
         // Don't cache when using the "collect metadata" feature.
         // We don't cache the JSON, so we can't reproduce it when the cache is positive.
         cli_dbgmsg("clean_cache_add: collect metadata feature enabled, skipping cache\n");
-        return;
+        goto done;
     }
 
     if (ctx->fmap && ctx->fmap->dont_cache_flag == true) {
         cli_dbgmsg("clean_cache_add: caching disabled for this layer, skipping cache\n");
-        return;
+        goto done;
     }
 
-    if (0 < evidence_num_alerts(ctx->evidence)) {
+    if (0 < evidence_num_alerts(ctx->this_layer_evidence)) {
         // TODO: The dont cache flag should take care of preventing caching of files with embedded files that alert.
         //       Consider removing this check to allow caching of other actually clean files found within archives.
         //       It would be a (very) minor optimization.
         cli_dbgmsg("clean_cache_add: alert found within same topfile, skipping cache\n");
-        return;
+        goto done;
     }
+
+    /* Get the hash */
+    ret = fmap_get_hash(ctx->fmap, &sha2_256, CLI_HASH_SHA2_256);
+    if (CL_SUCCESS != ret || NULL == sha2_256) {
+        cli_dbgmsg("clean_cache_add: Failed to get SHA2-256 hash.\n");
+        goto done;
+    }
+
+    /* Get the file size */
+    size = ctx->fmap->len;
 
     level = (ctx->fmap && ctx->fmap->dont_cache_flag) ? ctx->recursion_level : 0;
 
-    key = getkey(md5, ctx->engine->cache->trees);
+    key = getkey(sha2_256, ctx->engine->cache->trees);
     c   = &ctx->engine->cache[key];
 
 #ifdef CL_THREAD_SAFE
     if (pthread_mutex_lock(&c->mutex)) {
         cli_errmsg("cli_add: mutex lock fail\n");
-        return;
+        goto done;
     }
 #endif
 
-    errmsg = cacheset_add(&c->cacheset, md5, size, level);
+    errmsg = cacheset_add(&c->cacheset, sha2_256, size, level);
 
 #ifdef CL_THREAD_SAFE
     pthread_mutex_unlock(&c->mutex);
@@ -696,63 +722,110 @@ void clean_cache_add(unsigned char *md5, size_t size, cli_ctx *ctx)
         cli_errmsg("%s\n", errmsg);
     }
 
-    cli_dbgmsg("clean_cache_add: %02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x (level %u)\n", md5[0], md5[1], md5[2], md5[3], md5[4], md5[5], md5[6], md5[7], md5[8], md5[9], md5[10], md5[11], md5[12], md5[13], md5[14], md5[15], level);
+    cli_dbgmsg("clean_cache_add: "
+               "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x (level %u)\n",
+               sha2_256[0], sha2_256[1], sha2_256[2], sha2_256[3], sha2_256[4], sha2_256[5], sha2_256[6], sha2_256[7],
+               sha2_256[8], sha2_256[9], sha2_256[10], sha2_256[11], sha2_256[12], sha2_256[13], sha2_256[14], sha2_256[15],
+               sha2_256[16], sha2_256[17], sha2_256[18], sha2_256[19], sha2_256[20], sha2_256[21], sha2_256[22], sha2_256[23],
+               sha2_256[24], sha2_256[25], sha2_256[26], sha2_256[27], sha2_256[28], sha2_256[29], sha2_256[30], sha2_256[31],
+               level);
 
+done:
     return;
 }
 
-void clean_cache_remove(unsigned char *md5, size_t size, const struct cl_engine *engine)
+void clean_cache_remove(uint8_t *sha2_256, size_t size, const struct cl_engine *engine)
 {
     unsigned int key = 0;
     struct CACHE *c;
 
     if (!engine || !engine->cache)
-        return;
+        goto done;
 
     if (engine->engine_options & ENGINE_OPTIONS_DISABLE_CACHE) {
         cli_dbgmsg("clean_cache_remove: Caching disabled.\n");
-        return;
+        goto done;
     }
 
-    if (!md5) {
+    if (!sha2_256) {
         cli_dbgmsg("clean_cache_remove: No hash available. Nothing to remove from cache.\n");
-        return;
+        goto done;
     }
 
-    key = getkey(md5, engine->cache->trees);
+    key = getkey(sha2_256, engine->cache->trees);
 
     c = &engine->cache[key];
 #ifdef CL_THREAD_SAFE
     if (pthread_mutex_lock(&c->mutex)) {
         cli_errmsg("cli_add: mutex lock fail\n");
-        return;
+        goto done;
     }
 #endif
 
-    cacheset_remove(&c->cacheset, md5, size);
+    cacheset_remove(&c->cacheset, sha2_256, size);
 
 #ifdef CL_THREAD_SAFE
     pthread_mutex_unlock(&c->mutex);
 #endif
-    cli_dbgmsg("clean_cache_remove: %02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x\n", md5[0], md5[1], md5[2], md5[3], md5[4], md5[5], md5[6], md5[7], md5[8], md5[9], md5[10], md5[11], md5[12], md5[13], md5[14], md5[15]);
+    cli_dbgmsg("clean_cache_remove: "
+               "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x\n",
+               sha2_256[0], sha2_256[1], sha2_256[2], sha2_256[3], sha2_256[4], sha2_256[5], sha2_256[6], sha2_256[7],
+               sha2_256[8], sha2_256[9], sha2_256[10], sha2_256[11], sha2_256[12], sha2_256[13], sha2_256[14], sha2_256[15],
+               sha2_256[16], sha2_256[17], sha2_256[18], sha2_256[19], sha2_256[20], sha2_256[21], sha2_256[22], sha2_256[23],
+               sha2_256[24], sha2_256[25], sha2_256[26], sha2_256[27], sha2_256[28], sha2_256[29], sha2_256[30], sha2_256[31]);
+
+done:
     return;
 }
 
-cl_error_t clean_cache_check(unsigned char *md5, size_t size, cli_ctx *ctx)
+cl_error_t clean_cache_check(cli_ctx *ctx)
 {
-    int ret;
+    cl_error_t status = CL_VIRUS;
+    uint8_t *sha2_256 = NULL;
+    size_t size;
 
-    if (!ctx || !ctx->engine || !ctx->engine->cache)
-        return CL_VIRUS;
+    if (!ctx || !ctx->engine) {
+        cli_errmsg("clean_cache_check: Context or engine is NULL.\n");
+        status = CL_ENULLARG;
+        goto done;
+    }
+
+    if (!ctx->engine->cache) {
+        if (ctx->engine->engine_options & ENGINE_OPTIONS_DISABLE_CACHE) {
+            cli_dbgmsg("clean_cache_check: Caching is disabled.\n");
+            status = CL_VIRUS;
+        } else {
+            cli_dbgmsg("clean_cache_check: Cache is not initialized.\n");
+            status = CL_ENULLARG;
+        }
+        goto done;
+    }
 
     if (SCAN_COLLECT_METADATA) {
         // Don't cache when using the "collect metadata" feature.
         // We don't cache the JSON, so we can't reproduce it when the cache is positive.
         cli_dbgmsg("clean_cache_check: collect metadata feature enabled, skipping cache\n");
-        return CL_VIRUS;
+        status = CL_VIRUS;
+        goto done;
     }
 
-    ret = cache_lookup_hash(md5, size, ctx->engine->cache, ctx->recursion_level);
-    cli_dbgmsg("clean_cache_check: %02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x is %s\n", md5[0], md5[1], md5[2], md5[3], md5[4], md5[5], md5[6], md5[7], md5[8], md5[9], md5[10], md5[11], md5[12], md5[13], md5[14], md5[15], (ret == CL_VIRUS) ? "negative" : "positive");
-    return ret;
+    status = fmap_get_hash(ctx->fmap, &sha2_256, CLI_HASH_SHA2_256);
+    if (status != CL_SUCCESS || !sha2_256) {
+        cli_dbgmsg("clean_cache_check: Failed to get SHA2-256 hash. Cannot check in cache.\n");
+        status = CL_VIRUS;
+        goto done;
+    }
+    size = ctx->fmap->len;
+
+    status = cache_lookup_hash(sha2_256, size, ctx->engine->cache, ctx->recursion_level);
+    cli_dbgmsg("clean_cache_check: "
+               "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x is %s\n",
+               sha2_256[0], sha2_256[1], sha2_256[2], sha2_256[3], sha2_256[4], sha2_256[5], sha2_256[6], sha2_256[7],
+               sha2_256[8], sha2_256[9], sha2_256[10], sha2_256[11], sha2_256[12], sha2_256[13], sha2_256[14], sha2_256[15],
+               sha2_256[16], sha2_256[17], sha2_256[18], sha2_256[19], sha2_256[20], sha2_256[21], sha2_256[22], sha2_256[23],
+               sha2_256[24], sha2_256[25], sha2_256[26], sha2_256[27], sha2_256[28], sha2_256[29], sha2_256[30], sha2_256[31],
+               (status == CL_VIRUS) ? "negative" : "positive");
+
+done:
+    return status;
 }

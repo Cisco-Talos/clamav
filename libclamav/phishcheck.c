@@ -1168,37 +1168,37 @@ static cl_error_t hash_match(const struct regex_matcher* rlist,
 
     *phishing_verdict = CL_PHISH_NODECISION;
 
-    if (rlist->sha256_hashes.bm_patterns) {
+    if (rlist->sha2_256_hashes.bm_patterns) {
         const char hexchars[] = "0123456789ABCDEF";
         unsigned char h[65];
-        unsigned char sha256_dig[32];
+        unsigned char sha2_256_dig[32];
         unsigned i;
-        void* sha256;
+        void* sha2_256;
 
-        sha256 = cl_hash_init("sha256");
-        if (!(sha256))
+        sha2_256 = cl_hash_init("sha2-256");
+        if (!(sha2_256))
             return CL_EMEM;
 
-        cl_update_hash(sha256, (void*)host, hlen);
-        cl_update_hash(sha256, (void*)path, plen);
-        cl_finish_hash(sha256, sha256_dig);
+        cl_update_hash(sha2_256, (void*)host, hlen);
+        cl_update_hash(sha2_256, (void*)path, plen);
+        cl_finish_hash(sha2_256, sha2_256_dig);
 
         for (i = 0; i < 32; i++) {
-            h[2 * i]     = hexchars[sha256_dig[i] >> 4];
-            h[2 * i + 1] = hexchars[sha256_dig[i] & 0xf];
+            h[2 * i]     = hexchars[sha2_256_dig[i] >> 4];
+            h[2 * i + 1] = hexchars[sha2_256_dig[i] & 0xf];
         }
         h[64] = '\0';
         cli_dbgmsg("Looking up hash %s for %s(%u)%s(%u)\n", h, host, (unsigned)hlen, path, (unsigned)plen);
 #if 0
 	    if (prefix_matched) {
-		if (cli_bm_scanbuff(sha256_dig, 4, &virname, NULL, &rlist->hostkey_prefix,0,NULL,NULL,NULL) == CL_VIRUS) {
+		if (cli_bm_scanbuff(sha2_256_dig, 4, &virname, NULL, &rlist->hostkey_prefix,0,NULL,NULL,NULL) == CL_VIRUS) {
 		    cli_dbgmsg("prefix matched\n");
 		    *prefix_matched = 1;
 		} else
 		    return CL_SUCCESS;
 	    }
 #endif
-        if (cli_bm_scanbuff(sha256_dig, 32, &virname, NULL, &rlist->sha256_hashes, 0, NULL, NULL, NULL) == CL_VIRUS) {
+        if (cli_bm_scanbuff(sha2_256_dig, 32, &virname, NULL, &rlist->sha2_256_hashes, 0, NULL, NULL, NULL) == CL_VIRUS) {
             cli_dbgmsg("This hash matched: %s\n", h);
             switch (*virname) {
                 case 'W':
@@ -1347,7 +1347,7 @@ static cl_error_t url_hash_match(
     char urlbuff[URL_MAX_LEN + 3]; /* htmlnorm truncates at 1024 bytes + terminating null + slash + host end null */
     unsigned count;
 
-    if (!rlist || !rlist->sha256_hashes.bm_patterns) {
+    if (!rlist || !rlist->sha2_256_hashes.bm_patterns) {
         /* no hashes loaded -> don't waste time canonicalizing and
          * looking up */
         goto done;
