@@ -5655,8 +5655,10 @@ cl_error_t cl_engine_free(struct cl_engine *engine)
     pthread_mutex_unlock(&cli_ref_mutex);
 #endif
 
-    if (engine->stats_data)
+    if (engine->stats_data) {
         free(engine->stats_data);
+        engine->stats_data = NULL;
+    }
 
     /*
      * Pre-calculate number of "major" tasks to complete for the progress callback
