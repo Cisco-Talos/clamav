@@ -1323,6 +1323,24 @@ uint8_t cli_get_debug_flag(void);
  */
 uint8_t cli_set_debug_flag(uint8_t debug_flag);
 
+/**
+ * @brief Trust the current layer by removing any evidence and setting the verdict to trusted.
+ *
+ * @param ctx           The scan context.
+ * @return cl_error_t   CL_SUCCESS on success, or an error code.
+ */
+cl_error_t cli_trust_this_layer(cli_ctx *ctx);
+
+/**
+ * @brief Trust a range of layers by removing any evidence and setting the verdict to trusted.
+ *
+ * @param ctx           The scan context.
+ * @param start_layer   The layer to start trusting from (inclusive).
+ * @param end_layer     The layer to stop trusting at (inclusive).
+ * @return cl_error_t   CL_SUCCESS on success, or an error code.
+ */
+cl_error_t cli_trust_layers(cli_ctx *ctx, uint32_t start_layer, uint32_t end_layer);
+
 #ifndef CLI_SAFER_STRDUP_OR_GOTO_DONE
 /**
  * @brief Wrapper around strdup that does a NULL check.

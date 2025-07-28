@@ -154,9 +154,7 @@ pub unsafe extern "C" fn _evidence_add_child_evidence(
 /// Free the evidence
 #[no_mangle]
 pub extern "C" fn evidence_free(evidence: sys::evidence_t) {
-    if evidence.is_null() {
-        warn!("Attempted to free a NULL evidence pointer. Please report this at: https://github.com/Cisco-Talos/clamav/issues");
-    } else {
+    if !evidence.is_null() {
         let _ = unsafe { Box::from_raw(evidence as *mut Evidence) };
     }
 }

@@ -81,7 +81,19 @@ extern "C" {
 
 #define CL_COUNT_PRECISION 4096
 
-/* return codes */
+/**
+ * @brief Scan verdicts for cl_scanmap_ex(), cl_scanfile_ex(), and cl_scandesc_ex().
+ */
+typedef enum cl_verdict_t {
+    CL_VERDICT_NOTHING_FOUND = 0,    /**< No alerting signatures matched. */
+    CL_VERDICT_TRUSTED,              /**< The scan target has been deemed trusted (e.g. by FP signature or Authenticode). */
+    CL_VERDICT_STRONG_INDICATOR,                /**< One or more strong indicator signatures matched. */
+    CL_VERDICT_POTENTIALLY_UNWANTED, /**< One or more potentially unwanted signatures matched. */
+} cl_verdict_t;
+
+/**
+ * @brief Return codes used by libclamav functions.
+ */
 typedef enum cl_error_t {
     /* libclamav specific */
     CL_CLEAN   = 0,
@@ -123,7 +135,7 @@ typedef enum cl_error_t {
     CL_EBUSY,
     CL_ESTATE,
 
-    CL_VERIFIED, /** The binary has been deemed trusted */
+    CL_VERIFIED, /** The scan target has been deemed trusted */
     CL_ERROR,    /** Unspecified / generic error */
 
     /* no error codes below this line please */
@@ -1630,9 +1642,12 @@ extern cl_error_t cl_scandesc_callback(
  * This variant also upgrades the `scanned` output parameter to a 64-bit integer.
  *
  * @param desc               File descriptor of an open file. The caller must provide this or the map.
- * @param filename           (optional) Filepath of the open file descriptor or file map.
- * @param[out] virname       Will be set to a statically allocated (i.e. needs not be freed) signature name if the scan matches against a signature.
- * @param[out] scanned       The (exact) number of bytes scanned.
+ * @param filename           (Optional) Filepath of the open file descriptor or file map.
+ * @param[out] verdict_out   A pointer to a cl_verdict_t that will be set to the scan verdict.
+ *                           You should check the verdict even if the function returns an error.
+ * @param[out] last_alert_out Will be set to a statically allocated (i.e. needs not be freed) signature name if the scan
+ *                           matches against a signature.
+ * @param[out] scanned_out   The (exact) number of bytes scanned.
  * @param engine             The scanning engine.
  * @param scanoptions        Scanning options.
  * @param[in,out] context    (Optional) An application-defined context struct, opaque to libclamav.
@@ -1653,15 +1668,16 @@ extern cl_error_t cl_scandesc_callback(
  *                           of the top layer as determined by ClamAV.
  *                           Will take the form of the standard ClamAV file type format. E.g. "CL_TYPE_PE".
  *                           See also: https://docs.clamav.net/appendix/FileTypes.html#file-types
- * @return cl_error_t        CL_CLEAN if no signature matched.
- *                           CL_VIRUS if a signature matched.
- *                           Another CL_E* error code if an error occurred.
+ * @return cl_error_t        CL_SUCCESS if no error occured.
+ *                           Otherwise a CL_E* error code.
+ *                           Does NOT return CL_VIRUS for a signature match. Check the `verdict_out` parameter instead.
  */
 extern cl_error_t cl_scandesc_ex(
     int desc,
     const char *filename,
-    const char **virname,
-    uint64_t *scanned,
+    cl_verdict_t *verdict_out,
+    const char **last_alert_out,
+    uint64_t *scanned_out,
     const struct cl_engine *engine,
     struct cl_scan_options *scanoptions,
     void *context,
@@ -1727,8 +1743,11 @@ extern cl_error_t cl_scanfile_callback(
  * This variant also upgrades the `scanned` output parameter to a 64-bit integer.
  *
  * @param filename           Filepath of the file to be scanned.
- * @param[out] virname       Will be set to a statically allocated (i.e. needs not be freed) signature name if the scan matches against a signature.
- * @param[out] scanned       The exact number of bytes scanned.
+ * @param[out] verdict_out   A pointer to a cl_verdict_t that will be set to the scan verdict.
+ *                           You should check the verdict even if the function returns an error.
+ * @param[out] last_alert_out Will be set to a statically allocated (i.e. needs not be freed) signature name if the scan
+ *                           matches against a signature.
+ * @param[out] scanned_out   The (exact) number of bytes scanned.
  * @param engine             The scanning engine.
  * @param scanoptions        Scanning options.
  * @param[in,out] context    (Optional) An application-defined context struct, opaque to libclamav.
@@ -1749,14 +1768,15 @@ extern cl_error_t cl_scanfile_callback(
  *                           of the top layer as determined by ClamAV.
  *                           Will take the form of the standard ClamAV file type format. E.g. "CL_TYPE_PE".
  *                           See also: https://docs.clamav.net/appendix/FileTypes.html#file-types
- * @return cl_error_t        CL_CLEAN if no signature matched.
- *                           CL_VIRUS if a signature matched.
- *                           Another CL_E* error code if an error occurred.
+ * @return cl_error_t        CL_SUCCESS if no error occured.
+ *                           Otherwise a CL_E* error code.
+ *                           Does NOT return CL_VIRUS for a signature match. Check the `verdict_out` parameter instead.
  */
 extern cl_error_t cl_scanfile_ex(
     const char *filename,
-    const char **virname,
-    uint64_t *scanned,
+    cl_verdict_t *verdict_out,
+    const char **last_alert_out,
+    uint64_t *scanned_out,
     const struct cl_engine *engine,
     struct cl_scan_options *scanoptions,
     void *context,
@@ -1819,13 +1839,15 @@ extern cl_error_t cl_scanmap_callback(
  * This variant also upgrades the `scanned` output parameter to a 64-bit integer.
  *
  * @param map                Buffer to be scanned, in form of a cl_fmap_t.
- * @param filename           Name of data origin. Does not need to be an actual
- *                           file on disk. May be NULL if a name is not available.
- * @param[out] virname       Pointer to receive the signature match name name if a
- *                           signature matched.
- * @param[out] scanned       The exact number of bytes scanned.
+ * @param filename           (Optional) Name of data origin. Does not need to be an actual file on disk.
+ *                           May be NULL if a name is not available.
+ * @param[out] verdict_out   A pointer to a cl_verdict_t that will be set to the scan verdict.
+ *                           You should check the verdict even if the function returns an error.
+ * @param[out] last_alert_out Will be set to a statically allocated (i.e. needs not be freed) signature name if the scan
+ *                           matches against a signature.
+ * @param[out] scanned_out   The (exact) number of bytes scanned.
  * @param engine             The scanning engine.
- * @param scanoptions        The scanning options struct.
+ * @param scanoptions        Scanning options.
  * @param[in,out] context    (Optional) An application-defined context struct, opaque to libclamav.
  *                           May be used within your callback functions.
  * @param hash_hint          (Optional) A NULL terminated string of the file hash so that
@@ -1844,15 +1866,16 @@ extern cl_error_t cl_scanmap_callback(
  *                           of the top layer as determined by ClamAV.
  *                           Will take the form of the standard ClamAV file type format. E.g. "CL_TYPE_PE".
  *                           See also: https://docs.clamav.net/appendix/FileTypes.html#file-types
- * @return cl_error_t        CL_CLEAN if no signature matched.
- *                           CL_VIRUS if a signature matched.
- *                           Another CL_E* error code if an error occurred.
+ * @return cl_error_t        CL_SUCCESS if no error occured.
+ *                           Otherwise a CL_E* error code.
+ *                           Does NOT return CL_VIRUS for a signature match. Check the `verdict_out` parameter instead.
  */
 extern cl_error_t cl_scanmap_ex(
     cl_fmap_t *map,
     const char *filename,
-    const char **virname,
-    uint64_t *scanned,
+    cl_verdict_t *verdict_out,
+    const char **last_alert_out,
+    uint64_t *scanned_out,
     const struct cl_engine *engine,
     struct cl_scan_options *scanoptions,
     void *context,

@@ -181,7 +181,7 @@ static int print_chain(struct metachain *c, char *str, size_t len)
     return i == c->nchains - 1 ? 0 : 1;
 }
 
-static cl_error_t post(int fd, int result, const char *virname, void *context)
+static cl_error_t post(int fd, int result, const char *alert_name, void *context)
 {
     struct clamscan_cb_data *d = context;
     struct metachain *c        = NULL;
@@ -196,10 +196,10 @@ static cl_error_t post(int fd, int result, const char *virname, void *context)
     if (c && c->nchains) {
         print_chain(c, str, sizeof(str));
 
-        if (c->level == c->lastadd && !virname)
+        if (c->level == c->lastadd && !alert_name)
             free(c->chains[--c->nchains]);
 
-        if (virname && !c->lastvir)
+        if (alert_name && !c->lastvir)
             c->lastvir = c->level;
     }
 
@@ -275,7 +275,7 @@ static cl_error_t meta(const char *container_type, unsigned long fsize_container
     return CL_CLEAN;
 }
 
-static void clamscan_virus_found_cb(int fd, const char *virname, void *context)
+static void clamscan_virus_found_cb(int fd, const char *alert_name, void *context)
 {
     struct clamscan_cb_data *data = (struct clamscan_cb_data *)context;
     const char *filename;
@@ -288,7 +288,7 @@ static void clamscan_virus_found_cb(int fd, const char *virname, void *context)
         filename = data->filename;
     else
         filename = "(filename not set)";
-    logg(LOGG_INFO, "%s: %s FOUND\n", filename, virname);
+    logg(LOGG_INFO, "%s: %s FOUND\n", filename, alert_name);
     return;
 }
 
@@ -299,7 +299,8 @@ static void scanfile(const char *filename, struct cl_engine *engine, const struc
     int included   = 0;
     unsigned i;
     const struct optstruct *opt;
-    const char *virname = NULL;
+    cl_verdict_t verdict   = CL_VERDICT_NOTHING_FOUND;
+    const char *alert_name = NULL;
     STATBUF sb;
     struct metachain chain       = {0};
     struct clamscan_cb_data data = {0};
@@ -433,43 +434,63 @@ static void scanfile(const char *filename, struct cl_engine *engine, const struc
 
     data.chain    = &chain;
     data.filename = filename;
-    if (CL_VIRUS == (ret = cl_scandesc_ex(
-                         fd,
-                         filename,
-                         &virname,
-                         &info.bytes_scanned,
-                         engine, options,
-                         &data,
-                         hash_hint,
-                         hash_out,
-                         hash_alg,
-                         file_type_hint,
-                         file_type_out))) {
-        if (optget(opts, "archive-verbose")->enabled) {
-            if (chain.nchains > 1) {
-                char str[128];
-                int toolong = print_chain(&chain, str, sizeof(str));
 
-                logg(LOGG_INFO, "%s%s!(%llu)%s: %s FOUND\n", str, toolong ? "..." : "", (long long unsigned)(chain.lastvir - 1), chain.chains[chain.nchains - 1], virname);
-            } else if (chain.lastvir) {
-                logg(LOGG_INFO, "%s!(%llu): %s FOUND\n", filename, (long long unsigned)(chain.lastvir - 1), virname);
+    ret = cl_scandesc_ex(
+        fd,
+        filename,
+        &verdict,
+        &alert_name,
+        &info.bytes_scanned,
+        engine, options,
+        &data,
+        hash_hint,
+        hash_out,
+        hash_alg,
+        file_type_hint,
+        file_type_out);
+
+    switch (verdict) {
+        case CL_VERDICT_NOTHING_FOUND: {
+            if (CL_SUCCESS == ret) {
+                if (!printinfected && printclean) {
+                    mprintf(LOGG_INFO, "%s: OK\n", filename);
+                }
+                info.files++;
+            } else {
+                if (!printinfected)
+                    logg(LOGG_INFO, "%s: %s ERROR\n", filename, cl_strerror(ret));
+
+                info.errors++;
             }
-        }
-        info.files++;
-        info.ifiles++;
+        } break;
 
-        if (bell)
-            fprintf(stderr, "\007");
-    } else if (ret == CL_CLEAN) {
-        if (!printinfected && printclean)
-            mprintf(LOGG_INFO, "%s: OK\n", filename);
+        case CL_VERDICT_TRUSTED: {
+            // TODO: Option to print "TRUSTED" verdict instead of "OK"?
+            if (!printinfected && printclean) {
+                mprintf(LOGG_INFO, "%s: OK\n", filename);
+            }
+            info.files++;
+        } break;
 
-        info.files++;
-    } else {
-        if (!printinfected)
-            logg(LOGG_INFO, "%s: %s ERROR\n", filename, cl_strerror(ret));
+        case CL_VERDICT_STRONG_INDICATOR:
+        case CL_VERDICT_POTENTIALLY_UNWANTED: {
+            if (optget(opts, "archive-verbose")->enabled) {
+                if (chain.nchains > 1) {
+                    char str[128];
+                    int toolong = print_chain(&chain, str, sizeof(str));
 
-        info.errors++;
+                    logg(LOGG_INFO, "%s%s!(%llu)%s: %s FOUND\n", str, toolong ? "..." : "", (long long unsigned)(chain.lastvir - 1), chain.chains[chain.nchains - 1], alert_name);
+                } else if (chain.lastvir) {
+                    logg(LOGG_INFO, "%s!(%llu): %s FOUND\n", filename, (long long unsigned)(chain.lastvir - 1), alert_name);
+                }
+            }
+            info.files++;
+            info.ifiles++;
+
+            if (bell) {
+                fprintf(stderr, "\007");
+            }
+        } break;
     }
 
     if (NULL != hash) {
@@ -488,7 +509,7 @@ done:
     /*
      * Run the action callback if the file was infected.
      */
-    if (ret == CL_VIRUS && action) {
+    if (((verdict == CL_VERDICT_STRONG_INDICATOR) || (verdict == CL_VERDICT_POTENTIALLY_UNWANTED)) && action) {
         action(filename);
     }
 
@@ -630,9 +651,10 @@ static int scanstdin(const struct cl_engine *engine, const struct optstruct *opt
 {
     cl_error_t ret;
 
-    size_t fsize        = 0;
-    const char *virname = NULL;
-    const char *tmpdir  = NULL;
+    size_t fsize           = 0;
+    cl_verdict_t verdict   = CL_VERDICT_NOTHING_FOUND;
+    const char *alert_name = NULL;
+    const char *tmpdir     = NULL;
     char *filename, buff[FILEBUFF];
     size_t bread;
     FILE *fs;
@@ -702,30 +724,51 @@ static int scanstdin(const struct cl_engine *engine, const struct optstruct *opt
 
     data.filename = "stdin";
     data.chain    = NULL;
-    if (CL_VIRUS == (ret = cl_scanfile_ex(
-                         filename,
-                         &virname,
-                         &info.bytes_scanned,
-                         engine,
-                         options,
-                         &data,
-                         hash_hint,
-                         hash_out,
-                         hash_alg,
-                         file_type_hint,
-                         file_type_out))) {
-        info.ifiles++;
 
-        if (bell)
-            fprintf(stderr, "\007");
-    } else if (ret == CL_CLEAN) {
-        if (!printinfected)
-            mprintf(LOGG_INFO, "stdin: OK\n");
-    } else {
-        if (!printinfected)
-            logg(LOGG_INFO, "stdin: %s ERROR\n", cl_strerror(ret));
+    ret = cl_scanfile_ex(
+        filename,
+        &verdict,
+        &alert_name,
+        &info.bytes_scanned,
+        engine,
+        options,
+        &data,
+        hash_hint,
+        hash_out,
+        hash_alg,
+        file_type_hint,
+        file_type_out);
 
-        info.errors++;
+    switch (verdict) {
+        case CL_VERDICT_NOTHING_FOUND: {
+            if (CL_SUCCESS == ret) {
+                if (!printinfected) {
+                    mprintf(LOGG_INFO, "stdin: OK\n");
+                }
+                info.files++;
+            } else {
+                if (!printinfected) {
+                    logg(LOGG_INFO, "stdin: %s ERROR\n", cl_strerror(ret));
+                }
+                info.errors++;
+            }
+        } break;
+
+        case CL_VERDICT_TRUSTED: {
+            // TODO: Option to print "TRUSTED" verdict instead of "OK"?
+            if (!printinfected) {
+                mprintf(LOGG_INFO, "stdin: OK\n");
+            }
+        } break;
+
+        case CL_VERDICT_STRONG_INDICATOR:
+        case CL_VERDICT_POTENTIALLY_UNWANTED: {
+            info.ifiles++;
+
+            if (bell) {
+                fprintf(stderr, "\007");
+            }
+        } break;
     }
 
     if (NULL != hash) {

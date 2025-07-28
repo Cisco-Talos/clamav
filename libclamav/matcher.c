@@ -668,12 +668,20 @@ cl_error_t cli_check_fp(cli_ctx *ctx, const char *vname)
 
                 if (cli_hm_scan(hash, map->len, &virname, ctx->engine->hm_fp, hash_type) == CL_VIRUS) {
                     cli_dbgmsg("cli_check_fp: Found false positive detection for %s (fp sig: %s)\n", cli_hash_name(hash_type), virname);
-                    status = CL_CLEAN;
+
+                    // Remove any evidence and set the verdict to trusted for the layer where the FP hash matched, and for all contained layers.
+                    (void)cli_trust_layers(ctx, (uint32_t)stack_index, ctx->recursion_level);
+
+                    status = CL_VERIFIED;
                     goto done;
                 }
                 if (cli_hm_scan_wild(hash, &virname, ctx->engine->hm_fp, hash_type) == CL_VIRUS) {
                     cli_dbgmsg("cli_check_fp: Found false positive detection for %s (fp sig: %s)\n", cli_hash_name(hash_type), virname);
-                    status = CL_CLEAN;
+
+                    // Remove any evidence and set the verdict to trusted for the layer where the FP hash matched, and for all contained layers.
+                    (void)cli_trust_layers(ctx, (uint32_t)stack_index, ctx->recursion_level);
+
+                    status = CL_VERIFIED;
                     goto done;
                 }
 
@@ -682,7 +690,11 @@ cl_error_t cli_check_fp(cli_ctx *ctx, const char *vname)
                      * (associated with the .CAB file type) */
                     if (cli_hm_scan(hash, 1, &virname, ctx->engine->hm_fp, hash_type) == CL_VIRUS) {
                         cli_dbgmsg("cli_check_fp: Found .CAB false positive detection for %s via catalog file\n", cli_hash_name(hash_type));
-                        status = CL_CLEAN;
+
+                        // Remove any evidence and set the verdict to trusted for the layer where the FP hash matched, and for all contained layers.
+                        (void)cli_trust_layers(ctx, (uint32_t)stack_index, ctx->recursion_level);
+
+                        status = CL_VERIFIED;
                         goto done;
                     }
                 }

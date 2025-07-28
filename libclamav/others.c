@@ -1521,11 +1521,13 @@ static cl_error_t append_virus(cli_ctx *ctx, const char *virname, IndicatorType 
     ctx->this_layer_evidence = ctx->recursion_stack[ctx->recursion_level].evidence;
 
     if ((ctx->fmap != NULL) &&
-        (ctx->recursion_stack != NULL) &&
-        (CL_VIRUS != cli_check_fp(ctx, virname))) {
-        // FP signature found for one of the layers. Ignore indicator.
-        status = CL_SUCCESS;
-        goto done;
+        (ctx->recursion_stack != NULL)) {
+
+        status = cli_check_fp(ctx, virname);
+        if (CL_VERIFIED == status) {
+            // FP signature found for one of the layers. Ignore indicator.
+            goto done;
+        }
     }
 
     add_successful = evidence_add_indicator(
@@ -2621,10 +2623,8 @@ cl_error_t cli_dispatch_scan_callback(cli_ctx *ctx, cl_scan_callback_t location)
             // So we need to remove any alerts for this layer and return CL_VERIFIED (will stop scanning this layer).
             cli_dbgmsg("dispatch_scan_callback: Layer verified clean by callback\n");
 
-            evidence_free(ctx->recursion_stack[ctx->recursion_level].evidence);
-            ctx->recursion_stack[ctx->recursion_level].evidence = NULL;
-            ctx->this_layer_evidence                            = NULL;
-
+            // Remove any evidence for this layer and set the verdict to trusted.
+            (void)cli_trust_this_layer(ctx);
             status = CL_VERIFIED;
         } break;
 
@@ -2725,4 +2725,56 @@ uint8_t cli_set_debug_flag(uint8_t debug_flag)
     cli_debug_flag = debug_flag;
 
     return was;
+}
+
+cl_error_t cli_trust_this_layer(cli_ctx *ctx)
+{
+    cl_error_t status = CL_ERROR;
+
+    if (!ctx) {
+        cli_errmsg("cli_trust_this_layer: invalid context\n");
+        status = CL_ENULLARG;
+        goto done;
+    }
+
+    if (NULL != ctx->recursion_stack[ctx->recursion_level].evidence) {
+        evidence_free(ctx->recursion_stack[ctx->recursion_level].evidence);
+        ctx->recursion_stack[ctx->recursion_level].evidence = NULL;
+        ctx->this_layer_evidence                            = NULL;
+    }
+
+    ctx->recursion_stack[ctx->recursion_level].verdict = CL_VERDICT_TRUSTED;
+
+    status = CL_SUCCESS;
+
+done:
+    return status;
+}
+
+cl_error_t cli_trust_layers(cli_ctx *ctx, uint32_t start_layer, uint32_t end_layer)
+{
+    cl_error_t status = CL_ERROR;
+    size_t i;
+
+    if (!ctx) {
+        cli_errmsg("cli_trust_layers: invalid context\n");
+        status = CL_ENULLARG;
+        goto done;
+    }
+
+    for (i = start_layer; i <= end_layer; i++) {
+
+        if (NULL != ctx->recursion_stack[i].evidence) {
+            evidence_free(ctx->recursion_stack[i].evidence);
+            ctx->recursion_stack[i].evidence = NULL;
+            ctx->this_layer_evidence         = NULL;
+        }
+
+        ctx->recursion_stack[i].verdict = CL_VERDICT_TRUSTED;
+    }
+
+    status = CL_SUCCESS;
+
+done:
+    return status;
 }

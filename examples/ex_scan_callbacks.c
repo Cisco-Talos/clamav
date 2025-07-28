@@ -1008,41 +1008,76 @@ done:
 const char *cl_error_t_to_string(cl_error_t clerror)
 {
     switch (clerror) {
-        case CL_SUCCESS: return "CL_SUCCESS";
-        case CL_VIRUS: return "CL_VIRUS";
-        case CL_ENULLARG: return "CL_ENULLARG";
-        case CL_EARG: return "CL_EARG";
-        case CL_EMALFDB: return "CL_EMALFDB";
-        case CL_ECVD: return "CL_ECVD";
-        case CL_EVERIFY: return "CL_EVERIFY";
-        case CL_EUNPACK: return "CL_EUNPACK";
-        case CL_EPARSE: return "CL_EPARSE";
-        case CL_EOPEN: return "CL_EOPEN";
-        case CL_ECREAT: return "CL_ECREAT";
-        case CL_EUNLINK: return "CL_EUNLINK";
-        case CL_ESTAT: return "CL_ESTAT";
-        case CL_EREAD: return "CL_EREAD";
-        case CL_ESEEK: return "CL_ESEEK";
-        case CL_EWRITE: return "CL_EWRITE";
-        case CL_EDUP: return "CL_EDUP";
-        case CL_EACCES: return "CL_EACCES";
-        case CL_ETMPFILE: return "CL_ETMPFILE";
-        case CL_ETMPDIR: return "CL_ETMPDIR";
-        case CL_EMAP: return "CL_EMAP";
-        case CL_EMEM: return "CL_EMEM";
-        case CL_ETIMEOUT: return "CL_ETIMEOUT";
-        case CL_EMAXREC: return "CL_EMAXREC";
-        case CL_EMAXSIZE: return "CL_EMAXSIZE";
-        case CL_EMAXFILES: return "CL_EMAXFILES";
-        case CL_EFORMAT: return "CL_EFORMAT";
-        case CL_EBYTECODE: return "CL_EBYTECODE";
-        case CL_EBYTECODE_TESTFAIL: return "CL_EBYTECODE_TESTFAIL";
-        case CL_ELOCK: return "CL_ELOCK";
-        case CL_EBUSY: return "CL_EBUSY";
-        case CL_ESTATE: return "CL_ESTATE";
-        case CL_ERROR: return "CL_ERROR";
-        case CL_VERIFIED: return "CL_VERIFIED";
-        case CL_BREAK: return "CL_BREAK";
+        case CL_SUCCESS:
+            return "CL_SUCCESS";
+        case CL_VIRUS:
+            return "CL_VIRUS";
+        case CL_ENULLARG:
+            return "CL_ENULLARG";
+        case CL_EARG:
+            return "CL_EARG";
+        case CL_EMALFDB:
+            return "CL_EMALFDB";
+        case CL_ECVD:
+            return "CL_ECVD";
+        case CL_EVERIFY:
+            return "CL_EVERIFY";
+        case CL_EUNPACK:
+            return "CL_EUNPACK";
+        case CL_EPARSE:
+            return "CL_EPARSE";
+        case CL_EOPEN:
+            return "CL_EOPEN";
+        case CL_ECREAT:
+            return "CL_ECREAT";
+        case CL_EUNLINK:
+            return "CL_EUNLINK";
+        case CL_ESTAT:
+            return "CL_ESTAT";
+        case CL_EREAD:
+            return "CL_EREAD";
+        case CL_ESEEK:
+            return "CL_ESEEK";
+        case CL_EWRITE:
+            return "CL_EWRITE";
+        case CL_EDUP:
+            return "CL_EDUP";
+        case CL_EACCES:
+            return "CL_EACCES";
+        case CL_ETMPFILE:
+            return "CL_ETMPFILE";
+        case CL_ETMPDIR:
+            return "CL_ETMPDIR";
+        case CL_EMAP:
+            return "CL_EMAP";
+        case CL_EMEM:
+            return "CL_EMEM";
+        case CL_ETIMEOUT:
+            return "CL_ETIMEOUT";
+        case CL_EMAXREC:
+            return "CL_EMAXREC";
+        case CL_EMAXSIZE:
+            return "CL_EMAXSIZE";
+        case CL_EMAXFILES:
+            return "CL_EMAXFILES";
+        case CL_EFORMAT:
+            return "CL_EFORMAT";
+        case CL_EBYTECODE:
+            return "CL_EBYTECODE";
+        case CL_EBYTECODE_TESTFAIL:
+            return "CL_EBYTECODE_TESTFAIL";
+        case CL_ELOCK:
+            return "CL_ELOCK";
+        case CL_EBUSY:
+            return "CL_EBUSY";
+        case CL_ESTATE:
+            return "CL_ESTATE";
+        case CL_ERROR:
+            return "CL_ERROR";
+        case CL_VERIFIED:
+            return "CL_VERIFIED";
+        case CL_BREAK:
+            return "CL_BREAK";
         default:
             return "Unknown error code";
     }
@@ -1195,7 +1230,10 @@ int main(int argc, char **argv)
     script_context_t *script_context = NULL;
 
     unsigned long int size = 0;
-    const char *virname;
+
+    cl_verdict_t verdict = CL_VERDICT_NOTHING_FOUND;
+    const char *alert_name;
+
     struct cl_engine *engine = NULL;
     struct cl_scan_options options;
     unsigned int signo = 0;
@@ -1336,27 +1374,21 @@ int main(int argc, char **argv)
      * Run the scan.
      * Note that the callbacks will be called during this function.
      */
-    if (CL_VIRUS == (ret = cl_scandesc_ex(
-                         target_fd,
-                         filename,
-                         &virname,
-                         &size,
-                         engine,
-                         &options,
-                         script_context, // context,
-                         hash_hint,      // hash_hint,
-                         &hash_out,      // hash_out,
-                         hash_alg,       // hash_alg,
-                         file_type_hint, // file_type_hint,
-                         &file_type_out  // file_type_out
-                         ))) {
-        printf("Virus detected: %s\n", virname);
-    } else {
-        if (ret != CL_SUCCESS) {
-            printf("Error: %s\n", cl_strerror(ret));
-            goto done;
-        }
-    }
+    ret = cl_scandesc_ex(
+        target_fd,
+        filename,
+        &verdict,
+        &alert_name,
+        &size,
+        engine,
+        &options,
+        script_context, // context,
+        hash_hint,      // hash_hint,
+        &hash_out,      // hash_out,
+        hash_alg,       // hash_alg,
+        file_type_hint, // file_type_hint,
+        &file_type_out  // file_type_out
+    );
 
     /* Calculate size of scanned data */
     printf("\n");
@@ -1373,7 +1405,24 @@ int main(int argc, char **argv)
     } else {
         printf("No file type provided for this file.\n");
     }
-    printf("Return code:  %s (%d)\n", cl_strerror(ret), ret);
+    switch (verdict) {
+        case CL_VERDICT_NOTHING_FOUND: {
+            printf("Verdict:      Nothing found.\n");
+        } break;
+
+        case CL_VERDICT_TRUSTED: {
+            printf("Verdict:      Trusted.\n");
+        } break;
+
+        case CL_VERDICT_STRONG_INDICATOR: {
+            printf("Verdict:      Found Strong Indicator: %s\n", alert_name);
+        } break;
+
+        case CL_VERDICT_POTENTIALLY_UNWANTED: {
+            printf("Verdict:      Found Potentially Unwanted Indicator: %s\n", alert_name);
+        } break;
+    }
+    printf("Return Code:  %s (%d)\n", cl_error_t_to_string(ret), ret);
 
     status = ret == CL_VIRUS ? 1 : 0;
 

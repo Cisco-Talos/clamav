@@ -18,6 +18,16 @@ pub struct bignum_st {
     _unused: [u8; 0],
 }
 pub type BIGNUM = bignum_st;
+#[doc = "< No alerting signatures matched."]
+pub const cl_verdict_t_CL_VERDICT_NOTHING_FOUND: cl_verdict_t = 0;
+#[doc = "< The scan target has been deemed trusted (e.g. by FP signature or Authenticode)."]
+pub const cl_verdict_t_CL_VERDICT_TRUSTED: cl_verdict_t = 1;
+#[doc = "< One or more strong indicator signatures matched."]
+pub const cl_verdict_t_CL_VERDICT_STRONG_INDICATOR: cl_verdict_t = 2;
+#[doc = "< One or more potentially unwanted signatures matched."]
+pub const cl_verdict_t_CL_VERDICT_POTENTIALLY_UNWANTED: cl_verdict_t = 3;
+#[doc = " @brief Scan verdicts for cl_scanmap_ex(), cl_scanfile_ex(), and cl_scandesc_ex()."]
+pub type cl_verdict_t = ::std::os::raw::c_uint;
 pub const cl_error_t_CL_CLEAN: cl_error_t = 0;
 pub const cl_error_t_CL_SUCCESS: cl_error_t = 0;
 pub const cl_error_t_CL_VIRUS: cl_error_t = 1;
@@ -58,10 +68,11 @@ pub const cl_error_t_CL_EBUSY: cl_error_t = 31;
 pub const cl_error_t_CL_ESTATE: cl_error_t = 32;
 #[doc = " may be reported in testmode"]
 pub const cl_error_t_CL_VERIFIED: cl_error_t = 33;
-#[doc = " The binary has been deemed trusted"]
+#[doc = " The scan target has been deemed trusted"]
 pub const cl_error_t_CL_ERROR: cl_error_t = 34;
 #[doc = " Unspecified / generic error"]
 pub const cl_error_t_CL_ELAST_ERROR: cl_error_t = 35;
+#[doc = " @brief Return codes used by libclamav functions."]
 pub type cl_error_t = ::std::os::raw::c_uint;
 #[doc = " scan options"]
 #[repr(C)]
@@ -651,6 +662,7 @@ pub struct cli_scan_layer {
     pub object_id: usize,
     pub metadata_json: *mut json_object,
     pub evidence: evidence_t,
+    pub verdict: cl_verdict_t,
     pub tmpdir: *mut ::std::os::raw::c_char,
     pub parent: *mut cli_scan_layer,
 }
