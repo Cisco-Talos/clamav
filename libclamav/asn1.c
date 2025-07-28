@@ -2440,5 +2440,9 @@ cl_error_t asn1_check_mscat(struct cl_engine *engine, fmap_t *map, size_t offset
     }
 
     cli_dbgmsg("asn1_check_mscat: file with valid authenticode signature, trusted\n");
+
+    // Remove any evidence for this layer and set the verdict to trusted.
+    (void)cli_trust_this_layer(ctx);
+
     return CL_VERIFIED;
 }

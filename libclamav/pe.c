@@ -5655,6 +5655,10 @@ cl_error_t cli_check_auth_header(cli_ctx *ctx, struct cli_exe_info *peinfo)
 
         if (cli_hm_scan(authsha, 2, NULL, ctx->engine->hm_fp, hashtype) == CL_VIRUS) {
             cli_dbgmsg("cli_check_auth_header: PE file trusted by catalog file (%s)\n", hashctx_name);
+
+            // Remove any evidence for this layer and set the verdict to trusted.
+            (void)cli_trust_this_layer(ctx);
+
             ret = CL_VERIFIED;
             goto finish;
         }

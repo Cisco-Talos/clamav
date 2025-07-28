@@ -4380,6 +4380,10 @@ static cl_error_t dispatch_prescan_callback(clcb_pre_scan cb, cli_ctx *ctx, cons
         switch (status) {
             case CL_BREAK:
                 cli_dbgmsg("dispatch_prescan_callback: file allowed by callback\n");
+
+                // Remove any evidence for this layer and set the verdict to trusted.
+                (void)cli_trust_this_layer(ctx);
+
                 status = CL_VERIFIED;
                 break;
             case CL_VIRUS:
@@ -4548,9 +4552,9 @@ done:
 
 cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
 {
-    cl_error_t ret                   = CL_CLEAN;
-    cl_error_t cache_check_result    = CL_VIRUS;
-    cl_error_t verdict_at_this_level = CL_CLEAN;
+    cl_error_t ret                     = CL_CLEAN;
+    cl_error_t cache_check_result      = CL_VIRUS;
+    cl_verdict_t verdict_at_this_level = CL_VERDICT_NOTHING_FOUND;
 
     bool cache_enabled              = true;
     cli_file_t dettype              = 0;
@@ -5352,15 +5356,6 @@ done:
     (void)result_should_goto_done(ctx, ret, &ret);
 
     /*
-     * Determine if there was an alert for this layer (or its children).
-     */
-    if (0 < evidence_num_alerts(ctx->this_layer_evidence)) {
-        verdict_at_this_level = CL_VIRUS;
-    } else {
-        verdict_at_this_level = ret;
-    }
-
-    /*
      * Run the deprecated post-scan callback (if one exists) and provide the verdict for this layer.
      */
     cli_dbgmsg("cli_magic_scan: returning %d %s\n", ret, __AT__);
@@ -5369,7 +5364,7 @@ done:
         const char *virusname = NULL;
 
         // Get the last signature that matched (if any).
-        if (verdict_at_this_level == CL_VIRUS) {
+        if (0 < evidence_num_alerts(ctx->this_layer_evidence)) {
             virusname = cli_get_last_virus(ctx);
         }
 
@@ -5397,6 +5392,25 @@ done:
         }
     }
 
+    if (CL_VERDICT_TRUSTED == ctx->recursion_stack[ctx->recursion_level].verdict) {
+        /* Remove any alerts for this layer. */
+        if (NULL != ctx->recursion_stack[ctx->recursion_level].evidence) {
+            evidence_free(ctx->recursion_stack[ctx->recursion_level].evidence);
+            ctx->recursion_stack[ctx->recursion_level].evidence = NULL;
+            ctx->this_layer_evidence                            = NULL;
+        }
+    } else {
+        /*
+         * Update the verdict for this layer based on the scan results.
+         * If the verdict is CL_VERDICT_TRUSTED, then we don't change it.
+         */
+        if (0 < evidence_num_indicators_type(ctx->this_layer_evidence, IndicatorType_Strong)) {
+            ctx->recursion_stack[ctx->recursion_level].verdict = CL_VERDICT_STRONG_INDICATOR;
+        } else if (0 < evidence_num_indicators_type(ctx->this_layer_evidence, IndicatorType_PotentiallyUnwanted)) {
+            ctx->recursion_stack[ctx->recursion_level].verdict = CL_VERDICT_POTENTIALLY_UNWANTED;
+        }
+    }
+
     /*
      * If the verdict for this layer is "clean", we can cache it.
      *
@@ -5404,10 +5418,15 @@ done:
      * so this may not actually cache if we exceeded limits earlier.
      * It will also check if caching is disabled.
      */
-    if (verdict_at_this_level == CL_CLEAN) {
-        perf_start(ctx, PERFT_CACHE);
-        clean_cache_add(ctx);
-        perf_stop(ctx, PERFT_CACHE);
+    if ((CL_VERDICT_TRUSTED == ctx->recursion_stack[ctx->recursion_level].verdict) ||
+        (CL_VERDICT_NOTHING_FOUND == ctx->recursion_stack[ctx->recursion_level].verdict)) {
+        // Also verify we have no weak indicators before adding to the clean cache.
+        // Weak indicators may be used in the future to match a strong indicator.
+        if (evidence_num_indicators_type(ctx->this_layer_evidence, IndicatorType_Weak) == 0) {
+            perf_start(ctx, PERFT_CACHE);
+            clean_cache_add(ctx);
+            perf_stop(ctx, PERFT_CACHE);
+        }
     }
 
 early_ret:
@@ -5646,38 +5665,41 @@ cl_error_t cli_magic_scan_buff(const void *buffer, size_t length, cli_ctx *ctx, 
 /**
  * @brief   The main function to initiate a scan of an fmap.
  *
- * @param map             File map.
- * @param filepath        (optional, recommended) filepath of the open file descriptor or file map.
- * @param[out] virname    Will be set to a statically allocated (i.e. needs not be freed) signature name if the scan matches against a signature.
- * @param[out] scanned    (Optional) The number of bytes scanned.
- * @param engine          The scanning engine.
- * @param scanoptions     Scanning options.
- * @param[in,out] context (Optional) An application-defined context struct, opaque to libclamav.
- *                        May be used within your callback functions.
- * @param hash_hint       (Optional) A NULL terminated string of the file hash so that
- *                        libclamav does not need to calculate it.
- * @param[out] hash_out   (Optional) A NULL terminated string of the file hash.
- *                        The caller is responsible for freeing this string.
- * @param hash_alg        The hashing algorithm used for either `hash_hint` or `hash_out`.
- *                        Supported algorithms are "md5", "sha1", "sha2-256".
- *                        Required only if you provide a `hash_hint` or want to receive a `hash_out`.
- * @param file_type_hint  (Optional) A NULL terminated string of the file type hint.
- *                        E.g. "pe", "elf", "zip", etc.
- *                        You may also use ClamAV type names such as "CL_TYPE_PE".
- *                        ClamAV will ignore the hint if it is not familiar with the specified type.
- * @param file_type_out   (Optional) A NULL terminated string of the file type
- *                        of the top layer as determined by ClamAV.
- *                        Will take the form of the standard ClamAV file type format. E.g. "CL_TYPE_PE".
- *                        The caller is responsible for freeing this string.
- * @return cl_error_t     CL_CLEAN if no signature matched.
- *                        CL_VIRUS if a signature matched.
- *                        Another CL_E* error code if an error occurred.
+ * @param map                 File map.
+ * @param filepath            (optional, recommended) filepath of the open file descriptor or file map.
+ * @param[out] verdict_out    A pointer to a cl_verdict_t that will be set to the scan verdict.
+ *                            You should check the verdict even if the function returns an error.
+ * @param[out] last_alert_out Will be set to a statically allocated (i.e. needs not be freed) signature name if the scan matches against a signature.
+ * @param[out] scanned_out    (Optional) The number of bytes scanned.
+ * @param engine              The scanning engine.
+ * @param scanoptions         Scanning options.
+ * @param[in,out] context     (Optional) An application-defined context struct, opaque to libclamav.
+ *                            May be used within your callback functions.
+ * @param hash_hint           (Optional) A NULL terminated string of the file hash so that
+ *                            libclamav does not need to calculate it.
+ * @param[out] hash_out       (Optional) A NULL terminated string of the file hash.
+ *                            The caller is responsible for freeing this string.
+ * @param hash_alg            The hashing algorithm used for either `hash_hint` or `hash_out`.
+ *                            Supported algorithms are "md5", "sha1", "sha2-256".
+ *                            Required only if you provide a `hash_hint` or want to receive a `hash_out`.
+ * @param file_type_hint      (Optional) A NULL terminated string of the file type hint.
+ *                            E.g. "pe", "elf", "zip", etc.
+ *                            You may also use ClamAV type names such as "CL_TYPE_PE".
+ *                            ClamAV will ignore the hint if it is not familiar with the specified type.
+ * @param file_type_out       (Optional) A NULL terminated string of the file type
+ *                            of the top layer as determined by ClamAV.
+ *                            Will take the form of the standard ClamAV file type format. E.g. "CL_TYPE_PE".
+ *                            The caller is responsible for freeing this string.
+ * @return cl_error_t         CL_SUCCESS if no error occured.
+ *                            Otherwise a CL_E* error code.
+ *                            Does NOT return CL_VIRUS for a signature match. Check the `verdict_out` parameter instead.
  */
 static cl_error_t scan_common(
     cl_fmap_t *map,
     const char *filepath,
-    const char **virname,
-    uint64_t *scanned,
+    cl_verdict_t *verdict_out,
+    const char **last_alert_out,
+    uint64_t *scanned_out,
     const struct cl_engine *engine,
     struct cl_scan_options *scanoptions,
     void *context,
@@ -5689,7 +5711,6 @@ static cl_error_t scan_common(
 {
     cl_error_t status = CL_SUCCESS;
     cl_error_t ret;
-    cl_error_t verdict = CL_CLEAN;
 
     cli_ctx ctx = {0};
 
@@ -5710,12 +5731,13 @@ static cl_error_t scan_common(
     // The type of the file being scanned.
     cli_file_t file_type = CL_TYPE_ANY;
 
-    if (NULL == map || NULL == scanoptions || NULL == virname) {
+    if (NULL == map || NULL == scanoptions || NULL == verdict_out || NULL == last_alert_out || NULL == engine) {
         return CL_ENULLARG;
     }
 
     /* Initialize output variables */
-    *virname = NULL;
+    *verdict_out    = CL_VERDICT_NOTHING_FOUND;
+    *last_alert_out = NULL;
 
     // If the caller provided a file type hint, we make a best effort to use it.
     if (file_type_hint) {
@@ -5776,7 +5798,7 @@ static cl_error_t scan_common(
     }
 
     ctx.engine  = engine;
-    ctx.scanned = scanned;
+    ctx.scanned = scanned_out;
     CLI_MALLOC_OR_GOTO_DONE(ctx.options, sizeof(struct cl_scan_options), status = CL_EMEM);
 
     memcpy(ctx.options, scanoptions, sizeof(struct cl_scan_options));
@@ -6043,8 +6065,8 @@ static cl_error_t scan_common(
 
     // If any alerts occurred, set the output pointer to the "latest" alert signature name.
     if (0 < evidence_num_alerts(ctx.this_layer_evidence)) {
-        *virname = cli_get_last_virus_str(&ctx);
-        verdict  = CL_VIRUS;
+        *last_alert_out = cli_get_last_virus_str(&ctx);
+        *verdict_out    = CL_VERDICT_STRONG_INDICATOR;
     }
 
     /*
@@ -6152,12 +6174,6 @@ static cl_error_t scan_common(
         }
     }
 
-    if (verdict != CL_CLEAN) {
-        // Reporting "VIRUS" is more important than reporting and error,
-        // because... unfortunately we can only do one with the current API.
-        status = verdict;
-    }
-
 done:
 
     if (logg_initialized) {
@@ -6222,10 +6238,12 @@ cl_error_t cl_scandesc(
 {
     cl_error_t status;
     uint64_t scanned_out;
+    cl_verdict_t verdict_out = CL_VERDICT_NOTHING_FOUND;
 
     status = cl_scandesc_ex(
         desc,
         filename,
+        &verdict_out,
         virname,
         &scanned_out,
         engine,
@@ -6245,6 +6263,12 @@ cl_error_t cl_scandesc(
         } else {
             *scanned = (unsigned long int)(scanned_out / CL_COUNT_PRECISION);
         }
+    }
+
+    if (verdict_out == CL_VERDICT_STRONG_INDICATOR || verdict_out == CL_VERDICT_POTENTIALLY_UNWANTED) {
+        // Reporting "CL_VIRUS" is more important than reporting an error,
+        // because... unfortunately we can only do one with this API.
+        status = CL_VIRUS;
     }
 
     return status;
@@ -6260,13 +6284,15 @@ cl_error_t cl_scandesc_callback(
     void *context)
 {
     cl_error_t status;
-    uint64_t scanned_out;
+    uint64_t scanned_bytes;
+    cl_verdict_t verdict_out = CL_VERDICT_NOTHING_FOUND;
 
     status = cl_scandesc_ex(
         desc,
         filename,
+        &verdict_out,
         virname,
-        &scanned_out,
+        &scanned_bytes,
         engine,
         scanoptions,
         context,
@@ -6278,12 +6304,18 @@ cl_error_t cl_scandesc_callback(
 
     if (NULL != scanned) {
         if ((SIZEOF_LONG == 4) &&
-            (scanned_out / CL_COUNT_PRECISION > UINT32_MAX)) {
-            cli_warnmsg("cl_scanfile_callback: scanned_out exceeds UINT32_MAX, setting to UINT32_MAX\n");
+            (scanned_bytes / CL_COUNT_PRECISION > UINT32_MAX)) {
+            cli_warnmsg("cl_scanfile_callback: scanned_bytes exceeds UINT32_MAX, setting to UINT32_MAX\n");
             *scanned = UINT32_MAX;
         } else {
-            *scanned = (unsigned long int)(scanned_out / CL_COUNT_PRECISION);
+            *scanned = (unsigned long int)(scanned_bytes / CL_COUNT_PRECISION);
         }
+    }
+
+    if (verdict_out == CL_VERDICT_STRONG_INDICATOR || verdict_out == CL_VERDICT_POTENTIALLY_UNWANTED) {
+        // Reporting "CL_VIRUS" is more important than reporting an error,
+        // because... unfortunately we can only do one with this API.
+        status = CL_VIRUS;
     }
 
     return status;
@@ -6292,8 +6324,9 @@ cl_error_t cl_scandesc_callback(
 cl_error_t cl_scandesc_ex(
     int desc,
     const char *filename,
-    const char **virname,
-    uint64_t *scanned,
+    cl_verdict_t *verdict_out,
+    const char **last_alert_out,
+    uint64_t *scanned_out,
     const struct cl_engine *engine,
     struct cl_scan_options *scanoptions,
     void *context,
@@ -6323,8 +6356,8 @@ cl_error_t cl_scandesc_ex(
         if (scanoptions->heuristic & CL_SCAN_HEURISTIC_EXCEEDS_MAX) {
             if (engine->cb_virus_found) {
                 engine->cb_virus_found(desc, "Heuristics.Limits.Exceeded.MaxFileSize", context);
-                if (virname) {
-                    *virname = "Heuristics.Limits.Exceeded.MaxFileSize";
+                if (last_alert_out) {
+                    *last_alert_out = "Heuristics.Limits.Exceeded.MaxFileSize";
                 }
             }
             status = CL_VIRUS;
@@ -6347,8 +6380,9 @@ cl_error_t cl_scandesc_ex(
     status = scan_common(
         map,
         filename,
-        virname,
-        scanned,
+        verdict_out,
+        last_alert_out,
+        scanned_out,
         engine,
         scanoptions,
         context,
@@ -6379,13 +6413,15 @@ cl_error_t cl_scanmap_callback(
     void *context)
 {
     cl_error_t status;
-    uint64_t scanned_out;
+    uint64_t scanned_bytes;
+    cl_verdict_t verdict_out = CL_VERDICT_NOTHING_FOUND;
 
     status = cl_scanmap_ex(
         map,
         filename,
+        &verdict_out,
         virname,
-        &scanned_out,
+        &scanned_bytes,
         engine,
         scanoptions,
         context,
@@ -6397,12 +6433,18 @@ cl_error_t cl_scanmap_callback(
 
     if (NULL != scanned) {
         if ((SIZEOF_LONG == 4) &&
-            (scanned_out / CL_COUNT_PRECISION > UINT32_MAX)) {
-            cli_warnmsg("cl_scanfile_callback: scanned_out exceeds UINT32_MAX, setting to UINT32_MAX\n");
+            (scanned_bytes / CL_COUNT_PRECISION > UINT32_MAX)) {
+            cli_warnmsg("cl_scanfile_callback: scanned_bytes exceeds UINT32_MAX, setting to UINT32_MAX\n");
             *scanned = UINT32_MAX;
         } else {
-            *scanned = (unsigned long int)(scanned_out / CL_COUNT_PRECISION);
+            *scanned = (unsigned long int)(scanned_bytes / CL_COUNT_PRECISION);
         }
+    }
+
+    if (verdict_out == CL_VERDICT_STRONG_INDICATOR || verdict_out == CL_VERDICT_POTENTIALLY_UNWANTED) {
+        // Reporting "CL_VIRUS" is more important than reporting an error,
+        // because... unfortunately we can only do one with this API.
+        status = CL_VIRUS;
     }
 
     return status;
@@ -6411,8 +6453,9 @@ cl_error_t cl_scanmap_callback(
 cl_error_t cl_scanmap_ex(
     cl_fmap_t *map,
     const char *filename,
-    const char **virname,
-    uint64_t *scanned,
+    cl_verdict_t *verdict_out,
+    const char **last_alert_out,
+    uint64_t *scanned_out,
     const struct cl_engine *engine,
     struct cl_scan_options *scanoptions,
     void *context,
@@ -6427,8 +6470,8 @@ cl_error_t cl_scanmap_ex(
         if (scanoptions->heuristic & CL_SCAN_HEURISTIC_EXCEEDS_MAX) {
             if (engine->cb_virus_found) {
                 engine->cb_virus_found(fmap_fd(map), "Heuristics.Limits.Exceeded.MaxFileSize", context);
-                if (virname) {
-                    *virname = "Heuristics.Limits.Exceeded.MaxFileSize";
+                if (last_alert_out) {
+                    *last_alert_out = "Heuristics.Limits.Exceeded.MaxFileSize";
                 }
             }
             return CL_VIRUS;
@@ -6444,8 +6487,9 @@ cl_error_t cl_scanmap_ex(
     return scan_common(
         map,
         filename,
-        virname,
-        scanned,
+        verdict_out,
+        last_alert_out,
+        scanned_out,
         engine,
         scanoptions,
         context,
@@ -6485,12 +6529,14 @@ cl_error_t cl_scanfile(
     struct cl_scan_options *scanoptions)
 {
     cl_error_t status;
-    uint64_t scanned_out;
+    uint64_t scanned_bytes;
+    cl_verdict_t verdict_out = CL_VERDICT_NOTHING_FOUND;
 
     status = cl_scanfile_ex(
         filename,
+        &verdict_out,
         virname,
-        &scanned_out,
+        &scanned_bytes,
         engine,
         scanoptions,
         NULL,
@@ -6501,12 +6547,18 @@ cl_error_t cl_scanfile(
         NULL);
 
     if (NULL != scanned) {
-        if (SIZEOF_LONG == 4 && scanned_out > UINT32_MAX) {
-            cli_warnmsg("cl_scanfile_callback: scanned_out exceeds UINT32_MAX, setting to UINT32_MAX\n");
+        if (SIZEOF_LONG == 4 && scanned_bytes > UINT32_MAX) {
+            cli_warnmsg("cl_scanfile_callback: scanned_bytes exceeds UINT32_MAX, setting to UINT32_MAX\n");
             *scanned = UINT32_MAX;
         } else {
-            *scanned = (unsigned long int)scanned_out;
+            *scanned = (unsigned long int)scanned_bytes;
         }
+    }
+
+    if (verdict_out == CL_VERDICT_STRONG_INDICATOR || verdict_out == CL_VERDICT_POTENTIALLY_UNWANTED) {
+        // Reporting "CL_VIRUS" is more important than reporting an error,
+        // because... unfortunately we can only do one with this API.
+        status = CL_VIRUS;
     }
 
     return status;
@@ -6522,9 +6574,11 @@ cl_error_t cl_scanfile_callback(
 {
     cl_error_t status;
     uint64_t scanned_out;
+    cl_verdict_t verdict_out = CL_VERDICT_NOTHING_FOUND;
 
     status = cl_scanfile_ex(
         filename,
+        &verdict_out,
         virname,
         &scanned_out,
         engine,
@@ -6545,13 +6599,20 @@ cl_error_t cl_scanfile_callback(
         }
     }
 
+    if (verdict_out == CL_VERDICT_STRONG_INDICATOR || verdict_out == CL_VERDICT_POTENTIALLY_UNWANTED) {
+        // Reporting "CL_VIRUS" is more important than reporting an error,
+        // because... unfortunately we can only do one with this API.
+        status = CL_VIRUS;
+    }
+
     return status;
 }
 
 cl_error_t cl_scanfile_ex(
     const char *filename,
-    const char **virname,
-    uint64_t *scanned,
+    cl_verdict_t *verdict_out,
+    const char **last_alert_out,
+    uint64_t *scanned_out,
     const struct cl_engine *engine,
     struct cl_scan_options *scanoptions,
     void *context,
@@ -6582,8 +6643,9 @@ cl_error_t cl_scanfile_ex(
     ret = cl_scandesc_ex(
         fd,
         filename,
-        virname,
-        scanned,
+        verdict_out,
+        last_alert_out,
+        scanned_out,
         engine,
         scanoptions,
         context,

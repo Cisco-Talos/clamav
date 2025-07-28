@@ -44,6 +44,7 @@ typedef struct cli_scan_layer {
     size_t object_id;                     /* Unique ID for this object. */
     json_object *metadata_json;           /* JSON object for this recursion level, e.g. for JSON metadata. */
     evidence_t evidence;                  /* Store signature matches for this layer and its children. */
+    cl_verdict_t verdict;                 /* Verdict for this layer, e.g. CL_VERDICT_STRONG_INDICATOR, CL_VERDICT_NOTHING_FOUND, CL_VERDICT_TRUSTED. */
     char *tmpdir;                         /* The directory to store tmp files created when processing this layer. */
     struct cli_scan_layer *parent;        /* Pointer to the parent layer, if any. */
 } cli_scan_layer_t;

@@ -176,7 +176,8 @@ class TC(testcase.TestCase):
                 'Data scanned: 948 B',
                 'Hash:         21495c3a579d537dc63b0df710f63e60a0bfbc74d1c2739a313dbd42dd31e1fa',
                 'File Type:    CL_TYPE_ZIP',
-                'Return code:  Virus(es) detected (1)',
+                'Verdict:      Found Strong Indicator',
+                'Return Code:  CL_SUCCESS (0)',
             ]
 
         command = '{valgrind} {valgrind_args} {example} -d {database} -f {target} --script {script}'.format(
@@ -187,7 +188,8 @@ class TC(testcase.TestCase):
         )
         output = self.execute_command(command)
 
-        assert output.ec == 1  # virus(es) found
+        # Check for success
+        assert output.ec == 0
 
         # Custom logic to verify the output making sure that all expected results are found in the output in order.
         #
@@ -288,7 +290,7 @@ class TC(testcase.TestCase):
                 'Data scanned: 948 B',
                 'Hash:         21495c3a579d537dc63b0df710f63e60a0bfbc74d1c2739a313dbd42dd31e1fa',
                 'File Type:    CL_TYPE_ZIP',
-                'Return code:  No viruses detected (0)',
+                'Return Code:  CL_SUCCESS (0)',
             ]
 
         command = '{valgrind} {valgrind_args} {example} -d {database} -f {target} --script {script}'.format(
@@ -299,7 +301,8 @@ class TC(testcase.TestCase):
         )
         output = self.execute_command(command)
 
-        assert output.ec == 0  # no virus(es) found
+        # Check for success
+        assert output.ec == 0
 
         # Custom logic to verify the output making sure that all expected results are found in the output in order.
         #
@@ -336,7 +339,7 @@ class TC(testcase.TestCase):
                 'Data scanned: 0 B',
                 'Hash:         21495c3a579d537dc63b0df710f63e60a0bfbc74d1c2739a313dbd42dd31e1fa',
                 'File Type:    CL_TYPE_ZIP',
-                'Return code:  No viruses detected (0)',
+                'Return Code:  CL_SUCCESS (0)',
             ]
 
         command = '{valgrind} {valgrind_args} {example} -d {database} -f {target} --script {script}'.format(
@@ -347,7 +350,8 @@ class TC(testcase.TestCase):
         )
         output = self.execute_command(command)
 
-        assert output.ec == 0  # virus(es) found
+        # Check for success
+        assert output.ec == 0
 
         # Custom logic to verify the output making sure that all expected results are found in the output in order.
         #
@@ -398,7 +402,8 @@ class TC(testcase.TestCase):
                 'Data scanned: 0 B',
                 'Hash:         21495c3a579d537dc63b0df710f63e60a0bfbc74d1c2739a313dbd42dd31e1fa',
                 'File Type:    CL_TYPE_ZIP',
-                'Return code:  Virus(es) detected (1)',
+                'Verdict:      Found Strong Indicator',
+                'Return Code:  CL_SUCCESS (0)',
             ]
 
         command = '{valgrind} {valgrind_args} {example} -d {database} -f {target} --script {script}'.format(
@@ -409,7 +414,8 @@ class TC(testcase.TestCase):
         )
         output = self.execute_command(command)
 
-        assert output.ec == 1  # virus(es) found
+        # Check for success
+        assert output.ec == 0
 
         # Custom logic to verify the output making sure that all expected results are found in the output in order.
         #
@@ -526,7 +532,7 @@ class TC(testcase.TestCase):
                 'Data scanned: 948 B',
                 'Hash:         21495c3a579d537dc63b0df710f63e60a0bfbc74d1c2739a313dbd42dd31e1fa',
                 'File Type:    CL_TYPE_ZIP',
-                'Return code:  No viruses detected (0)',
+                'Return Code:  CL_SUCCESS (0)',
             ]
 
         command = '{valgrind} {valgrind_args} {example} -d {database} -f {target} --script {script}'.format(
@@ -537,7 +543,8 @@ class TC(testcase.TestCase):
         )
         output = self.execute_command(command)
 
-        assert output.ec == 0  # no virus(es) found
+        # Check for success
+        assert output.ec == 0
 
         # Custom logic to verify the output making sure that all expected results are found in the output in order.
         #
