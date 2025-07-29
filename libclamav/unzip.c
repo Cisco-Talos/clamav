@@ -616,10 +616,10 @@ static unsigned int parse_local_file_header(
     zip_cb zcb,
     struct zip_record *record)
 {
-    const uint8_t *local_header, *zip;
-    char name[256];
+    const uint8_t *local_header = NULL, *zip = NULL;
+    char name[256] = {0};
     char *original_filename = NULL;
-    uint32_t csize, usize;
+    uint32_t csize = 0, usize = 0;
     unsigned int size_of_fileheader_and_data = 0;
 
     uint32_t nsize  = 0;
@@ -641,31 +641,27 @@ static unsigned int parse_local_file_header(
     zip = local_header + SIZEOF_LOCAL_HEADER;
     zsize -= SIZEOF_LOCAL_HEADER;
 
-    memset(name, '\0', 256);
-
     if (zsize <= LOCAL_HEADER_flen) {
         cli_dbgmsg("cli_unzip: local header - fname out of file\n");
         fmap_unneed_off(map, loff, SIZEOF_LOCAL_HEADER);
         goto done;
     }
 
-    nsize = (LOCAL_HEADER_flen >= sizeof(name)) ? sizeof(name) - 1 : LOCAL_HEADER_flen;
+    nsize = LOCAL_HEADER_flen >= (sizeof(name) - 1) ? sizeof(name) - 1 : LOCAL_HEADER_flen;
+    cli_dbgmsg("cli_unzip: nsize %u\n", nsize);
     src   = fmap_need_ptr_once(map, zip, nsize);
     if (nsize && (NULL != src)) {
         memcpy(name, zip, nsize);
-        name[nsize] = '\0';
         if (CL_SUCCESS != cli_basename(name, nsize, &original_filename)) {
             original_filename = NULL;
         }
-    } else {
-        name[0] = '\0';
     }
 
     zip += LOCAL_HEADER_flen;
     zsize -= LOCAL_HEADER_flen;
 
-    cli_dbgmsg("cli_unzip: local header - ZMDNAME:%d:%s:%u:%u:%x:%u:%u:%u\n",
-               ((LOCAL_HEADER_flags & F_ENCR) != 0), name, LOCAL_HEADER_usize, LOCAL_HEADER_csize, LOCAL_HEADER_crc32, LOCAL_HEADER_method, file_count, ctx->recursion_level);
+    cli_dbgmsg("cli_unzip: local header - ZMDNAME:%d:%.255s:%u:%u:" /*%x:%u:*/ "%u:%u\n",
+               ((LOCAL_HEADER_flags & F_ENCR) != 0), name, usize, csize, file_count, ctx->recursion_level);
     /* ZMDfmt virname:encrypted(0-1):filename(exact|*):usize(exact|*):csize(exact|*):crc32(exact|*):method(exact|*):fileno(exact|*):maxdepth(exact|*) */
 
     /* Scan file header metadata. */
@@ -709,6 +705,7 @@ static unsigned int parse_local_file_header(
     if (zsize <= LOCAL_HEADER_elen) {
         cli_dbgmsg("cli_unzip: local header - extra out of file\n");
         fmap_unneed_off(map, loff, SIZEOF_LOCAL_HEADER);
+        *ret = CL_EPARSE;
         goto done;
     }
     zip += LOCAL_HEADER_elen;
@@ -720,6 +717,7 @@ static unsigned int parse_local_file_header(
         if (zsize < csize) {
             cli_dbgmsg("cli_unzip: local header - stream out of file\n");
             fmap_unneed_off(map, loff, SIZEOF_LOCAL_HEADER);
+            *ret = CL_EPARSE;
             goto done;
         }
 
@@ -757,13 +755,15 @@ static unsigned int parse_local_file_header(
     if (LOCAL_HEADER_flags & F_USEDD) {
         if (zsize < 12) {
             cli_dbgmsg("cli_unzip: local header - data desc out of file\n");
+            *ret = CL_EPARSE;
             goto done;
         }
         zsize -= 12;
         if (fmap_need_ptr_once(map, zip, 4)) {
-            if (cli_readint32(zip) == ZIP_MAGIC_FILE_BEGIN_SPLIT_OR_SPANNED) {
+            if (zip && cli_readint32(zip) == ZIP_MAGIC_FILE_BEGIN_SPLIT_OR_SPANNED) {
                 if (zsize < 4) {
                     cli_dbgmsg("cli_unzip: local header - data desc out of file\n");
+                    *ret = CL_EPARSE;
                     goto done;
                 }
                 zip += 4;
@@ -778,6 +778,16 @@ static unsigned int parse_local_file_header(
 done:
     if (NULL != original_filename) {
         free(original_filename);
+    }
+
+    if (*ret == CL_EPARSE) {
+        cli_dbgmsg("cli_unzip: Skipping local header for CL_EPARSE\n");
+        if (zip && local_header) {
+            size_of_fileheader_and_data = zip - local_header;
+        } else {
+            // Shouldn't happen, but best to log if it does due to changes
+            cli_dbgmsg("cli_unzip: zip %p local_header %p\n", zip, local_header);
+        }
     }
 
     return size_of_fileheader_and_data;
