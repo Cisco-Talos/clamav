@@ -1123,9 +1123,9 @@ extern void cl_engine_set_clcb_pre_scan(struct cl_engine *engine, clcb_pre_scan 
  * @param result    The scan result for the file.
  * @param virname   A signature name if there was one or more matches.
  * @param context   Opaque application provided data.
- * @return          Scan result is not overridden.
- * @return          CL_BREAK = Allowed by callback - scan result is set to CL_CLEAN.
- * @return          Blocked by callback - scan result is set to CL_VIRUS.
+ * @return          CL_CLEAN = File is scanned.
+ * @return          CL_BREAK = Allowed by callback - file is skipped and marked as clean.
+ * @return          CL_VIRUS = Blocked by callback - file is skipped and marked as infected.
  */
 typedef cl_error_t (*clcb_post_scan)(int fd, int result, const char *virname, void *context);
 /**

@@ -9,16 +9,18 @@ For reference:
     Example: ./install/bin/ex_scan_callbacks -d /path/to/clamav.db -f /path/to/file.txt
 
     Options:
-    --help (-h)      : Help message.
-    --database (-d)  : Path to the ClamAV database.
-    --file (-f)      : Path to the file to scan.
-    --hash_hint      : (optional) Hash of file to scan.
-    --hash_alg       : (optional) Hash algorithm of hash_hint.
-                    Will also change the hash algorithm reported at end of scan.
-    --file_type_hint : (optional) File type hint for the file to scan.
-    --script         : (optional) Path for non-interactive test script.
-                    Script must be a new-line delimited list of integers from 1-to-5
-                    Corresponding to the interactive scan options.
+    --help (-h)                : Help message.
+    --database (-d) FILE       : Path to the ClamAV database.
+    --file (-f)     FILE       : Path to the file to scan.
+    --hash-hint     HASH       : (optional) Hash of file to scan.
+    --hash-alg      ALGORITHM  : (optional) Hash algorithm of hash-hint.
+                                 Will also change the hash algorithm reported at end of scan.
+    --file-type-hint CL_TYPE_* : (optional) File type hint for the file to scan.
+    --script        FILE       : (optional) Path for non-interactive test script.
+                                 Script must be a new-line delimited list of integers from 1-to-5
+                                 Corresponding to the interactive scan options.
+    --one-match (-1)           : Disable allmatch (stops scans after one match).
+    --gen-json                 : Generate scan metadata JSON.
 
     Scripted scan options are:
     1  - Return CL_BREAK to abort scanning. Will still encounter POST_SCAN-callbacks on the way out.
@@ -32,6 +34,7 @@ For reference:
     9  - Get sha1 hash. Does not return from the callback!
     10 - Get sha2-256 hash. Does not return from the callback!
     11 - Print all hashes that have already been calculated. Does not return from the callback!
+
 """
 
 import os
@@ -176,7 +179,7 @@ class TC(testcase.TestCase):
                 'Data scanned: 948 B',
                 'Hash:         21495c3a579d537dc63b0df710f63e60a0bfbc74d1c2739a313dbd42dd31e1fa',
                 'File Type:    CL_TYPE_ZIP',
-                'Verdict:      Found Strong Indicator',
+                'Verdict:      CL_VERDICT_STRONG_INDICATOR',
                 'Return Code:  CL_SUCCESS (0)',
             ]
 
@@ -188,8 +191,127 @@ class TC(testcase.TestCase):
         )
         output = self.execute_command(command)
 
-        # Check for success
+        # Check for CL_SUCCESS return code
         assert output.ec == 0
+
+        # Custom logic to verify the output making sure that all expected results are found in the output in order.
+        #
+        # This is necessary because the STRICT_ORDER option gets confused when expected results have multiple of the
+        # same string, but in different contexts.
+        remaining_output = output.out
+
+        for expected in expected_results:
+            # find the first occurrence of the expected string in remaining_output, splitting into two parts
+            parts = remaining_output.split(expected, 1)
+            assert len(parts) == 2, f"Expected '{expected}' in output, but it was not found:\n{remaining_output}"
+
+            remaining_output = parts[1]
+
+    def test_cl_scan_callbacks_clam_zip_basic_one_match(self):
+        self.step_name('Same as basic test with clam.zip that just keeps scanning--but disables allmatch mode.')
+
+        # Notably, the return code at the end should be CL_VIRUS (1) instead of CL_SUCCESS (0).
+        # This is because the reason the scan ended "early" is because of the alert in the clam.exe file.
+
+        path_db = TC.path_source / 'unit_tests' / 'input' / 'clamav.hdb'
+
+        # Build up expected results as we define the test script.
+        expected_results = []
+
+        test_script = TC.path_tmp / 'zip_basic.txt'
+        with open(test_script, 'w') as f:
+            expected_results += [
+                'In FILE_TYPE callback',
+                'Recursion Level:    0',
+                'File Name:          clam.zip',
+                'File Type:          CL_TYPE_ZIP',
+            ]
+            f.write('2\n') # Return CL_SUCCESS to keep scanning
+
+            expected_results += [
+                'In PRE_HASH callback',
+                'Recursion Level:    0',
+                'File Name:          clam.zip',
+                'File Type:          CL_TYPE_ZIP',
+            ]
+            f.write('2\n') # Return CL_SUCCESS to keep scanning
+
+            expected_results += [
+                'In PRE_SCAN callback',
+                'Recursion Level:    0',
+                'File Name:          clam.zip',
+                'File Type:          CL_TYPE_ZIP',
+            ]
+            f.write('2\n') # Return CL_SUCCESS to keep scanning
+
+            expected_results += [
+                'In FILE_TYPE callback',
+                'Recursion Level:    1',
+                'File Name:          clam.exe',
+                'File Type:          CL_TYPE_MSEXE',
+            ]
+            f.write('2\n') # Return CL_SUCCESS to keep scanning
+
+            expected_results += [
+                'In PRE_HASH callback',
+                'Recursion Level:    1',
+                'File Name:          clam.exe',
+                'File Type:          CL_TYPE_MSEXE',
+            ]
+            f.write('2\n') # Return CL_SUCCESS to keep scanning
+
+            expected_results += [
+                'In PRE_SCAN callback',
+                'Recursion Level:    1',
+                'File Name:          clam.exe',
+                'File Type:          CL_TYPE_MSEXE',
+            ]
+            f.write('2\n') # Return CL_SUCCESS to keep scanning
+
+            expected_results += [
+                'In ALERT callback',
+                'Recursion Level:    1',
+                'File Name:          clam.exe',
+                'File Type:          CL_TYPE_MSEXE',
+                'Last Alert:         ClamAV-Test-File.UNOFFICIAL',
+            ]
+            f.write('3\n') # Return CL_VIRUS to keep scanning and accept the alert
+
+            expected_results += [
+                'In POST_SCAN callback',
+                'Recursion Level:    1',
+                'File Name:          clam.exe',
+                'File Type:          CL_TYPE_MSEXE',
+                'Last Alert:         ClamAV-Test-File.UNOFFICIAL',
+            ]
+            f.write('2\n') # Return CL_SUCCESS to keep scanning
+
+            expected_results += [
+                'Recursion Level:    0',
+                'In POST_SCAN callback',
+                'File Name:          clam.zip',
+                'File Type:          CL_TYPE_ZIP'
+            ]
+            f.write('2\n') # Return CL_SUCCESS to keep scanning
+
+            expected_results += [
+                'Data scanned: 544 B',  # Note this is less, because allmatch disabled so stopped after clam.exe matched.
+                'Hash:         21495c3a579d537dc63b0df710f63e60a0bfbc74d1c2739a313dbd42dd31e1fa',
+                'File Type:    CL_TYPE_ZIP',
+                'Verdict:      CL_VERDICT_STRONG_INDICATOR',
+                'Return Code:  CL_VIRUS (1)',
+            ]
+
+        command = '{valgrind} {valgrind_args} {example} -d {database} -f {target} --script {script} --one-match'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, example=TC.example_program,
+            database=path_db,
+            target=TC.path_build / 'unit_tests' / 'input' / 'clamav_hdb_scanfiles' / 'clam.zip',
+            script=test_script
+        )
+        output = self.execute_command(command)
+
+        # Check for CL_VIRUS return code
+        assert output.ec == 1
 
         # Custom logic to verify the output making sure that all expected results are found in the output in order.
         #
@@ -301,7 +423,7 @@ class TC(testcase.TestCase):
         )
         output = self.execute_command(command)
 
-        # Check for success
+        # Check for CL_SUCCESS return code
         assert output.ec == 0
 
         # Custom logic to verify the output making sure that all expected results are found in the output in order.
@@ -350,7 +472,7 @@ class TC(testcase.TestCase):
         )
         output = self.execute_command(command)
 
-        # Check for success
+        # Check for CL_SUCCESS return code
         assert output.ec == 0
 
         # Custom logic to verify the output making sure that all expected results are found in the output in order.
@@ -402,7 +524,7 @@ class TC(testcase.TestCase):
                 'Data scanned: 0 B',
                 'Hash:         21495c3a579d537dc63b0df710f63e60a0bfbc74d1c2739a313dbd42dd31e1fa',
                 'File Type:    CL_TYPE_ZIP',
-                'Verdict:      Found Strong Indicator',
+                'Verdict:      CL_VERDICT_STRONG_INDICATOR',
                 'Return Code:  CL_SUCCESS (0)',
             ]
 
@@ -414,7 +536,7 @@ class TC(testcase.TestCase):
         )
         output = self.execute_command(command)
 
-        # Check for success
+        # Check for CL_SUCCESS return code
         assert output.ec == 0
 
         # Custom logic to verify the output making sure that all expected results are found in the output in order.
@@ -543,7 +665,7 @@ class TC(testcase.TestCase):
         )
         output = self.execute_command(command)
 
-        # Check for success
+        # Check for CL_SUCCESS return code
         assert output.ec == 0
 
         # Custom logic to verify the output making sure that all expected results are found in the output in order.
