@@ -760,7 +760,7 @@ static unsigned int parse_local_file_header(
         }
         zsize -= 12;
         if (fmap_need_ptr_once(map, zip, 4)) {
-            if (cli_readint32(zip) == ZIP_MAGIC_FILE_BEGIN_SPLIT_OR_SPANNED) {
+            if (zip && cli_readint32(zip) == ZIP_MAGIC_FILE_BEGIN_SPLIT_OR_SPANNED) {
                 if (zsize < 4) {
                     cli_dbgmsg("cli_unzip: local header - data desc out of file\n");
                     *ret = CL_EPARSE;
@@ -786,7 +786,7 @@ done:
             size_of_fileheader_and_data = zip - local_header;
         } else {
             // Shouldn't happen, but best to log if it does due to changes
-            cli_dbgmsg("cli_unzip: zip %u local_header %u\n", zip, local_header);
+            cli_dbgmsg("cli_unzip: zip %p local_header %p\n", zip, local_header);
         }
     }
 
