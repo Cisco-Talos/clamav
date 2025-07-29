@@ -625,8 +625,6 @@ static unsigned int parse_local_file_header(
     uint32_t nsize  = 0;
     const char *src = NULL;
 
-    zip = local_header + SIZEOF_LOCAL_HEADER;
-
     if (!(local_header = fmap_need_off(map, loff, SIZEOF_LOCAL_HEADER))) {
         cli_dbgmsg("cli_unzip: local header - out of file\n");
         goto done;
@@ -640,6 +638,7 @@ static unsigned int parse_local_file_header(
         goto done;
     }
 
+    zip = local_header + SIZEOF_LOCAL_HEADER;
     zsize -= SIZEOF_LOCAL_HEADER;
 
     if (zsize <= LOCAL_HEADER_flen) {
@@ -776,7 +775,6 @@ done:
     if (NULL != original_filename) {
         free(original_filename);
     }
-
 
     if (size_of_fileheader_and_data == 0) {
         size_of_fileheader_and_data = zip - local_header;
@@ -1252,7 +1250,8 @@ cl_error_t index_local_file_headers_within_bounds(
         if (!(ptr = fmap_need_off_once(map, coff, 4)))
             continue;
         if (cli_readint32(ptr) == ZIP_MAGIC_LOCAL_FILE_HEADER) {
-            size_t file_record_size = parse_local_file_header(
+            // increment coff by the size of the found local file header + file data
+            coff += parse_local_file_header(
                 map,
                 coff,
                 fsize - coff,
@@ -1265,18 +1264,15 @@ cl_error_t index_local_file_headers_within_bounds(
                 1,
                 NULL,
                 &(zip_catalogue[index]));
+            // decrement coff by 1 to account for the increment at the end of the loop
+            coff -= 1;
 
-        if (file_record_size != 0 && CL_EPARSE != ret) { 
-            // Found a record.
-            cli_dbgmsg("cli_unzip: Found a record\n");
-            index++;
-            total_file_count++;
+            if (CL_EPARSE != ret) {
+                // Found a record.
+                index++;
+                total_file_count++;
+            }
 
-            // increment coff by the size of the found local file header + file data
-            // but decrement by 1 to account for the increment at the end of the loop
-            coff += file_record_size - 1;
-        }
-            
             if (ret == CL_VIRUS) {
                 status = CL_VIRUS;
                 goto done;
