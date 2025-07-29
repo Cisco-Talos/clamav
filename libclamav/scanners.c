@@ -128,7 +128,7 @@
 
 cl_error_t cli_magic_scan_dir(const char *dir, cli_ctx *ctx, uint32_t attributes)
 {
-    cl_error_t status = CL_CLEAN;
+    cl_error_t status = CL_SUCCESS;
     DIR *dd           = NULL;
     struct dirent *dent;
     STATBUF statbuf;
@@ -192,11 +192,11 @@ done:
  * @param metadata  unrar metadata structure
  * @param ctx       scanning context structure
  * @param files
- * @return cl_error_t  Returns CL_CLEAN if nothing found, CL_VIRUS if something found, CL_EUNPACK if encrypted.
+ * @return cl_error_t  Returns CL_SUCCESS if nothing found, CL_VIRUS if something found, CL_EUNPACK if encrypted.
  */
 static cl_error_t cli_unrar_scanmetadata(unrar_metadata_t *metadata, cli_ctx *ctx, unsigned int files)
 {
-    cl_error_t status = CL_CLEAN;
+    cl_error_t status = CL_SUCCESS;
 
     cli_dbgmsg("RAR: %s, crc32: 0x%x, encrypted: %u, compressed: %u, normal: %u, method: %u, ratio: %u\n",
                metadata->filename, metadata->crc, metadata->encrypted, (unsigned int)metadata->pack_size,
@@ -307,7 +307,7 @@ static cl_error_t cli_scanrar_file(const char *filepath, int desc, cli_ctx *ctx)
      *      and if we have not detected a signature match.
      */
     do {
-        status = CL_CLEAN;
+        status = CL_SUCCESS;
 
         /* Zero out the metadata struct before we read the header */
         memset(&metadata, 0, sizeof(unrar_metadata_t));
@@ -597,11 +597,11 @@ done:
  * @param metadata  egg metadata structure
  * @param ctx       scanning context structure
  * @param files     number of files
- * @return cl_error_t  Returns CL_CLEAN if nothing found, CL_VIRUS if something found, CL_EUNPACK if encrypted.
+ * @return cl_error_t  Returns CL_SUCCESS if nothing found, CL_VIRUS if something found, CL_EUNPACK if encrypted.
  */
 static cl_error_t cli_egg_scanmetadata(cl_egg_metadata *metadata, cli_ctx *ctx, unsigned int files)
 {
-    cl_error_t status = CL_CLEAN;
+    cl_error_t status = CL_SUCCESS;
 
     cli_dbgmsg("EGG: %s, encrypted: %u, compressed: %u, normal: %u, ratio: %u\n",
                metadata->filename, metadata->encrypted, (unsigned int)metadata->pack_size,
@@ -728,7 +728,7 @@ static cl_error_t cli_scanegg(cli_ctx *ctx)
      *      and if we have not detected a signature match.
      */
     do {
-        status = CL_CLEAN;
+        status = CL_SUCCESS;
 
         /* Zero out the metadata struct before we read the header */
         memset(&metadata, 0, sizeof(cl_egg_metadata));
@@ -899,7 +899,7 @@ static cl_error_t cli_scanegg(cli_ctx *ctx)
         }
 
         if (ctx->engine->maxscansize && ctx->scansize >= ctx->engine->maxscansize) {
-            status = CL_CLEAN;
+            status = CL_SUCCESS;
             break;
         }
 
@@ -911,10 +911,10 @@ static cl_error_t cli_scanegg(cli_ctx *ctx)
             metadata.filename = NULL;
         }
 
-    } while (status == CL_CLEAN);
+    } while (status == CL_SUCCESS);
 
     if (status == CL_BREAK) {
-        status = CL_CLEAN;
+        status = CL_SUCCESS;
     }
 
 done:
@@ -970,7 +970,7 @@ done:
 
 static cl_error_t cli_scanarj(cli_ctx *ctx)
 {
-    cl_error_t ret = CL_CLEAN;
+    cl_error_t ret = CL_SUCCESS;
     int file       = 0;
     arj_metadata_t metadata;
     char *dir = NULL;
@@ -1015,7 +1015,7 @@ static cl_error_t cli_scanarj(cli_ctx *ctx)
             return CL_VIRUS;
         }
 
-        if ((ret = cli_checklimits("ARJ", ctx, metadata.orig_size, metadata.comp_size, 0)) != CL_CLEAN) {
+        if ((ret = cli_checklimits("ARJ", ctx, metadata.orig_size, metadata.comp_size, 0)) != CL_SUCCESS) {
             ret = CL_SUCCESS;
             if (metadata.filename)
                 free(metadata.filename);
@@ -1098,7 +1098,7 @@ static cl_error_t cli_scangzip_with_zib_from_the_80s(cli_ctx *ctx, unsigned char
 
     while ((bytes = gzread(gz, buff, FILEBUFF)) > 0) {
         outsize += bytes;
-        if (cli_checklimits("GZip", ctx, outsize, 0, 0) != CL_CLEAN)
+        if (cli_checklimits("GZip", ctx, outsize, 0, 0) != CL_SUCCESS)
             break;
         if (cli_writen(fd, buff, (size_t)bytes) != (size_t)bytes) {
             close(fd);
@@ -1135,7 +1135,7 @@ static cl_error_t cli_scangzip_with_zib_from_the_80s(cli_ctx *ctx, unsigned char
 static cl_error_t cli_scangzip(cli_ctx *ctx)
 {
     int fd;
-    cl_error_t ret = CL_CLEAN;
+    cl_error_t ret = CL_SUCCESS;
     unsigned char buff[FILEBUFF];
     char *tmpname;
     z_stream z;
@@ -1197,7 +1197,7 @@ static cl_error_t cli_scangzip(cli_ctx *ctx)
                 return CL_EWRITE;
             }
             outsize += sizeof(buff) - z.avail_out;
-            if (cli_checklimits("GZip", ctx, outsize, 0, 0) != CL_CLEAN) {
+            if (cli_checklimits("GZip", ctx, outsize, 0, 0) != CL_SUCCESS) {
                 at = map->len;
                 break;
             }
@@ -1242,7 +1242,7 @@ static cl_error_t cli_scangzip(cli_ctx *ctx)
 
 static cl_error_t cli_scanbzip(cli_ctx *ctx)
 {
-    cl_error_t ret = CL_CLEAN;
+    cl_error_t ret = CL_SUCCESS;
     int fd, rc;
     uint64_t size = 0;
     char *tmpname;
@@ -1301,7 +1301,7 @@ static cl_error_t cli_scanbzip(cli_ctx *ctx)
                 return CL_EWRITE;
             }
 
-            if (cli_checklimits("Bzip", ctx, size, 0, 0) != CL_CLEAN)
+            if (cli_checklimits("Bzip", ctx, size, 0, 0) != CL_SUCCESS)
                 break;
 
             strm.next_out  = buf;
@@ -1333,7 +1333,7 @@ static cl_error_t cli_scanbzip(cli_ctx *ctx)
 
 static cl_error_t cli_scanxz(cli_ctx *ctx)
 {
-    cl_error_t ret = CL_CLEAN;
+    cl_error_t ret = CL_SUCCESS;
     int fd, rc;
     unsigned long int size = 0;
     char *tmpname;
@@ -1405,7 +1405,7 @@ static cl_error_t cli_scanxz(cli_ctx *ctx)
                 ret = CL_EWRITE;
                 goto xz_exit;
             }
-            if (cli_checklimits("cli_scanxz", ctx, size, 0, 0) != CL_CLEAN) {
+            if (cli_checklimits("cli_scanxz", ctx, size, 0, 0) != CL_SUCCESS) {
                 cli_warnmsg("cli_scanxz: decompress file size exceeds limits - "
                             "only scanning %li bytes\n",
                             size);
@@ -1423,7 +1423,7 @@ xz_exit:
     cli_XzShutdown(&strm);
     close(fd);
     if (!ctx->engine->keeptmp) {
-        if (cli_unlink(tmpname) && ret == CL_CLEAN) {
+        if (cli_unlink(tmpname) && ret == CL_SUCCESS) {
             ret = CL_EUNLINK;
         }
     }
@@ -1720,7 +1720,7 @@ done:
  */
 static cl_error_t cli_ole2_tempdir_scan_summary(const char *dir, cli_ctx *ctx, struct uniq *U)
 {
-    cl_error_t status = CL_CLEAN;
+    cl_error_t status = CL_SUCCESS;
     cl_error_t ret;
     char summary_filename[1024];
     char *hash;
@@ -1783,7 +1783,7 @@ done:
  */
 static cl_error_t cli_ole2_tempdir_scan_embedded_ole10(const char *dir, cli_ctx *ctx, struct uniq *U)
 {
-    cl_error_t status = CL_CLEAN;
+    cl_error_t status = CL_SUCCESS;
     cl_error_t ret;
     char ole10_filename[1024];
     char *hash;
@@ -2053,7 +2053,7 @@ done:
 
 static cl_error_t cli_ole2_tempdir_scan_for_xlm_and_images(const char *dir, cli_ctx *ctx, struct uniq *U)
 {
-    cl_error_t ret      = CL_CLEAN;
+    cl_error_t ret      = CL_SUCCESS;
     char *hash          = NULL;
     uint32_t hashcnt    = 0;
     char STR_WORKBOOK[] = "workbook";
@@ -2686,7 +2686,7 @@ static cl_error_t cli_scanscript(cli_ctx *ctx)
     /* CL_ENGINE_MAX_SCRIPTNORMALIZE */
     if (curr_len > ctx->engine->maxscriptnormalize) {
         cli_dbgmsg("cli_scanscript: exiting (file larger than MaxScriptSize)\n");
-        ret = CL_CLEAN;
+        ret = CL_SUCCESS;
         goto done;
     }
 
@@ -2952,7 +2952,7 @@ static cl_error_t cli_ole2_scan_tempdir(
     int has_xlm,
     int has_image)
 {
-    cl_error_t status = CL_CLEAN;
+    cl_error_t status = CL_SUCCESS;
     DIR *dd           = NULL;
     int has_macros    = 0;
 
@@ -3069,7 +3069,7 @@ done:
 static cl_error_t cli_scanole2(cli_ctx *ctx)
 {
     char *dir          = NULL;
-    cl_error_t ret     = CL_CLEAN;
+    cl_error_t ret     = CL_SUCCESS;
     struct uniq *files = NULL;
     int has_vba        = 0;
     int has_xlm        = 0;
@@ -3134,7 +3134,7 @@ done:
 static cl_error_t cli_scantar(cli_ctx *ctx, unsigned int posix)
 {
     char *dir;
-    cl_error_t ret = CL_CLEAN;
+    cl_error_t ret = CL_SUCCESS;
 
     cli_dbgmsg("in cli_scantar()\n");
 
@@ -3160,7 +3160,7 @@ static cl_error_t cli_scantar(cli_ctx *ctx, unsigned int posix)
 static cl_error_t cli_scanscrenc(cli_ctx *ctx)
 {
     char *tempname;
-    cl_error_t ret = CL_CLEAN;
+    cl_error_t ret = CL_SUCCESS;
 
     cli_dbgmsg("in cli_scanscrenc()\n");
 
@@ -3185,7 +3185,7 @@ static cl_error_t cli_scanscrenc(cli_ctx *ctx)
 
 static cl_error_t cli_scanriff(cli_ctx *ctx)
 {
-    cl_error_t ret = CL_CLEAN;
+    cl_error_t ret = CL_SUCCESS;
 
     if (cli_check_riff_exploit(ctx) == 2)
         ret = cli_append_potentially_unwanted(ctx, "Heuristics.Exploit.W32.MS05-002");
@@ -3195,7 +3195,7 @@ static cl_error_t cli_scanriff(cli_ctx *ctx)
 
 static cl_error_t cli_scancryptff(cli_ctx *ctx)
 {
-    cl_error_t ret = CL_CLEAN, ndesc;
+    cl_error_t ret = CL_SUCCESS, ndesc;
     unsigned int i;
     const unsigned char *src;
     unsigned char *dest = NULL;
@@ -3294,7 +3294,7 @@ static cl_error_t cli_scantnef(cli_ctx *ctx)
 
     ret = cli_tnef(dir, ctx);
 
-    if (ret == CL_CLEAN)
+    if (ret == CL_SUCCESS)
         ret = cli_magic_scan_dir(dir, ctx, LAYER_ATTRIBUTES_NONE);
 
     if (!ctx->engine->keeptmp)
@@ -3320,7 +3320,7 @@ static cl_error_t cli_scanuuencoded(cli_ctx *ctx)
 
     ret = cli_uuencode(dir, ctx->fmap);
 
-    if (ret == CL_CLEAN)
+    if (ret == CL_SUCCESS)
         ret = cli_magic_scan_dir(dir, ctx, LAYER_ATTRIBUTES_NONE);
 
     if (!ctx->engine->keeptmp)
@@ -3448,12 +3448,12 @@ static cl_error_t cli_scan_structured(cli_ctx *ctx)
         }
     }
 
-    return CL_CLEAN;
+    return CL_SUCCESS;
 }
 
 static cl_error_t cli_scanembpe(cli_ctx *ctx, off_t offset)
 {
-    cl_error_t ret = CL_CLEAN;
+    cl_error_t ret = CL_SUCCESS;
     int fd;
     size_t bytes;
     size_t size = 0;
@@ -3493,7 +3493,7 @@ static cl_error_t cli_scanembpe(cli_ctx *ctx, off_t offset)
         size += bytes;
         todo -= bytes;
 
-        if (cli_checklimits("cli_scanembpe", ctx, size, 0, 0) != CL_CLEAN)
+        if (cli_checklimits("cli_scanembpe", ctx, size, 0, 0) != CL_SUCCESS)
             break;
 
         if (cli_writen(fd, buff, bytes) != bytes) {
@@ -3536,7 +3536,7 @@ static cl_error_t cli_scanembpe(cli_ctx *ctx, off_t offset)
     }
     free(tmpname);
 
-    return CL_CLEAN;
+    return CL_SUCCESS;
 }
 
 #if defined(_WIN32) || defined(C_LINUX) || defined(C_DARWIN)
@@ -3717,7 +3717,7 @@ static inline void perf_done(cli_ctx *ctx)
  */
 static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_file_t *dettype)
 {
-    cl_error_t ret = CL_CLEAN, nret = CL_CLEAN;
+    cl_error_t ret = CL_SUCCESS, nret = CL_SUCCESS;
     struct cli_matched_type *ftoffset = NULL, *fpt;
     unsigned int acmode               = AC_SCAN_VIR;
 
@@ -3934,7 +3934,7 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
                                         cli_dbgmsg("GPT signature found at %u\n", (unsigned int)fpt->offset);
                                         nret = cli_scangpt(ctx, 0);
                                     }
-                                } else if ((iret == CL_CLEAN) && (DCONF_ARCH & ARCH_CONF_MBR)) {
+                                } else if ((iret == CL_SUCCESS) && (DCONF_ARCH & ARCH_CONF_MBR)) {
                                     // Reassign type of current layer based on what we discovered
                                     if (CL_SUCCESS != (ret = cli_recursion_stack_change_type(ctx, CL_TYPE_MBR, true))) {
                                         cli_dbgmsg("Call to cli_recursion_stack_change_type() returned %s \n", cl_strerror(ret));
@@ -4301,7 +4301,7 @@ void emax_reached(cli_ctx *ctx)
  */
 static cl_error_t dispatch_file_inspection_callback(clcb_file_inspection cb, cli_ctx *ctx, const char *filetype)
 {
-    cl_error_t status = CL_CLEAN;
+    cl_error_t status = CL_SUCCESS;
     cl_error_t append_ret;
 
     int fd              = -1;
@@ -4377,7 +4377,7 @@ done:
 
 static cl_error_t dispatch_prescan_callback(clcb_pre_scan cb, cli_ctx *ctx, const char *filetype)
 {
-    cl_error_t status = CL_CLEAN;
+    cl_error_t status = CL_SUCCESS;
     cl_error_t append_ret;
 
     if (cb) {
@@ -4656,11 +4656,11 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
      * Run the deprecated file_inspection callback.
      */
     ret = dispatch_file_inspection_callback(ctx->engine->cb_file_inspection, ctx, filetype);
-    if (CL_CLEAN != ret) {
+    if (CL_SUCCESS != ret) {
         if (ret == CL_VIRUS) {
             ret = cli_check_fp(ctx, NULL);
         } else {
-            ret = CL_CLEAN;
+            ret = CL_SUCCESS;
         }
         status = ret;
         goto done;
@@ -5487,7 +5487,7 @@ cl_error_t cli_magic_scan_desc_type(int desc, const char *filepath, cli_ctx *ctx
                                     const char *name, uint32_t attributes)
 {
     STATBUF sb;
-    cl_error_t status = CL_CLEAN;
+    cl_error_t status = CL_SUCCESS;
     fmap_t *new_map   = NULL;
 
     if (!ctx) {
@@ -5503,7 +5503,7 @@ cl_error_t cli_magic_scan_desc_type(int desc, const char *filepath, cli_ctx *ctx
     }
     if (sb.st_size <= 5) {
         cli_dbgmsg("cli_magic_scan_desc_type: Small data (%u bytes)\n", (unsigned int)sb.st_size);
-        status = CL_CLEAN;
+        status = CL_SUCCESS;
         goto done;
     }
 
@@ -5555,7 +5555,7 @@ cl_error_t cli_magic_scan_desc(int desc, const char *filepath, cli_ctx *ctx, con
 static cl_error_t magic_scan_nested_fmap_type(cl_fmap_t *map, size_t offset, size_t length, cli_ctx *ctx,
                                               cli_file_t type, const char *name, uint32_t attributes)
 {
-    cl_error_t status = CL_CLEAN;
+    cl_error_t status = CL_SUCCESS;
     fmap_t *new_map   = NULL;
 
     cli_dbgmsg("magic_scan_nested_fmap_type: [0, +%zu), [%zu, +%zu)\n",
@@ -5608,12 +5608,12 @@ done:
 cl_error_t cli_magic_scan_nested_fmap_type(cl_fmap_t *map, size_t offset, size_t length, cli_ctx *ctx,
                                            cli_file_t type, const char *name, uint32_t attributes)
 {
-    cl_error_t ret = CL_CLEAN;
+    cl_error_t ret = CL_SUCCESS;
 
     cli_dbgmsg("cli_magic_scan_nested_fmap_type: [%zu, +%zu)\n", offset, length);
     if (offset >= map->len) {
         cli_dbgmsg("Invalid offset: %zu\n", offset);
-        return CL_CLEAN;
+        return CL_SUCCESS;
     }
 
     if (ctx->engine->engine_options & ENGINE_OPTIONS_FORCE_TO_DISK) {
@@ -5638,11 +5638,11 @@ cl_error_t cli_magic_scan_nested_fmap_type(cl_fmap_t *map, size_t offset, size_t
         }
         if (length <= 5) {
             cli_dbgmsg("cli_magic_scan_nested_fmap_type: Small data (%u bytes)\n", (unsigned int)length);
-            return CL_CLEAN;
+            return CL_SUCCESS;
         }
         if (!CLI_ISCONTAINED_0_TO(map->len, offset, length)) {
             cli_dbgmsg("cli_magic_scan_nested_fmap_type: map error occurred [%zu, %zu] not within [0, %zu]\n", offset, length, map->len);
-            return CL_CLEAN;
+            return CL_SUCCESS;
         }
 
         /* Length checked, now get map */
@@ -6156,15 +6156,15 @@ static cl_error_t scan_common(
             if (0 == evidence_num_indicators_type(ctx.this_layer_evidence, IndicatorType_Strong)) {
                 // And it looks like we haven't reported anything else, so report the last "potentially unwanted" one.
                 // cli_get_last_virus() will do that, grabbing the last alerting indicator of any type.
-                cl_error_t callback_ret = CL_CLEAN;
+                cl_error_t callback_ret = CL_SUCCESS;
 
-                while ((CL_CLEAN == callback_ret) &&
+                while ((CL_SUCCESS == callback_ret) &&
                        (0 < evidence_num_indicators_type(ctx.this_layer_evidence, IndicatorType_PotentiallyUnwanted))) {
                     callback_ret = cli_virus_found_cb(
                         &ctx,
                         cli_get_last_virus(&ctx),
                         IndicatorType_PotentiallyUnwanted);
-                    // If the callback returned CL_CLEAN then it will have also removed the indicator from evidence
+                    // If the callback returned CL_SUCCESS then it will have also removed the indicator from evidence
                     // And we must loop around and report the next one.
                 }
             }
@@ -6391,7 +6391,7 @@ cl_error_t cl_scandesc_ex(
     }
     if (sb.st_size <= 5) {
         cli_dbgmsg("cl_scandesc_callback: File too small (" STDu64 " bytes), ignoring\n", (uint64_t)sb.st_size);
-        status = CL_CLEAN;
+        status = CL_SUCCESS;
         goto done;
     }
     if ((engine->maxfilesize > 0) && ((uint64_t)sb.st_size > engine->maxfilesize)) {
@@ -6405,7 +6405,7 @@ cl_error_t cl_scandesc_ex(
             }
             status = CL_VIRUS;
         } else {
-            status = CL_CLEAN;
+            status = CL_SUCCESS;
         }
         goto done;
     }
@@ -6519,7 +6519,7 @@ cl_error_t cl_scanmap_ex(
             }
             return CL_VIRUS;
         }
-        return CL_CLEAN;
+        return CL_SUCCESS;
     }
 
     if (NULL != filename && map->name == NULL) {

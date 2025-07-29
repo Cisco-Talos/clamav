@@ -958,7 +958,7 @@ typedef enum scan_callback {
  *         Scan aborted by callback (the rest of the scan is skipped).
  *         This does not mark the file as clean or infected, it just skips the rest of the scan.
  *
- * @return CL_SUCCESS / CL_CLEAN
+ * @return CL_SUCCESS
  *
  *         File scan will continue.
  *
@@ -1008,7 +1008,7 @@ extern void cl_engine_set_scan_callback(struct cl_engine *engine, clcb_scan call
  * @param fd        File descriptor which is about to be scanned.
  * @param type      File type detected via magic - i.e. NOT on the fly - (e.g. "CL_TYPE_MSEXE").
  * @param context   Opaque application provided data.
- * @return          CL_CLEAN = File is scanned.
+ * @return          CL_SUCCESS = File is scanned.
  * @return          CL_BREAK = Allowed by callback - file is skipped and marked as clean.
  * @return          CL_VIRUS = Blocked by callback - file is skipped and marked as infected.
  */
@@ -1048,7 +1048,7 @@ extern void cl_engine_set_clcb_pre_cache(struct cl_engine *engine, clcb_pre_cach
  * @param recursion_level     Recursion level / depth of the current file.
  * @param layer_attributes    See LAYER_ATTRIBUTES_* flags.
  * @param context             Opaque application provided data.
- * @return                    CL_CLEAN = File is scanned.
+ * @return                    CL_SUCCESS = File is scanned.
  * @return                    CL_BREAK = Whitelisted by callback - file is skipped and marked as clean.
  * @return                    CL_VIRUS = Blacklisted by callback - file is skipped and marked as infected.
  */
@@ -1092,7 +1092,7 @@ extern void cl_engine_set_clcb_file_inspection(struct cl_engine *engine, clcb_fi
  * @param fd        File descriptor which is about to be scanned.
  * @param type      File type detected via magic - i.e. NOT on the fly - (e.g. "CL_TYPE_MSEXE").
  * @param context   Opaque application provided data.
- * @return          CL_CLEAN = File is scanned.
+ * @return          CL_SUCCESS = File is scanned.
  * @return          CL_BREAK = Allowed by callback - file is skipped and marked as clean.
  * @return          CL_VIRUS = Blocked by callback - file is skipped and marked as infected.
  */
@@ -1123,7 +1123,7 @@ extern void cl_engine_set_clcb_pre_scan(struct cl_engine *engine, clcb_pre_scan 
  * @param result    The scan result for the file.
  * @param virname   A signature name if there was one or more matches.
  * @param context   Opaque application provided data.
- * @return          CL_CLEAN = File is scanned.
+ * @return          CL_SUCCESS = File is scanned.
  * @return          CL_BREAK = Allowed by callback - file is skipped and marked as clean.
  * @return          CL_VIRUS = Blocked by callback - file is skipped and marked as infected.
  */
@@ -1341,7 +1341,7 @@ extern void cl_engine_set_clcb_hash(struct cl_engine *engine, clcb_hash callback
  * @param filepos_container File index in container.
  * @param context           Opaque application provided data.
  * @return                  CL_VIRUS to block (alert on)
- * @return                  CL_CLEAN to continue scanning
+ * @return                  CL_SUCCESS to continue scanning
  */
 typedef cl_error_t (*clcb_meta)(
     const char *container_type,
@@ -1593,7 +1593,7 @@ extern void cl_engine_stats_enable(struct cl_engine *engine);
  * @param[out] scanned    The number of bytes scanned / CL_COUNT_PRECISION.
  * @param engine          The scanning engine.
  * @param scanoptions     Scanning options.
- * @return cl_error_t     CL_CLEAN, CL_VIRUS, or an error code if an error occurred during the scan.
+ * @return cl_error_t     CL_SUCCESS, CL_VIRUS, or an error code if an error occurred during the scan.
  */
 extern cl_error_t cl_scandesc(
     int desc,
@@ -1619,7 +1619,7 @@ extern cl_error_t cl_scandesc(
  * @param scanoptions     Scanning options.
  * @param[in,out] context (Optional) An application-defined context struct, opaque to libclamav.
  *                        May be used within your callback functions.
- * @return cl_error_t     CL_CLEAN, CL_VIRUS, or an error code if an error occurred during the scan.
+ * @return cl_error_t     CL_SUCCESS, CL_VIRUS, or an error code if an error occurred during the scan.
  */
 extern cl_error_t cl_scandesc_callback(
     int desc,
@@ -1697,7 +1697,7 @@ extern cl_error_t cl_scandesc_ex(
  * @param[out] scanned    The number of bytes scanned / CL_COUNT_PRECISION.
  * @param engine          The scanning engine.
  * @param scanoptions     Scanning options.
- * @return cl_error_t     CL_CLEAN, CL_VIRUS, or an error code if an error occurred during the scan.
+ * @return cl_error_t     CL_SUCCESS, CL_VIRUS, or an error code if an error occurred during the scan.
  */
 extern cl_error_t cl_scanfile(
     const char *filename,
@@ -1721,7 +1721,7 @@ extern cl_error_t cl_scanfile(
  * @param scanoptions     Scanning options.
  * @param[in,out] context (Optional) An application-defined context struct, opaque to libclamav.
  *                        May be used within your callback functions.
- * @return cl_error_t     CL_CLEAN, CL_VIRUS, or an error code if an error occurred during the scan.
+ * @return cl_error_t     CL_SUCCESS, CL_VIRUS, or an error code if an error occurred during the scan.
  */
 extern cl_error_t cl_scanfile_callback(
     const char *filename,
@@ -1809,7 +1809,7 @@ extern cl_error_t cl_scanfile_ex(
  * @param scanoptions   The scanning options struct.
  * @param context       An application-defined context struct, opaque to
  *                      libclamav. May be used within your callback functions.
- * @return cl_error_t   CL_CLEAN if no signature matched. CL_VIRUS if a
+ * @return cl_error_t   CL_SUCCESS if no signature matched. CL_VIRUS if a
  *                      signature matched. Another CL_E* error code if an
  *                      error occurred.
  */
