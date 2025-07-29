@@ -660,8 +660,10 @@ static unsigned int parse_local_file_header(
     zip += LOCAL_HEADER_flen;
     zsize -= LOCAL_HEADER_flen;
 
-        cli_dbgmsg("cli_unzip: local header - ZMDNAME:%d:%.255s:%u:%u:%x:%u:%u:%u\n",
-               ((LOCAL_HEADER_flags & F_ENCR) != 0), name, LOCAL_HEADER_usize, LOCAL_HEADER_csize, LOCAL_HEADER_crc32, LOCAL_HEADER_method, file_count, ctx->recursion_level);
+    cli_dbgmsg("cli_unzip: local header - ZMDNAME:%d:%.255s:%u:%u:" /*%x:%u:*/ "%u:%u\n",
+               ((LOCAL_HEADER_flags & F_ENCR) != 0), name, usize, csize, file_count, ctx->recursion_level);
+    /* ZMDfmt virname:encrypted(0-1):filename(exact|*):usize(exact|*):csize(exact|*):crc32(exact|*):method(exact|*):fileno(exact|*):maxdepth(exact|*) */
+
     /* Scan file header metadata. */
     if (cli_matchmeta(ctx, name, LOCAL_HEADER_csize, LOCAL_HEADER_usize, (LOCAL_HEADER_flags & F_ENCR) != 0, file_count, LOCAL_HEADER_crc32) == CL_VIRUS) {
         *ret = CL_VIRUS;
