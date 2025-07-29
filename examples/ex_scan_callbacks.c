@@ -1083,6 +1083,22 @@ const char *cl_error_t_to_string(cl_error_t clerror)
     }
 }
 
+const char *cl_verdict_t_to_string(cl_verdict_t verdict)
+{
+    switch (verdict) {
+        case CL_VERDICT_NOTHING_FOUND:
+            return "CL_VERDICT_NOTHING_FOUND";
+        case CL_VERDICT_TRUSTED:
+            return "CL_VERDICT_TRUSTED";
+        case CL_VERDICT_STRONG_INDICATOR:
+            return "CL_VERDICT_STRONG_INDICATOR";
+        case CL_VERDICT_POTENTIALLY_UNWANTED:
+            return "CL_VERDICT_POTENTIALLY_UNWANTED";
+        default:
+            return "Unknown verdict value";
+    }
+}
+
 cl_error_t pre_hash_callback(cl_scan_layer_t *layer, void *context)
 {
     cl_error_t status;
@@ -1206,6 +1222,23 @@ static void printBytes(uint64_t bytes)
     }
 }
 
+int file_props_callback(const char *j_propstr, int rc, void *context)
+{
+    (void)context; // Unused in this example
+
+    printf("\n⭐In FILE_PROPS callback⭐\n");
+
+    if (j_propstr) {
+        printf("%s\n", j_propstr);
+    }
+
+    printf("Metadata JSON Return Code: %s (%d)\n", cl_error_t_to_string((cl_error_t)rc), rc);
+
+    // Pass through the return code so as not to alter the scan return code.
+    // A real application might want to handle this differently.
+    return rc;
+}
+
 /*
  * Exit codes:
  *  0: clean
@@ -1226,6 +1259,9 @@ int main(int argc, char **argv)
     const char *hash_hint       = NULL;
     const char *hash_alg        = NULL;
     const char *file_type_hint  = NULL;
+    bool allmatch               = true;
+    bool gen_json               = false;
+    bool debug_mode             = false;
 
     script_context_t *script_context = NULL;
 
@@ -1248,16 +1284,18 @@ int main(int argc, char **argv)
         "Example: %s -d /path/to/clamav.db -f /path/to/file.txt\n"
         "\n"
         "Options:\n"
-        "--help (-h)      : Help message.\n"
-        "--database (-d)  : Path to the ClamAV database.\n"
-        "--file (-f)      : Path to the file to scan.\n"
-        "--hash_hint      : (optional) Hash of file to scan.\n"
-        "--hash_alg       : (optional) Hash algorithm of hash_hint.\n"
-        "                   Will also change the hash algorithm reported at end of scan.\n"
-        "--file_type_hint : (optional) File type hint for the file to scan.\n"
-        "--script         : (optional) Path for non-interactive test script.\n"
-        "                   Script must be a new-line delimited list of integers from 1-to-5\n"
-        "                   Corresponding to the interactive scan options.\n"
+        "--help (-h)                : Help message.\n"
+        "--database (-d) FILE       : Path to the ClamAV database.\n"
+        "--file (-f)     FILE       : Path to the file to scan.\n"
+        "--hash-hint     HASH       : (optional) Hash of file to scan.\n"
+        "--hash-alg      ALGORITHM  : (optional) Hash algorithm of hash-hint.\n"
+        "                             Will also change the hash algorithm reported at end of scan.\n"
+        "--file-type-hint CL_TYPE_* : (optional) File type hint for the file to scan.\n"
+        "--script        FILE       : (optional) Path for non-interactive test script.\n"
+        "                             Script must be a new-line delimited list of integers from 1-to-5\n"
+        "                             Corresponding to the interactive scan options.\n"
+        "--one-match (-1)           : Disable allmatch (stops scans after one match).\n"
+        "--gen-json                 : Generate scan metadata JSON.\n"
         "\n"
         "Scripted scan options are:\n"
         "%s";
@@ -1276,15 +1314,24 @@ int main(int argc, char **argv)
         } else if (strcmp(argv[i], "--script") == 0) {
             script_filepath = argv[++i];
             printf("Script file: %s\n", script_filepath);
-        } else if (strcmp(argv[i], "--hash_hint") == 0) {
+        } else if (strcmp(argv[i], "--hash-hint") == 0) {
             hash_hint = argv[++i];
             printf("Hash hint: %s\n", hash_hint);
-        } else if (strcmp(argv[i], "--hash_alg") == 0) {
+        } else if (strcmp(argv[i], "--hash-alg") == 0) {
             hash_alg = argv[++i];
             printf("Hash algorithm: %s\n", hash_alg);
-        } else if (strcmp(argv[i], "--file_type_hint") == 0) {
+        } else if (strcmp(argv[i], "--file-type-hint") == 0) {
             file_type_hint = argv[++i];
             printf("File type hint: %s\n", file_type_hint);
+        } else if (strcmp(argv[i], "--one-match") == 0 || strcmp(argv[i], "-1") == 0) {
+            allmatch = false;
+            printf("Disabling allmatch (stops scans after one match).\n");
+        } else if (strcmp(argv[i], "--gen-json") == 0) {
+            gen_json = true;
+            printf("Enabling scan metadata JSON feature.\n");
+        } else if (strcmp(argv[i], "--debug") == 0) {
+            debug_mode = true;
+            printf("Enabling debug mode.\n");
         } else {
             printf("Unknown option: %s\n", argv[i]);
             printf(help_string, argv[0], argv[0], command_list);
@@ -1321,6 +1368,10 @@ int main(int argc, char **argv)
         goto done;
     }
 
+    if (debug_mode) {
+        cl_debug();
+    }
+
     if (!(engine = cl_engine_new())) {
         printf("Can't create new engine\n");
         goto done;
@@ -1352,10 +1403,14 @@ int main(int argc, char **argv)
 
     /* Enable all parsers plus heuristics, allmatch, and the gen-json metadata feature. */
     memset(&options, 0, sizeof(struct cl_scan_options));
-    options.parse |= ~0;                                 /* enable all parsers */
-    options.general |= CL_SCAN_GENERAL_HEURISTICS;       /* enable heuristic alert options */
-    options.general |= CL_SCAN_GENERAL_ALLMATCHES;       /* run in all-match mode, so it keeps looking for alerts after the first one */
-    options.general |= CL_SCAN_GENERAL_COLLECT_METADATA; /* collect metadata may enable collecting additional filenames (like in zip) */
+    options.parse |= ~0;                           /* enable all parsers */
+    options.general |= CL_SCAN_GENERAL_HEURISTICS; /* enable heuristic alert options */
+    if (allmatch) {
+        options.general |= CL_SCAN_GENERAL_ALLMATCHES; /* run in all-match mode, so it keeps looking for alerts after the first one */
+    }
+    if (gen_json) {
+        options.general |= CL_SCAN_GENERAL_COLLECT_METADATA; /* collect metadata may enable collecting additional filenames (like in zip) */
+    }
 
     /*
      * Set our callbacks.
@@ -1365,10 +1420,11 @@ int main(int argc, char **argv)
     cl_engine_set_scan_callback(engine, &post_scan_callback, CL_SCAN_CALLBACK_POST_SCAN);
     cl_engine_set_scan_callback(engine, &alert_callback, CL_SCAN_CALLBACK_ALERT);
     cl_engine_set_scan_callback(engine, &file_type_callback, CL_SCAN_CALLBACK_FILE_TYPE);
+    if (gen_json) {
+        cl_engine_set_clcb_file_props(engine, &file_props_callback);
+    }
 
     printf("Testing scan layer callbacks on: %s (fd: %d)\n", filename, target_fd);
-
-    // cl_debug();
 
     /*
      * Run the scan.
@@ -1405,22 +1461,9 @@ int main(int argc, char **argv)
     } else {
         printf("No file type provided for this file.\n");
     }
-    switch (verdict) {
-        case CL_VERDICT_NOTHING_FOUND: {
-            printf("Verdict:      Nothing found.\n");
-        } break;
-
-        case CL_VERDICT_TRUSTED: {
-            printf("Verdict:      Trusted.\n");
-        } break;
-
-        case CL_VERDICT_STRONG_INDICATOR: {
-            printf("Verdict:      Found Strong Indicator: %s\n", alert_name);
-        } break;
-
-        case CL_VERDICT_POTENTIALLY_UNWANTED: {
-            printf("Verdict:      Found Potentially Unwanted Indicator: %s\n", alert_name);
-        } break;
+    printf("Verdict:      %s\n", cl_verdict_t_to_string(verdict));
+    if (alert_name) {
+        printf("Alert Name:   %s\n", alert_name);
     }
     printf("Return Code:  %s (%d)\n", cl_error_t_to_string(ret), ret);
 

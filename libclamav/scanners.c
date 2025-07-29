@@ -4302,6 +4302,7 @@ void emax_reached(cli_ctx *ctx)
 static cl_error_t dispatch_file_inspection_callback(clcb_file_inspection cb, cli_ctx *ctx, const char *filetype)
 {
     cl_error_t status = CL_CLEAN;
+    cl_error_t append_ret;
 
     int fd              = -1;
     uint32_t fmap_index = ctx->recursion_level; /* index of current file */
@@ -4347,18 +4348,24 @@ static cl_error_t dispatch_file_inspection_callback(clcb_file_inspection cb, cli
 
     switch (status) {
         case CL_BREAK:
-            cli_dbgmsg("dispatch_file_inspection_callback: scan cancelled by callback\n");
-            status = CL_BREAK;
+            cli_dbgmsg("dispatch_file_inspection_callback: file trusted by callback\n");
+
+            // Remove any evidence for this layer and set the verdict to trusted.
+            (void)cli_trust_this_layer(ctx);
+
             break;
         case CL_VIRUS:
             cli_dbgmsg("dispatch_file_inspection_callback: file blocked by callback\n");
-            cli_append_virus(ctx, "Detected.By.Callback.Inspection");
-            status = CL_VIRUS;
+            append_ret = cli_append_virus(ctx, "Detected.By.Callback.Inspection");
+            if (append_ret == CL_VIRUS) {
+                status = CL_VIRUS;
+            }
             break;
-        case CL_CLEAN:
+        case CL_SUCCESS:
+            // No action requested by callback. Keep scanning.
             break;
         default:
-            status = CL_CLEAN;
+            status = CL_SUCCESS;
             cli_warnmsg("dispatch_file_inspection_callback: ignoring bad return code from callback\n");
     }
 
@@ -4371,6 +4378,7 @@ done:
 static cl_error_t dispatch_prescan_callback(clcb_pre_scan cb, cli_ctx *ctx, const char *filetype)
 {
     cl_error_t status = CL_CLEAN;
+    cl_error_t append_ret;
 
     if (cb) {
         perf_start(ctx, PERFT_PRECB);
@@ -4388,12 +4396,16 @@ static cl_error_t dispatch_prescan_callback(clcb_pre_scan cb, cli_ctx *ctx, cons
                 break;
             case CL_VIRUS:
                 cli_dbgmsg("dispatch_prescan_callback: file blocked by callback\n");
-                status = cli_append_virus(ctx, "Detected.By.Callback");
+                append_ret = cli_append_virus(ctx, "Detected.By.Callback");
+                if (append_ret == CL_VIRUS) {
+                    status = CL_VIRUS;
+                }
                 break;
-            case CL_CLEAN:
+            case CL_SUCCESS:
+                // No action requested by callback. Keep scanning.
                 break;
             default:
-                status = CL_CLEAN;
+                status = CL_SUCCESS;
                 cli_warnmsg("dispatch_prescan_callback: ignoring bad return code from callback\n");
         }
     }
@@ -4552,38 +4564,40 @@ done:
 
 cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
 {
-    cl_error_t ret                     = CL_CLEAN;
+    cl_error_t status = CL_SUCCESS;
+    cl_error_t ret;
+
     cl_error_t cache_check_result      = CL_VIRUS;
     cl_verdict_t verdict_at_this_level = CL_VERDICT_NOTHING_FOUND;
 
     bool cache_enabled              = true;
-    cli_file_t dettype              = 0;
+    cli_file_t dettype              = CL_TYPE_ANY;
     uint8_t typercg                 = 1;
     bitset_t *old_hook_lsig_matches = NULL;
     const char *filetype;
 
     if (!ctx->engine) {
         cli_errmsg("CRITICAL: engine == NULL\n");
-        ret = CL_ENULLARG;
+        status = CL_ENULLARG;
         goto early_ret;
     }
 
     if (!(ctx->engine->dboptions & CL_DB_COMPILED)) {
         cli_errmsg("CRITICAL: engine not compiled\n");
-        ret = CL_EMALFDB;
+        status = CL_EMALFDB;
         goto early_ret;
     }
 
     if (ctx->fmap->len <= 5) {
-        ret = CL_CLEAN;
+        status = CL_SUCCESS;
         cli_dbgmsg("cli_magic_scan: File is too small (%zu bytes), ignoring.\n", ctx->fmap->len);
         goto early_ret;
     }
 
-    if (cli_updatelimits(ctx, ctx->fmap->len) != CL_CLEAN) {
+    if (cli_updatelimits(ctx, ctx->fmap->len) != CL_SUCCESS) {
         emax_reached(ctx);
-        ret = CL_CLEAN;
-        cli_dbgmsg("cli_magic_scan: returning %d %s (no post, no cache)\n", ret, __AT__);
+        status = CL_SUCCESS;
+        cli_dbgmsg("cli_magic_scan: returning %d %s (no post, no cache)\n", status, __AT__);
         goto early_ret;
     }
 
@@ -4604,9 +4618,9 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
     }
     perf_stop(ctx, PERFT_FT);
     if (type == CL_TYPE_ERROR) {
-        ret = CL_EREAD;
+        status = CL_EREAD;
         cli_dbgmsg("cli_magic_scan: cli_determine_fmap_type returned CL_TYPE_ERROR\n");
-        cli_dbgmsg("cli_magic_scan: returning %d %s (no post, no cache)\n", ret, __AT__);
+        cli_dbgmsg("cli_magic_scan: returning %d %s (no post, no cache)\n", status, __AT__);
         goto early_ret;
     }
     filetype = cli_ftname(type);
@@ -4615,8 +4629,9 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
     ret = cli_recursion_stack_change_type(ctx, type, true /* ? */);
     if (CL_SUCCESS != ret) {
         cli_dbgmsg("cli_magic_scan: cli_recursion_stack_change_type returned %d\n", ret);
-        cli_dbgmsg("cli_magic_scan: returning %d %s (no post, no cache)\n", ret, __AT__);
-        goto early_ret;
+        // We must go to done here (and not early_ret), because `ret` needs to be tidied up before returning.
+        status = ret;
+        goto done;
     }
 
     /*
@@ -4624,6 +4639,7 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
      */
     ret = cli_dispatch_scan_callback(ctx, CL_SCAN_CALLBACK_PRE_HASH);
     if (CL_SUCCESS != ret) {
+        status = ret;
         goto done;
     }
 
@@ -4632,6 +4648,7 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
      */
     ret = dispatch_prescan_callback(ctx->engine->cb_pre_cache, ctx, filetype);
     if (CL_VERIFIED == ret || CL_VIRUS == ret) {
+        status = ret;
         goto done;
     }
 
@@ -4645,6 +4662,7 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
         } else {
             ret = CL_CLEAN;
         }
+        status = ret;
         goto done;
     }
 
@@ -4670,6 +4688,7 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
                 ret = fmap_will_need_hash_later(ctx->fmap, hash_type);
                 if (CL_SUCCESS != ret) {
                     cli_dbgmsg("cli_check_fp: Failed to set fmap to need the %s hash later\n", cli_hash_name(hash_type));
+                    status = ret;
                     goto done;
                 }
             }
@@ -4686,7 +4705,7 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
                     cli_dbgmsg("cli_magic_scan: Failed to get a hash for the current fmap.\n");
                     // It may be that the file was truncated between the time we started the scan and the time we got the hash.
                     // Not a reason to print an error message.
-                    ret = CL_SUCCESS;
+                    status = CL_SUCCESS;
                     goto done;
                 }
 
@@ -4698,8 +4717,9 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
 
                 ret = cli_jsonstr(ctx->this_layer_metadata_json, cli_hash_name(hash_type), hash_string);
                 if (ret != CL_SUCCESS) {
-                    cli_dbgmsg("cli_magic_scan: returning %d %s (no post, no cache)\n", ret, __AT__);
-                    goto early_ret;
+                    cli_dbgmsg("cli_magic_scan: Failed to store the %s hash in the metadata JSON.\n", cli_hash_name(hash_type));
+                    status = ret;
+                    goto done;
                 }
             }
         }
@@ -4715,8 +4735,10 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
     }
 
     if (cache_enabled && (cache_check_result != CL_VIRUS)) {
-        ret = CL_SUCCESS;
-        cli_dbgmsg("cli_magic_scan: returning %d %s (no post, no cache)\n", ret, __AT__);
+        status = CL_SUCCESS;
+        cli_dbgmsg("cli_magic_scan: returning %d %s (no post, no cache)\n", status, __AT__);
+        // We can go to early_ret here, because we know status is CL_SUCCESS, and we obviously add to the cache.
+        // This does mean, however, that we do not run the post-scan callback for layers that are cached.
         goto early_ret;
     }
 
@@ -4729,6 +4751,7 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
      */
     ret = cli_dispatch_scan_callback(ctx, CL_SCAN_CALLBACK_PRE_SCAN);
     if (CL_SUCCESS != ret) {
+        status = ret;
         goto done;
     }
 
@@ -4737,13 +4760,14 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
      */
     ret = dispatch_prescan_callback(ctx->engine->cb_pre_scan, ctx, filetype);
     if (CL_VERIFIED == ret || CL_VIRUS == ret) {
+        status = ret;
         goto done;
     }
 
     // If none of the scan options are enabled, then we can skip parsing and just do a raw pattern match.
     // For this check, we don't care if the CL_SCAN_GENERAL_ALLMATCHES option is enabled, hence the `~`.
     if (!((ctx->options->general & ~CL_SCAN_GENERAL_ALLMATCHES) || (ctx->options->parse) || (ctx->options->heuristic) || (ctx->options->mail) || (ctx->options->dev))) {
-        ret = cli_scan_fmap(ctx, CL_TYPE_ANY, false, NULL, AC_SCAN_VIR, NULL);
+        status = cli_scan_fmap(ctx, CL_TYPE_ANY, false, NULL, AC_SCAN_VIR, NULL);
         // It doesn't matter what was returned, always go to the end after this. Raw mode! No parsing files!
         goto done;
     }
@@ -4752,7 +4776,7 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
     // The ctx one is NULL at present.
     ctx->hook_lsig_matches = cli_bitset_init();
     if (NULL == ctx->hook_lsig_matches) {
-        ret = CL_EMEM;
+        status = CL_EMEM;
         goto done;
     }
 
@@ -4765,7 +4789,7 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
 
         // Evaluate the result from the scan to see if it end the scan of this layer early,
         // and to decid if we should propagate an error or not.
-        if (result_should_goto_done(ctx, ret, &ret)) {
+        if (result_should_goto_done(ctx, ret, &status)) {
             goto done;
         }
     }
@@ -5196,7 +5220,7 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
 
     // Evaluate the result from the parsers to see if it end the scan of this layer early,
     // and to decide if we should propagate an error or not.
-    if (result_should_goto_done(ctx, ret, &ret)) {
+    if (result_should_goto_done(ctx, ret, &status)) {
         goto done;
     }
 
@@ -5228,7 +5252,7 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
 
         // Evaluate the result from the scan to see if it end the scan of this layer early,
         // and to decid if we should propagate an error or not.
-        if (result_should_goto_done(ctx, ret, &ret)) {
+        if (result_should_goto_done(ctx, ret, &status)) {
             goto done;
         }
     }
@@ -5350,17 +5374,22 @@ done:
      * Run the post_scan callback.
      */
     ret = cli_dispatch_scan_callback(ctx, CL_SCAN_CALLBACK_POST_SCAN);
+    if (CL_SUCCESS != ret) {
+        cli_dbgmsg("cli_magic_scan: POST_SCAN callback returned %d\n", ret);
+        status = ret;
+    }
 
     // Filter the result from the parsers so we don't propagate non-fatal errors.
-    // And to convert CL_VERIFIED -> CL_CLEAN
-    (void)result_should_goto_done(ctx, ret, &ret);
+    // And to convert CL_VERIFIED -> CL_SUCCESS
+    (void)result_should_goto_done(ctx, status, &status);
 
     /*
      * Run the deprecated post-scan callback (if one exists) and provide the verdict for this layer.
      */
-    cli_dbgmsg("cli_magic_scan: returning %d %s\n", ret, __AT__);
+    cli_dbgmsg("cli_magic_scan: returning %d %s\n", status, __AT__);
     if (ctx->engine->cb_post_scan) {
         cl_error_t callback_ret;
+        cl_error_t append_ret;
         const char *virusname = NULL;
 
         // Get the last signature that matched (if any).
@@ -5375,29 +5404,43 @@ done:
         switch (callback_ret) {
             case CL_BREAK:
                 cli_dbgmsg("cli_magic_scan: file allowed by post_scan callback\n");
-                ret = CL_CLEAN;
+
+                // Remove any evidence for this layer and set the verdict to trusted.
+                (void)cli_trust_this_layer(ctx);
+
+                //status = CL_SUCCESS; // Do override the status here.
+                // If status == CL_VIRUS, we'll fix when we look at the verdict.
                 break;
             case CL_VIRUS:
                 cli_dbgmsg("cli_magic_scan: file blocked by post_scan callback\n");
-                callback_ret = cli_append_virus(ctx, "Detected.By.Callback");
-                if (callback_ret == CL_VIRUS) {
-                    ret = CL_VIRUS;
+                append_ret = cli_append_virus(ctx, "Detected.By.Callback");
+                if (append_ret == CL_VIRUS) {
+                    status = CL_VIRUS;
                 }
                 break;
-            case CL_CLEAN:
+            case CL_SUCCESS:
+                // No action requested by callback. Keep scanning.
                 break;
             default:
-                ret = CL_CLEAN;
+                //status = CL_SUCCESS; // Do override the status here, just log a warning.
                 cli_warnmsg("cli_magic_scan: ignoring bad return code from post_scan callback\n");
         }
     }
 
+    /*
+     * Check the verdict for this layer.
+     * If the verdict is CL_VERDICT_TRUSTED, remove any evidence for this layer and clear CL_VIRUS status (if set)
+     * Otherwise, we'll update the verdict based on the evidence.
+     */
     if (CL_VERDICT_TRUSTED == ctx->recursion_stack[ctx->recursion_level].verdict) {
         /* Remove any alerts for this layer. */
         if (NULL != ctx->recursion_stack[ctx->recursion_level].evidence) {
             evidence_free(ctx->recursion_stack[ctx->recursion_level].evidence);
             ctx->recursion_stack[ctx->recursion_level].evidence = NULL;
             ctx->this_layer_evidence                            = NULL;
+        }
+        if (CL_VIRUS == status) {
+            status = CL_SUCCESS; // If we have a CL_VERDICT_TRUSTED, we should not return CL_VIRUS.
         }
     } else {
         /*
@@ -5437,7 +5480,7 @@ early_ret:
         ctx->hook_lsig_matches = old_hook_lsig_matches;
     }
 
-    return ret;
+    return status;
 }
 
 cl_error_t cli_magic_scan_desc_type(int desc, const char *filepath, cli_ctx *ctx, cli_file_t type,
