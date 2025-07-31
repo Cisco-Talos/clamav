@@ -55,18 +55,20 @@ struct cl_fmap {
     uint64_t pages;
     uint64_t pgsz;
     uint64_t paged;
-    bool aging;           /** indicates if we should age off memory mapped pages */
-    bool dont_cache_flag; /** indicates if we should not cache scan results for this fmap. Used if limits exceeded */
-    bool handle_is_fd;    /** non-zero if map->handle is an fd. */
-    size_t offset;        /** file offset representing start of original fmap, if the fmap created reading from a file starting at offset other than 0 */
-    size_t nested_offset; /** offset from start of original fmap (data) for nested scan. 0 for orig fmap. */
-    size_t real_len;      /** len from start of original fmap (data) to end of current (possibly nested) map. */
-                          /* real_len == nested_offset + len.
-                             real_len is needed for nested maps because we only reference the original mapping data.
-                             We convert caller's fmap offsets & lengths to real data offsets using nested_offset & real_len. */
+    bool aging;           /** Indicates if we should age off memory mapped pages */
+    bool dont_cache_flag; /** Indicates if we should not cache scan results for this fmap. Used if limits exceeded */
+    bool handle_is_fd;    /** Non-zero if `map->handle` is an fd. This is needed so that `fmap_fd()` knows if it can
+                              return a file descriptor. If it's some other kind of handle, then `fmap_fd()` has to return -1. */
+    size_t offset;        /** File offset representing start of original fmap, if the fmap created reading from a file starting at offset other than 0.
+                              `offset` & `len` are critical information for anyone using the file descriptor/handle */
+    size_t nested_offset; /** Offset from start of original fmap (data) for nested scan. 0 for orig fmap. */
+    size_t real_len;      /** Length from start of original fmap (data) to end of current (possibly nested) map.
+                              `real_len == nested_offset + len`.
+                              `real_len` is needed for nested maps because we only reference the original mapping data.
+                              We convert caller's fmap offsets & lengths to real data offsets using `nested_offset` & `real_len`. */
 
     /* external */
-    size_t len; /** length of data from nested_offset, accessible via current fmap */
+    size_t len; /** Length of data from nested_offset, accessible via current fmap */
 
     /* real_len = nested_offset + len
      * file_offset = offset + nested_offset + need_offset
@@ -84,14 +86,19 @@ struct cl_fmap {
     void (*unneed_off)(fmap_t *, size_t at, size_t len);
     void *windows_file_handle;
     void *windows_map_handle;
-    bool have_md5;
-    unsigned char md5[CLI_HASHLEN_MD5];
-    bool have_sha1;
-    unsigned char sha1[CLI_HASHLEN_SHA1];
-    bool have_sha256;
-    unsigned char sha256[CLI_HASHLEN_SHA256];
+
+    /* flags to indicate if we should calculate a hash next time we calculate any hashes */
+    bool will_need_hash[CLI_HASH_AVAIL_TYPES];
+
+    /* flags to indicate if we have calculated a hash */
+    bool have_hash[CLI_HASH_AVAIL_TYPES];
+
+    /* hash values */
+    uint8_t hash[CLI_HASH_AVAIL_TYPES][CLI_HASHLEN_MAX];
+
     uint64_t *bitmap;
-    char *name;
+    char *name; /* name of the file, e.g. as recorded in a zip file entry record */
+    char *path; /* path to the file/tempfile, if fmap was created from a file descriptor */
 };
 
 /**
@@ -101,14 +108,15 @@ struct cl_fmap {
  * @param offset    Offset into file for start of map.
  * @param len       Length from offset for size of map.
  * @param name      (optional) Original name of the file (to set fmap name metadata)
- * @return fmap_t*  The newly created fmap.  Free it with `funmap()`
+ * @param path      (optional) Original path of the file (to set fmap path metadata)
+ * @return fmap_t*  The newly created fmap.  Free it with `fmap_free()`
  */
-fmap_t *fmap(int fd, off_t offset, size_t len, const char *name);
+fmap_t *fmap_new(int fd, off_t offset, size_t len, const char *name, const char *path);
 
 /**
  * @brief Create  new fmap given a file descriptor.
  *
- * This variant of fmap() provides a boolean output variable to indicate on
+ * This variant of fmap_new() provides a boolean output variable to indicate on
  * failure if the failure was because the file is empty (not really a failure).
  *
  * @param fd            File descriptor of file to be mapped.
@@ -116,9 +124,10 @@ fmap_t *fmap(int fd, off_t offset, size_t len, const char *name);
  * @param len           Length from offset for size of map.
  * @param[out] empty    Boolean will be non-zero if the file couldn't be mapped because it is empty.
  * @param name          (optional) Original name of the file (to set fmap name metadata)
- * @return fmap_t*      The newly created fmap.  Free it with `funmap()`
+ * @param path          (optional) Original path of the file (to set fmap path metadata)
+ * @return fmap_t*      The newly created fmap.  Free it with `fmap_free()`
  */
-fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty, const char *name);
+fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty, const char *name, const char *path);
 
 /**
  * @brief Create a new fmap given a buffer.
@@ -155,7 +164,7 @@ void free_duplicate_fmap(cl_fmap_t *map);
  *
  * @param m The map to be free'd.
  */
-static inline void funmap(fmap_t *m)
+static inline void fmap_free(fmap_t *m)
 {
     m->unmap(m);
 }
@@ -430,6 +439,22 @@ cl_error_t fmap_dump_to_file(fmap_t *map, const char *filepath, const char *tmpd
 int fmap_fd(fmap_t *m);
 
 /**
+ * @brief Indicate that we will want to calculate this hash later.asm
+ *
+ * Set a flag to provide advanced notice that the next time we get a hash and
+ * it has to calculate the hash, it will also calculate this hash.
+ *
+ * This is an optimization so that all hashes may be calculated in one pass
+ * of the file rather than doing multiple passes of the file for each
+ * needed hash.
+ *
+ * @param map       The map in question.
+ * @param type      The type of hash we'll need.
+ * @return cl_error_t CL_SUCCESS if was able to set the flag, else some error.
+ */
+cl_error_t fmap_will_need_hash_later(fmap_t *map, cli_hash_type_t type);
+
+/**
  * @brief Get a pointer to the fmap hash.
  *
  * Will calculate the hash if not already previously calculated.
@@ -439,7 +464,7 @@ int fmap_fd(fmap_t *m);
  * @param type      The type of hash to calculate.
  * @return cl_error_t CL_SUCCESS if was able to get the hash, else some error.
  */
-cl_error_t fmap_get_hash(fmap_t *map, unsigned char **hash, cli_hash_type_t type);
+cl_error_t fmap_get_hash(fmap_t *map, uint8_t **hash, cli_hash_type_t type);
 
 /**
  * @brief Set the hash for the fmap that was previously calculated.
@@ -449,6 +474,6 @@ cl_error_t fmap_get_hash(fmap_t *map, unsigned char **hash, cli_hash_type_t type
  * @param type      The type of hash to calculate.
  * @return cl_error_t CL_SUCCESS if was able to set the hash, else some error.
  */
-cl_error_t fmap_set_hash(fmap_t *map, unsigned char *hash, cli_hash_type_t type);
+cl_error_t fmap_set_hash(fmap_t *map, uint8_t *hash, cli_hash_type_t type);
 
 #endif

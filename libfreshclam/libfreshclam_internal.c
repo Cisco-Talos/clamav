@@ -121,6 +121,8 @@ freshclam_dat_v1_t *g_freshclamDat = NULL;
 
 uint8_t g_lastRay[CFRAY_LEN + 1] = {0};
 
+bool g_bFipsLimits = false;
+
 /** @brief Generate a Version 4 UUID according to RFC-4122
  *
  * Uses the openssl RAND_bytes function to generate a Version 4 UUID.
@@ -1550,7 +1552,7 @@ static fc_error_t getcvd(
     }
 
     // Now that we have the cvd and the sign file, we can verify the cvd.
-    if (CL_SUCCESS != (cl_ret = cl_cvdverify(tmpfile))) {
+    if (CL_SUCCESS != (cl_ret = cli_cvdverify(tmpfile, g_bFipsLimits, g_signVerifier))) {
         logg(LOGG_ERROR, "Verification: %s\n", cl_strerror(cl_ret));
         status = FC_EBADCVD;
         goto done;
@@ -1663,7 +1665,7 @@ static fc_error_t mkdir_and_chdir_for_cdiff_tmp(const char *database, const char
         /*
          * 3) Unpack the existing CVD/CLD database to this directory.
          */
-        if (CL_SUCCESS != cli_cvdunpack_and_verify(cvdfile, tmpdir, is_cld == true, g_signVerifier)) {
+        if (CL_SUCCESS != cli_cvdunpack_and_verify(cvdfile, tmpdir, is_cld == true, g_bFipsLimits, g_signVerifier)) {
             logg(LOGG_ERROR, "mkdir_and_chdir_for_cdiff_tmp: Can't unpack %s into %s\n", cvdfile, tmpdir);
             cli_rmdirs(tmpdir);
             goto done;
@@ -1756,7 +1758,7 @@ static fc_error_t downloadPatchAndApply(
 
     if (FC_SUCCESS != (ret = downloadFile(sign_url, patch_sign_file, 1, logerr, 1, 0))) {
         // No sign file is not an error.
-        // Just means we'll have to fall back to the legacy sha256-based rsa method for verifying CDIFFs.
+        // Just means we'll have to fall back to the legacy sha2-256-based rsa method for verifying CDIFFs.
         logg(LOGG_DEBUG, "No external .sign digital signature file for %s\n", patch);
     } else {
         logg(LOGG_DEBUG, "Downloaded digital signature file: %s\n", patch_sign_file);

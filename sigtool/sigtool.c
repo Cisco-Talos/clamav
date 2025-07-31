@@ -162,7 +162,7 @@ static int hexdump(void)
     return 0;
 }
 
-static int hashpe(const char *filename, unsigned int class, int type)
+static int hashpe(const char *filename, unsigned int class, cli_hash_type_t type)
 {
     int status = -1;
     STATBUF sb;
@@ -184,7 +184,7 @@ static int hashpe(const char *filename, unsigned int class, int type)
     lseek(fd, 0, SEEK_SET);
     FSTAT(fd, &sb);
 
-    new_map = fmap(fd, 0, sb.st_size, filename);
+    new_map = fmap_new(fd, 0, sb.st_size, filename, filename);
     if (NULL == new_map) {
         mprintf(LOGG_ERROR, "hashpe: Can't create fmap for open file\n");
         goto done;
@@ -215,14 +215,12 @@ static int hashpe(const char *filename, unsigned int class, int type)
     /* prepare context */
     ctx.engine = engine;
 
-    ctx.evidence = evidence_new();
-
     ctx.options        = &options;
     ctx.options->parse = ~0;
     ctx.dconf          = (struct cli_dconf *)engine->dconf;
 
     ctx.recursion_stack_size = ctx.engine->max_recursion_level;
-    ctx.recursion_stack      = calloc(sizeof(recursion_level_t), ctx.recursion_stack_size);
+    ctx.recursion_stack      = calloc(sizeof(cli_scan_layer_t), ctx.recursion_stack_size);
     if (!ctx.recursion_stack) {
         goto done;
     }
@@ -278,13 +276,13 @@ static int hashpe(const char *filename, unsigned int class, int type)
 done:
     /* Cleanup */
     if (NULL != new_map) {
-        funmap(new_map);
+        fmap_free(new_map);
+    }
+    if (ctx.recursion_stack[ctx.recursion_level].evidence) {
+        evidence_free(ctx.recursion_stack[ctx.recursion_level].evidence);
     }
     if (NULL != ctx.recursion_stack) {
         free(ctx.recursion_stack);
-    }
-    if (NULL != ctx.evidence) {
-        evidence_free(ctx.evidence);
     }
     if (NULL != engine) {
         cl_engine_free(engine);
@@ -295,7 +293,7 @@ done:
     return status;
 }
 
-static int hashsig(const struct optstruct *opts, unsigned int class, int type)
+static int hashsig(const struct optstruct *opts, unsigned int class, cli_hash_type_t type)
 {
     char *hash;
     unsigned int i;
@@ -309,7 +307,7 @@ static int hashsig(const struct optstruct *opts, unsigned int class, int type)
                 return -1;
             } else {
                 if ((sb.st_mode & S_IFMT) == S_IFREG) {
-                    if ((class == 0) && (hash = cli_hashfile(opts->filename[i], type))) {
+                    if ((class == 0) && (hash = cli_hashfile(opts->filename[i], NULL, type))) {
                         mprintf(LOGG_INFO, "%s:%u:%s\n", hash, (unsigned int)sb.st_size, basename(opts->filename[i]));
                         free(hash);
                     } else if ((class > 0) && (hashpe(opts->filename[i], class, type) == 0)) {
@@ -437,7 +435,7 @@ done:
     return status;
 }
 
-static cli_ctx *convenience_ctx(int fd)
+static cli_ctx *convenience_ctx(int fd, const char *filepath)
 {
     cl_error_t status        = CL_EMEM;
     cli_ctx *ctx             = NULL;
@@ -469,7 +467,7 @@ static cli_ctx *convenience_ctx(int fd)
     }
 
     /* fake input fmap */
-    new_map = fmap(fd, 0, 0, NULL);
+    new_map = fmap_new(fd, 0, 0, NULL, filepath);
     if (NULL == new_map) {
         printf("convenience_ctx: fmap failed\n");
         goto done;
@@ -484,12 +482,10 @@ static cli_ctx *convenience_ctx(int fd)
 
     ctx->engine = (const struct cl_engine *)engine;
 
-    ctx->evidence = evidence_new();
-
     ctx->dconf = (struct cli_dconf *)engine->dconf;
 
     ctx->recursion_stack_size = ctx->engine->max_recursion_level;
-    ctx->recursion_stack      = calloc(sizeof(recursion_level_t), ctx->recursion_stack_size);
+    ctx->recursion_stack      = calloc(sizeof(cli_scan_layer_t), ctx->recursion_stack_size);
     if (!ctx->recursion_stack) {
         status = CL_EMEM;
         goto done;
@@ -515,11 +511,14 @@ static cli_ctx *convenience_ctx(int fd)
 done:
     if (CL_SUCCESS != status) {
         if (NULL != new_map) {
-            funmap(new_map);
+            fmap_free(new_map);
         }
         if (NULL != ctx) {
             if (NULL != ctx->options) {
                 free(ctx->options);
+            }
+            if (ctx->recursion_stack[ctx->recursion_level].evidence) {
+                evidence_free(ctx->recursion_stack[ctx->recursion_level].evidence);
             }
             if (NULL != ctx->recursion_stack) {
                 free(ctx->recursion_stack);
@@ -542,14 +541,20 @@ static void destroy_ctx(cli_ctx *ctx)
             /* Clean up any fmaps */
             while (ctx->recursion_level > 0) {
                 if (NULL != ctx->recursion_stack[ctx->recursion_level].fmap) {
-                    funmap(ctx->recursion_stack[ctx->recursion_level].fmap);
+                    fmap_free(ctx->recursion_stack[ctx->recursion_level].fmap);
                     ctx->recursion_stack[ctx->recursion_level].fmap = NULL;
                 }
                 ctx->recursion_level -= 1;
             }
+
             if (NULL != ctx->recursion_stack[0].fmap) {
-                funmap(ctx->recursion_stack[0].fmap);
+                fmap_free(ctx->recursion_stack[0].fmap);
                 ctx->recursion_stack[0].fmap = NULL;
+            }
+
+            if (NULL != ctx->recursion_stack[0].evidence) {
+                evidence_free(ctx->recursion_stack[0].evidence);
+                ctx->recursion_stack[0].evidence = NULL;
             }
 
             free(ctx->recursion_stack);
@@ -566,10 +571,6 @@ static void destroy_ctx(cli_ctx *ctx)
             ctx->options = NULL;
         }
 
-        if (NULL != ctx->evidence) {
-            evidence_free(ctx->evidence);
-        }
-
         free(ctx);
     }
 }
@@ -584,9 +585,9 @@ static int htmlnorm(const struct optstruct *opts)
         return -1;
     }
 
-    if (NULL != (ctx = convenience_ctx(fd))) {
+    if (NULL != (ctx = convenience_ctx(fd, optget(opts, "html-normalise")->strarg))) {
         html_normalise_map(ctx, ctx->fmap, ".", NULL, NULL);
-        funmap(ctx->fmap);
+        fmap_free(ctx->fmap);
     } else
         mprintf(LOGG_ERROR, "fmap failed\n");
 
@@ -620,7 +621,7 @@ static int asciinorm(const struct optstruct *opts)
         return -1;
     }
 
-    if (!(map = fmap(fd, 0, 0, fname))) {
+    if (!(map = fmap_new(fd, 0, 0, fname, fname))) {
         mprintf(LOGG_ERROR, "fmap: Could not map fd %d\n", fd);
         close(fd);
         free(norm_buff);
@@ -631,7 +632,7 @@ static int asciinorm(const struct optstruct *opts)
         mprintf(LOGG_ERROR, "asciinorm: File size of %zu too large\n", map->len);
         close(fd);
         free(norm_buff);
-        funmap(map);
+        fmap_free(map);
         return -1;
     }
 
@@ -640,7 +641,7 @@ static int asciinorm(const struct optstruct *opts)
         mprintf(LOGG_ERROR, "asciinorm: Can't open file ./normalised_text\n");
         close(fd);
         free(norm_buff);
-        funmap(map);
+        fmap_free(map);
         return -1;
     }
 
@@ -657,7 +658,7 @@ static int asciinorm(const struct optstruct *opts)
             close(fd);
             close(ofd);
             free(norm_buff);
-            funmap(map);
+            fmap_free(map);
             return -1;
         }
         text_normalize_reset(&state);
@@ -666,7 +667,7 @@ static int asciinorm(const struct optstruct *opts)
     close(fd);
     close(ofd);
     free(norm_buff);
-    funmap(map);
+    fmap_free(map);
     return 0;
 }
 
@@ -720,7 +721,7 @@ static int utf16decode(const struct optstruct *opts)
     return 0;
 }
 
-static char *sha256file(const char *file, unsigned int *size)
+static char *sha2_256_file(const char *file, unsigned int *size)
 {
     FILE *fh;
     unsigned int i, bytes;
@@ -728,12 +729,12 @@ static char *sha256file(const char *file, unsigned int *size)
     char *sha;
     void *ctx;
 
-    ctx = cl_hash_init("sha256");
+    ctx = cl_hash_init("sha2-256");
     if (!(ctx))
         return NULL;
 
     if (!(fh = fopen(file, "rb"))) {
-        mprintf(LOGG_ERROR, "sha256file: Can't open file %s\n", file);
+        mprintf(LOGG_ERROR, "sha2_256_file: Can't open file %s\n", file);
         cl_hash_destroy(ctx);
         return NULL;
     }
@@ -786,8 +787,8 @@ static int writeinfo(const char *dbname, const char *builder, const char *header
 
     if (dblist2cnt) {
         for (i = 0; i < dblist2cnt; i++) {
-            if (!(pt = sha256file(dblist2[i], &bytes))) {
-                mprintf(LOGG_ERROR, "writeinfo: Can't generate SHA256 for %s\n", file);
+            if (!(pt = sha2_256_file(dblist2[i], &bytes))) {
+                mprintf(LOGG_ERROR, "writeinfo: Can't generate SHA2-256 for %s\n", file);
                 fclose(fh);
                 return -1;
             }
@@ -804,8 +805,8 @@ static int writeinfo(const char *dbname, const char *builder, const char *header
         for (i = 0; dblist[i].ext; i++) {
             snprintf(dbfile, sizeof(dbfile), "%s.%s", dbname, dblist[i].ext);
             if (strcmp(dblist[i].ext, "info") && !access(dbfile, R_OK)) {
-                if (!(pt = sha256file(dbfile, &bytes))) {
-                    mprintf(LOGG_ERROR, "writeinfo: Can't generate SHA256 for %s\n", file);
+                if (!(pt = sha2_256_file(dbfile, &bytes))) {
+                    mprintf(LOGG_ERROR, "writeinfo: Can't generate SHA2-256 for %s\n", file);
                     fclose(fh);
                     return -1;
                 }
@@ -821,7 +822,7 @@ static int writeinfo(const char *dbname, const char *builder, const char *header
     }
     if (!optget(opts, "unsigned")->enabled) {
         rewind(fh);
-        ctx = cl_hash_init("sha256");
+        ctx = cl_hash_init("sha2-256");
         if (!(ctx)) {
             fclose(fh);
             return -1;
@@ -1154,6 +1155,7 @@ static int build(const struct optstruct *opts)
     unsigned int dblist2cnt = 0;
     DIR *dd;
     struct dirent *dent;
+    unsigned int dboptions = 0;
 
 #define FREE_LS(x)                   \
     for (i = 0; i < dblist2cnt; i++) \
@@ -1193,7 +1195,13 @@ static int build(const struct optstruct *opts)
         }
     }
 
-    if ((ret = cl_load(".", engine, &sigs, CL_DB_STDOPT | CL_DB_PUA | CL_DB_SIGNED))) {
+    dboptions = CL_DB_STDOPT | CL_DB_PUA | CL_DB_SIGNED;
+
+    if (optget(opts, "fips-limits")->enabled) {
+        dboptions |= CL_DB_FIPS_LIMITS;
+    }
+
+    if ((ret = cl_load(".", engine, &sigs, dboptions))) {
         mprintf(LOGG_ERROR, "build: Can't load database: %s\n", cl_strerror(ret));
         cl_engine_free(engine);
         return -1;
@@ -1435,7 +1443,7 @@ static int build(const struct optstruct *opts)
         return -1;
     }
 
-    if (!(pt = cli_hashstream(fh, buffer, 1))) {
+    if (!(pt = cli_hashstream(fh, buffer, CLI_HASH_MD5))) {
         mprintf(LOGG_ERROR, "build: Can't generate MD5 checksum for %s\n", tarfile);
         fclose(fh);
         unlink(tarfile);
@@ -1540,7 +1548,7 @@ static int build(const struct optstruct *opts)
         return -1;
     }
 
-    if (CL_SUCCESS != cl_cvdunpack_ex(olddb, pt, true, NULL)) {
+    if (CL_SUCCESS != cl_cvdunpack_ex(olddb, pt, NULL, CL_DB_UNSIGNED)) {
         mprintf(LOGG_ERROR, "build: Can't unpack CVD file %s\n", olddb);
         removeTempDir(opts, pt);
         free(pt);
@@ -1555,7 +1563,7 @@ static int build(const struct optstruct *opts)
         return -1;
     }
 
-    if (CL_SUCCESS != cl_cvdunpack_ex(newcvd, pt, true, NULL)) {
+    if (CL_SUCCESS != cl_cvdunpack_ex(newcvd, pt, NULL, CL_DB_UNSIGNED)) {
         mprintf(LOGG_ERROR, "build: Can't unpack CVD file %s\n", newcvd);
         removeTempDir(opts, pt);
         free(pt);
@@ -1604,7 +1612,9 @@ static int build(const struct optstruct *opts)
 static int unpack(const struct optstruct *opts)
 {
     char name[512], *dbdir;
-    const char *localdbdir = NULL;
+    const char *localdbdir      = NULL;
+    const char *certs_directory = NULL;
+    uint32_t dboptions          = 0;
 
     if (optget(opts, "datadir")->active)
         localdbdir = optget(opts, "datadir")->strarg;
@@ -1627,12 +1637,27 @@ static int unpack(const struct optstruct *opts)
         name[sizeof(name) - 1] = '\0';
     }
 
-    if (cl_cvdverify_ex(name, g_cvdcertsdir) != CL_SUCCESS) {
+    certs_directory = optget(opts, "cvdcertsdir")->strarg;
+    if (NULL == certs_directory) {
+        // Check if the CVD_CERTS_DIR environment variable is set
+        certs_directory = getenv("CVD_CERTS_DIR");
+
+        // If not, use the default value
+        if (NULL == certs_directory) {
+            certs_directory = OPT_CERTSDIR;
+        }
+    }
+
+    if (optget(opts, "fips-limits")->enabled) {
+        dboptions |= CL_DB_FIPS_LIMITS;
+    }
+
+    if (cl_cvdverify_ex(name, g_cvdcertsdir, dboptions) != CL_SUCCESS) {
         mprintf(LOGG_ERROR, "unpack: %s is not a valid CVD\n", name);
         return -1;
     }
 
-    if (CL_SUCCESS != cl_cvdunpack_ex(name, ".", true, NULL)) {
+    if (CL_SUCCESS != cl_cvdunpack_ex(name, ".", NULL, CL_DB_UNSIGNED)) {
         mprintf(LOGG_ERROR, "unpack: Can't unpack file %s\n", name);
         return -1;
     }
@@ -1645,6 +1670,8 @@ static int cvdinfo(const struct optstruct *opts)
     struct cl_cvd *cvd;
     char *pt;
     int ret;
+    const char *certs_directory = NULL;
+    uint32_t dboptions          = 0;
 
     pt = optget(opts, "info")->strarg;
     if ((cvd = cl_cvdhead(pt)) == NULL) {
@@ -1671,13 +1698,32 @@ static int cvdinfo(const struct optstruct *opts)
         mprintf(LOGG_INFO, "Digital signature: %s\n", cvd->dsig);
     }
     cl_cvdfree(cvd);
-    if (cli_strbcasestr(pt, ".cud"))
+
+    certs_directory = optget(opts, "cvdcertsdir")->strarg;
+    if (NULL == certs_directory) {
+        // Check if the CVD_CERTS_DIR environment variable is set
+        certs_directory = getenv("CVD_CERTS_DIR");
+
+        // If not, use the default value
+        if (NULL == certs_directory) {
+            certs_directory = OPT_CERTSDIR;
+        }
+    }
+
+    if (optget(opts, "fips-limits")->enabled) {
+        dboptions |= CL_DB_FIPS_LIMITS;
+    }
+
+    if (cli_strbcasestr(pt, ".cud")) {
         mprintf(LOGG_INFO, "Verification: Unsigned container\n");
-    else if ((ret = cl_cvdverify(pt))) {
+
+    } else if ((ret = cl_cvdverify_ex(pt, certs_directory, dboptions))) {
         mprintf(LOGG_ERROR, "cvdinfo: Verification: %s\n", cl_strerror(ret));
         return -1;
-    } else
+
+    } else {
         mprintf(LOGG_INFO, "Verification OK.\n");
+    }
 
     return 0;
 }
@@ -1779,7 +1825,7 @@ static int listdb(const struct optstruct *opts, const char *filename, const rege
             return -1;
         }
 
-        if (CL_SUCCESS != cl_cvdunpack_ex(filename, dir, true, NULL)) {
+        if (CL_SUCCESS != cl_cvdunpack_ex(filename, dir, NULL, CL_DB_UNSIGNED)) {
             mprintf(LOGG_ERROR, "listdb: Can't unpack CVD file %s\n", filename);
             removeTempDir(opts, dir);
             free(dir);
@@ -2158,13 +2204,15 @@ static int vbadump(const struct optstruct *opts)
 
     options.general |= CL_SCAN_GENERAL_COLLECT_METADATA;
 
-    /*Have the engine unpack everything so that we don't miss anything.  We'll clean it up later.*/
+    /* Have the engine unpack everything so that we don't miss anything.  We'll clean it up later. */
     options.parse = ~0;
 
-    /*Need to explicitly set this to always keep temps, since we are scanning extracted ooxml/ole2 files
-     * from our scan directory to print all the vba content.  Remove it later if leave-temps was not
-     * specified */
+    /*
+     * Need to explicitly set this to always keep temps, since we are scanning extracted ooxml/ole2 files
+     * from our scan directory to print all the vba content. Remove it later if leave-temps was not specified.
+     */
     cl_engine_set_num(engine, CL_ENGINE_KEEPTMP, 1);
+    cl_engine_set_num(engine, CL_ENGINE_TMPDIR_RECURSION, 1);
 
     filename = optget(opts, "vba")->strarg;
     if (NULL == filename) {
@@ -2230,8 +2278,8 @@ static int comparesha(const char *diff)
             ret = -1;
             break;
         }
-        if (!(sha = sha256file(tokens[0], NULL))) {
-            mprintf(LOGG_ERROR, "verifydiff: Can't generate SHA256 for %s\n", buff);
+        if (!(sha = sha2_256_file(tokens[0], NULL))) {
+            mprintf(LOGG_ERROR, "verifydiff: Can't generate SHA2-256 for %s\n", buff);
             ret = -1;
             break;
         }
@@ -2286,7 +2334,7 @@ static int rundiff(const struct optstruct *opts)
         goto done;
     }
 
-    // success. compare the SHA256 checksums of the files
+    // success. compare the SHA2-256 checksums of the files
     ret = comparesha(diff);
 
 done:
@@ -2342,8 +2390,8 @@ static int compare(const char *oldpath, const char *newpath, FILE *diff)
     int l1 = 0, l2;
     long opos;
 
-    if (!access(oldpath, R_OK) && (omd5 = cli_hashfile(oldpath, 1))) {
-        if (!(nmd5 = cli_hashfile(newpath, 1))) {
+    if (!access(oldpath, R_OK) && (omd5 = cli_hashfile(oldpath, NULL, CLI_HASH_MD5))) {
+        if (!(nmd5 = cli_hashfile(newpath, NULL, CLI_HASH_MD5))) {
             mprintf(LOGG_ERROR, "compare: Can't get MD5 checksum of %s\n", newpath);
             free(omd5);
             return -1;
@@ -2579,7 +2627,7 @@ static int verifydiff(const struct optstruct *opts, const char *diff, const char
     created_temp_dir = true;
 
     if (cvd) {
-        if (CL_SUCCESS != cl_cvdunpack_ex(cvd, tempdir, true, NULL)) {
+        if (CL_SUCCESS != cl_cvdunpack_ex(cvd, tempdir, NULL, CL_DB_UNSIGNED)) {
             mprintf(LOGG_ERROR, "verifydiff: Can't unpack CVD file %s\n", cvd);
             goto done;
         }
@@ -2690,7 +2738,7 @@ static void matchsig(char *sig, const char *offset, int fd)
     lseek(fd, 0, SEEK_SET);
     FSTAT(fd, &sb);
 
-    new_map = fmap(fd, 0, sb.st_size, NULL);
+    new_map = fmap_new(fd, 0, sb.st_size, NULL, NULL);
     if (NULL == new_map) {
         goto done;
     }
@@ -2719,14 +2767,12 @@ static void matchsig(char *sig, const char *offset, int fd)
 
     ctx.engine = engine;
 
-    ctx.evidence = evidence_new();
-
     ctx.options        = &options;
     ctx.options->parse = ~0;
     ctx.dconf          = (struct cli_dconf *)engine->dconf;
 
     ctx.recursion_stack_size = ctx.engine->max_recursion_level;
-    ctx.recursion_stack      = calloc(sizeof(recursion_level_t), ctx.recursion_stack_size);
+    ctx.recursion_stack      = calloc(sizeof(cli_scan_layer_t), ctx.recursion_stack_size);
     if (!ctx.recursion_stack) {
         goto done;
     }
@@ -2738,7 +2784,7 @@ static void matchsig(char *sig, const char *offset, int fd)
 
     ctx.fmap = ctx.recursion_stack[ctx.recursion_level].fmap;
 
-    (void)cli_scan_fmap(&ctx, CL_TYPE_ANY, false, NULL, AC_SCAN_VIR, &acres, NULL);
+    (void)cli_scan_fmap(&ctx, CL_TYPE_ANY, false, NULL, AC_SCAN_VIR, &acres);
 
     res = acres;
     while (res) {
@@ -2767,13 +2813,13 @@ done:
         free(res);
     }
     if (NULL != new_map) {
-        funmap(new_map);
+        fmap_free(new_map);
+    }
+    if (ctx.recursion_stack[ctx.recursion_level].evidence) {
+        evidence_free(ctx.recursion_stack[ctx.recursion_level].evidence);
     }
     if (NULL != ctx.recursion_stack) {
         free(ctx.recursion_stack);
-    }
-    if (NULL != ctx.evidence) {
-        evidence_free(ctx.evidence);
     }
     if (NULL != engine) {
         cl_engine_free(engine);
@@ -3817,7 +3863,7 @@ static int makediff(const struct optstruct *opts)
         return -1;
     }
 
-    if (CL_SUCCESS != cl_cvdunpack_ex(optget(opts, "diff")->strarg, odir, true, NULL)) {
+    if (CL_SUCCESS != cl_cvdunpack_ex(optget(opts, "diff")->strarg, odir, NULL, CL_DB_UNSIGNED)) {
         mprintf(LOGG_ERROR, "makediff: Can't unpack CVD file %s\n", optget(opts, "diff")->strarg);
         removeTempDir(opts, odir);
         free(odir);
@@ -3828,7 +3874,7 @@ static int makediff(const struct optstruct *opts)
         return -1;
     }
 
-    if (CL_SUCCESS != cl_cvdunpack_ex(opts->filename[0], ndir, true, NULL)) {
+    if (CL_SUCCESS != cl_cvdunpack_ex(opts->filename[0], ndir, NULL, CL_DB_UNSIGNED)) {
         mprintf(LOGG_ERROR, "makediff: Can't unpack CVD file %s\n", opts->filename[0]);
         removeTempDir(opts, odir);
         removeTempDir(opts, ndir);
@@ -3892,7 +3938,7 @@ static int dumpcerts(const struct optstruct *opts)
     lseek(fd, 0, SEEK_SET);
     FSTAT(fd, &sb);
 
-    new_map = fmap(fd, 0, sb.st_size, filename);
+    new_map = fmap_new(fd, 0, sb.st_size, filename, filename);
     if (NULL == new_map) {
         mprintf(LOGG_ERROR, "dumpcerts: Can't create fmap for open file\n");
         goto done;
@@ -3926,14 +3972,12 @@ static int dumpcerts(const struct optstruct *opts)
     /* prepare context */
     ctx.engine = engine;
 
-    ctx.evidence = evidence_new();
-
     ctx.options        = &options;
     ctx.options->parse = ~0;
     ctx.dconf          = (struct cli_dconf *)engine->dconf;
 
     ctx.recursion_stack_size = ctx.engine->max_recursion_level;
-    ctx.recursion_stack      = calloc(sizeof(recursion_level_t), ctx.recursion_stack_size);
+    ctx.recursion_stack      = calloc(sizeof(cli_scan_layer_t), ctx.recursion_stack_size);
     if (!ctx.recursion_stack) {
         goto done;
     }
@@ -3972,13 +4016,13 @@ static int dumpcerts(const struct optstruct *opts)
 done:
     /* Cleanup */
     if (NULL != new_map) {
-        funmap(new_map);
+        fmap_free(new_map);
+    }
+    if (ctx.recursion_stack[ctx.recursion_level].evidence) {
+        evidence_free(ctx.recursion_stack[ctx.recursion_level].evidence);
     }
     if (NULL != ctx.recursion_stack) {
         free(ctx.recursion_stack);
-    }
-    if (NULL != ctx.evidence) {
-        evidence_free(ctx.evidence);
     }
     if (NULL != engine) {
         cl_engine_free(engine);
@@ -4021,8 +4065,8 @@ static void help(void)
     mprintf(LOGG_INFO, "                                           or MD5 sigs for FILES\n");
     mprintf(LOGG_INFO, "    --sha1 [FILES]                         Generate SHA1 hash from stdin\n");
     mprintf(LOGG_INFO, "                                           or SHA1 sigs for FILES\n");
-    mprintf(LOGG_INFO, "    --sha256 [FILES]                       Generate SHA256 hash from stdin\n");
-    mprintf(LOGG_INFO, "                                           or SHA256 sigs for FILES\n");
+    mprintf(LOGG_INFO, "    --sha2-256 [FILES]                     Generate SHA2-256 hash from stdin\n");
+    mprintf(LOGG_INFO, "                                           or SHA2-256 sigs for FILES\n");
     mprintf(LOGG_INFO, "    --mdb [FILES]                          Generate .mdb (section hash) sigs\n");
     mprintf(LOGG_INFO, "    --imp [FILES]                          Generate .imp (import table hash) sigs\n");
     mprintf(LOGG_INFO, "    --fuzzy-img FILE(S)                    Generate image fuzzy hash for each file\n");
@@ -4074,6 +4118,11 @@ static void help(void)
     mprintf(LOGG_INFO, "    --unpack=FILE          -u FILE         Unpack a CVD/CLD file\n");
     mprintf(LOGG_INFO, "\n");
     mprintf(LOGG_INFO, "    --unpack-current=SHORTNAME             Unpack local CVD/CLD into cwd\n");
+    mprintf(LOGG_INFO, "\n");
+    mprintf(LOGG_INFO, "    --fips-limits                          Enforce FIPS-like limits on using hash algorithms for\n");
+    mprintf(LOGG_INFO, "                                           cryptographic purposes. Will disable MD5 & SHA1\n");
+    mprintf(LOGG_INFO, "                                           FP sigs and will require '.sign' files to verify CVD\n");
+    mprintf(LOGG_INFO, "                                           authenticity.\n");
     mprintf(LOGG_INFO, "\n");
     mprintf(LOGG_INFO, "  Commands for working with CDIFF patch files:\n");
     mprintf(LOGG_INFO, "\n");
@@ -4209,15 +4258,15 @@ int main(int argc, char **argv)
     if (optget(opts, "hex-dump")->enabled)
         ret = hexdump();
     else if (optget(opts, "md5")->enabled)
-        ret = hashsig(opts, 0, 1);
+        ret = hashsig(opts, 0, CLI_HASH_MD5);
     else if (optget(opts, "sha1")->enabled)
-        ret = hashsig(opts, 0, 2);
-    else if (optget(opts, "sha256")->enabled)
-        ret = hashsig(opts, 0, 3);
+        ret = hashsig(opts, 0, CLI_HASH_SHA1);
+    else if (optget(opts, "sha2-256")->enabled || optget(opts, "sha256")->enabled)
+        ret = hashsig(opts, 0, CLI_HASH_SHA2_256);
     else if (optget(opts, "mdb")->enabled)
-        ret = hashsig(opts, 1, 1);
+        ret = hashsig(opts, 1, CLI_HASH_MD5);
     else if (optget(opts, "imp")->enabled)
-        ret = hashsig(opts, 2, 1);
+        ret = hashsig(opts, 2, CLI_HASH_MD5);
     else if (optget(opts, "fuzzy-img")->enabled)
         ret = fuzzy_img(opts);
     else if (optget(opts, "html-normalise")->enabled)

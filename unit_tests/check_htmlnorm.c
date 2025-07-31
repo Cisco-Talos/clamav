@@ -140,7 +140,7 @@ START_TEST(test_htmlnorm_api)
     fd = open_testfile(tests[_i].input, O_RDONLY | O_BINARY);
     ck_assert_msg(fd > 0, "open_testfile failed");
 
-    map = fmap(fd, 0, 0, tests[_i].input);
+    map = fmap_new(fd, 0, 0, tests[_i].input, NULL);
     ck_assert_msg(!!map, "fmap failed");
 
     ck_assert_msg(mkdir(dir, 0700) == 0, "mkdir failed: %s", dir);
@@ -164,7 +164,7 @@ START_TEST(test_htmlnorm_api)
     ck_assert_msg(cli_rmdirs(dir) == 0, "rmdirs failed: %s", dir);
     html_tag_arg_free(&hrefs);
 
-    funmap(map);
+    fmap_free(map);
 
     close(fd);
 }
@@ -176,10 +176,10 @@ START_TEST(test_screnc_nullterminate)
     fmap_t *map;
 
     ck_assert_msg(mkdir(dir, 0700) == 0, "mkdir failed");
-    map = fmap(fd, 0, 0, "screnc_test");
+    map = fmap_new(fd, 0, 0, "screnc_test", NULL);
     ck_assert_msg(!!map, "fmap failed");
     ck_assert_msg(html_screnc_decode(map, dir) == 1, "html_screnc_decode failed");
-    funmap(map);
+    fmap_free(map);
     ck_assert_msg(cli_rmdirs(dir) == 0, "rmdirs failed");
     close(fd);
 }

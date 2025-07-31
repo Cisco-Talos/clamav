@@ -533,8 +533,10 @@ int scanfile(const char *filename, scanmem_data *scan_data, struct mem_info *inf
 {
     int fd;
     int scantype;
-    int ret             = CL_CLEAN;
-    const char *virname = NULL;
+    int ret = CL_CLEAN;
+
+    cl_verdict_t verdict   = CL_VERDICT_NOTHING_FOUND;
+    const char *alert_name = NULL;
 
     logg(LOGG_DEBUG, "Scanning %s\n", filename);
 
@@ -562,12 +564,38 @@ int scanfile(const char *filename, scanmem_data *scan_data, struct mem_info *inf
             ret = CL_VIRUS;
         }
     } else { // clamscan
-        ret = cl_scandesc(fd, filename, &virname, &info->blocks, info->engine, info->options);
-        if (ret == CL_VIRUS) {
-            logg(LOGG_INFO, "%s: %s FOUND\n", filename, virname);
-            info->ifiles++;
-        } else if (scan_data->printclean) {
-            logg(LOGG_INFO, "%s: OK    \n", filename);
+        ret = cl_scandesc_ex(
+            fd,
+            filename,
+            &verdict,
+            &alert_name,
+            &info->bytes_scanned,
+            info->engine,
+            info->options,
+            NULL,
+            NULL,
+            NULL,
+            NULL,
+            NULL,
+            NULL,
+            NULL);
+
+        switch (verdict) {
+            case CL_VERDICT_NOTHING_FOUND: {
+                logg(LOGG_INFO, "%s: OK    \n", filename);
+                ret = CL_CLEAN;
+            } break;
+            case CL_VERDICT_TRUSTED: {
+                // TODO: Option to print "TRUSTED" verdict instead of "OK"?
+                logg(LOGG_INFO, "%s: OK    \n", filename);
+                ret = CL_CLEAN;
+            } break;
+            case CL_VERDICT_STRONG_INDICATOR:
+            case CL_VERDICT_POTENTIALLY_UNWANTED: {
+                logg(LOGG_INFO, "%s: %s FOUND\n", filename, alert_name);
+                info->ifiles++;
+                ret = CL_VIRUS;
+            } break;
         }
     }
 

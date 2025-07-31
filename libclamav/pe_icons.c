@@ -1369,7 +1369,7 @@ static int parseicon(struct ICON_ENV *icon_env, uint32_t rva)
     if (!ctx || !ctx->engine || !(matcher = ctx->engine->iconcheck))
         return CL_SUCCESS;
     map   = ctx->fmap;
-    tempd = (cli_debug_flag && ctx->engine->keeptmp) ? (ctx->sub_tmpdir ? ctx->sub_tmpdir : cli_gettmpdir()) : NULL;
+    tempd = (cli_debug_flag && ctx->engine->keeptmp) ? (ctx->this_layer_tmpdir ? ctx->this_layer_tmpdir : cli_gettmpdir()) : NULL;
     icoff = cli_rawaddr(rva, peinfo->sections, peinfo->nsections, &err, map->len, peinfo->hdr_size);
 
     /* read the bitmap header */

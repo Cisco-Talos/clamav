@@ -52,7 +52,55 @@ typedef enum cvd_type {
     CVD_TYPE_CUD,
 } cvd_type;
 
-cl_error_t cli_cvdload(struct cl_engine *engine, unsigned int *signo, unsigned int options, cvd_type dbtype, const char *filename, void *sign_verifier, unsigned int chkonly);
-cl_error_t cli_cvdunpack_and_verify(const char *file, const char *dir, bool dont_verify, void *verifier);
+/**
+ * @brief Load a CVD, CLD, or CUD signature database archive
+ *
+ * @param engine        The ClamAV engine to load the CVD into
+ * @param signo         Pointer to the signature number
+ * @param options       CL_DB_* options for loading the CVD
+ * @param dbtype        Type of the database
+ * @param filename      Name of the CVD file
+ * @param sign_verifier Pointer to the signature verifier
+ * @param chkonly       Check only mode
+ * @return cl_error_t   CL_SUCCESS on success, or an error code on failure
+ */
+cl_error_t cli_cvdload(
+    struct cl_engine *engine,
+    unsigned int *signo,
+    uint32_t options,
+    cvd_type dbtype,
+    const char *filename,
+    void *sign_verifier,
+    bool chkonly);
+
+/**
+ * @brief Unpack and verify a CVD, CLD, or CUD signature database archive
+ *
+ * @param file                  Name of the CVD file
+ * @param dir                   Directory to unpack the CVD into
+ * @param dont_verify           Don't verify signatures
+ * @param disable_legacy_dsig   Disable legacy MD5-based digital signature verification
+ * @param verifier              Pointer to the signature verifier
+ * @return cl_error_t           CL_SUCCESS on success, or an error code on failure
+ */
+cl_error_t cli_cvdunpack_and_verify(
+    const char *file,
+    const char *dir,
+    bool dont_verify,
+    bool disable_legacy_dsig,
+    void *verifier);
+
+/**
+ * @brief Verify a CVD, CLD, or CUD signature database archive
+ *
+ * @param file                  Name of the CVD file
+ * @param disable_legacy_dsig   Disable legacy MD5-based digital signature verification
+ * @param verifier              Pointer to the signature verifier
+ * @return cl_error_t           CL_SUCCESS on success, or an error code on failure
+ */
+cl_error_t cli_cvdverify(
+    const char *file,
+    bool disable_legacy_dsig,
+    void *verifier);
 
 #endif

@@ -434,7 +434,7 @@ START_TEST(test_cl_load)
 }
 END_TEST
 
-/* cl_error_t cl_cvdverify(const char *file) */
+/* cl_error_t cl_cvdverify_ex(const char *file, const char *certs_directory, uint32_t dboptions) */
 START_TEST(test_cl_cvdverify)
 {
     cl_error_t ret;
@@ -450,22 +450,22 @@ START_TEST(test_cl_cvdverify)
 
     // Should be able to verify this cvd
     testfile = SRCDIR "/input/freshclam_testfiles/test-1.cvd";
-    ret      = cl_cvdverify_ex(testfile, cvdcertsdir);
+    ret      = cl_cvdverify_ex(testfile, cvdcertsdir, 0);
     ck_assert_msg(CL_SUCCESS == ret, "cl_cvdverify_ex failed for: %s -- %s", testfile, cl_strerror(ret));
 
     // Can't verify a cvd that doesn't exist
     testfile = SRCDIR "/input/freshclam_testfiles/test-na.cvd";
-    ret      = cl_cvdverify_ex(testfile, cvdcertsdir);
+    ret      = cl_cvdverify_ex(testfile, cvdcertsdir, 0);
     ck_assert_msg(CL_ECVD == ret, "cl_cvdverify_ex should have failed for: %s -- %s", testfile, cl_strerror(ret));
 
     // A cdiff is not a cvd. Cannot verify with cl_cvdverify_ex!
     testfile = SRCDIR "/input/freshclam_testfiles/test-2.cdiff";
-    ret      = cl_cvdverify_ex(testfile, cvdcertsdir);
+    ret      = cl_cvdverify_ex(testfile, cvdcertsdir, 0);
     ck_assert_msg(CL_ECVD == ret, "cl_cvdverify_ex should have failed for: %s -- %s", testfile, cl_strerror(ret));
 
     // Can't verify an hdb file
     testfile = SRCDIR "/input/clamav.hdb";
-    ret      = cl_cvdverify_ex(testfile, cvdcertsdir);
+    ret      = cl_cvdverify_ex(testfile, cvdcertsdir, 0);
     ck_assert_msg(CL_ECVD == ret, "cl_cvdverify_ex should have failed for: %s -- %s", testfile, cl_strerror(ret));
 
     // Modify the cvd to make it invalid
@@ -485,12 +485,12 @@ START_TEST(test_cl_cvdverify)
     fclose(new_fs);
 
     // Now verify the modified cvd
-    ret = cl_cvdverify(newtestfile);
-    ck_assert_msg(CL_EVERIFY == ret, "cl_cvdverify should have failed for: %s -- %s", newtestfile, cl_strerror(ret));
+    ret = cl_cvdverify_ex(newtestfile, cvdcertsdir, 0);
+    ck_assert_msg(CL_EVERIFY == ret, "cl_cvdverify_ex should have failed for: %s -- %s", newtestfile, cl_strerror(ret));
 }
 END_TEST
 
-/* cl_error_t cl_cvdunpack_ex(const char *file, const char *dir, bool dont_verify, const char* certs_directory) */
+/* cl_error_t cl_cvdunpack_ex(const char *file, const char *dir, const char *certs_directory, uint32_t dboptions) */
 START_TEST(test_cl_cvdunpack_ex)
 {
     cl_error_t ret;
@@ -499,12 +499,12 @@ START_TEST(test_cl_cvdunpack_ex)
     const char *testfile;
 
     testfile = SRCDIR "/input/freshclam_testfiles/test-1.cvd";
-    ret      = cl_cvdunpack_ex(testfile, tmpdir, true, NULL);
+    ret      = cl_cvdunpack_ex(testfile, tmpdir, NULL, CL_DB_UNSIGNED);
     ck_assert_msg(CL_SUCCESS == ret, "cl_cvdunpack_ex: failed for: %s -- %s", testfile, cl_strerror(ret));
 
     // Can't unpack a cdiff
     testfile = SRCDIR "/input/freshclam_testfiles/test-2.cdiff";
-    ret      = cl_cvdunpack_ex(testfile, tmpdir, true, NULL);
+    ret      = cl_cvdunpack_ex(testfile, tmpdir, NULL, CL_DB_UNSIGNED);
     ck_assert_msg(CL_ECVD == ret, "cl_cvdunpack_ex: should have failed for: %s -- %s", testfile, cl_strerror(ret));
 }
 END_TEST
@@ -1192,7 +1192,7 @@ START_TEST(test_fmap_assorted_api)
     ck_assert_msg(fmap_dump_fd != -1, "fmap_dump_fd failed");
     cli_dbgmsg("dumped map to %s\n", fmap_dump_filepath);
 
-    fd_based_map = fmap(fmap_dump_fd, 0, 0, NULL); // using fmap() instead of cl_fmap_open_handle() because I don't want to have to stat the file to figure out the len. fmap() does that for us.
+    fd_based_map = fmap_new(fmap_dump_fd, 0, 0, NULL, NULL); // using fmap_new() instead of cl_fmap_open_handle() because I don't want to have to stat the file to figure out the len. fmap_new() does that for us.
     ck_assert_msg(!!fd_based_map, "cl_fmap_open_handle failed");
     cli_dbgmsg("created fmap from file descriptor\n");
 
@@ -1274,7 +1274,7 @@ START_TEST(test_fmap_assorted_api)
     /*
      * Let's make an fmap of the dumped nested map, and run the tests to verify that everything is as expected.
      */
-    fd_based_dup_map = fmap(dup_fmap_dump_fd, 0, 0, NULL); // using fmap() instead of cl_fmap_open_handle() because I don't want to have to stat the file to figure out the len. fmap() does that for us.
+    fd_based_dup_map = fmap_new(dup_fmap_dump_fd, 0, 0, NULL, NULL); // using fmap_new() instead of cl_fmap_open_handle() because I don't want to have to stat the file to figure out the len. fmap_new() does that for us.
     ck_assert_msg(!!fd_based_dup_map, "cl_fmap_open_handle failed");
     cli_dbgmsg("created fmap from file descriptor\n");
 
@@ -1507,28 +1507,28 @@ static uint8_t res256[3][SHA256_HASH_SIZE] = {
      0x84, 0xd7, 0x3e, 0x67, 0xf1, 0x80, 0x9a, 0x48, 0xa4, 0x97, 0x20, 0x0e,
      0x04, 0x6d, 0x39, 0xcc, 0xc7, 0x11, 0x2c, 0xd0}};
 
-START_TEST(test_sha256)
+START_TEST(test_sha2_256)
 {
-    void *sha256;
-    uint8_t hsha256[SHA256_HASH_SIZE];
+    void *sha2_256;
+    uint8_t h_sha2_256[SHA256_HASH_SIZE];
     uint8_t buf[1000];
     int i;
 
     memset(buf, 0x61, sizeof(buf));
 
-    cl_sha256(tv1, sizeof(tv1), hsha256, NULL);
-    ck_assert_msg(!memcmp(hsha256, res256[0], sizeof(hsha256)), "sha256 test vector #1 failed");
+    cl_sha256(tv1, sizeof(tv1), h_sha2_256, NULL);
+    ck_assert_msg(!memcmp(h_sha2_256, res256[0], sizeof(h_sha2_256)), "sha2-256 test vector #1 failed");
 
-    cl_sha256(tv2, sizeof(tv2), hsha256, NULL);
-    ck_assert_msg(!memcmp(hsha256, res256[1], sizeof(hsha256)), "sha256 test vector #2 failed");
+    cl_sha256(tv2, sizeof(tv2), h_sha2_256, NULL);
+    ck_assert_msg(!memcmp(h_sha2_256, res256[1], sizeof(h_sha2_256)), "sha2-256 test vector #2 failed");
 
-    sha256 = cl_hash_init("sha256");
-    ck_assert_msg(sha256 != NULL, "Could not create EVP_MD_CTX for sha256");
+    sha2_256 = cl_hash_init("sha2-256");
+    ck_assert_msg(sha2_256 != NULL, "Could not create EVP_MD_CTX for sha2-256");
 
     for (i = 0; i < 1000; i++)
-        cl_update_hash(sha256, buf, sizeof(buf));
-    cl_finish_hash(sha256, hsha256);
-    ck_assert_msg(!memcmp(hsha256, res256[2], sizeof(hsha256)), "sha256 test vector #3 failed");
+        cl_update_hash(sha2_256, buf, sizeof(buf));
+    cl_finish_hash(sha2_256, h_sha2_256);
+    ck_assert_msg(!memcmp(h_sha2_256, res256[2], sizeof(h_sha2_256)), "sha2-256 test vector #3 failed");
 }
 END_TEST
 
@@ -1879,7 +1879,7 @@ static Suite *test_cli_suite(void)
 
     suite_add_tcase(s, tc_cli_dsig);
     tcase_add_loop_test(tc_cli_dsig, test_cli_dsig, 0, dsig_tests_cnt);
-    tcase_add_test(tc_cli_dsig, test_sha256);
+    tcase_add_test(tc_cli_dsig, test_sha2_256);
 
     suite_add_tcase(s, tc_cli_assorted);
     tcase_add_test(tc_cli_assorted, test_sanitize_path);

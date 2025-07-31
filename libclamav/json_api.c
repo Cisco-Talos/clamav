@@ -225,6 +225,39 @@ cl_error_t cli_jsonint64(json_object *obj, const char *key, int64_t i)
     return CL_SUCCESS;
 }
 
+cl_error_t cli_jsonuint64(json_object *obj, const char *key, uint64_t i)
+{
+    json_type objty;
+    json_object *fpobj;
+    if (NULL == obj) {
+        cli_dbgmsg("json: no parent object specified to cli_jsonuint64\n");
+        return CL_ENULLARG;
+    }
+    objty = json_object_get_type(obj);
+
+    if (objty == json_type_object) {
+        if (NULL == key) {
+            cli_dbgmsg("json: null string specified as key to cli_jsonuint64\n");
+            return CL_ENULLARG;
+        }
+    } else if (objty != json_type_array) {
+        return CL_EARG;
+    }
+
+    fpobj = json_object_new_uint64(i);
+    if (NULL == fpobj) {
+        cli_errmsg("json: no memory for json int object.\n");
+        return CL_EMEM;
+    }
+
+    if (objty == json_type_object)
+        json_object_object_add(obj, key, fpobj);
+    else if (objty == json_type_array)
+        json_object_array_add(obj, fpobj);
+
+    return CL_SUCCESS;
+}
+
 cl_error_t cli_jsonbool(json_object *obj, const char *key, int i)
 {
     json_type objty;
