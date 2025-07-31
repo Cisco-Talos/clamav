@@ -1277,6 +1277,8 @@ int main(int argc, char **argv)
     char *hash_out      = NULL;
     char *file_type_out = NULL;
 
+    bool disable_cache = false;
+
     int i = 0;
 
     const char *help_string =
@@ -1296,6 +1298,7 @@ int main(int argc, char **argv)
         "                             Corresponding to the interactive scan options.\n"
         "--one-match (-1)           : Disable allmatch (stops scans after one match).\n"
         "--gen-json                 : Generate scan metadata JSON.\n"
+        "--disable-cache            : Disable caching of clean scan results.\n"
         "\n"
         "Scripted scan options are:\n"
         "%s";
@@ -1332,6 +1335,9 @@ int main(int argc, char **argv)
         } else if (strcmp(argv[i], "--debug") == 0) {
             debug_mode = true;
             printf("Enabling debug mode.\n");
+        } else if (strcmp(argv[i], "--disable-cache") == 0) {
+            printf("Disabling caching of clean scan results.\n");
+            disable_cache = true;
         } else {
             printf("Unknown option: %s\n", argv[i]);
             printf(help_string, argv[0], argv[0], command_list);
@@ -1385,6 +1391,10 @@ int main(int argc, char **argv)
     /* Example feature usage raising the max file-size and scan-size to 1024MB */
     cl_engine_set_num(engine, CL_ENGINE_MAX_SCANSIZE, 1024 /*MB*/ * 1024 /*KB*/ * 1024 /*bytes*/);
     cl_engine_set_num(engine, CL_ENGINE_MAX_FILESIZE, 1024 /*MB*/ * 1024 /*KB*/ * 1024 /*bytes*/);
+
+    if (disable_cache) {
+        cl_engine_set_num(engine, CL_ENGINE_DISABLE_CACHE, 1); // Disable cache for clean results
+    }
 
     /*
      * Load signatures.
