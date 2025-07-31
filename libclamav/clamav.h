@@ -87,7 +87,7 @@ extern "C" {
 typedef enum cl_verdict_t {
     CL_VERDICT_NOTHING_FOUND = 0,    /**< No alerting signatures matched. */
     CL_VERDICT_TRUSTED,              /**< The scan target has been deemed trusted (e.g. by FP signature or Authenticode). */
-    CL_VERDICT_STRONG_INDICATOR,                /**< One or more strong indicator signatures matched. */
+    CL_VERDICT_STRONG_INDICATOR,     /**< One or more strong indicator signatures matched. */
     CL_VERDICT_POTENTIALLY_UNWANTED, /**< One or more potentially unwanted signatures matched. */
 } cl_verdict_t;
 
