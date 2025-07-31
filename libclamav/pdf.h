@@ -102,39 +102,45 @@ struct pdf_stats_entry {
 };
 
 struct pdf_stats {
-    int32_t ninvalidobjs;                     /* Number of invalid objects */
-    int32_t njs;                              /* Number of javascript objects */
-    int32_t nflate;                           /* Number of flate-encoded objects */
+    int32_t naa;                              /* Number of Automatic Action objects */
+    int32_t nacroform;                        /* Number of AcroForm objects */
     int32_t nactivex;                         /* Number of ActiveX objects */
-    int32_t nflash;                           /* Number of flash objects */
-    int32_t ncolors;                          /* Number of colors */
-    int32_t nasciihexdecode;                  /* Number of ASCIIHexDecode-filtered objects */
     int32_t nascii85decode;                   /* Number of ASCII85Decode-filtered objects */
-    int32_t nembeddedfile;                    /* Number of embedded files */
-    int32_t nimage;                           /* Number of image objects */
-    int32_t nlzw;                             /* Number of LZW-filtered objects */
-    int32_t nrunlengthdecode;                 /* Number of RunLengthDecode-filtered objects */
-    int32_t nfaxdecode;                       /* Number of CCITT-filtered objects */
-    int32_t njbig2decode;                     /* Number of JBIG2Decode-filtered objects */
-    int32_t ndctdecode;                       /* Number of DCTDecode-filtered objects */
-    int32_t njpxdecode;                       /* Number of JPXDecode-filtered objects */
+    int32_t nasciihexdecode;                  /* Number of ASCIIHexDecode-filtered objects */
+    int32_t ncolors;                          /* Number of colors */
     int32_t ncrypt;                           /* Number of Crypt-filtered objects */
-    int32_t nstandard;                        /* Number of Standard-filtered objects */
-    int32_t nsigned;                          /* Number of Signed objects */
-    int32_t nopenaction;                      /* Number of OpenAction objects */
+    int32_t ndctdecode;                       /* Number of DCTDecode-filtered objects */
+    int32_t nembeddedfile;                    /* Number of embedded files */
+    int32_t nfaxdecode;                       /* Number of CCITT-filtered objects */
+    int32_t nflash;                           /* Number of flash objects */
+    int32_t nflate;                           /* Number of flate-encoded objects */
+    int32_t nimage;                           /* Number of image objects */
+    int32_t ninvalidobjs;                     /* Number of invalid objects */
+    int32_t njbig2decode;                     /* Number of JBIG2Decode-filtered objects */
+    int32_t njpxdecode;                       /* Number of JPXDecode-filtered objects */
+    int32_t njs;                              /* Number of javascript objects */
     int32_t nlaunch;                          /* Number of Launch objects */
+    int32_t nlzw;                             /* Number of LZW-filtered objects */
+    int32_t nobjstream;                       /* Number of object streams */
+    int32_t nopenaction;                      /* Number of OpenAction objects */
     int32_t npage;                            /* Number of Page objects */
     int32_t nrichmedia;                       /* Number of RichMedia objects */
-    int32_t nacroform;                        /* Number of AcroForm objects */
+    int32_t nrunlengthdecode;                 /* Number of RunLengthDecode-filtered objects */
+    int32_t nsigned;                          /* Number of Signed objects */
+    int32_t nstandard;                        /* Number of Standard-filtered objects */
+    int32_t nstream;                          /* Number of streams */
+    int32_t ntrailer;                         /* Number of trailer objects */
+    int32_t nuri;                             /* Number of URI objects */
     int32_t nxfa;                             /* Number of XFA objects */
+    int32_t nxref;                            /* Number of xref objects */
     struct pdf_stats_entry *author;           /* Author of the PDF */
-    struct pdf_stats_entry *creator;          /* Application used to create the PDF */
-    struct pdf_stats_entry *producer;         /* Application used to produce the PDF */
     struct pdf_stats_entry *creationdate;     /* Date the PDF was created */
-    struct pdf_stats_entry *modificationdate; /* Date the PDF was modified */
-    struct pdf_stats_entry *title;            /* Title of the PDF */
-    struct pdf_stats_entry *subject;          /* Subject of the PDF */
+    struct pdf_stats_entry *creator;          /* Application used to create the PDF */
     struct pdf_stats_entry *keywords;         /* Keywords of the PDF */
+    struct pdf_stats_entry *modificationdate; /* Date the PDF was modified */
+    struct pdf_stats_entry *producer;         /* Application used to produce the PDF */
+    struct pdf_stats_entry *subject;          /* Subject of the PDF */
+    struct pdf_stats_entry *title;            /* Title of the PDF */
 };
 
 enum enc_method {
