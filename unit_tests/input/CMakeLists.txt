@@ -57,6 +57,7 @@ set(ENCRYPTED_TESTFILES
     clamav_hdb_scanfiles/clam.exe.2007.one
     clamav_hdb_scanfiles/clam.exe.2010.one
     clamav_hdb_scanfiles/clam.exe.webapp-export.one
+    clamav_hdb_scanfiles/clam.split.oneseg.zip
     signing/sign/signing-test.key
 )
 
