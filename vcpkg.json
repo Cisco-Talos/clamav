@@ -1,5 +1,5 @@
 {
-    "builtin-baseline": "8a9a97315aefb3f8bc5d81bf66ca0025938b9c91",
+    "builtin-baseline": "efcfaaf60d7ec57a159fc3110403d939bfb69729",
     "dependencies": [
         "curl[openssl]",
         "openssl:x64-windows-static-md",
