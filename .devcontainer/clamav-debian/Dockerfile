@@ -1,6 +1,8 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
+#
+# Copyright (C) 2025 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
 
-# Use a slim Debian image
-FROM index.docker.io/library/debian:12-slim AS clamav-debian-devcontainer-macos
+FROM index.docker.io/library/debian:12-slim AS clamav-debian-devcontainer
 
 # Declare container args
 ARG REMOTE_USER
