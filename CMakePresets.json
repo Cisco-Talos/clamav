@@ -1,0 +1,70 @@
+{
+    "version": 9,
+    "configurePresets": [
+        {
+            "name": "clamav-windows",
+            "cacheVariables": {
+                "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
+            },
+            "hidden": true
+        },
+        {
+            "name": "clamav-windows-ninja-multi",
+            "inherits": "clamav-windows",
+            "generator": "Ninja Multi-Config",
+            "binaryDir": "${sourceDir}/build/${presetName}",
+            "cacheVariables": {
+                "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+                "ENABLE_EXAMPLES": "ON",
+                "ENABLE_STATIC_LIB": "ON"
+            }
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "windows-release",
+            "configurePreset": "clamav-windows-ninja-multi",
+            "configuration": "Release"
+
+        }
+    ],
+    "testPresets": [
+        {
+            "name": "windows-release",
+            "configurePreset": "clamav-windows-ninja-multi",
+            "output": {"outputOnFailure": true, "verbosity": "verbose"},
+            "configuration": "Release"
+        }
+    ],
+    "packagePresets": [
+        {
+            "name": "windows-release",
+            "configurePreset": "clamav-windows-ninja-multi",
+            "generators": ["ZIP", "WIX"],
+            "configurations": ["Release"]
+        }
+    ],
+    "workflowPresets": [
+        {
+            "name": "windows-release",
+            "steps": [
+                {
+                    "type": "configure",
+                    "name": "clamav-windows-ninja-multi"
+                },
+                {
+                    "type": "build",
+                    "name": "windows-release"
+                },
+                {
+                    "type": "test",
+                    "name": "windows-release"
+                },
+                {
+                    "type": "package",
+                    "name": "windows-release"
+                }
+            ]
+        }
+    ]
+}
