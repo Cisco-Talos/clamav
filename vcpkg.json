@@ -2,7 +2,7 @@
     "builtin-baseline": "efcfaaf60d7ec57a159fc3110403d939bfb69729",
     "dependencies": [
         "curl[openssl]",
-        "openssl:x64-windows-static-md",
+        "openssl",
         "json-c",
         "libxml2",
        	"pcre2",
