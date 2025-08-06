@@ -18,7 +18,6 @@ on:
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
   BUILD_TYPE: Release
-  VCPKG_GIT_REF: 8a9a97315aefb3f8bc5d81bf66ca0025938b9c91
 
 jobs:
   build-windows:
@@ -49,7 +48,7 @@ jobs:
 
       - name: Print the VCPKG_ROOT & VCPKG_TRIPLET (for debugging)
         shell: bash
-        run: echo "'${{ steps.runvcpkg.outputs.RUNVCPKG_VCPKG_ROOT_OUT }}' '${{ steps.runvcpkg.outputs.RUNVCPKG_VCPKG_TRIPLET_OUT }}' "
+        run: echo "'${{ steps.runvcpkg.outputs.RUNVCPKG_VCPKG_ROOT_OUT }}' '${{ steps.runvcpkg.outputs.RUNVCPKG_DEFAULT_VCPKG_TRIPLET_OUT }}' "
 
       - name: dir the VCPKG_ROOT
         run: dir ${{ steps.runvcpkg.outputs.RUNVCPKG_VCPKG_ROOT_OUT }}
