@@ -536,7 +536,7 @@ END_TEST
 static char **testfiles     = NULL;
 static unsigned testfiles_n = 0;
 
-static const int expected_testfiles = 52;
+static const int expected_testfiles = 53;
 
 static unsigned skip_files(void)
 {
