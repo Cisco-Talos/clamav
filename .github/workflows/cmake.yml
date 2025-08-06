@@ -22,7 +22,7 @@ env:
 
 jobs:
   build-windows:
-    runs-on: windows-2022
+    runs-on: windows-latest
 
     steps:
       - name: Die, link!!!!!
@@ -46,10 +46,6 @@ jobs:
         # Download and build vcpkg, without installing any port. If content is cached already, it is a no-op.
         uses: lukka/run-vcpkg@v11
         id: runvcpkg
-        with:
-          vcpkgArguments: "curl[openssl] openssl:x64-windows-static-md json-c libxml2 pcre2 check pthreads zlib pdcurses bzip2"
-          vcpkgGitCommitId: "${{ env.VCPKG_GIT_REF }}"
-          vcpkgTriplet: "x64-windows"
 
       - name: Print the VCPKG_ROOT & VCPKG_TRIPLET (for debugging)
         shell: bash

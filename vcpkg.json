@@ -1,0 +1,14 @@
+{
+    "dependencies": [
+        "curl[openssl]",
+        "openssl:x64-windows-static-md",
+        "json-c",
+        "libxml2",
+       	"pcre2",
+        "check",
+       	"pthreads",
+       	"zlib",
+       	"pdcurses",
+       	"bzip2"
+    ]
+}
