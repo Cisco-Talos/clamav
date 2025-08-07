@@ -62,7 +62,7 @@ local int inflate_table OF((codetype type, unsigned short FAR *lens,
                              unsigned FAR *bits, unsigned short FAR *work));
 
 
-int ZEXPORT inflate64Init2(strm, windowBits)
+int inflate64Init2(strm, windowBits)
 z_stream64p strm;
 int windowBits;
 {
@@ -375,7 +375,7 @@ unsigned out;
    will return Z_BUF_ERROR if it has not reached the end of the stream.
  */
 
-int ZEXPORT inflate64(strm, flush)
+int inflate64(strm, flush)
 z_stream64p strm;
 int flush;
 {
@@ -805,7 +805,7 @@ int flush;
     return ret;
 }
 
-int ZEXPORT inflate64End(strm)
+int inflate64End(strm)
 z_stream64p strm;
 {
     struct inflate_state FAR *state;

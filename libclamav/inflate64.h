@@ -91,8 +91,8 @@ typedef struct z_stream64_s {
 
 typedef z_stream64 FAR *z_stream64p;
 
-ZEXTERN int ZEXPORT inflate64 OF((z_stream64p strm, int flush));
-ZEXTERN int ZEXPORT inflate64End OF((z_stream64p strm));
-ZEXTERN int ZEXPORT inflate64Init2 OF((z_stream64p strm, int  windowBits));
+int inflate64 OF((z_stream64p strm, int flush));
+int inflate64End OF((z_stream64p strm));
+int inflate64Init2 OF((z_stream64p strm, int  windowBits));
 
 #endif /* __INFLATE64_H */
