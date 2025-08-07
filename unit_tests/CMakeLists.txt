@@ -196,6 +196,10 @@ if(WIN32)
         file(TO_NATIVE_PATH $<TARGET_FILE_DIR:check_clamav>/freshclam.exe       FRESHCLAM)
         file(TO_NATIVE_PATH $<TARGET_FILE_DIR:check_clamav>/sigtool.exe         SIGTOOL)
     endif()
+    if(ENABLE_EXAMPLES)
+        file(TO_NATIVE_PATH $<TARGET_FILE_DIR:check_clamav>/ex_scan_callbacks.exe EX_SCAN_CALLBACKS)
+        file(TO_NATIVE_PATH $<TARGET_FILE_DIR:check_clamav>/ex_cl_cvdunpack.exe   EX_CL_CVDUNPACK)
+    endif()
 
     # Convert the CVD_CERTS_DIR to a native path for Windows (replacing forward slashes with backslashes).
     file(TO_NATIVE_PATH ${CVD_CERTS_DIR} CVD_CERTS_DIR)
@@ -259,6 +263,10 @@ else()
         if(ENABLE_CLAMONACC)
             set(CLAMONACC          $<TARGET_FILE:clamonacc>)
         endif()
+        if(ENABLE_EXAMPLES)
+            set(EX_SCAN_CALLBACKS  $<TARGET_FILE:ex_scan_callbacks>)
+            set(EX_CL_CVDUNPACK    $<TARGET_FILE:ex_cl_cvdunpack>)
+        endif()
     endif()
 endif()
 
@@ -302,6 +310,8 @@ set(ENVIRONMENT
     SIGTOOL=${SIGTOOL}
     CLAMAV_MILTER=${CLAMAV_MILTER}
     CLAMONACC=${CLAMONACC}
+    EX_SCAN_CALLBACKS=${EX_SCAN_CALLBACKS}
+    EX_CL_CVDUNPACK=${EX_CL_CVDUNPACK}
 )
 
 
@@ -314,6 +324,7 @@ if(NOT MSVC)
     list(APPEND ENVIRONMENT "OPENSSL_LIBS=${OPENSSL_LIBS}")
 endif()
 list(APPEND ENVIRONMENT "OPENSSL_LIB_DIR=${OPENSSL_LIB_DIR}")
+list(APPEND ENVIRONMENT "CONFIGURATION=$<CONFIG>")
 
 #
 # The Tests
@@ -495,6 +506,14 @@ if(WIN32)
                 file(COPY $<TARGET_FILE:clamconf> DESTINATION $<TARGET_FILE_DIR:check_clamav>)
                 file(COPY $<TARGET_FILE:freshclam-bin> DESTINATION $<TARGET_FILE_DIR:check_clamav>)
                 file(COPY $<TARGET_FILE:sigtool> DESTINATION $<TARGET_FILE_DIR:check_clamav>)
+
+                # Collect example programs, if built with ENABLE_EXAMPLES=ON
+                if ($<TARGET_EXISTS:ex_scan_callbacks>)
+                    file(COPY $<TARGET_FILE:$<IF:$<TARGET_EXISTS:ex_scan_callbacks>,ex_scan_callbacks,check_clamav>> DESTINATION $<TARGET_FILE_DIR:check_clamav>)
+                endif()
+                if ($<TARGET_EXISTS:ex_cl_cvdunpack>)
+                    file(COPY $<TARGET_FILE:$<IF:$<TARGET_EXISTS:ex_cl_cvdunpack>,ex_cl_cvdunpack,check_clamav>> DESTINATION $<TARGET_FILE_DIR:check_clamav>)
+                endif()
             ]])
         else()
             # We don't have libfreshclam unit tests, so no need to check if ENABLE_LIBCLAMAV_ONLY is enabled.
@@ -537,6 +556,14 @@ if(WIN32)
                 endif()
                 if ($<TARGET_EXISTS:ClamAV::libunrar_iface>)
                     file(COPY $<TARGET_FILE:$<IF:$<TARGET_EXISTS:ClamAV::libunrar_iface>,ClamAV::libunrar_iface,check_clamav>> DESTINATION $<TARGET_FILE_DIR:check_clamav>)
+                endif()
+
+                # Collect example programs, if built with ENABLE_EXAMPLES=ON
+                if ($<TARGET_EXISTS:ex_scan_callbacks>)
+                    file(COPY $<TARGET_FILE:$<IF:$<TARGET_EXISTS:ex_scan_callbacks>,ex_scan_callbacks,check_clamav>> DESTINATION $<TARGET_FILE_DIR:check_clamav>)
+                endif()
+                if ($<TARGET_EXISTS:ex_cl_cvdunpack>)
+                    file(COPY $<TARGET_FILE:$<IF:$<TARGET_EXISTS:ex_cl_cvdunpack>,ex_cl_cvdunpack,check_clamav>> DESTINATION $<TARGET_FILE_DIR:check_clamav>)
                 endif()
             ]])
         endif()
