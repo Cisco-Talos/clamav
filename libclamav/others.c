@@ -1575,7 +1575,7 @@ static cl_error_t append_virus(cli_ctx *ctx, const char *virname, IndicatorType 
 
     if (SCAN_COLLECT_METADATA && ctx->this_layer_metadata_json) {
         if (type == IndicatorType_Weak) {
-            // If this is a weak indicator, we don't add it to the "Viruses" array.
+            // If this is a weak indicator, we don't add it to the "Alerts" array.
             // Instead, we add it to the "WeakIndicators" array.
             json_object *arrobj, *virobj;
             if (!json_object_object_get_ex(ctx->this_layer_metadata_json, "WeakIndicators", &arrobj)) {
@@ -1595,16 +1595,16 @@ static cl_error_t append_virus(cli_ctx *ctx, const char *virname, IndicatorType 
             }
             json_object_array_add(arrobj, virobj);
         } else {
-            // If this is a strong or potentially unwanted indicator, we add it to the "Viruses" array.
+            // If this is a strong or potentially unwanted indicator, we add it to the "Alerts" array.
             json_object *arrobj, *virobj;
-            if (!json_object_object_get_ex(ctx->this_layer_metadata_json, "Viruses", &arrobj)) {
+            if (!json_object_object_get_ex(ctx->this_layer_metadata_json, "Alerts", &arrobj)) {
                 arrobj = json_object_new_array();
                 if (NULL == arrobj) {
                     cli_errmsg("cli_append_virus: no memory for json virus array\n");
                     status = CL_EMEM;
                     goto done;
                 }
-                json_object_object_add(ctx->this_layer_metadata_json, "Viruses", arrobj);
+                json_object_object_add(ctx->this_layer_metadata_json, "Alerts", arrobj);
             }
             virobj = json_object_new_string(virname);
             if (NULL == virobj) {
@@ -2740,7 +2740,7 @@ uint8_t cli_set_debug_flag(uint8_t debug_flag)
 /**
  * @brief Update the metadata JSON object to reflect that the current layer was trusted.
  *
- * This involves renaming the "ContainedIndicators" array to "IgnoredIndicators" and the "Viruses" array to "IgnoredAlerts".
+ * This involves renaming the "ContainedIndicators" array to "IgnoredIndicators" and the "Alerts" array to "IgnoredAlerts".
  * It also recursively processes any contained or embedded objects to rename their arrays as well.
  *
  * @param scan_layer_json   The JSON object representing the current scan layer's metadata.
@@ -2758,7 +2758,7 @@ static cl_error_t metadata_json_trust_this_layer(json_object *scan_layer_json)
         goto done;
     }
 
-    // Trust the current layer's metadata by renaming the "ContainedIndicators" and "Viruses" arrays.
+    // Trust the current layer's metadata by renaming the "ContainedIndicators" and "Alerts" arrays.
     json_object *contained_indicators = NULL;
     if (json_object_object_get_ex(scan_layer_json, "ContainedIndicators", &contained_indicators)) {
         // Rename "ContainedIndicators" to "IgnoredIndicators" to indicate these indicators were ignored because the layer was trusted.
@@ -2809,20 +2809,20 @@ static cl_error_t metadata_json_trust_this_layer(json_object *scan_layer_json)
     }
 
     json_object *viruses = NULL;
-    if (json_object_object_get_ex(scan_layer_json, "Viruses", &viruses)) {
-        // Rename "Viruses" to "IgnoredAlerts" to indicate these alerts were ignored because the layer was trusted.
+    if (json_object_object_get_ex(scan_layer_json, "Alerts", &viruses)) {
+        // Rename "Alerts" to "IgnoredAlerts" to indicate these alerts were ignored because the layer was trusted.
         ret = json_object_object_add(scan_layer_json, "IgnoredAlerts", viruses);
         if (ret != 0) {
-            cli_errmsg("metadata_json_trust_this_layer: failed to rename Viruses to IgnoredAlerts in metadata JSON\n");
+            cli_errmsg("metadata_json_trust_this_layer: failed to rename Alerts to IgnoredAlerts in metadata JSON\n");
             status = CL_ERROR;
             goto done;
         }
 
-        // Increment the reference count of the "Viruses" array since json_object_object_add() does not do that.
+        // Increment the reference count of the "Alerts" array since json_object_object_add() does not do that.
         json_object_get(viruses);
 
-        // Remove the original "Viruses" entry.
-        json_object_object_del(scan_layer_json, "Viruses");
+        // Remove the original "Alerts" entry.
+        json_object_object_del(scan_layer_json, "Alerts");
     }
 
     status = CL_SUCCESS;

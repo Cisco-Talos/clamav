@@ -3831,7 +3831,7 @@ getHrefs(cli_ctx *ctx, message *m, tag_arguments_t *hrefs)
 
     /* TODO: make this size customisable */
     if (len > 100 * 1024) {
-        cli_dbgmsg("Viruses pointed to by URLs not scanned in large message\n");
+        cli_dbgmsg("HTML pointed to by URLs not scanned in large message\n");
         blobDestroy(b);
         return NULL;
     }
