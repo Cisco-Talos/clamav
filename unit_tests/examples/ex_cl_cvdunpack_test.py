@@ -26,8 +26,13 @@ class TC(testcase.TestCase):
         # Find the example program
         if operating_system == 'windows':
             # Windows needs the example program to be in the same directory as libclamav and the rest.
+            program_path = TC.path_build / 'examples' / (program_name + '.exe')
+            # If we're being built with Ninja Multi-Config, also try the configuration build directory.
+            if not program_path.exists() and 'CONFIGURATION' in os.environ:
+                program_path = TC.path_build / 'examples' / os.environ["CONFIGURATION"] / ( program_name + '_static.exe' )
+
             shutil.copy(
-                str(TC.path_build / 'examples' / ( program_name + '.exe' ) ),
+                str( program_path ),
                 str(TC.path_build / 'unit_tests' / ( program_name + '.exe' ) ),
             )
 
