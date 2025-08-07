@@ -27,14 +27,14 @@ class TC(testcase.TestCase):
         if operating_system == 'windows':
             # Windows needs the example program to be in the same directory as libclamav and the rest.
             shutil.copy(
-                str(TC.path_build / 'examples' / program_name + '.exe'),
-                str(TC.path_build / 'unit_tests' / program_name + '.exe'),
+                str(TC.path_build / 'examples' / ( program_name + '.exe' ) ),
+                str(TC.path_build / 'unit_tests' / ( program_name + '.exe' ) ),
             )
 
-            TC.example_program = TC.path_build / 'unit_tests' / program_name + '.exe'
+            TC.example_program = TC.path_build / 'unit_tests' / ( program_name + '.exe' )
             if not TC.example_program.exists():
                 # Try the static version.
-                TC.example_program = TC.path_build / 'unit_tests' / program_name + '_static.exe'
+                TC.example_program = TC.path_build / 'unit_tests' / ( program_name + '_static.exe' )
                 if not TC.example_program.exists():
                     raise Exception('Could not find the example program.')
         else:
@@ -42,7 +42,7 @@ class TC(testcase.TestCase):
             TC.example_program = TC.path_build / 'examples' / program_name
             if not TC.example_program.exists():
                 # Try the static version.
-                TC.example_program = TC.path_build / 'examples' / program_name + '_static'
+                TC.example_program = TC.path_build / 'examples' / ( program_name + '_static' )
                 if not TC.example_program.exists():
                     raise Exception('Could not find the example program.')
 
