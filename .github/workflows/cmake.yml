@@ -46,9 +46,9 @@ jobs:
         uses: lukka/run-vcpkg@v11
         id: runvcpkg
 
-      - name: Print the VCPKG_ROOT & VCPKG_TRIPLET (for debugging)
+      - name: Print the VCPKG_ROOT (for debugging)
         shell: bash
-        run: echo "'${{ steps.runvcpkg.outputs.RUNVCPKG_VCPKG_ROOT_OUT }}' '${{ steps.runvcpkg.outputs.RUNVCPKG_DEFAULT_VCPKG_TRIPLET_OUT }}' "
+        run: echo "'${{ steps.runvcpkg.outputs.RUNVCPKG_VCPKG_ROOT_OUT }}'"
 
       - name: dir the VCPKG_ROOT
         run: dir ${{ steps.runvcpkg.outputs.RUNVCPKG_VCPKG_ROOT_OUT }}
@@ -63,16 +63,6 @@ jobs:
           testPreset: "windows-release"
           packagePreset: "windows-release"
           useVcpkgToolchainFile: true
-
-      - name: Test
-        working-directory: ${{runner.workspace}}/build
-        # Execute tests defined by the CMake configuration.
-        # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
-        run: ctest -C ${{ env.BUILD_TYPE }} -V
-
-      - name: Create Installer
-        working-directory: ${{runner.workspace}}/build
-        run: cpack -C ${{ env.BUILD_TYPE }}
 
   build-macos:
     runs-on: macos-latest
