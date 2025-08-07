@@ -229,7 +229,19 @@ endif()
 #
 if(ENABLE_TESTS)
     # Used for the libclamav unit test framework
-    find_package(Libcheck REQUIRED)
+    find_package(Libcheck QUIET)
+    if(NOT Libcheck_FOUND)
+        find_package(check CONFIG QUIET)
+        if(check_FOUND)
+            if(TARGET Check::check)
+                add_library(libcheck::check ALIAS Check::check)
+            elseif(TARGET Check::checkShared)
+                add_library(libcheck::check ALIAS Check::checkShared)
+            endif()
+        else()
+            message(FATAL_ERROR "Tests enabled (ENABLE_TESTS=ON), but Libcheck wsa not found.")
+        endif()
+    endif()
 
     # Used to generate the test files and for the application feature test framework
     # In distros that support multiple implementations of python it is helpful to specify the impl to use
