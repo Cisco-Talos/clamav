@@ -16,7 +16,7 @@
             "cacheVariables": {
                 "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
                 "ENABLE_EXAMPLES": "ON",
-                "DENABLE_STATIC_LIB": "ON"
+                "ENABLE_STATIC_LIB": "ON"
             }
         }
     ],
