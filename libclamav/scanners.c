@@ -221,7 +221,6 @@ static cl_error_t cli_scanrar_file(const char *filepath, int desc, cli_ctx *ctx)
     unsigned int file_count = 0;
 
     uint32_t nEncryptedFilesFound = 0;
-    uint32_t nTooLargeFilesFound  = 0;
 
     void *hArchive = NULL;
 
@@ -365,7 +364,6 @@ static cl_error_t cli_scanrar_file(const char *filepath, int desc, cli_ctx *ctx)
             } else if (cli_checklimits("RAR", ctx, metadata.unpack_size, 0, 0)) {
                 /* File size exceeds maxfilesize, must skip extraction.
                  * Although we may be able to scan the metadata */
-                nTooLargeFilesFound += 1;
 
                 cli_dbgmsg("RAR: Next file is too large (%" PRIu64 " bytes); it would exceed max scansize.  Skipping to next file.\n", metadata.unpack_size);
 
@@ -626,7 +624,6 @@ static cl_error_t cli_scanegg(cli_ctx *ctx)
     unsigned int file_count = 0;
 
     uint32_t nEncryptedFilesFound = 0;
-    uint32_t nTooLargeFilesFound  = 0;
 
     void *hArchive = NULL;
 
@@ -786,7 +783,6 @@ static cl_error_t cli_scanegg(cli_ctx *ctx)
             } else if (cli_checklimits("EGG", ctx, metadata.unpack_size, 0, 0)) {
                 /* File size exceeds maxfilesize, must skip extraction.
                  * Although we may be able to scan the metadata */
-                nTooLargeFilesFound += 1;
 
                 cli_dbgmsg("EGG: Next file is too large (%" PRIu64 " bytes); it would exceed max scansize.  Skipping to next file.\n", metadata.unpack_size);
 
@@ -5797,12 +5793,12 @@ static cl_error_t scan_common(
 
     if (NULL != hash_alg) {
         // Set the fmap hash for the given algorithm.
-        if (0 == strncmp(hash_alg, "md5", 3) || (0 == strncmp(hash_alg, "MD5", 3))) {
+        if (3 == strlen(hash_alg) && (0 == strncmp(hash_alg, "md5", 3) || (0 == strncmp(hash_alg, "MD5", 3)))) {
             requested_hash_type = CLI_HASH_MD5;
-        } else if (0 == strncmp(hash_alg, "sha1", 4) || (0 == strncmp(hash_alg, "SHA1", 4))) {
+        } else if (4 == strlen(hash_alg) && (0 == strncmp(hash_alg, "sha1", 4) || (0 == strncmp(hash_alg, "SHA1", 4)))) {
             requested_hash_type = CLI_HASH_SHA1;
-        } else if ((0 == strncmp(hash_alg, "sha2-256", 8)) || (0 == strncmp(hash_alg, "SHA2-256", 8)) ||
-                   (0 == strncmp(hash_alg, "sha256", 6)) || (0 == strncmp(hash_alg, "SHA256", 6))) {
+        } else if ((8 == strlen(hash_alg) && (0 == strncmp(hash_alg, "sha2-256", 8) || (0 == strncmp(hash_alg, "SHA2-256", 8)))) ||
+                   (6 == strlen(hash_alg) && (0 == strncmp(hash_alg, "sha256", 6) || (0 == strncmp(hash_alg, "SHA256", 6))))) {
             requested_hash_type = CLI_HASH_SHA2_256;
         } else {
             cli_errmsg("scan_common: Unsupported hash algorithm: %s\n", hash_alg);
@@ -6109,8 +6105,9 @@ static cl_error_t scan_common(
     // If any alerts occurred, set the output pointer to the "latest" alert signature name.
     if (0 < evidence_num_alerts(ctx.this_layer_evidence)) {
         *last_alert_out = cli_get_last_virus_str(&ctx);
-        *verdict_out    = CL_VERDICT_STRONG_INDICATOR;
     }
+
+    *verdict_out = ctx.recursion_stack[ctx.recursion_level].verdict;
 
     /*
      * Report PUA alerts here.

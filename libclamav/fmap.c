@@ -1140,6 +1140,21 @@ cl_error_t fmap_set_hash(fmap_t *map, uint8_t *hash, cli_hash_type_t type)
     map->have_hash[type] = true;
     status               = CL_SUCCESS;
 
+    if (cli_debug_flag) {
+        // Convert the hash to a hex string for logging
+        char hash_string[CLI_HASHLEN_MAX * 2 + 1] = {0};
+        size_t hash_len                           = cli_hash_len(type);
+
+        // Convert hash to string.
+        size_t i;
+        for (i = 0; i < hash_len; i++) {
+            sprintf(hash_string + i * 2, "%02x", map->hash[type][i]);
+        }
+        hash_string[hash_len * 2] = 0;
+
+        cli_dbgmsg("fmap_set_hash: set %s hash: %s\n", cli_hash_name(type), hash_string);
+    }
+
 done:
     return status;
 }
@@ -1240,6 +1255,21 @@ cl_error_t fmap_get_hash(fmap_t *map, unsigned char **hash, cli_hash_type_t type
 
             /* hashctx is finished, don't need to destroy it later */
             hashctx[hash_type] = NULL;
+
+            if (cli_debug_flag) {
+                // Convert the hash to a hex string for logging
+                char hash_string[CLI_HASHLEN_MAX * 2 + 1] = {0};
+                size_t hash_len                           = cli_hash_len(hash_type);
+
+                // Convert hash to string.
+                size_t i;
+                for (i = 0; i < hash_len; i++) {
+                    sprintf(hash_string + i * 2, "%02x", map->hash[hash_type][i]);
+                }
+                hash_string[hash_len * 2] = 0;
+
+                cli_dbgmsg("fmap_get_hash: calculated %s hash: %s\n", cli_hash_name(hash_type), hash_string);
+            }
         }
     }
 

@@ -276,7 +276,7 @@ static cl_error_t prompt_user_for_what_to_do(cl_scan_layer_t *layer, bool is_ale
         while ((c = getchar()) != '\n' && c != EOF) {
             continue;
         }
-        printf("Invalid input. Please enter a number between 1 and 5.\n");
+        printf("Invalid input. Please enter a number between 1 and 11.\n");
         return prompt_user_for_what_to_do(layer, is_alert_callback);
     }
 
@@ -944,14 +944,17 @@ static cl_error_t print_layer_info(cl_scan_layer_t *layer)
         if (NULL != md5_hash) {
             free((void *)md5_hash);
             md5_hash = NULL;
+            have_md5 = false;
         }
         if (NULL != sha1_hash) {
             free((void *)sha1_hash);
             sha1_hash = NULL;
+            have_sha1 = false;
         }
         if (NULL != sha256_hash) {
             free((void *)sha256_hash);
             sha256_hash = NULL;
+            have_sha256 = false;
         }
 
         /*
@@ -1265,7 +1268,7 @@ int main(int argc, char **argv)
 
     script_context_t *script_context = NULL;
 
-    unsigned long int size = 0;
+    uint64_t size = 0;
 
     cl_verdict_t verdict = CL_VERDICT_NOTHING_FOUND;
     const char *alert_name;

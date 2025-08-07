@@ -1561,6 +1561,16 @@ static cl_error_t append_virus(cli_ctx *ctx, const char *virname, IndicatorType 
                 break;
             }
         }
+
+        // Set the verdict
+        ctx->recursion_stack[ctx->recursion_level].verdict = CL_VERDICT_STRONG_INDICATOR;
+    } else if (type == IndicatorType_PotentiallyUnwanted) {
+        // Set the verdict, but don't override a strong indicator verdict.
+        if (CL_VERDICT_STRONG_INDICATOR != ctx->recursion_stack[ctx->recursion_level].verdict) {
+            ctx->recursion_stack[ctx->recursion_level].verdict = CL_VERDICT_POTENTIALLY_UNWANTED;
+        }
+    } else if (type == IndicatorType_Weak) {
+        cli_dbgmsg("cli_append_virus: Weak indicator '%s' added to evidence\n", virname);
     }
 
     if (SCAN_COLLECT_METADATA && ctx->this_layer_metadata_json) {
@@ -2727,6 +2737,100 @@ uint8_t cli_set_debug_flag(uint8_t debug_flag)
     return was;
 }
 
+/**
+ * @brief Update the metadata JSON object to reflect that the current layer was trusted.
+ *
+ * This involves renaming the "ContainedIndicators" array to "IgnoredIndicators" and the "Viruses" array to "IgnoredAlerts".
+ * It also recursively processes any contained or embedded objects to rename their arrays as well.
+ *
+ * @param scan_layer_json   The JSON object representing the current scan layer's metadata.
+ * @return cl_error_t       CL_SUCCESS on success, or an error code on failure.
+ */
+static cl_error_t metadata_json_trust_this_layer(json_object *scan_layer_json)
+{
+    cl_error_t status = CL_ERROR;
+    cl_error_t ret;
+    int json_ret;
+
+    if (!scan_layer_json) {
+        cli_errmsg("metadata_json_trust_this_layer: invalid JSON object\n");
+        status = CL_ENULLARG;
+        goto done;
+    }
+
+    // Trust the current layer's metadata by renaming the "ContainedIndicators" and "Viruses" arrays.
+    json_object *contained_indicators = NULL;
+    if (json_object_object_get_ex(scan_layer_json, "ContainedIndicators", &contained_indicators)) {
+        // Rename "ContainedIndicators" to "IgnoredIndicators" to indicate these indicators were ignored because the layer was trusted.
+        json_ret = json_object_object_add(scan_layer_json, "IgnoredIndicators", contained_indicators);
+        if (json_ret != 0) {
+            cli_errmsg("metadata_json_trust_this_layer: failed to rename ContainedIndicators to IgnoredIndicators in metadata JSON\n");
+            status = CL_ERROR;
+            goto done;
+        }
+
+        // Increment the reference count of the "ContainedIndicators" array since json_object_object_add() does not do that.
+        json_object_get(contained_indicators);
+
+        // Remove the original "ContainedIndicators" entry.
+        json_object_object_del(scan_layer_json, "ContainedIndicators");
+
+        // Now recursively find any contained objects and rename their "ContainedIndicators" arrays too.
+        json_object *contained_objects = NULL;
+        if (json_object_object_get_ex(scan_layer_json, "ContainedObjects", &contained_objects)) {
+            size_t i;
+            size_t num_objects = json_object_array_length(contained_objects);
+            for (i = 0; i < num_objects; i++) {
+                json_object *contained_object = json_object_array_get_idx(contained_objects, i);
+                if (contained_object) {
+                    ret = metadata_json_trust_this_layer(contained_object);
+                    if (ret != CL_SUCCESS) {
+                        cli_errmsg("metadata_json_trust_this_layer: failed to update metadata JSON for contained object: %s\n", cl_strerror(ret));
+                    }
+                }
+            }
+        }
+
+        // Do the same process for any "EmbeddedObjects" too.
+        json_object *embedded_objects = NULL;
+        if (json_object_object_get_ex(scan_layer_json, "EmbeddedObjects", &embedded_objects)) {
+            size_t i;
+            size_t num_objects = json_object_array_length(embedded_objects);
+            for (i = 0; i < num_objects; i++) {
+                json_object *embedded_object = json_object_array_get_idx(embedded_objects, i);
+                if (embedded_object) {
+                    ret = metadata_json_trust_this_layer(embedded_object);
+                    if (ret != CL_SUCCESS) {
+                        cli_errmsg("metadata_json_trust_this_layer: failed to update metadata JSON for embedded object: %s\n", cl_strerror(ret));
+                    }
+                }
+            }
+        }
+    }
+
+    json_object *viruses = NULL;
+    if (json_object_object_get_ex(scan_layer_json, "Viruses", &viruses)) {
+        // Rename "Viruses" to "IgnoredAlerts" to indicate these alerts were ignored because the layer was trusted.
+        ret = json_object_object_add(scan_layer_json, "IgnoredAlerts", viruses);
+        if (ret != 0) {
+            cli_errmsg("metadata_json_trust_this_layer: failed to rename Viruses to IgnoredAlerts in metadata JSON\n");
+            status = CL_ERROR;
+            goto done;
+        }
+
+        // Increment the reference count of the "Viruses" array since json_object_object_add() does not do that.
+        json_object_get(viruses);
+
+        // Remove the original "Viruses" entry.
+        json_object_object_del(scan_layer_json, "Viruses");
+    }
+
+    status = CL_SUCCESS;
+
+done:
+    return status;
+}
+
 cl_error_t cli_trust_this_layer(cli_ctx *ctx)
 {
     cl_error_t status = CL_ERROR;
@@ -2744,6 +2848,14 @@ cl_error_t cli_trust_this_layer(cli_ctx *ctx)
     }
 
     ctx->recursion_stack[ctx->recursion_level].verdict = CL_VERDICT_TRUSTED;
+
+    if (SCAN_COLLECT_METADATA && ctx->this_layer_metadata_json) {
+        status = metadata_json_trust_this_layer(ctx->this_layer_metadata_json);
+        if (status != CL_SUCCESS) {
+            cli_errmsg("cli_trust_this_layer: failed to update metadata JSON to reflect trusted layer: %s\n", cl_strerror(status));
+            goto done;
+        }
+    }
 
     status = CL_SUCCESS;
 
