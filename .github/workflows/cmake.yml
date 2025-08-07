@@ -57,7 +57,7 @@ jobs:
         uses: lukka/run-cmake@v10
         id: runcmake_cmd
         with:
-          cmakeListsTxtPath: "${{runner.workspace}}/CMakeLists.txt"
+          cmakeListsTxtPath: "${{runner.workspace}}/clamav/CMakeLists.txt"
           configurePreset: "clamav-windows-ninja-multi"
           buildPreset: "windows-release"
           testPreset: "windows-release"
