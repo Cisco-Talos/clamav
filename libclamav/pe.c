@@ -5455,6 +5455,9 @@ cl_error_t cli_check_auth_header(cli_ctx *ctx, struct cli_exe_info *peinfo)
     uint32_t sec_dir_size;
     struct cli_exe_info _peinfo;
 
+    char *source      = NULL;
+    size_t source_len = 0;
+
     // If Authenticode parsing has been disabled via DCONF or an engine
     // option, then don't continue on.
     if (!(DCONF & PE_CONF_CERTS))
@@ -5656,8 +5659,18 @@ cl_error_t cli_check_auth_header(cli_ctx *ctx, struct cli_exe_info *peinfo)
         if (cli_hm_scan(authsha, 2, NULL, ctx->engine->hm_fp, hashtype) == CL_VIRUS) {
             cli_dbgmsg("cli_check_auth_header: PE file trusted by catalog file (%s)\n", hashctx_name);
 
+            source_len = strlen("authenticode catalog file: ") + strlen(hashctx_name) + 1;
+            source     = malloc(source_len);
+            if (!source) {
+                cli_errmsg("dispatch_scan_callback: no memory for source string\n");
+                goto finish;
+            }
+            snprintf(source, source_len, "authenticode catalog file: %s", hashctx_name);
+
             // Remove any evidence for this layer and set the verdict to trusted.
-            (void)cli_trust_this_layer(ctx);
+            (void)cli_trust_this_layer(ctx, source);
+
+            CLI_FREE_AND_SET_NULL(source);
 
             ret = CL_VERIFIED;
             goto finish;
@@ -5679,6 +5692,9 @@ finish:
     if (&_peinfo == peinfo) {
         cli_exe_info_destroy(peinfo);
     }
+
+    CLI_FREE_AND_SET_NULL(source);
+
     return ret;
 }
 

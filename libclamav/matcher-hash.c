@@ -133,7 +133,7 @@ cl_error_t hm_addhash_bin(struct cl_engine *engine, hash_purpose_t purpose, cons
     struct cli_sz_hash *szh;
     struct cli_htu32 *ht;
     cl_error_t ret;
-    struct cli_matcher *root;
+    struct cli_matcher *root = NULL;
 
     if (purpose == HASH_PURPOSE_PE_SECTION_DETECT) {
         root = engine->hm_mdb;

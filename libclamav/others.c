@@ -1236,7 +1236,7 @@ cl_error_t cli_checklimits(const char *who, cli_ctx *ctx, uint64_t need1, uint64
     /* Enforce global scan-size limit, if limit enabled */
     if (needed && (ctx->engine->maxscansize != 0) && (ctx->engine->maxscansize - ctx->scansize < needed)) {
         /* The size needed is greater than the remaining scansize ... Skip this file. */
-        cli_dbgmsg("%s: scansize exceeded (initial: %lu, consumed: %lu, needed: %lu)\n", who, ctx->engine->maxscansize, ctx->scansize, needed);
+        cli_dbgmsg("%s: scansize exceeded (initial: " STDu64 ", consumed: " STDu64 ", needed: " STDu64 ")\n", who, ctx->engine->maxscansize, ctx->scansize, needed);
         ret = CL_EMAXSIZE;
         cli_append_potentially_unwanted_if_heur_exceedsmax(ctx, "Heuristics.Limits.Exceeded.MaxScanSize");
         goto done;
@@ -1245,7 +1245,7 @@ cl_error_t cli_checklimits(const char *who, cli_ctx *ctx, uint64_t need1, uint64
     /* Enforce per-file file-size limit, if limit enabled */
     if (needed && (ctx->engine->maxfilesize != 0) && (ctx->engine->maxfilesize < needed)) {
         /* The size needed is greater than that limit ... Skip this file. */
-        cli_dbgmsg("%s: filesize exceeded (allowed: %lu, needed: %lu)\n", who, ctx->engine->maxfilesize, needed);
+        cli_dbgmsg("%s: filesize exceeded (allowed: " STDu64 ", needed: " STDu64 ")\n", who, ctx->engine->maxfilesize, needed);
         ret = CL_EMAXSIZE;
         cli_append_potentially_unwanted_if_heur_exceedsmax(ctx, "Heuristics.Limits.Exceeded.MaxFileSize");
         goto done;
@@ -1466,24 +1466,68 @@ cl_error_t cli_virus_found_cb(cli_ctx *ctx, const char *virname, bool is_potenti
         }
 
         if (SCAN_COLLECT_METADATA && ctx->this_layer_metadata_json) {
-            // Note alerts ignored by callback in metadata.
-            json_object *arrobj, *virobj;
-            if (!json_object_object_get_ex(ctx->this_layer_metadata_json, "IgnoredAlerts", &arrobj)) {
-                arrobj = json_object_new_array();
-                if (NULL == arrobj) {
-                    cli_errmsg("cli_append_virus: no memory for json ignored alerts array\n");
+            // Remove the last alert from the "Alerts" array.
+            json_object *alerts = NULL;
+            if (json_object_object_get_ex(ctx->this_layer_metadata_json, "Alerts", &alerts)) {
+                int json_ret = 0;
+
+                // Get the index of the last alert.
+                size_t num_alerts = json_object_array_length(alerts);
+                if (0 == num_alerts) {
+                    cli_errmsg("Attempting to ignore an alerts, but alert not found in metadata Alerts array.\n");
+                    status = CL_ERROR;
+                    goto done;
+                }
+
+                // Remove the alert from the Alerts array.
+                json_ret = json_object_array_del_idx(alerts, num_alerts - 1, 1);
+                if (0 != json_ret) {
+                    cli_errmsg("Failed to remove alert from metadata JSON.\n");
+                    status = CL_ERROR;
+                    goto done;
+                }
+
+                // If there aren't any other alerts, we should also delete the "Alerts" array.
+                if (num_alerts == 1) {
+                    json_object_object_del(ctx->this_layer_metadata_json, "Alerts");
+                }
+            }
+
+            // Add "Ignored" key to the last alert from the "Indicators" array.
+            json_object *indicators = NULL;
+            if (json_object_object_get_ex(ctx->this_layer_metadata_json, "Indicators", &indicators)) {
+                int json_ret = 0;
+
+                // Get the index of the last indicator.
+                size_t num_indicators = json_object_array_length(indicators);
+                if (0 == num_indicators) {
+                    cli_errmsg("Attempting to ignore an alerts, but alert not found in metadata Alerts array.\n");
+                    status = CL_ERROR;
+                    goto done;
+                }
+
+                // Get the last indicator.
+                json_object *indicator_obj = json_object_array_get_idx(indicators, num_indicators - 1);
+                if (NULL == indicator_obj) {
+                    cli_errmsg("cli_virus_found_cb: Failed to get last indicator from Indicators array.\n");
+                    status = CL_ERROR;
+                    goto done;
+                }
+
+                // Add an "Ignored" string to the indicator object.
+                json_object *ignored = json_object_new_string("Signature ignored by alert application callback");
+                if (!ignored) {
+                    cli_errmsg("metadata_json_trust_this_layer: no memory for json ignored indicator object\n");
                     status = CL_EMEM;
                     goto done;
                 }
+                json_ret = json_object_object_add(indicator_obj, "Ignored", ignored);
+                if (0 != json_ret) {
+                    cli_errmsg("metadata_json_trust_this_layer: Failed to add Ignored boolean to indicator object\n");
+                    status = CL_ERROR;
+                    goto done;
+                }
             }
-            virobj = json_object_new_string(virname);
-            if (NULL == virobj) {
-                cli_errmsg("cli_append_virus: no memory for json ignored alert name object\n");
-                status = CL_EMEM;
-                goto done;
-            }
-            json_object_array_add(arrobj, virobj);
-            json_object_object_add(ctx->this_layer_metadata_json, "IgnoredAlerts", arrobj);
         }
     }
 
@@ -1513,22 +1557,12 @@ static cl_error_t append_virus(cli_ctx *ctx, const char *virname, IndicatorType 
         // evidence storage for this layer not initialized, initialize a new evidence store.
         ctx->recursion_stack[ctx->recursion_level].evidence = evidence_new();
         if (NULL == ctx->recursion_stack[ctx->recursion_level].evidence) {
-            cli_errmsg("cli_append_virus: no memory for evidence store\n");
+            cli_errmsg("append_virus: no memory for evidence store\n");
             status = CL_EMEM;
             goto done;
         }
     }
     ctx->this_layer_evidence = ctx->recursion_stack[ctx->recursion_level].evidence;
-
-    if ((ctx->fmap != NULL) &&
-        (ctx->recursion_stack != NULL)) {
-
-        status = cli_check_fp(ctx, virname);
-        if (CL_VERIFIED == status) {
-            // FP signature found for one of the layers. Ignore indicator.
-            goto done;
-        }
-    }
 
     add_successful = evidence_add_indicator(
         ctx->this_layer_evidence,
@@ -1540,6 +1574,78 @@ static cl_error_t append_virus(cli_ctx *ctx, const char *virname, IndicatorType 
         cli_errmsg("Failed to add indicator to scan evidence: %s\n", ffierror_fmt(add_indicator_error));
         status = CL_ERROR;
         goto done;
+    }
+
+    if (SCAN_COLLECT_METADATA && ctx->this_layer_metadata_json) {
+        // Add the indicator to the metadata.
+        json_object *indicators = NULL;
+        if (!json_object_object_get_ex(ctx->this_layer_metadata_json, "Indicators", &indicators)) {
+            indicators = json_object_new_array();
+            if (NULL == indicators) {
+                cli_errmsg("append_virus: no memory for json Indicators array\n");
+            } else {
+                json_object_object_add(ctx->this_layer_metadata_json, "Indicators", indicators);
+            }
+        }
+
+        // Create json object containing name, type, depth, and object_id
+        json_object *indicator_obj = json_object_new_object();
+        if (NULL == indicator_obj) {
+            cli_errmsg("append_virus: no memory for json indicator object\n");
+        } else {
+            json_object_object_add(indicator_obj, "Name", json_object_new_string(virname));
+            switch (type) {
+                case IndicatorType_Strong: {
+                    json_object_object_add(indicator_obj, "Type", json_object_new_string("Strong"));
+                } break;
+                case IndicatorType_PotentiallyUnwanted: {
+                    json_object_object_add(indicator_obj, "Type", json_object_new_string("PotentiallyUnwanted"));
+                } break;
+                case IndicatorType_Weak: {
+                    json_object_object_add(indicator_obj, "Type", json_object_new_string("Weak"));
+                } break;
+            }
+            json_object_object_add(indicator_obj, "Depth", json_object_new_uint64((uint64_t)0)); // 0 for this layer
+            json_object_object_add(indicator_obj, "ObjectID", json_object_new_uint64((uint64_t)ctx->recursion_stack[ctx->recursion_level].object_id));
+            json_object_array_add(indicators, indicator_obj);
+        }
+
+        // If this is a strong or potentially unwanted indicator, we add it to the "Alerts" array.
+        if (type != IndicatorType_Weak) {
+            json_object *arrobj = NULL;
+            if (!json_object_object_get_ex(ctx->this_layer_metadata_json, "Alerts", &arrobj)) {
+                arrobj = json_object_new_array();
+                if (NULL == arrobj) {
+                    cli_errmsg("append_virus: no memory for json virus array\n");
+                    status = CL_EMEM;
+                    goto done;
+                }
+                json_object_object_add(ctx->this_layer_metadata_json, "Alerts", arrobj);
+            }
+
+            // Increment the indicator_obj reference count, so that it can be added to the "Alerts" array.
+            json_object_get(indicator_obj);
+
+            // Add the same indicator object to the "Alerts" array.
+            json_object_array_add(arrobj, indicator_obj);
+        }
+    }
+
+    // Check for false positive hash signature matches for the current and parent layers.
+    // Do this after running the virus callback, so that the callback always gets called.
+    // Also do this after adding metadata, so that the metadata will correctly show ignored alerts.
+    if (ctx->fmap != NULL) {
+        // Check for ctx->fmap is because `do_phishing_test()` in the `check_regex.c` unit tests
+        // calls append_virus() through cli_append_potentially_unwanted() without actually providing
+        // an fmap.
+        // TODO: Add a basic fmap for unit tests since it makes no sense to append alerts when your scan
+        //       context doesn't even have an fmap.
+
+        status = cli_check_fp(ctx, virname);
+        if (CL_VERIFIED == status) {
+            // FP signature found for one of the layers. Ignore indicator.
+            goto done;
+        }
     }
 
     if (type == IndicatorType_Strong) {
@@ -1570,50 +1676,7 @@ static cl_error_t append_virus(cli_ctx *ctx, const char *virname, IndicatorType 
             ctx->recursion_stack[ctx->recursion_level].verdict = CL_VERDICT_POTENTIALLY_UNWANTED;
         }
     } else if (type == IndicatorType_Weak) {
-        cli_dbgmsg("cli_append_virus: Weak indicator '%s' added to evidence\n", virname);
-    }
-
-    if (SCAN_COLLECT_METADATA && ctx->this_layer_metadata_json) {
-        if (type == IndicatorType_Weak) {
-            // If this is a weak indicator, we don't add it to the "Alerts" array.
-            // Instead, we add it to the "WeakIndicators" array.
-            json_object *arrobj, *virobj;
-            if (!json_object_object_get_ex(ctx->this_layer_metadata_json, "WeakIndicators", &arrobj)) {
-                arrobj = json_object_new_array();
-                if (NULL == arrobj) {
-                    cli_errmsg("cli_append_virus: no memory for json weak indicators array\n");
-                    status = CL_EMEM;
-                    goto done;
-                }
-                json_object_object_add(ctx->this_layer_metadata_json, "WeakIndicators", arrobj);
-            }
-            virobj = json_object_new_string(virname);
-            if (NULL == virobj) {
-                cli_errmsg("cli_append_virus: no memory for json weak indicator name object\n");
-                status = CL_EMEM;
-                goto done;
-            }
-            json_object_array_add(arrobj, virobj);
-        } else {
-            // If this is a strong or potentially unwanted indicator, we add it to the "Alerts" array.
-            json_object *arrobj, *virobj;
-            if (!json_object_object_get_ex(ctx->this_layer_metadata_json, "Alerts", &arrobj)) {
-                arrobj = json_object_new_array();
-                if (NULL == arrobj) {
-                    cli_errmsg("cli_append_virus: no memory for json virus array\n");
-                    status = CL_EMEM;
-                    goto done;
-                }
-                json_object_object_add(ctx->this_layer_metadata_json, "Alerts", arrobj);
-            }
-            virobj = json_object_new_string(virname);
-            if (NULL == virobj) {
-                cli_errmsg("cli_append_virus: no memory for json virus name object\n");
-                status = CL_EMEM;
-                goto done;
-            }
-            json_object_array_add(arrobj, virobj);
-        }
+        cli_dbgmsg("append_virus: Weak indicator '%s' added to evidence\n", virname);
     }
 
     if (callback_ret == CL_BREAK) {
@@ -1930,6 +1993,103 @@ done:
     return status;
 }
 
+/**
+ * @brief Copy indicators from a child JSON object to a parent JSON object.
+ *
+ * Used to copy indicators and alerts from a child layer to a parent layer in the recursion stack.
+ * Will increment the Depth field in the indicators to reflect the new layer depth.
+ *
+ * @param parent        The parent JSON object to which indicators will be added.
+ * @param child         The child JSON object from which indicators will be copied.
+ * @param array_name    The name of the array in the JSON object where indicators are stored (e.g., "Indicators", "Alerts").
+ * @return cl_error_t   CL_SUCCESS if successful, or an error code if something went wrong.
+ */
+static cl_error_t json_add_child_array(json_object *parent, json_object *child, const char *array_name)
+{
+    cl_error_t status = CL_SUCCESS;
+
+    json_object *child_array = NULL;
+
+    if (0 == json_object_object_get_ex(child, array_name, &child_array)) {
+        cli_dbgmsg("cli_recursion_stack_pop: no %s array in child object\n", array_name);
+        status = CL_SUCCESS;
+        goto done;
+    }
+
+    /*
+     * Found the array. Copy each element to the parent layer and increment the field named "Depth".
+     */
+
+    /* Get the parent layer array. Create a new one if it doesn't exist */
+    json_object *parent_layer_indicators = NULL;
+    if (!json_object_object_get_ex(parent, array_name, &parent_layer_indicators)) {
+        parent_layer_indicators = json_object_new_array();
+        if (NULL == parent_layer_indicators) {
+            cli_errmsg("cli_recursion_stack_pop: no memory for json Indicators array\n");
+            status = CL_ERROR;
+            goto done;
+        }
+
+        if (json_object_object_add(parent, array_name, parent_layer_indicators)) {
+            cli_errmsg("cli_recursion_stack_pop: failed to add json Indicators array to parent object\n");
+            status = CL_ERROR;
+            goto done;
+        }
+    }
+
+    /* Get the number of indicators in this layer */
+    size_t num_indicators = json_object_array_length(child_array);
+    size_t i;
+
+    /* Copy all indicators from this layer to the parent layer */
+    for (i = 0; i < num_indicators; i++) {
+        json_object *indicator = json_object_array_get_idx(child_array, i);
+        if (NULL == indicator) {
+            cli_errmsg("cli_recursion_stack_pop: Failed to get indicator at index %zu\n", i);
+            status = CL_ERROR;
+            goto done;
+        }
+
+        // Check if the indicator is a valid JSON object
+        if (!json_object_is_type(indicator, json_type_object)) {
+            continue; // Skip non-object indicators
+        }
+
+        /* Make a new object for the copy, because we need to increment the Depth field */
+        json_object *indicator_copy = json_object_new_object();
+        if (NULL == indicator_copy) {
+            cli_errmsg("cli_recursion_stack_pop: no memory for json indicator copy\n");
+            status = CL_EMEM;
+            goto done;
+        }
+
+        /* Copy the indicator's properties to the new object */
+        json_object_object_foreach(indicator, key, val)
+        {
+            if (strcmp(key, "Depth") == 0) {
+                /* Depth is a new int object with incremented value */
+                json_object *new_depth = json_object_new_int(json_object_get_int(val) + 1);
+                if (NULL == new_depth) {
+                    cli_errmsg("cli_recursion_stack_pop: no memory for json new_depth\n");
+                    status = CL_EMEM;
+                    goto done;
+                }
+                json_object_object_add(indicator_copy, key, new_depth);
+            } else {
+                /* All other fields are shallow copied. Just need to increment the reference count */
+                json_object_get(val);
+                json_object_object_add(indicator_copy, key, val);
+            }
+        }
+
+        /* Add the copied indicator to the parent layer's indicators */
+        json_object_array_add(parent_layer_indicators, indicator_copy);
+    }
+
+done:
+    return status;
+}
+
 cl_fmap_t *cli_recursion_stack_pop(cli_ctx *ctx)
 {
     cl_fmap_t *popped_map = NULL;
@@ -1941,113 +2101,9 @@ cl_fmap_t *cli_recursion_stack_pop(cli_ctx *ctx)
 
     /* If evidence (i.e. a collection of indicators / matches) were found for the popped layer, add it to the parents evidence */
     if (ctx->recursion_stack[ctx->recursion_level].evidence) {
-
         /*
          * Record contained matches in the parent layer's evidence.
          */
-        if (SCAN_COLLECT_METADATA) {
-            size_t num_indicators;
-            size_t i;
-            json_object *parent_object = ctx->recursion_stack[ctx->recursion_level - 1].metadata_json;
-
-            /* Get "ContainedIndicators" array */
-            json_object *contained_indicators = NULL;
-            if (!json_object_object_get_ex(parent_object, "ContainedIndicators", &contained_indicators)) {
-                contained_indicators = json_object_new_array();
-                if (NULL == contained_indicators) {
-                    cli_errmsg("cli_recursion_stack_pop: no memory for json ContainedIndicators array\n");
-                } else {
-                    json_object_object_add(parent_object, "ContainedIndicators", contained_indicators);
-                }
-            }
-
-            if (NULL != contained_indicators) {
-                /* Get each Strong indicator and add it */
-                num_indicators = evidence_num_indicators_type(
-                    ctx->this_layer_evidence,
-                    IndicatorType_Strong);
-                for (i = 0; i < num_indicators; i++) {
-                    size_t depth, object_id;
-                    const char *indicator = evidence_get_indicator(
-                        ctx->this_layer_evidence,
-                        IndicatorType_Strong,
-                        i,
-                        &depth,
-                        &object_id);
-
-                    if (NULL != indicator) {
-                        // Create json object containing name, type, depth, and object_id
-                        json_object *match_obj = json_object_new_object();
-                        if (NULL == match_obj) {
-                            cli_errmsg("cli_recursion_stack_pop: no memory for json match object\n");
-                        } else {
-                            json_object_object_add(match_obj, "Name", json_object_new_string(indicator));
-                            json_object_object_add(match_obj, "Type", json_object_new_string("Strong"));
-                            json_object_object_add(match_obj, "Depth", json_object_new_uint64((uint64_t)depth + 1)); // depth + 1 because this is a child of the parent layer
-                            json_object_object_add(match_obj, "ObjectID", json_object_new_uint64((uint64_t)object_id));
-                            json_object_array_add(contained_indicators, match_obj);
-                        }
-                    }
-                }
-
-                /* Get each Potentially Unwanted indicator and add it */
-                num_indicators = evidence_num_indicators_type(
-                    ctx->this_layer_evidence,
-                    IndicatorType_PotentiallyUnwanted);
-                for (i = 0; i < num_indicators; i++) {
-                    size_t depth, object_id;
-                    const char *indicator = evidence_get_indicator(
-                        ctx->this_layer_evidence,
-                        IndicatorType_PotentiallyUnwanted,
-                        i,
-                        &depth,
-                        &object_id);
-
-                    if (NULL != indicator) {
-                        // Create json object containing name, type, depth, and object_id
-                        json_object *match_obj = json_object_new_object();
-                        if (NULL == match_obj) {
-                            cli_errmsg("cli_recursion_stack_pop: no memory for json match object\n");
-                        } else {
-                            json_object_object_add(match_obj, "Name", json_object_new_string(indicator));
-                            json_object_object_add(match_obj, "Type", json_object_new_string("PotentiallyUnwanted"));
-                            json_object_object_add(match_obj, "Depth", json_object_new_uint64((uint64_t)depth + 1)); // depth + 1 because this is a child of the parent layer
-                            json_object_object_add(match_obj, "ObjectID", json_object_new_uint64((uint64_t)object_id));
-                            json_object_array_add(contained_indicators, match_obj);
-                        }
-                    }
-                }
-
-                /* Get each Weak indicator and add it */
-                num_indicators = evidence_num_indicators_type(
-                    ctx->this_layer_evidence,
-                    IndicatorType_Weak);
-                for (i = 0; i < num_indicators; i++) {
-                    size_t depth, object_id;
-                    const char *indicator = evidence_get_indicator(
-                        ctx->this_layer_evidence,
-                        IndicatorType_Weak,
-                        i,
-                        &depth,
-                        &object_id);
-
-                    if (NULL != indicator) {
-                        // Create json object containing name, type, depth, and object_id
-                        json_object *match_obj = json_object_new_object();
-                        if (NULL == match_obj) {
-                            cli_errmsg("cli_recursion_stack_pop: no memory for json match object\n");
-                        } else {
-                            json_object_object_add(match_obj, "Name", json_object_new_string(indicator));
-                            json_object_object_add(match_obj, "Type", json_object_new_string("Weak"));
-                            json_object_object_add(match_obj, "Depth", json_object_new_uint64((uint64_t)depth + 1)); // depth + 1 because this is a child of the parent layer
-                            json_object_object_add(match_obj, "ObjectID", json_object_new_uint64((uint64_t)object_id));
-                            json_object_array_add(contained_indicators, match_obj);
-                        }
-                    }
-                }
-            }
-        }
-
         if (ctx->recursion_stack[ctx->recursion_level - 1].evidence == NULL) {
             evidence_t parent_evidence   = NULL;
             FFIError *new_evidence_error = NULL;
@@ -2087,6 +2143,31 @@ cl_fmap_t *cli_recursion_stack_pop(cli_ctx *ctx)
 
         evidence_free(ctx->recursion_stack[ctx->recursion_level].evidence);
         ctx->recursion_stack[ctx->recursion_level].evidence = NULL;
+    }
+
+    if (SCAN_COLLECT_METADATA) {
+        /*
+         * Record contained indicators and alerts in the parent layer's metadata.
+         * Copy the indicators and alerts from this layer to the parent layer.
+         */
+        json_object *this_layer_object = ctx->recursion_stack[ctx->recursion_level].metadata_json;
+        json_object *parent_object     = ctx->recursion_stack[ctx->recursion_level - 1].metadata_json;
+
+        if (this_layer_object && parent_object) {
+            cl_error_t ret;
+
+            // Copy indicators from this layer to the parent layer.
+            ret = json_add_child_array(parent_object, this_layer_object, "Indicators");
+            if (CL_SUCCESS != ret) {
+                cli_errmsg("cli_recursion_stack_pop: Failed to copy Indicators from child to parent: %s\n", cl_strerror(ret));
+            }
+
+            // Copy alerts from this layer to the parent layer.
+            ret = json_add_child_array(parent_object, this_layer_object, "Alerts");
+            if (CL_SUCCESS != ret) {
+                cli_errmsg("cli_recursion_stack_pop: Failed to copy Alerts from child to parent: %s\n", cl_strerror(ret));
+            }
+        }
     }
 
     if ((ctx->engine->engine_options & ENGINE_OPTIONS_TMPDIR_RECURSION)) {
@@ -2519,6 +2600,23 @@ void cl_engine_set_scan_callback(struct cl_engine *engine, clcb_scan callback, c
 #define POST_SCAN_NAME "PostScan"
 #define ALERT_NAME "Alert"
 #define FILE_TYPE_NAME "FileType"
+static const char *callback_name(cl_scan_callback_t location)
+{
+    switch (location) {
+        case CL_SCAN_CALLBACK_PRE_HASH:
+            return "pre-hash application callback";
+        case CL_SCAN_CALLBACK_PRE_SCAN:
+            return "pre-scan application callback";
+        case CL_SCAN_CALLBACK_POST_SCAN:
+            return "post-scan application callback";
+        case CL_SCAN_CALLBACK_ALERT:
+            return "alert application callback";
+        case CL_SCAN_CALLBACK_FILE_TYPE:
+            return "file-type application callback";
+        default:
+            return "Unknown";
+    }
+}
 
 cl_error_t cli_dispatch_scan_callback(cli_ctx *ctx, cl_scan_callback_t location)
 {
@@ -2631,10 +2729,10 @@ cl_error_t cli_dispatch_scan_callback(cli_ctx *ctx, cl_scan_callback_t location)
         case CL_VERIFIED: {
             // An alert callback returning CL_VERIFIED means the application verified the current layer as clean.
             // So we need to remove any alerts for this layer and return CL_VERIFIED (will stop scanning this layer).
-            cli_dbgmsg("dispatch_scan_callback: Layer verified clean by callback\n");
+            cli_dbgmsg("dispatch_scan_callback: Layer trusted by callback\n");
 
             // Remove any evidence for this layer and set the verdict to trusted.
-            (void)cli_trust_this_layer(ctx);
+            (void)cli_trust_this_layer(ctx, callback_name(location));
             status = CL_VERIFIED;
         } break;
 
@@ -2740,13 +2838,13 @@ uint8_t cli_set_debug_flag(uint8_t debug_flag)
 /**
  * @brief Update the metadata JSON object to reflect that the current layer was trusted.
  *
- * This involves renaming the "ContainedIndicators" array to "IgnoredIndicators" and the "Alerts" array to "IgnoredAlerts".
- * It also recursively processes any contained or embedded objects to rename their arrays as well.
+ * This involves deleting "Alerts" arrays and adding "Ignored" keys to the affected "Indicators".
+ * This function recursively processes any contained or embedded objects to do the same for them.
  *
  * @param scan_layer_json   The JSON object representing the current scan layer's metadata.
  * @return cl_error_t       CL_SUCCESS on success, or an error code on failure.
  */
-static cl_error_t metadata_json_trust_this_layer(json_object *scan_layer_json)
+static cl_error_t metadata_json_trust_this_layer(json_object *scan_layer_json, const char *reason)
 {
     cl_error_t status = CL_ERROR;
     cl_error_t ret;
@@ -2758,24 +2856,31 @@ static cl_error_t metadata_json_trust_this_layer(json_object *scan_layer_json)
         goto done;
     }
 
-    // Trust the current layer's metadata by renaming the "ContainedIndicators" and "Alerts" arrays.
-    json_object *contained_indicators = NULL;
-    if (json_object_object_get_ex(scan_layer_json, "ContainedIndicators", &contained_indicators)) {
-        // Rename "ContainedIndicators" to "IgnoredIndicators" to indicate these indicators were ignored because the layer was trusted.
-        json_ret = json_object_object_add(scan_layer_json, "IgnoredIndicators", contained_indicators);
-        if (json_ret != 0) {
-            cli_errmsg("metadata_json_trust_this_layer: failed to rename ContainedIndicators to IgnoredIndicators in metadata JSON\n");
-            status = CL_ERROR;
-            goto done;
+    // Trust the current layer's metadata by renaming the "Indicators" and "Alerts" arrays.
+    json_object *indicators = NULL;
+    if (json_object_object_get_ex(scan_layer_json, "Indicators", &indicators)) {
+        // For each indicator in the array, add the "Ignored" string and set to the "reason".
+        size_t num_indicators = json_object_array_length(indicators);
+        size_t i;
+        for (i = 0; i < num_indicators; i++) {
+            json_object *indicator = json_object_array_get_idx(indicators, i);
+            if (indicator) {
+                json_object *ignored = json_object_new_string(reason);
+                if (!ignored) {
+                    cli_errmsg("metadata_json_trust_this_layer: no memory for json ignored indicator object\n");
+                    status = CL_EMEM;
+                    goto done;
+                }
+                json_ret = json_object_object_add(indicator, "Ignored", ignored);
+                if (0 != json_ret) {
+                    cli_errmsg("metadata_json_trust_this_layer: Failed to add Ignored boolean to indicator object\n");
+                    status = CL_ERROR;
+                    goto done;
+                }
+            }
         }
 
-        // Increment the reference count of the "ContainedIndicators" array since json_object_object_add() does not do that.
-        json_object_get(contained_indicators);
-
-        // Remove the original "ContainedIndicators" entry.
-        json_object_object_del(scan_layer_json, "ContainedIndicators");
-
-        // Now recursively find any contained objects and rename their "ContainedIndicators" arrays too.
+        // Now recursively find any contained objects and rename their "Indicators" arrays too.
         json_object *contained_objects = NULL;
         if (json_object_object_get_ex(scan_layer_json, "ContainedObjects", &contained_objects)) {
             size_t i;
@@ -2783,7 +2888,7 @@ static cl_error_t metadata_json_trust_this_layer(json_object *scan_layer_json)
             for (i = 0; i < num_objects; i++) {
                 json_object *contained_object = json_object_array_get_idx(contained_objects, i);
                 if (contained_object) {
-                    ret = metadata_json_trust_this_layer(contained_object);
+                    ret = metadata_json_trust_this_layer(contained_object, reason);
                     if (ret != CL_SUCCESS) {
                         cli_errmsg("metadata_json_trust_this_layer: failed to update metadata JSON for contained object: %s\n", cl_strerror(ret));
                     }
@@ -2799,7 +2904,7 @@ static cl_error_t metadata_json_trust_this_layer(json_object *scan_layer_json)
             for (i = 0; i < num_objects; i++) {
                 json_object *embedded_object = json_object_array_get_idx(embedded_objects, i);
                 if (embedded_object) {
-                    ret = metadata_json_trust_this_layer(embedded_object);
+                    ret = metadata_json_trust_this_layer(embedded_object, reason);
                     if (ret != CL_SUCCESS) {
                         cli_errmsg("metadata_json_trust_this_layer: failed to update metadata JSON for embedded object: %s\n", cl_strerror(ret));
                     }
@@ -2808,22 +2913,8 @@ static cl_error_t metadata_json_trust_this_layer(json_object *scan_layer_json)
         }
     }
 
-    json_object *viruses = NULL;
-    if (json_object_object_get_ex(scan_layer_json, "Alerts", &viruses)) {
-        // Rename "Alerts" to "IgnoredAlerts" to indicate these alerts were ignored because the layer was trusted.
-        ret = json_object_object_add(scan_layer_json, "IgnoredAlerts", viruses);
-        if (ret != 0) {
-            cli_errmsg("metadata_json_trust_this_layer: failed to rename Alerts to IgnoredAlerts in metadata JSON\n");
-            status = CL_ERROR;
-            goto done;
-        }
-
-        // Increment the reference count of the "Alerts" array since json_object_object_add() does not do that.
-        json_object_get(viruses);
-
-        // Remove the original "Alerts" entry.
-        json_object_object_del(scan_layer_json, "Alerts");
-    }
+    // Remove the "Alerts" entry.
+    json_object_object_del(scan_layer_json, "Alerts");
 
     status = CL_SUCCESS;
 
@@ -2831,9 +2922,12 @@ done:
     return status;
 }
 
-cl_error_t cli_trust_this_layer(cli_ctx *ctx)
+cl_error_t cli_trust_this_layer(cli_ctx *ctx, const char *source)
 {
     cl_error_t status = CL_ERROR;
+
+    char *reason      = NULL;
+    size_t reason_len = 0;
 
     if (!ctx) {
         cli_errmsg("cli_trust_this_layer: invalid context\n");
@@ -2850,7 +2944,17 @@ cl_error_t cli_trust_this_layer(cli_ctx *ctx)
     ctx->recursion_stack[ctx->recursion_level].verdict = CL_VERDICT_TRUSTED;
 
     if (SCAN_COLLECT_METADATA && ctx->this_layer_metadata_json) {
-        status = metadata_json_trust_this_layer(ctx->this_layer_metadata_json);
+        reason_len = strlen("Object ") + SIZE_T_CHARLEN + strlen(" trusted by ") + strlen(source) + 1;
+        reason     = malloc(reason_len);
+        if (!reason) {
+            cli_errmsg("cli_trust_this_layer: no memory for reason string\n");
+            status = CL_EMEM;
+            goto done;
+        }
+        snprintf(reason, reason_len, "Object %zu trusted by %s",
+                 ctx->recursion_stack[ctx->recursion_level].object_id, source);
+
+        status = metadata_json_trust_this_layer(ctx->this_layer_metadata_json, reason);
         if (status != CL_SUCCESS) {
             cli_errmsg("cli_trust_this_layer: failed to update metadata JSON to reflect trusted layer: %s\n", cl_strerror(status));
             goto done;
@@ -2860,13 +2964,19 @@ cl_error_t cli_trust_this_layer(cli_ctx *ctx)
     status = CL_SUCCESS;
 
 done:
+
+    CLI_FREE_AND_SET_NULL(reason);
+
     return status;
 }
 
-cl_error_t cli_trust_layers(cli_ctx *ctx, uint32_t start_layer, uint32_t end_layer)
+cl_error_t cli_trust_layers(cli_ctx *ctx, uint32_t start_layer, uint32_t end_layer, const char *source)
 {
     cl_error_t status = CL_ERROR;
     size_t i;
+
+    char *reason      = NULL;
+    size_t reason_len = 0;
 
     if (!ctx) {
         cli_errmsg("cli_trust_layers: invalid context\n");
@@ -2883,10 +2993,30 @@ cl_error_t cli_trust_layers(cli_ctx *ctx, uint32_t start_layer, uint32_t end_lay
         }
 
         ctx->recursion_stack[i].verdict = CL_VERDICT_TRUSTED;
+
+        if (SCAN_COLLECT_METADATA && ctx->recursion_stack[i].metadata_json) {
+            reason_len = strlen("Object ") + SIZE_T_CHARLEN + strlen(" trusted by ") + strlen(source) + 1;
+            reason     = malloc(reason_len);
+            if (!reason) {
+                cli_errmsg("dispatch_scan_callback: no memory for reason string\n");
+                return CL_EMEM;
+            }
+            snprintf(reason, reason_len, "Object %zu trusted by %s",
+                     ctx->recursion_stack[ctx->recursion_level].object_id, source);
+
+            status = metadata_json_trust_this_layer(ctx->recursion_stack[i].metadata_json, reason);
+            if (status != CL_SUCCESS) {
+                cli_errmsg("cli_trust_this_layer: failed to update metadata JSON to reflect trusted layer: %s\n", cl_strerror(status));
+                goto done;
+            }
+        }
     }
 
     status = CL_SUCCESS;
 
 done:
+
+    CLI_FREE_AND_SET_NULL(reason);
+
     return status;
 }

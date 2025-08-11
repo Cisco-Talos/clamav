@@ -4347,7 +4347,7 @@ static cl_error_t dispatch_file_inspection_callback(clcb_file_inspection cb, cli
             cli_dbgmsg("dispatch_file_inspection_callback: file trusted by callback\n");
 
             // Remove any evidence for this layer and set the verdict to trusted.
-            (void)cli_trust_this_layer(ctx);
+            (void)cli_trust_this_layer(ctx, "legacy file-inspection application callback");
 
             break;
         case CL_VIRUS:
@@ -4371,7 +4371,7 @@ done:
     return status;
 }
 
-static cl_error_t dispatch_prescan_callback(clcb_pre_scan cb, cli_ctx *ctx, const char *filetype)
+static cl_error_t dispatch_prescan_callback(clcb_pre_scan cb, cli_ctx *ctx, const char *filetype, bool pre_cache)
 {
     cl_error_t status = CL_SUCCESS;
     cl_error_t append_ret;
@@ -4382,21 +4382,28 @@ static cl_error_t dispatch_prescan_callback(clcb_pre_scan cb, cli_ctx *ctx, cons
         perf_stop(ctx, PERFT_PRECB);
 
         switch (status) {
-            case CL_BREAK:
+            case CL_BREAK: {
+                const char *source = pre_cache ? "legacy pre-cache application callback"
+                                               : "legacy pre-scan application callback";
+
                 cli_dbgmsg("dispatch_prescan_callback: file allowed by callback\n");
 
                 // Remove any evidence for this layer and set the verdict to trusted.
-                (void)cli_trust_this_layer(ctx);
+                (void)cli_trust_this_layer(ctx, source);
 
                 status = CL_VERIFIED;
-                break;
-            case CL_VIRUS:
+            } break;
+            case CL_VIRUS: {
+                const char *alert_name = pre_cache ? "Detected.By.Callback.PreCache"
+                                                   : "Detected.By.Callback.PreScan";
+
                 cli_dbgmsg("dispatch_prescan_callback: file blocked by callback\n");
-                append_ret = cli_append_virus(ctx, "Detected.By.Callback");
+
+                append_ret = cli_append_virus(ctx, alert_name);
                 if (append_ret == CL_VIRUS) {
                     status = CL_VIRUS;
                 }
-                break;
+            } break;
             case CL_SUCCESS:
                 // No action requested by callback. Keep scanning.
                 break;
@@ -4642,7 +4649,7 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
     /*
      * Run the deprecated pre_cache callback.
      */
-    ret = dispatch_prescan_callback(ctx->engine->cb_pre_cache, ctx, filetype);
+    ret = dispatch_prescan_callback(ctx->engine->cb_pre_cache, ctx, filetype, true /* pre_cache */);
     if (CL_VERIFIED == ret || CL_VIRUS == ret) {
         status = ret;
         goto done;
@@ -4653,11 +4660,6 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
      */
     ret = dispatch_file_inspection_callback(ctx->engine->cb_file_inspection, ctx, filetype);
     if (CL_SUCCESS != ret) {
-        if (ret == CL_VIRUS) {
-            ret = cli_check_fp(ctx, NULL);
-        } else {
-            ret = CL_SUCCESS;
-        }
         status = ret;
         goto done;
     }
@@ -4683,7 +4685,7 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
             if (need_hash[hash_type]) {
                 ret = fmap_will_need_hash_later(ctx->fmap, hash_type);
                 if (CL_SUCCESS != ret) {
-                    cli_dbgmsg("cli_check_fp: Failed to set fmap to need the %s hash later\n", cli_hash_name(hash_type));
+                    cli_dbgmsg("cli_magic_scan: Failed to set fmap to need the %s hash later\n", cli_hash_name(hash_type));
                     status = ret;
                     goto done;
                 }
@@ -4754,7 +4756,7 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
     /*
      * Run the deprecated pre_scan callback.
      */
-    ret = dispatch_prescan_callback(ctx->engine->cb_pre_scan, ctx, filetype);
+    ret = dispatch_prescan_callback(ctx->engine->cb_pre_scan, ctx, filetype, false /* pre_cache */);
     if (CL_VERIFIED == ret || CL_VIRUS == ret) {
         status = ret;
         goto done;
@@ -5402,10 +5404,10 @@ done:
                 cli_dbgmsg("cli_magic_scan: file allowed by post_scan callback\n");
 
                 // Remove any evidence for this layer and set the verdict to trusted.
-                (void)cli_trust_this_layer(ctx);
+                (void)cli_trust_this_layer(ctx, "legacy post-scan application callback");
 
-                //status = CL_SUCCESS; // Do override the status here.
-                // If status == CL_VIRUS, we'll fix when we look at the verdict.
+                // status = CL_SUCCESS; // Do override the status here.
+                //  If status == CL_VIRUS, we'll fix when we look at the verdict.
                 break;
             case CL_VIRUS:
                 cli_dbgmsg("cli_magic_scan: file blocked by post_scan callback\n");
@@ -5418,7 +5420,7 @@ done:
                 // No action requested by callback. Keep scanning.
                 break;
             default:
-                //status = CL_SUCCESS; // Do override the status here, just log a warning.
+                // status = CL_SUCCESS; // Do override the status here, just log a warning.
                 cli_warnmsg("cli_magic_scan: ignoring bad return code from post_scan callback\n");
         }
     }

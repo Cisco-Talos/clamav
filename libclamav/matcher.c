@@ -587,6 +587,9 @@ cl_error_t cli_check_fp(cli_ctx *ctx, const char *vname)
 
     stack_index = (int32_t)ctx->recursion_level;
 
+    char *source = NULL;
+    size_t source_len;
+
     while (stack_index >= 0) {
         map = ctx->recursion_stack[stack_index].fmap;
 
@@ -669,8 +672,17 @@ cl_error_t cli_check_fp(cli_ctx *ctx, const char *vname)
                 if (cli_hm_scan(hash, map->len, &virname, ctx->engine->hm_fp, hash_type) == CL_VIRUS) {
                     cli_dbgmsg("cli_check_fp: Found false positive detection for %s (fp sig: %s)\n", cli_hash_name(hash_type), virname);
 
+                    source_len = strlen(virname) + strlen("false positive signature match: ") + 1;
+                    source     = malloc(source_len);
+                    if (source) {
+                        snprintf(source, source_len, "false positive signature match: %s", virname);
+                    }
+
                     // Remove any evidence and set the verdict to trusted for the layer where the FP hash matched, and for all contained layers.
-                    (void)cli_trust_layers(ctx, (uint32_t)stack_index, ctx->recursion_level);
+                    (void)cli_trust_layers(ctx, (uint32_t)stack_index, ctx->recursion_level, source);
+
+                    free(source);
+                    source = NULL;
 
                     status = CL_VERIFIED;
                     goto done;
@@ -678,8 +690,17 @@ cl_error_t cli_check_fp(cli_ctx *ctx, const char *vname)
                 if (cli_hm_scan_wild(hash, &virname, ctx->engine->hm_fp, hash_type) == CL_VIRUS) {
                     cli_dbgmsg("cli_check_fp: Found false positive detection for %s (fp sig: %s)\n", cli_hash_name(hash_type), virname);
 
+                    source_len = strlen(virname) + strlen("false positive signature match: ") + 1;
+                    source     = malloc(source_len);
+                    if (source) {
+                        snprintf(source, source_len, "false positive signature match: %s", virname);
+                    }
+
                     // Remove any evidence and set the verdict to trusted for the layer where the FP hash matched, and for all contained layers.
-                    (void)cli_trust_layers(ctx, (uint32_t)stack_index, ctx->recursion_level);
+                    (void)cli_trust_layers(ctx, (uint32_t)stack_index, ctx->recursion_level, source);
+
+                    free(source);
+                    source = NULL;
 
                     status = CL_VERIFIED;
                     goto done;
@@ -691,8 +712,17 @@ cl_error_t cli_check_fp(cli_ctx *ctx, const char *vname)
                     if (cli_hm_scan(hash, 1, &virname, ctx->engine->hm_fp, hash_type) == CL_VIRUS) {
                         cli_dbgmsg("cli_check_fp: Found .CAB false positive detection for %s via catalog file\n", cli_hash_name(hash_type));
 
+                        source_len = strlen(virname) + strlen("false positive signature match: ") + 1;
+                        source     = malloc(source_len);
+                        if (source) {
+                            snprintf(source, source_len, "false positive signature match: %s", virname);
+                        }
+
                         // Remove any evidence and set the verdict to trusted for the layer where the FP hash matched, and for all contained layers.
-                        (void)cli_trust_layers(ctx, (uint32_t)stack_index, ctx->recursion_level);
+                        (void)cli_trust_layers(ctx, (uint32_t)stack_index, ctx->recursion_level, source);
+
+                        free(source);
+                        source = NULL;
 
                         status = CL_VERIFIED;
                         goto done;
@@ -705,6 +735,10 @@ cl_error_t cli_check_fp(cli_ctx *ctx, const char *vname)
     }
 
 done:
+
+    if (NULL != source) {
+        free(source);
+    }
 
     return status;
 }
