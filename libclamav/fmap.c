@@ -995,7 +995,7 @@ cl_error_t fmap_dump_to_file(fmap_t *map, const char *filepath, const char *tmpd
 
     /* Create a filename prefix that includes the original filename, if available */
     if (filepath != NULL) {
-        if (CL_SUCCESS != cli_basename(filepath, strlen(filepath), &filebase)) {
+        if (CL_SUCCESS != cli_basename(filepath, strlen(filepath), &filebase, true /* posix_support_backslash_pathsep */)) {
             cli_dbgmsg("fmap_dump_to_file: Unable to determine basename from filepath.\n");
         } else if ((start_offset != 0) && (end_offset != map->real_len)) {
             /* If we're only dumping a portion of the file, include the offsets in the prefix,...

@@ -96,15 +96,23 @@ int cli_hexnibbles(char *str, int len);
 size_t cli_strlcat(char *dst, const char *src, size_t sz); /* libclamav/strlcat.c */
 
 /**
- * @brief   Get the file basename including extension from a file path.
+ * @brief Get the file basename including extension from a file path.
+ *
+ * Will treat both '/' and '\' as path separators.
  *
  * Caller is responsible for freeing filebase.
  * An empty string will be returned if the caller inputs a directory with a trailing slash (no file).
  *
  * @param filepath      The filepath in question.
  * @param[out] filebase An allocated string containing the file basename.
+ * @param posix_support_backslash_pathsep Whether to treat backslashes as path separators on Linux/Unix systems.
+ *
  * @return cl_error_t   CL_SUCCESS, CL_EARG, CL_EFORMAT, or CL_EMEM
  */
-cl_error_t cli_basename(const char *filepath, size_t filepath_len, char **filebase);
+cl_error_t cli_basename(
+    const char *filepath,
+    size_t filepath_len,
+    char **filebase,
+    bool posix_support_backslash_pathsep);
 
 #endif

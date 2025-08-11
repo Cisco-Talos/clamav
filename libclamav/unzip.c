@@ -658,7 +658,7 @@ static cl_error_t parse_local_file_header(
     src = fmap_need_ptr_once(map, zip, name_size);
     if (name_size && (NULL != src)) {
         memcpy(name, zip, name_size);
-        if (CL_SUCCESS != cli_basename(name, name_size, &original_filename)) {
+        if (CL_SUCCESS != cli_basename(name, name_size, &original_filename, true /* posix_support_backslash_pathsep */)) {
             original_filename = NULL;
         }
     }

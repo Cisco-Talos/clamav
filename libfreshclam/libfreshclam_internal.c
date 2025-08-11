@@ -2623,7 +2623,7 @@ fc_error_t updatedb(
         logg(LOGG_DEBUG, "updatedb: Moving signature file %s to database directory\n", signfile);
 
         // get the basename of the signfile
-        if (CL_SUCCESS != cli_basename(signfile, strlen(signfile), &newSignFilename)) {
+        if (CL_SUCCESS != cli_basename(signfile, strlen(signfile), &newSignFilename, false /* posix_support_backslash_pathsep */)) {
             logg(LOGG_ERROR, "updatedb: Failed to get basename of '%s'\n", signfile);
             goto done;
         }
