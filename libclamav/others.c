@@ -1460,7 +1460,7 @@ cl_error_t cli_virus_found_cb(cli_ctx *ctx, const char *virname, bool is_potenti
             is_potentially_unwanted ? IndicatorType_PotentiallyUnwanted : IndicatorType_Strong,
             &remove_indicator_error);
         if (!remove_successful) {
-            cli_errmsg("Failed to remove indicator from scan evidence: %s\n", ffierror_fmt(remove_indicator_error));
+            cli_errmsg("cli_virus_found_cb: Failed to remove indicator from scan evidence: %s\n", ffierror_fmt(remove_indicator_error));
             status = CL_ERROR;
             goto done;
         }
@@ -1474,7 +1474,7 @@ cl_error_t cli_virus_found_cb(cli_ctx *ctx, const char *virname, bool is_potenti
                 // Get the index of the last alert.
                 size_t num_alerts = json_object_array_length(alerts);
                 if (0 == num_alerts) {
-                    cli_errmsg("Attempting to ignore an alerts, but alert not found in metadata Alerts array.\n");
+                    cli_errmsg("cli_virus_found_cb: Attempting to ignore an alert, but alert not found in metadata Alerts array.\n");
                     status = CL_ERROR;
                     goto done;
                 }
@@ -1482,7 +1482,7 @@ cl_error_t cli_virus_found_cb(cli_ctx *ctx, const char *virname, bool is_potenti
                 // Remove the alert from the Alerts array.
                 json_ret = json_object_array_del_idx(alerts, num_alerts - 1, 1);
                 if (0 != json_ret) {
-                    cli_errmsg("Failed to remove alert from metadata JSON.\n");
+                    cli_errmsg("cli_virus_found_cb: Failed to remove alert from metadata JSON.\n");
                     status = CL_ERROR;
                     goto done;
                 }
@@ -1501,7 +1501,7 @@ cl_error_t cli_virus_found_cb(cli_ctx *ctx, const char *virname, bool is_potenti
                 // Get the index of the last indicator.
                 size_t num_indicators = json_object_array_length(indicators);
                 if (0 == num_indicators) {
-                    cli_errmsg("Attempting to ignore an alerts, but alert not found in metadata Alerts array.\n");
+                    cli_errmsg("cli_virus_found_cb: Attempting to ignore an alert, but alert not found in metadata Alerts array.\n");
                     status = CL_ERROR;
                     goto done;
                 }
@@ -1517,13 +1517,13 @@ cl_error_t cli_virus_found_cb(cli_ctx *ctx, const char *virname, bool is_potenti
                 // Add an "Ignored" string to the indicator object.
                 json_object *ignored = json_object_new_string("Signature ignored by alert application callback");
                 if (!ignored) {
-                    cli_errmsg("metadata_json_trust_this_layer: no memory for json ignored indicator object\n");
+                    cli_errmsg("cli_virus_found_cb: no memory for json ignored indicator object\n");
                     status = CL_EMEM;
                     goto done;
                 }
                 json_ret = json_object_object_add(indicator_obj, "Ignored", ignored);
                 if (0 != json_ret) {
-                    cli_errmsg("metadata_json_trust_this_layer: Failed to add Ignored boolean to indicator object\n");
+                    cli_errmsg("cli_virus_found_cb: Failed to add Ignored boolean to indicator object\n");
                     status = CL_ERROR;
                     goto done;
                 }
@@ -1670,11 +1670,13 @@ static cl_error_t append_virus(cli_ctx *ctx, const char *virname, IndicatorType 
 
         // Set the verdict
         ctx->recursion_stack[ctx->recursion_level].verdict = CL_VERDICT_STRONG_INDICATOR;
+        cli_dbgmsg("append_virus: Strong indicator '%s' added to evidence\n", virname);
     } else if (type == IndicatorType_PotentiallyUnwanted) {
         // Set the verdict, but don't override a strong indicator verdict.
         if (CL_VERDICT_STRONG_INDICATOR != ctx->recursion_stack[ctx->recursion_level].verdict) {
             ctx->recursion_stack[ctx->recursion_level].verdict = CL_VERDICT_POTENTIALLY_UNWANTED;
         }
+        cli_dbgmsg("append_virus: Potentially Unwanted indicator '%s' added to evidence\n", virname);
     } else if (type == IndicatorType_Weak) {
         cli_dbgmsg("append_virus: Weak indicator '%s' added to evidence\n", virname);
     }
