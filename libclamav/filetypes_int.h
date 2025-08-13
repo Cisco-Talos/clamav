@@ -324,5 +324,7 @@ static const char *ftypes_int[] = {
     "1:0:08??12??6f6e6e782d636166666532:ONNX AI Model File:CL_TYPE_ANY:CL_TYPE_AI_MODEL:220",
     // tflite model detection
     "0:4:54464c33:TensorFlow Lite Model File:CL_TYPE_ANY:CL_TYPE_AI_MODEL:220",
+    "0:0:504b0708504b0304:ZIP (First segment split/spanned):CL_TYPE_ANY:CL_TYPE_ZIP",
+    "0:0:504b0303504b0304:ZIP (Single-segment split/spanned):CL_TYPE_ANY:CL_TYPE_ZIP",
     NULL};
 #endif

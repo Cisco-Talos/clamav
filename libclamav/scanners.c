@@ -389,7 +389,7 @@ static cl_error_t cli_scanrar_file(const char *filepath, int desc, cli_ctx *ctx)
                  * Extract the file...
                  */
                 if (0 != metadata.filename[0]) {
-                    (void)cli_basename(metadata.filename, strlen(metadata.filename), &filename_base);
+                    (void)cli_basename(metadata.filename, strlen(metadata.filename), &filename_base, true /* posix_support_backslash_pathsep */);
                 }
 
                 if (!(ctx->engine->keeptmp) ||
@@ -837,7 +837,7 @@ static cl_error_t cli_scanegg(cli_ctx *ctx)
                      * Drop to a temp file, if requested.
                      */
                     if (NULL != metadata.filename) {
-                        (void)cli_basename(metadata.filename, strlen(metadata.filename), &filename_base);
+                        (void)cli_basename(metadata.filename, strlen(metadata.filename), &filename_base, true /* posix_support_backslash_pathsep */);
                     }
 
                     if (ctx->engine->keeptmp) {
@@ -4716,7 +4716,7 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
          * Keep-temp enabled, so create a sub-directory to provide extraction directory recursion.
          */
         if ((NULL != ctx->fmap->name) &&
-            (CL_SUCCESS == cli_basename(ctx->fmap->name, strlen(ctx->fmap->name), &fmap_basename))) {
+            (CL_SUCCESS == cli_basename(ctx->fmap->name, strlen(ctx->fmap->name), &fmap_basename, true /* posix_support_backslash_pathsep */))) {
             /*
              * The fmap has a name, lets include it in the new sub-directory.
              */
@@ -5910,7 +5910,7 @@ static cl_error_t scan_common(cl_fmap_t *map, const char *filepath, const char *
 
     if ((ctx.engine->keeptmp) &&
         (NULL != ctx.target_filepath) &&
-        (CL_SUCCESS == cli_basename(ctx.target_filepath, strlen(ctx.target_filepath), &target_basename))) {
+        (CL_SUCCESS == cli_basename(ctx.target_filepath, strlen(ctx.target_filepath), &target_basename, true /* posix_support_backslash_pathsep */))) {
         /* Include the basename in the temp directory */
         new_temp_prefix_len = strlen("YYYYMMDD_HHMMSS-") + strlen(target_basename);
         new_temp_prefix     = cli_max_calloc(1, new_temp_prefix_len + 1);
@@ -6186,7 +6186,7 @@ cl_error_t cl_scandesc_callback(int desc, const char *filename, const char **vir
     }
 
     if (NULL != filename) {
-        (void)cli_basename(filename, strlen(filename), &filename_base);
+        (void)cli_basename(filename, strlen(filename), &filename_base, true /* posix_support_backslash_pathsep */);
     }
 
     if (NULL == (map = fmap(desc, 0, sb.st_size, filename_base))) {
@@ -6226,7 +6226,7 @@ cl_error_t cl_scanmap_callback(cl_fmap_t *map, const char *filename, const char 
 
     if (NULL != filename && map->name == NULL) {
         // Use the provided name for the fmap name if one wasn't already set.
-        cli_basename(filename, strlen(filename), &map->name);
+        cli_basename(filename, strlen(filename), &map->name, true /* posix_support_backslash_pathsep */);
     }
 
     return scan_common(map, filename, virname, scanned, engine, scanoptions, context);

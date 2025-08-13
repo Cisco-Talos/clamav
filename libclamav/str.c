@@ -424,8 +424,7 @@ char *cli_strrcpy(char *dest, const char *source) /* by NJH */
         return NULL;
     }
 
-    while ((*dest++ = *source++))
-        ;
+    while ((*dest++ = *source++));
 
     return --dest;
 }
@@ -470,8 +469,7 @@ char *__cli_strndup(const char *s, size_t n)
 size_t __cli_strnlen(const char *s, size_t n)
 {
     size_t i = 0;
-    for (; (i < n) && s[i] != '\0'; ++i)
-        ;
+    for (; (i < n) && s[i] != '\0'; ++i);
     return i;
 }
 
@@ -1058,8 +1056,11 @@ int cli_hexnibbles(char *str, int len)
     return 0;
 }
 
-cl_error_t cli_basename(const char *filepath, size_t filepath_len,
-                        char **filebase)
+cl_error_t cli_basename(
+    const char *filepath,
+    size_t filepath_len,
+    char **filebase,
+    bool posix_support_backslash_pathsep)
 {
     cl_error_t status = CL_EARG;
     const char *index = NULL;
@@ -1071,13 +1072,25 @@ cl_error_t cli_basename(const char *filepath, size_t filepath_len,
 
     index = filepath + filepath_len - 1;
 
+#ifdef _WIN32
     while (index > filepath) {
-        if (index[0] == PATHSEP[0])
+        if ((index[0] == '/') || (index[0] == '\\'))
             break;
         index--;
     }
-    if ((index != filepath) || (index[0] == PATHSEP[0]))
+    if ((index != filepath) || (index[0] == '/') || (index[0] == '\\')) {
         index++;
+    }
+#else
+    while (index > filepath) {
+        if ((index[0] == '/') || (index[0] == '\\' && posix_support_backslash_pathsep))
+            break;
+        index--;
+    }
+    if ((index != filepath) || (index[0] == '/') || (index[0] == '\\' && posix_support_backslash_pathsep)) {
+        index++;
+    }
+#endif
 
     if (0 == CLI_STRNLEN(index, filepath_len - (index - filepath))) {
         cli_dbgmsg("cli_basename: Provided path does not include a file name.\n");
