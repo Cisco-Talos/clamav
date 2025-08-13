@@ -4762,7 +4762,7 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
      */
     perf_start(ctx, PERFT_FT);
     if ((type == CL_TYPE_ANY) || type == CL_TYPE_PART_ANY) {
-        type = cli_determine_fmap_type(ctx->fmap, ctx->engine, type);
+        type = cli_determine_fmap_type(ctx, type);
     }
     perf_stop(ctx, PERFT_FT);
     if (type == CL_TYPE_ERROR) {

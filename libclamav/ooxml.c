@@ -380,7 +380,7 @@ static cl_error_t ooxml_hwp_cb(int fd, const char *filepath, cli_ctx *ctx, const
     return ret;
 }
 
-cli_file_t cli_ooxml_filetype(cli_ctx *ctx, fmap_t *map)
+cli_file_t cli_ooxml_filetype(cli_ctx *ctx)
 {
     struct zip_requests requests;
     cl_error_t ret;
@@ -400,7 +400,7 @@ cli_file_t cli_ooxml_filetype(cli_ctx *ctx, fmap_t *map)
         return CL_TYPE_ANY;
     }
 
-    if ((ret = unzip_search(ctx, map, &requests)) == CL_VIRUS) {
+    if ((ret = unzip_search(ctx, &requests)) == CL_VIRUS) {
         switch (requests.found) {
             case 0:
                 return CL_TYPE_OOXML_XL;

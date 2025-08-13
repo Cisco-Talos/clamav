@@ -278,7 +278,7 @@ const struct ooxml_ftcodes {
         }                                                                       \
     } while (0)
 
-cli_file_t cli_determine_fmap_type(fmap_t *map, const struct cl_engine *engine, cli_file_t basetype)
+cli_file_t cli_determine_fmap_type(cli_ctx *ctx, cli_file_t basetype)
 {
     unsigned char buffer[MAGIC_BUFFER_SIZE];
     const unsigned char *buff;
@@ -289,22 +289,22 @@ cli_file_t cli_determine_fmap_type(fmap_t *map, const struct cl_engine *engine, 
     struct cli_matcher *root;
     struct cli_ac_data mdata;
 
-    if (!engine) {
+    if (!ctx || !ctx->engine || !ctx->fmap) {
         cli_errmsg("cli_determine_fmap_type: engine == NULL\n");
         return CL_TYPE_ERROR;
     }
 
     if (basetype == CL_TYPE_PART_ANY) {
-        bread = MIN(map->len, CL_PART_MBUFF_SIZE);
+        bread = MIN(ctx->fmap->len, CL_PART_MBUFF_SIZE);
     } else {
-        bread = MIN(map->len, CL_FILE_MBUFF_SIZE);
+        bread = MIN(ctx->fmap->len, CL_FILE_MBUFF_SIZE);
     }
     if (bread > MAGIC_BUFFER_SIZE) {
         /* Save anyone who tampered with the header */
         bread = MAGIC_BUFFER_SIZE;
     }
 
-    buff = fmap_need_off_once(map, 0, bread);
+    buff = fmap_need_off_once(ctx->fmap, 0, bread);
     if (buff) {
         if (CL_SUCCESS != cli_memcpy(buffer, buff, bread)) {
             cli_errmsg("cli_determine_fmap_type: fileread error!\n");
@@ -315,9 +315,9 @@ cli_file_t cli_determine_fmap_type(fmap_t *map, const struct cl_engine *engine, 
     }
 
     if (basetype == CL_TYPE_PART_ANY) { /* typing a partition */
-        ret = cli_compare_ftm_partition(buff, bread, engine);
+        ret = cli_compare_ftm_partition(buff, bread, ctx->engine);
     } else { /* typing a file */
-        ret = cli_compare_ftm_file(buff, bread, engine);
+        ret = cli_compare_ftm_file(buff, bread, ctx->engine);
 
         if (ret == CL_TYPE_BINARY_DATA) {
             switch (is_tar(buff, bread)) {
@@ -361,7 +361,7 @@ cli_file_t cli_determine_fmap_type(fmap_t *map, const struct cl_engine *engine, 
                             /* if likely, check full archive */
                             if (likely_ooxml) {
                                 cli_dbgmsg("Likely OOXML, checking additional zip headers\n");
-                                if ((ret2 = cli_ooxml_filetype(NULL, map)) != CL_TYPE_ANY) {
+                                if ((ret2 = cli_ooxml_filetype(ctx)) != CL_TYPE_ANY) {
                                     /* either an error or retyping has occurred, return error or just CL_TYPE_ZIP? */
                                     OOXML_FTIDENTIFIED(ret2);
                                     /* falls-through to additional filetyping */
@@ -375,10 +375,10 @@ cli_file_t cli_determine_fmap_type(fmap_t *map, const struct cl_engine *engine, 
                 }
 
                 if (znamep == NULL) {
-                    if (map->len - zoff > SIZEOF_LOCAL_HEADER) {
+                    if (ctx->fmap->len - zoff > SIZEOF_LOCAL_HEADER) {
                         zoff -= SIZEOF_LOCAL_HEADER + OOXML_DETECT_MAXLEN + 1; /* remap for SIZEOF_LOCAL_HEADER+filelen for header overlap map boundary */
-                        zread = MIN(MAGIC_BUFFER_SIZE, map->len - zoff);
-                        zbuff = fmap_need_off_once(map, zoff, zread);
+                        zread = MIN(MAGIC_BUFFER_SIZE, ctx->fmap->len - zoff);
+                        zbuff = fmap_need_off_once(ctx->fmap, zoff, zread);
                         if (zbuff == NULL) {
                             cli_dbgmsg("cli_determine_fmap_type: error mapping data for OOXML check\n");
                             return CL_TYPE_ERROR;
@@ -393,7 +393,7 @@ cli_file_t cli_determine_fmap_type(fmap_t *map, const struct cl_engine *engine, 
             }
         } else if (ret == CL_TYPE_MBR) {
             /* given filetype sig type 0 */
-            int iret = cli_mbr_check(buff, bread, map->len);
+            int iret = cli_mbr_check(buff, bread, ctx->fmap->len);
             if (iret == CL_TYPE_GPT) {
                 cli_dbgmsg("Recognized GUID Partition Table file\n");
                 return CL_TYPE_GPT;
@@ -411,14 +411,14 @@ cli_file_t cli_determine_fmap_type(fmap_t *map, const struct cl_engine *engine, 
         /* HTML files may contain special characters and could be
          * misidentified as BINARY_DATA by cli_compare_ftm_file()
          */
-        root = engine->root[0];
+        root = ctx->engine->root[0];
         if (!root)
             return ret;
 
         if (cli_ac_initdata(&mdata, root->ac_partsigs, root->ac_lsigs, root->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN))
             return ret;
 
-        scan_ret = (cli_file_t)cli_ac_scanbuff(buff, bread, NULL, NULL, NULL, engine->root[0], &mdata, 0, ret, NULL, AC_SCAN_FT, NULL);
+        scan_ret = (cli_file_t)cli_ac_scanbuff(buff, bread, NULL, NULL, NULL, ctx->engine->root[0], &mdata, 0, ret, NULL, AC_SCAN_FT, NULL);
 
         cli_ac_freedata(&mdata);
 
@@ -437,14 +437,14 @@ cli_file_t cli_determine_fmap_type(fmap_t *map, const struct cl_engine *engine, 
 
             decoded = (unsigned char *)cli_utf16toascii((char *)buff, bread);
             if (decoded) {
-                scan_ret = (cli_file_t)cli_ac_scanbuff(decoded, bread / 2, NULL, NULL, NULL, engine->root[0], &mdata, 0, CL_TYPE_TEXT_ASCII, NULL, AC_SCAN_FT, NULL);
+                scan_ret = (cli_file_t)cli_ac_scanbuff(decoded, bread / 2, NULL, NULL, NULL, ctx->engine->root[0], &mdata, 0, CL_TYPE_TEXT_ASCII, NULL, AC_SCAN_FT, NULL);
                 free(decoded);
                 if (scan_ret == CL_TYPE_HTML)
                     ret = CL_TYPE_HTML_UTF16;
             }
             cli_ac_freedata(&mdata);
 
-            if ((((struct cli_dconf *)engine->dconf)->phishing & PHISHING_CONF_ENTCONV) && ret != CL_TYPE_HTML_UTF16) {
+            if ((((struct cli_dconf *)ctx->engine->dconf)->phishing & PHISHING_CONF_ENTCONV) && ret != CL_TYPE_HTML_UTF16) {
                 const char *encoding;
 
                 /* check if we can autodetect this encoding.
@@ -472,7 +472,7 @@ cli_file_t cli_determine_fmap_type(fmap_t *map, const struct cl_engine *engine, 
                             return ret;
 
                         if (out_area.length > 0) {
-                            scan_ret = (cli_file_t)cli_ac_scanbuff(decodedbuff, out_area.length, NULL, NULL, NULL, engine->root[0], &mdata, 0, 0, NULL, AC_SCAN_FT, NULL); /* FIXME: can we use CL_TYPE_TEXT_ASCII instead of 0? */
+                            scan_ret = (cli_file_t)cli_ac_scanbuff(decodedbuff, out_area.length, NULL, NULL, NULL, ctx->engine->root[0], &mdata, 0, 0, NULL, AC_SCAN_FT, NULL); /* FIXME: can we use CL_TYPE_TEXT_ASCII instead of 0? */
                             if (scan_ret == CL_TYPE_HTML) {
                                 cli_dbgmsg("cli_determine_fmap_type: detected HTML signature in Unicode file\n");
                                 /* htmlnorm is able to handle any unicode now, since it skips null chars */
