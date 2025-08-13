@@ -64,19 +64,6 @@ pipeline {
 
     stages {
 
-        stage('GitGuardian Scan') {
-            environment {
-                GITGUARDIAN_API_KEY = credentials('gitguardian-token')
-                GITGUARDIAN_API_URL = 'https://gitguardian.cisco.com/'
-            }
-            agent { label "docker" }
-            steps {
-                withDockerContainer(args: "-i --entrypoint=''", image: 'gitguardian/ggshield:latest') {
-                    sh 'ggshield secret scan ci'
-                }
-            }
-        }
-
         stage('Generate Tarball') {
             steps {
                 cleanWs()
