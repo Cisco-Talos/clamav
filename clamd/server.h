@@ -35,6 +35,8 @@
 #include "thrmgr.h"
 #include "session.h"
 
+int need_db_reload(void);
+
 struct thrarg {
     int sid;
     struct cl_scan_options *options;

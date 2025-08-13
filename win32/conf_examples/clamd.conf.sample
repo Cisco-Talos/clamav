@@ -123,6 +123,11 @@ TCPAddr localhost
 # Default: yes
 #EnableReloadCommand no
 #
+# Enable the SELFCHECK command
+# Setting this to no prevents a client to running selfcheck on clamd.
+# Default: yes
+#EnableSelfCheckCommand no
+#
 # Enable the STATS command
 # Setting this to no prevents a client from querying statistics.
 # Default: yes

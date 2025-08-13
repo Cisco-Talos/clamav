@@ -192,7 +192,7 @@ void sighandler_th(int sig)
             logg(LOGG_DEBUG_NV, "Failed to write to syncpipe\n");
 }
 
-static int need_db_reload(void)
+int need_db_reload(void)
 {
     if (!dbstat.entries) {
         logg(LOGG_INFO, "No stats for Database check - forcing reload\n");
