@@ -47,12 +47,13 @@ ClamAV 1.5.0 includes the following improvements and changes:
   Added two new APIs to the public clamav.h header:
     ```c
     extern cl_error_t cl_cvdverify_ex(const char *file,
-                                      const char *certs_directory);
+                                      const char *certs_directory,
+                                      uint32_t dboptions);
 
     extern cl_error_t cl_cvdunpack_ex(const char *file,
                                       const char *dir,
-                                      bool dont_verify,
-                                      const char *certs_directory);
+                                      const char *certs_directory,
+                                      uint32_t dboptions);
     ```
     The original `cl_cvdverify` and `cl_cvdunpack` are deprecated.
 

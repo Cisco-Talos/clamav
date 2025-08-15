@@ -78,12 +78,10 @@ static void runtest(const char *file, uint64_t expected, int fail, int nojit,
     rc = cl_engine_compile(engine);
     ck_assert_msg(!rc, "cannot compile engine");
 
-    cctx.evidence = evidence_new();
-
     cctx.dconf = cctx.engine->dconf;
 
     cctx.recursion_stack_size = cctx.engine->max_recursion_level;
-    cctx.recursion_stack      = calloc(sizeof(recursion_level_t), cctx.recursion_stack_size);
+    cctx.recursion_stack      = calloc(sizeof(cli_scan_layer_t), cctx.recursion_stack_size);
     ck_assert_msg(!!cctx.recursion_stack, "calloc() for recursion_stack failed");
 
     // ctx was memset, so recursion_level starts at 0.
@@ -132,7 +130,7 @@ static void runtest(const char *file, uint64_t expected, int fail, int nojit,
         if (fdin < 0 && errno == ENOENT)
             fdin = open_testfile(infile, O_RDONLY | O_BINARY);
         ck_assert_msg(fdin >= 0, "failed to open infile");
-        map = fmap(fdin, 0, 0, filestr);
+        map = fmap_new(fdin, 0, 0, filestr, NULL);
         ck_assert_msg(!!map, "unable to fmap infile");
         if (pedata)
             ctx->hooks.pedata = pedata;
@@ -157,12 +155,14 @@ static void runtest(const char *file, uint64_t expected, int fail, int nojit,
     }
     cli_bytecode_context_destroy(ctx);
     if (map)
-        funmap(map);
+        fmap_free(map);
     cli_bytecode_destroy(&bc);
     cli_bytecode_done(&bcs);
+    if (cctx.recursion_stack[cctx.recursion_level].evidence) {
+        evidence_free(cctx.recursion_stack[cctx.recursion_level].evidence);
+    }
     free(cctx.recursion_stack);
     cl_engine_free(engine);
-    evidence_free(cctx.evidence);
     if (fdin >= 0)
         close(fdin);
 }

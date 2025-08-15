@@ -813,7 +813,7 @@ static int cli_ole2_summary_json_cleanup(summary_ctx_t *sctx, int retcode)
     cli_dbgmsg("in cli_ole2_summary_json_cleanup: %d[%x]\n", retcode, sctx->flags);
 
     if (sctx->sfmap) {
-        funmap(sctx->sfmap);
+        fmap_free(sctx->sfmap);
     }
 
     if (sctx->flags) {
@@ -872,7 +872,7 @@ static int cli_ole2_summary_json_cleanup(summary_ctx_t *sctx, int retcode)
     return retcode;
 }
 
-int cli_ole2_summary_json(cli_ctx *ctx, int fd, int mode)
+int cli_ole2_summary_json(cli_ctx *ctx, int fd, int mode, const char *filepath)
 {
     summary_ctx_t sctx;
     STATBUF statbuf;
@@ -909,7 +909,7 @@ int cli_ole2_summary_json(cli_ctx *ctx, int fd, int mode)
         return CL_ESTAT;
     }
 
-    sctx.sfmap = fmap(fd, 0, statbuf.st_size, NULL);
+    sctx.sfmap = fmap_new(fd, 0, statbuf.st_size, NULL, filepath);
     if (!sctx.sfmap) {
         cli_dbgmsg("ole2_summary_json: failed to get fmap\n");
         return CL_EMAP;
@@ -919,14 +919,14 @@ int cli_ole2_summary_json(cli_ctx *ctx, int fd, int mode)
 
     switch (mode) {
         case 1:
-            sctx.summary = cli_jsonobj(ctx->wrkproperty, "DocSummaryInfo");
+            sctx.summary = cli_jsonobj(ctx->this_layer_metadata_json, "DocSummaryInfo");
             break;
         case 2:
-            sctx.summary = cli_jsonobj(ctx->wrkproperty, "Hwp5SummaryInfo");
+            sctx.summary = cli_jsonobj(ctx->this_layer_metadata_json, "Hwp5SummaryInfo");
             break;
         case 0:
         default:
-            sctx.summary = cli_jsonobj(ctx->wrkproperty, "SummaryInfo");
+            sctx.summary = cli_jsonobj(ctx->this_layer_metadata_json, "SummaryInfo");
             break;
     }
 
@@ -991,7 +991,7 @@ int cli_ole2_summary_json(cli_ctx *ctx, int fd, int mode)
 
     /* second property set (index=1) is always a custom property set (if present) */
     if (sumstub.num_propsets == 2) {
-        cli_jsonbool(ctx->wrkproperty, "HasUserDefinedProperties", 1);
+        cli_jsonbool(ctx->this_layer_metadata_json, "HasUserDefinedProperties", 1);
     }
 
     return cli_ole2_summary_json_cleanup(&sctx, CL_SUCCESS);

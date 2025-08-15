@@ -4334,7 +4334,7 @@ cl_error_t process_blip_record(struct OfficeArtRecordHeader_Unpacked *rh, const 
         if (ctx->engine->keeptmp) {
             /* Drop a temp file and scan that */
             if (CL_SUCCESS != (ret = cli_gentempfd_with_prefix(
-                                   ctx->sub_tmpdir,
+                                   ctx->this_layer_tmpdir,
                                    extracted_image_type,
                                    &extracted_image_filepath,
                                    &extracted_image_tempfd))) {
@@ -4642,7 +4642,7 @@ cl_error_t cli_extract_xlm_macros_and_images(const char *dir, cli_ctx *ctx, char
         goto done;
     }
 
-    if ((ret = cli_gentempfd_with_prefix(ctx->sub_tmpdir, "xlm_macros", &tempfile, &out_fd)) != CL_SUCCESS) {
+    if ((ret = cli_gentempfd_with_prefix(ctx->this_layer_tmpdir, "xlm_macros", &tempfile, &out_fd)) != CL_SUCCESS) {
         cli_dbgmsg("[cli_extract_xlm_macros_and_images] Failed to open output file descriptor\n");
         status = ret;
         goto done;
@@ -4950,7 +4950,7 @@ cl_error_t cli_extract_xlm_macros_and_images(const char *dir, cli_ctx *ctx, char
     }
 
     if (CL_VIRUS == cli_scan_desc(out_fd, ctx, CL_TYPE_SCRIPT, false, NULL, AC_SCAN_VIR,
-                                  NULL, NULL, LAYER_ATTRIBUTES_NONE)) {
+                                  NULL, "xlm-macro", tempfile, LAYER_ATTRIBUTES_NORMALIZED)) {
         status = CL_VIRUS;
         goto done;
     }

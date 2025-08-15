@@ -522,21 +522,21 @@ static int crtmgr_rsa_verify(cli_crt *x509, BIGNUM *sig, cli_crt_hashtype hashty
             if (hashtype == CLI_SHA256RSA) {
                 // Check for OID type indicating a length of 9, OID_sha256, and the NULL type/value
                 if (0 != memcmp(&d[j], "\x06\x09" OID_sha256 "\x05\x00", 13)) {
-                    cli_dbgmsg("crtmgr_rsa_verify: invalid AlgorithmIdentifier block for SHA256 hash\n");
+                    cli_dbgmsg("crtmgr_rsa_verify: invalid AlgorithmIdentifier block for SHA2-256 hash\n");
                     break;
                 }
 
             } else if (hashtype == CLI_SHA384RSA) {
                 // Check for OID type indicating a length of 9, OID_sha384, and the NULL type/value
                 if (0 != memcmp(&d[j], "\x06\x09" OID_sha384 "\x05\x00", 13)) {
-                    cli_dbgmsg("crtmgr_rsa_verify: invalid AlgorithmIdentifier block for SHA384 hash\n");
+                    cli_dbgmsg("crtmgr_rsa_verify: invalid AlgorithmIdentifier block for SHA2-384 hash\n");
                     break;
                 }
 
             } else if (hashtype == CLI_SHA512RSA) {
                 // Check for OID type indicating a length of 9, OID_sha512, and the NULL type/value
                 if (0 != memcmp(&d[j], "\x06\x09" OID_sha512 "\x05\x00", 13)) {
-                    cli_dbgmsg("crtmgr_rsa_verify: invalid AlgorithmIdentifier block for SHA512 hash\n");
+                    cli_dbgmsg("crtmgr_rsa_verify: invalid AlgorithmIdentifier block for SHA2-512 hash\n");
                     break;
                 }
 

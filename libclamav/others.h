@@ -43,6 +43,7 @@
 #include <json.h>
 
 #include "clamav.h"
+#include "other_types.h"
 #include "dconf.h"
 #include "filetypes.h"
 #include "fmap.h"
@@ -51,6 +52,7 @@
 #include "bytecode_api.h"
 #include "events.h"
 #include "crtmgr.h"
+#include "scan_layer.h"
 
 #include "unrar_iface.h"
 
@@ -171,52 +173,29 @@ typedef struct bitset_tag {
     unsigned long length;
 } bitset_t;
 
-typedef struct image_fuzzy_hash {
-    uint8_t hash[8];
-} image_fuzzy_hash_t;
-
-typedef struct recursion_level_tag {
-    cli_file_t type;
-    size_t size;
-    cl_fmap_t *fmap;                      /* The fmap for this layer. This used to be in an array in the ctx. */
-    uint32_t recursion_level_buffer;      /* Which buffer layer in scan recursion. */
-    uint32_t recursion_level_buffer_fmap; /* Which fmap layer in this buffer. */
-    uint32_t attributes;                  /* layer attributes. */
-    image_fuzzy_hash_t image_fuzzy_hash;  /* Used for image/graphics files to store a fuzzy hash. */
-    bool calculated_image_fuzzy_hash;     /* Used for image/graphics files to store a fuzzy hash. */
-} recursion_level_t;
-
-typedef void *evidence_t;
-typedef void *onedump_t;
-typedef void *cvd_t;
-
 /* internal clamav context */
 typedef struct cli_ctx_tag {
-    char *target_filepath;    /* (optional) The filepath of the original scan target. */
-    const char *sub_filepath; /* (optional) The filepath of the current file being parsed. May be a temp file. */
-    char *sub_tmpdir;         /* The directory to store tmp files at this recursion depth. */
-    evidence_t evidence;      /* Stores the evidence for this scan to alert (alerting indicators). */
-    unsigned long int *scanned;
+    char *target_filepath;   /* (optional) The filepath of the original scan target. */
+    char *this_layer_tmpdir; /* Pointer to current temporary directory, MAY vary with recursion depth. For convenience. */
+    uint64_t *scanned;
     const struct cli_matcher *root;
     const struct cl_engine *engine;
     uint64_t scansize;
     struct cl_scan_options *options;
-    unsigned int scannedfiles;
-    unsigned int corrupted_input;       /* Setting this flag will prevent the PE parser from reporting "broken executable" for unpacked/reconstructed files that may not be 100% to spec. */
-    recursion_level_t *recursion_stack; /* Array of recursion levels used as a stack. */
-    uint32_t recursion_stack_size;      /* stack size must == engine->max_recursion_level */
-    uint32_t recursion_level;           /* Index into recursion_stack; current fmap recursion level from start of scan. */
-    fmap_t *fmap;                       /* Pointer to current fmap in recursion_stack, varies with recursion depth. For convenience. */
-    unsigned char handlertype_hash[16];
+    uint32_t scannedfiles;
+    unsigned int corrupted_input;      /* Setting this flag will prevent the PE parser from reporting "broken executable" for unpacked/reconstructed files that may not be 100% to spec. */
+    cli_scan_layer_t *recursion_stack; /* Array of recursion levels used as a stack. */
+    uint32_t recursion_stack_size;     /* stack size must == engine->max_recursion_level */
+    uint32_t recursion_level;          /* Index into recursion_stack; current fmap recursion level from start of scan. */
+    evidence_t this_layer_evidence;    /* Pointer to current evidence in recursion_stack, varies with recursion depth. For convenience. */
+    fmap_t *fmap;                      /* Pointer to current fmap in recursion_stack, varies with recursion depth. For convenience. */
+    size_t object_count;               /* Counter for number of unique entities/contained files (including normalized files) processed. */
     struct cli_dconf *dconf;
     bitset_t *hook_lsig_matches;
     void *cb_ctx;
     cli_events_t *perf;
-#ifdef HAVE__INTERNAL__SHA_COLLECT
-    int sha_collect;
-#endif
-    struct json_object *properties;
-    struct json_object *wrkproperty;
+    struct json_object *metadata_json;            /* Top level metadata JSON object for the whole scan. */
+    struct json_object *this_layer_metadata_json; /* Pointer to current metadata JSON object in recursion_stack, varies with recursion depth. For convenience. */
     struct timeval time_limit;
     bool limit_exceeded; /* To guard against alerting on limits exceeded more than once, or storing that in the JSON metadata more than once. */
     bool abort_scan;     /* So we can guarantee a scan is aborted, even if CL_ETIMEOUT/etc. status is lost in the scan recursion stack. */
@@ -228,7 +207,7 @@ typedef struct cli_ctx_tag {
 
 typedef struct cli_flagged_sample {
     char **virus_name;
-    char md5[16];
+    char md5[MD5_HASH_SIZE];
     uint32_t size; /* A size of zero means size is unavailable (why would this ever happen?) */
     uint32_t hits;
     stats_section_t *sections;
@@ -405,8 +384,13 @@ struct cl_engine {
     crtmgr cmgr;
 
     /* Callback(s) */
-    clcb_file_inspection cb_file_inspection;
+    clcb_scan cb_scan_pre_hash;
+    clcb_scan cb_scan_pre_scan;
+    clcb_scan cb_scan_post_scan;
+    clcb_scan cb_scan_alert;
+    clcb_scan cb_scan_file_type;
     clcb_pre_cache cb_pre_cache;
+    clcb_file_inspection cb_file_inspection;
     clcb_pre_scan cb_pre_scan;
     clcb_post_scan cb_post_scan;
     clcb_virus_found cb_virus_found;
@@ -556,6 +540,7 @@ extern LIBCLAMAV_EXPORT int have_rar;
 #define SCAN_UNPRIVILEGED (ctx->options->general & CL_SCAN_GENERAL_UNPRIVILEGED)
 #define SCAN_STORE_HTML_URIS (ctx->options->general & CL_SCAN_GENERAL_STORE_HTML_URIS)
 #define SCAN_STORE_PDF_URIS (ctx->options->general & CL_SCAN_GENERAL_STORE_PDF_URIS)
+#define SCAN_STORE_EXTRA_HASHES (ctx->options->general & CL_SCAN_GENERAL_STORE_EXTRA_HASHES)
 
 #define SCAN_PARSE_ARCHIVE (ctx->options->parse & CL_SCAN_PARSE_ARCHIVE)
 #define SCAN_PARSE_ELF (ctx->options->parse & CL_SCAN_PARSE_ELF)
@@ -586,21 +571,20 @@ extern LIBCLAMAV_EXPORT int have_rar;
 
 #define SCAN_MAIL_PARTIAL_MESSAGE (ctx->options->mail & CL_SCAN_MAIL_PARTIAL_MESSAGE)
 
-#define SCAN_DEV_COLLECT_SHA (ctx->options->dev & CL_SCAN_DEV_COLLECT_SHA)
 #define SCAN_DEV_COLLECT_PERF_INFO (ctx->options->dev & CL_SCAN_DEV_COLLECT_PERFORMANCE_INFO)
 
 /* based on macros from A. Melnikoff */
 #define cbswap16(v) (((v & 0xff) << 8) | (((v) >> 8) & 0xff))
-#define cbswap32(v) ((((v)&0x000000ff) << 24) | (((v)&0x0000ff00) << 8) | \
-                     (((v)&0x00ff0000) >> 8) | (((v)&0xff000000) >> 24))
-#define cbswap64(v) ((((v)&0x00000000000000ffULL) << 56) | \
-                     (((v)&0x000000000000ff00ULL) << 40) | \
-                     (((v)&0x0000000000ff0000ULL) << 24) | \
-                     (((v)&0x00000000ff000000ULL) << 8) |  \
-                     (((v)&0x000000ff00000000ULL) >> 8) |  \
-                     (((v)&0x0000ff0000000000ULL) >> 24) | \
-                     (((v)&0x00ff000000000000ULL) >> 40) | \
-                     (((v)&0xff00000000000000ULL) >> 56))
+#define cbswap32(v) ((((v) & 0x000000ff) << 24) | (((v) & 0x0000ff00) << 8) | \
+                     (((v) & 0x00ff0000) >> 8) | (((v) & 0xff000000) >> 24))
+#define cbswap64(v) ((((v) & 0x00000000000000ffULL) << 56) | \
+                     (((v) & 0x000000000000ff00ULL) << 40) | \
+                     (((v) & 0x0000000000ff0000ULL) << 24) | \
+                     (((v) & 0x00000000ff000000ULL) << 8) |  \
+                     (((v) & 0x000000ff00000000ULL) >> 8) |  \
+                     (((v) & 0x0000ff0000000000ULL) >> 24) | \
+                     (((v) & 0x00ff000000000000ULL) >> 40) | \
+                     (((v) & 0xff00000000000000ULL) >> 56))
 
 #ifndef HAVE_ATTRIB_PACKED
 #define __attribute__(x)
@@ -751,7 +735,18 @@ void cli_append_potentially_unwanted_if_heur_exceedsmax(cli_ctx *ctx, char *virn
 
 const char *cli_get_last_virus(const cli_ctx *ctx);
 const char *cli_get_last_virus_str(const cli_ctx *ctx);
-void cli_virus_found_cb(cli_ctx *ctx, const char *virname);
+
+/**
+ * @brief Dispatch the alert / virus found callbacks.
+ *
+ * AKA for clamscan it will print FOUND message.
+ *
+ * @param ctx                     The scan context.
+ * @param virname                 The name of the virus.
+ * @param is_potentially_unwanted true if the alert is for a potentially unwanted application (PUA).
+ * @return cl_error_t
+ */
+cl_error_t cli_virus_found_cb(cli_ctx *ctx, const char *virname, bool is_potentially_unwanted);
 
 /**
  * @brief Push a new fmap onto our scan recursion stack.
@@ -770,7 +765,7 @@ cl_error_t cli_recursion_stack_push(cli_ctx *ctx, cl_fmap_t *map, cli_file_t typ
 /**
  * @brief Pop off a layer of our scan recursion stack.
  *
- * Returns the fmap for the popped layer. Does NOT funmap() the fmap for you.
+ * Returns the fmap for the popped layer. Does NOT fmap_free() the fmap for you.
  *
  * @param ctx           The scanning context.
  * @return cl_fmap_t*   A pointer to the fmap for the popped layer, may return NULL instead if the stack is empty.
@@ -780,10 +775,13 @@ cl_fmap_t *cli_recursion_stack_pop(cli_ctx *ctx);
 /**
  * @brief Re-assign the type for the current layer.
  *
- * @param ctx   The scanning context.
- * @param type  The new file type.
+ * @param ctx           The scanning context.
+ * @param type          The new file type.
+ * @param run_callback  Whether to run the scan callback for file type corrections.
+ *
+ * @return cl_error_t   CL_SUCCESS if successful, else an error code.
  */
-void cli_recursion_stack_change_type(cli_ctx *ctx, cli_file_t type);
+cl_error_t cli_recursion_stack_change_type(cli_ctx *ctx, cli_file_t type, bool run_callback);
 
 /**
  * @brief Get the type of a specific layer.
@@ -823,11 +821,20 @@ cli_file_t cli_recursion_stack_get_type(cli_ctx *ctx, int index);
  */
 size_t cli_recursion_stack_get_size(cli_ctx *ctx, int index);
 
+/**
+ * @brief Dispatch scan callback based on location.
+ *
+ * @param ctx           Current scan context.
+ * @param location      Callback location.
+ * @return cl_error_t
+ */
+cl_error_t cli_dispatch_scan_callback(cli_ctx *ctx, cl_scan_callback_t location);
+
 /* used by: spin, yc (C) aCaB */
 #define __SHIFTBITS(a) (sizeof(a) << 3)
 #define __SHIFTMASK(a) (__SHIFTBITS(a) - 1)
-#define CLI_ROL(a, b) a = (a << ((b)&__SHIFTMASK(a))) | (a >> ((__SHIFTBITS(a) - (b)) & __SHIFTMASK(a)))
-#define CLI_ROR(a, b) a = (a >> ((b)&__SHIFTMASK(a))) | (a << ((__SHIFTBITS(a) - (b)) & __SHIFTMASK(a)))
+#define CLI_ROL(a, b) a = (a << ((b) & __SHIFTMASK(a))) | (a >> ((__SHIFTBITS(a) - (b)) & __SHIFTMASK(a)))
+#define CLI_ROR(a, b) a = (a >> ((b) & __SHIFTMASK(a))) | (a << ((__SHIFTBITS(a) - (b)) & __SHIFTMASK(a)))
 
 /* Implementation independent sign-extended signed right shift */
 #ifdef HAVE_SAR
@@ -1029,8 +1036,25 @@ void *cli_safer_realloc_or_free(void *ptr, size_t size);
 char *cli_safer_strdup(const char *s);
 
 int cli_rmdirs(const char *dirname);
-char *cli_hashstream(FILE *fs, unsigned char *digcpy, int type);
-char *cli_hashfile(const char *filename, int type);
+
+/**
+ * @brief Calculate a hash of a stream.
+ * @param fs        The file stream to read from.
+ * @param[out] hash (Optional) The buffer to store the calculated raw binary hash.
+ * @param type      The type of hash to calculate.
+ * @return char*    Returns the allocated hash string or NULL if allocation failed.
+ */
+char *cli_hashstream(FILE *fs, uint8_t *hash, cli_hash_type_t type);
+
+/**
+ * @brief Calculate a hash of a file.
+ *
+ * @param filename  The file to read from.
+ * @param[out] hash (Optional) The buffer to store the calculated raw binary hash.
+ * @param type      The type of hash to calculate.
+ * @return char*    Returns the allocated hash string or NULL if allocation failed.
+ */
+char *cli_hashfile(const char *filename, uint8_t *hash, cli_hash_type_t type);
 
 /**
  * @brief unlink() with error checking
@@ -1298,6 +1322,26 @@ uint8_t cli_get_debug_flag(void);
  * directly manipulate libclamav global variables.
  */
 uint8_t cli_set_debug_flag(uint8_t debug_flag);
+
+/**
+ * @brief Trust the current layer by removing any evidence and setting the verdict to trusted.
+ *
+ * @param ctx           The scan context.
+ * @param source        The source of the trust request.
+ * @return cl_error_t   CL_SUCCESS on success, or an error code.
+ */
+cl_error_t cli_trust_this_layer(cli_ctx *ctx, const char *source);
+
+/**
+ * @brief Trust a range of layers by removing any evidence and setting the verdict to trusted.
+ *
+ * @param ctx           The scan context.
+ * @param start_layer   The layer to start trusting from (inclusive).
+ * @param end_layer     The layer to stop trusting at (inclusive).
+ * @param source        The source of the trust request.
+ * @return cl_error_t   CL_SUCCESS on success, or an error code.
+ */
+cl_error_t cli_trust_layers(cli_ctx *ctx, uint32_t start_layer, uint32_t end_layer, const char *source);
 
 #ifndef CLI_SAFER_STRDUP_OR_GOTO_DONE
 /**

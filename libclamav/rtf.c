@@ -532,7 +532,7 @@ int cli_scanrtf(cli_ctx* ctx)
         return CL_EMEM;
     }
 
-    if (!(tempname = cli_gentemp_with_prefix(ctx->sub_tmpdir, "rtf-tmp")))
+    if (!(tempname = cli_gentemp_with_prefix(ctx->this_layer_tmpdir, "rtf-tmp")))
         return CL_EMEM;
 
     if (mkdir(tempname, 0700)) {

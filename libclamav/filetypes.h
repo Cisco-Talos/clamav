@@ -149,8 +149,30 @@ struct cli_matched_type {
     unsigned short cnt;
 };
 
+/**
+ * @brief Convert a file type name to a file type code.
+ *
+ * @param name The name of the file type. E.g. "CL_TYPE_PE", "CL_TYPE_ELF", etc.
+ * @return cli_file_t
+ */
 cli_file_t cli_ftcode(const char *name);
+
+/**
+ * @brief Convert a human-friendly file type name to a file type code.
+ *
+ * @param name The human-friendly name of the file type. E.g. "pe", "ZIP", "CL_TYPE_ELF", etc.
+ * @return cli_file_t
+ */
+cli_file_t cli_ftcode_human_friendly(const char *name);
+
+/**
+ * @brief Convert a file type code to a file type name.
+ *
+ * @param code The file type code. E.g. CL_TYPE_PE, CL_TYPE_ELF, etc.
+ * @return const char* A ame of the file type. E.g. "CL_TYPE_PE", "CL_TYPE_ELF", etc.
+ */
 const char *cli_ftname(cli_file_t code);
+
 void cli_ftfree(const struct cl_engine *engine);
 cli_file_t cli_compare_ftm_file(const unsigned char *buf, size_t buflen, const struct cl_engine *engine);
 cli_file_t cli_compare_ftm_partition(const unsigned char *buf, size_t buflen, const struct cl_engine *engine);

@@ -1539,7 +1539,7 @@ cli_dbgmsg("sizeof(hfsNodeDescriptor) is %lu\n", sizeof(hfsNodeDescriptor));
     }
 
     /* Create temp folder for contents */
-    if (!(targetdir = cli_gentemp_with_prefix(ctx->sub_tmpdir, "hfsplus-tmp"))) {
+    if (!(targetdir = cli_gentemp_with_prefix(ctx->this_layer_tmpdir, "hfsplus-tmp"))) {
         cli_errmsg("cli_scanhfsplus: cli_gentemp failed\n");
         status = CL_ETMPDIR;
         goto done;

@@ -46,8 +46,8 @@ struct regex_matcher {
     size_t regex_cnt;
     regex_t** all_pregs;
     struct cli_matcher suffixes;
-    struct cli_matcher sha256_hashes;
-    struct cli_hashset sha256_pfx_set;
+    struct cli_matcher sha2_256_hashes;
+    struct cli_hashset sha2_256_pfx_set;
     struct cli_matcher hostkey_prefix;
     struct filter filter;
 #ifdef USE_MPOOL

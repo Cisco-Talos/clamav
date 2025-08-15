@@ -8,6 +8,7 @@ import shutil
 import unittest
 import sys
 from zipfile import ZIP_DEFLATED, ZipFile
+from pathlib import Path
 
 sys.path.append('../unit_tests')
 import testcase
@@ -359,3 +360,51 @@ class TC(testcase.TestCase):
             '"FileName":"logo.1.png",',
         ]
         self.verify_output(output.err, expected=expected_stderr)
+
+    def test_cvdload_no_sign_fips_limits(self):
+        self.step_name('Test that clamscan --fips-limits fails to load a CVD if .cvd.sign file is not present')
+
+        path_db = Path(TC.path_tmp, 'database')
+        path_db.mkdir()
+
+        # Copy cvd to temp directory
+        shutil.copy(str(TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles' / 'test-6.cvd'), str(path_db / 'test.cvd'))
+
+        testpaths = [
+            TC.path_build / "unit_tests" / "input" / "clamav_hdb_scanfiles" / "clam.exe.2007.one",
+        ]
+
+        testfiles = ' '.join([str(testpath) for testpath in testpaths])
+
+        command = '{valgrind} {valgrind_args} {clamscan} --fips-limits -d {path_db} {testfiles}'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args,
+            clamscan=TC.clamscan,
+            path_db=path_db,
+            testfiles=testfiles,
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 2  # error
+
+        expected_results = [
+            'Unable to verify CVD with detached signature file and MD5 verification is disabled',
+            'Can\'t verify CVD file']
+        self.verify_output(output.err, expected=expected_results)
+
+        # Add the .cvd.sign file and try again
+        shutil.copy(str(TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles' / 'test-6.cvd.sign'), str(path_db))
+
+        command = '{valgrind} {valgrind_args} {clamscan} --fips-limits -d {path_db} {testfiles}'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args,
+            clamscan=TC.clamscan,
+            path_db=path_db,
+            testfiles=testfiles,
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 1  # virus found
+
+        expected_results = ['{}: Clamav.Test.File-6 FOUND'.format(testpath.name) for testpath in testpaths]
+        expected_results.append('Scanned files: {}'.format(len(testpaths)))
+        expected_results.append('Infected files: {}'.format(len(testpaths)))
+        self.verify_output(output.out, expected=expected_results)
