@@ -117,7 +117,7 @@ cl_error_t cli_unzip(cli_ctx *ctx);
  * @param local_header_offset   The offset of the local file header in the zip archive.
  * @return cl_error_t           Returns CL_SUCCESS on success, or an error code on failure.
  */
-cl_error_t cli_unzip_single(cli_ctx *ctx, off_t local_header_offset);
+cl_error_t cli_unzip_single(cli_ctx *ctx, size_t local_header_offset);
 
 /**
  * @brief Unzip a single file from a zip archive.
@@ -131,7 +131,7 @@ cl_error_t cli_unzip_single(cli_ctx *ctx, off_t local_header_offset);
  * @param zcb                   The callback function to invoke after extraction. See `zip_scan_cb`.
  * @return cl_error_t           Returns CL_SUCCESS on success, or an error code on failure.
  */
-cl_error_t unzip_single_internal(cli_ctx *ctx, off_t local_header_offset, zip_cb zcb);
+cl_error_t unzip_single_internal(cli_ctx *ctx, size_t local_header_offset, zip_cb zcb);
 
 /**
  * @brief Add a file a bundle of files to search for in a zip archive.
@@ -153,13 +153,12 @@ cl_error_t unzip_search_add(struct zip_requests *requests, const char *name, siz
  *             or the file you're looking for is not listed in the central directory.
  *
  * @param ctx                   The scan context containing the file map and other scan parameters.
- * @param map                   The file map to search in.
  * @param requests              The `zip_requests` structure containing the files to search for.
  * @return cl_error_t           Returns CL_SUCCESS if nothing was found.
  *                              Returns CL_VIRUS if a match was found.
  *                              Returns a CL_E* error code on failure.
  */
-cl_error_t unzip_search(cli_ctx *ctx, fmap_t *map, struct zip_requests *requests);
+cl_error_t unzip_search(cli_ctx *ctx, struct zip_requests *requests);
 
 /**
  * @brief Search for a single file in a zip archive.

@@ -25,7 +25,8 @@
 #include <sys/types.h>
 
 #include "clamav.h"
-#include "fmap.h"
+
+typedef struct cli_ctx_tag cli_ctx;
 
 #define CL_FILE_MBUFF_SIZE 1024
 #define CL_PART_MBUFF_SIZE 1028
@@ -153,7 +154,7 @@ const char *cli_ftname(cli_file_t code);
 void cli_ftfree(const struct cl_engine *engine);
 cli_file_t cli_compare_ftm_file(const unsigned char *buf, size_t buflen, const struct cl_engine *engine);
 cli_file_t cli_compare_ftm_partition(const unsigned char *buf, size_t buflen, const struct cl_engine *engine);
-cli_file_t cli_determine_fmap_type(fmap_t *map, const struct cl_engine *engine, cli_file_t basetype);
+cli_file_t cli_determine_fmap_type(cli_ctx *ctx, cli_file_t basetype);
 int cli_addtypesigs(struct cl_engine *engine);
 
 #endif

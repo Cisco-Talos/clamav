@@ -27,7 +27,7 @@
 
 #include "others.h"
 
-cli_file_t cli_ooxml_filetype(cli_ctx *, fmap_t *);
+cli_file_t cli_ooxml_filetype(cli_ctx *);
 cl_error_t cli_process_ooxml(cli_ctx *, int);
 
 #endif
