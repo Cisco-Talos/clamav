@@ -197,6 +197,7 @@ static struct basic_test {
 } basic_tests[] = {
     {"PING", NULL, "PONG", 1, 0, IDS_OK},
     {"RELOAD", NULL, "RELOADING", 1, 0, IDS_REJECT},
+    {"SELFCHECK", NULL, "DBUPTODATE", 1, 0, IDS_REJECT},
     {"VERSION", NULL, VERSION_REPLY, 1, 0, IDS_OK},
     {"VERSIONCOMMANDS", NULL, VCMDS_REPLY, 0, 0, IDS_REJECT},
     {"SCAN " SCANFILE, NULL, FOUNDREPLY, 1, 0, IDS_OK},
