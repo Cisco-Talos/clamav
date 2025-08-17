@@ -194,7 +194,12 @@ extern cl_error_t cl_hash_data_ex(
     cl_error_t status = CL_ERROR;
 
     EVP_MD_CTX *ctx = NULL;
-    EVP_MD *md      = NULL;
+
+#if OPENSSL_VERSION_MAJOR >= 3
+    EVP_MD *md = NULL;
+#else
+    const EVP_MD *md = NULL;
+#endif
 
     size_t required_hash_len;
     uint8_t *new_hash = NULL;
@@ -212,13 +217,13 @@ extern cl_error_t cl_hash_data_ex(
 #if OPENSSL_VERSION_MAJOR >= 3
     if (flags & CL_HASH_FLAG_FIPS_BYPASS) {
         /* Bypass FIPS restrictions the OpenSSL 3.0 way */
-        md = EVP_MD_fetch(NULL, alg, "-fips");
+        md = EVP_MD_fetch(NULL, to_openssl_alg(alg), "-fips");
     } else {
         /* Use FIPS compliant algorithms */
-        md = EVP_MD_fetch(NULL, alg, NULL);
+        md = EVP_MD_fetch(NULL, to_openssl_alg(alg), NULL);
     }
 #else
-    md = EVP_get_digestbyname(alg);
+    md = EVP_get_digestbyname(to_openssl_alg(alg));
 #endif
     if (NULL == md) {
         cli_errmsg("cl_hash_data_ex: Unsupported hash algorithm: %s\n", alg);
@@ -332,10 +337,14 @@ extern cl_error_t cl_hash_init_ex(
     uint32_t flags,
     cl_hash_ctx_t **ctx_out)
 {
-
     cl_error_t status = CL_ERROR;
     EVP_MD_CTX *ctx   = NULL;
-    EVP_MD *md        = NULL;
+
+#if OPENSSL_VERSION_MAJOR >= 3
+    EVP_MD *md = NULL;
+#else
+    const EVP_MD *md = NULL;
+#endif
 
     if (NULL == alg || NULL == ctx_out) {
         cli_errmsg("cl_hash_init_ex: Invalid arguments\n");
@@ -346,13 +355,13 @@ extern cl_error_t cl_hash_init_ex(
 #if OPENSSL_VERSION_MAJOR >= 3
     if (flags & CL_HASH_FLAG_FIPS_BYPASS) {
         /* Bypass FIPS restrictions the OpenSSL 3.0 way */
-        md = EVP_MD_fetch(NULL, alg, "-fips");
+        md = EVP_MD_fetch(NULL, to_openssl_alg(alg), "-fips");
     } else {
         /* Use FIPS compliant algorithms */
-        md = EVP_MD_fetch(NULL, alg, NULL);
+        md = EVP_MD_fetch(NULL, to_openssl_alg(alg), NULL);
     }
 #else
-    md = EVP_get_digestbyname(alg);
+    md = EVP_get_digestbyname(to_openssl_alg(alg));
 #endif
     if (NULL == md) {
         cli_errmsg("cl_hash_data_ex: Unsupported hash algorithm: %s\n", alg);
@@ -551,7 +560,12 @@ extern cl_error_t cl_hash_file_fd_ex(
     STATBUF sb;
 
     EVP_MD_CTX *ctx = NULL;
-    EVP_MD *md      = NULL;
+
+#if OPENSSL_VERSION_MAJOR >= 3
+    EVP_MD *md = NULL;
+#else
+    const EVP_MD *md = NULL;
+#endif
 
     size_t required_hash_len;
     uint8_t *new_hash = NULL;
@@ -596,13 +610,13 @@ extern cl_error_t cl_hash_file_fd_ex(
 #if OPENSSL_VERSION_MAJOR >= 3
     if (flags & CL_HASH_FLAG_FIPS_BYPASS) {
         /* Bypass FIPS restrictions the OpenSSL 3.0 way */
-        md = EVP_MD_fetch(NULL, alg, "-fips");
+        md = EVP_MD_fetch(NULL, to_openssl_alg(alg), "-fips");
     } else {
         /* Use FIPS compliant algorithms */
-        md = EVP_MD_fetch(NULL, alg, NULL);
+        md = EVP_MD_fetch(NULL, to_openssl_alg(alg), NULL);
     }
 #else
-    md = EVP_get_digestbyname(alg);
+    md = EVP_get_digestbyname(to_openssl_alg(alg));
 #endif
     if (NULL == md) {
         cli_errmsg("cl_hash_data_ex: Unsupported hash algorithm: %s\n", alg);
@@ -723,16 +737,22 @@ unsigned char *cl_hash_data(const char *alg, const void *buf, size_t len, unsign
     EVP_MD_CTX *ctx;
     unsigned char *ret;
     size_t mdsz;
-    EVP_MD *md;
+
+#if OPENSSL_VERSION_MAJOR >= 3
+    EVP_MD *md = NULL;
+#else
+    const EVP_MD *md = NULL;
+#endif
+
     unsigned int i;
     size_t cur;
     bool win_exception = false;
 
 #if OPENSSL_VERSION_MAJOR >= 3
     /* Bypass FIPS restrictions the OpenSSL 3.0 way */
-    md = EVP_MD_fetch(NULL, alg, "-fips");
+    md = EVP_MD_fetch(NULL, to_openssl_alg(alg), "-fips");
 #else
-    md = EVP_get_digestbyname(alg);
+    md = EVP_get_digestbyname(to_openssl_alg(alg));
 #endif
     if (!(md))
         return NULL;
@@ -844,14 +864,20 @@ unsigned char *cl_hash_data(const char *alg, const void *buf, size_t len, unsign
 unsigned char *cl_hash_file_fd(int fd, const char *alg, unsigned int *olen)
 {
     EVP_MD_CTX *ctx;
-    EVP_MD *md;
+
+#if OPENSSL_VERSION_MAJOR >= 3
+    EVP_MD *md = NULL;
+#else
+    const EVP_MD *md = NULL;
+#endif
+
     unsigned char *res;
 
 #if OPENSSL_VERSION_MAJOR >= 3
     /* Bypass FIPS restrictions the OpenSSL 3.0 way */
-    md = EVP_MD_fetch(NULL, alg, "-fips");
+    md = EVP_MD_fetch(NULL, to_openssl_alg(alg), "-fips");
 #else
-    md = EVP_get_digestbyname(alg);
+    md = EVP_get_digestbyname(to_openssl_alg(alg));
 #endif
     if (!(md))
         return NULL;
@@ -996,7 +1022,7 @@ int cl_verify_signature_hash(EVP_PKEY *pkey, const char *alg, unsigned char *sig
     const EVP_MD *md;
     size_t mdsz;
 
-    md = EVP_get_digestbyname(alg);
+    md = EVP_get_digestbyname(to_openssl_alg(alg));
     if (!(md))
         return -1;
 
@@ -1036,7 +1062,7 @@ int cl_verify_signature_fd(EVP_PKEY *pkey, const char *alg, unsigned char *sig, 
     if (!(digest))
         return -1;
 
-    md = EVP_get_digestbyname(alg);
+    md = EVP_get_digestbyname(to_openssl_alg(alg));
     if (!(md)) {
         free(digest);
         return -1;
@@ -1100,7 +1126,7 @@ int cl_verify_signature(EVP_PKEY *pkey, const char *alg, unsigned char *sig, uns
         return -1;
     }
 
-    md = EVP_get_digestbyname(alg);
+    md = EVP_get_digestbyname(to_openssl_alg(alg));
     if (!(md)) {
         free(digest);
         if (decode)
@@ -1314,7 +1340,7 @@ unsigned char *cl_sign_data(EVP_PKEY *pkey, const char *alg, unsigned char *hash
     unsigned int siglen;
     unsigned char *sig;
 
-    md = EVP_get_digestbyname(alg);
+    md = EVP_get_digestbyname(to_openssl_alg(alg));
     if (!(md))
         return NULL;
 
@@ -1730,13 +1756,18 @@ X509_CRL *cl_load_crl(const char *file)
 void *cl_hash_init(const char *alg)
 {
     EVP_MD_CTX *ctx;
-    EVP_MD *md;
+
+#if OPENSSL_VERSION_MAJOR >= 3
+    EVP_MD *md = NULL;
+#else
+    const EVP_MD *md = NULL;
+#endif
 
 #if OPENSSL_VERSION_MAJOR >= 3
     /* Bypass FIPS restrictions the OpenSSL 3.0 way */
-    md = EVP_MD_fetch(NULL, alg, "-fips");
+    md = EVP_MD_fetch(NULL, to_openssl_alg(alg), "-fips");
 #else
-    md = EVP_get_digestbyname(alg);
+    md = EVP_get_digestbyname(to_openssl_alg(alg));
 #endif
     if (!(md))
         return NULL;

@@ -30,5 +30,6 @@ typedef struct image_fuzzy_hash {
 typedef void *evidence_t;
 typedef void *onedump_t;
 typedef void *cvd_t;
+typedef void *cli_ctx_t;
 
 #endif /* __OTHER_TYPES_H_LC */

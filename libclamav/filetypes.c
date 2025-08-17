@@ -327,7 +327,7 @@ const struct ooxml_ftcodes {
         }                                                                       \
     } while (0)
 
-cli_file_t cli_determine_fmap_type(cli_ctx *ctx, cli_file_t basetype)
+cli_file_t cli_determine_fmap_type(cli_ctx_t ctx_t, cli_file_t basetype)
 {
     unsigned char buffer[MAGIC_BUFFER_SIZE];
     const unsigned char *buff;
@@ -337,6 +337,7 @@ cli_file_t cli_determine_fmap_type(cli_ctx *ctx, cli_file_t basetype)
     cli_file_t ret = CL_TYPE_BINARY_DATA;
     struct cli_matcher *root;
     struct cli_ac_data mdata;
+    cli_ctx *ctx = (cli_ctx *)ctx_t;
 
     if (!ctx || !ctx->engine || !ctx->fmap) {
         cli_errmsg("cli_determine_fmap_type: engine == NULL\n");

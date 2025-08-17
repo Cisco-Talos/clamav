@@ -44,6 +44,42 @@ const char *cli_hash_name(cli_hash_type_t type)
     }
 }
 
+const char *to_openssl_alg(const char *alg) {
+    cl_error_t ret;
+    cli_hash_type_t type;
+
+    ret = cli_hash_type_from_name(alg, &type);
+    if (CL_SUCCESS != ret) {
+        cli_dbgmsg("to_openssl_alg: unknown hash type %s\n", alg);
+        return NULL;
+    }
+
+    switch (type) {
+        case CLI_HASH_MD5:
+            return "md5";
+        case CLI_HASH_SHA1:
+            return "sha1";
+#if OPENSSL_VERSION_MAJOR >= 3
+        case CLI_HASH_SHA2_256:
+            return "sha2-256";
+        case CLI_HASH_SHA2_384:
+            return "sha2-384";
+        case CLI_HASH_SHA2_512:
+            return "sha2-512";
+#else
+        case CLI_HASH_SHA2_256:
+            return "sha256";
+        case CLI_HASH_SHA2_384:
+            return "sha384";
+        case CLI_HASH_SHA2_512:
+            return "sha512";
+#endif
+        default:
+            cli_dbgmsg("to_openssl_alg: unknown hash type %d\n", type);
+            return NULL; // Unsupported hash type
+    }
+}
+
 size_t cli_hash_len(cli_hash_type_t type)
 {
     switch (type) {
@@ -68,15 +104,15 @@ cl_error_t cli_hash_type_from_name(const char *name, cli_hash_type_t *type_out)
         return CL_ENULLARG;
     }
 
-    if (strcmp(name, "md5") == 0) {
+    if (strcasecmp(name, "md5") == 0) {
         *type_out = CLI_HASH_MD5;
-    } else if (strcmp(name, "sha1") == 0) {
+    } else if (strcasecmp(name, "sha1") == 0) {
         *type_out = CLI_HASH_SHA1;
-    } else if ((strcmp(name, "sha2-256") == 0) || (strcmp(name, "sha256") == 0)) {
+    } else if ((strcasecmp(name, "sha2-256") == 0) || (strcasecmp(name, "sha256") == 0)) {
         *type_out = CLI_HASH_SHA2_256;
-    } else if ((strcmp(name, "sha2-384") == 0) || (strcmp(name, "sha384") == 0)) {
+    } else if ((strcasecmp(name, "sha2-384") == 0) || (strcasecmp(name, "sha384") == 0)) {
         *type_out = CLI_HASH_SHA2_384;
-    } else if ((strcmp(name, "sha2-512") == 0) || (strcmp(name, "sha512") == 0)) {
+    } else if ((strcasecmp(name, "sha2-512") == 0) || (strcasecmp(name, "sha512") == 0)) {
         *type_out = CLI_HASH_SHA2_512;
     } else {
         return CL_EARG; // Unknown hash type name

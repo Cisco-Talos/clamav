@@ -364,7 +364,6 @@ script_context_t *read_script_commands(const char *script_filepath)
     long script_size = ftell(script_file);
     if (script_size < 0) {
         printf("Error reading script file %s\n", script_filepath);
-        fclose(script_file);
         goto done;
     }
 
@@ -372,15 +371,12 @@ script_context_t *read_script_commands(const char *script_filepath)
     script_contents = calloc(script_size + 1, sizeof(char));
     if (!script_contents) {
         printf("Memory allocation failed for script contents\n");
-        fclose(script_file);
         goto done;
     }
 
     size_t bytes_read = fread(script_contents, 1, script_size, script_file);
     if (bytes_read != (size_t)script_size) {
         printf("Error reading script file %s\n", script_filepath);
-        free(script_contents);
-        fclose(script_file);
         status = 2;
         goto done;
     }
@@ -444,8 +440,6 @@ done:
 
 /**
  * @brief Check if the data matches the given hash.
- *
- * Note: Not bothering with md5 because clamav.h API does not provide it. 🤯
  *
  * @param data The data to check.
  * @param len The length of the data.

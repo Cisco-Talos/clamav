@@ -526,7 +526,7 @@ static int asn1_getnum(const char *s)
     return (s[0] - '0') * 10 + (s[1] - '0');
 }
 
-static int asn1_get_time(fmap_t *map, const void **asn1data, unsigned int *size, time_t *tm)
+static int asn1_get_time(fmap_t *map, const void **asn1data, unsigned int *size, int64_t *tm)
 {
     struct cli_asn1 obj;
     int ret = asn1_get_obj(map, *asn1data, size, &obj);
@@ -1134,7 +1134,7 @@ static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size,
     return ret;
 }
 
-static int asn1_parse_countersignature(fmap_t *map, const void **asn1data, unsigned int *size, crtmgr *cmgr, const uint8_t *message, const unsigned int message_size, time_t not_before, time_t not_after)
+static int asn1_parse_countersignature(fmap_t *map, const void **asn1data, unsigned int *size, crtmgr *cmgr, const uint8_t *message, const unsigned int message_size, int64_t not_before, int64_t not_after)
 {
 
     struct cli_asn1 asn1, deep, deeper;
@@ -1311,7 +1311,7 @@ static int asn1_parse_countersignature(fmap_t *map, const void **asn1data, unsig
                     break;
                 case 2: /* signingTime */
                 {
-                    time_t sigdate; /* FIXME shall i use it?! */
+                    int64_t sigdate; /* FIXME shall i use it?! */
                     if (asn1_get_time(map, &deeper.content, &deep.size, &sigdate)) {
                         cli_dbgmsg("asn1_parse_countersignature: an error occurred when getting the time\n");
                         deep.size = 1;

@@ -35,12 +35,21 @@ typedef enum cli_hash_type {
 /**
  * @brief Get the name of the hash type as a string.
  *
- * Note: using the name OpenSSL uses for the hash type.
- *
  * @param type The hash type.
  * @return char* The name of the hash type.
  */
 const char* cli_hash_name(cli_hash_type_t type);
+
+/**
+ * @brief Get OpenSSL's name of the hash type as a string.
+ *
+ * Needed because older versions of OpenSSL aren't familiar with "sha2-256",
+ * "sha2-384", and "sha2-512".
+ *
+ * @param alg The name of the hash algorithm.
+ * @return char* The OpenSSL name of the hash algorithm.
+ */
+const char *to_openssl_alg(const char *alg);
 
 /**
  * @brief Get the size of the hash type.
