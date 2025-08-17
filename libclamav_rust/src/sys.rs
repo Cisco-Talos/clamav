@@ -301,66 +301,15 @@ extern "C" {
     #[doc = " @brief Get the Functionality Level (FLEVEL).\n\n @return unsigned int The FLEVEL."]
     pub fn cl_retflevel() -> ::std::os::raw::c_uint;
 }
-pub type fmap_t = cl_fmap_t;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
-pub struct cl_fmap {
-    pub handle: *mut ::std::os::raw::c_void,
-    pub pread_cb: clcb_pread,
-    pub data: *const ::std::os::raw::c_void,
-    pub mtime: u64,
-    pub pages: u64,
-    pub pgsz: u64,
-    pub paged: u64,
-    pub aging: bool,
-    #[doc = " Indicates if we should age off memory mapped pages"]
-    pub dont_cache_flag: bool,
-    #[doc = " Indicates if we should not cache scan results for this fmap. Used if limits exceeded"]
-    pub handle_is_fd: bool,
-    #[doc = " Non-zero if `map->handle` is an fd. This is needed so that `fmap_fd()` knows if it can\nreturn a file descriptor. If it's some other kind of handle, then `fmap_fd()` has to return -1."]
-    pub offset: usize,
-    #[doc = " File offset representing start of original fmap, if the fmap created reading from a file starting at offset other than 0.\n`offset` & `len` are critical information for anyone using the file descriptor/handle"]
-    pub nested_offset: usize,
-    #[doc = " Offset from start of original fmap (data) for nested scan. 0 for orig fmap."]
-    pub real_len: usize,
-    #[doc = " Length from start of original fmap (data) to end of current (possibly nested) map.\n`real_len == nested_offset + len`.\n`real_len` is needed for nested maps because we only reference the original mapping data.\nWe convert caller's fmap offsets & lengths to real data offsets using `nested_offset` & `real_len`."]
-    pub len: usize,
-    #[doc = " Length of data from nested_offset, accessible via current fmap"]
-    pub unmap: ::std::option::Option<unsafe extern "C" fn(arg1: *mut fmap_t)>,
-    pub need: ::std::option::Option<
-        unsafe extern "C" fn(
-            arg1: *mut fmap_t,
-            at: usize,
-            len: usize,
-            lock: ::std::os::raw::c_int,
-        ) -> *const ::std::os::raw::c_void,
-    >,
-    pub need_offstr: ::std::option::Option<
-        unsafe extern "C" fn(
-            arg1: *mut fmap_t,
-            at: usize,
-            len_hint: usize,
-        ) -> *const ::std::os::raw::c_void,
-    >,
-    pub gets: ::std::option::Option<
-        unsafe extern "C" fn(
-            arg1: *mut fmap_t,
-            dst: *mut ::std::os::raw::c_char,
-            at: *mut usize,
-            max_len: usize,
-        ) -> *const ::std::os::raw::c_void,
-    >,
-    pub unneed_off:
-        ::std::option::Option<unsafe extern "C" fn(arg1: *mut fmap_t, at: usize, len: usize)>,
-    pub windows_file_handle: *mut ::std::os::raw::c_void,
-    pub windows_map_handle: *mut ::std::os::raw::c_void,
-    pub will_need_hash: [bool; 3usize],
-    pub have_hash: [bool; 3usize],
-    pub hash: [[u8; 32usize]; 3usize],
-    pub bitmap: *mut u64,
-    pub name: *mut ::std::os::raw::c_char,
-    pub path: *mut ::std::os::raw::c_char,
+pub struct image_fuzzy_hash {
+    pub hash: [u8; 8usize],
 }
+pub type image_fuzzy_hash_t = image_fuzzy_hash;
+pub type evidence_t = *mut ::std::os::raw::c_void;
+pub type onedump_t = *mut ::std::os::raw::c_void;
+pub type cvd_t = *mut ::std::os::raw::c_void;
 pub const cli_file_CL_TYPE_ANY: cli_file = 0;
 pub const cli_file_CL_TYPE_TEXT_ASCII: cli_file = 500;
 pub const cli_file_CL_TYPE_TEXT_UTF8: cli_file = 501;
@@ -468,15 +417,6 @@ pub struct cli_ftype {
 pub struct json_object {
     _unused: [u8; 0],
 }
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct image_fuzzy_hash {
-    pub hash: [u8; 8usize],
-}
-pub type image_fuzzy_hash_t = image_fuzzy_hash;
-pub type evidence_t = *mut ::std::os::raw::c_void;
-pub type onedump_t = *mut ::std::os::raw::c_void;
-pub type cvd_t = *mut ::std::os::raw::c_void;
 pub type mpool_t = ::std::os::raw::c_void;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -492,6 +432,66 @@ pub struct cli_dconf {
     pub bytecode: u32,
     pub stats: u32,
     pub pcre: u32,
+}
+pub type fmap_t = cl_fmap_t;
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct cl_fmap {
+    pub handle: *mut ::std::os::raw::c_void,
+    pub pread_cb: clcb_pread,
+    pub data: *const ::std::os::raw::c_void,
+    pub mtime: u64,
+    pub pages: u64,
+    pub pgsz: u64,
+    pub paged: u64,
+    pub aging: bool,
+    #[doc = " Indicates if we should age off memory mapped pages"]
+    pub dont_cache_flag: bool,
+    #[doc = " Indicates if we should not cache scan results for this fmap. Used if limits exceeded"]
+    pub handle_is_fd: bool,
+    #[doc = " Non-zero if `map->handle` is an fd. This is needed so that `fmap_fd()` knows if it can\nreturn a file descriptor. If it's some other kind of handle, then `fmap_fd()` has to return -1."]
+    pub offset: usize,
+    #[doc = " File offset representing start of original fmap, if the fmap created reading from a file starting at offset other than 0.\n`offset` & `len` are critical information for anyone using the file descriptor/handle"]
+    pub nested_offset: usize,
+    #[doc = " Offset from start of original fmap (data) for nested scan. 0 for orig fmap."]
+    pub real_len: usize,
+    #[doc = " Length from start of original fmap (data) to end of current (possibly nested) map.\n`real_len == nested_offset + len`.\n`real_len` is needed for nested maps because we only reference the original mapping data.\nWe convert caller's fmap offsets & lengths to real data offsets using `nested_offset` & `real_len`."]
+    pub len: usize,
+    #[doc = " Length of data from nested_offset, accessible via current fmap"]
+    pub unmap: ::std::option::Option<unsafe extern "C" fn(arg1: *mut fmap_t)>,
+    pub need: ::std::option::Option<
+        unsafe extern "C" fn(
+            arg1: *mut fmap_t,
+            at: usize,
+            len: usize,
+            lock: ::std::os::raw::c_int,
+        ) -> *const ::std::os::raw::c_void,
+    >,
+    pub need_offstr: ::std::option::Option<
+        unsafe extern "C" fn(
+            arg1: *mut fmap_t,
+            at: usize,
+            len_hint: usize,
+        ) -> *const ::std::os::raw::c_void,
+    >,
+    pub gets: ::std::option::Option<
+        unsafe extern "C" fn(
+            arg1: *mut fmap_t,
+            dst: *mut ::std::os::raw::c_char,
+            at: *mut usize,
+            max_len: usize,
+        ) -> *const ::std::os::raw::c_void,
+    >,
+    pub unneed_off:
+        ::std::option::Option<unsafe extern "C" fn(arg1: *mut fmap_t, at: usize, len: usize)>,
+    pub windows_file_handle: *mut ::std::os::raw::c_void,
+    pub windows_map_handle: *mut ::std::os::raw::c_void,
+    pub will_need_hash: [bool; 3usize],
+    pub have_hash: [bool; 3usize],
+    pub hash: [[u8; 32usize]; 3usize],
+    pub bitmap: *mut u64,
+    pub name: *mut ::std::os::raw::c_char,
+    pub path: *mut ::std::os::raw::c_char,
 }
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
