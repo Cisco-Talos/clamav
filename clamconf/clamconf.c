@@ -228,7 +228,7 @@ static void print_platform(struct cli_environment *env)
 
     printf("OS: " TARGET_OS_TYPE ", ARCH: " TARGET_ARCH_TYPE ", CPU: " TARGET_CPU_TYPE "\n");
 
-#ifdef C_LINUX
+#if defined(C_LINUX) || defined(C_GNU_HURD)
     if (!access("/usr/bin/lsb_release", X_OK)) {
         fputs("Full OS version: ", stdout);
         fflush(stdout);
