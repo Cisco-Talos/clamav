@@ -51,7 +51,7 @@
 #include <syslog.h>
 #endif
 
-#ifdef C_LINUX
+#if defined(C_LINUX) || defined(__GLIBC__)
 #include <sys/resource.h>
 #endif
 
@@ -150,7 +150,7 @@ int main(int argc, char **argv)
     struct sigaction sa;
     int dropPrivRet = 0;
 #endif
-#if defined(C_LINUX) || (defined(RLIMIT_DATA) && defined(C_BSD))
+#if defined(C_LINUX) || defined(__GLIBC__) || (defined(RLIMIT_DATA) && defined(C_BSD))
     struct rlimit rlim;
 #endif
     time_t currtime;
@@ -201,7 +201,7 @@ int main(int argc, char **argv)
     }
 
     if (optget(opts, "debug")->enabled) {
-#if defined(C_LINUX)
+#if defined(C_LINUX) || defined(__GLIBC__)
         /* njh@bandsman.co.uk: create a dump if needed */
         rlim.rlim_cur = rlim.rlim_max = RLIM_INFINITY;
         if (setrlimit(RLIMIT_CORE, &rlim) < 0)
