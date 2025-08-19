@@ -7,7 +7,7 @@
 install(DIRECTORY DESTINATION ${CVD_CERTS_DIRECTORY} COMPONENT programs)
 install(
     FILES
-        ${CMAKE_CURRENT_SOURCE_DIR}/clamav-beta.crt
+        ${CMAKE_CURRENT_SOURCE_DIR}/clamav.crt
     DESTINATION
         ${CVD_CERTS_DIRECTORY}
     COMPONENT programs)
