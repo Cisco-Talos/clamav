@@ -146,7 +146,7 @@ int cli_scandmg(cli_ctx *ctx)
     }
 
     /* Create temp folder for contents */
-    if (!(dirname = cli_gentemp_with_prefix(ctx->sub_tmpdir, "dmg-tmp"))) {
+    if (!(dirname = cli_gentemp_with_prefix(ctx->this_layer_tmpdir, "dmg-tmp"))) {
         return CL_ETMPDIR;
     }
     if (mkdir(dirname, 0700)) {

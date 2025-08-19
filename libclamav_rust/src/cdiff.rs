@@ -469,7 +469,7 @@ pub extern "C" fn _script2cdiff(
 /// Convert a plaintext script file of cdiff commands into a cdiff formatted file
 ///
 /// This function makes a single C call to cli_getdsig to obtain a signed
-/// signature from the sha256 of the contents written.
+/// signature from the sha2-256 of the contents written.
 ///
 /// This function will panic if any of the &str parameters contain interior NUL bytes
 pub fn script2cdiff(script_file_name: &str, builder: &str, server: &str) -> Result<(), Error> {
@@ -547,7 +547,7 @@ pub fn script2cdiff(script_file_name: &str, builder: &str, server: &str) -> Resu
     // TODO: Do this while the file is being written
     let bytes = std::fs::read(&cdiff_file_name)
         .map_err(|e| Error::FileRead(cdiff_file_name.to_owned(), e))?;
-    let sha256 = {
+    let sha2_256 = {
         let mut hasher = Sha256::new();
         hasher.update(&bytes);
         hasher.finalize()
@@ -560,7 +560,7 @@ pub fn script2cdiff(script_file_name: &str, builder: &str, server: &str) -> Resu
         let dsig_ptr = sys::cli_getdsig(
             server.as_c_str().as_ptr() as *const c_char,
             builder.as_c_str().as_ptr() as *const c_char,
-            sha256.to_vec().as_ptr(),
+            sha2_256.to_vec().as_ptr(),
             32,
             2,
         );
@@ -635,7 +635,7 @@ pub unsafe extern "C" fn _cdiff_apply(
 /// after the last ':' in the header and before the first ':' in the footer. The
 /// body consists of cdiff commands.
 ///
-/// A cdiff file contains a footer that is the signed signature of the sha256
+/// A cdiff file contains a footer that is the signed signature of the sha2-256
 /// file contains of the header and the body. The footer begins after the first
 /// ':' character to the left of EOF.
 pub fn cdiff_apply(
@@ -695,9 +695,9 @@ pub fn cdiff_apply(
 
                 // The SHA is calculated from the contents of the beginning of the file
                 // up until the ':' before the dsig at the end of the file.
-                let sha256 = get_hash(&mut file, footer_offset)?;
+                let sha2_256 = get_hash(&mut file, footer_offset)?;
 
-                debug!("cdiff_apply: sha256: {}", hex::encode(sha256));
+                debug!("cdiff_apply: sha2-256: {}", hex::encode(sha2_256));
 
                 // cli_versig2 will expect dsig to be a null-terminated string
                 let dsig_cstring = CString::new(dsig)?;
@@ -707,7 +707,7 @@ pub fn cdiff_apply(
                 let e = CString::new(PUBLIC_KEY_EXPONENT).unwrap();
                 let versig_result = unsafe {
                     sys::cli_versig2(
-                        sha256.to_vec().as_ptr(),
+                        sha2_256.to_vec().as_ptr(),
                         dsig_cstring.as_ptr(),
                         n.as_ptr() as *const c_char,
                         e.as_ptr() as *const c_char,
@@ -1308,7 +1308,7 @@ fn read_size(file: &mut File) -> Result<(u32, usize), HeaderError> {
     Err(HeaderError::TooFewFields)
 }
 
-/// Calculate the sha256 of the first len bytes of a file
+/// Calculate the sha2-256 of the first len bytes of a file
 fn get_hash(file: &mut File, len: usize) -> Result<[u8; 32], Error> {
     let mut hasher = Sha256::new();
 

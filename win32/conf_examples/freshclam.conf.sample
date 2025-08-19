@@ -22,6 +22,12 @@ Example
 # Default: "certs"
 #CVDCertsDirectory "C:\Program Files\ClamAV\certs"
 
+# Enforce FIPS-like limits on using hash algorithms for cryptographic purposes.
+# Will disable MD5 & SHA1 FP sigs and will require '.sign' files to verify
+# CVD authenticity.
+# Default: no
+#FIPSCryptoHashLimits yes
+
 # Path to the log file (make sure it has proper permissions)
 # Default: disabled
 #UpdateLogFile "C:\Program Files\ClamAV\freshclam.log"

@@ -78,7 +78,7 @@ char *strptime(const char *buf, const char *fmt, struct tm *tm);
     }                                                                       \
     __except (filter_memcpy(GetExceptionCode(), GetExceptionInformation())) \
     {                                                                       \
-        winres = 1;                                                         \
+        win_exception = true;                                               \
     }
 #else
 #define EXCEPTION_PREAMBLE
@@ -151,6 +151,8 @@ int cl_initialize_crypto(void)
 /**
  * @brief This is a deprecated function that used to clean up ssl crypto inits
  *
+ * @deprecated This function is deprecated and will be removed in a future release.
+ *
  * Call to EVP_cleanup() has been removed since cleanup is now handled by
  * auto-deinit as of openssl 1.0.2h and 1.1.0
  *
@@ -160,37 +162,627 @@ void cl_cleanup_crypto(void)
     return;
 }
 
+/**
+ * @brief Generate a hash of data.
+ *
+ * @param alg               The hashing algorithm to use.
+ *                          Suggested "alg" names include "md5", "sha1", "sha2-256", "sha2-384", and "sha2-512".
+ *                          But the underlying hashing library is OpenSSL and you might be able to use
+ *                          other algorithms supported by OpenSSL's EVP_get_digestbyname() function.
+ *                          Note: For the `cl_scan*` functions (above) the supported algorithms are
+ *                                presently limited to "md5", "sha1", "sha2-256".
+ * @param data              The data to be hashed.
+ * @param data_len          The length of the to-be-hashed data.
+ * @param[inout] hash       A buffer to store the generated hash.
+ *                          Set flags to CL_HASH_FLAG_ALLOCATE to dynamically allocate buffer.
+ * @param[inout] hash_len   A pointer that stores how long the generated hash is.
+ * @param flags             Flags to modify the behavior of the hashing function.
+ *                          Use CL_HASH_FLAG_ALLOCATE to dynamically allocate the output buffer.
+ *                          Use CL_HASH_FLAG_FIPS_BYPASS to bypass FIPS restrictions on which algorithms can be used.
+ *
+ * @return cl_error_t       CL_SUCCESS if the hash was generated successfully.
+ *                          CL_E* error code if an error occurred.
+ */
+extern cl_error_t cl_hash_data_ex(
+    const char *alg,
+    const uint8_t *data,
+    size_t data_len,
+    uint8_t **hash,
+    size_t *hash_len,
+    uint32_t flags)
+{
+    cl_error_t status = CL_ERROR;
+
+    EVP_MD_CTX *ctx = NULL;
+
+#if OPENSSL_VERSION_MAJOR >= 3
+    EVP_MD *md = NULL;
+#else
+    const EVP_MD *md = NULL;
+#endif
+
+    size_t required_hash_len;
+    uint8_t *new_hash = NULL;
+    unsigned int hash_len_final;
+
+    size_t cur;
+    bool win_exception = false;
+
+    if (NULL == alg || NULL == data || NULL == hash || NULL == hash_len) {
+        cli_errmsg("cl_hash_data_ex: Invalid arguments\n");
+        status = CL_ENULLARG;
+        goto done;
+    }
+
+#if OPENSSL_VERSION_MAJOR >= 3
+    if (flags & CL_HASH_FLAG_FIPS_BYPASS) {
+        /* Bypass FIPS restrictions the OpenSSL 3.0 way */
+        md = EVP_MD_fetch(NULL, to_openssl_alg(alg), "-fips");
+    } else {
+        /* Use FIPS compliant algorithms */
+        md = EVP_MD_fetch(NULL, to_openssl_alg(alg), NULL);
+    }
+#else
+    md = EVP_get_digestbyname(to_openssl_alg(alg));
+#endif
+    if (NULL == md) {
+        cli_errmsg("cl_hash_data_ex: Unsupported hash algorithm: %s\n", alg);
+        status = CL_EARG;
+        goto done;
+    }
+
+    required_hash_len = (size_t)EVP_MD_size(md);
+
+    if (flags & CL_HASH_FLAG_ALLOCATE) {
+        new_hash = (uint8_t *)malloc(required_hash_len);
+        if (new_hash == NULL) {
+            cli_errmsg("cl_hash_data_ex: Failed to allocate memory for hash\n");
+            status = CL_EMEM;
+            goto done;
+        }
+    } else {
+        if (*hash_len < required_hash_len) {
+            cli_errmsg("cl_hash_data_ex: Provided hash buffer for '%s' is too small. Provided bytes: %zu, Required bytes: %zu\n", alg, *hash_len, required_hash_len);
+            status = CL_EARG;
+            goto done;
+        }
+        new_hash = *hash;
+    }
+
+    ctx = EVP_MD_CTX_new();
+    if (NULL == ctx) {
+        cli_errmsg("cl_hash_data_ex: Failed to create EVP_MD_CTX\n");
+        status = CL_EMEM;
+        goto done;
+    }
+
+#ifdef EVP_MD_CTX_FLAG_NON_FIPS_ALLOW
+    if (flags & CL_HASH_FLAG_FIPS_BYPASS && OPENSSL_VERSION_NUMBER < 0x30000000L) {
+        /* Bypass FIPS restrictions the OpenSSL 1.x way */
+        EVP_MD_CTX_set_flags(ctx, EVP_MD_CTX_FLAG_NON_FIPS_ALLOW);
+    }
+#endif
+
+    if (!EVP_DigestInit_ex(ctx, md, NULL)) {
+        cli_errmsg("cl_hash_data_ex: Failed to initialize digest context\n");
+        status = CL_EMEM;
+        goto done;
+    }
+
+    cur = 0;
+    while (cur < data_len) {
+        size_t todo = MIN(
+            (size_t)EVP_MD_block_size(md),
+            data_len - cur);
+
+        EXCEPTION_PREAMBLE
+        if (!EVP_DigestUpdate(ctx, (const void *)(data + cur), todo)) {
+            cli_errmsg("cl_hash_data_ex: Failed to update digest context\n");
+            status = CL_EMEM;
+            goto done;
+        }
+        EXCEPTION_POSTAMBLE
+
+        if (win_exception) {
+            cli_errmsg("cl_hash_data_ex: Exception occurred during hashing\n");
+            status = CL_ERROR;
+            goto done;
+        }
+
+        cur += todo;
+    }
+
+    if (!EVP_DigestFinal_ex(ctx, new_hash, &hash_len_final)) {
+        cli_errmsg("cl_hash_data_ex: Failed to finalize digest context\n");
+        status = CL_EMEM;
+        goto done;
+    }
+
+    if (flags & CL_HASH_FLAG_ALLOCATE) {
+        // give up ownership of the new hash buffer
+        *hash    = new_hash;
+        new_hash = NULL;
+    }
+    *hash_len = hash_len_final;
+
+    status = CL_SUCCESS;
+
+done:
+    if (NULL != new_hash) {
+        free(new_hash);
+    }
+    if (NULL != ctx) {
+        EVP_MD_CTX_free(ctx);
+    }
+#if OPENSSL_VERSION_MAJOR >= 3
+    if (NULL != md) {
+        EVP_MD_free(md);
+    }
+#endif
+    return status;
+}
+
+/**
+ * @brief Initialize a hash context.
+ *
+ * @param alg               The hash algorithm to use.
+ * @param flags             Flags to modify the behavior of the hashing function.
+ *                          Use CL_HASH_FLAG_FIPS_BYPASS to bypass FIPS restrictions on which algorithms can be used.
+ * @param ctx_out           A pointer to a pointer that will receive the initialized hash context.
+ *                          The caller is responsible for freeing this context using cl_hash_destroy_ex().
+ * @return cl_error_t       CL_SUCCESS if the hash context was successfully initialized.
+ */
+extern cl_error_t cl_hash_init_ex(
+    const char *alg,
+    uint32_t flags,
+    cl_hash_ctx_t **ctx_out)
+{
+    cl_error_t status = CL_ERROR;
+    EVP_MD_CTX *ctx   = NULL;
+
+#if OPENSSL_VERSION_MAJOR >= 3
+    EVP_MD *md = NULL;
+#else
+    const EVP_MD *md = NULL;
+#endif
+
+    if (NULL == alg || NULL == ctx_out) {
+        cli_errmsg("cl_hash_init_ex: Invalid arguments\n");
+        status = CL_ENULLARG;
+        goto done;
+    }
+
+#if OPENSSL_VERSION_MAJOR >= 3
+    if (flags & CL_HASH_FLAG_FIPS_BYPASS) {
+        /* Bypass FIPS restrictions the OpenSSL 3.0 way */
+        md = EVP_MD_fetch(NULL, to_openssl_alg(alg), "-fips");
+    } else {
+        /* Use FIPS compliant algorithms */
+        md = EVP_MD_fetch(NULL, to_openssl_alg(alg), NULL);
+    }
+#else
+    md = EVP_get_digestbyname(to_openssl_alg(alg));
+#endif
+    if (NULL == md) {
+        cli_errmsg("cl_hash_data_ex: Unsupported hash algorithm: %s\n", alg);
+        status = CL_EARG;
+        goto done;
+    }
+
+    ctx = EVP_MD_CTX_new();
+    if (NULL == ctx) {
+        cli_errmsg("cl_hash_init_ex: Failed to create EVP_MD_CTX\n");
+        status = CL_EMEM;
+        goto done;
+    }
+
+#ifdef EVP_MD_CTX_FLAG_NON_FIPS_ALLOW
+    if (flags & CL_HASH_FLAG_FIPS_BYPASS && OPENSSL_VERSION_NUMBER < 0x30000000L) {
+        /* Bypass FIPS restrictions the OpenSSL 1.x way */
+        EVP_MD_CTX_set_flags(ctx, EVP_MD_CTX_FLAG_NON_FIPS_ALLOW);
+    }
+#endif
+
+    if (!EVP_DigestInit_ex(ctx, md, NULL)) {
+        cli_errmsg("cl_hash_init_ex: Failed to initialize digest context\n");
+        status = CL_EMEM;
+        goto done;
+    }
+
+    *ctx_out = (cl_hash_ctx_t *)ctx;
+    ctx      = NULL; // Ownership of ctx is transferred to the caller
+
+    status = CL_SUCCESS;
+
+done:
+    if (NULL != ctx) {
+        EVP_MD_CTX_free(ctx);
+    }
+#if OPENSSL_VERSION_MAJOR >= 3
+    if (NULL != md) {
+        EVP_MD_free(md);
+    }
+#endif
+    return status;
+}
+
+/**
+ * @brief Update a hash context with new data.
+ *
+ * @param ctx               The hash context.
+ * @param data              The data to hash.
+ * @param length            The size of the data.
+ * @return cl_error_t       CL_SUCCESS if the data was successfully added to the hash context.
+ *                          CL_E* error code if an error occurred.
+ */
+extern cl_error_t cl_update_hash_ex(
+    cl_hash_ctx_t *ctx,
+    const uint8_t *data,
+    size_t length)
+{
+    cl_error_t status  = CL_ERROR;
+    bool win_exception = false;
+
+    if (NULL == ctx || NULL == data || length == 0) {
+        cli_errmsg("cl_update_hash_ex: Invalid arguments\n");
+        status = CL_ENULLARG;
+        goto done;
+    }
+
+    EXCEPTION_PREAMBLE
+    if (!EVP_DigestUpdate((EVP_MD_CTX *)ctx, data, length)) {
+        cli_errmsg("cl_update_hash_ex: Failed to update digest context\n");
+        status = CL_EMEM;
+        goto done;
+    }
+    EXCEPTION_POSTAMBLE
+
+    if (win_exception) {
+        cli_errmsg("cl_update_hash_ex: Exception occurred during hashing\n");
+        status = CL_ERROR;
+        goto done;
+    }
+
+done:
+    return status;
+}
+
+/**
+ * @brief Finalize a hash context and get the resulting hash.
+ *
+ * @param ctx               The hash context.
+ * @param[inout] hash       A buffer to store the generated hash.
+ *                          Set flags to CL_HASH_FLAG_ALLOCATE to dynamically allocate buffer.
+ * @param[inout] hash_len   A pointer that stores how long the generated hash is.
+ * @param flags             Flags to modify the behavior of the hashing function.
+ *                          Use CL_HASH_FLAG_ALLOCATE to dynamically allocate the output buffer.
+ *
+ * @return cl_error_t       CL_SUCCESS if the hash was successfully finalized.
+ *                          CL_E* error code if an error occurred.
+ */
+extern cl_error_t cl_finish_hash_ex(
+    cl_hash_ctx_t *ctx,
+    uint8_t **hash,
+    size_t *hash_len,
+    uint32_t flags)
+{
+    cl_error_t status = CL_ERROR;
+
+    size_t required_hash_len;
+    uint8_t *new_hash = NULL;
+    unsigned int hash_len_final;
+
+    if (NULL == ctx || NULL == hash || NULL == hash_len) {
+        cli_errmsg("cl_finish_hash_ex: Invalid arguments\n");
+        status = CL_ENULLARG;
+        goto done;
+    }
+
+    required_hash_len = (size_t)EVP_MD_CTX_size((EVP_MD_CTX *)ctx);
+
+    if (flags & CL_HASH_FLAG_ALLOCATE) {
+        new_hash = (uint8_t *)malloc(required_hash_len);
+        if (new_hash == NULL) {
+            cli_errmsg("cl_hash_data_ex: Failed to allocate memory for hash\n");
+            status = CL_EMEM;
+            goto done;
+        }
+    } else {
+        if (*hash_len < required_hash_len) {
+            cli_errmsg("cl_hash_data_ex: Provided hash buffer is too small. Provided bytes: %zu, Required bytes: %zu\n", *hash_len, required_hash_len);
+            status = CL_EARG;
+            goto done;
+        }
+        new_hash = *hash;
+    }
+
+    if (!EVP_DigestFinal_ex((EVP_MD_CTX *)ctx, new_hash, &hash_len_final)) {
+        cli_errmsg("cl_hash_data_ex: Failed to finalize digest context\n");
+        status = CL_EMEM;
+        goto done;
+    }
+
+    if (flags & CL_HASH_FLAG_ALLOCATE) {
+        // give up ownership of the new hash buffer
+        *hash    = new_hash;
+        new_hash = NULL;
+    }
+    *hash_len = hash_len_final;
+
+    status = CL_SUCCESS;
+
+done:
+    if (NULL != ctx) {
+        EVP_MD_CTX_free((EVP_MD_CTX *)ctx);
+    }
+    return status;
+}
+
+/**
+ * @brief Destroy a hash context.
+ *
+ * @param ctx   The hash context.
+ */
+extern void cl_hash_destroy_ex(cl_hash_ctx_t *ctx)
+{
+    if (ctx) {
+        EVP_MD_CTX_free((EVP_MD_CTX *)ctx);
+    }
+}
+
+/**
+ * @brief Generate a hash of a file.
+ *
+ * @param alg               The hashing algorithm to use.
+ * @param fd                The file descriptor.
+ * @param offset            The offset in the file to start hashing from.
+ * @param length            The length of the data to hash. If 0, the entire file will be hashed.
+ * @param[inout] hash       A buffer to store the generated hash.
+ *                          Set flags to CL_HASH_FLAG_ALLOCATE to dynamically allocate buffer.
+ * @param[inout] hash_len   A pointer that stores how long the generated hash is.
+ * @param flags             Flags to modify the behavior of the hashing function.
+ *                          Use CL_HASH_FLAG_ALLOCATE to dynamically allocate the output buffer.
+ *                          Use CL_HASH_FLAG_FIPS_BYPASS to bypass FIPS restrictions on which algorithms can be used.
+ *
+ * @return cl_error_t       CL_SUCCESS if the hash was generated successfully.
+ */
+extern cl_error_t cl_hash_file_fd_ex(
+    const char *alg,
+    int fd,
+    size_t offset,
+    size_t length,
+    uint8_t **hash,
+    size_t *hash_len,
+    uint32_t flags)
+{
+    cl_error_t status = CL_ERROR;
+
+    STATBUF sb;
+
+    EVP_MD_CTX *ctx = NULL;
+
+#if OPENSSL_VERSION_MAJOR >= 3
+    EVP_MD *md = NULL;
+#else
+    const EVP_MD *md = NULL;
+#endif
+
+    size_t required_hash_len;
+    uint8_t *new_hash = NULL;
+    unsigned int hash_len_final;
+
+    bool win_exception = false;
+
+    uint8_t *block = NULL;
+
+#ifdef _WIN32
+    unsigned int blocksize = 8192;
+    int nread;
+#else
+    size_t blocksize;
+    ssize_t nread;
+#endif
+    size_t byte_read = 0;
+
+    if (NULL == alg || -1 == fd || NULL == hash || NULL == hash_len) {
+        cli_errmsg("cl_hash_data_ex: Invalid arguments\n");
+        status = CL_ENULLARG;
+        goto done;
+    }
+
+#ifndef _WIN32
+    if (fstat(fd, &sb) < 0) {
+        cli_errmsg("cl_hash_data_ex: Failed to stat file descriptor %d: %s\n", fd, cl_strerror(CL_ESTAT));
+        status = CL_ESTAT;
+        goto done;
+    }
+
+    blocksize = sb.st_blksize;
+#endif
+
+    block = (uint8_t *)malloc(blocksize);
+    if (NULL == block) {
+        cli_errmsg("cl_hash_data_ex: Failed to allocate memory for block buffer\n");
+        status = CL_EMEM;
+        goto done;
+    }
+
+#if OPENSSL_VERSION_MAJOR >= 3
+    if (flags & CL_HASH_FLAG_FIPS_BYPASS) {
+        /* Bypass FIPS restrictions the OpenSSL 3.0 way */
+        md = EVP_MD_fetch(NULL, to_openssl_alg(alg), "-fips");
+    } else {
+        /* Use FIPS compliant algorithms */
+        md = EVP_MD_fetch(NULL, to_openssl_alg(alg), NULL);
+    }
+#else
+    md = EVP_get_digestbyname(to_openssl_alg(alg));
+#endif
+    if (NULL == md) {
+        cli_errmsg("cl_hash_data_ex: Unsupported hash algorithm: %s\n", alg);
+        status = CL_EARG;
+        goto done;
+    }
+
+    required_hash_len = (size_t)EVP_MD_size(md);
+
+    if (flags & CL_HASH_FLAG_ALLOCATE) {
+        new_hash = (uint8_t *)malloc(required_hash_len);
+        if (new_hash == NULL) {
+            cli_errmsg("cl_hash_data_ex: Failed to allocate memory for hash\n");
+            status = CL_EMEM;
+            goto done;
+        }
+    } else {
+        if (*hash_len < required_hash_len) {
+            cli_errmsg("cl_hash_data_ex: Provided hash buffer for '%s' is too small. Provided bytes: %zu, Required bytes: %zu\n", alg, *hash_len, required_hash_len);
+            status = CL_EARG;
+            goto done;
+        }
+        new_hash = *hash;
+    }
+
+    ctx = EVP_MD_CTX_new();
+    if (NULL == ctx) {
+        cli_errmsg("cl_hash_data_ex: Failed to create EVP_MD_CTX\n");
+        status = CL_EMEM;
+        goto done;
+    }
+
+#ifdef EVP_MD_CTX_FLAG_NON_FIPS_ALLOW
+    if (flags & CL_HASH_FLAG_FIPS_BYPASS && OPENSSL_VERSION_NUMBER < 0x30000000L) {
+        /* Bypass FIPS restrictions the OpenSSL 1.x way */
+        EVP_MD_CTX_set_flags(ctx, EVP_MD_CTX_FLAG_NON_FIPS_ALLOW);
+    }
+#endif
+
+    if (!EVP_DigestInit_ex(ctx, md, NULL)) {
+        cli_errmsg("cl_hash_data_ex: Failed to initialize digest context\n");
+        status = CL_EMEM;
+        goto done;
+    }
+
+    if (lseek(fd, offset, SEEK_SET) == (off_t)-1) {
+        cli_errmsg("cl_hash_data_ex: Failed to seek to offset %zu: %s\n", offset, cl_strerror(CL_ESEEK));
+        status = CL_ESEEK;
+        goto done;
+    }
+
+    do {
+        blocksize = MIN(blocksize, length - byte_read);
+
+#ifdef _WIN32
+        nread = _read(fd, block, blocksize);
+#else
+        nread = read(fd, block, blocksize);
+#endif
+        if (nread < 0) {
+            cli_errmsg("cl_hash_data_ex: Failed to read from file descriptor %d: %s\n", fd, cl_strerror(CL_EREAD));
+            status = CL_EREAD;
+            goto done;
+        } else if (nread == 0) {
+            // End of file reached
+            break;
+        }
+
+        byte_read += nread;
+
+        EXCEPTION_PREAMBLE
+        if (!EVP_DigestUpdate(ctx, (const void *)block, nread)) {
+            cli_errmsg("cl_hash_data_ex: Failed to update digest context\n");
+            status = CL_EMEM;
+            goto done;
+        }
+        EXCEPTION_POSTAMBLE
+
+        if (win_exception) {
+            cli_errmsg("cl_hash_data_ex: Exception occurred during hashing\n");
+            status = CL_ERROR;
+            goto done;
+        }
+    } while (true);
+
+    if (!EVP_DigestFinal_ex(ctx, new_hash, &hash_len_final)) {
+        cli_errmsg("cl_hash_data_ex: Failed to finalize digest context\n");
+        status = CL_EMEM;
+        goto done;
+    }
+
+    if (flags & CL_HASH_FLAG_ALLOCATE) {
+        // give up ownership of the new hash buffer
+        *hash    = new_hash;
+        new_hash = NULL;
+    }
+    *hash_len = hash_len_final;
+
+    status = CL_SUCCESS;
+
+done:
+    if (NULL != new_hash) {
+        free(new_hash);
+    }
+    if (NULL != ctx) {
+        EVP_MD_CTX_free(ctx);
+    }
+#if OPENSSL_VERSION_MAJOR >= 3
+    if (NULL != md) {
+        EVP_MD_free(md);
+    }
+#endif
+    return status;
+}
+
 unsigned char *cl_hash_data(const char *alg, const void *buf, size_t len, unsigned char *obuf, unsigned int *olen)
 {
     EVP_MD_CTX *ctx;
     unsigned char *ret;
     size_t mdsz;
-    const EVP_MD *md;
+
+#if OPENSSL_VERSION_MAJOR >= 3
+    EVP_MD *md = NULL;
+#else
+    const EVP_MD *md = NULL;
+#endif
+
     unsigned int i;
     size_t cur;
-    int winres = 0;
+    bool win_exception = false;
 
-    md = EVP_get_digestbyname(alg);
+#if OPENSSL_VERSION_MAJOR >= 3
+    /* Bypass FIPS restrictions the OpenSSL 3.0 way */
+    md = EVP_MD_fetch(NULL, to_openssl_alg(alg), "-fips");
+#else
+    md = EVP_get_digestbyname(to_openssl_alg(alg));
+#endif
     if (!(md))
         return NULL;
 
     mdsz = EVP_MD_size(md);
 
     ret = (obuf != NULL) ? obuf : (unsigned char *)malloc(mdsz);
-    if (!(ret))
+    if (!(ret)) {
+#if OPENSSL_VERSION_MAJOR >= 3
+        EVP_MD_free(md);
+#endif
         return NULL;
+    }
 
     ctx = EVP_MD_CTX_create();
     if (!(ctx)) {
         if (!(obuf))
             free(ret);
 
+#if OPENSSL_VERSION_MAJOR >= 3
+        EVP_MD_free(md);
+#endif
         return NULL;
     }
 
 #ifdef EVP_MD_CTX_FLAG_NON_FIPS_ALLOW
-    /* we will be using MD5, which is not allowed under FIPS */
-    EVP_MD_CTX_set_flags(ctx, EVP_MD_CTX_FLAG_NON_FIPS_ALLOW);
+    if (OPENSSL_VERSION_NUMBER < 0x30000000L) {
+        /* Bypass FIPS restrictions the OpenSSL 1.x way */
+        EVP_MD_CTX_set_flags(ctx, EVP_MD_CTX_FLAG_NON_FIPS_ALLOW);
+    }
 #endif
 
     if (!EVP_DigestInit_ex(ctx, md, NULL)) {
@@ -200,6 +792,9 @@ unsigned char *cl_hash_data(const char *alg, const void *buf, size_t len, unsign
         if ((olen))
             *olen = 0;
 
+#if OPENSSL_VERSION_MAJOR >= 3
+        EVP_MD_free(md);
+#endif
         EVP_MD_CTX_destroy(ctx);
         return NULL;
     }
@@ -216,18 +811,24 @@ unsigned char *cl_hash_data(const char *alg, const void *buf, size_t len, unsign
             if ((olen))
                 *olen = 0;
 
+#if OPENSSL_VERSION_MAJOR >= 3
+            EVP_MD_free(md);
+#endif
             EVP_MD_CTX_destroy(ctx);
             return NULL;
         }
         EXCEPTION_POSTAMBLE
 
-        if (winres) {
+        if (win_exception) {
             if (!(obuf))
                 free(ret);
 
             if ((olen))
                 *olen = 0;
 
+#if OPENSSL_VERSION_MAJOR >= 3
+            EVP_MD_free(md);
+#endif
             EVP_MD_CTX_destroy(ctx);
             return NULL;
         }
@@ -242,10 +843,16 @@ unsigned char *cl_hash_data(const char *alg, const void *buf, size_t len, unsign
         if ((olen))
             *olen = 0;
 
+#if OPENSSL_VERSION_MAJOR >= 3
+        EVP_MD_free(md);
+#endif
         EVP_MD_CTX_destroy(ctx);
         return NULL;
     }
 
+#if OPENSSL_VERSION_MAJOR >= 3
+    EVP_MD_free(md);
+#endif
     EVP_MD_CTX_destroy(ctx);
 
     if ((olen))
@@ -257,41 +864,64 @@ unsigned char *cl_hash_data(const char *alg, const void *buf, size_t len, unsign
 unsigned char *cl_hash_file_fd(int fd, const char *alg, unsigned int *olen)
 {
     EVP_MD_CTX *ctx;
-    const EVP_MD *md;
+
+#if OPENSSL_VERSION_MAJOR >= 3
+    EVP_MD *md = NULL;
+#else
+    const EVP_MD *md = NULL;
+#endif
+
     unsigned char *res;
 
-    md = EVP_get_digestbyname(alg);
+#if OPENSSL_VERSION_MAJOR >= 3
+    /* Bypass FIPS restrictions the OpenSSL 3.0 way */
+    md = EVP_MD_fetch(NULL, to_openssl_alg(alg), "-fips");
+#else
+    md = EVP_get_digestbyname(to_openssl_alg(alg));
+#endif
     if (!(md))
         return NULL;
 
-    ctx = EVP_MD_CTX_create();
-    if (!(ctx))
+    ctx = EVP_MD_CTX_new();
+    if (!(ctx)) {
+#if OPENSSL_VERSION_MAJOR >= 3
+        EVP_MD_free(md);
+#endif
         return NULL;
+    }
 
 #ifdef EVP_MD_CTX_FLAG_NON_FIPS_ALLOW
-    /* we will be using MD5, which is not allowed under FIPS */
-    EVP_MD_CTX_set_flags(ctx, EVP_MD_CTX_FLAG_NON_FIPS_ALLOW);
+    if (OPENSSL_VERSION_NUMBER < 0x30000000L) {
+        /* Bypass FIPS restrictions the OpenSSL 1.x way */
+        EVP_MD_CTX_set_flags(ctx, EVP_MD_CTX_FLAG_NON_FIPS_ALLOW);
+    }
 #endif
 
     if (!EVP_DigestInit_ex(ctx, md, NULL)) {
-        EVP_MD_CTX_destroy(ctx);
+#if OPENSSL_VERSION_MAJOR >= 3
+        EVP_MD_free(md);
+#endif
+        EVP_MD_CTX_free(ctx);
         return NULL;
     }
 
     res = cl_hash_file_fd_ctx(ctx, fd, olen);
-    EVP_MD_CTX_destroy(ctx);
+#if OPENSSL_VERSION_MAJOR >= 3
+    EVP_MD_free(md);
+#endif
+    EVP_MD_CTX_free(ctx);
 
     return res;
 }
 
 unsigned char *cl_hash_file_fd_ctx(EVP_MD_CTX *ctx, int fd, unsigned int *olen)
 {
-    unsigned char *buf;
-    unsigned char *hash;
+    uint8_t *buf;
+    uint8_t *hash;
     int mdsz;
     unsigned int hashlen;
     STATBUF sb;
-    int winres = 0;
+    bool win_exception = false;
 
     unsigned int blocksize;
 
@@ -313,12 +943,12 @@ unsigned char *cl_hash_file_fd_ctx(EVP_MD_CTX *ctx, int fd, unsigned int *olen)
     blocksize = sb.st_blksize;
 #endif
 
-    buf = (unsigned char *)malloc(blocksize);
+    buf = (uint8_t *)malloc(blocksize);
     if (!(buf)) {
         return NULL;
     }
 
-    hash = (unsigned char *)malloc(mdsz);
+    hash = (uint8_t *)malloc(mdsz);
     if (!(hash)) {
         free(buf);
         return NULL;
@@ -338,7 +968,7 @@ unsigned char *cl_hash_file_fd_ctx(EVP_MD_CTX *ctx, int fd, unsigned int *olen)
         }
         EXCEPTION_POSTAMBLE
 
-        if (winres) {
+        if (win_exception) {
             free(buf);
             free(hash);
 
@@ -368,17 +998,17 @@ unsigned char *cl_hash_file_fp(FILE *fp, const char *alg, unsigned int *olen)
 
 unsigned char *cl_sha512(const void *buf, size_t len, unsigned char *obuf, unsigned int *olen)
 {
-    return cl_hash_data("sha512", buf, len, obuf, olen);
+    return cl_hash_data("sha2-512", buf, len, obuf, olen);
 }
 
 unsigned char *cl_sha384(const void *buf, size_t len, unsigned char *obuf, unsigned int *olen)
 {
-    return cl_hash_data("sha384", buf, len, obuf, olen);
+    return cl_hash_data("sha2-384", buf, len, obuf, olen);
 }
 
 unsigned char *cl_sha256(const void *buf, size_t len, unsigned char *obuf, unsigned int *olen)
 {
-    return cl_hash_data("sha256", buf, len, obuf, olen);
+    return cl_hash_data("sha2-256", buf, len, obuf, olen);
 }
 
 unsigned char *cl_sha1(const void *buf, size_t len, unsigned char *obuf, unsigned int *olen)
@@ -392,37 +1022,32 @@ int cl_verify_signature_hash(EVP_PKEY *pkey, const char *alg, unsigned char *sig
     const EVP_MD *md;
     size_t mdsz;
 
-    md = EVP_get_digestbyname(alg);
+    md = EVP_get_digestbyname(to_openssl_alg(alg));
     if (!(md))
         return -1;
 
-    ctx = EVP_MD_CTX_create();
+    ctx = EVP_MD_CTX_new();
     if (!(ctx))
         return -1;
 
     mdsz = EVP_MD_size(md);
 
-#ifdef EVP_MD_CTX_FLAG_NON_FIPS_ALLOW
-    /* we will be using MD5, which is not allowed under FIPS */
-    EVP_MD_CTX_set_flags(ctx, EVP_MD_CTX_FLAG_NON_FIPS_ALLOW);
-#endif
-
     if (!EVP_VerifyInit_ex(ctx, md, NULL)) {
-        EVP_MD_CTX_destroy(ctx);
+        EVP_MD_CTX_free(ctx);
         return -1;
     }
 
     if (!EVP_VerifyUpdate(ctx, digest, mdsz)) {
-        EVP_MD_CTX_destroy(ctx);
+        EVP_MD_CTX_free(ctx);
         return -1;
     }
 
     if (EVP_VerifyFinal(ctx, sig, siglen, pkey) <= 0) {
-        EVP_MD_CTX_destroy(ctx);
+        EVP_MD_CTX_free(ctx);
         return -1;
     }
 
-    EVP_MD_CTX_destroy(ctx);
+    EVP_MD_CTX_free(ctx);
     return 0;
 }
 
@@ -431,13 +1056,13 @@ int cl_verify_signature_fd(EVP_PKEY *pkey, const char *alg, unsigned char *sig, 
     EVP_MD_CTX *ctx;
     const EVP_MD *md;
     size_t mdsz;
-    unsigned char *digest;
+    uint8_t *digest;
 
     digest = cl_hash_file_fd(fd, alg, NULL);
     if (!(digest))
         return -1;
 
-    md = EVP_get_digestbyname(alg);
+    md = EVP_get_digestbyname(to_openssl_alg(alg));
     if (!(md)) {
         free(digest);
         return -1;
@@ -445,37 +1070,32 @@ int cl_verify_signature_fd(EVP_PKEY *pkey, const char *alg, unsigned char *sig, 
 
     mdsz = EVP_MD_size(md);
 
-    ctx = EVP_MD_CTX_create();
+    ctx = EVP_MD_CTX_new();
     if (!(ctx)) {
         free(digest);
         return -1;
     }
 
-#ifdef EVP_MD_CTX_FLAG_NON_FIPS_ALLOW
-    /* we will be using MD5, which is not allowed under FIPS */
-    EVP_MD_CTX_set_flags(ctx, EVP_MD_CTX_FLAG_NON_FIPS_ALLOW);
-#endif
-
     if (!EVP_VerifyInit_ex(ctx, md, NULL)) {
         free(digest);
-        EVP_MD_CTX_destroy(ctx);
+        EVP_MD_CTX_free(ctx);
         return -1;
     }
 
     if (!EVP_VerifyUpdate(ctx, digest, mdsz)) {
         free(digest);
-        EVP_MD_CTX_destroy(ctx);
+        EVP_MD_CTX_free(ctx);
         return -1;
     }
 
     if (EVP_VerifyFinal(ctx, sig, siglen, pkey) <= 0) {
         free(digest);
-        EVP_MD_CTX_destroy(ctx);
+        EVP_MD_CTX_free(ctx);
         return -1;
     }
 
     free(digest);
-    EVP_MD_CTX_destroy(ctx);
+    EVP_MD_CTX_free(ctx);
     return 0;
 }
 
@@ -506,7 +1126,7 @@ int cl_verify_signature(EVP_PKEY *pkey, const char *alg, unsigned char *sig, uns
         return -1;
     }
 
-    md = EVP_get_digestbyname(alg);
+    md = EVP_get_digestbyname(to_openssl_alg(alg));
     if (!(md)) {
         free(digest);
         if (decode)
@@ -517,7 +1137,7 @@ int cl_verify_signature(EVP_PKEY *pkey, const char *alg, unsigned char *sig, uns
 
     mdsz = EVP_MD_size(md);
 
-    ctx = EVP_MD_CTX_create();
+    ctx = EVP_MD_CTX_new();
     if (!(ctx)) {
         free(digest);
         if (decode)
@@ -526,17 +1146,12 @@ int cl_verify_signature(EVP_PKEY *pkey, const char *alg, unsigned char *sig, uns
         return -1;
     }
 
-#ifdef EVP_MD_CTX_FLAG_NON_FIPS_ALLOW
-    /* we will be using MD5, which is not allowed under FIPS */
-    EVP_MD_CTX_set_flags(ctx, EVP_MD_CTX_FLAG_NON_FIPS_ALLOW);
-#endif
-
     if (!EVP_VerifyInit_ex(ctx, md, NULL)) {
         free(digest);
         if (decode)
             free(sig);
 
-        EVP_MD_CTX_destroy(ctx);
+        EVP_MD_CTX_free(ctx);
         return -1;
     }
 
@@ -545,7 +1160,7 @@ int cl_verify_signature(EVP_PKEY *pkey, const char *alg, unsigned char *sig, uns
         if (decode)
             free(sig);
 
-        EVP_MD_CTX_destroy(ctx);
+        EVP_MD_CTX_free(ctx);
         return -1;
     }
 
@@ -554,7 +1169,7 @@ int cl_verify_signature(EVP_PKEY *pkey, const char *alg, unsigned char *sig, uns
         if (decode)
             free(sig);
 
-        EVP_MD_CTX_destroy(ctx);
+        EVP_MD_CTX_free(ctx);
         return -1;
     }
 
@@ -562,7 +1177,7 @@ int cl_verify_signature(EVP_PKEY *pkey, const char *alg, unsigned char *sig, uns
         free(sig);
 
     free(digest);
-    EVP_MD_CTX_destroy(ctx);
+    EVP_MD_CTX_free(ctx);
     return 0;
 }
 
@@ -725,40 +1340,35 @@ unsigned char *cl_sign_data(EVP_PKEY *pkey, const char *alg, unsigned char *hash
     unsigned int siglen;
     unsigned char *sig;
 
-    md = EVP_get_digestbyname(alg);
+    md = EVP_get_digestbyname(to_openssl_alg(alg));
     if (!(md))
         return NULL;
 
-    ctx = EVP_MD_CTX_create();
+    ctx = EVP_MD_CTX_new();
     if (!(ctx))
         return NULL;
 
     sig = (unsigned char *)calloc(1, EVP_PKEY_size(pkey));
     if (!(sig)) {
-        EVP_MD_CTX_destroy(ctx);
+        EVP_MD_CTX_free(ctx);
         return NULL;
     }
 
-#ifdef EVP_MD_CTX_FLAG_NON_FIPS_ALLOW
-    /* we will be using MD5, which is not allowed under FIPS */
-    EVP_MD_CTX_set_flags(ctx, EVP_MD_CTX_FLAG_NON_FIPS_ALLOW);
-#endif
-
     if (!EVP_SignInit_ex(ctx, md, NULL)) {
         free(sig);
-        EVP_MD_CTX_destroy(ctx);
+        EVP_MD_CTX_free(ctx);
         return NULL;
     }
 
     if (!EVP_SignUpdate(ctx, hash, EVP_MD_size(md))) {
         free(sig);
-        EVP_MD_CTX_destroy(ctx);
+        EVP_MD_CTX_free(ctx);
         return NULL;
     }
 
     if (!EVP_SignFinal(ctx, sig, &siglen, pkey)) {
         free(sig);
-        EVP_MD_CTX_destroy(ctx);
+        EVP_MD_CTX_free(ctx);
         return NULL;
     }
 
@@ -766,7 +1376,7 @@ unsigned char *cl_sign_data(EVP_PKEY *pkey, const char *alg, unsigned char *hash
         unsigned char *newsig = (unsigned char *)cl_base64_encode(sig, siglen);
         if (!(newsig)) {
             free(sig);
-            EVP_MD_CTX_destroy(ctx);
+            EVP_MD_CTX_free(ctx);
             return NULL;
         }
 
@@ -776,13 +1386,13 @@ unsigned char *cl_sign_data(EVP_PKEY *pkey, const char *alg, unsigned char *hash
     }
 
     *olen = siglen;
-    EVP_MD_CTX_destroy(ctx);
+    EVP_MD_CTX_free(ctx);
     return sig;
 }
 
 unsigned char *cl_sign_file_fd(int fd, EVP_PKEY *pkey, const char *alg, unsigned int *olen, int encode)
 {
-    unsigned char *hash, *res;
+    uint8_t *hash, *res;
     unsigned int hashlen;
 
     hash = cl_hash_file_fd(fd, alg, &hashlen);
@@ -1146,33 +1756,54 @@ X509_CRL *cl_load_crl(const char *file)
 void *cl_hash_init(const char *alg)
 {
     EVP_MD_CTX *ctx;
-    const EVP_MD *md;
 
-    md = EVP_get_digestbyname(alg);
+#if OPENSSL_VERSION_MAJOR >= 3
+    EVP_MD *md = NULL;
+#else
+    const EVP_MD *md = NULL;
+#endif
+
+#if OPENSSL_VERSION_MAJOR >= 3
+    /* Bypass FIPS restrictions the OpenSSL 3.0 way */
+    md = EVP_MD_fetch(NULL, to_openssl_alg(alg), "-fips");
+#else
+    md = EVP_get_digestbyname(to_openssl_alg(alg));
+#endif
     if (!(md))
         return NULL;
 
-    ctx = EVP_MD_CTX_create();
+    ctx = EVP_MD_CTX_new();
     if (!(ctx)) {
+#if OPENSSL_VERSION_MAJOR >= 3
+        EVP_MD_free(md);
+#endif
         return NULL;
     }
 
 #ifdef EVP_MD_CTX_FLAG_NON_FIPS_ALLOW
-    /* we will be using MD5, which is not allowed under FIPS */
-    EVP_MD_CTX_set_flags(ctx, EVP_MD_CTX_FLAG_NON_FIPS_ALLOW);
+    if (OPENSSL_VERSION_NUMBER < 0x30000000L) {
+        /* Bypass FIPS restrictions the OpenSSL 1.x way */
+        EVP_MD_CTX_set_flags(ctx, EVP_MD_CTX_FLAG_NON_FIPS_ALLOW);
+    }
 #endif
 
     if (!EVP_DigestInit_ex(ctx, md, NULL)) {
-        EVP_MD_CTX_destroy(ctx);
+#if OPENSSL_VERSION_MAJOR >= 3
+        EVP_MD_free(md);
+#endif
+        EVP_MD_CTX_free(ctx);
         return NULL;
     }
 
+#if OPENSSL_VERSION_MAJOR >= 3
+    EVP_MD_free(md);
+#endif
     return (void *)ctx;
 }
 
 int cl_update_hash(void *ctx, const void *data, size_t sz)
 {
-    int winres = 0;
+    bool win_exception = false;
 
     if (!(ctx) || !(data))
         return -1;
@@ -1182,7 +1813,7 @@ int cl_update_hash(void *ctx, const void *data, size_t sz)
         return -1;
     EXCEPTION_POSTAMBLE
 
-    if (winres)
+    if (win_exception)
         return -1;
 
     return 0;
@@ -1198,7 +1829,7 @@ int cl_finish_hash(void *ctx, void *buf)
     if (!EVP_DigestFinal_ex((EVP_MD_CTX *)ctx, (unsigned char *)buf, NULL))
         res = -1;
 
-    EVP_MD_CTX_destroy((EVP_MD_CTX *)ctx);
+    EVP_MD_CTX_free((EVP_MD_CTX *)ctx);
 
     return res;
 }
@@ -1208,5 +1839,5 @@ void cl_hash_destroy(void *ctx)
     if (!(ctx))
         return;
 
-    EVP_MD_CTX_destroy((EVP_MD_CTX *)ctx);
+    EVP_MD_CTX_free((EVP_MD_CTX *)ctx);
 }

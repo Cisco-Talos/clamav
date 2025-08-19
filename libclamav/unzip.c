@@ -131,9 +131,9 @@ static cl_error_t unz(
         }
     } else {
         if (ctx->engine->keeptmp && (NULL != original_filename)) {
-            if (!(tempfile = cli_gentemp_with_prefix(ctx->sub_tmpdir, original_filename))) return CL_EMEM;
+            if (!(tempfile = cli_gentemp_with_prefix(ctx->this_layer_tmpdir, original_filename))) return CL_EMEM;
         } else {
-            if (!(tempfile = cli_gentemp(ctx->sub_tmpdir))) return CL_EMEM;
+            if (!(tempfile = cli_gentemp(ctx->this_layer_tmpdir))) return CL_EMEM;
         }
     }
     if ((out_file = open(tempfile, O_RDWR | O_CREAT | O_TRUNC | O_BINARY, S_IRUSR | S_IWUSR)) == -1) {
@@ -507,7 +507,7 @@ static inline cl_error_t zdecrypt(
                 snprintf(name, sizeof(name), "%s" PATHSEP "zip.decrypt.%03zu", tmpd, *num_files_unzipped);
                 name[sizeof(name) - 1] = '\0';
             } else {
-                if (!(tempfile = cli_gentemp_with_prefix(ctx->sub_tmpdir, "zip-decrypt"))) return CL_EMEM;
+                if (!(tempfile = cli_gentemp_with_prefix(ctx->this_layer_tmpdir, "zip-decrypt"))) return CL_EMEM;
             }
             if ((out_file = open(tempfile, O_RDWR | O_CREAT | O_TRUNC | O_BINARY, S_IRUSR | S_IWUSR)) == -1) {
                 cli_warnmsg("cli_unzip: decrypt - failed to create temporary file %s\n", tempfile);
@@ -541,7 +541,7 @@ static inline cl_error_t zdecrypt(
             cli_dbgmsg("cli_unzip: decrypt - decrypted %zu bytes to %s\n", total, tempfile);
 
             /* decrypt data to new fmap -> buffer */
-            if (!(dcypt_map = fmap(out_file, 0, total, NULL))) {
+            if (!(dcypt_map = fmap_new(out_file, 0, total, NULL, tempfile))) {
                 cli_warnmsg("cli_unzip: decrypt - failed to create fmap on decrypted file %s\n", tempfile);
                 ret = CL_EMAP;
                 goto zd_clean;
@@ -549,7 +549,7 @@ static inline cl_error_t zdecrypt(
 
             if (!(dcypt_zip = fmap_need_off_once(dcypt_map, 0, total))) {
                 cli_warnmsg("cli_unzip: decrypt - failed to acquire buffer on decrypted file %s\n", tempfile);
-                funmap(dcypt_map);
+                fmap_free(dcypt_map);
                 ret = CL_EREAD;
                 goto zd_clean;
             }
@@ -559,7 +559,7 @@ static inline cl_error_t zdecrypt(
                       num_files_unzipped, ctx, tmpd, zcb, original_filename, true);
 
             /* clean-up and return */
-            funmap(dcypt_map);
+            fmap_free(dcypt_map);
         zd_clean:
             close(out_file);
             if (!ctx->engine->keeptmp)

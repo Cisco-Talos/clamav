@@ -106,7 +106,7 @@
 #define OID_1_3_6_1_4_1_311_12_1_2 "\x2b\x06\x01\x04\x01\x82\x37\x0c\x01\x02"
 #define OID_szOID_CATALOG_LIST_MEMBER OID_1_3_6_1_4_1_311_12_1_2
 
-/* CATALOG_LIST_MEMBER2 seems to be what's used by the SHA256-based CAT files */
+/* CATALOG_LIST_MEMBER2 seems to be what's used by the SHA2-256-based CAT files */
 #define OID_1_3_6_1_4_1_311_12_1_3 "\x2b\x06\x01\x04\x01\x82\x37\x0c\x01\x03"
 #define OID_szOID_CATALOG_LIST_MEMBER2 OID_1_3_6_1_4_1_311_12_1_3
 
@@ -154,31 +154,31 @@ static int map_raw(fmap_t *map, const void *data, unsigned int len, uint8_t raw[
     return 0;
 }
 
-static int map_sha512(fmap_t *map, const void *data, unsigned int len, uint8_t sha512[SHA512_HASH_SIZE])
+static int map_sha2_512(fmap_t *map, const void *data, unsigned int len, uint8_t sha2_512[SHA512_HASH_SIZE])
 {
     if (!fmap_need_ptr_once(map, data, len)) {
-        cli_dbgmsg("map_sha512: failed to read hash data\n");
+        cli_dbgmsg("map_sha2_512: failed to read hash data\n");
         return 1;
     }
-    return (cl_sha512(data, len, sha512, NULL) == NULL);
+    return (cl_sha512(data, len, sha2_512, NULL) == NULL);
 }
 
-static int map_sha384(fmap_t *map, const void *data, unsigned int len, uint8_t sha384[SHA384_HASH_SIZE])
+static int map_sha2_384(fmap_t *map, const void *data, unsigned int len, uint8_t sha2_384[SHA384_HASH_SIZE])
 {
     if (!fmap_need_ptr_once(map, data, len)) {
-        cli_dbgmsg("map_sha384: failed to read hash data\n");
+        cli_dbgmsg("map_sha2_384: failed to read hash data\n");
         return 1;
     }
-    return (cl_sha384(data, len, sha384, NULL) == NULL);
+    return (cl_sha384(data, len, sha2_384, NULL) == NULL);
 }
 
-static int map_sha256(fmap_t *map, const void *data, unsigned int len, uint8_t sha256[SHA256_HASH_SIZE])
+static int map_sha2_256(fmap_t *map, const void *data, unsigned int len, uint8_t sha2_256[SHA256_HASH_SIZE])
 {
     if (!fmap_need_ptr_once(map, data, len)) {
-        cli_dbgmsg("map_sha256: failed to read hash data\n");
+        cli_dbgmsg("map_sha2_256: failed to read hash data\n");
         return 1;
     }
-    return (cl_sha256(data, len, sha256, NULL) == NULL);
+    return (cl_sha256(data, len, sha2_256, NULL) == NULL);
 }
 
 static int map_sha1(fmap_t *map, const void *data, unsigned int len, uint8_t sha1[SHA1_HASH_SIZE])
@@ -211,15 +211,15 @@ static int map_hash(fmap_t *map, const void *data, unsigned int len, uint8_t *ou
             return 1;
         }
     } else if (hashtype == CLI_SHA256RSA) {
-        if (map_sha256(map, data, len, out_hash)) {
+        if (map_sha2_256(map, data, len, out_hash)) {
             return 1;
         }
     } else if (hashtype == CLI_SHA384RSA) {
-        if (map_sha384(map, data, len, out_hash)) {
+        if (map_sha2_384(map, data, len, out_hash)) {
             return 1;
         }
     } else if (hashtype == CLI_SHA512RSA) {
-        if (map_sha512(map, data, len, out_hash)) {
+        if (map_sha2_512(map, data, len, out_hash)) {
             return 1;
         }
     } else {
@@ -237,11 +237,11 @@ static void *get_hash_ctx(cli_crt_hashtype hashtype)
     } else if (hashtype == CLI_MD5RSA) {
         ctx = cl_hash_init("md5");
     } else if (hashtype == CLI_SHA256RSA) {
-        ctx = cl_hash_init("sha256");
+        ctx = cl_hash_init("sha2-256");
     } else if (hashtype == CLI_SHA384RSA) {
-        ctx = cl_hash_init("sha384");
+        ctx = cl_hash_init("sha2-384");
     } else if (hashtype == CLI_SHA512RSA) {
-        ctx = cl_hash_init("sha512");
+        ctx = cl_hash_init("sha2-512");
     } else {
         cli_dbgmsg("asn1_get_hash_ctx: unsupported hashtype\n");
     }
@@ -526,7 +526,7 @@ static int asn1_getnum(const char *s)
     return (s[0] - '0') * 10 + (s[1] - '0');
 }
 
-static int asn1_get_time(fmap_t *map, const void **asn1data, unsigned int *size, time_t *tm)
+static int asn1_get_time(fmap_t *map, const void **asn1data, unsigned int *size, int64_t *tm)
 {
     struct cli_asn1 obj;
     int ret = asn1_get_obj(map, *asn1data, size, &obj);
@@ -1134,7 +1134,7 @@ static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size,
     return ret;
 }
 
-static int asn1_parse_countersignature(fmap_t *map, const void **asn1data, unsigned int *size, crtmgr *cmgr, const uint8_t *message, const unsigned int message_size, time_t not_before, time_t not_after)
+static int asn1_parse_countersignature(fmap_t *map, const void **asn1data, unsigned int *size, crtmgr *cmgr, const uint8_t *message, const unsigned int message_size, int64_t not_before, int64_t not_after)
 {
 
     struct cli_asn1 asn1, deep, deeper;
@@ -1311,7 +1311,7 @@ static int asn1_parse_countersignature(fmap_t *map, const void **asn1data, unsig
                     break;
                 case 2: /* signingTime */
                 {
-                    time_t sigdate; /* FIXME shall i use it?! */
+                    int64_t sigdate; /* FIXME shall i use it?! */
                     if (asn1_get_time(map, &deeper.content, &deep.size, &sigdate)) {
                         cli_dbgmsg("asn1_parse_countersignature: an error occurred when getting the time\n");
                         deep.size = 1;
@@ -2293,9 +2293,9 @@ int asn1_load_mscat(fmap_t *map, struct cl_engine *engine)
             if (CLI_SHA1RSA == hashtype) {
                 hm_hashtype = CLI_HASH_SHA1;
             } else if (CLI_SHA256RSA == hashtype) {
-                hm_hashtype = CLI_HASH_SHA256;
+                hm_hashtype = CLI_HASH_SHA2_256;
             } else {
-                cli_dbgmsg("asn1_load_mscat: only SHA1 and SHA256 hashes are supported for .cat file sigs\n");
+                cli_dbgmsg("asn1_load_mscat: only SHA1 and SHA2-256 hashes are supported for .cat file sigs\n");
                 return 1;
             }
 
@@ -2333,7 +2333,7 @@ int asn1_load_mscat(fmap_t *map, struct cl_engine *engine)
             /* Load the trusted hashes into hm_fp, using the size values
              * 1 and 2 as sentinel values corresponding to CAB and PE hashes
              * from .cat files respectively. */
-            if (hm_addhash_bin(engine->hm_fp, tagval3.content, hm_hashtype, hashed_obj_type, NULL)) {
+            if (CL_SUCCESS != hm_addhash_bin(engine, HASH_PURPOSE_WHOLE_FILE_FP_CHECK, tagval3.content, hm_hashtype, hashed_obj_type, NULL)) {
                 cli_warnmsg("asn1_load_mscat: failed to add hash\n");
                 return 1;
             }
@@ -2440,5 +2440,9 @@ cl_error_t asn1_check_mscat(struct cl_engine *engine, fmap_t *map, size_t offset
     }
 
     cli_dbgmsg("asn1_check_mscat: file with valid authenticode signature, trusted\n");
+
+    // Remove any evidence for this layer and set the verdict to trusted.
+    (void)cli_trust_this_layer(ctx, "authenticode digital signature verification");
+
     return CL_VERIFIED;
 }

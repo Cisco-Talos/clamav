@@ -135,7 +135,7 @@ static cl_error_t scanzws(cli_ctx *ctx, struct swf_file_hdr *hdr)
     int fd;
     size_t n_read;
 
-    if ((ret = cli_gentempfd(ctx->sub_tmpdir, &tmpname, &fd)) != CL_SUCCESS) {
+    if ((ret = cli_gentempfd(ctx->this_layer_tmpdir, &tmpname, &fd)) != CL_SUCCESS) {
         cli_errmsg("scanzws: Can't generate temporary file\n");
         return ret;
     }
@@ -315,7 +315,7 @@ static cl_error_t scancws(cli_ctx *ctx, struct swf_file_hdr *hdr)
     char *tmpname;
     int fd;
 
-    if ((ret = cli_gentempfd(ctx->sub_tmpdir, &tmpname, &fd)) != CL_SUCCESS) {
+    if ((ret = cli_gentempfd(ctx->this_layer_tmpdir, &tmpname, &fd)) != CL_SUCCESS) {
         cli_errmsg("scancws: Can't generate temporary file\n");
         return ret;
     }

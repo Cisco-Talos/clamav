@@ -2615,7 +2615,7 @@ static int cli_loadinfo(FILE *fs, struct cl_engine *engine, unsigned int options
         return CL_EMALFDB;
     }
 
-    ctx = cl_hash_init("sha256");
+    ctx = cl_hash_init("sha2-256");
     if (!(ctx))
         return CL_EMALFDB;
 
@@ -2695,7 +2695,7 @@ static int cli_loadinfo(FILE *fs, struct cl_engine *engine, unsigned int options
         new->size = atoi(tokens[1]);
 
         if (strlen(tokens[2]) != 64 || !(new->hash = CLI_MPOOL_HEX2STR(engine->mempool, tokens[2]))) {
-            cli_errmsg("cli_loadinfo: Malformed SHA256 string at line %u\n", line);
+            cli_errmsg("cli_loadinfo: Malformed SHA2-256 string at line %u\n", line);
             MPOOL_FREE(engine->mempool, new->name);
             MPOOL_FREE(engine->mempool, new);
             ret = CL_EMALFDB;
@@ -2820,48 +2820,20 @@ static int cli_loadign(FILE *fs, struct cl_engine *engine, unsigned int options,
     return CL_SUCCESS;
 }
 
-#define MD5_HDB 0
-#define MD5_MDB 1
-#define MD5_FP 2
-#define MD5_IMP 3
-
-#define MD5_TOKENS 5
-static int cli_loadhash(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned int mode, unsigned int options, struct cli_dbio *dbio, const char *dbname)
+#define HASH_DB_TOKENS 5
+static int cli_loadhash(FILE *fs, struct cl_engine *engine, unsigned int *signo, hash_purpose_t purpose, unsigned int options, struct cli_dbio *dbio, const char *dbname)
 {
-    const char *tokens[MD5_TOKENS + 1];
+    const char *tokens[HASH_DB_TOKENS + 1];
     char buffer[FILEBUFF], *buffer_cpy = NULL;
     const char *pt, *virname;
     int ret                 = CL_SUCCESS;
-    unsigned int size_field = 1, md5_field = 0, line = 0, sigs = 0, tokens_count;
+    unsigned int size_field = 1, hash_field = 0, line = 0, sigs = 0, tokens_count;
     unsigned int req_fl = 0;
-    struct cli_matcher *db;
     unsigned long size;
 
-    if (mode == MD5_MDB) {
+    if (purpose == HASH_PURPOSE_PE_SECTION_DETECT) {
         size_field = 0;
-        md5_field  = 1;
-        db         = engine->hm_mdb;
-    } else if (mode == MD5_HDB)
-        db = engine->hm_hdb;
-    else if (mode == MD5_IMP)
-        db = engine->hm_imp;
-    else
-        db = engine->hm_fp;
-
-    if (!db) {
-        if (!(db = MPOOL_CALLOC(engine->mempool, 1, sizeof(*db))))
-            return CL_EMEM;
-#ifdef USE_MPOOL
-        db->mempool = engine->mempool;
-#endif
-        if (mode == MD5_HDB)
-            engine->hm_hdb = db;
-        else if (mode == MD5_MDB)
-            engine->hm_mdb = db;
-        else if (mode == MD5_IMP)
-            engine->hm_imp = db;
-        else
-            engine->hm_fp = db;
+        hash_field = 1;
     }
 
     if (engine->ignored)
@@ -2878,23 +2850,23 @@ static int cli_loadhash(FILE *fs, struct cl_engine *engine, unsigned int *signo,
         if (engine->ignored)
             strcpy(buffer_cpy, buffer);
 
-        tokens_count = cli_strtokenize(buffer, ':', MD5_TOKENS + 1, tokens);
+        tokens_count = cli_strtokenize(buffer, ':', HASH_DB_TOKENS + 1, tokens);
         if (tokens_count < 3) {
             ret = CL_EMALFDB;
             break;
         }
-        if (tokens_count > MD5_TOKENS - 2) {
-            req_fl = atoi(tokens[MD5_TOKENS - 2]);
+        if (tokens_count > HASH_DB_TOKENS - 2) {
+            req_fl = atoi(tokens[HASH_DB_TOKENS - 2]);
 
-            if (tokens_count > MD5_TOKENS) {
+            if (tokens_count > HASH_DB_TOKENS) {
                 ret = CL_EMALFDB;
                 break;
             }
 
             if (cl_retflevel() < req_fl)
                 continue;
-            if (tokens_count == MD5_TOKENS) {
-                int max_fl = atoi(tokens[MD5_TOKENS - 1]);
+            if (tokens_count == HASH_DB_TOKENS) {
+                int max_fl = atoi(tokens[HASH_DB_TOKENS - 1]);
                 if (cl_retflevel() > (unsigned int)max_fl)
                     continue;
             }
@@ -2914,7 +2886,7 @@ static int cli_loadhash(FILE *fs, struct cl_engine *engine, unsigned int *signo,
             // is specified.  This check doesn't apply to .imp rules, though,
             // since this rule category wasn't introduced until FLEVEL 90, and
             // has always supported wildcard usage in rules.
-            if (mode != MD5_IMP && ((tokens_count < MD5_TOKENS - 1) || (req_fl < 73))) {
+            if (purpose != HASH_PURPOSE_PE_IMPORT_DETECT && ((tokens_count < HASH_DB_TOKENS - 1) || (req_fl < 73))) {
                 cli_errmsg("cli_loadhash: Minimum FLEVEL field must be at least 73 for wildcard size hash signatures."
                            " For reference, running FLEVEL is %d\n",
                            cl_retflevel());
@@ -2949,7 +2921,7 @@ static int cli_loadhash(FILE *fs, struct cl_engine *engine, unsigned int *signo,
             break;
         }
 
-        if (CL_SUCCESS != (ret = hm_addhash_str(db, tokens[md5_field], size, virname))) {
+        if (CL_SUCCESS != (ret = hm_addhash_str(engine, purpose, tokens[hash_field], size, virname))) {
             cli_errmsg("cli_loadhash: Malformed hash string at line %u\n", line);
             MPOOL_FREE(engine->mempool, (void *)virname);
             break;
@@ -3536,7 +3508,7 @@ static int cli_loadmscat(FILE *fs, const char *dbname, struct cl_engine *engine,
         return 0;
     }
 
-    if (!(map = fmap(fileno(fs), 0, 0, dbname))) {
+    if (!(map = fmap_new(fileno(fs), 0, 0, dbname, NULL))) {
         cli_dbgmsg("Can't map cat: %s\n", dbname);
         return 0;
     }
@@ -3545,7 +3517,7 @@ static int cli_loadmscat(FILE *fs, const char *dbname, struct cl_engine *engine,
         cli_dbgmsg("Failed to load certificates from cat: %s\n", dbname);
     }
 
-    funmap(map);
+    fmap_free(map);
     return 0;
 }
 
@@ -4776,35 +4748,35 @@ cl_error_t cli_load(const char *filename, struct cl_engine *engine, unsigned int
         ret = cli_loaddb(fs, engine, signo, options, dbio, dbname);
 
     } else if (cli_strbcasestr(dbname, ".cvd")) {
-        ret = cli_cvdload(engine, signo, options, CVD_TYPE_CVD, filename, sign_verifier, 0);
+        ret = cli_cvdload(engine, signo, options, CVD_TYPE_CVD, filename, sign_verifier, false);
 
     } else if (cli_strbcasestr(dbname, ".cld")) {
-        ret = cli_cvdload(engine, signo, options, CVD_TYPE_CLD, filename, sign_verifier, 0);
+        ret = cli_cvdload(engine, signo, options, CVD_TYPE_CLD, filename, sign_verifier, false);
 
     } else if (cli_strbcasestr(dbname, ".cud")) {
-        ret = cli_cvdload(engine, signo, options, CVD_TYPE_CUD, filename, sign_verifier, 0);
+        ret = cli_cvdload(engine, signo, options, CVD_TYPE_CUD, filename, sign_verifier, false);
 
     } else if (cli_strbcasestr(dbname, ".crb")) {
         ret = cli_loadcrt(fs, engine, dbio);
 
     } else if (cli_strbcasestr(dbname, ".hdb") || cli_strbcasestr(dbname, ".hsb")) {
-        ret = cli_loadhash(fs, engine, signo, MD5_HDB, options, dbio, dbname);
+        ret = cli_loadhash(fs, engine, signo, HASH_PURPOSE_WHOLE_FILE_DETECT, options, dbio, dbname);
     } else if (cli_strbcasestr(dbname, ".hdu") || cli_strbcasestr(dbname, ".hsu")) {
         if (options & CL_DB_PUA)
-            ret = cli_loadhash(fs, engine, signo, MD5_HDB, options | CL_DB_PUA_MODE, dbio, dbname);
+            ret = cli_loadhash(fs, engine, signo, HASH_PURPOSE_WHOLE_FILE_DETECT, options | CL_DB_PUA_MODE, dbio, dbname);
         else
             skipped = 1;
 
     } else if (cli_strbcasestr(dbname, ".fp") || cli_strbcasestr(dbname, ".sfp")) {
-        ret = cli_loadhash(fs, engine, signo, MD5_FP, options, dbio, dbname);
+        ret = cli_loadhash(fs, engine, signo, HASH_PURPOSE_WHOLE_FILE_FP_CHECK, options, dbio, dbname);
     } else if (cli_strbcasestr(dbname, ".mdb") || cli_strbcasestr(dbname, ".msb")) {
-        ret = cli_loadhash(fs, engine, signo, MD5_MDB, options, dbio, dbname);
+        ret = cli_loadhash(fs, engine, signo, HASH_PURPOSE_PE_SECTION_DETECT, options, dbio, dbname);
     } else if (cli_strbcasestr(dbname, ".imp")) {
-        ret = cli_loadhash(fs, engine, signo, MD5_IMP, options, dbio, dbname);
+        ret = cli_loadhash(fs, engine, signo, HASH_PURPOSE_PE_IMPORT_DETECT, options, dbio, dbname);
 
     } else if (cli_strbcasestr(dbname, ".mdu") || cli_strbcasestr(dbname, ".msu")) {
         if (options & CL_DB_PUA)
-            ret = cli_loadhash(fs, engine, signo, MD5_MDB, options | CL_DB_PUA_MODE, dbio, dbname);
+            ret = cli_loadhash(fs, engine, signo, HASH_PURPOSE_PE_SECTION_DETECT, options | CL_DB_PUA_MODE, dbio, dbname);
         else
             skipped = 1;
 
@@ -5289,7 +5261,7 @@ cl_error_t cl_load(const char *path, struct cl_engine *engine, unsigned int *sig
     }
 
     if (engine->dboptions & CL_DB_COMPILED) {
-        cli_errmsg("cl_load(): can't load new databases when engine is already compiled\n");
+        cli_errmsg("cl_load: can't load new databases when engine is already compiled\n");
         return CL_EARG;
     }
 
@@ -5297,27 +5269,27 @@ cl_error_t cl_load(const char *path, struct cl_engine *engine, unsigned int *sig
         switch (errno) {
 #if defined(EACCES)
             case EACCES:
-                cli_errmsg("cl_load(): Access denied for path: %s\n", path);
+                cli_errmsg("cl_load: Access denied for path: %s\n", path);
                 break;
 #endif
 #if defined(ENOENT)
             case ENOENT:
-                cli_errmsg("cl_load(): No such file or directory: %s\n", path);
+                cli_errmsg("cl_load: No such file or directory: %s\n", path);
                 break;
 #endif
 #if defined(ELOOP)
             case ELOOP:
-                cli_errmsg("cl_load(): Too many symbolic links encountered in path: %s\n", path);
+                cli_errmsg("cl_load: Too many symbolic links encountered in path: %s\n", path);
                 break;
 #endif
 #if defined(EOVERFLOW)
             case EOVERFLOW:
-                cli_errmsg("cl_load(): File size is too large to be recognized. Path: %s\n", path);
+                cli_errmsg("cl_load: File size is too large to be recognized. Path: %s\n", path);
                 break;
 #endif
 #if defined(EIO)
             case EIO:
-                cli_errmsg("cl_load(): An I/O error occurred while reading from path: %s\n", path);
+                cli_errmsg("cl_load: An I/O error occurred while reading from path: %s\n", path);
                 break;
 #endif
             default:
@@ -5338,8 +5310,13 @@ cl_error_t cl_load(const char *path, struct cl_engine *engine, unsigned int *sig
         cli_dbgmsg("Bytecode engine disabled\n");
     }
 
-    if (!engine->cache && clean_cache_init(engine))
-        return CL_EMEM;
+    if (!engine->cache) {
+        ret = clean_cache_init(engine);
+        if (ret != CL_SUCCESS) {
+            cli_errmsg("cl_load: Failed to initialize the cache: %s\n", cl_strerror(ret));
+            return ret;
+        }
+    }
 
     engine->dboptions |= dboptions;
 
@@ -5365,7 +5342,7 @@ cl_error_t cl_load(const char *path, struct cl_engine *engine, unsigned int *sig
             break;
 
         default:
-            cli_errmsg("cl_load(%s): Not supported database file type\n", path);
+            cli_errmsg("cl_load: Not supported database file type: %s\n", path);
             if (sign_verifier) {
                 codesign_verifier_free(sign_verifier);
             }

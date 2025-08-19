@@ -63,8 +63,9 @@ Generate MD5 checksum from stdin or MD5 sigs for FILES.
 \fB\-\-sha1 [FILES]\fR
 Generate SHA1 checksum from stdin or SHA1 sigs for FILES.
 .TP
-\fB\-\-sha256 [FILES]\fR
-Generate SHA256 checksum from stdin or SHA256 sigs for FILES.
+\fB\-\-sha2-256 [FILES]\fR
+Generate SHA2-256 checksum from stdin or SHA2-256 sigs for FILES.
+The previous option \-\-sha256 is deprecated and may be removed in a future version.
 .TP
 \fB\-\-mdb [FILES]\fR
 Generate .mdb (PE section hash) signatures for FILES.
@@ -144,6 +145,9 @@ Unpack FILE (CVD) to a current directory.
 .TP
 \fB\-\-unpack\-current\fR
 Unpack a local CVD file (main or daily) to current directory.
+.TP
+\fB\-\-fips\-limits\fR
+Enforce FIPS\-like limits on using hash algorithms for cryptographic purposes. Will disable MD5 & SHA1 FP sigs and will require '.sign' files to verify CVD authenticity.
 
 .SH "COMMANDS FOR WORKING WITH CDIFF PATCH FILES"
 .LP

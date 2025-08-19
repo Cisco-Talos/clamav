@@ -180,7 +180,7 @@ int cli_7unz(cli_ctx *ctx, size_t offset)
             else if ((outBuffer == NULL) || (outSizeProcessed == 0)) {
                 cli_dbgmsg("cli_unz: extracted empty file\n");
             } else {
-                if ((found = cli_gentempfd(ctx->sub_tmpdir, &tmp_name, &fd)))
+                if ((found = cli_gentempfd(ctx->this_layer_tmpdir, &tmp_name, &fd)))
                     break;
 
                 cli_dbgmsg("cli_7unz: Saving to %s\n", tmp_name);

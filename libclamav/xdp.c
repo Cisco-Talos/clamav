@@ -64,7 +64,7 @@ static char *dump_xdp(cli_ctx *ctx, const char *start, size_t sz)
     size_t nwritten = 0;
     ssize_t writeret;
 
-    if (cli_gentempfd(ctx->sub_tmpdir, &filename, &fd) != CL_SUCCESS)
+    if (cli_gentempfd(ctx->this_layer_tmpdir, &filename, &fd) != CL_SUCCESS)
         return NULL;
 
     while (nwritten < sz) {

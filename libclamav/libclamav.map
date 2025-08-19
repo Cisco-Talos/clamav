@@ -68,6 +68,28 @@ CLAMAV_PUBLIC {
     cl_engine_set_clcb_vba;
     cl_cvdunpack_ex;
     cl_cvdverify_ex;
+    cl_scandesc_ex;
+    cl_scanmap_ex;
+    cl_scanfile_ex;
+    cl_fmap_set_name;
+    cl_fmap_get_name;
+    cl_fmap_set_path;
+    cl_fmap_get_path;
+    cl_fmap_get_fd;
+    cl_fmap_get_size;
+    cl_fmap_set_hash;
+    cl_fmap_have_hash;
+    cl_fmap_will_need_hash_later;
+    cl_fmap_get_hash;
+    cl_fmap_get_data;
+    cl_scan_layer_get_fmap;
+    cl_scan_layer_get_parent_layer;
+    cl_scan_layer_get_type;
+    cl_scan_layer_get_recursion_level;
+    cl_scan_layer_get_object_id;
+    cl_scan_layer_get_last_alert;
+    cl_scan_layer_get_attributes;
+    cl_engine_set_scan_callback;
 };
 CLAMAV_PRIVATE {
   global:
@@ -224,7 +246,7 @@ CLAMAV_PRIVATE {
     cli_bytecode_done;
     cli_bytecode_debug;
     cli_hex2ui;
-    fmap;
+    fmap_new;
     cli_bytecode_context_set_trace;
     cli_bytecode_debug_printsrc;
     cli_bytecode_printversion;
@@ -296,6 +318,7 @@ CLAMAV_PRIVATE {
     cli_checklimits;
     cli_matchmeta;
     cli_cvdunpack_and_verify;
+    cli_cvdverify;
 
     __cli_strcasestr;
     __cli_strndup;

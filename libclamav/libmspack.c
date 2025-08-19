@@ -417,7 +417,7 @@ cl_error_t cli_scanmscab(cli_ctx *ctx, off_t sfx_offset)
             }
         }
 
-        tmp_fname = cli_gentemp(ctx->sub_tmpdir);
+        tmp_fname = cli_gentemp(ctx->this_layer_tmpdir);
         if (!tmp_fname) {
             ret = CL_EMEM;
             goto done;
@@ -546,7 +546,7 @@ cl_error_t cli_scanmschm(cli_ctx *ctx)
             }
         }
 
-        tmp_fname = cli_gentemp(ctx->sub_tmpdir);
+        tmp_fname = cli_gentemp(ctx->this_layer_tmpdir);
         if (!tmp_fname) {
             ret = CL_EMEM;
             break;

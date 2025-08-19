@@ -166,15 +166,13 @@ static void setup(void)
     memset(&options, 0, sizeof(struct cl_scan_options));
     ctx.options = &options;
 
-    ctx.evidence = evidence_new();
-
     ctx.engine = cl_engine_new();
     ck_assert_msg(!!ctx.engine, "cl_engine_new() failed");
 
     ctx.dconf = ctx.engine->dconf;
 
     ctx.recursion_stack_size = ctx.engine->max_recursion_level;
-    ctx.recursion_stack      = calloc(sizeof(recursion_level_t), ctx.recursion_stack_size);
+    ctx.recursion_stack      = calloc(sizeof(cli_scan_layer_t), ctx.recursion_stack_size);
     ck_assert_msg(!!ctx.recursion_stack, "calloc() for recursion_stack failed");
 
     // ctx was memset, so recursion_level starts at 0.
@@ -194,8 +192,10 @@ static void setup(void)
 static void teardown(void)
 {
     cl_engine_free((struct cl_engine *)ctx.engine);
+    if (ctx.recursion_stack[ctx.recursion_level].evidence) {
+        evidence_free(ctx.recursion_stack[ctx.recursion_level].evidence);
+    }
     free(ctx.recursion_stack);
-    evidence_free(ctx.evidence);
 }
 
 START_TEST(test_ac_scanbuff)
@@ -281,11 +281,13 @@ START_TEST(test_ac_scanbuff_allscan)
         // phishingScan() doesn't check the number of alerts. When using CL_SCAN_GENERAL_ALLMATCHES
         // or if using `CL_SCAN_GENERAL_HEURISTIC_PRECEDENCE` and `cli_append_potentially_unwanted()`
         // we need to count the number of alerts manually to determine the verdict.
-        ck_assert_msg(0 < evidence_num_alerts(ctx.evidence), "cli_scan_buff() failed for %s", ac_testdata[i].virname);
+        ck_assert_msg(0 < evidence_num_alerts(ctx.this_layer_evidence), "cli_scan_buff() failed for %s", ac_testdata[i].virname);
         ck_assert_msg(!strncmp(virname, ac_testdata[i].virname, strlen(ac_testdata[i].virname)), "Dataset %u matched with %s", i, virname);
-        if (evidence_num_alerts(ctx.evidence) > 0) {
-            evidence_free(ctx.evidence);
-            ctx.evidence = evidence_new();
+        if (evidence_num_alerts(ctx.this_layer_evidence) > 0) {
+            // Reset evidence for the next scan.
+            evidence_free(ctx.recursion_stack[ctx.recursion_level].evidence);
+            ctx.recursion_stack[ctx.recursion_level].evidence = NULL;
+            ctx.this_layer_evidence                           = NULL;
         }
     }
 
@@ -379,14 +381,16 @@ START_TEST(test_ac_scanbuff_allscan_ex)
         // phishingScan() doesn't check the number of alerts. When using CL_SCAN_GENERAL_ALLMATCHES
         // or if using `CL_SCAN_GENERAL_HEURISTIC_PRECEDENCE` and `cli_append_potentially_unwanted()`
         // we need to count the number of alerts manually to determine the verdict.
-        if (0 < evidence_num_alerts(ctx.evidence)) {
+        if (0 < evidence_num_alerts(ctx.this_layer_evidence)) {
             verdict = CL_VIRUS;
         }
 
         ck_assert_msg(verdict == ac_sigopts_testdata[i].expected_result, "[ac_ex] cli_ac_scanbuff() failed for %s (%d != %d)", ac_sigopts_testdata[i].virname, verdict, ac_sigopts_testdata[i].expected_result);
-        if (evidence_num_alerts(ctx.evidence) > 0) {
-            evidence_free(ctx.evidence);
-            ctx.evidence = evidence_new();
+        if (evidence_num_alerts(ctx.this_layer_evidence) > 0) {
+            // Reset evidence for the next scan.
+            evidence_free(ctx.recursion_stack[ctx.recursion_level].evidence);
+            ctx.recursion_stack[ctx.recursion_level].evidence = NULL;
+            ctx.this_layer_evidence                           = NULL;
         }
     }
 
@@ -554,15 +558,17 @@ START_TEST(test_pcre_scanbuff_allscan)
         // cli_scan_buff() doesn't check the number of alerts. When using CL_SCAN_GENERAL_ALLMATCHES
         // or if using `CL_SCAN_GENERAL_HEURISTIC_PRECEDENCE` and `cli_append_potentially_unwanted()`
         // we need to count the number of alerts manually to determine the verdict.
-        if (0 < evidence_num_alerts(ctx.evidence)) {
+        if (0 < evidence_num_alerts(ctx.this_layer_evidence)) {
             verdict = CL_VIRUS;
         }
 
         ck_assert_msg(verdict == pcre_testdata[i].expected_result, "[pcre] cli_scan_buff() failed for %s", pcre_testdata[i].virname);
         /* num_virus field add to test case struct */
-        if (evidence_num_alerts(ctx.evidence) > 0) {
-            evidence_free(ctx.evidence);
-            ctx.evidence = evidence_new();
+        if (evidence_num_alerts(ctx.this_layer_evidence) > 0) {
+            // Reset evidence for the next scan.
+            evidence_free(ctx.recursion_stack[ctx.recursion_level].evidence);
+            ctx.recursion_stack[ctx.recursion_level].evidence = NULL;
+            ctx.this_layer_evidence                           = NULL;
         }
     }
 

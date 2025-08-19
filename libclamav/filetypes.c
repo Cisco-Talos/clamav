@@ -147,6 +147,55 @@ static const struct ftmap_s {
 };
 // clang-format on
 
+cli_file_t cli_ftcode_human_friendly(const char *name)
+{
+    cli_file_t code = CL_TYPE_ERROR;
+
+    unsigned int i;
+    char *reconstructed_name = NULL;
+    const char *ftname;
+
+    if (NULL == name) {
+        cli_dbgmsg("cli_ftcode_human_friendly: NULL name\n");
+        code = CL_TYPE_ERROR;
+        goto done;
+    }
+
+    if (0 == strncmp(name, "CL_TYPE_", strlen("CL_TYPE_"))) {
+        /* If the name starts with "CL_TYPE_", we can use it directly. */
+        ftname = name;
+    } else {
+        /* If the name does not start with "CL_TYPE_", let's prefix "CL_TYPE_" and convert it to uppercase. */
+        size_t len = strlen(name) + strlen("CL_TYPE_") + 1;
+
+        reconstructed_name = malloc(len);
+        if (NULL == reconstructed_name) {
+            cli_dbgmsg("cli_ftcode_human_friendly: Failed to allocate memory for reconstructed name\n");
+            code = CL_TYPE_ERROR;
+            goto done;
+        }
+        snprintf(reconstructed_name, len, "CL_TYPE_%s", name);
+
+        /* Convert to uppercase */
+        for (i = 0; i < len; i++) {
+            reconstructed_name[i] = toupper((unsigned char)reconstructed_name[i]);
+        }
+
+        ftname = reconstructed_name;
+    }
+
+    code = cli_ftcode(ftname);
+    if (CL_TYPE_ERROR == code) {
+        cli_dbgmsg("cli_ftcode_human_friendly: Unknown file type '%s'\n", name);
+    }
+
+done:
+    if (NULL != reconstructed_name) {
+        free(reconstructed_name);
+    }
+    return code;
+}
+
 cli_file_t cli_ftcode(const char *name)
 {
     unsigned int i;
@@ -278,7 +327,7 @@ const struct ooxml_ftcodes {
         }                                                                       \
     } while (0)
 
-cli_file_t cli_determine_fmap_type(cli_ctx *ctx, cli_file_t basetype)
+cli_file_t cli_determine_fmap_type(cli_ctx_t ctx_t, cli_file_t basetype)
 {
     unsigned char buffer[MAGIC_BUFFER_SIZE];
     const unsigned char *buff;
@@ -288,6 +337,7 @@ cli_file_t cli_determine_fmap_type(cli_ctx *ctx, cli_file_t basetype)
     cli_file_t ret = CL_TYPE_BINARY_DATA;
     struct cli_matcher *root;
     struct cli_ac_data mdata;
+    cli_ctx *ctx = (cli_ctx *)ctx_t;
 
     if (!ctx || !ctx->engine || !ctx->fmap) {
         cli_errmsg("cli_determine_fmap_type: engine == NULL\n");

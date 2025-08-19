@@ -315,16 +315,16 @@ class TC(testcase.TestCase):
             zf.writestr('file-2.txt', b"Test file 2")
             zf.writestr('file-3.txt', b"Test file 3")
 
-        # Calculate sha256 and len for all files
-        sha256s = {}
+        # Calculate sha2-256 and len for all files
+        sha2_256s = {}
         with ZipFile(str(testfile), 'r') as zf:
             for name in zf.namelist():
                 data = zf.read(name)
-                sha256s[name] = ( hashlib.sha256(data).hexdigest(), len(data) )
+                sha2_256s[name] = ( hashlib.sha256(data).hexdigest(), len(data) )
 
-        # Make sha256 signatures for all files
+        # Make sha2-256 signatures for all files
         with open(TC.path_db / 'missing_entries.hsb', 'w') as f:
-            for name, data in sha256s.items():
+            for name, data in sha2_256s.items():
                 f.write(f"{data[0]}:{data[1]}:{name}.NDB:73\n")
 
         command = '{valgrind} {valgrind_args} {clamscan} -d {missing_entries_db} --allmatch {testfiles}'.format(
@@ -355,16 +355,16 @@ class TC(testcase.TestCase):
             zf.writestr('file-2.txt', b"Test file 2")
             zf.writestr('file-3.txt', b"Test file 3")
 
-        # Calculate sha256 and len for all files
-        sha256s = {}
+        # Calculate sha2-256 and len for all files
+        sha2_256s = {}
         with ZipFile(str(testfile), 'r') as zf:
             for name in zf.namelist():
                 data = zf.read(name)
-                sha256s[name] = ( hashlib.sha256(data).hexdigest(), len(data) )
+                sha2_256s[name] = ( hashlib.sha256(data).hexdigest(), len(data) )
 
-        # Make sha256 signatures for all files
+        # Make sha2-256 signatures for all files
         with open(TC.path_db / 'missing_entries.hsb', 'w') as f:
-            for name, data in sha256s.items():
+            for name, data in sha2_256s.items():
                 f.write(f"{data[0]}:{data[1]}:{name}.NDB:73\n")
 
         # Remove the central directory
@@ -405,16 +405,16 @@ class TC(testcase.TestCase):
             zf.writestr('file-2.txt', b"Test file 2")
             zf.writestr('file-3.txt', b"Test file 3")
 
-        # Calculate sha256 and len for all files
-        sha256s = {}
+        # Calculate sha2-256 and len for all files
+        sha2_256s = {}
         with ZipFile(str(testfile), 'r') as zf:
             for name in zf.namelist():
                 data = zf.read(name)
-                sha256s[name] = ( hashlib.sha256(data).hexdigest(), len(data) )
+                sha2_256s[name] = ( hashlib.sha256(data).hexdigest(), len(data) )
 
-        # Make sha256 signatures for all files
+        # Make sha2-256 signatures for all files
         with open(TC.path_db / 'missing_entries.hsb', 'w') as f:
-            for name, data in sha256s.items():
+            for name, data in sha2_256s.items():
                 f.write(f"{data[0]}:{data[1]}:{name}.NDB:73\n")
 
         # Remove the central directory entries for file-2.txt and file-4.txt

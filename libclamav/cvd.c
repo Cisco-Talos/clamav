@@ -41,6 +41,7 @@
 #include "zlib.h"
 #include <time.h>
 #include <errno.h>
+#include <openssl/crypto.h>
 
 #include "clamav.h"
 #include "clamav_rust.h"
@@ -216,7 +217,7 @@ static int cli_tgzload(cvd_t *cvd, struct cl_engine *engine, unsigned int *signo
         dbio->bufpt    = NULL;
         dbio->readpt   = dbio->buf;
         if (!(dbio->hashctx)) {
-            dbio->hashctx = cl_hash_init("sha256");
+            dbio->hashctx = cl_hash_init("sha2-256");
             if (!(dbio->hashctx)) {
                 cli_tgzload_cleanup(compr, dbio, fdd);
                 return CL_EMALFDB;
@@ -256,7 +257,7 @@ static int cli_tgzload(cvd_t *cvd, struct cl_engine *engine, unsigned int *signo
                         return CL_EMALFDB;
                     }
                     cl_finish_hash(dbio->hashctx, hash);
-                    dbio->hashctx = cl_hash_init("sha256");
+                    dbio->hashctx = cl_hash_init("sha2-256");
                     if (!(dbio->hashctx)) {
                         cli_tgzload_cleanup(compr, dbio, fdd);
                         return CL_EMALFDB;
@@ -394,8 +395,9 @@ struct cl_cvd *cl_cvdhead(const char *file)
     if ((pt = strpbrk(head, "\n\r")))
         *pt = 0;
 
-    for (i = bread - 1; i > 0 && (head[i] == ' ' || head[i] == '\n' || head[i] == '\r'); head[i] = 0, i--)
-        ;
+    for (i = bread - 1; i > 0 && (head[i] == ' ' || head[i] == '\n' || head[i] == '\r'); head[i] = 0, i--) {
+        continue;
+    }
 
     return cl_cvdparse(head);
 }
@@ -411,10 +413,10 @@ void cl_cvdfree(struct cl_cvd *cvd)
 
 cl_error_t cl_cvdverify(const char *file)
 {
-    return cl_cvdverify_ex(file, NULL);
+    return cl_cvdverify_ex(file, NULL, 0);
 }
 
-cl_error_t cl_cvdverify_ex(const char *file, const char *certs_directory)
+cl_error_t cl_cvdverify_ex(const char *file, const char *certs_directory, uint32_t dboptions)
 {
     struct cl_engine *engine = NULL;
     cl_error_t ret;
@@ -455,7 +457,7 @@ cl_error_t cl_cvdverify_ex(const char *file, const char *certs_directory)
         }
     }
 
-    ret = cli_cvdload(engine, NULL, CL_DB_STDOPT | CL_DB_PUA, dbtype, file, verifier, 1);
+    ret = cli_cvdload(engine, NULL, dboptions | CL_DB_STDOPT | CL_DB_PUA, dbtype, file, verifier, true);
 
 done:
     if (NULL != engine) {
@@ -471,7 +473,14 @@ done:
     return ret;
 }
 
-cl_error_t cli_cvdload(struct cl_engine *engine, unsigned int *signo, unsigned int options, cvd_type dbtype, const char *filename, void *sign_verifier, unsigned int chkonly)
+cl_error_t cli_cvdload(
+    struct cl_engine *engine,
+    unsigned int *signo,
+    uint32_t options,
+    cvd_type dbtype,
+    const char *filename,
+    void *sign_verifier,
+    bool chkonly)
 {
     cl_error_t status = CL_ECVD;
     cl_error_t ret;
@@ -484,10 +493,13 @@ cl_error_t cli_cvdload(struct cl_engine *engine, unsigned int *signo, unsigned i
     FFIError *cvd_open_error   = NULL;
     FFIError *cvd_verify_error = NULL;
     char *signer_name          = NULL;
+    bool disable_legacy_dsig   = false;
 
     dbio.hashctx = NULL;
 
     cli_dbgmsg("in cli_cvdload()\n");
+
+    disable_legacy_dsig = (options & CL_DB_FIPS_LIMITS) || (engine->engine_options & ENGINE_OPTIONS_FIPS_LIMITS);
 
     /* Open the cvd and read the header */
     cvd = cvd_open(filename, &cvd_open_error);
@@ -501,7 +513,7 @@ cl_error_t cli_cvdload(struct cl_engine *engine, unsigned int *signo, unsigned i
         if (!cvd_verify(
                 cvd,
                 sign_verifier,
-                false,
+                disable_legacy_dsig,
                 &signer_name,
                 &cvd_verify_error)) {
             cli_errmsg("cli_cvdload: Can't verify CVD file %s: %s\n", filename, ffierror_fmt(cvd_verify_error));
@@ -641,7 +653,53 @@ done:
     return status;
 }
 
-cl_error_t cli_cvdunpack_and_verify(const char *file, const char *dir, bool dont_verify, void *verifier)
+cl_error_t cli_cvdverify(
+    const char *file,
+    bool disable_legacy_dsig,
+    void *verifier)
+{
+    cl_error_t status          = CL_SUCCESS;
+    cvd_t *cvd                 = NULL;
+    FFIError *cvd_open_error   = NULL;
+    FFIError *cvd_verify_error = NULL;
+    char *signer_name          = NULL;
+
+    cvd = cvd_open(file, &cvd_open_error);
+    if (!cvd) {
+        cli_errmsg("Can't open CVD file %s: %s\n", file, ffierror_fmt(cvd_open_error));
+        return CL_EOPEN;
+    }
+
+    if (!cvd_verify(cvd, verifier, disable_legacy_dsig, &signer_name, &cvd_verify_error)) {
+        cli_errmsg("CVD verification failed: %s\n", ffierror_fmt(cvd_verify_error));
+        status = CL_EVERIFY;
+        goto done;
+    }
+
+done:
+
+    if (NULL != signer_name) {
+        ffi_cstring_free(signer_name);
+    }
+    if (NULL != cvd) {
+        cvd_free(cvd);
+    }
+    if (NULL != cvd_open_error) {
+        ffierror_free(cvd_open_error);
+    }
+    if (NULL != cvd_verify_error) {
+        ffierror_free(cvd_verify_error);
+    }
+
+    return status;
+}
+
+cl_error_t cli_cvdunpack_and_verify(
+    const char *file,
+    const char *dir,
+    bool dont_verify,
+    bool disable_legacy_dsig,
+    void *verifier)
 {
     cl_error_t status          = CL_SUCCESS;
     cvd_t *cvd                 = NULL;
@@ -657,7 +715,7 @@ cl_error_t cli_cvdunpack_and_verify(const char *file, const char *dir, bool dont
     }
 
     if (!dont_verify) {
-        if (!cvd_verify(cvd, verifier, false, &signer_name, &cvd_verify_error)) {
+        if (!cvd_verify(cvd, verifier, disable_legacy_dsig, &signer_name, &cvd_verify_error)) {
             cli_errmsg("CVD verification failed: %s\n", ffierror_fmt(cvd_verify_error));
             status = CL_EVERIFY;
             goto done;
@@ -691,7 +749,7 @@ done:
     return status;
 }
 
-cl_error_t cl_cvdunpack_ex(const char *file, const char *dir, bool dont_verify, const char *certs_directory)
+cl_error_t cl_cvdunpack_ex(const char *file, const char *dir, const char *certs_directory, uint32_t dboptions)
 {
     cl_error_t status            = CL_SUCCESS;
     cvd_t *cvd                   = NULL;
@@ -707,15 +765,16 @@ cl_error_t cl_cvdunpack_ex(const char *file, const char *dir, bool dont_verify, 
         return CL_EOPEN;
     }
 
-    if (dont_verify) {
-        // Just unpack the CVD file.
+    if (dboptions & CL_DB_UNSIGNED) {
+        // Just unpack the CVD file and don´t verify the digital signature.
         if (!cvd_unpack(cvd, dir, &cvd_unpack_error)) {
             cli_errmsg("CVD unpacking failed: %s\n", ffierror_fmt(cvd_unpack_error));
             status = CL_EUNPACK;
             goto done;
         }
     } else {
-        // Verify the CVD file and hten unpack it.
+        // Verify the CVD file and then unpack it.
+        bool disable_legacy_dsig = false;
 
         // The certs directory is optional.
         // If not provided, then we can't validate external signatures and will have to rely
@@ -728,7 +787,13 @@ cl_error_t cl_cvdunpack_ex(const char *file, const char *dir, bool dont_verify, 
             }
         }
 
-        status = cli_cvdunpack_and_verify(file, dir, dont_verify, verifier);
+#if OPENSSL_VERSION_MAJOR >= 3
+        disable_legacy_dsig = (dboptions & CL_DB_FIPS_LIMITS) || EVP_default_properties_is_fips_enabled(NULL);
+#else
+        disable_legacy_dsig = (dboptions & CL_DB_FIPS_LIMITS) || FIPS_mode();
+#endif
+
+        status = cli_cvdunpack_and_verify(file, dir, false, disable_legacy_dsig, verifier);
         if (status != CL_SUCCESS) {
             goto done;
         }
@@ -766,6 +831,7 @@ cl_error_t cl_cvdunpack(const char *file, const char *dir, bool dont_verify)
     FFIError *cvd_verify_error = NULL;
     FFIError *cvd_unpack_error = NULL;
     char *signer_name          = NULL;
+    bool disable_legacy_dsig   = false;
 
     cvd = cvd_open(file, &cvd_open_error);
     if (!cvd) {
@@ -773,8 +839,14 @@ cl_error_t cl_cvdunpack(const char *file, const char *dir, bool dont_verify)
         return CL_EOPEN;
     }
 
+#if OPENSSL_VERSION_MAJOR >= 3
+    disable_legacy_dsig = EVP_default_properties_is_fips_enabled(NULL);
+#else
+    disable_legacy_dsig = FIPS_mode();
+#endif
+
     if (!dont_verify) {
-        if (!cvd_verify(cvd, NULL, false, &signer_name, &cvd_verify_error)) {
+        if (!cvd_verify(cvd, NULL, disable_legacy_dsig, &signer_name, &cvd_verify_error)) {
             cli_errmsg("CVD verification failed: %s\n", ffierror_fmt(cvd_verify_error));
             status = CL_EVERIFY;
             goto done;

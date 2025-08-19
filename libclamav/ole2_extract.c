@@ -1065,12 +1065,12 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
             case 1: /* Directory */
                 ole2_listmsg("directory node\n");
                 if (dir) {
-                    if (SCAN_COLLECT_METADATA && (ctx->wrkproperty != NULL)) {
-                        if (!json_object_object_get_ex(ctx->wrkproperty, "DigitalSignatures", NULL)) {
+                    if (SCAN_COLLECT_METADATA && (ctx->this_layer_metadata_json != NULL)) {
+                        if (!json_object_object_get_ex(ctx->this_layer_metadata_json, "DigitalSignatures", NULL)) {
                             name = cli_ole2_get_property_name2(prop_block[idx].name, prop_block[idx].name_size);
                             if (name) {
                                 if (!strcmp(name, "_xmlsignatures") || !strcmp(name, "_signatures")) {
-                                    cli_jsonbool(ctx->wrkproperty, "HasDigitalSignatures", 1);
+                                    cli_jsonbool(ctx->this_layer_metadata_json, "HasDigitalSignatures", 1);
                                 }
                                 free(name);
                             }
@@ -1352,8 +1352,8 @@ static cl_error_t scan_biff_for_xlm_macros_and_images(
                             state->tmp = buff[i] & 0x20;
                         } else if ((state->data_offset == 14 || state->data_offset == 15) && state->tmp) {
                             if (buff[i] == 1 || buff[i] == 2) {
-                                if (SCAN_COLLECT_METADATA && (ctx->wrkproperty != NULL)) {
-                                    json_object *indicators = cli_jsonarray(ctx->wrkproperty, "MacroIndicators");
+                                if (SCAN_COLLECT_METADATA && (ctx->this_layer_metadata_json != NULL)) {
+                                    json_object *indicators = cli_jsonarray(ctx->this_layer_metadata_json, "MacroIndicators");
                                     if (indicators) {
                                         cli_jsonstr(indicators, NULL, "autorun");
                                     } else {
@@ -1373,16 +1373,16 @@ static cl_error_t scan_biff_for_xlm_macros_and_images(
                         } else if (state->data_offset == 5 && buff[i] == 1) { // Excel 4.0 macro sheet
                             cli_dbgmsg("[scan_biff_for_xlm_macros_and_images] Found XLM macro sheet\n");
 
-                            if (SCAN_COLLECT_METADATA && (ctx->wrkproperty != NULL)) {
-                                cli_jsonbool(ctx->wrkproperty, "HasMacros", 1);
-                                json_object *macro_languages = cli_jsonarray(ctx->wrkproperty, "MacroLanguages");
+                            if (SCAN_COLLECT_METADATA && (ctx->this_layer_metadata_json != NULL)) {
+                                cli_jsonbool(ctx->this_layer_metadata_json, "HasMacros", 1);
+                                json_object *macro_languages = cli_jsonarray(ctx->this_layer_metadata_json, "MacroLanguages");
                                 if (macro_languages) {
                                     cli_jsonstr(macro_languages, NULL, "XLM");
                                 } else {
                                     cli_dbgmsg("[scan_biff_for_xlm_macros_and_images] Failed to add \"XLM\" entry to MacroLanguages JSON array\n");
                                 }
                                 if (state->tmp == 1 || state->tmp == 2) {
-                                    json_object *indicators = cli_jsonarray(ctx->wrkproperty, "MacroIndicators");
+                                    json_object *indicators = cli_jsonarray(ctx->this_layer_metadata_json, "MacroIndicators");
                                     if (indicators) {
                                         cli_jsonstr(indicators, NULL, "hidden");
                                     } else {
@@ -1537,8 +1537,8 @@ static cl_error_t handler_enum(ole2_header_t *hdr, property_t *prop, const char 
 
     name = cli_ole2_get_property_name2(prop->name, prop->name_size);
     if (name) {
-        if (SCAN_COLLECT_METADATA && ctx->wrkproperty != NULL) {
-            arrobj = cli_jsonarray(ctx->wrkproperty, "Streams");
+        if (SCAN_COLLECT_METADATA && ctx->this_layer_metadata_json != NULL) {
+            arrobj = cli_jsonarray(ctx->this_layer_metadata_json, "Streams");
             if (NULL == arrobj) {
                 cli_warnmsg("ole2: no memory for streams list or streams is not an array\n");
             } else {
@@ -1547,13 +1547,13 @@ static cl_error_t handler_enum(ole2_header_t *hdr, property_t *prop, const char 
             }
 
             if (!strcmp(name, "powerpoint document")) {
-                cli_jsonstr(ctx->wrkproperty, "FileType", "CL_TYPE_MSPPT");
+                cli_jsonstr(ctx->this_layer_metadata_json, "FileType", "CL_TYPE_MSPPT");
             }
             if (!strcmp(name, "worddocument")) {
-                cli_jsonstr(ctx->wrkproperty, "FileType", "CL_TYPE_MSWORD");
+                cli_jsonstr(ctx->this_layer_metadata_json, "FileType", "CL_TYPE_MSWORD");
             }
             if (!strcmp(name, "workbook")) {
-                cli_jsonstr(ctx->wrkproperty, "FileType", "CL_TYPE_MSXL");
+                cli_jsonstr(ctx->this_layer_metadata_json, "FileType", "CL_TYPE_MSXL");
             }
         }
     }
@@ -1609,7 +1609,7 @@ static cl_error_t handler_enum(ole2_header_t *hdr, property_t *prop, const char 
                     if (!memcmp(hwp_check + offset, "HWP Document File", 17)) {
                         hwp5_header_t *hwp_new;
 
-                        cli_jsonstr(ctx->wrkproperty, "FileType", "CL_TYPE_HWP5");
+                        cli_jsonstr(ctx->this_layer_metadata_json, "FileType", "CL_TYPE_HWP5");
 
                         CLI_CALLOC_OR_GOTO_DONE(hwp_new, 1, sizeof(hwp5_header_t), status = CL_EMEM);
 
@@ -1680,7 +1680,7 @@ likely_mso_stream(int fd)
     return 0;
 }
 
-static cl_error_t scan_mso_stream(int fd, cli_ctx *ctx)
+static cl_error_t scan_mso_stream(int fd, const char *filepath, cli_ctx *ctx)
 {
     int zret, ofd;
     cl_error_t ret = CL_SUCCESS;
@@ -1704,7 +1704,7 @@ static cl_error_t scan_mso_stream(int fd, cli_ctx *ctx)
             return CL_ESTAT;
         }
 
-        input = fmap(fd, 0, statbuf.st_size, NULL);
+        input = fmap_new(fd, 0, statbuf.st_size, NULL, filepath);
         if (!input) {
             cli_dbgmsg("scan_mso_stream: Failed to get fmap for input stream\n");
             return CL_EMAP;
@@ -1712,9 +1712,9 @@ static cl_error_t scan_mso_stream(int fd, cli_ctx *ctx)
     }
 
     /* reserve tempfile for output and scanning */
-    if ((ret = cli_gentempfd(ctx->sub_tmpdir, &tmpname, &ofd)) != CL_SUCCESS) {
+    if ((ret = cli_gentempfd(ctx->this_layer_tmpdir, &tmpname, &ofd)) != CL_SUCCESS) {
         cli_errmsg("scan_mso_stream: Can't generate temporary file\n");
-        funmap(input);
+        fmap_free(input);
         return ret;
     }
 
@@ -1815,7 +1815,7 @@ mso_end:
         if (cli_unlink(tmpname))
             ret = CL_EUNLINK;
     free(tmpname);
-    funmap(input);
+    fmap_free(input);
     return ret;
 }
 
@@ -1841,7 +1841,7 @@ static cl_error_t handler_otf(ole2_header_t *hdr, property_t *prop, const char *
     }
     print_ole2_property(prop);
 
-    if (!(tempfile = cli_gentemp(ctx->sub_tmpdir))) {
+    if (!(tempfile = cli_gentemp(ctx->this_layer_tmpdir))) {
         ret = CL_EMEM;
         goto done;
     }
@@ -1927,7 +1927,7 @@ static cl_error_t handler_otf(ole2_header_t *hdr, property_t *prop, const char *
     }
 
     /* JSON Output Summary Information */
-    if (SCAN_COLLECT_METADATA && (ctx->properties != NULL)) {
+    if (SCAN_COLLECT_METADATA && (ctx->metadata_json != NULL)) {
         if (!name) {
             name = cli_ole2_get_property_name2(prop->name, prop->name_size);
         }
@@ -1935,7 +1935,7 @@ static cl_error_t handler_otf(ole2_header_t *hdr, property_t *prop, const char *
             if (!strncmp(name, "_5_summaryinformation", 21)) {
                 cli_dbgmsg("OLE2: detected a '_5_summaryinformation' stream\n");
                 /* JSONOLE2 - what to do if something breaks? */
-                if (cli_ole2_summary_json(ctx, ofd, 0) == CL_ETIMEOUT) {
+                if (cli_ole2_summary_json(ctx, ofd, 0, tempfile) == CL_ETIMEOUT) {
                     ret = CL_ETIMEOUT;
                     goto done;
                 }
@@ -1944,7 +1944,7 @@ static cl_error_t handler_otf(ole2_header_t *hdr, property_t *prop, const char *
             if (!strncmp(name, "_5_documentsummaryinformation", 29)) {
                 cli_dbgmsg("OLE2: detected a '_5_documentsummaryinformation' stream\n");
                 /* JSONOLE2 - what to do if something breaks? */
-                if (cli_ole2_summary_json(ctx, ofd, 1) == CL_ETIMEOUT) {
+                if (cli_ole2_summary_json(ctx, ofd, 1, tempfile) == CL_ETIMEOUT) {
                     ret = CL_ETIMEOUT;
                     goto done;
                 }
@@ -1961,7 +1961,7 @@ static cl_error_t handler_otf(ole2_header_t *hdr, property_t *prop, const char *
         ret = CL_ESEEK;
     } else if (is_mso) {
         /* MSO Stream Scan */
-        ret = scan_mso_stream(ofd, ctx);
+        ret = scan_mso_stream(ofd, tempfile, ctx);
     } else {
         /* Normal File Scan */
         ret = cli_magic_scan_desc(ofd, tempfile, ctx, NULL, LAYER_ATTRIBUTES_NONE);
@@ -2045,7 +2045,7 @@ static cl_error_t handler_otf_encrypted(ole2_header_t *hdr, property_t *prop, co
 
     nrounds = rijndaelSetupDecrypt(rk, key->key, key->key_length_bits);
 
-    if (!(tempfile = cli_gentemp(ctx->sub_tmpdir))) {
+    if (!(tempfile = cli_gentemp(ctx->this_layer_tmpdir))) {
         ret = CL_EMEM;
         goto done;
     }
@@ -2167,7 +2167,7 @@ static cl_error_t handler_otf_encrypted(ole2_header_t *hdr, property_t *prop, co
     }
 
     /* JSON Output Summary Information */
-    if (SCAN_COLLECT_METADATA && (ctx->properties != NULL)) {
+    if (SCAN_COLLECT_METADATA && (ctx->metadata_json != NULL)) {
         if (!name) {
             name = cli_ole2_get_property_name2(prop->name, prop->name_size);
         }
@@ -2175,7 +2175,7 @@ static cl_error_t handler_otf_encrypted(ole2_header_t *hdr, property_t *prop, co
             if (!strncmp(name, "_5_summaryinformation", 21)) {
                 cli_dbgmsg("OLE2: detected a '_5_summaryinformation' stream\n");
                 /* JSONOLE2 - what to do if something breaks? */
-                if (cli_ole2_summary_json(ctx, ofd, 0) == CL_ETIMEOUT) {
+                if (cli_ole2_summary_json(ctx, ofd, 0, tempfile) == CL_ETIMEOUT) {
                     ret = CL_ETIMEOUT;
                     goto done;
                 }
@@ -2184,7 +2184,7 @@ static cl_error_t handler_otf_encrypted(ole2_header_t *hdr, property_t *prop, co
             if (!strncmp(name, "_5_documentsummaryinformation", 29)) {
                 cli_dbgmsg("OLE2: detected a '_5_documentsummaryinformation' stream\n");
                 /* JSONOLE2 - what to do if something breaks? */
-                if (cli_ole2_summary_json(ctx, ofd, 1) == CL_ETIMEOUT) {
+                if (cli_ole2_summary_json(ctx, ofd, 1, tempfile) == CL_ETIMEOUT) {
                     ret = CL_ETIMEOUT;
                     goto done;
                 }
@@ -2201,7 +2201,7 @@ static cl_error_t handler_otf_encrypted(ole2_header_t *hdr, property_t *prop, co
         ret = CL_ESEEK;
     } else if (is_mso) {
         /* MSO Stream Scan */
-        ret = scan_mso_stream(ofd, ctx);
+        ret = scan_mso_stream(ofd, tempfile, ctx);
     } else {
         /* Normal File Scan */
         ret = cli_magic_scan_desc(ofd, tempfile, ctx, NULL, LAYER_ATTRIBUTES_NONE);
@@ -2939,12 +2939,12 @@ cl_error_t cli_ole2_extract(const char *dirname, cli_ctx *ctx, struct uniq **fil
         }
     }
 
-    if (SCAN_COLLECT_METADATA && (ctx->wrkproperty != NULL)) {
+    if (SCAN_COLLECT_METADATA && (ctx->this_layer_metadata_json != NULL)) {
         if (encryption_status.encrypted) {
             if (encryption_status.encryption_type) {
-                cli_jsonstr(ctx->wrkproperty, ENCRYPTED_JSON_KEY, encryption_status.encryption_type);
+                cli_jsonstr(ctx->this_layer_metadata_json, ENCRYPTED_JSON_KEY, encryption_status.encryption_type);
             } else {
-                cli_jsonstr(ctx->wrkproperty, ENCRYPTED_JSON_KEY, GENERIC_ENCRYPTED);
+                cli_jsonstr(ctx->this_layer_metadata_json, ENCRYPTED_JSON_KEY, GENERIC_ENCRYPTED);
             }
         }
     }

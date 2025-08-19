@@ -46,21 +46,6 @@ pub enum Error {
     Utf8(#[from] std::str::Utf8Error),
 }
 
-/// Get the ctx.sub_filepath as an Option<'str>
-///
-/// # Safety
-///
-/// Must be a valid ctx pointer.
-pub unsafe fn sub_filepath(ctx: *mut cli_ctx) -> Result<Option<PathBuf>, Error> {
-    if ctx.is_null() {
-        return Err(Error::NullPointer("ctx"));
-    }
-
-    Ok(str_from_ptr(unsafe { *ctx }.sub_filepath)
-        .map_err(Error::Utf8)?
-        .map(PathBuf::from))
-}
-
 /// Get the ctx.target_filepath as an Option<'str>
 ///
 /// # Safety

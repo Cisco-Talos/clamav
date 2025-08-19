@@ -395,7 +395,7 @@ cl_error_t cli_vba_readdir_new(cli_ctx *ctx, const char *dir, struct uniq *U, co
 
     *has_macros = *has_macros + 1;
 
-    if ((ret = cli_gentempfd_with_prefix(ctx->sub_tmpdir, "vba_project", tempfile, tempfd)) != CL_SUCCESS) {
+    if ((ret = cli_gentempfd_with_prefix(ctx->this_layer_tmpdir, "vba_project", tempfile, tempfd)) != CL_SUCCESS) {
         cli_warnmsg("vba_readdir_new: VBA project cannot be dumped to file\n");
         goto done;
     }
@@ -1755,7 +1755,7 @@ int cli_scan_ole10(int fd, cli_ctx *ctx)
         if (!read_uint32(fd, &object_size, FALSE))
             return CL_CLEAN;
     }
-    if (!(fullname = cli_gentemp(ctx ? ctx->sub_tmpdir : NULL))) {
+    if (!(fullname = cli_gentemp(ctx ? ctx->this_layer_tmpdir : NULL))) {
         return CL_EMEM;
     }
     ofd = open(fullname, O_RDWR | O_CREAT | O_TRUNC | O_BINARY | O_EXCL,
@@ -1944,7 +1944,7 @@ cli_ppt_vba_read(int ifd, cli_ctx *ctx)
     const char *ret;
 
     /* Create a directory to store the extracted OLE2 objects */
-    dir = cli_gentemp_with_prefix(ctx ? ctx->sub_tmpdir : NULL, "ppt-ole2-tmp");
+    dir = cli_gentemp_with_prefix(ctx ? ctx->this_layer_tmpdir : NULL, "ppt-ole2-tmp");
     if (dir == NULL)
         return NULL;
     if (mkdir(dir, 0700)) {

@@ -60,7 +60,10 @@ typedef struct fc_config_ {
     const char *proxyPassword;       /**< (optional) Password for proxy server authentication. */
     const char *databaseDirectory;   /**< Filepath of database directory. */
     const char *tempDirectory;       /**< Filepath to store temp files. */
-    const char *certsDirectory;      /**< Filepath of clamav ca certificates directory to verify database external digital signatures. */
+    const char *certsDirectory;      /**< Filepath of clamav ca certificates directory to verify database external
+                                      *   digital signatures. */
+    bool bFipsLimits;                /**< If true, enable FIPS cryptographic hashing limitations that will require CVDs
+                                      *   to be signed with FIPS-compliant external '.sign' file. */
 } fc_config;
 
 typedef enum fc_error_tag {

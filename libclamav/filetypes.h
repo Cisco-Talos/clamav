@@ -25,8 +25,7 @@
 #include <sys/types.h>
 
 #include "clamav.h"
-
-typedef struct cli_ctx_tag cli_ctx;
+#include "other_types.h"
 
 #define CL_FILE_MBUFF_SIZE 1024
 #define CL_PART_MBUFF_SIZE 1028
@@ -149,12 +148,34 @@ struct cli_matched_type {
     unsigned short cnt;
 };
 
+/**
+ * @brief Convert a file type name to a file type code.
+ *
+ * @param name The name of the file type. E.g. "CL_TYPE_PE", "CL_TYPE_ELF", etc.
+ * @return cli_file_t
+ */
 cli_file_t cli_ftcode(const char *name);
+
+/**
+ * @brief Convert a human-friendly file type name to a file type code.
+ *
+ * @param name The human-friendly name of the file type. E.g. "pe", "ZIP", "CL_TYPE_ELF", etc.
+ * @return cli_file_t
+ */
+cli_file_t cli_ftcode_human_friendly(const char *name);
+
+/**
+ * @brief Convert a file type code to a file type name.
+ *
+ * @param code The file type code. E.g. CL_TYPE_PE, CL_TYPE_ELF, etc.
+ * @return const char* A ame of the file type. E.g. "CL_TYPE_PE", "CL_TYPE_ELF", etc.
+ */
 const char *cli_ftname(cli_file_t code);
+
 void cli_ftfree(const struct cl_engine *engine);
 cli_file_t cli_compare_ftm_file(const unsigned char *buf, size_t buflen, const struct cl_engine *engine);
 cli_file_t cli_compare_ftm_partition(const unsigned char *buf, size_t buflen, const struct cl_engine *engine);
-cli_file_t cli_determine_fmap_type(cli_ctx *ctx, cli_file_t basetype);
+cli_file_t cli_determine_fmap_type(cli_ctx_t ctx, cli_file_t basetype);
 int cli_addtypesigs(struct cl_engine *engine);
 
 #endif

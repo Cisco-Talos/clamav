@@ -859,7 +859,7 @@ static int arj_read_main_header(arj_metadata_t *metadata)
         goto done;
     }
     if (header_size > HEADERSIZE_MAX) {
-        cli_dbgmsg("arj_read_header: invalid header_size: %u\n ", header_size);
+        cli_dbgmsg("arj_read_header: invalid header_size: %u\n", header_size);
         ret = FALSE;
         goto done;
     }

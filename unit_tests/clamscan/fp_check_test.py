@@ -1,7 +1,7 @@
 # Copyright (C) 2020-2025 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
 
 """
-Run {valgrind} {valgrind_args} {clamscan} tests.
+Run {valgrind} {valgrind_args} {clamscan} --fips-limits tests.
 """
 
 import unittest
@@ -34,18 +34,24 @@ rename()
         TC.normalized_match_sig.write_text(r"Malicious.PHP.normalized:0:*:69676e6f72655f757365725f61626f7274286173646629")
 
         TC.original_hash_fp = TC.path_tmp / "original_hash.fp"
-        TC.original_hash_fp.write_text(r"a4b3c39134fa424beb9f84ffe5f175a3:190:original_hash")
+        TC.original_hash_fp.write_text(r"845c4893a8a4c666251300718eec7bdbd1b10011b12a08a90a4ab54879f3b9f9:190:original_hash")
 
         TC.original_hash_wild_fp = TC.path_tmp / "original_hash.wild.fp"
-        TC.original_hash_wild_fp.write_text(r"a4b3c39134fa424beb9f84ffe5f175a3:*:original_hash.wild:73")
+        TC.original_hash_wild_fp.write_text(r"845c4893a8a4c666251300718eec7bdbd1b10011b12a08a90a4ab54879f3b9f9:*:original_hash.wild:73")
 
         # The normalized hash is this for now. Changes to clamav normalization logic may require
         # changes to this hash.
         TC.normalized_hash_fp = TC.path_tmp / "normalized_hash.fp"
-        TC.normalized_hash_fp.write_text(r"0e32a3ab501afb50daedc04764f8dc16:188:normalized_hash")
+        TC.normalized_hash_fp.write_text(r"93506a60db8ba890558033e77d2e90274013c6c387e1ae11c542bcd65a8b260e:188:normalized_hash")
 
         TC.normalized_hash_wild_fp = TC.path_tmp / "normalized_hash.wild.fp"
-        TC.normalized_hash_wild_fp.write_text(r"0e32a3ab501afb50daedc04764f8dc16:*:normalized_hash.wild:73")
+        TC.normalized_hash_wild_fp.write_text(r"93506a60db8ba890558033e77d2e90274013c6c387e1ae11c542bcd65a8b260e:*:normalized_hash.wild:73")
+
+        TC.normalized_md5_fp = TC.path_tmp / "normalized_md5.fp"
+        TC.normalized_md5_fp.write_text(r"0e32a3ab501afb50daedc04764f8dc16:188:normalized_hash")
+
+        TC.normalized_sha1_fp = TC.path_tmp / "normalized_sha1.fp"
+        TC.normalized_sha1_fp.write_text(r"df6341adaf8c7cec6daaca281b724fad9f9c412e:188:normalized_hash")
 
         TC.test_file_zipped = TC.path_tmp / 'test_file.zip'
         with ZipFile(str(TC.test_file_zipped), 'w', ZIP_DEFLATED) as zf:
@@ -62,20 +68,20 @@ rename()
 
         # Generate hash of the zipped file.
         # Since we generated the zip in python, we don't know the hash in advance.
-        hash_sha256 = hashlib.sha256()
+        hash_sha2_256 = hashlib.sha256()
         with TC.test_file_zipped.open("rb") as f:
             for chunk in iter(lambda: f.read(4096), b""):
-                hash_sha256.update(chunk)
-        hash_sha256 = hash_sha256.hexdigest()
+                hash_sha2_256.update(chunk)
+        hash_sha2_256 = hash_sha2_256.hexdigest()
 
         TC.test_file_zipped_hash_fp = TC.path_tmp / 'test_file.zip.hash.fp'
         TC.test_file_zipped_hash_fp.write_text('{hash}:{size}:test_file.zip'.format(
-            hash=hash_sha256,
+            hash=hash_sha2_256,
             size=TC.test_file_zipped.stat().st_size))
 
         TC.test_file_zipped_hash_wild_fp = TC.path_tmp / 'test_file.zip.hash.wild.fp'
         TC.test_file_zipped_hash_wild_fp.write_text('{hash}:*:test_file.zip.wild:73'.format(
-            hash=hash_sha256))
+            hash=hash_sha2_256))
 
     @classmethod
     def tearDownClass(cls):
@@ -95,7 +101,7 @@ rename()
         self.step_name("Test file detection with pattern from normalized HTML")
 
         output = self.execute_command(
-            "{valgrind} {valgrind_args} {clamscan} {testfiles} -d {db1}".format(
+            "{valgrind} {valgrind_args} {clamscan} --fips-limits {testfiles} -d {db1}".format(
                 valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan,
                 testfiles=TC.test_file,
                 db1=TC.normalized_match_sig,
@@ -110,7 +116,7 @@ rename()
         self.step_name("Test file detection with pattern from normalized HTML inside a ZIP file")
 
         output = self.execute_command(
-            "{valgrind} {valgrind_args} {clamscan} {testfiles} -d {db1}".format(
+            "{valgrind} {valgrind_args} {clamscan} --fips-limits {testfiles} -d {db1}".format(
                 valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan,
                 testfiles=TC.test_file_zipped,
                 db1=TC.normalized_match_sig,
@@ -127,7 +133,7 @@ rename()
         self.step_name("Test file trusted with fixed-size hash of the normalized HTML")
 
         output = self.execute_command(
-            "{valgrind} {valgrind_args} {clamscan} {testfiles} -d {db1} -d {db2} ".format(
+            "{valgrind} {valgrind_args} {clamscan} --fips-limits {testfiles} -d {db1} -d {db2} ".format(
                 valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan,
                 testfiles=TC.test_file,
                 db1=TC.normalized_match_sig,
@@ -135,6 +141,46 @@ rename()
             )
         )
         self.verify_output(output.out, expected=["OK"], unexpected=[])
+
+    def test_fp_for_normalized_fips_md5(self):
+        """
+        This test expects that FP sigs for normalized HTML hashes will fail if using md5 with --fips-limits
+        This is because --fips-limits will prevent loading md5 and sha1 FP signatures.
+
+        We can't test with --fips-limits disabled beacuse those tests will fail in a fips-enabled environment where
+        these limits are forced.
+        """
+        self.step_name("Test file trusted with fixed-size hash of the normalized HTML")
+
+        output = self.execute_command(
+            "{valgrind} {valgrind_args} {clamscan} --fips-limits {testfiles} -d {db1} -d {db2} ".format(
+                valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan,
+                testfiles=TC.test_file,
+                db1=TC.normalized_match_sig,
+                db2=TC.normalized_md5_fp,
+            )
+        )
+        self.verify_output(output.out, expected=["Malicious.PHP.normalized.UNOFFICIAL FOUND"], unexpected=[])
+
+    def test_fp_for_normalized_fips_sha1(self):
+        """
+        This test expects that FP sigs for normalized HTML hashes will fail if using sha1 with --fips-limits
+        This is because --fips-limits will prevent loading md5 and sha1 FP signatures.
+
+        We can't test with --fips-limits disabled beacuse those tests will fail in a fips-enabled environment where
+        these limits are forced.
+        """
+        self.step_name("Test file trusted with fixed-size hash of the normalized HTML")
+
+        output = self.execute_command(
+            "{valgrind} {valgrind_args} {clamscan} --fips-limits {testfiles} -d {db1} -d {db2} ".format(
+                valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan,
+                testfiles=TC.test_file,
+                db1=TC.normalized_match_sig,
+                db2=TC.normalized_sha1_fp,
+            )
+        )
+        self.verify_output(output.out, expected=["Malicious.PHP.normalized.UNOFFICIAL FOUND"], unexpected=[])
 
     def test_fp_for_normalized_wild(self):
         """
@@ -145,7 +191,7 @@ rename()
         self.step_name("Test file trusted with wild-card hash of the normalized HTML")
 
         output = self.execute_command(
-            "{valgrind} {valgrind_args} {clamscan} {testfiles} -d {db1} -d {db2} ".format(
+            "{valgrind} {valgrind_args} {clamscan} --fips-limits {testfiles} -d {db1} -d {db2} ".format(
                 valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan,
                 testfiles=TC.test_file,
                 db1=TC.normalized_match_sig,
@@ -162,7 +208,7 @@ rename()
         self.step_name("Test file trusted with the original non-normalized fixed-size hash")
 
         output = self.execute_command(
-            "{valgrind} {valgrind_args} {clamscan} {testfiles} -d {db1} -d {db2}".format(
+            "{valgrind} {valgrind_args} {clamscan} --fips-limits {testfiles} -d {db1} -d {db2}".format(
                 valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan,
                 testfiles=TC.test_file,
                 db1=TC.normalized_match_sig,
@@ -179,7 +225,7 @@ rename()
         self.step_name("Test file trusted with the original non-normalized wild-card hash")
 
         output = self.execute_command(
-            "{valgrind} {valgrind_args} {clamscan} {testfiles} -d {db1} -d {db2}".format(
+            "{valgrind} {valgrind_args} {clamscan} --fips-limits {testfiles} -d {db1} -d {db2}".format(
                 valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan,
                 testfiles=TC.test_file,
                 db1=TC.normalized_match_sig,
@@ -195,7 +241,7 @@ rename()
         self.step_name("Test file trusted with fixed-size hash of zip containing test file")
 
         output = self.execute_command(
-            "{valgrind} {valgrind_args} {clamscan} {testfiles} -d {db1} -d {db2}".format(
+            "{valgrind} {valgrind_args} {clamscan} --fips-limits {testfiles} -d {db1} -d {db2}".format(
                 valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan,
                 testfiles=TC.test_file_zipped,
                 db1=TC.normalized_match_sig,
@@ -211,7 +257,7 @@ rename()
         self.step_name("Test file trusted with wildcard hash of zip containing test file")
 
         output = self.execute_command(
-            "{valgrind} {valgrind_args} {clamscan} {testfiles} -d {db1} -d {db2}".format(
+            "{valgrind} {valgrind_args} {clamscan} --fips-limits {testfiles} -d {db1} -d {db2}".format(
                 valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan,
                 testfiles=TC.test_file_zipped,
                 db1=TC.normalized_match_sig,

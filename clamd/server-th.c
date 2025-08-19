@@ -1379,11 +1379,6 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
             options.heuristic |= CL_SCAN_HEURISTIC_STRUCTURED_SSN_STRIPPED;
     }
 
-#ifdef HAVE__INTERNAL__SHA_COLLECT
-    if (optget(opts, "DevCollectHashes")->enabled)
-        options.dev |= CL_SCAN_DEV_COLLECT_SHA;
-#endif
-
     if (optget(opts, "GenerateMetadataJson")->enabled) {
         options.general |= CL_SCAN_GENERAL_COLLECT_METADATA;
     }
@@ -1394,6 +1389,10 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
 
     if (optget(opts, "JsonStorePDFURIs")->enabled) {
         options.general |= CL_SCAN_GENERAL_STORE_PDF_URIS;
+    }
+
+    if (optget(opts, "JsonStoreExtraHashes")->enabled) {
+        options.general |= CL_SCAN_GENERAL_STORE_EXTRA_HASHES;
     }
 
     selfchk = optget(opts, "SelfCheck")->numarg;

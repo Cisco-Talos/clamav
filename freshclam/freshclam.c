@@ -1003,6 +1003,8 @@ static fc_error_t initialize(struct optstruct *opts)
 
     fcConfig.bCompressLocalDatabase = optget(opts, "CompressLocalDatabase")->enabled;
 
+    fcConfig.bFipsLimits = optget(opts, "FIPSCryptoHashLimits")->enabled;
+
     /*
      * Initialize libfreshclam.
      */

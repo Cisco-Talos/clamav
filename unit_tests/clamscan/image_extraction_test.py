@@ -44,8 +44,8 @@ class TC(testcase.TestCase):
         expected_results = [
             'Recognized PNG file',
             'Recognized JPEG file',
-            '"FileMD5":"41e64a9ddb49690f0b6fbbd71362b1b3"',
-            '"FileMD5":"5341e0efde53a50c416b2352263e7693"',
+            '"sha2-256":"4b947f2c5a9bff880100adc319690ab0da05792951e7355d76dfee1da17bb674"',
+            '"sha2-256":"b5c25a21cb9a59489c0629a14a06b492181d166c956e4244bb3da91476f39ecf"',
         ]
         self.verify_output(output.err, expected=expected_results)
 
@@ -74,8 +74,8 @@ class TC(testcase.TestCase):
         expected_stderr = [
             'Recognized PNG file',
             'Recognized JPEG file',
-            '"FileMD5":"41e64a9ddb49690f0b6fbbd71362b1b3"',
-            '"FileMD5":"5341e0efde53a50c416b2352263e7693"',
+            '"sha2-256":"4b947f2c5a9bff880100adc319690ab0da05792951e7355d76dfee1da17bb674"',
+            '"sha2-256":"b5c25a21cb9a59489c0629a14a06b492181d166c956e4244bb3da91476f39ecf"',
         ]
         self.verify_output(output.err, expected=expected_stderr)
 
@@ -112,8 +112,8 @@ class TC(testcase.TestCase):
         expected_stderr = [
             'Recognized GIF file',
             'Recognized PNG file',
-            '"FileMD5":"d8cff93e97a3d74b5a8bdd06a4381fee"',
-            '"FileMD5":"fff2b19d9d2442488d819aba21dc0729"',
+            '"sha2-256":"e559f8ea2867eb925d4fd3472129f455832912eb5dd5adc3769ea9138d6d9f0c"',
+            '"sha2-256":"b80f890d19ccb36dae6cf9e62c56013ea9988f763ac3ca86f74539303b091f6b"',
         ]
         self.verify_output(output.err, expected=expected_stderr)
 

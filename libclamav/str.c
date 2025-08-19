@@ -1110,3 +1110,39 @@ cl_error_t cli_basename(
 done:
     return status;
 }
+
+cl_error_t cli_hexstr_to_bytes(const char *hexstr, size_t hexlen, uint8_t *outbuf)
+{
+    size_t i;
+    if (!hexstr || !outbuf || (hexlen % 2 != 0)) {
+        return CL_EFORMAT;
+    }
+
+    for (i = 0; i < hexlen / 2; ++i) {
+        int hi, lo;
+        char c1 = hexstr[2 * i];
+        char c2 = hexstr[2 * i + 1];
+
+        if (!isxdigit((unsigned char)c1) || !isxdigit((unsigned char)c2)) {
+            return CL_EFORMAT;
+        }
+
+        // clang-format off
+        hi = (c1 >= '0' && c1 <= '9') ? c1 - '0' :
+             (c1 >= 'a' && c1 <= 'f') ? c1 - 'a' + 10 :
+             (c1 >= 'A' && c1 <= 'F') ? c1 - 'A' + 10 : -1;
+
+        lo = (c2 >= '0' && c2 <= '9') ? c2 - '0' :
+             (c2 >= 'a' && c2 <= 'f') ? c2 - 'a' + 10 :
+             (c2 >= 'A' && c2 <= 'F') ? c2 - 'A' + 10 : -1;
+        // clang-format on
+
+        if (hi < 0 || lo < 0) {
+            return CL_EFORMAT;
+        }
+
+        outbuf[i] = (uint8_t)((hi << 4) | lo);
+    }
+
+    return CL_SUCCESS;
+}

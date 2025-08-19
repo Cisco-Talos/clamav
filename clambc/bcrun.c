@@ -398,23 +398,15 @@ int main(int argc, char *argv[])
             fprintf(stderr, "Out of memory\n");
             exit(3);
         }
-        ctx->ctx      = &cctx;
-        cctx.engine   = engine;
-        cctx.evidence = evidence_new();
+        ctx->ctx    = &cctx;
+        cctx.engine = engine;
 
         cctx.recursion_stack_size = cctx.engine->max_recursion_level;
-        cctx.recursion_stack      = calloc(sizeof(recursion_level_t), cctx.recursion_stack_size);
+        cctx.recursion_stack      = calloc(sizeof(cli_scan_layer_t), cctx.recursion_stack_size);
         if (!cctx.recursion_stack) {
             fprintf(stderr, "Out of memory\n");
             exit(3);
         }
-
-        // ctx was memset, so recursion_level starts at 0.
-        cctx.recursion_stack[cctx.recursion_level].fmap = map;
-        cctx.recursion_stack[cctx.recursion_level].type = CL_TYPE_ANY; /* ANY for the top level, because we don't yet know the type. */
-        cctx.recursion_stack[cctx.recursion_level].size = map->len;
-
-        cctx.fmap = cctx.recursion_stack[cctx.recursion_level].fmap;
 
         memset(&dbg_state, 0, sizeof(dbg_state));
         dbg_state.file     = "<libclamav>";
@@ -453,11 +445,18 @@ int main(int argc, char *argv[])
                 optfree(opts);
                 exit(5);
             }
-            map = fmap(fd, 0, 0, opt->strarg);
+
+            map = fmap_new(fd, 0, 0, opt->strarg, opt->strarg);
             if (!map) {
                 fprintf(stderr, "Unable to map input file %s\n", opt->strarg);
                 exit(5);
             }
+
+            // ctx was memset, so recursion_level starts at 0.
+            cctx.recursion_stack[cctx.recursion_level].fmap = map;
+            cctx.recursion_stack[cctx.recursion_level].type = CL_TYPE_ANY; /* ANY for the top level, because we don't yet know the type. */
+            cctx.recursion_stack[cctx.recursion_level].size = map->len;
+
             rc = cli_bytecode_context_setfile(ctx, map);
             if (rc != CL_SUCCESS) {
                 fprintf(stderr, "Unable to set file %s: %s\n", opt->strarg, cl_strerror(rc));
@@ -465,10 +464,15 @@ int main(int argc, char *argv[])
                 exit(5);
             }
         }
+
         /* for testing */
         ctx->hooks.match_counts  = deadbeefcounts;
         ctx->hooks.match_offsets = deadbeefcounts;
-        rc                       = cli_bytecode_run(&bcs, bc, ctx);
+
+        /*
+         * Run the bytecode.
+         */
+        rc = cli_bytecode_run(&bcs, bc, ctx);
         if (rc != CL_SUCCESS) {
             fprintf(stderr, "Unable to run bytecode: %s\n", cl_strerror(rc));
         } else {
@@ -479,12 +483,15 @@ int main(int argc, char *argv[])
             if (debug_flag)
                 printf("[clambc] Bytecode returned: 0x%llx\n", (long long)v);
         }
+
         cli_bytecode_context_destroy(ctx);
         if (map)
-            funmap(map);
-        cl_engine_free(engine);
+            fmap_free(map);
+        if (cctx.recursion_stack[cctx.recursion_level].evidence) {
+            evidence_free(cctx.recursion_stack[cctx.recursion_level].evidence);
+        }
         free(cctx.recursion_stack);
-        evidence_free(cctx.evidence);
+        cl_engine_free(engine);
     }
     cli_bytecode_destroy(bc);
     cli_bytecode_done(&bcs);

@@ -57,6 +57,15 @@ This option causes memory or nested map scans to dump the content to disk. If yo
 \fB\-\-gen\-json\fR
 Generate JSON description of scanned file(s). JSON will be printed and also dropped to the temp directory if --leave-temps is enabled.
 .TP
+\fB\-\-json\-store\-html\-uris\fR
+Store html URIs in metadata. URIs will be written to the metadata.json file in an array called 'URIs'.
+.TP
+\fB\-\-json\-store\-pdf\-uris\fR
+Store pdf URIs in metadata. URIs will be written to the metadata.json file in an array called 'URIs'.
+.TP
+\fB\-\-json\-store\-extra\-hashes\fR
+Store md5 and sha1 in addition to sha2-256 in metadata.
+.TP
 \fB\-d FILE/DIR, \-\-database=FILE/DIR\fR
 Load virus database from FILE or load all virus database files from DIR.
 .TP
@@ -274,8 +283,26 @@ Maximum size file to perform PCRE subsig matching (default: 100 MB).
 \fB\-\-disable\-cache\fR
 Disable caching and cache checks for hash sums of scanned files.
 .TP
+\fB\-\-hash\-hint\fR
+The file hash so that libclamav does not need to calculate it. The type of hash must match the '\-\-hash-alg'.
+.TP
+\fB\-\-log\-hash\fR
+Print the file hash after each file scanned. The type of hash printed will match the '\-\-hash-alg'.
+.TP
+\fB\-\-hash\-alg\fR
+The hashing algorithm used for either '\-\-hash\-hint' or '\-\-log\-hash'. Supported algorithms are "md5", "sha1", "sha2\-256". If not specified, the default is "sha2\-256".
+.TP
+\fB\-\-file\-type\-hint\fR
+The file type hint so that libclamav can optimize scanning. E.g. "pe", "elf", "zip", etc. You may also use ClamAV type names such as "CL_TYPE_PE". ClamAV will ignore the hint if it is not familiar with the specified type. See also: https://docs.clamav.net/appendix/FileTypes.html#file-types
+.TP
+\fB\-\-log\-file\-type\fR
+Print the file type after each file scanned.
+.TP
 \fB\-\-cvdcertsdir=DIR\fR
 Specify a directory containing the root CA cert needed to verify detached CVD digital signatures. If not provided, then clamscan will look in the default directory.
+.TP
+\fB\-\-fips\-limits\fR
+Enforce FIPS\-like limits on using hash algorithms for cryptographic purposes. Will disable MD5 & SHA1 FP sigs and will require '.sign' files to verify CVD authenticity.
 
 .SH "ENVIRONMENT VARIABLES"
 .LP

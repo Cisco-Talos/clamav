@@ -9,7 +9,7 @@
  *  ESTsoft's "unEGG" module was not used in the creation of this capability
  *  in order to avoid to licensing restrictions on the ESTsoft "unEGG" module.
  *
- *  Authors: Micah Snyder
+ *  Authors: Valerie Snyder
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 as

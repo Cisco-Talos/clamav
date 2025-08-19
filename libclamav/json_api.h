@@ -41,6 +41,7 @@ cl_error_t cli_jsonstr(json_object *obj, const char *key, const char *s);
 cl_error_t cli_jsonstrlen(json_object *obj, const char *key, const char *s, int len);
 cl_error_t cli_jsonint(json_object *obj, const char *key, int32_t i);
 cl_error_t cli_jsonint64(json_object *obj, const char *key, int64_t i);
+cl_error_t cli_jsonuint64(json_object *obj, const char *key, uint64_t i);
 cl_error_t cli_jsonbool(json_object *obj, const char *key, int i);
 cl_error_t cli_jsondouble(json_object *obj, const char *key, double d);
 

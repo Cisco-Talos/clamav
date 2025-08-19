@@ -62,7 +62,7 @@ typedef struct fileblob {
                      */
     char *fullname; /* full pathname of the file */
     cli_ctx *ctx;   /* When set we can scan the blob, otherwise NULL */
-    unsigned long bytes_scanned;
+    uint64_t bytes_scanned;
     unsigned int isNotEmpty : 1;
     unsigned int isInfected : 1;
 } fileblob;
