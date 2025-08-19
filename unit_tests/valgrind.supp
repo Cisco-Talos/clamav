@@ -376,3 +376,10 @@
    fun:start_thread
    fun:clone
 }
+{
+   <clamd_localserver_socket>
+   CoreError:FdNotClosed
+   fun:socket
+   fun:localserver
+   fun:main
+}
