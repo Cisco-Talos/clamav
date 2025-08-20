@@ -175,7 +175,7 @@ int16_t ping_clamd(const struct optstruct *opts)
     char *errchk                = NULL;
     uint64_t i                  = 0;
     const struct optstruct *opt = NULL;
-    int64_t sockd               = 1;
+    int64_t sockd               = -1;
     struct RCVLN rcv;
     uint16_t ret = 0;
 
