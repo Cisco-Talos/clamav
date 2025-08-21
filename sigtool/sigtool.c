@@ -587,9 +587,9 @@ static int htmlnorm(const struct optstruct *opts)
 
     if (NULL != (ctx = convenience_ctx(fd, optget(opts, "html-normalise")->strarg))) {
         html_normalise_map(ctx, ctx->fmap, ".", NULL, NULL);
-        fmap_free(ctx->fmap);
-    } else
+    } else {
         mprintf(LOGG_ERROR, "fmap failed\n");
+    }
 
     close(fd);
 
