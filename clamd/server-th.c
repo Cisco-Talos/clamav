@@ -652,6 +652,7 @@ static void *acceptloop_th(void *arg)
             logg(LOGG_DEBUG_NV, "Shutdown: closed fd %d\n", fds->buf[i].fd);
             shutdown(fds->buf[i].fd, 2);
             closesocket(fds->buf[i].fd);
+            fds->buf[i].fd = -1;
         }
     }
 
