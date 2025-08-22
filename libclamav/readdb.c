@@ -2600,36 +2600,62 @@ static int cli_loadftm(FILE *fs, struct cl_engine *engine, unsigned int options,
 #define INFO_NSTR "11088894983048545473659556106627194923928941791795047620591658697413581043322715912172496806525381055880964520618400224333320534660299233983755341740679502866829909679955734391392668378361221524205396631090105151641270857277080310734320951653700508941717419168723942507890702904702707587451621691050754307850383399865346487203798464178537392211402786481359824461197231102895415093770394216666324484593935762408468516826633192140826667923494822045805347809932848454845886971706424360558667862775876072059437703365380209101697738577515476935085469455279994113145977994084618328482151013142393373316337519977244732747977"
 #define INFO_ESTR "100002049"
 #define INFO_TOKENS 3
-static int cli_loadinfo(FILE *fs, struct cl_engine *engine, unsigned int options, struct cli_dbio *dbio)
+static cl_error_t cli_loadinfo(FILE *fs, struct cl_engine *engine, unsigned int options, struct cli_dbio *dbio)
 {
+    cl_error_t status = CL_SUCCESS;
     const char *tokens[INFO_TOKENS + 1];
     char buffer[FILEBUFF];
     unsigned int line = 0, tokens_count, len;
     char hash[32];
-    struct cli_dbinfo *last = NULL, *new;
-    int ret = CL_SUCCESS, dsig = 0;
-    void *ctx;
+    struct cli_dbinfo *last = NULL;
+    struct cli_dbinfo *new  = NULL;
+
+    void *ctx = NULL;
+
+    bool check_dsig = true;
+    bool has_dsig   = false;
 
     if (!dbio) {
         cli_errmsg("cli_loadinfo: .info files can only be loaded from within database container files\n");
-        return CL_EMALFDB;
+        status = CL_EMALFDB;
+        goto done;
     }
 
-    ctx = cl_hash_init("sha2-256");
-    if (!(ctx))
-        return CL_EMALFDB;
+    // Check if we're loading a CUD (aka intentionally unsigned) or if we already verified using an external .sign file.
+    if ((options & CL_DB_UNSIGNED) ||
+        (options & CL_DB_ENHANCED)) {
+        check_dsig = false;
+    }
+
+    if (check_dsig) {
+        ctx = cl_hash_init("sha2-256");
+        if (!(ctx)) {
+            status = CL_EMALFDB;
+            goto done;
+        }
+    }
 
     while (cli_dbgets(buffer, FILEBUFF, fs, dbio)) {
         line++;
+
         if (!(options & CL_DB_UNSIGNED) && !strncmp(buffer, "DSIG:", 5)) {
-            dsig = 1;
-            cl_finish_hash(ctx, hash);
-            if (cli_versig2((unsigned char *)hash, buffer + 5, INFO_NSTR, INFO_ESTR) != CL_SUCCESS) {
-                cli_errmsg("cli_loadinfo: Incorrect digital signature\n");
-                ret = CL_EMALFDB;
+
+            if (check_dsig) {
+                has_dsig = true;
+
+                cl_finish_hash(ctx, hash);
+
+                if (cli_versig2((unsigned char *)hash, buffer + 5, INFO_NSTR, INFO_ESTR) != CL_SUCCESS) {
+                    cli_errmsg("cli_loadinfo: Incorrect digital signature\n");
+                    status = CL_EMALFDB;
+                    goto done;
+                }
             }
+
+            // We're done.
             break;
         }
+
         len = strlen(buffer);
         if (!len) {
             buffer[len]     = '\n';
@@ -2641,81 +2667,97 @@ static int cli_loadinfo(FILE *fs, struct cl_engine *engine, unsigned int options
                 buffer[len + 1] = 0;
             }
         }
-        cl_update_hash(ctx, buffer, strlen(buffer));
+
+        if (check_dsig) {
+            cl_update_hash(ctx, buffer, strlen(buffer));
+        }
+
         cli_chomp(buffer);
+
         if (!strncmp("ClamAV-VDB:", buffer, 11)) {
             if (engine->dbinfo) { /* shouldn't be initialized at this point */
                 cli_errmsg("cli_loadinfo: engine->dbinfo already initialized\n");
-                ret = CL_EMALFDB;
-                break;
+                status = CL_EMALFDB;
+                goto done;
             }
+
             last = engine->dbinfo = (struct cli_dbinfo *)MPOOL_CALLOC(engine->mempool, 1, sizeof(struct cli_bm_patt));
             if (!engine->dbinfo) {
-                ret = CL_EMEM;
-                break;
+                cli_errmsg("cli_loadinfo: Problem parsing database. Can't allocate memory for new database info at line %u\n", line);
+                status = CL_EMEM;
+                goto done;
             }
+
             engine->dbinfo->cvd = cl_cvdparse(buffer);
             if (!engine->dbinfo->cvd) {
-                cli_errmsg("cli_loadinfo: Can't parse header entry\n");
-                ret = CL_EMALFDB;
-                break;
+                cli_errmsg("cli_loadinfo: Problem parsing database. Can't parse CVD header entry at line %u\n", line);
+                status = CL_EMALFDB;
+                goto done;
             }
             continue;
         }
 
         if (!last) {
-            cli_errmsg("cli_loadinfo: Incorrect file format\n");
-            ret = CL_EMALFDB;
-            break;
+            cli_errmsg("cli_loadinfo: Problem parsing database. Incorrect file format at line %u\n", line);
+            status = CL_EMALFDB;
+            goto done;
         }
+
         tokens_count = cli_strtokenize(buffer, ':', INFO_TOKENS + 1, tokens);
         if (tokens_count != INFO_TOKENS) {
-            ret = CL_EMALFDB;
-            break;
+            cli_errmsg("cli_loadinfo: Problem parsing database. Incorrect number of tokens at line %u\n", line);
+            status = CL_EMALFDB;
+            goto done;
         }
+
         new = (struct cli_dbinfo *)MPOOL_CALLOC(engine->mempool, 1, sizeof(struct cli_dbinfo));
         if (!new) {
-            ret = CL_EMEM;
-            break;
+            cli_errmsg("cli_loadinfo: Problem parsing database. Can't allocate memory for new database info at line %u\n", line);
+            status = CL_EMEM;
+            goto done;
         }
+
         new->name = CLI_MPOOL_STRDUP(engine->mempool, tokens[0]);
         if (!new->name) {
-            MPOOL_FREE(engine->mempool, new);
-            ret = CL_EMEM;
-            break;
+            cli_errmsg("cli_loadinfo: Problem parsing database. Can't allocate memory for name at line %u\n", line);
+            status = CL_EMEM;
+            goto done;
         }
 
         if (!cli_isnumber(tokens[1])) {
-            cli_errmsg("cli_loadinfo: Invalid value in the size field\n");
-            MPOOL_FREE(engine->mempool, new->name);
-            MPOOL_FREE(engine->mempool, new);
-            ret = CL_EMALFDB;
-            break;
+            cli_errmsg("cli_loadinfo: Problem parsing database. Invalid value in the size field at line %u\n", line);
+            status = CL_EMALFDB;
+            goto done;
         }
         new->size = atoi(tokens[1]);
 
         if (strlen(tokens[2]) != 64 || !(new->hash = CLI_MPOOL_HEX2STR(engine->mempool, tokens[2]))) {
-            cli_errmsg("cli_loadinfo: Malformed SHA2-256 string at line %u\n", line);
-            MPOOL_FREE(engine->mempool, new->name);
-            MPOOL_FREE(engine->mempool, new);
-            ret = CL_EMALFDB;
-            break;
+            cli_errmsg("cli_loadinfo: Problem parsing database. Malformed SHA2-256 string at line %u\n", line);
+            status = CL_EMALFDB;
+            goto done;
         }
+
         last->next = new;
         last       = new;
+        new        = NULL;
     }
 
-    if (!(options & CL_DB_UNSIGNED) && !dsig) {
-        cli_errmsg("cli_loadinfo: Digital signature not found\n");
-        return CL_EMALFDB;
+    if (check_dsig && !has_dsig) {
+        cli_errmsg("cli_loadinfo: Problem parsing database. Digital signature not found\n");
+        status = CL_EMALFDB;
+        goto done;
     }
 
-    if (ret) {
-        cli_errmsg("cli_loadinfo: Problem parsing database at line %u\n", line);
-        return ret;
+done:
+
+    if (NULL != new) {
+        if (NULL != new->name) {
+            MPOOL_FREE(engine->mempool, new->name);
+        }
+        MPOOL_FREE(engine->mempool, new);
     }
 
-    return CL_SUCCESS;
+    return status;
 }
 
 #define IGN_MAX_TOKENS 3

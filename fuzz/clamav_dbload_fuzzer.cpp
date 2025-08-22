@@ -80,7 +80,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
 
     dboptions =
         CL_DB_PHISHING | CL_DB_PHISHING_URLS |
-        CL_DB_BYTECODE | CL_DB_PUA | CL_DB_ENHANCED;
+        CL_DB_BYTECODE | CL_DB_PUA;
 
 #if defined(CLAMAV_FUZZ_CDB)
     snprintf(tmp_file_name, sizeof(tmp_file_name), "tmp.dbload.%d.cdb", pid);

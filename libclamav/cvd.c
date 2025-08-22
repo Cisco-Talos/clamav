@@ -520,6 +520,9 @@ cl_error_t cli_cvdload(
             status = CL_EVERIFY;
             goto done;
         }
+
+        // Set enhanced flag to indicate it was verified using an external .sign digital signature.
+        options |= CL_DB_ENHANCED;
     }
 
     /* For .cvd files, check if there is a .cld of the same name.
