@@ -648,7 +648,7 @@ static cl_error_t initPointerList(PointerList *pl)
 
     freePointerList(pl);
     CLI_CALLOC_OR_GOTO_DONE(pl->idxs, capacity, sizeof(uint8_t *),
-                            cli_errmsg("initPointerList: Can't allocate memory\n");
+                            cli_errmsg("initPointerList: Can't allocate memory\n"),
                             ret = CL_EMEM);
 
     pl->capacity = capacity;
