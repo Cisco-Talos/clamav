@@ -135,11 +135,9 @@ size_t pdf_decodestream(
         pdf_print_dict(params, 0);
 #endif
 
-    token = malloc(sizeof(struct pdf_token));
-    if (!token) {
-        *status = CL_EMEM;
-        goto done;
-    }
+    CLI_CALLOC_OR_GOTO_DONE(
+        token, 1, sizeof(struct pdf_token),
+        *status = CL_EMEM);
 
     token->flags = 0;
     if (xref)
@@ -147,11 +145,9 @@ size_t pdf_decodestream(
 
     token->success = 0;
 
-    token->content = cli_max_malloc(streamlen);
-    if (!token->content) {
-        *status = CL_EMEM;
-        goto done;
-    }
+    CLI_MAX_CALLOC_OR_GOTO_DONE(
+        token->content, 1, streamlen,
+        *status = CL_EMEM);
 
     memcpy(token->content, stream, streamlen);
     token->length = streamlen;
@@ -890,7 +886,8 @@ static cl_error_t filter_decrypt(struct pdf_struct *pdf, struct pdf_obj *obj, st
 
 static cl_error_t filter_lzwdecode(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_dict *params, struct pdf_token *token)
 {
-    uint8_t *decoded, *temp;
+    uint8_t *decoded = NULL;
+    uint8_t *temp    = NULL;
     size_t declen = 0, capacity = 0;
 
     uint8_t *content = (uint8_t *)token->content;
@@ -1093,7 +1090,7 @@ done:
         }
     }
 
-    if (rc == CL_SUCCESS || rc == CL_BREAK) {
+    if ((rc == CL_SUCCESS || rc == CL_BREAK) && (NULL != decoded)) {
         free(token->content);
 
         token->content = decoded;
