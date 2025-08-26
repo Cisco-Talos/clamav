@@ -4608,7 +4608,13 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
         typercg = 0;
     }
 
-    if (ctx->engine->engine_options & ENGINE_OPTIONS_DISABLE_CACHE) {
+    /*
+     * Determine if caching is enabled.
+     * The application may have specifically disabled caching. Also, if the application never loaded any signatures,
+     * then the cache will be NULL and caching will also be disabled.
+     */
+    if ((ctx->engine->engine_options & ENGINE_OPTIONS_DISABLE_CACHE) ||
+        (ctx->engine->cache == NULL)) {
         cache_enabled = false;
     }
 
