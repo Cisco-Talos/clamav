@@ -1677,15 +1677,12 @@ cl_error_t pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t
                     goto done;
                 }
 
-                objstm = malloc(sizeof(struct objstm_struct));
-                if (!objstm) {
-                    cli_warnmsg("pdf_extract_obj: out of memory parsing object stream (%u)\n", pdf->nobjstms);
-                    status = CL_EMEM;
-                    goto done;
-                }
-                pdf->objstms[pdf->nobjstms - 1] = objstm;
+                CLI_CALLOC_OR_GOTO_DONE(
+                    objstm, 1, sizeof(struct objstm_struct),
+                    cli_warnmsg("pdf_extract_obj: out of memory parsing object stream (%u)\n", pdf->nobjstms),
+                    status = CL_EMEM);
 
-                memset(objstm, 0, sizeof(*objstm));
+                pdf->objstms[pdf->nobjstms - 1] = objstm;
 
                 objstm->first        = (size_t)objstm_first;
                 objstm->current      = (size_t)objstm_first;
