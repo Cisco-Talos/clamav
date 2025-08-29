@@ -66,6 +66,10 @@ if(ENABLE_UNRAR)
             set_target_properties(clamunrar_iface PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
         elseif(UNIX AND NOT APPLE)
             target_link_options(clamunrar_iface PRIVATE "-Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/libclamunrar_iface.map")
+            if (${CMAKE_SYSTEM_NAME} MATCHES "SunOS")
+                # Solaris 11.4 linker supports a subset of GNU ld version scripts, but requires a special option to enable
+                target_link_options(clamunrar_iface PRIVATE "-Wl,-z,gnu-version-script-compat")
+            endif()
         endif()
 
         # Private (internal-only) dependencies.
