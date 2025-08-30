@@ -63,6 +63,8 @@ elseif(APPLE OR CMAKE_SYSTEM_NAME MATCHES "BSD")
     set(C_BSD 1)
 elseif(CMAKE_SYSTEM_NAME MATCHES "AIX")
     set(AIX TRUE)
+elseif(CMAKE_SYSTEM_NAME STREQUAL "GNU")
+    set(C_GNU_HURD 1)
 endif()
 
 # Git optionally used to add commit info into build to differentiate in bug reports.
@@ -196,7 +198,7 @@ else()
   set(USING_CLANG OFF)
 endif()
 
-if(C_LINUX)
+if(C_LINUX OR C_GNU_HURD)
     if(CMAKE_COMPILER_IS_GNUCXX OR USING_CLANG)
         # Set _GNU_SOURCE for O_LARGEFILE, O_CLOEXEC, O_DIRECTORY, O_NOFOLLOW, etc flags on older systems
         # (pre POSIX.1-2008: glibc 2.11 and earlier). #4042
