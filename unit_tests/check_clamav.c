@@ -2012,6 +2012,7 @@ int main(int argc, char **argv)
     int nf;
     Suite *s;
     SRunner *sr;
+    FILE *log_file = NULL;
 
     UNUSEDPARAM(argc);
     UNUSEDPARAM(argv);
@@ -2037,7 +2038,8 @@ int main(int argc, char **argv)
     srunner_add_suite(sr, test_bytecode_suite());
 
     srunner_set_log(sr, OBJDIR PATHSEP "test.log");
-    if (freopen(OBJDIR PATHSEP "test-stderr.log", "w+", stderr) == NULL) {
+    log_file = freopen(OBJDIR PATHSEP "test-stderr.log", "w+", stderr);
+    if (log_file == NULL) {
         // The stderr FILE pointer may be closed by `freopen()` even if redirecting to the log file files.
         // So we will output the error message to stdout instead.
         fputs("Unable to redirect stderr!\n", stdout);
@@ -2051,6 +2053,10 @@ int main(int argc, char **argv)
     srunner_free(sr);
 
     xmlCleanupParser();
+
+    if (log_file) {
+        fclose(log_file);
+    }
 
     return (nf == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
 }

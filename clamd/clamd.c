@@ -904,7 +904,10 @@ int main(int argc, char **argv)
         logg(LOGG_DEBUG, "Closing the main socket%s.\n", (nlsockets > 1) ? "s" : "");
 
         for (i = 0; i < nlsockets; i++) {
+            if (lsockets[i] == -1)
+                continue;
             closesocket(lsockets[i]);
+            lsockets[i] = -1;
         }
 #ifndef _WIN32
         if (nlsockets && localsock) {
