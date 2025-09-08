@@ -98,8 +98,7 @@ static struct {
     {CMD17, sizeof(CMD17) - 1, COMMAND_INSTREAM, 0, 0, 1},
     {CMD19, sizeof(CMD19) - 1, COMMAND_DETSTATSCLEAR, 0, 1, 1},
     {CMD20, sizeof(CMD20) - 1, COMMAND_DETSTATS, 0, 1, 1},
-    {CMD21, sizeof(CMD21) - 1, COMMAND_ALLMATCHSCAN, 1, 0, 1}
-};
+    {CMD21, sizeof(CMD21) - 1, COMMAND_ALLMATCHSCAN, 1, 0, 1}};
 
 enum commands parse_command(const char *cmd, const char **argument, int oldstyle)
 {
