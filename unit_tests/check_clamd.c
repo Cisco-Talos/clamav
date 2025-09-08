@@ -197,7 +197,6 @@ static struct basic_test {
 } basic_tests[] = {
     {"PING", NULL, "PONG", 1, 0, IDS_OK},
     {"RELOAD", NULL, "RELOADING", 1, 0, IDS_REJECT},
-    {"SELFCHECK", NULL, "DBUPTODATE", 1, 0, IDS_REJECT},
     {"VERSION", NULL, VERSION_REPLY, 1, 0, IDS_OK},
     {"VERSIONCOMMANDS", NULL, VCMDS_REPLY, 0, 0, IDS_REJECT},
     {"SCAN " SCANFILE, NULL, FOUNDREPLY, 1, 0, IDS_OK},
@@ -206,6 +205,8 @@ static struct basic_test {
     {"CONTSCAN " CLEANFILE, NULL, CLEANREPLY, 1, 0, IDS_REJECT},
     {"MULTISCAN " SCANFILE, NULL, FOUNDREPLY, 1, 0, IDS_REJECT},
     {"MULTISCAN " CLEANFILE, NULL, CLEANREPLY, 1, 0, IDS_REJECT},
+    /* selfcheck on freshly loaded database */
+    {"SELFCHECK", NULL, "DBUPTODATE", 1, 0, IDS_REJECT},
     /* unknown commands */
     {"RANDOM", NULL, UNKNOWN_REPLY, 1, 0, IDS_REJECT},
     /* commands invalid as first */
