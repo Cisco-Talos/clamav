@@ -1253,15 +1253,17 @@ struct optstruct *optparse(const char *cfgfile, int argc, char **argv, int verbo
             }
         }
 
-        /* Find and remove inline comments. */
-        numarg        = -1;
-        inlinecomment = strchr(arg, '#');
-        if (inlinecomment != NULL) {
-            /* Found a '#', indicating an inline comment. Strip it off along with any leading spaces or tabs. */
-            arg          = strtok(arg, "#");
-            trim_comment = arg + strlen(arg) - 1;
-            while (trim_comment >= arg && (*trim_comment == ' ' || *trim_comment == '\t')) {
-                *(trim_comment--) = '\0';
+        if (NULL != arg) {
+            /* Find and remove inline comments. */
+            numarg        = -1;
+            inlinecomment = strchr(arg, '#');
+            if (inlinecomment != NULL) {
+                /* Found a '#', indicating an inline comment. Strip it off along with any leading spaces or tabs. */
+                arg          = strtok(arg, "#");
+                trim_comment = arg + strlen(arg) - 1;
+                while (trim_comment >= arg && (*trim_comment == ' ' || *trim_comment == '\t')) {
+                    *(trim_comment--) = '\0';
+                }
             }
         }
 
