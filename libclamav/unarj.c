@@ -56,10 +56,6 @@
 #define CHAR_BIT (8)
 #endif
 #define MAXMATCH 256
-#ifndef FALSE
-#define FALSE (0)
-#define TRUE (1)
-#endif
 
 #define CODE_BIT 16
 #define NT (CODE_BIT + 3)
@@ -814,23 +810,25 @@ static cl_error_t arj_unstore(arj_metadata_t *metadata, int ofd, uint32_t len)
     return CL_SUCCESS;
 }
 
-static int is_arj_archive(arj_metadata_t *metadata)
+static bool is_arj_archive(arj_metadata_t *metadata)
 {
     const char header_id[2] = {0x60, 0xea};
     const char *mark;
 
     mark = fmap_need_off_once(metadata->map, metadata->offset, 2);
-    if (!mark)
-        return FALSE;
+    if (!mark) {
+        cli_dbgmsg("is_arj_archive: Failed to read the two-byte ARJ header ID at offset %zu\n", metadata->offset);
+        return false;
+    }
     metadata->offset += 2;
     if (memcmp(&mark[0], &header_id[0], 2) == 0) {
-        return TRUE;
+        return true;
     }
-    cli_dbgmsg("Not an ARJ archive\n");
-    return FALSE;
+    cli_dbgmsg("is_arj_archive: The two-byte ARJ header ID did not match; This is not an ARJ archive\n");
+    return false;
 }
 
-static int arj_read_main_header(arj_metadata_t *metadata)
+static bool arj_read_main_header(arj_metadata_t *metadata)
 {
     uint16_t header_size, count;
     arj_main_hdr_t main_hdr;
@@ -839,7 +837,7 @@ static int arj_read_main_header(arj_metadata_t *metadata)
     struct text_norm_state fnstate, comstate;
     unsigned char *fnnorm  = NULL;
     unsigned char *comnorm = NULL;
-    uint32_t ret           = TRUE;
+    bool ret               = true;
 
     size_t filename_max_len = 0;
     size_t filename_len     = 0;
@@ -848,28 +846,28 @@ static int arj_read_main_header(arj_metadata_t *metadata)
     size_t orig_offset      = metadata->offset;
 
     if (fmap_readn(metadata->map, &header_size, metadata->offset, 2) != 2)
-        return FALSE;
+        return false;
 
     metadata->offset += 2;
     header_size = le16_to_host(header_size);
     cli_dbgmsg("Header Size: %d\n", header_size);
     if (header_size == 0) {
         /* End of archive */
-        ret = FALSE;
+        ret = false;
         goto done;
     }
     if (header_size > HEADERSIZE_MAX) {
         cli_dbgmsg("arj_read_header: invalid header_size: %u\n", header_size);
-        ret = FALSE;
+        ret = false;
         goto done;
     }
     if ((header_size + sizeof(header_size)) > (metadata->map->len - metadata->offset)) {
         cli_dbgmsg("arj_read_header: invalid header_size: %u, exceeds length of file.\n", header_size);
-        ret = FALSE;
+        ret = false;
         goto done;
     }
     if (fmap_readn(metadata->map, &main_hdr, metadata->offset, 30) != 30) {
-        ret = FALSE;
+        ret = false;
         goto done;
     }
     metadata->offset += 30;
@@ -885,7 +883,7 @@ static int arj_read_main_header(arj_metadata_t *metadata)
 
     if (main_hdr.first_hdr_size < 30) {
         cli_dbgmsg("Format error. First Header Size < 30\n");
-        ret = FALSE;
+        ret = false;
         goto done;
     }
     if (main_hdr.first_hdr_size > 30) {
@@ -895,7 +893,7 @@ static int arj_read_main_header(arj_metadata_t *metadata)
     filename_max_len = (header_size + sizeof(header_size)) - (metadata->offset - orig_offset);
     if (filename_max_len > header_size) {
         cli_dbgmsg("UNARJ: Format error. First Header Size invalid\n");
-        ret = FALSE;
+        ret = false;
         goto done;
     }
     if (filename_max_len > 0) {
@@ -903,7 +901,7 @@ static int arj_read_main_header(arj_metadata_t *metadata)
         filename = fmap_need_offstr(metadata->map, metadata->offset, filename_max_len + 1);
         if (!filename || !fnnorm) {
             cli_dbgmsg("UNARJ: Unable to allocate memory for filename\n");
-            ret = FALSE;
+            ret = false;
             goto done;
         }
         filename_len = CLI_STRNLEN(filename, filename_max_len);
@@ -913,7 +911,7 @@ static int arj_read_main_header(arj_metadata_t *metadata)
     comment_max_len = (header_size + sizeof(header_size)) - (metadata->offset - orig_offset);
     if (comment_max_len > header_size) {
         cli_dbgmsg("UNARJ: Format error. First Header Size invalid\n");
-        ret = FALSE;
+        ret = false;
         goto done;
     }
     if (comment_max_len > 0) {
@@ -921,7 +919,7 @@ static int arj_read_main_header(arj_metadata_t *metadata)
         comment = fmap_need_offstr(metadata->map, metadata->offset, comment_max_len + 1);
         if (!comment || !comnorm) {
             cli_dbgmsg("UNARJ: Unable to allocate memory for comment\n");
-            ret = FALSE;
+            ret = false;
             goto done;
         }
         comment_len = CLI_STRNLEN(comment, comment_max_len);
@@ -942,7 +940,7 @@ static int arj_read_main_header(arj_metadata_t *metadata)
     for (;;) {
         const uint16_t *countp = fmap_need_off_once(metadata->map, metadata->offset, 2);
         if (!countp) {
-            ret = FALSE;
+            ret = false;
             goto done;
         }
         count = cli_readint16(countp);
@@ -1118,7 +1116,7 @@ static cl_error_t arj_read_file_header(arj_metadata_t *metadata)
     metadata->comp_size = file_hdr.comp_size;
     metadata->orig_size = file_hdr.orig_size;
     metadata->method    = file_hdr.method;
-    metadata->encrypted = ((file_hdr.flags & GARBLE_FLAG) != 0) ? TRUE : FALSE;
+    metadata->encrypted = ((file_hdr.flags & GARBLE_FLAG) != 0) ? true : false;
     metadata->ofd       = -1;
     if (!metadata->filename) {
         ret = CL_EMEM;
@@ -1146,27 +1144,112 @@ cl_error_t cli_unarj_open(fmap_t *map, const char *dirname, arj_metadata_t *meta
     metadata->map    = map;
     metadata->offset = 0;
     if (!is_arj_archive(metadata)) {
-        cli_dbgmsg("Not in ARJ format\n");
+        cli_dbgmsg("cli_unarj_open: is_arj_archive check failed\n");
         return CL_EFORMAT;
     }
     if (!arj_read_main_header(metadata)) {
-        cli_dbgmsg("Failed to read main header\n");
+        cli_dbgmsg("cli_unarj_open: Failed to read main header\n");
         return CL_EFORMAT;
     }
     return CL_SUCCESS;
 }
 
-cl_error_t cli_unarj_prepare_file(const char *dirname, arj_metadata_t *metadata)
+cl_error_t cli_unarj_header_check(
+    cli_ctx *ctx,
+    uint32_t offset,
+    size_t *size)
+{
+    cl_error_t status = CL_EFORMAT;
+    bool bool_ret;
+    cl_error_t ret;
+    arj_metadata_t metadata = {0};
+    int files_found         = 0;
+
+    cli_dbgmsg("in cli_unarj_header_check\n");
+
+    if (!ctx || !ctx->fmap || !size) {
+        status = CL_ENULLARG;
+        goto done;
+    }
+
+    metadata.map    = ctx->fmap;
+    metadata.offset = offset;
+    *size           = 0;
+
+    bool_ret = is_arj_archive(&metadata);
+    if (false == bool_ret) {
+        cli_dbgmsg("Not in ARJ format\n");
+        status = CL_EFORMAT;
+        goto done;
+    }
+
+    cli_dbgmsg("cli_unarj_header_check: is_arj_archive-check passed\n");
+
+    bool_ret = arj_read_main_header(&metadata);
+    if (false == bool_ret) {
+        cli_dbgmsg("Failed to read main header\n");
+        status = CL_EFORMAT;
+        goto done;
+    }
+
+    cli_dbgmsg("cli_unarj_header_check: Successfully read main header\n");
+
+    do {
+        metadata.filename  = NULL;
+        metadata.comp_size = 0;
+        metadata.orig_size = 0;
+
+        ret = cli_unarj_prepare_file(&metadata);
+        if (ret == CL_SUCCESS) {
+            cli_dbgmsg("cli_unarj_header_check: Successfully read file header\n");
+            files_found++;
+
+            /* Skip the file data */
+            metadata.offset += metadata.comp_size;
+
+        } else if (ret == CL_BREAK) {
+            cli_dbgmsg("cli_unarj_header_check: End of archive\n");
+            status = CL_BREAK;
+
+        } else {
+            cli_dbgmsg("cli_unarj_header_check: Error reading file header: %s\n", cl_strerror(ret));
+            status = ret;
+        }
+
+        CLI_FREE_AND_SET_NULL(metadata.filename);
+    } while (ret == CL_SUCCESS);
+
+    if (files_found > 0) {
+        /* Successfully found at least one file */
+        status = CL_SUCCESS;
+        *size  = metadata.offset - offset;
+        cli_dbgmsg("cli_unarj_header_check: Successfully found %d files in valid ARJ archive of %zu bytes\n", files_found, *size);
+    } else {
+        status = CL_EFORMAT;
+        cli_dbgmsg("cli_unarj_header_check: No files found; Invalid ARJ archive\n");
+    }
+
+done:
+    CLI_FREE_AND_SET_NULL(metadata.filename);
+
+    return status;
+}
+
+cl_error_t cli_unarj_prepare_file(arj_metadata_t *metadata)
 {
     cli_dbgmsg("in cli_unarj_prepare_file\n");
-    if (!metadata || !dirname) {
+
+    if (NULL == metadata) {
+        cli_dbgmsg("cli_unarj_prepare_file: invalid NULL arguments\n");
         return CL_ENULLARG;
     }
+
     /* Each file is preceded by the ARJ file marker */
     if (!is_arj_archive(metadata)) {
         cli_dbgmsg("Not in ARJ format\n");
         return CL_EFORMAT;
     }
+
     return arj_read_file_header(metadata);
 }
 

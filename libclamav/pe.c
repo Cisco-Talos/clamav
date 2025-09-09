@@ -4658,10 +4658,7 @@ cl_error_t cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts,
             pe_add_heuristic_property(ctx, "BadNumberOfSections");
         }
 
-        // TODO Investigate how corrupted_input is set and whether this
-        // check is needed
-        if (opts & CLI_PEHEADER_OPT_DBG_PRINT_INFO &&
-            !ctx->corrupted_input) {
+        if ((opts & CLI_PEHEADER_OPT_DBG_PRINT_INFO) && !ctx->corrupted_input) {
             if (peinfo->nsections == 0) {
                 cli_dbgmsg("cli_peheader: Invalid NumberOfSections (0)\n");
             }

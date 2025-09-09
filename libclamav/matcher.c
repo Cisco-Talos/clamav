@@ -602,7 +602,10 @@ cl_error_t cli_check_fp(cli_ctx *ctx, const char *vname)
 
         need_hash[CLI_HASH_SHA2_256] = cli_hm_have_size(ctx->engine->hm_fp, CLI_HASH_SHA2_256, map->len) ||
                                        cli_hm_have_wild(ctx->engine->hm_fp, CLI_HASH_SHA2_256) ||
-                                       cli_hm_have_size(ctx->engine->hm_fp, CLI_HASH_SHA2_256, 1);
+                                       cli_hm_have_size(ctx->engine->hm_fp, CLI_HASH_SHA2_256, 1) ||
+                                       // If debug logging is enabled, we want to calculate SHA256 hashes for all layers.
+                                       // Some users rely on the debug log output to create new FP signatures.
+                                       cli_debug_flag;
 
         /* Set fmap to need hash later if required.
          * This is an optimization so we can calculate all needed hashes in one pass. */
@@ -629,13 +632,14 @@ cl_error_t cli_check_fp(cli_ctx *ctx, const char *vname)
                     goto done;
                 }
 
-                /* Convert hash to string */
-                for (i = 0; i < hash_len; i++) {
-                    sprintf(hash_string + i * 2, "%02x", hash[i]);
-                }
-                hash_string[hash_len * 2] = 0;
+                if (cli_debug_flag ||
+                    ((CLI_HASH_MD5 == hash_type) && (ctx->engine->cb_hash))) {
+                    /* Convert hash to string */
+                    for (i = 0; i < hash_len; i++) {
+                        sprintf(hash_string + i * 2, "%02x", hash[i]);
+                    }
+                    hash_string[hash_len * 2] = 0;
 
-                if (cli_debug_flag || ctx->engine->cb_hash) {
                     const char *name = ctx->recursion_stack[stack_index].fmap->name;
                     const char *type = cli_ftname(ctx->recursion_stack[stack_index].type);
 
