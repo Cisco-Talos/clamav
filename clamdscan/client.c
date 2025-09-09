@@ -175,7 +175,7 @@ int16_t ping_clamd(const struct optstruct *opts)
     char *errchk                = NULL;
     uint64_t i                  = 0;
     const struct optstruct *opt = NULL;
-    int64_t sockd;
+    int64_t sockd               = -1;
     struct RCVLN rcv;
     uint16_t ret = 0;
 
@@ -227,6 +227,7 @@ int16_t ping_clamd(const struct optstruct *opts)
             if (sendln(sockd, zPING, sizeof(zPING))) {
                 logg(LOGG_DEBUG, "PING failed...\n");
                 closesocket(sockd);
+                sockd = -1;
             } else {
                 if (!optget(opts, "wait")->enabled) {
                     logg(LOGG_INFO, "PONG\n");
@@ -262,6 +263,9 @@ int16_t ping_clamd(const struct optstruct *opts)
     }
 
 done:
+    if (sockd >= 0) {
+        closesocket(sockd);
+    }
     if (attempt_str) {
         free(attempt_str);
     }
