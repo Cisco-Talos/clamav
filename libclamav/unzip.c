@@ -1154,11 +1154,15 @@ cl_error_t index_the_central_directory(
                     cli_dbgmsg("    current file start: %u\n", curr_record->local_header_offset);
 
                     if (ZIP_MAX_NUM_OVERLAPPING_FILES < num_overlapping_files) {
+                        status = CL_EFORMAT;
+
                         if (SCAN_HEURISTICS) {
-                            status = cli_append_potentially_unwanted(ctx, "Heuristics.Zip.OverlappingFiles");
-                        } else {
-                            status = CL_EFORMAT;
+                            ret = cli_append_potentially_unwanted(ctx, "Heuristics.Zip.OverlappingFiles");
+                            if (CL_SUCCESS != ret) {
+                                status = ret;
+                            }
                         }
+
                         goto done;
                     }
                 }
