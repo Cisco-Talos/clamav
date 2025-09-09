@@ -133,7 +133,7 @@ static void mspack_fmap_close(struct mspack_file *file)
 static int mspack_fmap_read(struct mspack_file *file, void *buffer, int bytes)
 {
     struct mspack_handle *mspack_handle = (struct mspack_handle *)file;
-    off_t offset;
+    size_t offset;
     size_t count;
     int ret;
 
@@ -150,7 +150,7 @@ static int mspack_fmap_read(struct mspack_file *file, void *buffer, int bytes)
         /* Use fmap */
         offset = mspack_handle->offset + mspack_handle->org;
 
-        count = fmap_readn(mspack_handle->fmap, buffer, (size_t)offset, (size_t)bytes);
+        count = fmap_readn(mspack_handle->fmap, buffer, offset, (size_t)bytes);
         if (count == (size_t)-1) {
             cli_dbgmsg("%s() %d requested %d bytes, read failed (-1)\n", __func__, __LINE__, bytes);
             return -1;
@@ -163,7 +163,7 @@ static int mspack_fmap_read(struct mspack_file *file, void *buffer, int bytes)
         return (int)count;
     } else {
         /* Use file descriptor */
-        count = fread(buffer, bytes, 1, mspack_handle->f);
+        count = fread(buffer, (size_t)bytes, 1, mspack_handle->f);
         if (count < 1) {
             cli_dbgmsg("%s() %d requested %d bytes, read failed (%zu)\n", __func__, __LINE__, bytes, count);
             return -1;
@@ -340,18 +340,83 @@ static struct mspack_system mspack_sys_fmap_ops = {
     .copy    = mspack_fmap_copy,
 };
 
-cl_error_t cli_scanmscab(cli_ctx *ctx, off_t sfx_offset)
+cl_error_t cli_mscab_header_check(cli_ctx *ctx, size_t offset, size_t *size)
+{
+    cl_error_t status = CL_EFORMAT;
+
+    struct mscab_decompressor *cab_d = NULL;
+    struct mscabd_cabinet *cab_h     = NULL;
+    struct mspack_name mspack_fmap   = {0};
+    struct mspack_system_ex ops_ex   = {0};
+
+    if (NULL == ctx || NULL == size) {
+        cli_dbgmsg("%s() invalid argument\n", __func__);
+        status = CL_EARG;
+        goto done;
+    }
+
+    *size            = 0;
+    mspack_fmap.fmap = ctx->fmap;
+
+    if (offset > INT32_MAX) {
+        cli_dbgmsg("%s() offset too large %zu\n", __func__, offset);
+        status = CL_EFORMAT;
+        goto done;
+    }
+
+    mspack_fmap.org = (off_t)offset;
+
+    ops_ex.ops = mspack_sys_fmap_ops;
+
+    cab_d = mspack_create_cab_decompressor(&ops_ex.ops);
+    if (NULL == cab_d) {
+        cli_dbgmsg("%s() failed at %d\n", __func__, __LINE__);
+        status = CL_EUNPACK;
+        goto done;
+    }
+
+    cab_h = cab_d->open(cab_d, (char *)&mspack_fmap);
+    if (NULL == cab_h) {
+        cli_dbgmsg("%s() failed at %d\n", __func__, __LINE__);
+        status = CL_EFORMAT;
+        goto done;
+    }
+
+    *size = (size_t)cab_h->length;
+
+    cli_dbgmsg("%s(): Successfully read CAB header for CAB of size %zu\n", __func__, *size);
+    status = CL_SUCCESS;
+
+done:
+    if (NULL != cab_d) {
+        if (NULL != cab_h) {
+            cab_d->close(cab_d, cab_h);
+        }
+        mspack_destroy_cab_decompressor(cab_d);
+    }
+
+    return status;
+}
+
+cl_error_t cli_scanmscab(cli_ctx *ctx, size_t sfx_offset)
 {
     cl_error_t ret                   = CL_SUCCESS;
     struct mscab_decompressor *cab_d = NULL;
     struct mscabd_cabinet *cab_h     = NULL;
     struct mscabd_file *cab_f        = NULL;
     int files;
-    struct mspack_name mspack_fmap = {
-        .fmap = ctx->fmap,
-        .org  = sfx_offset,
-    };
-    struct mspack_system_ex ops_ex;
+    struct mspack_name mspack_fmap = {0};
+    struct mspack_system_ex ops_ex = {0};
+
+    mspack_fmap.fmap = ctx->fmap;
+
+    if (sfx_offset > INT32_MAX) {
+        cli_dbgmsg("%s() offset too large %zu\n", __func__, sfx_offset);
+        ret = CL_EFORMAT;
+        goto done;
+    }
+
+    mspack_fmap.org = (off_t)sfx_offset;
 
     char *tmp_fname      = NULL;
     bool tempfile_exists = false;

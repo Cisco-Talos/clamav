@@ -24,7 +24,10 @@
 #ifndef __UNARJ_H
 #define __UNARJ_H
 
+#include "clamav.h"
+#include "others.h"
 #include "fmap.h"
+
 typedef struct arj_metadata_tag {
     char *filename;
     uint32_t comp_size;
@@ -36,8 +39,20 @@ typedef struct arj_metadata_tag {
     size_t offset;
 } arj_metadata_t;
 
+/**
+ * @brief Verify ARJ file header and get size of ARJ based on headers.
+ *
+ * Does not extract or scan the file.
+ *
+ * @param[in,out] ctx     Scan context
+ * @param offset          Offset of the file header
+ * @param[out] size       Will be set to the size of the file header + file data.
+ * @return cl_error_t     CL_SUCCESS on success, or an error code on failure.
+ */
+cl_error_t cli_unarj_header_check(cli_ctx *ctx, uint32_t offset, size_t *size);
+
 cl_error_t cli_unarj_open(fmap_t *map, const char *dirname, arj_metadata_t *metadata);
-cl_error_t cli_unarj_prepare_file(const char *dirname, arj_metadata_t *metadata);
+cl_error_t cli_unarj_prepare_file(arj_metadata_t *metadata);
 cl_error_t cli_unarj_extract_file(const char *dirname, arj_metadata_t *metadata);
 
 #endif

@@ -629,13 +629,14 @@ cl_error_t cli_check_fp(cli_ctx *ctx, const char *vname)
                     goto done;
                 }
 
-                /* Convert hash to string */
-                for (i = 0; i < hash_len; i++) {
-                    sprintf(hash_string + i * 2, "%02x", hash[i]);
-                }
-                hash_string[hash_len * 2] = 0;
+                if (cli_debug_flag ||
+                    ((CLI_HASH_MD5 == hash_type) && (ctx->engine->cb_hash))) {
+                    /* Convert hash to string */
+                    for (i = 0; i < hash_len; i++) {
+                        sprintf(hash_string + i * 2, "%02x", hash[i]);
+                    }
+                    hash_string[hash_len * 2] = 0;
 
-                if (cli_debug_flag || ctx->engine->cb_hash) {
                     const char *name = ctx->recursion_stack[stack_index].fmap->name;
                     const char *type = cli_ftname(ctx->recursion_stack[stack_index].type);
 
