@@ -205,8 +205,6 @@ static struct basic_test {
     {"CONTSCAN " CLEANFILE, NULL, CLEANREPLY, 1, 0, IDS_REJECT},
     {"MULTISCAN " SCANFILE, NULL, FOUNDREPLY, 1, 0, IDS_REJECT},
     {"MULTISCAN " CLEANFILE, NULL, CLEANREPLY, 1, 0, IDS_REJECT},
-    /* selfcheck on freshly loaded database */
-    {"SELFCHECK", NULL, "DBUPTODATE", 1, 0, IDS_REJECT},
     /* unknown commands */
     {"RANDOM", NULL, UNKNOWN_REPLY, 1, 0, IDS_REJECT},
     /* commands invalid as first */
@@ -374,6 +372,64 @@ START_TEST(test_stats)
 
     ck_assert_msg(rc == 0, "Wrong reply: %s\n", recvdata);
     free(recvdata);
+    conn_teardown();
+}
+END_TEST
+
+/* Robust SELFCHECK: tolerate RELOADING for a short while, then require DBUPTODATE */
+#define SELFCHECK_EXPECT    "DBUPTODATE"
+#define SELFCHECK_RELOADING "RELOADING"
+START_TEST(test_selfcheck)
+{
+    char *recvdata = NULL;
+    size_t len;
+    int rc;
+    int attempts = 0;
+    const int max_attempts = 60; /* timeout ~3m with check each 3s */
+    const int sleep_ms = 3000;
+
+    conn_setup();
+
+    do {
+        const char *cmd = "nSELFCHECK\n";
+        len = strlen(cmd);
+        rc = send(sockd, cmd, len, 0);
+        ck_assert_msg((size_t)rc == len, "Unable to send(): %s\n", strerror(errno));
+
+        recvdata = (char *)recvfull(sockd, &len);
+        ck_assert_msg(recvdata != NULL, "recvfull() returned NULL");
+
+        /* Trim trailing newlines */
+        while (len > 0 && (recvdata[len - 1] == '\n' || recvdata[len - 1] == '\r')) {
+            recvdata[--len] = '\0';
+        }
+
+        if (strcmp(recvdata, SELFCHECK_EXPECT) == 0) {
+            /* success */
+            free(recvdata);
+            conn_teardown();
+            return;
+        }
+
+        if (strcmp(recvdata, SELFCHECK_RELOADING) != 0) {
+            ck_abort_msg("Wrong reply for SELFCHECK: '%s' (expected DBUPTODATE or RELOADING)", recvdata);
+        }
+
+        /* still reloading, wait then retry */
+        free(recvdata);
+        recvdata = NULL;
+
+#if defined(_WIN32)
+        Sleep(sleep_ms);
+#else
+        struct timespec ts = { .tv_sec = sleep_ms / 1000,
+                               .tv_nsec = (sleep_ms % 1000) * 1000000L };
+        nanosleep(&ts, NULL);
+#endif
+    } while (++attempts < max_attempts);
+
+    ck_abort_msg("SELFCHECK did not reach DBUPTODATE within timeout");
+
     conn_teardown();
 }
 END_TEST
@@ -871,6 +927,7 @@ static Suite *test_clamd_suite(void)
 #endif
 
     tcase_add_test(tc_commands, test_stats);
+    tcase_add_test(tc_commands, test_selfcheck);
     tcase_add_test(tc_commands, test_instream);
     tcase_add_test(tc_commands, test_idsession);
 
