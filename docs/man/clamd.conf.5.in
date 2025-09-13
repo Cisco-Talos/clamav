@@ -163,6 +163,13 @@ When disabled, clamd responds to this command with COMMAND UNAVAILABLE.
 .br
 Default: yes
 .TP
+\EnableSelfCheckCommand BOOL\fR
+Enables the SELFCHECK command. Setting this to no prevents a client to reload the database.
+.br
+When disabled, clamd responds to this command with COMMAND UNAVAILABLE. When enabled and reload is required clamd responds RELOADING. If reload not needed - DBUPTODATE.  
+.br
+Default: yes
+.TP
 \fBEnableVersionCommand BOOL\fR
 Enables the VERSION command. Setting this to no prevents a client from querying version information.
 .br
