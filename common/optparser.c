@@ -322,6 +322,8 @@ const struct clam_option __clam_options[] = {
 
     {"EnableReloadCommand", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD, "Enables the RELOAD command for clamd", "no"},
 
+    {"EnableSelfCheckCommand", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD, "Enables the SELFCHECK command for clamd", "no"},
+
     {"EnableVersionCommand", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD, "Enables the VERSION command for clamd", "yes"},
 
     {"EnableStatsCommand", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD, "Enables the STATS command for clamd", "yes"},
