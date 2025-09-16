@@ -701,7 +701,7 @@ void clean_cache_add(cli_ctx *ctx)
     /* Get the file size */
     size = ctx->fmap->len;
 
-    level = (ctx->fmap && ctx->fmap->dont_cache_flag) ? ctx->recursion_level : 0;
+    level = ctx->fmap->dont_cache_flag ? ctx->recursion_level : 0;
 
     key = getkey(sha2_256, ctx->engine->cache->trees);
     c   = &ctx->engine->cache[key];

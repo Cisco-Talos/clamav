@@ -206,7 +206,9 @@ extern cl_error_t cl_hash_data_ex(
     unsigned int hash_len_final;
 
     size_t cur;
+#if defined(_WIN32)
     bool win_exception = false;
+#endif
 
     if (NULL == alg || NULL == data || NULL == hash || NULL == hash_len) {
         cli_errmsg("cl_hash_data_ex: Invalid arguments\n");
@@ -283,11 +285,13 @@ extern cl_error_t cl_hash_data_ex(
         }
         EXCEPTION_POSTAMBLE
 
+#if defined(_WIN32)
         if (win_exception) {
             cli_errmsg("cl_hash_data_ex: Exception occurred during hashing\n");
             status = CL_ERROR;
             goto done;
         }
+#endif
 
         cur += todo;
     }
@@ -420,8 +424,10 @@ extern cl_error_t cl_update_hash_ex(
     const uint8_t *data,
     size_t length)
 {
-    cl_error_t status  = CL_ERROR;
+    cl_error_t status = CL_ERROR;
+#if defined(_WIN32)
     bool win_exception = false;
+#endif
 
     if (NULL == ctx || NULL == data || length == 0) {
         cli_errmsg("cl_update_hash_ex: Invalid arguments\n");
@@ -437,11 +443,13 @@ extern cl_error_t cl_update_hash_ex(
     }
     EXCEPTION_POSTAMBLE
 
+#if defined(_WIN32)
     if (win_exception) {
         cli_errmsg("cl_update_hash_ex: Exception occurred during hashing\n");
         status = CL_ERROR;
         goto done;
     }
+#endif
 
 done:
     return status;
@@ -571,7 +579,9 @@ extern cl_error_t cl_hash_file_fd_ex(
     uint8_t *new_hash = NULL;
     unsigned int hash_len_final;
 
+#if defined(_WIN32)
     bool win_exception = false;
+#endif
 
     uint8_t *block = NULL;
 
@@ -685,6 +695,13 @@ extern cl_error_t cl_hash_file_fd_ex(
             break;
         }
 
+        if (SIZE_MAX - (size_t)nread < byte_read) {
+            // Potential overflow
+            cli_errmsg("cl_hash_data_ex: Potential overflow detected\n");
+            status = CL_EREAD;
+            goto done;
+        }
+
         byte_read += nread;
 
         EXCEPTION_PREAMBLE
@@ -695,11 +712,13 @@ extern cl_error_t cl_hash_file_fd_ex(
         }
         EXCEPTION_POSTAMBLE
 
+#if defined(_WIN32)
         if (win_exception) {
             cli_errmsg("cl_hash_data_ex: Exception occurred during hashing\n");
             status = CL_ERROR;
             goto done;
         }
+#endif
     } while (true);
 
     if (!EVP_DigestFinal_ex(ctx, new_hash, &hash_len_final)) {
@@ -718,6 +737,9 @@ extern cl_error_t cl_hash_file_fd_ex(
     status = CL_SUCCESS;
 
 done:
+    if (NULL != block) {
+        free(block);
+    }
     if (NULL != new_hash) {
         free(new_hash);
     }
@@ -746,7 +768,9 @@ unsigned char *cl_hash_data(const char *alg, const void *buf, size_t len, unsign
 
     unsigned int i;
     size_t cur;
+#if defined(_WIN32)
     bool win_exception = false;
+#endif
 
 #if OPENSSL_VERSION_MAJOR >= 3
     /* Bypass FIPS restrictions the OpenSSL 3.0 way */
@@ -819,6 +843,7 @@ unsigned char *cl_hash_data(const char *alg, const void *buf, size_t len, unsign
         }
         EXCEPTION_POSTAMBLE
 
+#if defined(_WIN32)
         if (win_exception) {
             if (!(obuf))
                 free(ret);
@@ -832,6 +857,7 @@ unsigned char *cl_hash_data(const char *alg, const void *buf, size_t len, unsign
             EVP_MD_CTX_destroy(ctx);
             return NULL;
         }
+#endif
 
         cur += todo;
     }
@@ -921,7 +947,9 @@ unsigned char *cl_hash_file_fd_ctx(EVP_MD_CTX *ctx, int fd, unsigned int *olen)
     int mdsz;
     unsigned int hashlen;
     STATBUF sb;
+#if defined(_WIN32)
     bool win_exception = false;
+#endif
 
     unsigned int blocksize;
 
@@ -968,12 +996,14 @@ unsigned char *cl_hash_file_fd_ctx(EVP_MD_CTX *ctx, int fd, unsigned int *olen)
         }
         EXCEPTION_POSTAMBLE
 
+#if defined(_WIN32)
         if (win_exception) {
             free(buf);
             free(hash);
 
             return NULL;
         }
+#endif
     }
 
     if (!EVP_DigestFinal_ex(ctx, hash, &hashlen)) {
@@ -1803,7 +1833,9 @@ void *cl_hash_init(const char *alg)
 
 int cl_update_hash(void *ctx, const void *data, size_t sz)
 {
+#if defined(_WIN32)
     bool win_exception = false;
+#endif
 
     if (!(ctx) || !(data))
         return -1;
@@ -1813,8 +1845,11 @@ int cl_update_hash(void *ctx, const void *data, size_t sz)
         return -1;
     EXCEPTION_POSTAMBLE
 
-    if (win_exception)
+#if defined(_WIN32)
+    if (win_exception) {
         return -1;
+    }
+#endif
 
     return 0;
 }

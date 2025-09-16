@@ -243,8 +243,15 @@ cl_error_t cli_jsonuint64(json_object *obj, const char *key, uint64_t i)
     } else if (objty != json_type_array) {
         return CL_EARG;
     }
-
+#if JSON_C_MINOR_VERSION >= 14
     fpobj = json_object_new_uint64(i);
+#else
+    if (i > INT64_MAX) {
+        cli_dbgmsg("json: uint64 value too large for json int64 object\n");
+        return CL_EARG;
+    }
+    fpobj = json_object_new_int64(i);
+#endif
     if (NULL == fpobj) {
         cli_errmsg("json: no memory for json int object.\n");
         return CL_EMEM;

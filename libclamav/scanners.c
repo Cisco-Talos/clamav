@@ -5325,6 +5325,12 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
             break;
     }
 
+    // Evaluate the result from the parsers to see if it end the scan of this layer early,
+    // and to decide if we should propagate an error or not.
+    if (result_should_goto_done(ctx, ret, &status)) {
+        goto done;
+    }
+
 done:
 
     /*
@@ -6482,7 +6488,7 @@ cl_error_t cl_scanmap_ex(
 
     if (NULL != filename && map->name == NULL) {
         // Use the provided name for the fmap name if one wasn't already set.
-        cli_basename(filename, strlen(filename), &map->name, true /* posix_support_backslash_pathsep */);
+        (void)cli_basename(filename, strlen(filename), &map->name, true /* posix_support_backslash_pathsep */);
     }
 
     return scan_common(

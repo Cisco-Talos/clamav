@@ -278,10 +278,10 @@ done:
     if (NULL != new_map) {
         fmap_free(new_map);
     }
-    if (ctx.recursion_stack[ctx.recursion_level].evidence) {
-        evidence_free(ctx.recursion_stack[ctx.recursion_level].evidence);
-    }
     if (NULL != ctx.recursion_stack) {
+        if (ctx.recursion_stack[ctx.recursion_level].evidence) {
+            evidence_free(ctx.recursion_stack[ctx.recursion_level].evidence);
+        }
         free(ctx.recursion_stack);
     }
     if (NULL != engine) {
@@ -2815,10 +2815,10 @@ done:
     if (NULL != new_map) {
         fmap_free(new_map);
     }
-    if (ctx.recursion_stack[ctx.recursion_level].evidence) {
-        evidence_free(ctx.recursion_stack[ctx.recursion_level].evidence);
-    }
     if (NULL != ctx.recursion_stack) {
+        if (ctx.recursion_stack[ctx.recursion_level].evidence) {
+            evidence_free(ctx.recursion_stack[ctx.recursion_level].evidence);
+        }
         free(ctx.recursion_stack);
     }
     if (NULL != engine) {
@@ -4018,10 +4018,10 @@ done:
     if (NULL != new_map) {
         fmap_free(new_map);
     }
-    if (ctx.recursion_stack[ctx.recursion_level].evidence) {
-        evidence_free(ctx.recursion_stack[ctx.recursion_level].evidence);
-    }
     if (NULL != ctx.recursion_stack) {
+        if (ctx.recursion_stack[ctx.recursion_level].evidence) {
+            evidence_free(ctx.recursion_stack[ctx.recursion_level].evidence);
+        }
         free(ctx.recursion_stack);
     }
     if (NULL != engine) {

@@ -1605,8 +1605,8 @@ static cl_error_t append_virus(cli_ctx *ctx, const char *virname, IndicatorType 
                     json_object_object_add(indicator_obj, "Type", json_object_new_string("Weak"));
                 } break;
             }
-            json_object_object_add(indicator_obj, "Depth", json_object_new_uint64((uint64_t)0)); // 0 for this layer
-            json_object_object_add(indicator_obj, "ObjectID", json_object_new_uint64((uint64_t)ctx->recursion_stack[ctx->recursion_level].object_id));
+            json_object_object_add(indicator_obj, "Depth", json_object_new_int(0)); // 0 for this layer
+            cli_jsonuint64(indicator_obj, "ObjectID", (uint64_t)ctx->recursion_stack[ctx->recursion_level].object_id);
             json_object_array_add(indicators, indicator_obj);
         }
 
@@ -1767,6 +1767,9 @@ cl_error_t cli_recursion_stack_push(cli_ctx *ctx, cl_fmap_t *map, cli_file_t typ
     cli_scan_layer_t *current_layer = NULL;
     cli_scan_layer_t *new_layer     = NULL;
 
+    char *new_temp_path = NULL;
+    char *fmap_basename = NULL;
+
     // Check the regular limits
     if (CL_SUCCESS != (status = cli_checklimits("cli_recursion_stack_push", ctx, map->len, 0, 0))) {
         cli_dbgmsg("cli_recursion_stack_push: Some content was skipped. The scan result will not be cached.\n");
@@ -1832,8 +1835,6 @@ cl_error_t cli_recursion_stack_push(cli_ctx *ctx, cl_fmap_t *map, cli_file_t typ
     // See append_virus()
 
     if (ctx->engine->engine_options & ENGINE_OPTIONS_TMPDIR_RECURSION) {
-        char *new_temp_path = NULL;
-        char *fmap_basename = NULL;
         char *parent_tmpdir = ctx->recursion_stack[ctx->recursion_level - 1].tmpdir;
 
         /*
@@ -1846,6 +1847,8 @@ cl_error_t cli_recursion_stack_push(cli_ctx *ctx, cl_fmap_t *map, cli_file_t typ
              */
             new_temp_path = cli_gentemp_with_prefix(parent_tmpdir, fmap_basename);
             free(fmap_basename);
+            fmap_basename = NULL;
+
             if (NULL == new_temp_path) {
                 cli_errmsg("cli_magic_scan: Failed to generate temp directory name.\n");
                 status = CL_EMEM;
@@ -1871,6 +1874,7 @@ cl_error_t cli_recursion_stack_push(cli_ctx *ctx, cl_fmap_t *map, cli_file_t typ
 
         ctx->recursion_stack[ctx->recursion_level].tmpdir = new_temp_path;
         ctx->this_layer_tmpdir                            = new_temp_path;
+        new_temp_path                                     = NULL; // ownership transferred to ctx->recursion_stack[ctx->recursion_level].tmpdir
     } else {
         /*
          * Keep-temp disabled, so use the parent layer's tmpdir.
@@ -1991,6 +1995,13 @@ cl_error_t cli_recursion_stack_push(cli_ctx *ctx, cl_fmap_t *map, cli_file_t typ
     }
 
 done:
+
+    if (new_temp_path) {
+        free(new_temp_path);
+    }
+    if (fmap_basename) {
+        free(fmap_basename);
+    }
 
     return status;
 }
@@ -2700,31 +2711,27 @@ cl_error_t cli_dispatch_scan_callback(cli_ctx *ctx, cl_scan_callback_t location)
         } break;
 
         case CL_VIRUS: {
-            if (location == CL_SCAN_CALLBACK_ALERT) {
-                // An alert callback returning CL_VIRUS means to accept the alert.
-            } else {
-                // Other scan callbacks returning CL_VIRUS the application wants to alert on the file.
-                const char *virus_name = NULL;
-                switch (location) {
-                    case CL_SCAN_CALLBACK_PRE_HASH:
-                        virus_name = "Detected.By.Callback." PRE_HASH_NAME;
-                        break;
-                    case CL_SCAN_CALLBACK_PRE_SCAN:
-                        virus_name = "Detected.By.Callback." PRE_SCAN_NAME;
-                        break;
-                    case CL_SCAN_CALLBACK_POST_SCAN:
-                        virus_name = "Detected.By.Callback." POST_SCAN_NAME;
-                        break;
-                    case CL_SCAN_CALLBACK_ALERT:
-                        virus_name = "Detected.By.Callback." ALERT_NAME;
-                        break;
-                    case CL_SCAN_CALLBACK_FILE_TYPE:
-                        virus_name = "Detected.By.Callback." FILE_TYPE_NAME;
-                        break;
-                }
-                status = cli_append_virus(ctx, virus_name);
-
-                cli_dbgmsg("dispatch_scan_callback: Alert added by callback\n");
+            // Other scan callbacks returning CL_VIRUS the application wants to alert on the file.
+            switch (location) {
+                case CL_SCAN_CALLBACK_PRE_HASH:
+                    status = cli_append_virus(ctx, "Detected.By.Callback." PRE_HASH_NAME);
+                    cli_dbgmsg("dispatch_scan_callback: Detected.By.Callback." PRE_HASH_NAME " alert added by callback\n");
+                    break;
+                case CL_SCAN_CALLBACK_PRE_SCAN:
+                    status = cli_append_virus(ctx, "Detected.By.Callback." PRE_SCAN_NAME);
+                    cli_dbgmsg("dispatch_scan_callback: Detected.By.Callback." PRE_SCAN_NAME " alert added by callback\n");
+                    break;
+                case CL_SCAN_CALLBACK_POST_SCAN:
+                    status = cli_append_virus(ctx, "Detected.By.Callback." POST_SCAN_NAME);
+                    cli_dbgmsg("dispatch_scan_callback: Detected.By.Callback." POST_SCAN_NAME " alert added by callback\n");
+                    break;
+                case CL_SCAN_CALLBACK_ALERT:
+                    // An alert callback returning CL_VIRUS means to accept the alert.
+                    break;
+                case CL_SCAN_CALLBACK_FILE_TYPE:
+                    status = cli_append_virus(ctx, "Detected.By.Callback." FILE_TYPE_NAME);
+                    cli_dbgmsg("dispatch_scan_callback: Detected.By.Callback." FILE_TYPE_NAME " alert added by callback\n");
+                    break;
             }
         } break;
 

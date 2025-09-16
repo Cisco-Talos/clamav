@@ -270,6 +270,9 @@ fmap_t *fmap_duplicate(cl_fmap_t *map, size_t offset, size_t length, const char 
 
     /* Duplicate the state of the original map */
     memcpy(duplicate_map, map, sizeof(cl_fmap_t));
+    /* Clear the pointers that need to be unique pointers. */
+    duplicate_map->name = NULL;
+    duplicate_map->path = NULL;
 
     if (offset > map->len) {
         /* invalid offset, exceeds length of map */
@@ -336,6 +339,14 @@ fmap_t *fmap_duplicate(cl_fmap_t *map, size_t offset, size_t length, const char 
 done:
     if (CL_SUCCESS != status) {
         if (NULL != duplicate_map) {
+            if (NULL != duplicate_map->name) {
+                free(duplicate_map->name);
+                duplicate_map->name = NULL;
+            }
+            if (NULL != duplicate_map->path) {
+                free(duplicate_map->path);
+                duplicate_map->path = NULL;
+            }
             free(duplicate_map);
             duplicate_map = NULL;
         }
@@ -1586,15 +1597,15 @@ extern cl_error_t cl_fmap_get_hash(const cl_fmap_t *map, const char *hash_alg, c
     }
     hash_string[hash_len * 2] = 0;
 
-    *hash_out = hash_string;
-    status    = CL_SUCCESS;
+    *hash_out   = hash_string;
+    hash_string = NULL; /* transfer ownership to *hash_out */
+
+    status = CL_SUCCESS;
 
 done:
-    if (status != CL_SUCCESS) {
-        if (NULL != hash_string) {
-            free(hash_string);
-            hash_string = NULL;
-        }
+    if (NULL != hash_string) {
+        free(hash_string);
+        hash_string = NULL;
     }
 
     return status;
