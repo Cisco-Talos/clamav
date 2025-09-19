@@ -825,6 +825,48 @@ done:
     return status;
 }
 
+cl_error_t cli_unzip_single_header_check(
+    cli_ctx *ctx,
+    uint32_t offset,
+    size_t *size)
+{
+    cl_error_t status             = CL_ERROR;
+    struct zip_record file_record = {0};
+    cl_error_t ret;
+
+    ret = parse_local_file_header(
+        ctx,
+        offset,
+        NULL,  /* num_files_unzipped */
+        0,     /* file_count */
+        NULL,  /* central_header */
+        NULL,  /* tmpd */
+        false, /* detect_encrypted */
+        NULL,  /* zcb */
+        &file_record,
+        size);
+    if (ret != CL_SUCCESS) {
+        cli_dbgmsg("cli_unzip: single header check - failed to parse local file header: %s (%d)\n", cl_strerror(ret), ret);
+        status = ret;
+        goto done;
+    }
+
+    if (file_record.compressed_size == 0 || file_record.uncompressed_size == 0) {
+        cli_dbgmsg("cli_unzip: single header check - empty file\n");
+        status = CL_EFORMAT;
+        goto done;
+    }
+
+    status = CL_SUCCESS;
+
+done:
+    if (file_record.original_filename) {
+        free(file_record.original_filename);
+    }
+
+    return status;
+}
+
 /**
  * @brief Parse, extract, and scan a file by iterating the central directory.
  *
