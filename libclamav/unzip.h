@@ -120,6 +120,18 @@ cl_error_t cli_unzip(cli_ctx *ctx);
 cl_error_t cli_unzip_single(cli_ctx *ctx, size_t local_header_offset);
 
 /**
+ * @brief Verify a single local file header.
+ *
+ * Does not extract or scan the file.
+ *
+ * @param[in,out] ctx           Scan context
+ * @param offset                Offset of the local file header
+ * @param[out] size             Will be set to the size of the file header + file data.
+ * @return cl_error_t           CL_SUCCESS on success, or an error code on failure.
+ */
+cl_error_t cli_unzip_single_header_check(cli_ctx *ctx, uint32_t offset, size_t *size);
+
+/**
  * @brief Unzip a single file from a zip archive.
  *
  * Different from `cli_unzip_single`, this function allows for a custom callback to be used after extraction.

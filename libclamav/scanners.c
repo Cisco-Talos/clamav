@@ -997,7 +997,7 @@ static cl_error_t cli_scanarj(cli_ctx *ctx)
     do {
         metadata.filename = NULL;
 
-        ret = cli_unarj_prepare_file(dir, &metadata);
+        ret = cli_unarj_prepare_file(&metadata);
         if (ret != CL_SUCCESS) {
             cli_dbgmsg("ARJ: cli_unarj_prepare_file Error: %s\n", cl_strerror(ret));
             break;
@@ -3447,94 +3447,6 @@ static cl_error_t cli_scan_structured(cli_ctx *ctx)
     return CL_SUCCESS;
 }
 
-static cl_error_t cli_scanembpe(cli_ctx *ctx, off_t offset)
-{
-    cl_error_t ret = CL_SUCCESS;
-    int fd;
-    size_t bytes;
-    size_t size = 0;
-    size_t todo;
-    const char *buff;
-    char *tmpname;
-    fmap_t *map = ctx->fmap;
-    unsigned int corrupted_input;
-
-    tmpname = cli_gentemp_with_prefix(ctx->this_layer_tmpdir, "embedded-pe");
-    if (!tmpname)
-        return CL_EMEM;
-
-    if ((fd = open(tmpname, O_RDWR | O_CREAT | O_TRUNC | O_BINARY, S_IRUSR | S_IWUSR)) < 0) {
-        cli_errmsg("cli_scanembpe: Can't create file %s\n", tmpname);
-        free(tmpname);
-        return CL_ECREAT;
-    }
-
-    todo = map->len - offset;
-    while (1) {
-        bytes = MIN(todo, map->pgsz);
-        if (!bytes)
-            break;
-
-        if (!(buff = fmap_need_off_once(map, offset + size, bytes))) {
-            close(fd);
-            if (!ctx->engine->keeptmp) {
-                if (cli_unlink(tmpname)) {
-                    free(tmpname);
-                    return CL_EUNLINK;
-                }
-            }
-            free(tmpname);
-            return CL_EREAD;
-        }
-        size += bytes;
-        todo -= bytes;
-
-        if (cli_checklimits("cli_scanembpe", ctx, size, 0, 0) != CL_SUCCESS)
-            break;
-
-        if (cli_writen(fd, buff, bytes) != bytes) {
-            cli_dbgmsg("cli_scanembpe: Can't write to temporary file\n");
-            close(fd);
-            if (!ctx->engine->keeptmp) {
-                if (cli_unlink(tmpname)) {
-                    free(tmpname);
-                    return CL_EUNLINK;
-                }
-            }
-            free(tmpname);
-            return CL_EWRITE;
-        }
-    }
-
-    // Setting ctx->corrupted_input will prevent the PE parser from reporting "broken executable" for unpacked/reconstructed files that may not be 100% to spec.
-    corrupted_input      = ctx->corrupted_input;
-    ctx->corrupted_input = 1;
-    ret                  = cli_magic_scan_desc(fd, tmpname, ctx, NULL, LAYER_ATTRIBUTES_NONE);
-    ctx->corrupted_input = corrupted_input;
-    if (ret != CL_SUCCESS) {
-        close(fd);
-        if (!ctx->engine->keeptmp) {
-            if (cli_unlink(tmpname)) {
-                free(tmpname);
-                return CL_EUNLINK;
-            }
-        }
-        free(tmpname);
-        return ret;
-    }
-
-    close(fd);
-    if (!ctx->engine->keeptmp) {
-        if (cli_unlink(tmpname)) {
-            free(tmpname);
-            return CL_EUNLINK;
-        }
-    }
-    free(tmpname);
-
-    return CL_SUCCESS;
-}
-
 #if defined(_WIN32) || defined(C_LINUX) || defined(C_DARWIN)
 #define PERF_MEASURE
 #endif
@@ -3720,26 +3632,33 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
     cli_file_t found_type;
 
     if ((typercg) &&
-        // We should also omit bzips, but DMG's may be detected in bzips. (type != CL_TYPE_BZ) &&        /* Omit BZ files because they can contain portions of original files like zip file entries that cause invalid extractions and lots of warnings. Decompress first, then scan! */
-        (type != CL_TYPE_GZ) &&         /* Omit GZ files because they can contain portions of original files like zip file entries that cause invalid extractions and lots of warnings. Decompress first, then scan! */
-        (type != CL_TYPE_CPIO_OLD) &&   /* Omit CPIO_OLD files because it's an image format that we can extract and scan manually. */
-        (type != CL_TYPE_ZIP) &&        /* Omit ZIP files because it'll detect each zip file entry as SFXZIP, which is a waste. We'll extract it and then scan. */
-        (type != CL_TYPE_ZIPSFX) &&     /* Omit SFX archive types from being checked for embedded content. They should only be parsed for contained files. Those contained files could be EXE's with more SFX, but that's the nature of containers. */
-        (type != CL_TYPE_ARJSFX) &&     /* " */
-        (type != CL_TYPE_RARSFX) &&     /* " */
-        (type != CL_TYPE_EGGSFX) &&     /* " */
-        (type != CL_TYPE_CABSFX) &&     /* " */
-        (type != CL_TYPE_7ZSFX) &&      /* " */
-        (type != CL_TYPE_OOXML_WORD) && /* Omit OOXML because they are ZIP-based and file-type scanning will double-extract their contents. */
-        (type != CL_TYPE_OOXML_PPT) &&  /* " */
-        (type != CL_TYPE_OOXML_XL) &&   /* " */
-        (type != CL_TYPE_OOXML_HWP) &&  /* " */
-        (type != CL_TYPE_OLD_TAR) &&    /* Omit OLD TAR files because it's a raw archive format that we can extract and scan manually. */
-        (type != CL_TYPE_POSIX_TAR)) {  /* Omit POSIX TAR files because it's a raw archive format that we can extract and scan manually. */
+        // Omit embedded files or file types already identified via this process.
+        (!(ctx->recursion_stack[ctx->recursion_level].attributes & LAYER_ATTRIBUTES_EMBEDDED)) &&
+        // Omit GZ files because they can contain portions of original files like zip file entries that cause invalid extractions and lots of warnings. Decompress first, then scan!
+        (type != CL_TYPE_GZ) &&
+        // We should also omit bzips, but DMG's may be detected in bzips.
+        //(type != CL_TYPE_BZ) &&
+        // Omit CPIO_OLD files because it's an image format that we can extract and scan manually.
+        (type != CL_TYPE_CPIO_OLD) &&
+        // Omit ZIP files because it'll detect each zip file entry as SFXZIP, which is a waste. We'll extract it and then scan.
+        (type != CL_TYPE_ZIP) &&
+        // Omit OOXML because they are ZIP-based and file-type scanning will double-extract their contents.
+        (type != CL_TYPE_OOXML_WORD) &&
+        (type != CL_TYPE_OOXML_PPT) &&
+        (type != CL_TYPE_OOXML_XL) &&
+        (type != CL_TYPE_OOXML_HWP) &&
+        // Omit OLD TAR files because it's a raw archive format that we can extract and scan manually.
+        (type != CL_TYPE_OLD_TAR) &&
+        // Omit POSIX TAR files because it's a raw archive format that we can extract and scan manually.
+        (type != CL_TYPE_POSIX_TAR)) {
         /*
          * Enable file type recognition scan mode if requested, except for some problematic types (above).
          */
         acmode |= AC_SCAN_FT;
+    } else {
+        cli_dbgmsg("scanraw: embedded type recognition disabled or not applicable for type %s %s\n",
+                   cli_ftname(type),
+                   (ctx->recursion_stack[ctx->recursion_level].attributes & LAYER_ATTRIBUTES_EMBEDDED) ? "(embedded layer)" : "");
     }
 
     perf_start(ctx, PERFT_RAW);
@@ -3960,8 +3879,9 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
                  * This restriction will prevent detecting the same embedded content more than once when recursing with
                  * embedded file type recognition deeper within the same buffer.
                  *
-                 * This is necessary because we have no way of knowing the length of a file and cannot prevent a search
-                 * for embedded files from finding the same embedded content multiple times (like a LOT of times).
+                 * This is necessary because we have no way of knowing the length of a file for many formats and cannot
+                 * prevent a search for embedded files from finding the same embedded content multiple times (like a LOT
+                 * of times).
                  *
                  * E.g. if the file is like this:
                  *
@@ -3990,7 +3910,7 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
                  *  Decompressed:    [ data                   ] [ embedded file ]
                  *
                  * So if this happened... then we WOULD want to scan the decompressed file for embedded files.
-                 * The problem is, we have way of knowing how long embedded files are.
+                 * The problem is, we have no way of knowing how long embedded files are.
                  * We don't know if we have:
                  *
                  * A.       [ data ] [ embedded file ] [ data ] [ embedded file ]
@@ -4035,7 +3955,9 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
 
                     switch (fpt->type) {
                         case CL_TYPE_RARSFX:
-                            if (type != CL_TYPE_RAR) {
+                            if ((have_rar && SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_RAR)) &&
+                                (type != CL_TYPE_RAR)) {
+                                // TODO: Add header validity check to prevent false positives from being scanned.
                                 nret = cli_magic_scan_nested_fmap_type(
                                     ctx->fmap,
                                     fpt->offset,
@@ -4048,7 +3970,9 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
                             break;
 
                         case CL_TYPE_EGGSFX:
-                            if (type != CL_TYPE_EGG) {
+                            if ((SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_EGG)) &&
+                                (type != CL_TYPE_EGG)) {
+                                // TODO: Add header validity check to prevent false positives from being scanned.
                                 nret = cli_magic_scan_nested_fmap_type(
                                     ctx->fmap,
                                     fpt->offset,
@@ -4061,11 +3985,26 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
                             break;
 
                         case CL_TYPE_ZIPSFX:
-                            if (type != CL_TYPE_ZIP) {
+                            if ((SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_ZIP)) &&
+                                (type != CL_TYPE_ZIP) &&
+                                /* OOXML are ZIP-based. */
+                                (type != CL_TYPE_OOXML_WORD) &&
+                                (type != CL_TYPE_OOXML_PPT) &&
+                                (type != CL_TYPE_OOXML_XL) &&
+                                (type != CL_TYPE_OOXML_HWP)) {
+                                // Header validity check to prevent false positives from being scanned.
+                                size_t zip_size = 0;
+
+                                ret = cli_unzip_single_header_check(ctx, fpt->offset, &zip_size);
+                                if (ret != CL_SUCCESS) {
+                                    cli_dbgmsg("ZIP single header check failed: %s (%d)\n", cl_strerror(ret), ret);
+                                    break;
+                                }
+
                                 nret = cli_magic_scan_nested_fmap_type(
                                     ctx->fmap,
                                     fpt->offset,
-                                    ctx->fmap->len - fpt->offset,
+                                    zip_size,
                                     ctx,
                                     CL_TYPE_ZIP,
                                     NULL,
@@ -4074,11 +4013,20 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
                             break;
 
                         case CL_TYPE_CABSFX:
-                            if (type != CL_TYPE_MSCAB) {
+                            if ((SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_CAB)) &&
+                                (type != CL_TYPE_MSCAB)) {
+                                // Header validity check to prevent false positives from being scanned.
+                                size_t cab_size = 0;
+                                ret             = cli_mscab_header_check(ctx, fpt->offset, &cab_size);
+                                if (ret != CL_SUCCESS) {
+                                    cli_dbgmsg("CAB header check failed: %s (%d)\n", cl_strerror(ret), ret);
+                                    break;
+                                }
+
                                 nret = cli_magic_scan_nested_fmap_type(
                                     ctx->fmap,
                                     fpt->offset,
-                                    ctx->fmap->len - fpt->offset,
+                                    cab_size,
                                     ctx,
                                     CL_TYPE_MSCAB,
                                     NULL,
@@ -4087,11 +4035,21 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
                             break;
 
                         case CL_TYPE_ARJSFX:
-                            if (type != CL_TYPE_ARJ) {
+                            if ((SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_ARJ)) &&
+                                (type != CL_TYPE_ARJ)) {
+                                // Header validity check to prevent false positives from being scanned.
+                                size_t arj_size = 0;
+
+                                ret = cli_unarj_header_check(ctx, fpt->offset, &arj_size);
+                                if (ret != CL_SUCCESS) {
+                                    cli_dbgmsg("ARJ header check failed: %s (%d)\n", cl_strerror(ret), ret);
+                                    break;
+                                }
+
                                 nret = cli_magic_scan_nested_fmap_type(
                                     ctx->fmap,
                                     fpt->offset,
-                                    ctx->fmap->len - fpt->offset,
+                                    arj_size,
                                     ctx,
                                     CL_TYPE_ARJ,
                                     NULL,
@@ -4100,7 +4058,9 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
                             break;
 
                         case CL_TYPE_7ZSFX:
-                            if (type != CL_TYPE_7Z) {
+                            if ((SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_7Z)) &&
+                                (type != CL_TYPE_7Z)) {
+                                // TODO: Add header validity check to prevent false positives from being scanned.
                                 nret = cli_magic_scan_nested_fmap_type(
                                     ctx->fmap,
                                     fpt->offset,
@@ -4113,8 +4073,10 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
                             break;
 
                         case CL_TYPE_NULSFT:
-                            if (type == CL_TYPE_MSEXE && fpt->offset > 4) {
-                                // Note: CL_TYPE_NULSFT is special, because the file actually starts 4 bytes before the start of the signature match
+                            // Note: CL_TYPE_NULSFT is special, because the file actually starts 4 bytes before the start of the signature match
+                            if ((SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_NSIS)) &&
+                                (type == CL_TYPE_MSEXE && fpt->offset > 4)) {
+                                // TODO: Add header validity check to prevent false positives from being scanned.
                                 nret = cli_magic_scan_nested_fmap_type(
                                     ctx->fmap,
                                     fpt->offset - 4,
@@ -4127,7 +4089,9 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
                             break;
 
                         case CL_TYPE_AUTOIT:
-                            if (type == CL_TYPE_MSEXE) {
+                            if ((SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_AUTOIT)) &&
+                                (type == CL_TYPE_MSEXE)) {
+                                // TODO: Add header validity check to prevent false positives from being scanned.
                                 nret = cli_magic_scan_nested_fmap_type(
                                     ctx->fmap,
                                     fpt->offset,
@@ -4140,7 +4104,9 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
                             break;
 
                         case CL_TYPE_ISHIELD_MSI:
-                            if (type == CL_TYPE_MSEXE) {
+                            if ((SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_ISHIELD)) &&
+                                (type == CL_TYPE_MSEXE)) {
+                                // TODO: Add header validity check to prevent false positives from being scanned.
                                 nret = cli_magic_scan_nested_fmap_type(
                                     ctx->fmap,
                                     fpt->offset,
@@ -4153,7 +4119,9 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
                             break;
 
                         case CL_TYPE_PDF:
-                            if (type != CL_TYPE_PDF) {
+                            if ((SCAN_PARSE_PDF && (DCONF_DOC & DOC_CONF_PDF)) &&
+                                (type != CL_TYPE_PDF)) {
+                                // TODO: Add header validity check to prevent false positives from being scanned.
                                 nret = cli_magic_scan_nested_fmap_type(
                                     ctx->fmap,
                                     fpt->offset,
@@ -4166,23 +4134,48 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
                             break;
 
                         case CL_TYPE_MSEXE:
-                            if (type == CL_TYPE_MSEXE || type == CL_TYPE_ZIP || type == CL_TYPE_MSOLE2) {
-
-                                cli_dbgmsg("*** Detected embedded PE file at %u ***\n", (unsigned int)fpt->offset);
+                            if (SCAN_PARSE_PE && ctx->dconf->pe &&
+                                (type == CL_TYPE_MSEXE || type == CL_TYPE_ZIP || type == CL_TYPE_MSOLE2)) {
+                                struct cli_exe_info peinfo;
 
                                 if ((uint64_t)(ctx->fmap->len - fpt->offset) > ctx->engine->maxembeddedpe) {
                                     cli_dbgmsg("scanraw: MaxEmbeddedPE exceeded\n");
                                     break;
                                 }
 
+                                cli_exe_info_init(&peinfo, 0);
+
+                                // Header validity check to prevent false positives from being scanned.
+                                ret = cli_peheader(ctx->fmap, &peinfo, CLI_PEHEADER_OPT_NONE, NULL);
+
+                                // peinfo memory may have been allocated and must be freed even if it failed.
+                                cli_exe_info_destroy(&peinfo);
+
+                                if (CL_SUCCESS != ret) {
+                                    cli_dbgmsg("Header check for MSEXE detection failed, probably not actually an embedded PE file.\n");
+                                    break;
+                                }
+
+                                cli_dbgmsg("*** Detected embedded PE file at %u ***\n", (unsigned int)fpt->offset);
+
+                                // Setting ctx->corrupted_input will prevent the PE parser from reporting "broken executable" for unpacked/reconstructed files that may not be 100% to spec.
+                                // In here we're just carrying the corrupted_input flag from parent to child, in case the parent's flag was set.
+                                unsigned int corrupted_input = ctx->corrupted_input;
+
+                                ctx->corrupted_input = 1;
+
                                 nret = cli_magic_scan_nested_fmap_type(
                                     ctx->fmap,
                                     fpt->offset,
+                                    // Sadly, there is no way from the PE header to determine the length of the PE file.
+                                    // So we just pass the remaining length of the fmap.
                                     ctx->fmap->len - fpt->offset,
                                     ctx,
                                     CL_TYPE_MSEXE,
                                     NULL,
                                     LAYER_ATTRIBUTES_EMBEDDED);
+
+                                ctx->corrupted_input = corrupted_input;
                             }
                             break;
 
@@ -4789,6 +4782,8 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
          * If self protection mechanism enabled, do the scanraw() scan first
          * before extracting with a file type parser.
          */
+        cli_dbgmsg("cli_magic_scan: Performing raw scan to pattern match\n");
+
         ret = scanraw(ctx, type, 0, &dettype);
 
         // Evaluate the result from the scan to see if it end the scan of this layer early,
@@ -5252,6 +5247,8 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
         (type != CL_TYPE_HTML || !(SCAN_PARSE_HTML) || !(DCONF_DOC & DOC_CONF_HTML_SKIPRAW)) &&
         (!ctx->engine->sdb)) {
 
+        cli_dbgmsg("cli_magic_scan: Performing raw scan to pattern match and/or detect embedded files\n");
+
         ret = scanraw(ctx, type, typercg, &dettype);
 
         // Evaluate the result from the scan to see if it end the scan of this layer early,
@@ -5290,56 +5287,11 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
         case CL_TYPE_MSEXE:
             perf_nested_start(ctx, PERFT_PE, PERFT_SCAN);
             if (SCAN_PARSE_PE && ctx->dconf->pe) {
-                if (ctx->recursion_stack[ctx->recursion_level].attributes & LAYER_ATTRIBUTES_EMBEDDED) {
-                    /*
-                     * Embedded PE files are PE files that were found within another file using file-type scanning in scanraw()
-                     * They are parsed differently than normal PE files.
-                     */
-                    struct cli_exe_info peinfo;
-
-                    cli_exe_info_init(&peinfo, 0);
-
-                    // TODO We could probably substitute in a quicker
-                    // method of determining whether a PE file exists
-                    // at this offset.
-                    if (cli_peheader(ctx->fmap, &peinfo, CLI_PEHEADER_OPT_NONE, NULL) != 0) {
-                        cli_dbgmsg("Header check for MSEXE detection failed, probably not actually an embedded PE file.\n");
-
-                        /* Despite failing, peinfo memory may have been allocated and must be freed. */
-                        cli_exe_info_destroy(&peinfo);
-
-                    } else {
-                        /* Immediately free up peinfo allocated memory, prior to any recursion */
-                        cli_exe_info_destroy(&peinfo);
-
-                        ret = cli_scanembpe(ctx, 0);
-
-                        // TODO This method of embedded PE extraction
-                        // is kinda gross in that:
-                        //   - if you have an executable that contains
-                        //     20 other exes, the bytes associated with
-                        //     the last exe will have been included in
-                        //     hash computations and things 20 times
-                        //     (as overlay data to the previously
-                        //     extracted exes).
-                        //   - if you have a signed embedded exe, it
-                        //     will fail to validate after extraction
-                        //     bc it has overlay data, which is a
-                        //     violation of the Authenticode spec.
-                        //   - this method of extraction is subject to
-                        //     the recursion limit, which is fairly low.
-                        //
-                        // It'd be awesome if we could compute the PE
-                        // size from the PE header and just extract
-                        // that.
-                    }
-                } else {
-                    // Setting ctx->corrupted_input will prevent the PE parser from reporting "broken executable" for unpacked/reconstructed files that may not be 100% to spec.
-                    // In here we're just carrying the corrupted_input flag from parent to child, in case the parent's flag was set.
-                    unsigned int corrupted_input = ctx->corrupted_input;
-                    ret                          = cli_scanpe(ctx);
-                    ctx->corrupted_input         = corrupted_input;
-                }
+                // Setting ctx->corrupted_input will prevent the PE parser from reporting "broken executable" for unpacked/reconstructed files that may not be 100% to spec.
+                // In here we're just carrying the corrupted_input flag from parent to child, in case the parent's flag was set.
+                unsigned int corrupted_input = ctx->corrupted_input;
+                ret                          = cli_scanpe(ctx);
+                ctx->corrupted_input         = corrupted_input;
             }
             perf_nested_stop(ctx, PERFT_PE, PERFT_SCAN);
             break;
@@ -5364,8 +5316,9 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
             break;
 
         case CL_TYPE_PDF: /* FIXMELIMITS: pdf should be an archive! */
-            if (SCAN_PARSE_PDF && (DCONF_DOC & DOC_CONF_PDF))
+            if (SCAN_PARSE_PDF && (DCONF_DOC & DOC_CONF_PDF)) {
                 ret = cli_scanpdf(ctx, 0);
+            }
             break;
 
         default:
