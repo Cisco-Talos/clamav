@@ -2022,12 +2022,10 @@ static void handle_pdfname(struct pdf_struct *pdf, struct pdf_obj *obj, const ch
         pdfname = "URI";
     }
 
-    if (!act) {
-        for (j = 0; j < sizeof(pdfname_actions) / sizeof(pdfname_actions[0]); j++) {
-            if (!strcmp(pdfname, pdfname_actions[j].pdfname)) {
-                act = &pdfname_actions[j];
-                break;
-            }
+    for (j = 0; j < sizeof(pdfname_actions) / sizeof(pdfname_actions[0]); j++) {
+        if (!strcmp(pdfname, pdfname_actions[j].pdfname)) {
+            act = &pdfname_actions[j];
+            break;
         }
     }
 
