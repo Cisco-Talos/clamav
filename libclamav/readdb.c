@@ -1564,7 +1564,7 @@ done:
         free(buffer_cpy);
     }
 
-    if (CL_SUCCESS != ret) {
+    if (CL_SUCCESS != ret && NULL != matcher) {
         for (i = 0; i < 3; i++) {
             if (matcher->icons[i]) {
                 uint32_t j;

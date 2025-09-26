@@ -466,10 +466,10 @@ static void do_phishing_test(const struct rtest *rtest)
             break;
     }
 
-    if (NULL != ctx.recursion_stack[ctx.recursion_level].evidence) {
-        evidence_free(ctx.recursion_stack[ctx.recursion_level].evidence);
-    }
     if (ctx.recursion_stack) {
+        if (NULL != ctx.recursion_stack[ctx.recursion_level].evidence) {
+            evidence_free(ctx.recursion_stack[ctx.recursion_level].evidence);
+        }
         free(ctx.recursion_stack);
     }
 }
@@ -583,10 +583,10 @@ static void do_phishing_test_allscan(const struct rtest *rtest)
 
     html_tag_arg_free(&hrefs);
 
-    if (NULL != ctx.recursion_stack[ctx.recursion_level].evidence) {
-        evidence_free(ctx.recursion_stack[ctx.recursion_level].evidence);
-    }
     if (ctx.recursion_stack) {
+        if (NULL != ctx.recursion_stack[ctx.recursion_level].evidence) {
+            evidence_free(ctx.recursion_stack[ctx.recursion_level].evidence);
+        }
         free(ctx.recursion_stack);
     }
 }

@@ -1255,7 +1255,6 @@ struct optstruct *optparse(const char *cfgfile, int argc, char **argv, int verbo
 
         if (NULL != arg) {
             /* Find and remove inline comments. */
-            numarg        = -1;
             inlinecomment = strchr(arg, '#');
             if (inlinecomment != NULL) {
                 /* Found a '#', indicating an inline comment. Strip it off along with any leading spaces or tabs. */
@@ -1266,6 +1265,8 @@ struct optstruct *optparse(const char *cfgfile, int argc, char **argv, int verbo
                 }
             }
         }
+
+        numarg = -1;
 
         switch (optentry->argtype) {
             case CLOPT_TYPE_STRING:
