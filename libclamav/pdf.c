@@ -2018,14 +2018,14 @@ static void handle_pdfname(struct pdf_struct *pdf, struct pdf_obj *obj, const ch
 
     // Check to see if this object was observed to be a reference to a URI
     if (obj->flags & (1 << OBJ_URI)) {
-        act = &(struct pdfname_action){"URI", OBJ_DICT, STATE_ANY, STATE_URI, NAMEFLAG_NONE, URI_cb};
+        // Forcing URI here, so we run the pdf_stats_cb for a URI.
+        pdfname = "URI";
     }
-    if (!act) {
-        for (j = 0; j < sizeof(pdfname_actions) / sizeof(pdfname_actions[0]); j++) {
-            if (!strcmp(pdfname, pdfname_actions[j].pdfname)) {
-                act = &pdfname_actions[j];
-                break;
-            }
+
+    for (j = 0; j < sizeof(pdfname_actions) / sizeof(pdfname_actions[0]); j++) {
+        if (!strcmp(pdfname, pdfname_actions[j].pdfname)) {
+            act = &pdfname_actions[j];
+            break;
         }
     }
 
