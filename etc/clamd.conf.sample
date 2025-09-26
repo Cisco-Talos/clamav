@@ -151,6 +151,11 @@ Example
 # Default: yes
 #EnableReloadCommand no
 #
+# Enable the SELFCHECK command
+# Setting this to no prevents a client to reload the database.
+# Default: yes
+#EnableSelfCheckCommand no
+#
 # Enable the STATS command
 # Setting this to no prevents a client from querying statistics.
 # Default: yes
