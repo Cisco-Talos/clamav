@@ -408,6 +408,9 @@ cl_error_t cli_scanmscab(cli_ctx *ctx, size_t sfx_offset)
     struct mspack_name mspack_fmap = {0};
     struct mspack_system_ex ops_ex = {0};
 
+    char *tmp_fname      = NULL;
+    bool tempfile_exists = false;
+
     mspack_fmap.fmap = ctx->fmap;
 
     if (sfx_offset > INT32_MAX) {
@@ -417,9 +420,6 @@ cl_error_t cli_scanmscab(cli_ctx *ctx, size_t sfx_offset)
     }
 
     mspack_fmap.org = (off_t)sfx_offset;
-
-    char *tmp_fname      = NULL;
-    bool tempfile_exists = false;
 
     memset(&ops_ex, 0, sizeof(struct mspack_system_ex));
     ops_ex.ops = mspack_sys_fmap_ops;

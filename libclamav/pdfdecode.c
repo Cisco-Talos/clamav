@@ -893,6 +893,7 @@ static cl_error_t filter_lzwdecode(struct pdf_struct *pdf, struct pdf_obj *obj, 
     uint8_t *content = (uint8_t *)token->content;
     uint32_t length  = token->length;
     lzw_stream stream;
+    bool stream_initialized = false;
     int echg = 1, lzwstat, rc = CL_SUCCESS;
 
     if (pdf->ctx && !(pdf->ctx->dconf->other & OTHER_CONF_LZW)) {
@@ -942,6 +943,7 @@ static cl_error_t filter_lzwdecode(struct pdf_struct *pdf, struct pdf_obj *obj, 
         rc = CL_EMEM;
         goto done;
     }
+    stream_initialized = true;
 
     memset(&stream, 0, sizeof(stream));
     stream.next_in   = content;
@@ -1066,9 +1068,11 @@ static cl_error_t filter_lzwdecode(struct pdf_struct *pdf, struct pdf_obj *obj, 
             break;
     }
 
-    (void)lzwInflateEnd(&stream);
-
 done:
+    if (stream_initialized) {
+        (void)lzwInflateEnd(&stream);
+    }
+
     if (rc == CL_SUCCESS) {
         if (declen == 0) {
             cli_dbgmsg("cli_pdf: empty stream after inflation completed.\n");

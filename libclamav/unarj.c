@@ -1209,11 +1209,8 @@ cl_error_t cli_unarj_header_check(
 
         } else if (ret == CL_BREAK) {
             cli_dbgmsg("cli_unarj_header_check: End of archive\n");
-            status = CL_BREAK;
-
         } else {
             cli_dbgmsg("cli_unarj_header_check: Error reading file header: %s\n", cl_strerror(ret));
-            status = ret;
         }
 
         CLI_FREE_AND_SET_NULL(metadata.filename);

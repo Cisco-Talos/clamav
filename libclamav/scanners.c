@@ -1826,8 +1826,8 @@ static cl_error_t cli_ole2_tempdir_scan_vba(const char *dir, cli_ctx *ctx, struc
     cl_error_t ret;
     int i, j;
     size_t data_len;
-    vba_project_t *vba_project;
-    char *fullname = NULL;
+    vba_project_t *vba_project = NULL;
+    char *fullname             = NULL;
     char vbaname[1024];
     unsigned char *data = NULL;
     char *hash;
@@ -2022,6 +2022,10 @@ done:
     }
     if (NULL != proj_contents_fname) {
         free(proj_contents_fname);
+    }
+
+    if (NULL != vba_project) {
+        cli_free_vba_project(vba_project);
     }
 
     if (NULL != data) {
