@@ -824,7 +824,7 @@ static cl_error_t add_pattern_suffix(void *cbdata, const char *suffix, size_t su
     }
 
 done:
-    if (CL_SUCCESS != ret) {
+    if (CL_SUCCESS != ret && NULL != regex) {
         CLI_FREE_AND_SET_NULL(regex->pattern);
         CLI_FREE_AND_SET_NULL(regex);
     }

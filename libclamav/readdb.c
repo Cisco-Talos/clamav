@@ -3935,7 +3935,6 @@ static int load_oneyara(YR_RULE *rule, int chkpua, struct cl_engine *engine, uns
 #ifdef YARA_FINISHED
         } else if (STRING_IS_LITERAL(string)) {
             /* TODO - handle literal strings, short-circuits other string type handling */
-            cli_yaramsg("load_oneyara: literal string: [%.*s] => [%s]\n", string->length, string->string, substr);
 #else
         } else if (STRING_IS_LITERAL(string)) {
             cli_errmsg("load_oneyara: literal strings are unsupported, reorganize existing code\n");
