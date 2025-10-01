@@ -259,7 +259,9 @@ int onas_ht_insert(struct onas_ht *ht, struct onas_element *elem)
 
     if (bckt == NULL) {
         ht->htable[idx] = onas_bucket_init();
-        bckt            = ht->htable[idx];
+        if (ht->htable[idx] == NULL) return CL_EMEM;
+
+        bckt = ht->htable[idx];
     }
 
     /* Init activated buckets */
