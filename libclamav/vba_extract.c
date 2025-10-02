@@ -2075,6 +2075,7 @@ word_read_macro_info(int fd, macro_info_t *macro_info)
     }
     if (!word_read_macro_entry(fd, macro_info)) {
         free(macro_info->entries);
+        macro_info->entries = NULL;
         macro_info->count = 0;
         return NULL;
     }

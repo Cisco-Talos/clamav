@@ -279,8 +279,10 @@ static int rtf_object_process(struct rtf_state* state, const unsigned char* inpu
         return 0;
 
     if (data->has_partial) {
-        for (i = 0; i < len && !isxdigit(input[i]); i++)
-            ;
+        for (i = 0; i < len && !isxdigit(input[i]); i++) {
+            continue;
+        };
+
         if (i < len) {
             outdata[out_cnt++] = data->partial | hextable[input[i++]];
             data->has_partial  = 0;
@@ -532,8 +534,10 @@ int cli_scanrtf(cli_ctx* ctx)
         return CL_EMEM;
     }
 
-    if (!(tempname = cli_gentemp_with_prefix(ctx->this_layer_tmpdir, "rtf-tmp")))
+    if (!(tempname = cli_gentemp_with_prefix(ctx->this_layer_tmpdir, "rtf-tmp"))) {
+        free(stack.states);
         return CL_EMEM;
+    }
 
     if (mkdir(tempname, 0700)) {
         cli_dbgmsg("ScanRTF -> Can't create temporary directory %s\n", tempname);

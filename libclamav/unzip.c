@@ -1147,11 +1147,6 @@ cl_error_t index_the_central_directory(
         }
     } while (1);
 
-    if (ret == CL_VIRUS) {
-        status = CL_VIRUS;
-        goto done;
-    }
-
     if (records_count > 1) {
         /*
          * Sort the records by local file offset
@@ -1463,7 +1458,6 @@ cl_error_t index_local_file_headers(
     struct zip_record *prev_record        = NULL;
     size_t local_file_headers_count       = 0;
     uint32_t num_overlapping_files        = 0;
-    bool exceeded_max_files               = false;
 
     if (NULL == catalogue || NULL == num_records || NULL == *catalogue) {
         cli_dbgmsg("index_local_file_headers: Invalid NULL arguments\n");
@@ -1505,8 +1499,6 @@ cl_error_t index_local_file_headers(
         if (ctx->engine->maxfiles && total_files_found >= ctx->engine->maxfiles) {
             cli_dbgmsg("cli_unzip: Files limit reached (max: %u)\n", ctx->engine->maxfiles);
             cli_append_potentially_unwanted_if_heur_exceedsmax(ctx, "Heuristics.Limits.Exceeded.MaxFiles");
-            exceeded_max_files = true; // Set a bool so we can return the correct status code later.
-                                       // We still need to scan the files we found while reviewing the file records up to this limit.
             break;
         }
 
@@ -1611,10 +1603,12 @@ cl_error_t index_local_file_headers(
                         cli_dbgmsg("    current file start: %u\n", curr_record->local_header_offset);
 
                         if (ZIP_MAX_NUM_OVERLAPPING_FILES < num_overlapping_files) {
+                            status = CL_EFORMAT;
                             if (SCAN_HEURISTICS) {
-                                status = cli_append_potentially_unwanted(ctx, "Heuristics.Zip.OverlappingFiles");
-                            } else {
-                                status = CL_EFORMAT;
+                                ret = cli_append_potentially_unwanted(ctx, "Heuristics.Zip.OverlappingFiles");
+                                if (CL_SUCCESS != ret) {
+                                    status = ret;
+                                }
                             }
                             goto done;
                         }
@@ -1631,8 +1625,11 @@ cl_error_t index_local_file_headers(
 
         free(temp_catalogue);
         temp_catalogue = NULL;
+
         free(*catalogue);
-        *catalogue   = combined_catalogue;
+        *catalogue         = combined_catalogue;
+        combined_catalogue = NULL;
+
         *num_records = total_files_found;
     } else {
         free(temp_catalogue);
@@ -1654,34 +1651,30 @@ done:
             free(*catalogue);
             *catalogue = NULL;
         }
+    }
 
-        if (NULL != temp_catalogue) {
-            size_t i;
-            for (i = 0; i < local_file_headers_count; i++) {
-                if (NULL != temp_catalogue[i].original_filename) {
-                    free(temp_catalogue[i].original_filename);
-                    temp_catalogue[i].original_filename = NULL;
-                }
+    if (NULL != temp_catalogue) {
+        size_t i;
+        for (i = 0; i < local_file_headers_count; i++) {
+            if (NULL != temp_catalogue[i].original_filename) {
+                free(temp_catalogue[i].original_filename);
+                temp_catalogue[i].original_filename = NULL;
             }
-            free(temp_catalogue);
-            temp_catalogue = NULL;
         }
+        free(temp_catalogue);
+        temp_catalogue = NULL;
+    }
 
-        if (NULL != combined_catalogue) {
-            size_t i;
-            for (i = 0; i < total_files_found; i++) {
-                if (NULL != combined_catalogue[i].original_filename) {
-                    free(combined_catalogue[i].original_filename);
-                    combined_catalogue[i].original_filename = NULL;
-                }
+    if (NULL != combined_catalogue) {
+        size_t i;
+        for (i = 0; i < total_files_found; i++) {
+            if (NULL != combined_catalogue[i].original_filename) {
+                free(combined_catalogue[i].original_filename);
+                combined_catalogue[i].original_filename = NULL;
             }
-            free(combined_catalogue);
-            combined_catalogue = NULL;
         }
-
-        if (exceeded_max_files) {
-            status = CL_EMAXFILES;
-        }
+        free(combined_catalogue);
+        combined_catalogue = NULL;
     }
 
     return status;

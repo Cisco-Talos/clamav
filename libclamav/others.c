@@ -1593,21 +1593,21 @@ static cl_error_t append_virus(cli_ctx *ctx, const char *virname, IndicatorType 
         if (NULL == indicator_obj) {
             cli_errmsg("append_virus: no memory for json indicator object\n");
         } else {
-            json_object_object_add(indicator_obj, "Name", json_object_new_string(virname));
+            (void)json_object_object_add(indicator_obj, "Name", json_object_new_string(virname));
             switch (type) {
                 case IndicatorType_Strong: {
-                    json_object_object_add(indicator_obj, "Type", json_object_new_string("Strong"));
+                    (void)json_object_object_add(indicator_obj, "Type", json_object_new_string("Strong"));
                 } break;
                 case IndicatorType_PotentiallyUnwanted: {
-                    json_object_object_add(indicator_obj, "Type", json_object_new_string("PotentiallyUnwanted"));
+                    (void)json_object_object_add(indicator_obj, "Type", json_object_new_string("PotentiallyUnwanted"));
                 } break;
                 case IndicatorType_Weak: {
-                    json_object_object_add(indicator_obj, "Type", json_object_new_string("Weak"));
+                    (void)json_object_object_add(indicator_obj, "Type", json_object_new_string("Weak"));
                 } break;
             }
-            json_object_object_add(indicator_obj, "Depth", json_object_new_int(0)); // 0 for this layer
-            cli_jsonuint64(indicator_obj, "ObjectID", (uint64_t)ctx->recursion_stack[ctx->recursion_level].object_id);
-            json_object_array_add(indicators, indicator_obj);
+            (void)json_object_object_add(indicator_obj, "Depth", json_object_new_int(0)); // 0 for this layer
+            (void)cli_jsonuint64(indicator_obj, "ObjectID", (uint64_t)ctx->recursion_stack[ctx->recursion_level].object_id);
+            (void)json_object_array_add(indicators, indicator_obj);
         }
 
         // If this is a strong or potentially unwanted indicator, we add it to the "Alerts" array.
@@ -1620,14 +1620,14 @@ static cl_error_t append_virus(cli_ctx *ctx, const char *virname, IndicatorType 
                     status = CL_EMEM;
                     goto done;
                 }
-                json_object_object_add(ctx->this_layer_metadata_json, "Alerts", arrobj);
+                (void)json_object_object_add(ctx->this_layer_metadata_json, "Alerts", arrobj);
             }
 
             // Increment the indicator_obj reference count, so that it can be added to the "Alerts" array.
-            json_object_get(indicator_obj);
+            (void)json_object_get(indicator_obj);
 
             // Add the same indicator object to the "Alerts" array.
-            json_object_array_add(arrobj, indicator_obj);
+            (void)json_object_array_add(arrobj, indicator_obj);
         }
     }
 

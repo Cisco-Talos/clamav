@@ -360,7 +360,7 @@ int upx_inflate2b(const char *src, uint32_t ssize, char *dst, uint32_t *dsize, u
             } while ((oob = doubleebx(src, &myebx, &scur, ssize)) == 0);
             if (oob == -1)
                 return -1;
-            if (backsize + 2 > UINT32_MAX)
+            if (backsize > UINT32_MAX - 2)
                 return -1;
             backsize += 2;
         }
@@ -455,7 +455,7 @@ int upx_inflate2d(const char *src, uint32_t ssize, char *dst, uint32_t *dsize, u
             } while ((oob = doubleebx(src, &myebx, &scur, ssize)) == 0);
             if (oob == -1)
                 return -1;
-            if (backsize + 2 > UINT32_MAX)
+            if (backsize > UINT32_MAX - 2)
                 return -1;
             backsize += 2;
         }
@@ -554,7 +554,7 @@ int upx_inflate2e(const char *src, uint32_t ssize, char *dst, uint32_t *dsize, u
                 } while ((oob = doubleebx(src, &myebx, &scur, ssize)) == 0);
                 if (oob == -1)
                     return -1;
-                if (backsize + 2 > UINT32_MAX)
+                if (backsize > UINT32_MAX - 2)
                     return -1;
                 backsize += 2;
             }
@@ -563,7 +563,7 @@ int upx_inflate2e(const char *src, uint32_t ssize, char *dst, uint32_t *dsize, u
         if ((uint32_t)unp_offset < 0xfffffb00)
             backsize++;
 
-        if (backsize + 2 > UINT32_MAX)
+        if (backsize > UINT32_MAX - 2)
             return -1;
         backsize += 2;
 

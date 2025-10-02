@@ -517,10 +517,10 @@ done:
             if (NULL != ctx->options) {
                 free(ctx->options);
             }
-            if (ctx->recursion_stack[ctx->recursion_level].evidence) {
-                evidence_free(ctx->recursion_stack[ctx->recursion_level].evidence);
-            }
             if (NULL != ctx->recursion_stack) {
+                if (ctx->recursion_stack[ctx->recursion_level].evidence) {
+                    evidence_free(ctx->recursion_stack[ctx->recursion_level].evidence);
+                }
                 free(ctx->recursion_stack);
             }
             free(ctx);
