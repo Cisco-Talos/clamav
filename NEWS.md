@@ -40,6 +40,10 @@ ClamAV 1.5.0 includes the following improvements and changes:
 
   [GitHub pull request #2](https://github.com/Cisco-Talos/clamav/pull/1514)
 
+  [GitHub pull request #3](https://github.com/Cisco-Talos/clamav/pull/1559)
+
+  [GitHub pull request #4](https://github.com/Cisco-Talos/clamav/pull/1572)
+
 - Added regex support for the `clamd.conf` `OnAccessExcludePath` config option.
   This change courtesy of GitHub user b1tg.
 
@@ -133,7 +137,9 @@ ClamAV 1.5.0 includes the following improvements and changes:
   is required to enable ClamAV to operate legitimately in FIPS-mode enabled
   environments.
 
-  [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1532)
+  [GitHub pull request #1](https://github.com/Cisco-Talos/clamav/pull/1532)
+
+  [GitHub pull request #2](https://github.com/Cisco-Talos/clamav/pull/1560)
 
 - ClamD: Added an option to disable select administrative commands including
   `SHUTDOWN`, `RELOAD`, `STATS` and `VERSION`.
@@ -487,15 +493,44 @@ ClamAV 1.5.0 includes the following improvements and changes:
   be processed the same way and then they can trigger application callbacks
   (e.g., "pre-scan", "post-scan", etc.).
 
+  A consequence of this change is that each embedded file will be pattern-
+  matched just like any other extracted file. To minimize excessive pattern
+  matching, file header validation checks were added for ZIP, ARJ, and CAB.
+  Also fixed a bug with embedded PE file scanning to reduce unnecessary matching.
+
   This change will impact scans with both the "leave-temps" feature and the
   "force-to-disk" feature enabled, resulting in additional temporary files.
 
-  [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1532)
+  [GitHub pull request #1](https://github.com/Cisco-Talos/clamav/pull/1532)
+
+  [GitHub pull request #2](https://github.com/Cisco-Talos/clamav/pull/1571)
 
 - Added DevContainer templates to the ClamAV Git repository in order to make it
   easier to set up AlmaLinux or Debian development environments.
 
   [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1462)
+
+- Removed the "Heuristics.XZ.DicSizeLimit" alert because of potential unintended
+  alerts based on system state.
+
+  [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1573)
+
+- Improved support for compiling on Solaris.
+
+  This fix courtesy of Andrew Watkins.
+
+  [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1569)
+
+- Improved support for compiling on GNU/Hurd.
+
+  This fix courtesy of Pino Toscano.
+
+  [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1569)
+
+- Improved support for linking with the NCurses library dependency when
+  libtinfo is built as a separate library.
+
+  [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1356)
 
 ### Bug fixes
 
@@ -550,15 +585,41 @@ ClamAV 1.5.0 includes the following improvements and changes:
 
   [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1532)
 
+- Fixed an assortment of issues found with Coverity static analysis.
+
+  [GitHub pull request #1](https://github.com/Cisco-Talos/clamav/pull/1574)
+
+  [GitHub pull request #2](https://github.com/Cisco-Talos/clamav/pull/1582)
+
+- Fixed libclamav unit test, ClamD, and ClamDScan Valgrind test failures
+  affecting some platforms.
+
+  [GitHub pull request #1](https://github.com/Cisco-Talos/clamav/pull/1554)
+
+  [GitHub pull request #2](https://github.com/Cisco-Talos/clamav/pull/1570)
+
+- Fixed crash in the Sigtool program when using the `--html-normalize` option.
+
+  [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1556)
+
+- Fixed some potential NULL-pointer dereference issues if memory allocations
+  fail.
+
+  Fix courtesy of GitHUb user JiangJias.
+
+  [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1581)
+
 ### Acknowledgments
 
 Special thanks to the following people for code contributions and bug reports:
+- Andrew Watkins
 - b1tg
 - ChaoticByte
 - Frederick Sell
 - KamathForAIX
 - Mark Carey at SAP
 - Maxim Suhanov
+- Pino Toscano
 - rma-x
 - Shivam7-1
 - Sophie0x2E
