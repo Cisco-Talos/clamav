@@ -231,7 +231,7 @@ textAddMessage(text *aText, message *aMessage)
 
         if (aText) {
             text *newHead = textMove(aText, anotherText);
-            free(anotherText);
+            textDestroy(anotherText);
             return newHead;
         }
         return anotherText;
