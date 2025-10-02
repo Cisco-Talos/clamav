@@ -1,0 +1,18 @@
+{
+    "builtin-baseline": "efcfaaf60d7ec57a159fc3110403d939bfb69729",
+    "dependencies": [
+        {
+            "name": "curl",
+            "features": ["openssl"]
+        },
+        "openssl",
+        "json-c",
+        "libxml2",
+       	"pcre2",
+        "check",
+       	"pthreads",
+       	"zlib",
+       	"pdcurses",
+       	"bzip2"
+    ]
+}
