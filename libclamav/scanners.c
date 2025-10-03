@@ -6255,12 +6255,12 @@ cl_error_t cl_scandesc(
         &scanned_out,
         engine,
         scanoptions,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL);
+        NULL,  // void *context,
+        NULL,  // const char *hash_hint,
+        NULL,  // char **hash_out,
+        NULL,  // const char *hash_alg,
+        NULL,  // const char *file_type_hint,
+        NULL); // char **file_type_out);
 
     if (NULL != scanned) {
         if ((SIZEOF_LONG == 4) &&
@@ -6303,11 +6303,11 @@ cl_error_t cl_scandesc_callback(
         engine,
         scanoptions,
         context,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL);
+        NULL,  // const char *hash_hint,
+        NULL,  // char **hash_out,
+        NULL,  // const char *hash_alg,
+        NULL,  // const char *file_type_hint,
+        NULL); // char **file_type_out);
 
     if (NULL != scanned) {
         if ((SIZEOF_LONG == 4) &&

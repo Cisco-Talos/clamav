@@ -1445,13 +1445,12 @@ int main(int argc, char **argv)
         &size,
         engine,
         &options,
-        script_context, // context,
-        hash_hint,      // hash_hint,
-        &hash_out,      // hash_out,
-        hash_alg,       // hash_alg,
-        file_type_hint, // file_type_hint,
-        &file_type_out  // file_type_out
-    );
+        script_context,
+        hash_hint,
+        &hash_out,
+        hash_alg,
+        file_type_hint,
+        &file_type_out);
 
     /* Calculate size of scanned data */
     printf("\n");
