@@ -1695,7 +1695,7 @@ static fc_error_t downloadPatchAndApply(
     fc_error_t status = FC_EARG;
 
     char patch[DB_FILENAME_MAX];
-    char patch_sign_file[DB_FILENAME_MAX + 5];
+    char patch_sign_file[DB_FILENAME_MAX + 5 /* ".sign" */ + 1];
     char olddir[PATH_MAX];
 
     char *url     = NULL;
@@ -1735,6 +1735,12 @@ static fc_error_t downloadPatchAndApply(
 
     urlLen = strlen(server) + strlen("/") + strlen(patch);
     url    = malloc(urlLen + 1);
+    if (NULL == url) {
+        logg(LOGG_ERROR, "downloadPatchAndApply: Can't allocate memory for URL\n");
+        status = FC_EMEM;
+        goto done;
+    }
+
     snprintf(url, urlLen + 1, "%s/%s", server, patch);
 
     if (FC_SUCCESS != (ret = downloadFile(url, patch, 1, logerr, 0, 0))) {
@@ -1751,9 +1757,16 @@ static fc_error_t downloadPatchAndApply(
      * Download the patch sign file.
      */
     snprintf(patch_sign_file, sizeof(patch_sign_file), "%s.sign", patch);
+    patch_sign_file[sizeof(patch_sign_file) - 1] = 0;
 
     sign_urlLen = strlen(server) + strlen("/") + strlen(patch_sign_file);
     sign_url    = malloc(sign_urlLen + 1);
+    if (NULL == sign_url) {
+        logg(LOGG_ERROR, "downloadPatchAndApply: Can't allocate memory for sign URL\n");
+        status = FC_EMEM;
+        goto done;
+    }
+
     snprintf(sign_url, sign_urlLen + 1, "%s/%s", server, patch_sign_file);
 
     if (FC_SUCCESS != (ret = downloadFile(sign_url, patch_sign_file, 1, logerr, 1, 0))) {
@@ -2395,9 +2408,57 @@ fc_error_t updatedb(
         goto done;
     }
 
-    if ((localVersion >= remoteVersion) && (NULL != localFilename)) {
-        *dbFilename = cli_safer_strdup(localFilename);
-        goto up_to_date;
+    if (NULL != localFilename) {
+        if (localVersion == remoteVersion) {
+            *dbFilename = cli_safer_strdup(localFilename);
+
+            /* check if localFilename ends with ".cvd" (i.e., not ".cld") */
+            if (NULL != strstr(localFilename, ".cvd")) {
+                /* CVD file detected, lets see if we have the .sign file.
+                   Just in case one was published for the database we have and we missed it. */
+                char cvd_sign_file[DB_FILENAME_MAX + 5 /* ".sign" */ + 1];
+                snprintf(cvd_sign_file, sizeof(cvd_sign_file), "%s-%d.cvd.sign", database, localVersion);
+                cvd_sign_file[sizeof(cvd_sign_file) - 1] = 0;
+
+                if (-1 == access(cvd_sign_file, R_OK)) {
+                    /* CVD .sign file not found. We should try to download it. */
+                    char *sign_url     = NULL;
+                    size_t sign_urlLen = 0;
+
+                    sign_urlLen = strlen(server) + strlen("/") + strlen(cvd_sign_file);
+                    sign_url    = malloc(sign_urlLen + 1);
+                    if (NULL == sign_url) {
+                        logg(LOGG_ERROR, "updatedb: Can't allocate memory for sign URL\n");
+                        status = FC_EMEM;
+                        goto done;
+                    }
+
+                    snprintf(sign_url, sign_urlLen + 1, "%s/%s", server, cvd_sign_file);
+
+                    logg(LOGG_DEBUG, "Trying to download missing CVD .sign file %s\n", sign_url);
+                    ret = downloadFile(
+                        sign_url,
+                        cvd_sign_file,
+                        1,
+                        logerr,
+                        1,
+                        0);
+                    if (FC_SUCCESS != ret) {
+                        // Not a big deal if we can't get it, just debug-log it, and move on.
+                        logg(LOGG_DEBUG, "No .sign file found for %s\n", localFilename);
+                    } else {
+                        logg(LOGG_INFO, "Downloaded missing CVD .sign file %s\n", cvd_sign_file);
+                    }
+
+                    free(sign_url);
+                }
+            }
+
+            goto up_to_date;
+        } else if (localVersion > remoteVersion) {
+            *dbFilename = cli_safer_strdup(localFilename);
+            goto up_to_date;
+        }
     }
 
     /*
