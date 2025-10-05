@@ -196,7 +196,8 @@ extern cl_error_t cl_hash_data_ex(
     EVP_MD_CTX *ctx = NULL;
 
 #if OPENSSL_VERSION_MAJOR >= 3
-    EVP_MD *md = NULL;
+    OSSL_LIB_CTX *ossl_ctx = NULL;
+    EVP_MD *md             = NULL;
 #else
     const EVP_MD *md = NULL;
 #endif
@@ -219,7 +220,14 @@ extern cl_error_t cl_hash_data_ex(
 #if OPENSSL_VERSION_MAJOR >= 3
     if (flags & CL_HASH_FLAG_FIPS_BYPASS) {
         /* Bypass FIPS restrictions the OpenSSL 3.0 way */
-        md = EVP_MD_fetch(NULL, to_openssl_alg(alg), "-fips");
+        ossl_ctx = OSSL_LIB_CTX_new();
+        if (NULL == ossl_ctx) {
+            cli_errmsg("cl_hash_data_ex: Failed to create new OpenSSL library context\n");
+            status = CL_EMEM;
+            goto done;
+        }
+
+        md = EVP_MD_fetch(ossl_ctx, to_openssl_alg(alg), "-fips");
     } else {
         /* Use FIPS compliant algorithms */
         md = EVP_MD_fetch(NULL, to_openssl_alg(alg), NULL);
@@ -322,6 +330,9 @@ done:
     if (NULL != md) {
         EVP_MD_free(md);
     }
+    if (NULL != ossl_ctx) {
+        OSSL_LIB_CTX_free(ossl_ctx);
+    }
 #endif
     return status;
 }
@@ -345,7 +356,8 @@ extern cl_error_t cl_hash_init_ex(
     EVP_MD_CTX *ctx   = NULL;
 
 #if OPENSSL_VERSION_MAJOR >= 3
-    EVP_MD *md = NULL;
+    OSSL_LIB_CTX *ossl_ctx = NULL;
+    EVP_MD *md             = NULL;
 #else
     const EVP_MD *md = NULL;
 #endif
@@ -359,7 +371,14 @@ extern cl_error_t cl_hash_init_ex(
 #if OPENSSL_VERSION_MAJOR >= 3
     if (flags & CL_HASH_FLAG_FIPS_BYPASS) {
         /* Bypass FIPS restrictions the OpenSSL 3.0 way */
-        md = EVP_MD_fetch(NULL, to_openssl_alg(alg), "-fips");
+        ossl_ctx = OSSL_LIB_CTX_new();
+        if (NULL == ossl_ctx) {
+            cli_errmsg("cl_hash_data_ex: Failed to create new OpenSSL library context\n");
+            status = CL_EMEM;
+            goto done;
+        }
+
+        md = EVP_MD_fetch(ossl_ctx, to_openssl_alg(alg), "-fips");
     } else {
         /* Use FIPS compliant algorithms */
         md = EVP_MD_fetch(NULL, to_openssl_alg(alg), NULL);
@@ -405,6 +424,9 @@ done:
 #if OPENSSL_VERSION_MAJOR >= 3
     if (NULL != md) {
         EVP_MD_free(md);
+    }
+    if (NULL != ossl_ctx) {
+        OSSL_LIB_CTX_free(ossl_ctx);
     }
 #endif
     return status;
@@ -570,7 +592,8 @@ extern cl_error_t cl_hash_file_fd_ex(
     EVP_MD_CTX *ctx = NULL;
 
 #if OPENSSL_VERSION_MAJOR >= 3
-    EVP_MD *md = NULL;
+    OSSL_LIB_CTX *ossl_ctx = NULL;
+    EVP_MD *md             = NULL;
 #else
     const EVP_MD *md = NULL;
 #endif
@@ -620,7 +643,14 @@ extern cl_error_t cl_hash_file_fd_ex(
 #if OPENSSL_VERSION_MAJOR >= 3
     if (flags & CL_HASH_FLAG_FIPS_BYPASS) {
         /* Bypass FIPS restrictions the OpenSSL 3.0 way */
-        md = EVP_MD_fetch(NULL, to_openssl_alg(alg), "-fips");
+        ossl_ctx = OSSL_LIB_CTX_new();
+        if (NULL == ossl_ctx) {
+            cli_errmsg("cl_hash_data_ex: Failed to create new OpenSSL library context\n");
+            status = CL_EMEM;
+            goto done;
+        }
+
+        md = EVP_MD_fetch(ossl_ctx, to_openssl_alg(alg), "-fips");
     } else {
         /* Use FIPS compliant algorithms */
         md = EVP_MD_fetch(NULL, to_openssl_alg(alg), NULL);
@@ -750,6 +780,9 @@ done:
     if (NULL != md) {
         EVP_MD_free(md);
     }
+    if (NULL != ossl_ctx) {
+        OSSL_LIB_CTX_free(ossl_ctx);
+    }
 #endif
     return status;
 }
@@ -761,7 +794,8 @@ unsigned char *cl_hash_data(const char *alg, const void *buf, size_t len, unsign
     size_t mdsz;
 
 #if OPENSSL_VERSION_MAJOR >= 3
-    EVP_MD *md = NULL;
+    OSSL_LIB_CTX *ossl_ctx = NULL;
+    EVP_MD *md             = NULL;
 #else
     const EVP_MD *md = NULL;
 #endif
@@ -774,7 +808,13 @@ unsigned char *cl_hash_data(const char *alg, const void *buf, size_t len, unsign
 
 #if OPENSSL_VERSION_MAJOR >= 3
     /* Bypass FIPS restrictions the OpenSSL 3.0 way */
-    md = EVP_MD_fetch(NULL, to_openssl_alg(alg), "-fips");
+    ossl_ctx = OSSL_LIB_CTX_new();
+    if (NULL == ossl_ctx) {
+        cli_errmsg("cl_hash_data_ex: Failed to create new OpenSSL library context\n");
+        return NULL;
+    }
+
+    md = EVP_MD_fetch(ossl_ctx, to_openssl_alg(alg), "-fips");
 #else
     md = EVP_get_digestbyname(to_openssl_alg(alg));
 #endif
@@ -787,6 +827,7 @@ unsigned char *cl_hash_data(const char *alg, const void *buf, size_t len, unsign
     if (!(ret)) {
 #if OPENSSL_VERSION_MAJOR >= 3
         EVP_MD_free(md);
+        OSSL_LIB_CTX_free(ossl_ctx);
 #endif
         return NULL;
     }
@@ -798,6 +839,7 @@ unsigned char *cl_hash_data(const char *alg, const void *buf, size_t len, unsign
 
 #if OPENSSL_VERSION_MAJOR >= 3
         EVP_MD_free(md);
+        OSSL_LIB_CTX_free(ossl_ctx);
 #endif
         return NULL;
     }
@@ -818,6 +860,7 @@ unsigned char *cl_hash_data(const char *alg, const void *buf, size_t len, unsign
 
 #if OPENSSL_VERSION_MAJOR >= 3
         EVP_MD_free(md);
+        OSSL_LIB_CTX_free(ossl_ctx);
 #endif
         EVP_MD_CTX_destroy(ctx);
         return NULL;
@@ -837,6 +880,7 @@ unsigned char *cl_hash_data(const char *alg, const void *buf, size_t len, unsign
 
 #if OPENSSL_VERSION_MAJOR >= 3
             EVP_MD_free(md);
+            OSSL_LIB_CTX_free(ossl_ctx);
 #endif
             EVP_MD_CTX_destroy(ctx);
             return NULL;
@@ -853,6 +897,7 @@ unsigned char *cl_hash_data(const char *alg, const void *buf, size_t len, unsign
 
 #if OPENSSL_VERSION_MAJOR >= 3
             EVP_MD_free(md);
+            OSSL_LIB_CTX_free(ossl_ctx);
 #endif
             EVP_MD_CTX_destroy(ctx);
             return NULL;
@@ -871,6 +916,7 @@ unsigned char *cl_hash_data(const char *alg, const void *buf, size_t len, unsign
 
 #if OPENSSL_VERSION_MAJOR >= 3
         EVP_MD_free(md);
+        OSSL_LIB_CTX_free(ossl_ctx);
 #endif
         EVP_MD_CTX_destroy(ctx);
         return NULL;
@@ -878,6 +924,7 @@ unsigned char *cl_hash_data(const char *alg, const void *buf, size_t len, unsign
 
 #if OPENSSL_VERSION_MAJOR >= 3
     EVP_MD_free(md);
+    OSSL_LIB_CTX_free(ossl_ctx);
 #endif
     EVP_MD_CTX_destroy(ctx);
 
@@ -892,7 +939,8 @@ unsigned char *cl_hash_file_fd(int fd, const char *alg, unsigned int *olen)
     EVP_MD_CTX *ctx;
 
 #if OPENSSL_VERSION_MAJOR >= 3
-    EVP_MD *md = NULL;
+    OSSL_LIB_CTX *ossl_ctx = NULL;
+    EVP_MD *md             = NULL;
 #else
     const EVP_MD *md = NULL;
 #endif
@@ -901,7 +949,13 @@ unsigned char *cl_hash_file_fd(int fd, const char *alg, unsigned int *olen)
 
 #if OPENSSL_VERSION_MAJOR >= 3
     /* Bypass FIPS restrictions the OpenSSL 3.0 way */
-    md = EVP_MD_fetch(NULL, to_openssl_alg(alg), "-fips");
+    ossl_ctx = OSSL_LIB_CTX_new();
+    if (NULL == ossl_ctx) {
+        cli_errmsg("cl_hash_data_ex: Failed to create new OpenSSL library context\n");
+        return NULL;
+    }
+
+    md = EVP_MD_fetch(ossl_ctx, to_openssl_alg(alg), "-fips");
 #else
     md = EVP_get_digestbyname(to_openssl_alg(alg));
 #endif
@@ -912,6 +966,7 @@ unsigned char *cl_hash_file_fd(int fd, const char *alg, unsigned int *olen)
     if (!(ctx)) {
 #if OPENSSL_VERSION_MAJOR >= 3
         EVP_MD_free(md);
+        OSSL_LIB_CTX_free(ossl_ctx);
 #endif
         return NULL;
     }
@@ -926,6 +981,7 @@ unsigned char *cl_hash_file_fd(int fd, const char *alg, unsigned int *olen)
     if (!EVP_DigestInit_ex(ctx, md, NULL)) {
 #if OPENSSL_VERSION_MAJOR >= 3
         EVP_MD_free(md);
+        OSSL_LIB_CTX_free(ossl_ctx);
 #endif
         EVP_MD_CTX_free(ctx);
         return NULL;
@@ -934,6 +990,7 @@ unsigned char *cl_hash_file_fd(int fd, const char *alg, unsigned int *olen)
     res = cl_hash_file_fd_ctx(ctx, fd, olen);
 #if OPENSSL_VERSION_MAJOR >= 3
     EVP_MD_free(md);
+    OSSL_LIB_CTX_free(ossl_ctx);
 #endif
     EVP_MD_CTX_free(ctx);
 
@@ -1788,14 +1845,21 @@ void *cl_hash_init(const char *alg)
     EVP_MD_CTX *ctx;
 
 #if OPENSSL_VERSION_MAJOR >= 3
-    EVP_MD *md = NULL;
+    OSSL_LIB_CTX *ossl_ctx = NULL;
+    EVP_MD *md             = NULL;
 #else
     const EVP_MD *md = NULL;
 #endif
 
 #if OPENSSL_VERSION_MAJOR >= 3
     /* Bypass FIPS restrictions the OpenSSL 3.0 way */
-    md = EVP_MD_fetch(NULL, to_openssl_alg(alg), "-fips");
+    ossl_ctx = OSSL_LIB_CTX_new();
+    if (NULL == ossl_ctx) {
+        cli_errmsg("cl_hash_data_ex: Failed to create new OpenSSL library context\n");
+        return NULL;
+    }
+
+    md = EVP_MD_fetch(ossl_ctx, to_openssl_alg(alg), "-fips");
 #else
     md = EVP_get_digestbyname(to_openssl_alg(alg));
 #endif
@@ -1806,6 +1870,7 @@ void *cl_hash_init(const char *alg)
     if (!(ctx)) {
 #if OPENSSL_VERSION_MAJOR >= 3
         EVP_MD_free(md);
+        OSSL_LIB_CTX_free(ossl_ctx);
 #endif
         return NULL;
     }
@@ -1820,6 +1885,7 @@ void *cl_hash_init(const char *alg)
     if (!EVP_DigestInit_ex(ctx, md, NULL)) {
 #if OPENSSL_VERSION_MAJOR >= 3
         EVP_MD_free(md);
+        OSSL_LIB_CTX_free(ossl_ctx);
 #endif
         EVP_MD_CTX_free(ctx);
         return NULL;
@@ -1827,6 +1893,7 @@ void *cl_hash_init(const char *alg)
 
 #if OPENSSL_VERSION_MAJOR >= 3
     EVP_MD_free(md);
+    OSSL_LIB_CTX_free(ossl_ctx);
 #endif
     return (void *)ctx;
 }
