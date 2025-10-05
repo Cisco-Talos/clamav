@@ -572,13 +572,12 @@ int scanfile(const char *filename, scanmem_data *scan_data, struct mem_info *inf
             &info->bytes_scanned,
             info->engine,
             info->options,
-            NULL,
-            NULL,
-            NULL,
-            NULL,
-            NULL,
-            NULL,
-            NULL);
+            NULL,  // void *context,
+            NULL,  // const char *hash_hint,
+            NULL,  // char **hash_out,
+            NULL,  // const char *hash_alg,
+            NULL,  // const char *file_type_hint,
+            NULL); // char **file_type_out);
 
         switch (verdict) {
             case CL_VERDICT_NOTHING_FOUND: {
