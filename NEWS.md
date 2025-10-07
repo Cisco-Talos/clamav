@@ -3,6 +3,20 @@
 Note: This file refers to the official packages. Things described here may
 differ slightly from third-party binary packages.
 
+## 1.6.0
+
+ClamAV 1.6.0 includes the following improvements and changes:
+
+### Major changes
+
+### Other improvements
+
+### Bug fixes
+
+### Acknowledgments
+
+Special thanks to the following people for code contributions and bug reports:
+
 ## 1.5.0
 
 ClamAV 1.5.0 includes the following improvements and changes:
