@@ -19,10 +19,10 @@ cmake_policy(SET CMP0087 NEW) # support generator expressions in install(CODE) a
 #  For release candidate:     set(VERSION_SUFFIX "-rc")
 #  For release:               set(VERSION_SUFFIX "")
 string(TIMESTAMP TODAY "%Y%m%d")
-set(VERSION_SUFFIX "")
+set(VERSION_SUFFIX "-devel-${TODAY}")
 
 project( ClamAV
-         VERSION "1.5.0"
+         VERSION "1.6.0"
          DESCRIPTION "ClamAV open source email, web, and end-point anti-virus toolkit." )
 
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
