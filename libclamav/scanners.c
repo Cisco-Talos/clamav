@@ -4143,10 +4143,10 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
                                     break;
                                 }
 
-                                cli_exe_info_init(&peinfo, 0);
+                                cli_exe_info_init(&peinfo, fpt->offset);
 
                                 // Header validity check to prevent false positives from being scanned.
-                                ret = cli_peheader(ctx->fmap, &peinfo, CLI_PEHEADER_OPT_NONE, NULL);
+                                ret = cli_peheader(ctx, &peinfo, CLI_PEHEADER_OPT_NONE);
 
                                 // peinfo memory may have been allocated and must be freed even if it failed.
                                 cli_exe_info_destroy(&peinfo);
