@@ -2075,6 +2075,9 @@ cl_error_t unzip_search(cli_ctx *ctx, struct zip_requests *requests)
                 status = CL_ETIMEOUT;
                 goto done;
             }
+
+            // Increment to the next central file header.
+            central_file_header_offset += file_record_size;
         } while ((ret == CL_SUCCESS) && (file_record_size > 0));
     } else {
         cli_dbgmsg("unzip_search: Cannot locate central directory. unzip_search failed.\n");
