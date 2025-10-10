@@ -2113,7 +2113,7 @@ cl_error_t unzip_search_single(cli_ctx *ctx, const char *name, size_t nlen, uint
 
     // Search for the zip file entry in the current layer.
     status = unzip_search(ctx, &requests);
-    if (CL_SUCCESS == status) {
+    if (CL_VIRUS == status) {
         *loff = requests.loff;
     }
 
