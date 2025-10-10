@@ -3650,7 +3650,9 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
         // Omit OLD TAR files because it's a raw archive format that we can extract and scan manually.
         (type != CL_TYPE_OLD_TAR) &&
         // Omit POSIX TAR files because it's a raw archive format that we can extract and scan manually.
-        (type != CL_TYPE_POSIX_TAR)) {
+        (type != CL_TYPE_POSIX_TAR) &&
+        // Omit TNEF files because TNEF message attachments are raw / not compressed. Document and ZIP attachments would be likely to have double-extraction issues.
+        (type != CL_TYPE_TNEF)) {
         /*
          * Enable file type recognition scan mode if requested, except for some problematic types (above).
          */
