@@ -3670,6 +3670,8 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
     // In allmatch-mode, ret will never be CL_VIRUS, so ret may be used exclusively for file type detection and for terminal errors.
     // When not in allmatch-mode, it's more important to return right away if ret is CL_VIRUS, so we don't care if file type matches were found.
     if (ret >= CL_TYPENO) {
+        size_t last_offset = 0;
+
         // Matched 1+ file type signatures. Handle them.
         found_type = (cli_file_t)ret;
 
@@ -3678,10 +3680,15 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
         fpt = ftoffset;
 
         while (fpt) {
-            if (fpt->offset > 0) {
+            if ((fpt->offset > 0) &&
+                // Only handle each offset once to prevent duplicate processing like if two signatures are found at the same offset.
+                ((size_t)fpt->offset > last_offset)) {
+
                 bool type_has_been_handled = true;
                 bool ancestor_was_embedded = false;
                 size_t i;
+
+                last_offset = (size_t)fpt->offset;
 
                 /*
                  * First, use "embedded type recognition" to identify a file's actual type.
@@ -3874,83 +3881,9 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
                 }
 
                 /*
-                 * Only scan embedded files if we are not already in an embedded context.
-                 * That is, if this or a previous layer was identified with embedded file type recognition, then we do
-                 * not scan for embedded files again.
-                 *
-                 * This restriction will prevent detecting the same embedded content more than once when recursing with
-                 * embedded file type recognition deeper within the same buffer.
-                 *
-                 * This is necessary because we have no way of knowing the length of a file for many formats and cannot
-                 * prevent a search for embedded files from finding the same embedded content multiple times (like a LOT
-                 * of times).
-                 *
-                 * E.g. if the file is like this:
-                 *
-                 *          [ data ] [ embedded file ] [ data ] [ embedded file ]
-                 *
-                 * The first time we do it we'll find "two" embedded files, like this:
-                 *
-                 *  Emb. File #1:    [ embedded file ] [ data ] [ embedded file ]
-                 *  Emb. File #2:                               [ embedded file ]
-                 *
-                 * We must not scan Emb. File #1 again for embedded files, because it would double-extract Emb. File #2.
-                 *
-                 * There is a flaw in this logic, though. Suppose that we actually have:
-                 *
-                 *          [ data ] [ compressed file w. recognizable magic bytes ]
-                 *
-                 * A first pass of the above will again identify "two" embedded files:
-                 *
-                 *  Emb. File #1:    [ compressed archive w. recognizable magic bytes ]
-                 *  Emb. File #2:                               [ magic bytes         ] <- Compressed data/Not real file
-                 *
-                 * In this case, the magic bytes of a contained, compressed file is somehow still identifiable despite
-                 * compression. The result is the Emb. File #2 will fail to be parsed and when we decompress Emb. File
-                 * #1, then we maybe get something like this:
-                 *
-                 *  Decompressed:    [ data                   ] [ embedded file ]
-                 *
-                 * So if this happened... then we WOULD want to scan the decompressed file for embedded files.
-                 * The problem is, we have no way of knowing how long embedded files are.
-                 * We don't know if we have:
-                 *
-                 * A.       [ data ] [ embedded file ] [ data ] [ embedded file ]
-                 *  or
-                 * B.       [ data ] [ embedded compressed archive w. recognizable magic bytes ]
-                 *  or
-                 * C.       [ data ] [ embedded uncompressed archive w. multiple file entries [ file 1 ] [ file 2 ] [ file 2 ] ]
-                 *
-                 * Some ideas for a more accurate solution:
-                 *
-                 * 1. Record the offset and size of each file extracted by the parsers.
-                 *    Then, when we do embedded file type recognition, we can check if the offset and size of the
-                 *    embedded file matches the offset and size of a file that was extracted by a parser.
-                 *    This falls apart a little bit for multiple layers of archives unless we also compare offsets within
-                 *    each layer. We could do that, but it would be a lot of work. And we'd probably want to take into
-                 *    consideration if files were decompressed or decrypted. ... I don't know a clean solution.
-                 *
-                 * 2. Have all parsers to run before embedded file type recognition and they each determine the length
-                 *    of the file they parsed, so we can differentiate between embedded files and appended files.
-                 *    For appended files, we would know they weren't extracted by a parser module and the parser for
-                 *    each of those would report the length of the file it parsed so we can use that to mitigate
-                 *    overlapping embedded file type recognition.
-                 *    But I highly doubt all file types can be parsed to determine the correct length of the file.
-                 */
-                for (i = ctx->recursion_level; i > 0; i--) {
-                    if (ctx->recursion_stack[i].attributes & LAYER_ATTRIBUTES_EMBEDDED) {
-                        // Found an ancestor that was embedded.
-                        // Do not scan embedded files again.
-                        ancestor_was_embedded = true;
-                        break;
-                    }
-                }
-
-                /*
                  * Next, check for actual embedded files.
                  */
-                if ((false == ancestor_was_embedded) &&
-                    (false == type_has_been_handled)) {
+                if (false == type_has_been_handled) {
                     cli_dbgmsg("%s signature found at %u\n", cli_ftname(fpt->type), (unsigned int)fpt->offset);
 
                     type_has_been_handled = true;
@@ -4003,6 +3936,9 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
                                     break;
                                 }
 
+                                // Increment last_offset to ignore any file type matches that occured within this legitimate archive.
+                                last_offset += zip_size - 1; // Note: size is definitely > 0 because header_check succeeded.
+
                                 nret = cli_magic_scan_nested_fmap_type(
                                     ctx->fmap,
                                     fpt->offset,
@@ -4024,6 +3960,9 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
                                     cli_dbgmsg("CAB header check failed: %s (%d)\n", cl_strerror(ret), ret);
                                     break;
                                 }
+
+                                // Increment last_offset to ignore any file type matches that occured within this legitimate archive.
+                                last_offset += cab_size - 1; // Note: size is definitely > 0 because header_check succeeded.
 
                                 nret = cli_magic_scan_nested_fmap_type(
                                     ctx->fmap,
@@ -4047,6 +3986,9 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
                                     cli_dbgmsg("ARJ header check failed: %s (%d)\n", cl_strerror(ret), ret);
                                     break;
                                 }
+
+                                // Increment last_offset to ignore any file type matches that occured within this legitimate archive.
+                                last_offset += arj_size - 1; // Note: size is definitely > 0 because header_check succeeded.
 
                                 nret = cli_magic_scan_nested_fmap_type(
                                     ctx->fmap,
