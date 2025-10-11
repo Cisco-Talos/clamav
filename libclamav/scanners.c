@@ -1665,7 +1665,7 @@ static cl_error_t cli_ole2_tempdir_scan_vba_new(const char *dir, cli_ctx *ctx, s
                 goto done;
             }
 
-            ret = cli_scan_desc(tempfd, ctx, CL_TYPE_SCRIPT, false, NULL, AC_SCAN_VIR, NULL, "extracted-vba-project", tempfile, LAYER_ATTRIBUTES_NORMALIZED);
+            ret = cli_scan_desc(tempfd, ctx, CL_TYPE_SCRIPT, false, NULL, AC_SCAN_VIR, NULL, "extracted-vba-project", tempfile, LAYER_ATTRIBUTES_NONE);
             if (CL_SUCCESS != ret) {
                 goto done;
             }
