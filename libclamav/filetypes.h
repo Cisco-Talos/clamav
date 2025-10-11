@@ -33,7 +33,7 @@
 #define MAGIC_BUFFER_SIZE 1028
 
 #define CL_TYPENO 500
-#define MAX_EMBEDDED_OBJ 10
+#define MAX_EMBEDDED_OBJ 16
 
 typedef enum cli_file {
     CL_TYPE_ANY        = 0,

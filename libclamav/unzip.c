@@ -1310,7 +1310,8 @@ cl_error_t index_local_file_headers_within_bounds(
     index             = *num_records;
 
     if (start_offset > fsize || end_offset > fsize || start_offset > end_offset) {
-        cli_errmsg("index_local_file_headers_within_bounds: Invalid offset arguments\n");
+        cli_errmsg("index_local_file_headers_within_bounds: Invalid offset arguments: start_offset=%u, end_offset=%u, fsize=%u\n",
+                    start_offset, end_offset, fsize);
         status = CL_EPARSE;
         goto done;
     }
@@ -2075,6 +2076,9 @@ cl_error_t unzip_search(cli_ctx *ctx, struct zip_requests *requests)
                 status = CL_ETIMEOUT;
                 goto done;
             }
+
+            // Increment to the next central file header.
+            central_file_header_offset += file_record_size;
         } while ((ret == CL_SUCCESS) && (file_record_size > 0));
     } else {
         cli_dbgmsg("unzip_search: Cannot locate central directory. unzip_search failed.\n");
@@ -2106,7 +2110,7 @@ cl_error_t unzip_search_single(cli_ctx *ctx, const char *name, size_t nlen, uint
 
     // Search for the zip file entry in the current layer.
     status = unzip_search(ctx, &requests);
-    if (CL_SUCCESS == status) {
+    if (CL_VIRUS == status) {
         *loff = requests.loff;
     }
 

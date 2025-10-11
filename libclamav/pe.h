@@ -88,7 +88,7 @@ enum {
 #define CLI_PEHEADER_OPT_REMOVE_MISSING_SECTIONS 0x10
 
 cl_error_t cli_pe_targetinfo(cli_ctx *ctx, struct cli_exe_info *peinfo);
-cl_error_t cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts, cli_ctx *ctx);
+cl_error_t cli_peheader(cli_ctx *ctx, struct cli_exe_info *peinfo, uint32_t opts);
 
 cl_error_t cli_check_auth_header(cli_ctx *ctx, struct cli_exe_info *peinfo);
 cl_error_t cli_genhash_pe(cli_ctx *ctx, unsigned int class, cli_hash_type_t type, stats_section_t *hashes);
