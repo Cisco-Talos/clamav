@@ -37,44 +37,44 @@
 
 #include "clamav.h"
 #include "others.h"
-#include "phish_allow_list.h"
+#include "phish_allow_real_only.h"
 #include "regex_list.h"
 
 #include "mpool.h"
 
-cl_error_t allow_list_match(const struct cl_engine* engine, char* real_url, const char* display_url, int hostOnly)
+cl_error_t phish_allow_real_only_match(const struct cl_engine* engine, char* real_url, const char* display_url, int hostOnly)
 {
     const char* info; /*unused*/
-    cli_dbgmsg("Phishing: looking up in allow list: %s:%s; host-only:%d\n", real_url, display_url, hostOnly);
-    return engine->allow_list_matcher ? regex_list_match(engine->allow_list_matcher, real_url, display_url, NULL, hostOnly, &info, 1) : 0;
+    cli_dbgmsg("Phishing: looking up in real only allow list: %s:%s; host-only:%d\n", real_url, "", hostOnly);
+    return engine->phish_allow_real_only_matcher ? regex_list_match(engine->phish_allow_real_only_matcher, real_url, "", NULL, hostOnly, &info, 2) : 0;
 }
 
-cl_error_t init_allow_list(struct cl_engine* engine)
+cl_error_t phish_allow_real_only_init(struct cl_engine* engine)
 {
     if (engine) {
-        engine->allow_list_matcher = (struct regex_matcher*)MPOOL_MALLOC(engine->mempool, sizeof(struct regex_matcher));
-        if (!engine->allow_list_matcher) {
+        engine->phish_allow_real_only_matcher = (struct regex_matcher*)MPOOL_MALLOC(engine->mempool, sizeof(struct regex_matcher));
+        if (!engine->phish_allow_real_only_matcher) {
             cli_errmsg("Phish_allow_list: Unable to allocate memory for allow_list_match\n");
             return CL_EMEM;
         }
 #ifdef USE_MPOOL
-        ((struct regex_matcher*)(engine->allow_list_matcher))->mempool = engine->mempool;
+        ((struct regex_matcher*)(engine->phish_allow_real_only_matcher))->mempool = engine->mempool;
 #endif
-        return init_regex_list(engine->allow_list_matcher, engine->dconf->other & OTHER_CONF_PREFILTERING);
+        return init_regex_list(engine->phish_allow_real_only_matcher, engine->dconf->other & OTHER_CONF_PREFILTERING);
     } else
         return CL_ENULLARG;
 }
 
-int is_allow_list_ok(const struct cl_engine* engine)
+int phish_is_allow_real_only_ok(const struct cl_engine* engine)
 {
-    return (engine && engine->allow_list_matcher) ? is_regex_ok(engine->allow_list_matcher) : 1;
+    return (engine && engine->phish_allow_real_only_matcher) ? is_regex_ok(engine->phish_allow_real_only_matcher) : 1;
 }
 
-void allow_list_done(struct cl_engine* engine)
+void phish_allow_real_only_done(struct cl_engine* engine)
 {
-    if (engine && engine->allow_list_matcher) {
-        regex_list_done(engine->allow_list_matcher);
-        MPOOL_FREE(engine->mempool, engine->allow_list_matcher);
-        engine->allow_list_matcher = NULL;
+    if (engine && engine->phish_allow_real_only_matcher) {
+        regex_list_done(engine->phish_allow_real_only_matcher);
+        MPOOL_FREE(engine->mempool, engine->phish_allow_real_only_matcher);
+        engine->phish_allow_real_only_matcher = NULL;
     }
 }

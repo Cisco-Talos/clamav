@@ -1,5 +1,5 @@
 /*
- *  Phishing module: domain list implementation.
+ *  Phishing module: Allow list implementation.
  *
  *  Copyright (C) 2013-2025 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
@@ -21,13 +21,15 @@
  *  MA 02110-1301, USA.
  */
 
-#ifndef _PHISH_DOMAINCHECK_DB_H
-#define _PHISH_DOMAINCHECK_DB_H
+#ifndef _PHISH_ALLOW_REAL_AND_DISPLAY_H
+#define _PHISH_ALLOW_REAL_AND_DISPLAY_H
+
 #include "clamav.h"
 
-int phish_protected_domain_init(struct cl_engine* engine);
-void phish_protected_domain_done(struct cl_engine* engine);
-int phish_is_protected_domain_ok(const struct cl_engine* engine);
-int phish_protected_domain_match(const struct cl_engine* engine, char* real_url, const char* display_url, const struct pre_fixup_info* pre_fixup, int hostOnly);
+cl_error_t phish_allow_real_and_display_init(struct cl_engine* engine);
+void phish_allow_real_and_display_done(struct cl_engine* engine);
+void allow_list_cleanup(const struct cl_engine* engine);
+int phish_is_allow_real_and_display_ok(const struct cl_engine* engine);
+cl_error_t phish_allow_real_and_display_match(const struct cl_engine* engine, char* real_url, const char* display_url, int hostOnly);
 
 #endif

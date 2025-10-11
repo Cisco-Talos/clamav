@@ -515,8 +515,8 @@ fc_error_t fc_test_database(const char *dbFilename, int bBytecodeEnabled)
 done:
 
     if (NULL != engine) {
-        if (engine->domain_list_matcher && engine->domain_list_matcher->sha2_256_pfx_set.keys)
-            cli_hashset_destroy(&engine->domain_list_matcher->sha2_256_pfx_set);
+        if (engine->phish_protected_domain_matcher && engine->phish_protected_domain_matcher->sha2_256_pfx_set.keys)
+            cli_hashset_destroy(&engine->phish_protected_domain_matcher->sha2_256_pfx_set);
 
         cl_engine_free(engine);
     }

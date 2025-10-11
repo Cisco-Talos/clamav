@@ -40,7 +40,8 @@
 #include "htmlnorm.h"
 #include "phishcheck.h"
 #include "phish_domaincheck_db.h"
-#include "phish_allow_list.h"
+#include "phish_allow_real_and_display.h"
+#include "phish_allow_real_only.h"
 #include "regex_list.h"
 #include "iana_tld.h"
 #include "iana_cctld.h"
@@ -861,8 +862,9 @@ void phishing_done(struct cl_engine* engine)
     if (pchk && !pchk->is_disabled) {
         free_regex(&pchk->preg_numeric);
     }
-    allow_list_done(engine);
-    domain_list_done(engine);
+    phish_allow_real_and_display_done(engine);
+    phish_allow_real_only_done(engine);
+    phish_protected_domain_done(engine);
     if (pchk) {
         cli_dbgmsg("Freeing phishcheck struct\n");
         MPOOL_FREE(engine->mempool, pchk);
@@ -1141,7 +1143,11 @@ static enum phish_status phishy_map(int phishy, enum phish_status fallback)
 
 static cl_error_t allow_list_check(const struct cl_engine* engine, struct url_check* urls, int hostOnly)
 {
-    return allow_list_match(engine, urls->realLink.data, urls->displayLink.data, hostOnly);
+    int rd = 0;
+    int ro = 0;
+    rd     = phish_allow_real_and_display_match(engine, urls->realLink.data, urls->displayLink.data, hostOnly);
+    ro     = phish_allow_real_only_match(engine, urls->realLink.data, urls->displayLink.data, hostOnly);
+    return ro || rd;
 }
 
 static cl_error_t hash_match(const struct regex_matcher* rlist,
@@ -1477,7 +1483,7 @@ static enum phish_status phishingCheck(cli_ctx* ctx, struct url_check* urls)
         goto done;
     }
 
-    if (CL_SUCCESS != (status = url_hash_match(ctx->engine->domain_list_matcher,
+    if (CL_SUCCESS != (status = url_hash_match(ctx->engine->phish_protected_domain_matcher,
                                                urls->realLink.data,
                                                strlen(urls->realLink.data),
                                                &phishing_verdict))) {
@@ -1549,7 +1555,7 @@ static enum phish_status phishingCheck(cli_ctx* ctx, struct url_check* urls)
         phishing_verdict = CL_PHISH_CLEAN;
         goto done;
     }
-    if (domain_list_match(ctx->engine, realData, displayData, &urls->pre_fixup, 0)) {
+    if (phish_protected_domain_match(ctx->engine, realData, displayData, &urls->pre_fixup, 0)) {
         phishy |= DOMAIN_LISTED;
     }
 
@@ -1588,7 +1594,7 @@ static enum phish_status phishingCheck(cli_ctx* ctx, struct url_check* urls)
      * Eg:
      *      H:malicious.com
      */
-    if (domain_list_match(ctx->engine, host_url.displayLink.data, host_url.realLink.data, &urls->pre_fixup, 1)) {
+    if (phish_protected_domain_match(ctx->engine, host_url.displayLink.data, host_url.realLink.data, &urls->pre_fixup, 1)) {
         phishy |= DOMAIN_LISTED;
     } else {
         urls->flags &= urls->always_check_flags;
