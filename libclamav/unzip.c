@@ -1310,7 +1310,8 @@ cl_error_t index_local_file_headers_within_bounds(
     index             = *num_records;
 
     if (start_offset > fsize || end_offset > fsize || start_offset > end_offset) {
-        cli_errmsg("index_local_file_headers_within_bounds: Invalid offset arguments\n");
+        cli_errmsg("index_local_file_headers_within_bounds: Invalid offset arguments: start_offset=%u, end_offset=%u, fsize=%u\n",
+                    start_offset, end_offset, fsize);
         status = CL_EPARSE;
         goto done;
     }
