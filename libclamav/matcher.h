@@ -390,6 +390,6 @@ cl_error_t cli_matchmeta(cli_ctx *ctx, const char *fname, size_t fsizec, size_t 
  *               - 9 - MachO
  * @param ctx The current scan context
  */
-void cli_targetinfo(struct cli_target_info *info, unsigned int target, cli_ctx *ctx);
+void cli_targetinfo(struct cli_target_info *info, cli_target_t target, cli_ctx *ctx);
 
 #endif
