@@ -418,11 +418,7 @@ static cl_error_t cli_scanrar_file(const char *filepath, int desc, cli_ctx *ctx)
                      * File should be extracted...
                      * ... make sure we have read permissions to the file.
                      */
-#ifdef _WIN32
-                    if (0 != _access_s(extract_fullpath, R_OK)) {
-#else
                     if (0 != access(extract_fullpath, R_OK)) {
-#endif
                         cli_dbgmsg("RAR: Don't have read permissions, attempting to change file permissions to make it readable..\n");
 #ifdef _WIN32
                         if (0 != _chmod(extract_fullpath, _S_IREAD)) {
@@ -533,11 +529,11 @@ static cl_error_t cli_scanrar(cli_ctx *ctx)
     char *tmpname = NULL;
     int tmpfd     = -1;
 
-#ifdef _WIN32
-    if ((SCAN_UNPRIVILEGED) || (NULL == ctx->fmap->path) || (0 != _access_s(ctx->fmap->path, R_OK))) {
-#else
-    if ((SCAN_UNPRIVILEGED) || (NULL == ctx->fmap->path) || (0 != access(ctx->fmap->path, R_OK))) {
-#endif
+    if ((SCAN_UNPRIVILEGED) ||
+        (NULL == ctx->fmap->path) ||
+        (0 != access(ctx->fmap->path, R_OK)) ||
+        (ctx->fmap->nested_offset > 0) || (ctx->fmap->len < ctx->fmap->real_len)) {
+
         /* If map is not file-backed have to dump to file for scanrar. */
         status = fmap_dump_to_file(ctx->fmap, ctx->fmap->path, ctx->this_layer_tmpdir, &tmpname, &tmpfd, 0, SIZE_MAX);
         if (status != CL_SUCCESS) {
