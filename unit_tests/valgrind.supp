@@ -376,3 +376,12 @@
    fun:start_thread
    fun:clone
 }
+{
+   <image-fuzzy-hash-png-decoder>
+   Memcheck:Cond
+   ...
+   fun:read_header_info<std::io::cursor::Cursor<&[u8]>>
+   ...
+   fun:fuzzy_hash_calculate_image
+   ...
+}
