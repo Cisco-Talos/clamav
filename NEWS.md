@@ -3,6 +3,10 @@
 Note: This file refers to the official packages. Things described here may
 differ slightly from third-party binary packages.
 
+## 1.5.1
+
+ClamAV 1.5.1 is a patch release with the following fixes:
+
 ## 1.5.0
 
 ClamAV 1.5.0 includes the following improvements and changes:
