@@ -36,9 +36,8 @@ target_link_libraries( clamconf
     PRIVATE
         ClamAV::libclamav
         ClamAV::common )
+
+install(TARGETS clamconf COMPONENT programs)
 if(WIN32)
-    install(TARGETS clamconf DESTINATION . COMPONENT programs)
-    install(FILES $<TARGET_PDB_FILE:clamconf> DESTINATION . OPTIONAL COMPONENT programs)
-else()
-    install(TARGETS clamconf DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT programs)
+    install(FILES $<TARGET_PDB_FILE:clamconf> TYPE BIN OPTIONAL COMPONENT programs)
 endif()
