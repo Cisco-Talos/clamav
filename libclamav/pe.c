@@ -2781,7 +2781,7 @@ int cli_scanpe(cli_ctx *ctx)
 
     cli_exe_info_init(peinfo, 0);
 
-    peheader_ret = cli_peheader(map, peinfo, opts, ctx);
+    peheader_ret = cli_peheader(ctx, peinfo, opts);
 
     // Warn the user if PE header parsing failed - if it's a binary that runs
     // successfully on Windows, we need to relax our PE parsing standards so
@@ -4360,7 +4360,7 @@ int cli_scanpe(cli_ctx *ctx)
 
 cl_error_t cli_pe_targetinfo(cli_ctx *ctx, struct cli_exe_info *peinfo)
 {
-    return cli_peheader(ctx->fmap, peinfo, CLI_PEHEADER_OPT_EXTRACT_VINFO, NULL);
+    return cli_peheader(ctx, peinfo, CLI_PEHEADER_OPT_EXTRACT_VINFO);
 }
 
 /** Parse the PE header and, if successful, populate peinfo
@@ -4420,7 +4420,7 @@ cl_error_t cli_pe_targetinfo(cli_ctx *ctx, struct cli_exe_info *peinfo)
  *
  * TODO Same as above but with JSON creation
  */
-cl_error_t cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts, cli_ctx *ctx)
+cl_error_t cli_peheader(cli_ctx *ctx, struct cli_exe_info *peinfo, uint32_t opts)
 {
     cl_error_t ret = CL_ERROR;
 
@@ -4446,16 +4446,19 @@ cl_error_t cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts,
     size_t read;
     uint32_t temp;
 
+    fmap_t *map = NULL;
+
     int toval                   = 0;
     struct json_object *pe_json = NULL;
     char jsonbuf[128];
 
-    if (ctx == NULL &&
-        (opts & CLI_PEHEADER_OPT_COLLECT_JSON ||
-         opts & CLI_PEHEADER_OPT_DBG_PRINT_INFO)) {
-        cli_errmsg("cli_peheader: ctx can't be NULL for options specified\n");
+    if (ctx == NULL) {
+        cli_errmsg("cli_peheader: ctx can't be NULL\n");
+        ret = CL_EARG;
         goto done;
     }
+
+    map = ctx->fmap;
 
     if (opts & CLI_PEHEADER_OPT_COLLECT_JSON) {
         pe_json = get_pe_property(ctx);
@@ -5469,7 +5472,7 @@ cl_error_t cli_check_auth_header(cli_ctx *ctx, struct cli_exe_info *peinfo)
         peinfo = &_peinfo;
         cli_exe_info_init(peinfo, 0);
 
-        if (CL_SUCCESS != cli_peheader(ctx->fmap, peinfo, CLI_PEHEADER_OPT_NONE, NULL)) {
+        if (CL_SUCCESS != cli_peheader(ctx, peinfo, CLI_PEHEADER_OPT_NONE)) {
             cli_exe_info_destroy(peinfo);
             return CL_EFORMAT;
         }
@@ -5741,7 +5744,7 @@ cl_error_t cli_genhash_pe(cli_ctx *ctx, unsigned int class, cli_hash_type_t type
     // if so, use that to avoid having to re-parse the header
     cli_exe_info_init(peinfo, 0);
 
-    if (cli_peheader(ctx->fmap, peinfo, CLI_PEHEADER_OPT_NONE, NULL) != CL_SUCCESS) {
+    if (cli_peheader(ctx, peinfo, CLI_PEHEADER_OPT_NONE) != CL_SUCCESS) {
         cli_exe_info_destroy(peinfo);
         return CL_EFORMAT;
     }

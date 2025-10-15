@@ -717,17 +717,35 @@ static cl_error_t parse_local_file_header(
     zip += LOCAL_HEADER_elen;
     bytes_remaining -= LOCAL_HEADER_elen;
 
-    if (!csize) { /* FIXME: what's used for method0 files? csize or usize? Nothing in the specs, needs testing */
-        cli_dbgmsg("cli_unzip: local header - skipping empty file\n");
-    } else {
-        if (bytes_remaining < csize) {
-            cli_dbgmsg("cli_unzip: local header - stream out of file\n");
-            status = CL_EPARSE;
-            goto done;
-        }
+    if (bytes_remaining < csize) {
+        cli_dbgmsg("cli_unzip: local header - stream out of file\n");
+        status = CL_EPARSE;
+        goto done;
+    }
 
+    if (NULL != record) {
         /* Don't actually unzip if we're just collecting the file record information (offset, sizes) */
-        if (NULL == record) {
+        if (NULL == original_filename) {
+            record->original_filename = NULL;
+        } else {
+            record->original_filename = CLI_STRNDUP(original_filename, strlen(original_filename));
+        }
+        record->local_header_offset = loff;
+        record->local_header_size   = zip - local_header;
+        record->compressed_size     = csize;
+        record->uncompressed_size   = usize;
+        record->method              = LOCAL_HEADER_method;
+        record->flags               = LOCAL_HEADER_flags;
+        record->encrypted           = (LOCAL_HEADER_flags & F_ENCR) ? 1 : 0;
+
+        status = CL_SUCCESS;
+    } else {
+        /*
+         * Unzip or decompress & then unzip.
+         */
+        if (!csize) { /* FIXME: what's used for method0 files? csize or usize? Nothing in the specs, needs testing */
+            cli_dbgmsg("cli_unzip: local header - skipping empty file\n");
+        } else {
             zip = fmap_need_ptr_once(ctx->fmap, zip, csize);
             if (NULL == zip) {
                 cli_dbgmsg("cli_unzip: local header - data out of file\n");
@@ -751,26 +769,11 @@ static cl_error_t parse_local_file_header(
                     goto done;
                 }
             }
-        } else {
-            if (NULL == original_filename) {
-                record->original_filename = NULL;
-            } else {
-                record->original_filename = CLI_STRNDUP(original_filename, strlen(original_filename));
-            }
-            record->local_header_offset = loff;
-            record->local_header_size   = zip - local_header;
-            record->compressed_size     = csize;
-            record->uncompressed_size   = usize;
-            record->method              = LOCAL_HEADER_method;
-            record->flags               = LOCAL_HEADER_flags;
-            record->encrypted           = (LOCAL_HEADER_flags & F_ENCR) ? 1 : 0;
-
-            status = CL_SUCCESS;
         }
-
-        zip += csize;
-        bytes_remaining -= csize;
     }
+
+    zip += csize;
+    bytes_remaining -= csize;
 
     if (LOCAL_HEADER_flags & F_USEDD) {
         if (bytes_remaining < 12) {
@@ -910,8 +913,8 @@ static cl_error_t parse_central_directory_file_header(
 
     central_header = fmap_need_off(ctx->fmap, central_file_header_offset, SIZEOF_CENTRAL_HEADER);
     if (NULL == central_header) {
-        cli_dbgmsg("cli_unzip: central header - file header offset out of file\n");
-        status = CL_EPARSE;
+        cli_dbgmsg("cli_unzip: central header - reached end of central directory.\n");
+        status = CL_BREAK;
         goto done;
     }
 
@@ -1310,7 +1313,8 @@ cl_error_t index_local_file_headers_within_bounds(
     index             = *num_records;
 
     if (start_offset > fsize || end_offset > fsize || start_offset > end_offset) {
-        cli_errmsg("index_local_file_headers_within_bounds: Invalid offset arguments\n");
+        cli_errmsg("index_local_file_headers_within_bounds: Invalid offset arguments: start_offset=%u, end_offset=%u, fsize=%u\n",
+                   start_offset, end_offset, fsize);
         status = CL_EPARSE;
         goto done;
     }
@@ -2075,6 +2079,9 @@ cl_error_t unzip_search(cli_ctx *ctx, struct zip_requests *requests)
                 status = CL_ETIMEOUT;
                 goto done;
             }
+
+            // Increment to the next central file header.
+            central_file_header_offset += file_record_size;
         } while ((ret == CL_SUCCESS) && (file_record_size > 0));
     } else {
         cli_dbgmsg("unzip_search: Cannot locate central directory. unzip_search failed.\n");
@@ -2106,7 +2113,7 @@ cl_error_t unzip_search_single(cli_ctx *ctx, const char *name, size_t nlen, uint
 
     // Search for the zip file entry in the current layer.
     status = unzip_search(ctx, &requests);
-    if (CL_SUCCESS == status) {
+    if (CL_VIRUS == status) {
         *loff = requests.loff;
     }
 
