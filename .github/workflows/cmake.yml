@@ -62,7 +62,6 @@ jobs:
           buildPreset: "windows-release"
           testPreset: "windows-release"
           packagePreset: "windows-release"
-          useVcpkgToolchainFile: true
 
   build-macos:
     runs-on: macos-latest
