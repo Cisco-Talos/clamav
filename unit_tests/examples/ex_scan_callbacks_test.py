@@ -63,10 +63,10 @@ class TC(testcase.TestCase):
             # Windows needs the example program to be in the same directory as libclamav and the rest.
             shutil.copy(
                 program_path,
-                str(TC.path_build / 'unit_tests' / program_name + '.exe'),
+                str( TC.path_build / 'unit_tests' / ( program_name + '.exe' ) ),
             )
 
-            TC.example_program = TC.path_build / 'unit_tests' / program_name + '.exe'
+            TC.example_program = TC.path_build / 'unit_tests' / ( program_name  + '.exe' )
         else:
             # Linux and macOS can use the LD_LIBRARY_PATH environment variable to find libclamav
             TC.example_program = program_path
