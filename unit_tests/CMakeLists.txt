@@ -196,6 +196,9 @@ if(WIN32)
         file(TO_NATIVE_PATH $<TARGET_FILE_DIR:check_clamav>/freshclam.exe       FRESHCLAM)
         file(TO_NATIVE_PATH $<TARGET_FILE_DIR:check_clamav>/sigtool.exe         SIGTOOL)
     endif()
+    if(ENABLE_TESTS)
+        file(TO_NATIVE_PATH $<TARGET_FILE_DIR:check_clamav>/ex_cl_cvdunpack.exe EX_CL_CVDUNPACK)
+    endif()
 
     # Convert the CVD_CERTS_DIR to a native path for Windows (replacing forward slashes with backslashes).
     file(TO_NATIVE_PATH ${CVD_CERTS_DIR} CVD_CERTS_DIR)
@@ -259,6 +262,9 @@ else()
         if(ENABLE_CLAMONACC)
             set(CLAMONACC          $<TARGET_FILE:clamonacc>)
         endif()
+        if(ENABLE_TESTS)
+            set(EX_CL_CVDUNPACK $<TARGET_FILE:ex_cl_cvdunpack>)
+        endif()
     endif()
 endif()
 
@@ -302,6 +308,7 @@ set(ENVIRONMENT
     SIGTOOL=${SIGTOOL}
     CLAMAV_MILTER=${CLAMAV_MILTER}
     CLAMONACC=${CLAMONACC}
+    EX_CL_CVDUNPACK=${EX_CL_CVDUNPACK}
 )
 
 # The Rust openssl-sys crate needs to know how to find the OpenSSL headers and libraries.

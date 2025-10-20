@@ -24,32 +24,14 @@ class TC(testcase.TestCase):
         super(TC, cls).setUpClass()
 
         # Find the example program
-        if operating_system == 'windows':
-            # Windows needs the example program to be in the same directory as libclamav and the rest.
-            program_path = TC.path_build / 'examples' / (program_name + '.exe')
-            # If we're being built with Ninja Multi-Config, also try the configuration build directory.
-            if not program_path.exists() and 'CONFIGURATION' in os.environ:
-                program_path = TC.path_build / 'examples' / os.environ["CONFIGURATION"] / ( program_name + '_static.exe' )
+        program_path = os.environ["EX_CL_CVDUNPACK"]
 
-            shutil.copy(
-                str( program_path ),
-                str(TC.path_build / 'unit_tests' / ( program_name + '.exe' ) ),
-            )
+        shutil.copy(
+            str( program_path ),
+            str(TC.path_build / 'unit_tests' / ( program_name + '.exe' ) ),
+        )
 
-            TC.example_program = TC.path_build / 'unit_tests' / ( program_name + '.exe' )
-            if not TC.example_program.exists():
-                # Try the static version.
-                TC.example_program = TC.path_build / 'unit_tests' / ( program_name + '_static.exe' )
-                if not TC.example_program.exists():
-                    raise Exception('Could not find the example program.')
-        else:
-            # Linux and macOS can use the LD_LIBRARY_PATH environment variable to find libclamav
-            TC.example_program = TC.path_build / 'examples' / program_name
-            if not TC.example_program.exists():
-                # Try the static version.
-                TC.example_program = TC.path_build / 'examples' / ( program_name + '_static' )
-                if not TC.example_program.exists():
-                    raise Exception('Could not find the example program.')
+        TC.example_program = TC.path_build / 'unit_tests' / ( program_name + '.exe' )
 
         # Copy the test cvd to the temp directory
         shutil.copyfile(
