@@ -375,8 +375,9 @@ script_context_t *read_script_commands(const char *script_filepath)
     }
 
     size_t bytes_read = fread(script_contents, 1, script_size, script_file);
-    if (bytes_read != (size_t)script_size) {
-        printf("Error reading script file %s\n", script_filepath);
+    if (bytes_read != (size_t)script_size && ferror(script_file) != 0) {
+        printf("Error reading script file %s. Bytes read: %zu, Script size: %zu\n",
+               script_filepath, bytes_read, (size_t)script_size);
         status = 2;
         goto done;
     }
