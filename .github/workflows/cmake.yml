@@ -44,6 +44,10 @@ jobs:
       - name: Restore vcpkg ports from cache or install vcpkg
         # Download and build vcpkg, without installing any port. If content is cached already, it is a no-op.
         uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgDirectory: ${{runner.workspace}}/vcpkg
+          vcpkgJsonBlob: ${{runner.workspace}}/clamav/vcpkg.json
+          vcpkgGitCommitId: "efcfaaf60d7ec57a159fc3110403d939bfb69729"
         id: runvcpkg
 
       - name: Print the VCPKG_ROOT (for debugging)
