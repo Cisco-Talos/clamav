@@ -8,6 +8,7 @@ import shutil
 import unittest
 import sys
 from zipfile import ZIP_DEFLATED, ZipFile
+from pathlib import Path
 
 sys.path.append('../unit_tests')
 import testcase
@@ -281,4 +282,129 @@ class TC(testcase.TestCase):
         expected_results = ['{}: OK'.format(testpath.name) for testpath in testpaths]
         expected_results.append('Scanned files: 3')
         expected_results.append('Infected files: 0')
+        self.verify_output(output.out, expected=expected_results)
+
+    def test_split_zip(self):
+        self.step_name('Test scanning a split zip archive containing 4 identical logo files.')
+
+        # For context, the zip utility won't make splits smaller than 64k.
+        # I used a folder with 4 copies of the same logo.png file, and then used the zip utility to create a split zip archive.
+        # The split zip archive segments are "logos.z01" and "logos.zip".
+        #
+        # The logos.z01 file is the first segment, and it contains the first 64k of the zip archive.
+        # This includes "logo.2.png", "logo.1.png", and a malformed portion of "logo.4.png" files.
+        # The first part has the identifying magic at the start, so we recognize it as a zip archive.
+        #
+        # The logos.zip file is the second segment, and it contains the remaining 36k of the zip archive.
+        # This includes a malformed portion of "logo.4.png" and "logo.3.png" and the zip archive's central directory.
+        # The second part does not have the identifying magic at the start, so we discover "logo.3.png" through ZIP_SFX
+        # embedded file type recognition.
+
+        (TC.path_tmp / 'logo.png.ldb').write_text(
+            "logo.png;Engine:150-255,Target:0;0;fuzzy_img#af2ad01ed42993c7#0\n"
+        )
+
+        first_file = TC.path_source / 'unit_tests' / 'input' / 'other_scanfiles' / 'zip' / 'logos.z01'
+        second_file = TC.path_source / 'unit_tests' / 'input' / 'other_scanfiles' / 'zip' / 'logos.zip'
+
+        # Scan the first segment of the split zip archive.
+        command = '{valgrind} {valgrind_args} {clamscan} -d {path_db} {testfiles} --allmatch --gen-json --debug'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan,
+            path_db=TC.path_tmp / 'logo.png.ldb',
+            testfiles=first_file,
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 1  # virus
+
+        expected_stdout = [
+            'logos.z01: logo.png.UNOFFICIAL FOUND',
+        ]
+        self.verify_output(output.out, expected=expected_stdout)
+
+        expected_stderr = [
+            '"FileName":"logo.2.png",',
+            '"FileName":"logo.1.png",',
+        ]
+        # The "logo.4.png" file is split between this segment and the next, so it can't be extracted.
+        # The "logo.3.png" file is not in this segment, so it won't be reported either.
+        unexpected_stdout = [
+            '"FileName":"logo.3.png",',
+            '"FileName":"logo.4.png",',
+        ]
+        self.verify_output(output.err, expected=expected_stderr)
+
+        # Scan the second segment of the split zip archive.
+        command = '{valgrind} {valgrind_args} {clamscan} -d {path_db} {testfiles} --allmatch --gen-json --debug'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan,
+            path_db=TC.path_tmp / 'logo.png.ldb',
+            testfiles=second_file,
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 1  # virus
+
+        expected_stdout = [
+            'logos.zip: logo.png.UNOFFICIAL FOUND',
+        ]
+        self.verify_output(output.out, expected=expected_stdout)
+
+        expected_stderr = [
+            '"FileName":"logo.3.png",',
+        ]
+        # The "logo.4.png" file is split between this segment and the first, so it can't be extracted.
+        # The "logo.2.png" and "logo.1.png" files are not in this segment, so they won't be reported either.
+        unexpected_stdout = [
+            '"FileName":"logo.4.png",',
+            '"FileName":"logo.2.png",',
+            '"FileName":"logo.1.png",',
+        ]
+        self.verify_output(output.err, expected=expected_stderr)
+
+    def test_cvdload_no_sign_fips_limits(self):
+        self.step_name('Test that clamscan --fips-limits fails to load a CVD if .cvd.sign file is not present')
+
+        path_db = Path(TC.path_tmp, 'database')
+        path_db.mkdir()
+
+        # Copy cvd to temp directory
+        shutil.copy(str(TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles' / 'test-6.cvd'), str(path_db / 'test.cvd'))
+
+        testpaths = [
+            TC.path_build / "unit_tests" / "input" / "clamav_hdb_scanfiles" / "clam.exe.2007.one",
+        ]
+
+        testfiles = ' '.join([str(testpath) for testpath in testpaths])
+
+        command = '{valgrind} {valgrind_args} {clamscan} --fips-limits -d {path_db} {testfiles}'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args,
+            clamscan=TC.clamscan,
+            path_db=path_db,
+            testfiles=testfiles,
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 2  # error
+
+        expected_results = [
+            'Unable to verify CVD with detached signature file and MD5 verification is disabled',
+            'Can\'t verify CVD file']
+        self.verify_output(output.err, expected=expected_results)
+
+        # Add the .cvd.sign file and try again
+        shutil.copy(str(TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles' / 'test-6.cvd.sign'), str(path_db))
+
+        command = '{valgrind} {valgrind_args} {clamscan} --fips-limits -d {path_db} {testfiles}'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args,
+            clamscan=TC.clamscan,
+            path_db=path_db,
+            testfiles=testfiles,
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 1  # virus found
+
+        expected_results = ['{}: Clamav.Test.File-6 FOUND'.format(testpath.name) for testpath in testpaths]
+        expected_results.append('Scanned files: {}'.format(len(testpaths)))
+        expected_results.append('Infected files: {}'.format(len(testpaths)))
         self.verify_output(output.out, expected=expected_results)

@@ -121,6 +121,8 @@ freshclam_dat_v1_t *g_freshclamDat = NULL;
 
 uint8_t g_lastRay[CFRAY_LEN + 1] = {0};
 
+bool g_bFipsLimits = false;
+
 /** @brief Generate a Version 4 UUID according to RFC-4122
  *
  * Uses the openssl RAND_bytes function to generate a Version 4 UUID.
@@ -1550,7 +1552,7 @@ static fc_error_t getcvd(
     }
 
     // Now that we have the cvd and the sign file, we can verify the cvd.
-    if (CL_SUCCESS != (cl_ret = cl_cvdverify(tmpfile))) {
+    if (CL_SUCCESS != (cl_ret = cli_cvdverify(tmpfile, g_bFipsLimits, g_signVerifier))) {
         logg(LOGG_ERROR, "Verification: %s\n", cl_strerror(cl_ret));
         status = FC_EBADCVD;
         goto done;
@@ -1663,7 +1665,7 @@ static fc_error_t mkdir_and_chdir_for_cdiff_tmp(const char *database, const char
         /*
          * 3) Unpack the existing CVD/CLD database to this directory.
          */
-        if (CL_SUCCESS != cli_cvdunpack_and_verify(cvdfile, tmpdir, is_cld == true, g_signVerifier)) {
+        if (CL_SUCCESS != cli_cvdunpack_and_verify(cvdfile, tmpdir, is_cld == true, g_bFipsLimits, g_signVerifier)) {
             logg(LOGG_ERROR, "mkdir_and_chdir_for_cdiff_tmp: Can't unpack %s into %s\n", cvdfile, tmpdir);
             cli_rmdirs(tmpdir);
             goto done;
@@ -1693,7 +1695,7 @@ static fc_error_t downloadPatchAndApply(
     fc_error_t status = FC_EARG;
 
     char patch[DB_FILENAME_MAX];
-    char patch_sign_file[DB_FILENAME_MAX + 5];
+    char patch_sign_file[DB_FILENAME_MAX + 5 /* ".sign" */ + 1];
     char olddir[PATH_MAX];
 
     char *url     = NULL;
@@ -1733,6 +1735,12 @@ static fc_error_t downloadPatchAndApply(
 
     urlLen = strlen(server) + strlen("/") + strlen(patch);
     url    = malloc(urlLen + 1);
+    if (NULL == url) {
+        logg(LOGG_ERROR, "downloadPatchAndApply: Can't allocate memory for URL\n");
+        status = FC_EMEM;
+        goto done;
+    }
+
     snprintf(url, urlLen + 1, "%s/%s", server, patch);
 
     if (FC_SUCCESS != (ret = downloadFile(url, patch, 1, logerr, 0, 0))) {
@@ -1749,14 +1757,21 @@ static fc_error_t downloadPatchAndApply(
      * Download the patch sign file.
      */
     snprintf(patch_sign_file, sizeof(patch_sign_file), "%s.sign", patch);
+    patch_sign_file[sizeof(patch_sign_file) - 1] = 0;
 
     sign_urlLen = strlen(server) + strlen("/") + strlen(patch_sign_file);
     sign_url    = malloc(sign_urlLen + 1);
+    if (NULL == sign_url) {
+        logg(LOGG_ERROR, "downloadPatchAndApply: Can't allocate memory for sign URL\n");
+        status = FC_EMEM;
+        goto done;
+    }
+
     snprintf(sign_url, sign_urlLen + 1, "%s/%s", server, patch_sign_file);
 
     if (FC_SUCCESS != (ret = downloadFile(sign_url, patch_sign_file, 1, logerr, 1, 0))) {
         // No sign file is not an error.
-        // Just means we'll have to fall back to the legacy sha256-based rsa method for verifying CDIFFs.
+        // Just means we'll have to fall back to the legacy sha2-256-based rsa method for verifying CDIFFs.
         logg(LOGG_DEBUG, "No external .sign digital signature file for %s\n", patch);
     } else {
         logg(LOGG_DEBUG, "Downloaded digital signature file: %s\n", patch_sign_file);
@@ -2393,9 +2408,57 @@ fc_error_t updatedb(
         goto done;
     }
 
-    if ((localVersion >= remoteVersion) && (NULL != localFilename)) {
-        *dbFilename = cli_safer_strdup(localFilename);
-        goto up_to_date;
+    if (NULL != localFilename) {
+        if (localVersion == remoteVersion) {
+            *dbFilename = cli_safer_strdup(localFilename);
+
+            /* check if localFilename ends with ".cvd" (i.e., not ".cld") */
+            if (NULL != strstr(localFilename, ".cvd")) {
+                /* CVD file detected, lets see if we have the .sign file.
+                   Just in case one was published for the database we have and we missed it. */
+                char cvd_sign_file[DB_FILENAME_MAX + 5 /* ".sign" */ + 1];
+                snprintf(cvd_sign_file, sizeof(cvd_sign_file), "%s-%d.cvd.sign", database, localVersion);
+                cvd_sign_file[sizeof(cvd_sign_file) - 1] = 0;
+
+                if (-1 == access(cvd_sign_file, R_OK)) {
+                    /* CVD .sign file not found. We should try to download it. */
+                    char *sign_url     = NULL;
+                    size_t sign_urlLen = 0;
+
+                    sign_urlLen = strlen(server) + strlen("/") + strlen(cvd_sign_file);
+                    sign_url    = malloc(sign_urlLen + 1);
+                    if (NULL == sign_url) {
+                        logg(LOGG_ERROR, "updatedb: Can't allocate memory for sign URL\n");
+                        status = FC_EMEM;
+                        goto done;
+                    }
+
+                    snprintf(sign_url, sign_urlLen + 1, "%s/%s", server, cvd_sign_file);
+
+                    logg(LOGG_DEBUG, "Trying to download missing CVD .sign file %s\n", sign_url);
+                    ret = downloadFile(
+                        sign_url,
+                        cvd_sign_file,
+                        1,
+                        logerr,
+                        1,
+                        0);
+                    if (FC_SUCCESS != ret) {
+                        // Not a big deal if we can't get it, just debug-log it, and move on.
+                        logg(LOGG_DEBUG, "No .sign file found for %s\n", localFilename);
+                    } else {
+                        logg(LOGG_INFO, "Downloaded missing CVD .sign file %s\n", cvd_sign_file);
+                    }
+
+                    free(sign_url);
+                }
+            }
+
+            goto up_to_date;
+        } else if (localVersion > remoteVersion) {
+            *dbFilename = cli_safer_strdup(localFilename);
+            goto up_to_date;
+        }
     }
 
     /*
@@ -2623,7 +2686,7 @@ fc_error_t updatedb(
         logg(LOGG_DEBUG, "updatedb: Moving signature file %s to database directory\n", signfile);
 
         // get the basename of the signfile
-        if (CL_SUCCESS != cli_basename(signfile, strlen(signfile), &newSignFilename)) {
+        if (CL_SUCCESS != cli_basename(signfile, strlen(signfile), &newSignFilename, false /* posix_support_backslash_pathsep */)) {
             logg(LOGG_ERROR, "updatedb: Failed to get basename of '%s'\n", signfile);
             goto done;
         }

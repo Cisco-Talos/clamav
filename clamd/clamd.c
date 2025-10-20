@@ -51,7 +51,7 @@
 #include <syslog.h>
 #endif
 
-#ifdef C_LINUX
+#if defined(C_LINUX) || defined(__GLIBC__)
 #include <sys/resource.h>
 #endif
 
@@ -150,7 +150,7 @@ int main(int argc, char **argv)
     struct sigaction sa;
     int dropPrivRet = 0;
 #endif
-#if defined(C_LINUX) || (defined(RLIMIT_DATA) && defined(C_BSD))
+#if defined(C_LINUX) || defined(__GLIBC__) || (defined(RLIMIT_DATA) && defined(C_BSD))
     struct rlimit rlim;
 #endif
     time_t currtime;
@@ -201,7 +201,7 @@ int main(int argc, char **argv)
     }
 
     if (optget(opts, "debug")->enabled) {
-#if defined(C_LINUX)
+#if defined(C_LINUX) || defined(__GLIBC__)
         /* njh@bandsman.co.uk: create a dump if needed */
         rlim.rlim_cur = rlim.rlim_max = RLIM_INFINITY;
         if (setrlimit(RLIMIT_CORE, &rlim) < 0)
@@ -616,8 +616,12 @@ int main(int argc, char **argv)
 
         cl_engine_set_clcb_virus_found(engine, clamd_virus_found_cb);
 
-        if (optget(opts, "LeaveTemporaryFiles")->enabled)
+        if (optget(opts, "LeaveTemporaryFiles")->enabled) {
+            /* Set the engine to keep temporary files */
             cl_engine_set_num(engine, CL_ENGINE_KEEPTMP, 1);
+            /* Also set the engine to create temporary directory structure */
+            cl_engine_set_num(engine, CL_ENGINE_TMPDIR_RECURSION, 1);
+        }
 
         if (optget(opts, "ForceToDisk")->enabled)
             cl_engine_set_num(engine, CL_ENGINE_FORCETODISK, 1);
@@ -703,6 +707,12 @@ int main(int argc, char **argv)
                 ret = 1;
                 break;
             }
+        }
+
+        if (optget(opts, "FIPSCryptoHashLimits")->enabled) {
+            dboptions |= CL_DB_FIPS_LIMITS;
+            cl_engine_set_num(engine, CL_ENGINE_FIPS_LIMITS, 1);
+            logg(LOGG_INFO_NF, "FIPS crypto hash limits enabled.\n");
         }
 
         if ((ret = cl_load(dbdir, engine, &sigs, dboptions))) {

@@ -45,7 +45,7 @@ int main(int argc, char **argv)
 
     const char *filename;
     const char *destination_directory;
-    bool dont_verify = false;
+    uint32_t dboptions = 0;
 
     switch (argc) {
         case 2:
@@ -60,7 +60,7 @@ int main(int argc, char **argv)
             if (strcmp(argv[1], "--no-verify") == 0) {
                 filename              = argv[2];
                 destination_directory = argv[3];
-                dont_verify           = true;
+                dboptions             = CL_DB_UNSIGNED;
             } else {
                 printf("Usage: %s [--no-verify] file [destination_directory]\n", argv[0]);
                 return CL_EARG;
@@ -73,7 +73,7 @@ int main(int argc, char **argv)
 
     // Note: using NULL for certs_directory will disable external digital signature verification.
 
-    ret = cl_cvdunpack_ex(filename, destination_directory, dont_verify, NULL);
+    ret = cl_cvdunpack_ex(filename, destination_directory, NULL, dboptions);
     if (ret != CL_SUCCESS) {
         printf("ERROR: %s\n", cl_strerror(ret));
     }

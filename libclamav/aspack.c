@@ -161,9 +161,13 @@ static uint8_t build_decrypt_array(struct ASPK *stream, uint8_t *array, uint8_t 
         if (counter >= 0x10) {
             uint32_t old = endoff;
             endoff       = d3[i + 1] >> 0x10;
-            if (endoff - old) {
-                if (!CLI_ISCONTAINED(stream->dict_helper[which].ends, 0x100, stream->dict_helper[which].ends + old, endoff - old)) return 0;
-                memset((stream->dict_helper[which].ends + old), i + 1, endoff - old);
+
+            if (endoff < old) return 0;
+            uint32_t remaining = endoff - old;
+
+            if (remaining > 0) {
+                if (!CLI_ISCONTAINED(stream->dict_helper[which].ends, 0x100, stream->dict_helper[which].ends + old, remaining)) return 0;
+                memset((stream->dict_helper[which].ends + old), i + 1, remaining);
             }
         }
 

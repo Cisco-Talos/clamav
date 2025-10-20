@@ -68,7 +68,7 @@ static cl_error_t writeWholeFile(cli_ctx *ctx, const char *const fileName, const
     }
 
     /* Not sure if I care about the name that is actually created. */
-    if (cli_gentempfd_with_prefix(ctx->sub_tmpdir, fileName, &tmpf, &fd) != CL_SUCCESS) {
+    if (cli_gentempfd_with_prefix(ctx->this_layer_tmpdir, fileName, &tmpf, &fd) != CL_SUCCESS) {
         cli_warnmsg("writeWholeFile: Can't create temp file\n");
         status = CL_ETMPFILE;
         goto done;
@@ -648,7 +648,7 @@ static cl_error_t initPointerList(PointerList *pl)
 
     freePointerList(pl);
     CLI_CALLOC_OR_GOTO_DONE(pl->idxs, capacity, sizeof(uint8_t *),
-                            cli_errmsg("initPointerList: Can't allocate memory\n");
+                            cli_errmsg("initPointerList: Can't allocate memory\n"),
                             ret = CL_EMEM);
 
     pl->capacity = capacity;

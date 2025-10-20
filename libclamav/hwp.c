@@ -87,7 +87,7 @@ static cl_error_t decompress_and_callback(cli_ctx *ctx, fmap_t *input, size_t at
         remain = len;
 
     /* reserve tempfile for output and callback */
-    if ((ret = cli_gentempfd(ctx->sub_tmpdir, &tmpname, &ofd)) != CL_SUCCESS) {
+    if ((ret = cli_gentempfd(ctx->this_layer_tmpdir, &tmpname, &ofd)) != CL_SUCCESS) {
         cli_errmsg("%s: Can't generate temporary file\n", parent);
         return ret;
     }
@@ -302,7 +302,7 @@ cl_error_t cli_hwp5header(cli_ctx *ctx, hwp5_header_t *hwp5)
     if (SCAN_COLLECT_METADATA) {
         json_object *header, *flags;
 
-        header = cli_jsonobj(ctx->wrkproperty, "Hwp5Header");
+        header = cli_jsonobj(ctx->this_layer_metadata_json, "Hwp5Header");
         if (!header) {
             cli_errmsg("HWP5.x: No memory for Hwp5Header object\n");
             return CL_EMEM;
@@ -405,23 +405,23 @@ cl_error_t cli_scanhwp5_stream(cli_ctx *ctx, hwp5_header_t *hwp5, char *name, in
                     return CL_ESTAT;
                 }
 
-                input = fmap(fd, 0, statbuf.st_size, NULL);
+                input = fmap_new(fd, 0, statbuf.st_size, NULL, filepath);
                 if (!input) {
                     cli_errmsg("HWP5.x: Failed to get fmap for input stream\n");
                     return CL_EMAP;
                 }
                 ret = decompress_and_callback(ctx, input, 0, 0, "HWP5.x", hwp5_cb, NULL);
-                funmap(input);
+                fmap_free(input);
                 return ret;
             }
         }
 
         /* JSON Output Summary Information */
-        if (SCAN_COLLECT_METADATA && ctx->properties != NULL) {
+        if (SCAN_COLLECT_METADATA && ctx->metadata_json != NULL) {
             if (name && !strncmp(name, "_5_hwpsummaryinformation", 24)) {
                 cli_dbgmsg("HWP5.x: Detected a '_5_hwpsummaryinformation' stream\n");
                 /* JSONOLE2 - what to do if something breaks? */
-                if (cli_ole2_summary_json(ctx, fd, 2) == CL_ETIMEOUT)
+                if (cli_ole2_summary_json(ctx, fd, 2, filepath) == CL_ETIMEOUT)
                     return CL_ETIMEOUT;
             }
         }
@@ -530,7 +530,7 @@ static inline cl_error_t parsehwp3_docinfo(cli_ctx *ctx, size_t offset, struct h
         json_object *header, *flags;
         char *str;
 
-        header = cli_jsonobj(ctx->wrkproperty, "Hwp3Header");
+        header = cli_jsonobj(ctx->this_layer_metadata_json, "Hwp3Header");
         if (!header) {
             cli_errmsg("HWP3.x: No memory for Hwp3Header object\n");
             return CL_EMEM;
@@ -600,7 +600,7 @@ static inline cl_error_t parsehwp3_docsummary(cli_ctx *ctx, size_t offset)
         return CL_EMAP;
     }
 
-    summary = cli_jsonobj(ctx->wrkproperty, "Hwp3SummaryInfo");
+    summary = cli_jsonobj(ctx->this_layer_metadata_json, "Hwp3SummaryInfo");
     if (!summary) {
         cli_errmsg("HWP3.x: No memory for json object\n");
         return CL_EMEM;
@@ -1514,7 +1514,7 @@ static inline cl_error_t parsehwp3_infoblk_1(cli_ctx *ctx, fmap_t *dmap, size_t 
     hwp3_debug("HWP3.x: Information Block @ offset %llu\n", infoloc);
 
     if (SCAN_COLLECT_METADATA) {
-        infoblk_1 = cli_jsonobj(ctx->wrkproperty, "InfoBlk_1");
+        infoblk_1 = cli_jsonobj(ctx->this_layer_metadata_json, "InfoBlk_1");
         if (!infoblk_1) {
             cli_errmsg("HWP5.x: No memory for information block object\n");
             return CL_EMEM;
@@ -1752,7 +1752,7 @@ static cl_error_t hwp3_cb(void *cbdata, int fd, const char *filepath, cli_ctx *c
                 return CL_ESTAT;
             }
 
-            map = dmap = fmap(fd, 0, statbuf.st_size, NULL);
+            map = dmap = fmap_new(fd, 0, statbuf.st_size, NULL, filepath);
             if (!map) {
                 cli_errmsg("HWP3.x: Failed to get fmap for uncompressed stream\n");
                 return CL_EMAP;
@@ -1767,14 +1767,14 @@ static cl_error_t hwp3_cb(void *cbdata, int fd, const char *filepath, cli_ctx *c
 
     /* Fonts - 7 entries of 2 + (n x 40) bytes where n is the first 2 bytes of the entry */
     if (SCAN_COLLECT_METADATA)
-        fonts = cli_jsonarray(ctx->wrkproperty, "FontCounts");
+        fonts = cli_jsonarray(ctx->this_layer_metadata_json, "FontCounts");
 
     for (i = 0; i < 7; i++) {
         uint16_t nfonts;
 
         if (fmap_readn(map, &nfonts, offset, sizeof(nfonts)) != sizeof(nfonts)) {
             if (dmap)
-                funmap(dmap);
+                fmap_free(dmap);
             return CL_EREAD;
         }
         nfonts = le16_to_host(nfonts);
@@ -1787,7 +1787,7 @@ static cl_error_t hwp3_cb(void *cbdata, int fd, const char *filepath, cli_ctx *c
         if ((new_offset <= offset) || (new_offset >= map->len)) {
             cli_errmsg("HWP3.x: Font Entry: number of fonts is too high, invalid. %u\n", nfonts);
             if (dmap)
-                funmap(dmap);
+                fmap_free(dmap);
             return CL_EPARSE;
         }
         offset = new_offset;
@@ -1796,20 +1796,20 @@ static cl_error_t hwp3_cb(void *cbdata, int fd, const char *filepath, cli_ctx *c
     /* Styles - 2 + (n x 238) bytes where n is the first 2 bytes of the section */
     if (fmap_readn(map, &nstyles, offset, sizeof(nstyles)) != sizeof(nstyles)) {
         if (dmap)
-            funmap(dmap);
+            fmap_free(dmap);
         return CL_EREAD;
     }
     nstyles = le16_to_host(nstyles);
 
     if (SCAN_COLLECT_METADATA)
-        cli_jsonint(ctx->wrkproperty, "StyleCount", nstyles);
+        cli_jsonint(ctx->this_layer_metadata_json, "StyleCount", nstyles);
 
     hwp3_debug("HWP3.x: %u Styles @ offset %zu\n", nstyles, offset);
     new_offset = offset + (2 + nstyles * 238);
     if ((new_offset <= offset) || (new_offset >= map->len)) {
         cli_errmsg("HWP3.x: Font Entry: number of font styles is too high, invalid. %u\n", nstyles);
         if (dmap)
-            funmap(dmap);
+            fmap_free(dmap);
         return CL_EPARSE;
     }
     offset += (2 + nstyles * 238);
@@ -1821,12 +1821,12 @@ static cl_error_t hwp3_cb(void *cbdata, int fd, const char *filepath, cli_ctx *c
     /* return is never a virus */
     if (ret != CL_SUCCESS) {
         if (dmap)
-            funmap(dmap);
+            fmap_free(dmap);
         return ret;
     }
 
     if (SCAN_COLLECT_METADATA)
-        cli_jsonint(ctx->wrkproperty, "ParagraphCount", p);
+        cli_jsonint(ctx->this_layer_metadata_json, "ParagraphCount", p);
 
     last = 0;
     /* 'additional information block #1's - attachments and media */
@@ -1840,7 +1840,7 @@ static cl_error_t hwp3_cb(void *cbdata, int fd, const char *filepath, cli_ctx *c
     }
 
     if (dmap)
-        funmap(dmap);
+        fmap_free(dmap);
     return ret;
 }
 
@@ -1887,7 +1887,7 @@ cl_error_t cli_scanhwp3(cli_ctx *ctx)
     if (docinfo.di_compressed)
         ret = decompress_and_callback(ctx, ctx->fmap, offset, 0, "HWP3.x", hwp3_cb, NULL);
     else
-        ret = hwp3_cb(&offset, 0, ctx->sub_filepath, ctx);
+        ret = hwp3_cb(&offset, 0, ctx->fmap->path, ctx);
 
     if (ret != CL_SUCCESS)
         return ret;
@@ -1993,7 +1993,7 @@ static cl_error_t hwpml_binary_cb(int fd, const char *filepath, cli_ctx *ctx, in
             return CL_ESTAT;
         }
 
-        if (!(input = fmap(fd, 0, statbuf.st_size, NULL))) {
+        if (!(input = fmap_new(fd, 0, statbuf.st_size, NULL, filepath))) {
             cli_errmsg("HWPML: Failed to get fmap for binary data\n");
             return CL_EMAP;
         }
@@ -2001,19 +2001,19 @@ static cl_error_t hwpml_binary_cb(int fd, const char *filepath, cli_ctx *ctx, in
         /* send data for base64 conversion - TODO: what happens with really big files? */
         if (!(instream = fmap_need_off_once(input, 0, input->len))) {
             cli_errmsg("HWPML: Failed to get input stream from binary data\n");
-            funmap(input);
+            fmap_free(input);
             return CL_EMAP;
         }
 
         decoded = (char *)cl_base64_decode((char *)instream, input->len, NULL, &decodedlen, 0);
-        funmap(input);
+        fmap_free(input);
         if (!decoded) {
             cli_errmsg("HWPML: Failed to get base64 decode binary data\n");
             return cli_magic_scan_desc(fd, filepath, ctx, NULL, LAYER_ATTRIBUTES_NONE);
         }
 
         /* open file for writing and scanning */
-        if ((ret = cli_gentempfd(ctx->sub_tmpdir, &tempfile, &df)) != CL_SUCCESS) {
+        if ((ret = cli_gentempfd(ctx->this_layer_tmpdir, &tempfile, &df)) != CL_SUCCESS) {
             cli_warnmsg("HWPML: Failed to create temporary file for decoded stream scanning\n");
             return ret;
         }
@@ -2045,14 +2045,14 @@ static cl_error_t hwpml_binary_cb(int fd, const char *filepath, cli_ctx *ctx, in
             goto hwpml_end;
         }
 
-        input = fmap(fd, 0, statbuf.st_size, NULL);
+        input = fmap_new(fd, 0, statbuf.st_size, NULL, filepath);
         if (!input) {
             cli_errmsg("HWPML: Failed to get fmap for binary data\n");
             ret = CL_EMAP;
             goto hwpml_end;
         }
         ret = decompress_and_callback(ctx, input, 0, 0, "HWPML", hwpml_scan_cb, NULL);
-        funmap(input);
+        fmap_free(input);
     } else {
         if (fd == df) { /* fd is a decoded tempfile */
             ret = hwpml_scan_cb(NULL, fd, tempfile, ctx);
@@ -2092,7 +2092,7 @@ cl_error_t cli_scanhwpml(cli_ctx *ctx)
     if (!reader) {
         cli_dbgmsg("cli_scanhwpml: cannot initialize xmlReader\n");
 
-        ret = cli_json_parse_error(ctx->wrkproperty, "HWPML_ERROR_XML_READER_IO");
+        ret = cli_json_parse_error(ctx->this_layer_metadata_json, "HWPML_ERROR_XML_READER_IO");
 
         return ret; // libxml2 failed!
     }

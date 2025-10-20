@@ -499,18 +499,19 @@ struct acceptdata {
     struct fd_data fds;
     struct fd_data recv_fds;
     pthread_cond_t cond_nfds;
+    unsigned initial_fds;
     int max_queue;
     int commandtimeout;
     int syncpipe_wake_recv[2];
     int syncpipe_wake_accept[2];
 };
 
-#define ACCEPTDATA_INIT(mutex1, mutex2)                                               \
-    {                                                                                 \
-        FDS_INIT(mutex1), FDS_INIT(mutex2), PTHREAD_COND_INITIALIZER, 0, 0, {-1, -1}, \
-        {                                                                             \
-            -1, -1                                                                    \
-        }                                                                             \
+#define ACCEPTDATA_INIT(mutex1, mutex2)                                                  \
+    {                                                                                    \
+        FDS_INIT(mutex1), FDS_INIT(mutex2), PTHREAD_COND_INITIALIZER, 0, 0, 0, {-1, -1}, \
+        {                                                                                \
+            -1, -1                                                                       \
+        }                                                                                \
     }
 
 static void *acceptloop_th(void *arg)
@@ -646,7 +647,7 @@ static void *acceptloop_th(void *arg)
 
     if (sd_listen_fds(0) == 0) {
         /* only close the sockets, when not using systemd socket activation */
-        for (i = 0; i < fds->nfds; i++) {
+        for (i = data->initial_fds; i < fds->nfds; i++) {
             if (fds->buf[i].fd == -1)
                 continue;
             logg(LOGG_DEBUG_NV, "Shutdown: closed fd %d\n", fds->buf[i].fd);
@@ -922,6 +923,9 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
     time_t start_time, current_time;
     unsigned int selfchk;
     threadpool_t *thr_pool;
+
+    // Initial sockets will be closed in clamd.c
+    acceptdata.initial_fds = nsockets;
 
 #ifndef _WIN32
     memset(&sigact, 0, sizeof(struct sigaction));
@@ -1379,11 +1383,6 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
             options.heuristic |= CL_SCAN_HEURISTIC_STRUCTURED_SSN_STRIPPED;
     }
 
-#ifdef HAVE__INTERNAL__SHA_COLLECT
-    if (optget(opts, "DevCollectHashes")->enabled)
-        options.dev |= CL_SCAN_DEV_COLLECT_SHA;
-#endif
-
     if (optget(opts, "GenerateMetadataJson")->enabled) {
         options.general |= CL_SCAN_GENERAL_COLLECT_METADATA;
     }
@@ -1394,6 +1393,10 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
 
     if (optget(opts, "JsonStorePDFURIs")->enabled) {
         options.general |= CL_SCAN_GENERAL_STORE_PDF_URIS;
+    }
+
+    if (optget(opts, "JsonStoreExtraHashes")->enabled) {
+        options.general |= CL_SCAN_GENERAL_STORE_EXTRA_HASHES;
     }
 
     selfchk = optget(opts, "SelfCheck")->numarg;

@@ -817,6 +817,7 @@ static void wm_decode_macro(unsigned char *buff, uint32_t len, int hex_output)
             case 0x65:
                 s_length = (uint8_t)buff[i + 1];
                 tmp_buff = (unsigned char *)malloc(s_length + 1);
+                if (!tmp_buff) return;
                 strncpy((char *)tmp_buff, (char *)(buff + i + 2), s_length);
                 tmp_buff[s_length] = '\0';
                 print_hex_buff(line_start, buff + i + 2 + s_length, hex_output);
@@ -828,6 +829,7 @@ static void wm_decode_macro(unsigned char *buff, uint32_t len, int hex_output)
             case 0x69:
                 s_length = (uint8_t)buff[i + 1];
                 tmp_buff = (unsigned char *)malloc(s_length + 1);
+                if (!tmp_buff) return;
                 strncpy((char *)tmp_buff, (char *)(buff + i + 2), s_length);
                 tmp_buff[s_length] = '\0';
                 printf(" %s", tmp_buff);
@@ -837,6 +839,7 @@ static void wm_decode_macro(unsigned char *buff, uint32_t len, int hex_output)
             case 0x6a:
                 s_length = (uint8_t)buff[i + 1];
                 tmp_buff = (unsigned char *)malloc(s_length + 1);
+                if (!tmp_buff) return;
                 strncpy((char *)tmp_buff, (char *)(buff + i + 2), s_length);
                 tmp_buff[s_length] = '\0';
                 printf(" \"%s\"", tmp_buff);
@@ -846,6 +849,7 @@ static void wm_decode_macro(unsigned char *buff, uint32_t len, int hex_output)
             case 0x6b:
                 s_length = (uint8_t)buff[i + 1];
                 tmp_buff = (unsigned char *)malloc(s_length + 1);
+                if (!tmp_buff) return;
                 strncpy((char *)tmp_buff, (char *)(buff + i + 2), s_length);
                 tmp_buff[s_length] = '\0';
                 printf(" '%s", tmp_buff);
@@ -855,6 +859,7 @@ static void wm_decode_macro(unsigned char *buff, uint32_t len, int hex_output)
             case 0x6d:
                 s_length = (uint8_t)buff[i + 1];
                 tmp_buff = (unsigned char *)malloc(s_length + 1);
+                if (!tmp_buff) return;
                 strncpy((char *)tmp_buff, (char *)(buff + i + 2), s_length);
                 tmp_buff[s_length] = '\0';
                 printf(" %s", tmp_buff);
@@ -864,6 +869,7 @@ static void wm_decode_macro(unsigned char *buff, uint32_t len, int hex_output)
             case 0x70:
                 s_length = (uint8_t)buff[i + 1];
                 tmp_buff = (unsigned char *)malloc(s_length + 1);
+                if (!tmp_buff) return;
                 strncpy((char *)tmp_buff, (char *)(buff + i + 2), s_length);
                 tmp_buff[s_length] = '\0';
                 printf("REM%s", tmp_buff);
@@ -873,6 +879,7 @@ static void wm_decode_macro(unsigned char *buff, uint32_t len, int hex_output)
             case 0x76:
                 s_length = (uint8_t)buff[i + 1];
                 tmp_buff = (unsigned char *)malloc(s_length + 1);
+                if (!tmp_buff) return;
                 strncpy((char *)tmp_buff, (char *)(buff + i + 2), s_length);
                 tmp_buff[s_length] = '\0';
                 printf(" .%s", tmp_buff);
@@ -882,6 +889,7 @@ static void wm_decode_macro(unsigned char *buff, uint32_t len, int hex_output)
             case 0x77:
                 s_length = (uint8_t)buff[i + 1];
                 tmp_buff = (unsigned char *)malloc(s_length + 1);
+                if (!tmp_buff) return;
                 strncpy((char *)tmp_buff, (char *)(buff + i + 2), s_length);
                 tmp_buff[s_length] = '\0';
                 printf("%s", tmp_buff);
@@ -891,6 +899,7 @@ static void wm_decode_macro(unsigned char *buff, uint32_t len, int hex_output)
             case 0x79: /* unicode "string" */
                 w_length = (uint16_t)(buff[i + 2] << 8) + buff[i + 1];
                 tmp_buff = (unsigned char *)malloc((w_length * 2) + 1);
+                if (!tmp_buff) return;
                 memcpy(tmp_buff, buff + i + 3, w_length * 2);
                 tmp_name = (unsigned char *)get_unicode_name((char *)tmp_buff, w_length * 2);
                 free(tmp_buff);
@@ -898,10 +907,10 @@ static void wm_decode_macro(unsigned char *buff, uint32_t len, int hex_output)
                 free(tmp_name);
                 i += 3 + (w_length * 2);
                 break;
-
             case 0x7c: /* unicode 'string */
                 s_length = (uint8_t)buff[i + 1];
                 tmp_buff = (unsigned char *)malloc((s_length * 2) + 1);
+                if (!tmp_buff) return;
                 memcpy(tmp_buff, buff + i + 2, s_length * 2);
                 tmp_name = (unsigned char *)get_unicode_name((char *)tmp_buff, s_length * 2);
                 free(tmp_buff);
@@ -909,7 +918,6 @@ static void wm_decode_macro(unsigned char *buff, uint32_t len, int hex_output)
                 free(tmp_name);
                 i += 2 + (s_length * 2);
                 break;
-
             case 0x66:
                 int_val = (uint8_t)(buff[i + 2] << 8) + buff[i + 1];
                 print_hex_buff(line_start, buff + i + 3, hex_output);

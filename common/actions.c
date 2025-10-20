@@ -452,7 +452,7 @@ static int traverse_rename(const char *source, const char *destination)
 #endif
 
 #ifndef _WIN32
-    ret = cli_basename(source, strlen(source), &source_basename);
+    ret = cli_basename(source, strlen(source), &source_basename, false /* posix_support_backslash_pathsep */);
     if (CL_SUCCESS != ret) {
         logg(LOGG_INFO, "traverse_rename: Failed to get basename of source path:%s\n\tError: %d\n", source, (int)ret);
         goto done;
@@ -564,7 +564,7 @@ static int traverse_unlink(const char *target)
         goto done;
     }
 
-    ret = cli_basename(target, strlen(target), &target_basename);
+    ret = cli_basename(target, strlen(target), &target_basename, false /* posix_support_backslash_pathsep */);
     if (CL_SUCCESS != ret) {
         logg(LOGG_INFO, "traverse_unlink: Failed to get basename of target path: %s\n\tError: %d\n", target, (int)ret);
         goto done;

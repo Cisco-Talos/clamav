@@ -360,7 +360,7 @@ static cl_error_t hfsplus_scanfile(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader,
     ext = 0;
     /* Dump file, extent by extent */
     do {
-        uint32_t currBlock, endBlock, outputSize = 0;
+        uint32_t currBlock, endBlock;
         if (targetSize == 0) {
             cli_dbgmsg("hfsplus_scanfile: output complete\n");
             break;
@@ -423,7 +423,6 @@ static cl_error_t hfsplus_scanfile(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader,
             }
 
             targetSize -= to_write;
-            outputSize += to_write;
             currBlock++;
 
             if (targetSize == 0) {
@@ -1539,7 +1538,7 @@ cli_dbgmsg("sizeof(hfsNodeDescriptor) is %lu\n", sizeof(hfsNodeDescriptor));
     }
 
     /* Create temp folder for contents */
-    if (!(targetdir = cli_gentemp_with_prefix(ctx->sub_tmpdir, "hfsplus-tmp"))) {
+    if (!(targetdir = cli_gentemp_with_prefix(ctx->this_layer_tmpdir, "hfsplus-tmp"))) {
         cli_errmsg("cli_scanhfsplus: cli_gentemp failed\n");
         status = CL_ETMPDIR;
         goto done;

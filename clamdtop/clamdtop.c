@@ -1338,12 +1338,19 @@ static int read_version(conn_t *conn)
 {
     char buf[1024];
     unsigned i;
+
     if (!recv_line(conn, buf, sizeof(buf)))
         return -1;
+
     if (!strcmp(buf, "UNKNOWN COMMAND\n"))
         return -2;
+
+    char *p = strchr(buf, ':');
+    if (NULL == p)
+        return -1;
+
     // check if VERSION command is available
-    if (!strcmp(strchr(buf, ':'), ": COMMAND UNAVAILABLE\n"))
+    if (!strcmp(p, ": COMMAND UNAVAILABLE\n"))
         return -3;
 
     conn->version = strdup(buf);
@@ -1358,10 +1365,17 @@ static int check_stats_available(conn_t *conn)
 {
     char buf[1024];
     send_string(conn, "nSTATS\n");
+
     if (!recv_line(conn, buf, sizeof(buf)))
         return 0;
-    if (!strcmp(strchr(buf, ':'), ": COMMAND UNAVAILABLE\n"))
+
+    char *p = strchr(buf, ':');
+    if (NULL == p)
         return 0;
+
+    if (!strcmp(p, ": COMMAND UNAVAILABLE\n"))
+        return 0;
+
     return 1;
 }
 

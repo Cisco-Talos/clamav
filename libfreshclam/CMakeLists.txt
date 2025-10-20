@@ -64,6 +64,10 @@ if(ENABLE_SHARED_LIB)
         set_target_properties(freshclam PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
     elseif(UNIX AND NOT APPLE AND NOT AIX)
         target_link_options(freshclam PRIVATE "-Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/libfreshclam.map")
+        if (${CMAKE_SYSTEM_NAME} MATCHES "SunOS")
+            # Solaris 11.4 linker supports a subset of GNU ld version scripts, but requires a special option to enable
+            target_link_options(freshclam PRIVATE "-Wl,-z,gnu-version-script-compat")
+        endif()
     endif()
     set_target_properties(freshclam PROPERTIES
         COMPILE_FLAGS "${WARNCFLAGS}"

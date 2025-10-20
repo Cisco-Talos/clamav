@@ -233,6 +233,7 @@ set(LIBCLAMAV_SOURCES
     mpool.c             mpool.h
     others.c
     perflogging.c       perflogging.h
+    scan_layer.c        scan_layer.h
     scanners.c          scanners.h
     textdet.c           textdet.h
     version.c
@@ -476,6 +477,10 @@ if(ENABLE_SHARED_LIB)
     endif()
     if(UNIX AND NOT APPLE AND NOT AIX)
         target_link_options( clamav PRIVATE "-Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/libclamav.map")
+        if(${CMAKE_SYSTEM_NAME} MATCHES "SunOS")
+            # Solaris 11.4 linker supports a subset of GNU ld version scripts, but requires a special option to enable
+            target_link_options( clamav PRIVATE "-Wl,-z,gnu-version-script-compat")
+        endif()
     endif()
     install( TARGETS clamav COMPONENT libraries )
     if(WIN32)

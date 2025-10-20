@@ -359,8 +359,8 @@ class TestCase(unittest.TestCase):
         if stdout_unexpected:
             self.verify_unexpected_output(stdout_unexpected, stdout)
 
-    def _sha256(self, filepath):
-        """Get sha256 hash sum of a given file.
+    def _sha2_256(self, filepath):
+        """Get sha2-256 hash sum of a given file.
 
         :Parameters:
             - `filepath`: path to file.
@@ -375,31 +375,31 @@ class TestCase(unittest.TestCase):
         assert isinstance(filepath, str), "Invalid filepath: %s." % (filepath,)
         assert os.path.exists(filepath), "file does not exist: %s." % (filepath,)
 
-        hash_sha256 = hashlib.sha256()
+        hash_sha2_256 = hashlib.sha256()
         with open(filepath, "rb") as f:
             for chunk in iter(lambda: f.read(4096), b""):
-                hash_sha256.update(chunk)
-        return hash_sha256.hexdigest()
+                hash_sha2_256.update(chunk)
+        return hash_sha2_256.hexdigest()
 
-    def get_sha256(self, files):
-        """Get sha256 hash sum of every given file.
+    def get_sha2_256(self, files):
+        """Get sha2-256 hash sum of every given file.
 
         :Parameters:
             - `files`: a list or a tuple of files.
 
         :Return:
-            - dictionary like {file: sha256sum}.
+            - dictionary like {file: sha2_256_sum}.
 
         :Exceptions:
             - `AssertionError`: is raised if `files` is empty.
         """
         assert files, "`files` should not be empty."
         files = files if isinstance(files, (list, tuple)) else [files]
-        sha256_dict = {}
+        sha2_256_dict = {}
         for path in files:
             if os.path.isfile(path):
-                sha256_dict[path] = self._sha256(path)
-        return sha256_dict
+                sha2_256_dict[path] = self._sha2_256(path)
+        return sha2_256_dict
 
     def _pkill(self, process, options=["-9 -f"], sudo=False):
         """Wrapper for CLI *nix `pkill` command.

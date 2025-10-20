@@ -106,11 +106,11 @@ static int wrap_inflateinit2(void *a, int b)
  */
 static cl_error_t unz(
     const uint8_t *src,
-    uint32_t csize,
-    uint32_t usize,
+    uint64_t csize,
+    uint64_t usize,
     uint16_t method,
     uint16_t flags,
-    unsigned int *num_files_unzipped,
+    size_t *num_files_unzipped,
     cli_ctx *ctx,
     char *tmpd,
     zip_cb zcb,
@@ -131,9 +131,9 @@ static cl_error_t unz(
         }
     } else {
         if (ctx->engine->keeptmp && (NULL != original_filename)) {
-            if (!(tempfile = cli_gentemp_with_prefix(ctx->sub_tmpdir, original_filename))) return CL_EMEM;
+            if (!(tempfile = cli_gentemp_with_prefix(ctx->this_layer_tmpdir, original_filename))) return CL_EMEM;
         } else {
-            if (!(tempfile = cli_gentemp(ctx->sub_tmpdir))) return CL_EMEM;
+            if (!(tempfile = cli_gentemp(ctx->this_layer_tmpdir))) return CL_EMEM;
         }
     }
     if ((out_file = open(tempfile, O_RDWR | O_CREAT | O_TRUNC | O_BINARY, S_IRUSR | S_IWUSR)) == -1) {
@@ -144,7 +144,7 @@ static cl_error_t unz(
     switch (method) {
         case ALG_STORED:
             if (csize < usize) {
-                unsigned int fake = *num_files_unzipped + 1;
+                size_t fake = *num_files_unzipped + 1;
                 cli_dbgmsg("cli_unzip: attempting to inflate stored file with inconsistent size\n");
                 if (CL_SUCCESS == (ret = unz(src, csize, usize, ALG_DEFLATE, 0, &fake, ctx,
                                              tmpd, zcb, original_filename, decrypted))) {
@@ -155,8 +155,8 @@ static cl_error_t unz(
             }
             if (res == 1) {
                 if (ctx->engine->maxfilesize && csize > ctx->engine->maxfilesize) {
-                    cli_dbgmsg("cli_unzip: trimming output size to maxfilesize (%lu)\n",
-                               (long unsigned int)ctx->engine->maxfilesize);
+                    cli_dbgmsg("cli_unzip: trimming output size to maxfilesize (" STDu64 ")\n",
+                               ctx->engine->maxfilesize);
                     csize = ctx->engine->maxfilesize;
                 }
                 if (cli_writen(out_file, src, csize) != csize)
@@ -220,12 +220,14 @@ static cl_error_t unz(
                 if (*avail_out != sizeof(obuf)) {
                     written += sizeof(obuf) - (*avail_out);
                     if (ctx->engine->maxfilesize && written > ctx->engine->maxfilesize) {
-                        cli_dbgmsg("cli_unzip: trimming output size to maxfilesize (%lu)\n", (long unsigned int)ctx->engine->maxfilesize);
+                        cli_dbgmsg("cli_unzip: trimming output size to maxfilesize (" STDu64 ")\n",
+                                   ctx->engine->maxfilesize);
                         res = Z_STREAM_END;
                         break;
                     }
-                    if (cli_writen(out_file, obuf, sizeof(obuf) - (*avail_out)) != (size_t)(sizeof(obuf) - (*avail_out))) {
-                        cli_warnmsg("cli_unzip: failed to write %lu inflated bytes\n", (unsigned long int)sizeof(obuf) - (*avail_out));
+                    if (cli_writen(out_file, obuf, sizeof(obuf) - *avail_out) != sizeof(obuf) - *avail_out) {
+                        cli_warnmsg("cli_unzip: failed to write %zu inflated bytes\n",
+                                    sizeof(obuf) - *avail_out);
                         ret = CL_EWRITE;
                         res = 100;
                         break;
@@ -262,12 +264,12 @@ static cl_error_t unz(
                 if (strm.avail_out != sizeof(obuf)) {
                     written += sizeof(obuf) - strm.avail_out;
                     if (ctx->engine->maxfilesize && written > ctx->engine->maxfilesize) {
-                        cli_dbgmsg("cli_unzip: trimming output size to maxfilesize (%lu)\n", (unsigned long int)ctx->engine->maxfilesize);
+                        cli_dbgmsg("cli_unzip: trimming output size to maxfilesize (" STDu64 ")\n", ctx->engine->maxfilesize);
                         res = BZ_STREAM_END;
                         break;
                     }
-                    if (cli_writen(out_file, obuf, sizeof(obuf) - strm.avail_out) != (size_t)(sizeof(obuf) - strm.avail_out)) {
-                        cli_warnmsg("cli_unzip: failed to write %lu bunzipped bytes\n", (long unsigned int)sizeof(obuf) - strm.avail_out);
+                    if (cli_writen(out_file, obuf, sizeof(obuf) - strm.avail_out) != sizeof(obuf) - strm.avail_out) {
+                        cli_warnmsg("cli_unzip: failed to write %zu bunzipped bytes\n", sizeof(obuf) - strm.avail_out);
                         ret = CL_EWRITE;
                         res = 100;
                         break;
@@ -297,12 +299,12 @@ static cl_error_t unz(
                 if (strm.avail_out != sizeof(obuf)) {
                     written += sizeof(obuf) - strm.avail_out;
                     if (ctx->engine->maxfilesize && written > ctx->engine->maxfilesize) {
-                        cli_dbgmsg("cli_unzip: trimming output size to maxfilesize (%lu)\n", (unsigned long int)ctx->engine->maxfilesize);
+                        cli_dbgmsg("cli_unzip: trimming output size to maxfilesize (" STDu64 ")\n", ctx->engine->maxfilesize);
                         res = 0;
                         break;
                     }
-                    if (cli_writen(out_file, obuf, sizeof(obuf) - strm.avail_out) != (size_t)(sizeof(obuf) - strm.avail_out)) {
-                        cli_warnmsg("cli_unzip: failed to write %lu exploded bytes\n", (unsigned long int)sizeof(obuf) - strm.avail_out);
+                    if (cli_writen(out_file, obuf, sizeof(obuf) - strm.avail_out) != sizeof(obuf) - strm.avail_out) {
+                        cli_warnmsg("cli_unzip: failed to write %zu exploded bytes\n", sizeof(obuf) - strm.avail_out);
                         ret = CL_EWRITE;
                         res = 100;
                         break;
@@ -425,7 +427,7 @@ static inline cl_error_t zdecrypt(
     uint32_t csize,
     uint32_t usize,
     const uint8_t *local_header,
-    unsigned int *num_files_unzipped,
+    size_t *num_files_unzipped,
     cli_ctx *ctx,
     char *tmpd,
     zip_cb zcb,
@@ -502,10 +504,10 @@ static inline cl_error_t zdecrypt(
 
             /* output decrypted data to tempfile */
             if (tmpd) {
-                snprintf(name, sizeof(name), "%s" PATHSEP "zip.decrypt.%03u", tmpd, *num_files_unzipped);
+                snprintf(name, sizeof(name), "%s" PATHSEP "zip.decrypt.%03zu", tmpd, *num_files_unzipped);
                 name[sizeof(name) - 1] = '\0';
             } else {
-                if (!(tempfile = cli_gentemp_with_prefix(ctx->sub_tmpdir, "zip-decrypt"))) return CL_EMEM;
+                if (!(tempfile = cli_gentemp_with_prefix(ctx->this_layer_tmpdir, "zip-decrypt"))) return CL_EMEM;
             }
             if ((out_file = open(tempfile, O_RDWR | O_CREAT | O_TRUNC | O_BINARY, S_IRUSR | S_IWUSR)) == -1) {
                 cli_warnmsg("cli_unzip: decrypt - failed to create temporary file %s\n", tempfile);
@@ -539,7 +541,7 @@ static inline cl_error_t zdecrypt(
             cli_dbgmsg("cli_unzip: decrypt - decrypted %zu bytes to %s\n", total, tempfile);
 
             /* decrypt data to new fmap -> buffer */
-            if (!(dcypt_map = fmap(out_file, 0, total, NULL))) {
+            if (!(dcypt_map = fmap_new(out_file, 0, total, NULL, tempfile))) {
                 cli_warnmsg("cli_unzip: decrypt - failed to create fmap on decrypted file %s\n", tempfile);
                 ret = CL_EMAP;
                 goto zd_clean;
@@ -547,7 +549,7 @@ static inline cl_error_t zdecrypt(
 
             if (!(dcypt_zip = fmap_need_off_once(dcypt_map, 0, total))) {
                 cli_warnmsg("cli_unzip: decrypt - failed to acquire buffer on decrypted file %s\n", tempfile);
-                funmap(dcypt_map);
+                fmap_free(dcypt_map);
                 ret = CL_EREAD;
                 goto zd_clean;
             }
@@ -557,7 +559,7 @@ static inline cl_error_t zdecrypt(
                       num_files_unzipped, ctx, tmpd, zcb, original_filename, true);
 
             /* clean-up and return */
-            funmap(dcypt_map);
+            fmap_free(dcypt_map);
         zd_clean:
             close(out_file);
             if (!ctx->engine->keeptmp)
@@ -588,106 +590,106 @@ static inline cl_error_t zdecrypt(
  *
  * Usage of the `record` parameter will alter behavior so it only collect file record metadata and does not extract or scan any files.
  *
- * @param map                           fmap for the file
+ * @param[in,out] ctx                   scan context
  * @param loff                          offset of the local file header
- * @param zsize                         size of the zip file
  * @param[in,out] num_files_unzipped    current number of files that have been unzipped
  * @param file_count                    current number of files that have been discovered
- * @param central_header                offset of central directory header
- * @param[out] ret                      The status code
- * @param[in,out] ctx                   scan context
+ * @param central_header                pointer to central directory header
  * @param tmpd                          temp directory path name
  * @param detect_encrypted              bool: if encrypted files should raise heuristic alert
  * @param zcb                           callback function to invoke after extraction (default: scan)
  * @param record                        (optional) a pointer to a struct to store file record information.
- * @return unsigned int                 returns the size of the file header + file data, so zip file can be indexed without the central directory
+ * @param[out] file_record_size         (optional) if not NULL, will be set to the size of the file header + file data.
+ * @return cl_error_t                   CL_SUCCESS on success, or an error code on failure.
  */
-static unsigned int parse_local_file_header(
-    fmap_t *map,
-    uint32_t loff,
-    uint32_t zsize,
-    unsigned int *num_files_unzipped,
-    unsigned int file_count,
-    const uint8_t *central_header, /* pointer to central header. */
-    cl_error_t *ret,
+static cl_error_t parse_local_file_header(
     cli_ctx *ctx,
+    uint32_t loff,
+    size_t *num_files_unzipped,
+    size_t file_count,
+    const uint8_t *central_header,
     char *tmpd,
     int detect_encrypted,
     zip_cb zcb,
-    struct zip_record *record)
+    struct zip_record *record,
+    size_t *file_record_size)
 {
-    const uint8_t *local_header, *zip;
-    char name[256];
-    char *original_filename = NULL;
-    uint32_t csize, usize;
-    unsigned int size_of_fileheader_and_data = 0;
+    cl_error_t status = CL_ERROR;
+    cl_error_t ret;
+    const uint8_t *local_header = NULL;
+    char name[256]              = {0};
+    char *original_filename     = NULL;
+    uint32_t csize = 0, usize = 0;
 
-    uint32_t nsize  = 0;
-    const char *src = NULL;
+    uint32_t name_size = 0;
+    const char *src    = NULL;
 
-    if (!(local_header = fmap_need_off(map, loff, SIZEOF_LOCAL_HEADER))) {
-        cli_dbgmsg("cli_unzip: local header - out of file\n");
+    const uint8_t *zip     = NULL;
+    size_t bytes_remaining = 0;
+
+    if (NULL != file_record_size) {
+        *file_record_size = 0;
+    }
+
+    local_header = fmap_need_off(ctx->fmap, loff, SIZEOF_LOCAL_HEADER);
+    if (NULL == local_header) {
+        cli_dbgmsg("cli_unzip: local header - out of file or work complete\n");
+        status = CL_EPARSE;
         goto done;
     }
     if (LOCAL_HEADER_magic != ZIP_MAGIC_LOCAL_FILE_HEADER) {
-        if (!central_header)
-            cli_dbgmsg("cli_unzip: local header - wrkcomplete\n");
-        else
-            cli_dbgmsg("cli_unzip: local header - bad magic\n");
-        fmap_unneed_off(map, loff, SIZEOF_LOCAL_HEADER);
+        cli_dbgmsg("cli_unzip: local header - bad magic\n");
+        status = CL_EFORMAT;
         goto done;
     }
+    bytes_remaining = ctx->fmap->len - loff;
 
     zip = local_header + SIZEOF_LOCAL_HEADER;
-    zsize -= SIZEOF_LOCAL_HEADER;
+    bytes_remaining -= SIZEOF_LOCAL_HEADER;
 
-    memset(name, '\0', 256);
-
-    if (zsize <= LOCAL_HEADER_flen) {
+    if (bytes_remaining <= LOCAL_HEADER_flen) {
         cli_dbgmsg("cli_unzip: local header - fname out of file\n");
-        fmap_unneed_off(map, loff, SIZEOF_LOCAL_HEADER);
+        status = CL_EPARSE;
         goto done;
     }
 
-    nsize = (LOCAL_HEADER_flen >= sizeof(name)) ? sizeof(name) - 1 : LOCAL_HEADER_flen;
-    src   = fmap_need_ptr_once(map, zip, nsize);
-    if (nsize && (NULL != src)) {
-        memcpy(name, zip, nsize);
-        name[nsize] = '\0';
-        if (CL_SUCCESS != cli_basename(name, nsize, &original_filename)) {
+    name_size = LOCAL_HEADER_flen >= (sizeof(name) - 1) ? sizeof(name) - 1 : LOCAL_HEADER_flen;
+    cli_dbgmsg("cli_unzip: name_size %u\n", name_size);
+    src = fmap_need_ptr_once(ctx->fmap, zip, name_size);
+    if (name_size && (NULL != src)) {
+        memcpy(name, zip, name_size);
+        if (CL_SUCCESS != cli_basename(name, name_size, &original_filename, true /* posix_support_backslash_pathsep */)) {
             original_filename = NULL;
         }
-    } else {
-        name[0] = '\0';
     }
 
     zip += LOCAL_HEADER_flen;
-    zsize -= LOCAL_HEADER_flen;
+    bytes_remaining -= LOCAL_HEADER_flen;
 
-    cli_dbgmsg("cli_unzip: local header - ZMDNAME:%d:%s:%u:%u:%x:%u:%u:%u\n",
+    /* Print ZMD container metadata signature and try matching the metadata AFTER we have all the metadata. */
+    cli_dbgmsg("cli_unzip: local header - ZMDNAME:%d:%s:%u:%u:%x:%u:%zu:%u\n",
                ((LOCAL_HEADER_flags & F_ENCR) != 0), name, LOCAL_HEADER_usize, LOCAL_HEADER_csize, LOCAL_HEADER_crc32, LOCAL_HEADER_method, file_count, ctx->recursion_level);
     /* ZMDfmt virname:encrypted(0-1):filename(exact|*):usize(exact|*):csize(exact|*):crc32(exact|*):method(exact|*):fileno(exact|*):maxdepth(exact|*) */
 
     /* Scan file header metadata. */
-    if (cli_matchmeta(ctx, name, LOCAL_HEADER_csize, LOCAL_HEADER_usize, (LOCAL_HEADER_flags & F_ENCR) != 0, file_count, LOCAL_HEADER_crc32) == CL_VIRUS) {
-        *ret = CL_VIRUS;
+    ret = cli_matchmeta(ctx, name, LOCAL_HEADER_csize, LOCAL_HEADER_usize, (LOCAL_HEADER_flags & F_ENCR) != 0, file_count, LOCAL_HEADER_crc32);
+    if (ret != CL_SUCCESS) {
+        status = ret;
         goto done;
     }
 
     if (LOCAL_HEADER_flags & F_MSKED) {
         cli_dbgmsg("cli_unzip: local header - header has got unusable masked data\n");
         /* FIXME: need to find/craft a sample */
-        fmap_unneed_off(map, loff, SIZEOF_LOCAL_HEADER);
+        status = CL_EPARSE;
         goto done;
     }
 
     if (detect_encrypted && (LOCAL_HEADER_flags & F_ENCR) && SCAN_HEURISTIC_ENCRYPTED_ARCHIVE) {
-        cl_error_t fp_check;
         cli_dbgmsg("cli_unzip: Encrypted files found in archive.\n");
-        fp_check = cli_append_potentially_unwanted(ctx, "Heuristics.Encrypted.Zip");
-        if (fp_check != CL_SUCCESS) {
-            *ret = fp_check;
-            fmap_unneed_off(map, loff, SIZEOF_LOCAL_HEADER);
+        ret = cli_append_potentially_unwanted(ctx, "Heuristics.Encrypted.Zip");
+        if (ret != CL_SUCCESS) {
+            status = ret;
             goto done;
         }
     }
@@ -695,92 +697,177 @@ static unsigned int parse_local_file_header(
     if (LOCAL_HEADER_flags & F_USEDD) {
         cli_dbgmsg("cli_unzip: local header - has data desc\n");
         if (!central_header) {
-            fmap_unneed_off(map, loff, SIZEOF_LOCAL_HEADER);
+            status = CL_EPARSE;
             goto done;
-        } else {
-            usize = CENTRAL_HEADER_usize;
-            csize = CENTRAL_HEADER_csize;
         }
+
+        usize = CENTRAL_HEADER_usize;
+        csize = CENTRAL_HEADER_csize;
     } else {
         usize = LOCAL_HEADER_usize;
         csize = LOCAL_HEADER_csize;
     }
 
-    if (zsize <= LOCAL_HEADER_elen) {
+    if (bytes_remaining <= LOCAL_HEADER_elen) {
         cli_dbgmsg("cli_unzip: local header - extra out of file\n");
-        fmap_unneed_off(map, loff, SIZEOF_LOCAL_HEADER);
+        status = CL_EPARSE;
         goto done;
     }
+
     zip += LOCAL_HEADER_elen;
-    zsize -= LOCAL_HEADER_elen;
+    bytes_remaining -= LOCAL_HEADER_elen;
 
-    if (!csize) { /* FIXME: what's used for method0 files? csize or usize? Nothing in the specs, needs testing */
-        cli_dbgmsg("cli_unzip: local header - skipping empty file\n");
-    } else {
-        if (zsize < csize) {
-            cli_dbgmsg("cli_unzip: local header - stream out of file\n");
-            fmap_unneed_off(map, loff, SIZEOF_LOCAL_HEADER);
-            goto done;
-        }
-
-        /* Don't actually unzip if we're just collecting the file record information (offset, sizes) */
-        if (NULL == record) {
-            if (LOCAL_HEADER_flags & F_ENCR) {
-                if (fmap_need_ptr_once(map, zip, csize))
-                    *ret = zdecrypt(zip, csize, usize, local_header, num_files_unzipped, ctx, tmpd, zcb, original_filename);
-            } else {
-                if (fmap_need_ptr_once(map, zip, csize))
-                    *ret = unz(zip, csize, usize, LOCAL_HEADER_method, LOCAL_HEADER_flags, num_files_unzipped,
-                               ctx, tmpd, zcb, original_filename, false);
-            }
-        } else {
-            if ((NULL == original_filename) ||
-                (CL_SUCCESS != cli_basename(original_filename, strlen(original_filename), &record->original_filename))) {
-                record->original_filename = NULL;
-            }
-            record->local_header_offset = loff;
-            record->local_header_size   = zip - local_header;
-            record->compressed_size     = csize;
-            record->uncompressed_size   = usize;
-            record->method              = LOCAL_HEADER_method;
-            record->flags               = LOCAL_HEADER_flags;
-            record->encrypted           = (LOCAL_HEADER_flags & F_ENCR) ? 1 : 0;
-
-            *ret = CL_SUCCESS;
-        }
-
-        zip += csize;
-        zsize -= csize;
+    if (bytes_remaining < csize) {
+        cli_dbgmsg("cli_unzip: local header - stream out of file\n");
+        status = CL_EPARSE;
+        goto done;
     }
 
-    fmap_unneed_off(map, loff, SIZEOF_LOCAL_HEADER); /* unneed now. block is guaranteed to exists till the next need */
-    if (LOCAL_HEADER_flags & F_USEDD) {
-        if (zsize < 12) {
-            cli_dbgmsg("cli_unzip: local header - data desc out of file\n");
-            goto done;
+    if (NULL != record) {
+        /* Don't actually unzip if we're just collecting the file record information (offset, sizes) */
+        if (NULL == original_filename) {
+            record->original_filename = NULL;
+        } else {
+            record->original_filename = CLI_STRNDUP(original_filename, strlen(original_filename));
         }
-        zsize -= 12;
-        if (fmap_need_ptr_once(map, zip, 4)) {
-            if (cli_readint32(zip) == ZIP_MAGIC_FILE_BEGIN_SPLIT_OR_SPANNED) {
-                if (zsize < 4) {
-                    cli_dbgmsg("cli_unzip: local header - data desc out of file\n");
+        record->local_header_offset = loff;
+        record->local_header_size   = zip - local_header;
+        record->compressed_size     = csize;
+        record->uncompressed_size   = usize;
+        record->method              = LOCAL_HEADER_method;
+        record->flags               = LOCAL_HEADER_flags;
+        record->encrypted           = (LOCAL_HEADER_flags & F_ENCR) ? 1 : 0;
+
+        status = CL_SUCCESS;
+    } else {
+        /*
+         * Unzip or decompress & then unzip.
+         */
+        if (!csize) { /* FIXME: what's used for method0 files? csize or usize? Nothing in the specs, needs testing */
+            cli_dbgmsg("cli_unzip: local header - skipping empty file\n");
+        } else {
+            zip = fmap_need_ptr_once(ctx->fmap, zip, csize);
+            if (NULL == zip) {
+                cli_dbgmsg("cli_unzip: local header - data out of file\n");
+                status = CL_EPARSE;
+                goto done;
+            }
+
+            if (LOCAL_HEADER_flags & F_ENCR) {
+                ret = zdecrypt(zip, csize, usize, local_header, num_files_unzipped, ctx, tmpd, zcb, original_filename);
+                if (ret != CL_SUCCESS) {
+                    cli_dbgmsg("cli_unzip: local header - zdecrypt failed with %d\n", ret);
+                    status = ret;
                     goto done;
                 }
-                zip += 4;
+            } else {
+                ret = unz(zip, csize, usize, LOCAL_HEADER_method, LOCAL_HEADER_flags, num_files_unzipped,
+                          ctx, tmpd, zcb, original_filename, false);
+                if (ret != CL_SUCCESS) {
+                    cli_dbgmsg("cli_unzip: local header - unz failed with %d\n", ret);
+                    status = ret;
+                    goto done;
+                }
             }
+        }
+    }
+
+    zip += csize;
+    bytes_remaining -= csize;
+
+    if (LOCAL_HEADER_flags & F_USEDD) {
+        if (bytes_remaining < 12) {
+            cli_dbgmsg("cli_unzip: local header - data desc out of file\n");
+            status = CL_EPARSE;
+            goto done;
+        }
+        bytes_remaining -= 12;
+
+        /*
+         * Get the next 4 bytes to check if ZIP is split or spanned.
+         *
+         * 8.5.3 Spanned/Split archives created using PKZIP for Windows
+         * (V2.50 or greater), PKZIP Command Line (V2.50 or greater),
+         * or PKZIP Explorer will include a special spanning
+         * signature as the first 4 bytes of the first segment of
+         * the archive.  This signature (0x08074b50) will be
+         * followed immediately by the local header signature for
+         * the first file in the archive.
+         */
+        zip = fmap_need_ptr_once(ctx->fmap, zip, 4);
+        if (NULL == zip) {
+            cli_dbgmsg("cli_unzip: local header - data desc out of file\n");
+            status = CL_EPARSE;
+            goto done;
+        }
+
+        if (cli_readint32(zip) == ZIP_MAGIC_FILE_BEGIN_SPLIT_OR_SPANNED) {
+            cli_dbgmsg("cli_unzip: local header - split/spanned archive detected\n");
+            /* skip the split/spanned signature */
+            zip += 4;
+            bytes_remaining -= 4;
         }
         zip += 12;
     }
 
     /* Success */
-    size_of_fileheader_and_data = zip - local_header;
+    if (file_record_size) {
+        *file_record_size = zip - local_header;
+    }
+    status = CL_SUCCESS;
 
 done:
+    if (NULL != local_header) {
+        fmap_unneed_off(ctx->fmap, loff, SIZEOF_LOCAL_HEADER);
+    }
+
     if (NULL != original_filename) {
         free(original_filename);
     }
 
-    return size_of_fileheader_and_data;
+    return status;
+}
+
+cl_error_t cli_unzip_single_header_check(
+    cli_ctx *ctx,
+    uint32_t offset,
+    size_t *size)
+{
+    cl_error_t status             = CL_ERROR;
+    struct zip_record file_record = {0};
+    cl_error_t ret;
+
+    ret = parse_local_file_header(
+        ctx,
+        offset,
+        NULL,  /* num_files_unzipped */
+        0,     /* file_count */
+        NULL,  /* central_header */
+        NULL,  /* tmpd */
+        false, /* detect_encrypted */
+        NULL,  /* zcb */
+        &file_record,
+        size);
+    if (ret != CL_SUCCESS) {
+        cli_dbgmsg("cli_unzip: single header check - failed to parse local file header: %s (%d)\n", cl_strerror(ret), ret);
+        status = ret;
+        goto done;
+    }
+
+    if (file_record.compressed_size == 0 || file_record.uncompressed_size == 0) {
+        cli_dbgmsg("cli_unzip: single header check - empty file\n");
+        status = CL_EFORMAT;
+        goto done;
+    }
+
+    status = CL_SUCCESS;
+
+done:
+    if (file_record.original_filename) {
+        free(file_record.original_filename);
+    }
+
+    return status;
 }
 
 /**
@@ -788,137 +875,137 @@ done:
  *
  * Usage of the `record` parameter will alter behavior so it only collect file record metadata and does not extract or scan any files.
  *
- * @param map                           fmap for the file
- * @param coff                          offset of the file header in the central directory
- * @param zsize                         size of the zip file
+ * @param[in,out] ctx                   scan context
+ * @param central_file_header_offset    offset of the file header in the central directory
  * @param[in,out] num_files_unzipped    current number of files that have been unzipped
  * @param file_count                    current number of files that have been discovered
- * @param[out] ret                      The status code
- * @param[in,out] ctx                   scan context
  * @param tmpd                          temp directory path name
  * @param requests                      (optional) structure use to search the zip for files by name
  * @param record                        (optional) a pointer to a struct to store file record information.
- * @return unsigned int                 returns the size of the file header in the central directory, or 0 if no more files
+ * @param[out] file_record_size         A pointer to a variable to store the size of the file record.
+ * @return cl_error_t                   CL_SUCCESS on success, or an error code on failure.
  */
-static unsigned int
-parse_central_directory_file_header(
-    fmap_t *map,
-    uint32_t coff,
-    uint32_t zsize,
-    unsigned int *num_files_unzipped,
-    unsigned int file_count,
-    cl_error_t *ret,
+static cl_error_t parse_central_directory_file_header(
     cli_ctx *ctx,
+    size_t central_file_header_offset,
+    size_t *num_files_unzipped,
+    size_t file_count,
     char *tmpd,
     struct zip_requests *requests,
-    struct zip_record *record)
+    struct zip_record *record,
+    size_t *file_record_size)
 {
-    char name[256];
-    int last                      = 0;
-    const uint8_t *central_header = NULL;
+    cl_error_t status = CL_ERROR;
+    cl_error_t ret;
 
-    *ret = CL_EPARSE;
+    char name[256] = {0};
+
+    const uint8_t *central_header = NULL;
+    size_t index;
+
+    *file_record_size = 0;
 
     if (cli_checktimelimit(ctx) != CL_SUCCESS) {
         cli_dbgmsg("cli_unzip: central header - Time limit reached (max: %u)\n", ctx->engine->maxscantime);
-        last = 1;
-        *ret = CL_ETIMEOUT;
+        status = CL_ETIMEOUT;
         goto done;
     }
 
-    if (!(central_header = fmap_need_off(map, coff, SIZEOF_CENTRAL_HEADER)) || CENTRAL_HEADER_magic != ZIP_MAGIC_CENTRAL_DIRECTORY_RECORD_BEGIN) {
-        if (central_header) {
-            fmap_unneed_ptr(map, central_header, SIZEOF_CENTRAL_HEADER);
-            central_header = NULL;
-        }
-        cli_dbgmsg("cli_unzip: central header - wrkcomplete\n");
-        last = 1;
+    central_header = fmap_need_off(ctx->fmap, central_file_header_offset, SIZEOF_CENTRAL_HEADER);
+    if (NULL == central_header) {
+        cli_dbgmsg("cli_unzip: central header - reached end of central directory.\n");
+        status = CL_BREAK;
         goto done;
     }
-    coff += SIZEOF_CENTRAL_HEADER;
+
+    if (CENTRAL_HEADER_magic != ZIP_MAGIC_CENTRAL_DIRECTORY_RECORD_BEGIN) {
+        cli_dbgmsg("cli_unzip: central header - file header offset has wrong magic\n");
+        status = CL_EPARSE;
+        goto done;
+    }
+    index = central_file_header_offset + SIZEOF_CENTRAL_HEADER;
 
     cli_dbgmsg("cli_unzip: central header - flags %x - method %x - csize %x - usize %x - flen %x - elen %x - clen %x - disk %x - off %x\n",
                CENTRAL_HEADER_flags, CENTRAL_HEADER_method, CENTRAL_HEADER_csize, CENTRAL_HEADER_usize, CENTRAL_HEADER_flen, CENTRAL_HEADER_extra_len, CENTRAL_HEADER_comment_len, CENTRAL_HEADER_disk_num, CENTRAL_HEADER_off);
 
-    if (zsize - coff <= CENTRAL_HEADER_flen) {
+    if (ctx->fmap->len <= index + CENTRAL_HEADER_flen) {
         cli_dbgmsg("cli_unzip: central header - fname out of file\n");
-        last = 1;
+        status = CL_EPARSE;
         goto done;
     }
 
-    name[0] = '\0';
-    if (!last) {
-        unsigned int size = (CENTRAL_HEADER_flen >= sizeof(name)) ? sizeof(name) - 1 : CENTRAL_HEADER_flen;
-        const char *src   = fmap_need_off_once(map, coff, size);
-        if (src) {
-            memcpy(name, src, size);
-            name[size] = '\0';
-            cli_dbgmsg("cli_unzip: central header - fname: %s\n", name);
-        }
+    size_t size     = (CENTRAL_HEADER_flen >= sizeof(name)) ? sizeof(name) - 1 : CENTRAL_HEADER_flen;
+    const char *src = fmap_need_off_once(ctx->fmap, index, size);
+    if (src) {
+        memcpy(name, src, size);
+        name[size] = '\0';
+        cli_dbgmsg("cli_unzip: central header - fname: %s\n", name);
     }
-    coff += CENTRAL_HEADER_flen;
+    index += CENTRAL_HEADER_flen;
 
     /* requests do not supply a ctx; also prevent multiple scans */
-    if (ctx && (CL_VIRUS == cli_matchmeta(ctx, name, CENTRAL_HEADER_csize, CENTRAL_HEADER_usize, (CENTRAL_HEADER_flags & F_ENCR) != 0, file_count, CENTRAL_HEADER_crc32))) {
-        last = 1;
-        *ret = CL_VIRUS;
+    ret = cli_matchmeta(ctx, name, CENTRAL_HEADER_csize, CENTRAL_HEADER_usize, (CENTRAL_HEADER_flags & F_ENCR) != 0, file_count, CENTRAL_HEADER_crc32);
+    if (CL_VIRUS == ret) {
+        // Set file record size to 0 to indicate this is the last file record
+        status = CL_VIRUS;
         goto done;
     }
 
-    if (zsize - coff <= CENTRAL_HEADER_extra_len && !last) {
+    if (ctx->fmap->len <= index + CENTRAL_HEADER_extra_len) {
         cli_dbgmsg("cli_unzip: central header - extra out of file\n");
-        last = 1;
+        status = CL_EPARSE;
+        goto done;
     }
-    coff += CENTRAL_HEADER_extra_len;
+    index += CENTRAL_HEADER_extra_len;
 
-    if (zsize - coff < CENTRAL_HEADER_comment_len && !last) {
+    if (ctx->fmap->len < index + CENTRAL_HEADER_comment_len) {
         cli_dbgmsg("cli_unzip: central header - comment out of file\n");
-        last = 1;
+        status = CL_EPARSE;
+        goto done;
     }
-    coff += CENTRAL_HEADER_comment_len;
+    index += CENTRAL_HEADER_comment_len;
+
+    *file_record_size = index - central_file_header_offset;
 
     if (!requests) {
-        if (CENTRAL_HEADER_off < zsize - SIZEOF_LOCAL_HEADER) {
-            parse_local_file_header(map,
-                                    CENTRAL_HEADER_off,
-                                    zsize - CENTRAL_HEADER_off,
-                                    num_files_unzipped,
-                                    file_count,
-                                    central_header,
-                                    ret,
-                                    ctx,
-                                    tmpd,
-                                    1,
-                                    zip_scan_cb,
-                                    record);
-        } else {
-            cli_dbgmsg("cli_unzip: central header - local hdr out of file\n");
-        }
+        // Parse the local file header.
+        // We'll verify enough bytes available for a local file header when we parse it.
+
+        status = parse_local_file_header(
+            ctx,
+            CENTRAL_HEADER_off,
+            num_files_unzipped,
+            file_count,
+            central_header,
+            tmpd,
+            1, /* detect_encrypted */
+            zip_scan_cb,
+            record,
+            NULL); /* file_record_size */
     } else {
         int i;
         size_t len;
 
-        if (!last) {
-            for (i = 0; i < requests->namecnt; ++i) {
-                cli_dbgmsg("cli_unzip: central header - checking for %i: %s\n", i, requests->names[i]);
+        for (i = 0; i < requests->namecnt; ++i) {
+            cli_dbgmsg("cli_unzip: central header - checking for %i: %s\n", i, requests->names[i]);
 
-                len = MIN(sizeof(name) - 1, requests->namelens[i]);
-                if (!strncmp(requests->names[i], name, len)) {
-                    requests->match = 1;
-                    requests->found = i;
-                    requests->loff  = CENTRAL_HEADER_off;
-                }
+            len = MIN(sizeof(name) - 1, requests->namelens[i]);
+            if (!strncmp(requests->names[i], name, len)) {
+                requests->match = 1;
+                requests->found = i;
+                requests->loff  = CENTRAL_HEADER_off;
             }
         }
-        *ret = CL_SUCCESS;
+
+        status = CL_SUCCESS;
     }
 
 done:
     if (NULL != central_header) {
-        fmap_unneed_ptr(map, central_header, SIZEOF_CENTRAL_HEADER);
+        fmap_unneed_ptr(ctx->fmap, central_header, SIZEOF_CENTRAL_HEADER);
     }
 
-    return (last ? 0 : coff);
+    return status;
 }
 
 /**
@@ -956,8 +1043,6 @@ static int sort_by_file_offset(const void *first, const void *second)
  * The catalogue may contain duplicate items, which should be skipped.
  *
  * @param ctx               The scanning context
- * @param map               The file map
- * @param fsize             The file size
  * @param coff              The central directory offset
  * @param[out] catalogue    A catalogue of zip_records found in the central directory.
  * @param[out] num_records  The number of records in the catalogue.
@@ -969,8 +1054,6 @@ static int sort_by_file_offset(const void *first, const void *second)
  */
 cl_error_t index_the_central_directory(
     cli_ctx *ctx,
-    fmap_t *map,
-    uint32_t fsize,
     uint32_t coff,
     struct zip_record **catalogue,
     size_t *num_records)
@@ -987,6 +1070,9 @@ cl_error_t index_the_central_directory(
     struct zip_record *prev_record   = NULL;
     uint32_t num_overlapping_files   = 0;
     bool exceeded_max_files          = false;
+
+    size_t record_size   = 0;
+    size_t record_offset = coff;
 
     if (NULL == catalogue || NULL == num_records) {
         cli_errmsg("index_the_central_directory: Invalid NULL arguments\n");
@@ -1007,33 +1093,32 @@ cl_error_t index_the_central_directory(
     cli_dbgmsg("cli_unzip: checking for non-recursive zip bombs...\n");
 
     do {
-        coff = parse_central_directory_file_header(map,
-                                                   coff,
-                                                   fsize,
-                                                   NULL, // num_files_unzipped not required
-                                                   index + 1,
-                                                   &ret,
-                                                   ctx,
-                                                   NULL, // tmpd not required
-                                                   NULL,
-                                                   &(zip_catalogue[records_count]));
-
-        if (CL_EPARSE != ret) {
-            // Found a record.
-            records_count++;
-        }
-
-        if (0 == coff) {
-            // No more files (previous was last).
-            break;
-        }
+        ret = parse_central_directory_file_header(
+            ctx,
+            record_offset,
+            NULL, // num_files_unzipped not required
+            records_count + 1,
+            NULL, // tmpd not required
+            NULL,
+            &(zip_catalogue[records_count]),
+            &record_size);
 
         if (ret == CL_VIRUS) {
+            // Aborting scan due to a detection (not in all match mode).
             status = CL_VIRUS;
             goto done;
         }
 
-        index++;
+        if (record_size == 0) {
+            // No more files (previous was last).
+            break;
+        }
+
+        // Found a record.
+        records_count++;
+
+        // Increment the record offset by the size of the record for the next iteration.
+        record_offset += record_size;
 
         if (cli_checktimelimit(ctx) != CL_SUCCESS) {
             cli_dbgmsg("cli_unzip: Time limit reached (max: %u)\n", ctx->engine->maxscantime);
@@ -1050,16 +1135,8 @@ cl_error_t index_the_central_directory(
             break;
         }
 
-        if (records_count % ZIP_RECORDS_CHECK_BLOCKSIZE == 0) {
-            cli_dbgmsg("   cli_unzip: Exceeded zip record block size, allocating more space...\n");
-
-            /* allocate more space for zip records */
-            if (sizeof(struct zip_record) * ZIP_RECORDS_CHECK_BLOCKSIZE * (num_record_blocks + 1) <
-                sizeof(struct zip_record) * ZIP_RECORDS_CHECK_BLOCKSIZE * (num_record_blocks)) {
-                cli_errmsg("cli_unzip: Number of file records in zip will exceed the max for current architecture (integer overflow)\n");
-                status = CL_EFORMAT;
-                goto done;
-            }
+        if (num_record_blocks * ZIP_RECORDS_CHECK_BLOCKSIZE == records_count + 1) {
+            cli_dbgmsg("cli_unzip: Filled a block of zip records. Allocating an additional block for more zip records...\n");
 
             CLI_MAX_REALLOC_OR_GOTO_DONE(
                 zip_catalogue,
@@ -1072,11 +1149,6 @@ cl_error_t index_the_central_directory(
                    sizeof(struct zip_record) * (ZIP_RECORDS_CHECK_BLOCKSIZE * num_record_blocks - records_count));
         }
     } while (1);
-
-    if (ret == CL_VIRUS) {
-        status = CL_VIRUS;
-        goto done;
-    }
 
     if (records_count > 1) {
         /*
@@ -1115,18 +1187,22 @@ cl_error_t index_the_central_directory(
                 if ((curr_record->local_header_offset == prev_record->local_header_offset) &&
                     (curr_record->local_header_size == prev_record->local_header_size) &&
                     (curr_record->compressed_size == prev_record->compressed_size)) {
-                    cli_dbgmsg("cli_unzip: Ignoring duplicate file entry @ 0x%x.\n", curr_record->local_header_offset);
+                    cli_dbgmsg("cli_unzip: Ignoring duplicate file entry at offset: 0x%x.\n", curr_record->local_header_offset);
                 } else {
                     cli_dbgmsg("cli_unzip: Overlapping files detected.\n");
                     cli_dbgmsg("    previous file end:  %u\n", prev_record_end);
                     cli_dbgmsg("    current file start: %u\n", curr_record->local_header_offset);
 
                     if (ZIP_MAX_NUM_OVERLAPPING_FILES < num_overlapping_files) {
+                        status = CL_EFORMAT;
+
                         if (SCAN_HEURISTICS) {
-                            status = cli_append_potentially_unwanted(ctx, "Heuristics.Zip.OverlappingFiles");
-                        } else {
-                            status = CL_EFORMAT;
+                            ret = cli_append_potentially_unwanted(ctx, "Heuristics.Zip.OverlappingFiles");
+                            if (CL_SUCCESS != ret) {
+                                status = ret;
+                            }
                         }
+
                         goto done;
                     }
                 }
@@ -1208,9 +1284,8 @@ cl_error_t index_local_file_headers_within_bounds(
     size_t num_record_blocks = 0;
     size_t index             = 0;
 
-    uint32_t coff                    = 0;
+    uint32_t search_offset           = 0;
     uint32_t total_file_count        = file_count;
-    const char *ptr                  = NULL;
     struct zip_record *zip_catalogue = NULL;
     bool exceeded_max_files          = false;
 
@@ -1238,38 +1313,46 @@ cl_error_t index_local_file_headers_within_bounds(
     index             = *num_records;
 
     if (start_offset > fsize || end_offset > fsize || start_offset > end_offset) {
-        cli_errmsg("index_local_file_headers_within_bounds: Invalid offset arguments\n");
+        cli_errmsg("index_local_file_headers_within_bounds: Invalid offset arguments: start_offset=%u, end_offset=%u, fsize=%u\n",
+                   start_offset, end_offset, fsize);
+        status = CL_EPARSE;
         goto done;
     }
 
     /*
      * Search for local file headers between the start and end offsets. Append found file headers to zip_catalogue
      */
-    for (coff = start_offset; coff < end_offset; coff++) {
-        if (!(ptr = fmap_need_off_once(map, coff, 4)))
-            continue;
-        if (cli_readint32(ptr) == ZIP_MAGIC_LOCAL_FILE_HEADER) {
-            // increment coff by the size of the found local file header + file data
-            coff += parse_local_file_header(
-                map,
-                coff,
-                fsize - coff,
-                NULL,
-                total_file_count + 1,
-                NULL,
-                &ret,
-                ctx,
-                NULL,
-                1,
-                NULL,
-                &(zip_catalogue[index]));
-            // decrement coff by 1 to account for the increment at the end of the loop
-            coff -= 1;
+    for (search_offset = start_offset; search_offset < end_offset; search_offset++) {
+        const char *local_file_header = fmap_need_off_once(map, search_offset, SIZEOF_LOCAL_HEADER);
+        if (NULL == local_file_header) {
+            break; // Reached the end of the file.
+        }
 
-            if (CL_EPARSE != ret) {
+        if (cli_readint32(local_file_header) == ZIP_MAGIC_LOCAL_FILE_HEADER) {
+            uint32_t local_file_header_offset = search_offset;
+            size_t file_record_size           = 0;
+
+            ret = parse_local_file_header(
+                ctx,
+                local_file_header_offset,
+                NULL,                    /* num_files_unzipped */
+                total_file_count + 1,    /* file_count */
+                NULL,                    /* central_header */
+                NULL,                    /* tmpd */
+                1,                       /* detect_encrypted */
+                NULL,                    /* zcb */
+                &(zip_catalogue[index]), /* record */
+                &file_record_size);      /* file_record_size */
+
+            if (file_record_size != 0 && CL_EPARSE != ret) {
                 // Found a record.
+                cli_dbgmsg("cli_unzip: Found a record\n");
                 index++;
                 total_file_count++;
+
+                // increment search_offset by the size of the found local file header + file data
+                // but decrement by 1 to account for the increment at the end of the loop
+                search_offset += file_record_size - 1;
             }
 
             if (ret == CL_VIRUS) {
@@ -1284,7 +1367,7 @@ cl_error_t index_local_file_headers_within_bounds(
             }
 
             /* stop checking file entries if we'll exceed maxfiles */
-            if (ctx->engine->maxfiles && file_count >= ctx->engine->maxfiles) {
+            if (ctx->engine->maxfiles && total_file_count >= ctx->engine->maxfiles) {
                 cli_dbgmsg("cli_unzip: Files limit reached (max: %u)\n", ctx->engine->maxfiles);
                 cli_append_potentially_unwanted_if_heur_exceedsmax(ctx, "Heuristics.Limits.Exceeded.MaxFiles");
                 exceeded_max_files = true; // Set a bool so we can return the correct status code later.
@@ -1292,30 +1375,19 @@ cl_error_t index_local_file_headers_within_bounds(
                 break;
             }
 
-            if (index % ZIP_RECORDS_CHECK_BLOCKSIZE == 0) {
-                struct zip_record *zip_catalogue_new = NULL;
+            if (num_record_blocks * ZIP_RECORDS_CHECK_BLOCKSIZE == index + 1) {
+                // Filled up the current block of zip records, need to allocate more space to fit additional records.
+                cli_dbgmsg("cli_unzip: Filled a zip record block. Allocating an additional block for more zip records...\n");
 
-                cli_dbgmsg("   cli_unzip: Exceeded zip record block size, allocating more space...\n");
-
-                /* allocate more space for zip records */
-                if (sizeof(struct zip_record) * ZIP_RECORDS_CHECK_BLOCKSIZE * (num_record_blocks + 1) <
-                    sizeof(struct zip_record) * ZIP_RECORDS_CHECK_BLOCKSIZE * (num_record_blocks)) {
-                    cli_errmsg("cli_unzip: Number of file records in zip will exceed the max for current architecture (integer overflow)\n");
-                    status = CL_EFORMAT;
-                    goto done;
-                }
-
-                zip_catalogue_new = cli_max_realloc(zip_catalogue, sizeof(struct zip_record) * ZIP_RECORDS_CHECK_BLOCKSIZE * (num_record_blocks + 1));
-                if (NULL == zip_catalogue_new) {
-                    status = CL_EMEM;
-                    goto done;
-                }
-                zip_catalogue     = zip_catalogue_new;
-                zip_catalogue_new = NULL;
+                CLI_MAX_REALLOC_OR_GOTO_DONE(
+                    zip_catalogue,
+                    sizeof(struct zip_record) * ZIP_RECORDS_CHECK_BLOCKSIZE * (num_record_blocks + 1),
+                    status = CL_EMEM);
 
                 num_record_blocks++;
                 /* zero out the memory for the new records */
-                memset(&(zip_catalogue[index]), 0, sizeof(struct zip_record) * (ZIP_RECORDS_CHECK_BLOCKSIZE * num_record_blocks - index));
+                memset(&(zip_catalogue[index]), 0,
+                       sizeof(struct zip_record) * (ZIP_RECORDS_CHECK_BLOCKSIZE * num_record_blocks - index));
             }
         }
     }
@@ -1390,7 +1462,6 @@ cl_error_t index_local_file_headers(
     struct zip_record *prev_record        = NULL;
     size_t local_file_headers_count       = 0;
     uint32_t num_overlapping_files        = 0;
-    bool exceeded_max_files               = false;
 
     if (NULL == catalogue || NULL == num_records || NULL == *catalogue) {
         cli_dbgmsg("index_local_file_headers: Invalid NULL arguments\n");
@@ -1432,8 +1503,6 @@ cl_error_t index_local_file_headers(
         if (ctx->engine->maxfiles && total_files_found >= ctx->engine->maxfiles) {
             cli_dbgmsg("cli_unzip: Files limit reached (max: %u)\n", ctx->engine->maxfiles);
             cli_append_potentially_unwanted_if_heur_exceedsmax(ctx, "Heuristics.Limits.Exceeded.MaxFiles");
-            exceeded_max_files = true; // Set a bool so we can return the correct status code later.
-                                       // We still need to scan the files we found while reviewing the file records up to this limit.
             break;
         }
 
@@ -1531,17 +1600,19 @@ cl_error_t index_local_file_headers(
                     if ((curr_record->local_header_offset == prev_record->local_header_offset) &&
                         (curr_record->local_header_size == prev_record->local_header_size) &&
                         (curr_record->compressed_size == prev_record->compressed_size)) {
-                        cli_dbgmsg("cli_unzip: Ignoring duplicate file entry @ 0x%x.\n", curr_record->local_header_offset);
+                        cli_dbgmsg("cli_unzip: Ignoring duplicate file entry at offset: 0x%x.\n", curr_record->local_header_offset);
                     } else {
                         cli_dbgmsg("cli_unzip: Overlapping files detected.\n");
                         cli_dbgmsg("    previous file end:  %u\n", prev_record_end);
                         cli_dbgmsg("    current file start: %u\n", curr_record->local_header_offset);
 
                         if (ZIP_MAX_NUM_OVERLAPPING_FILES < num_overlapping_files) {
+                            status = CL_EFORMAT;
                             if (SCAN_HEURISTICS) {
-                                status = cli_append_potentially_unwanted(ctx, "Heuristics.Zip.OverlappingFiles");
-                            } else {
-                                status = CL_EFORMAT;
+                                ret = cli_append_potentially_unwanted(ctx, "Heuristics.Zip.OverlappingFiles");
+                                if (CL_SUCCESS != ret) {
+                                    status = ret;
+                                }
                             }
                             goto done;
                         }
@@ -1558,8 +1629,11 @@ cl_error_t index_local_file_headers(
 
         free(temp_catalogue);
         temp_catalogue = NULL;
+
         free(*catalogue);
-        *catalogue   = combined_catalogue;
+        *catalogue         = combined_catalogue;
+        combined_catalogue = NULL;
+
         *num_records = total_files_found;
     } else {
         free(temp_catalogue);
@@ -1581,34 +1655,99 @@ done:
             free(*catalogue);
             *catalogue = NULL;
         }
+    }
 
-        if (NULL != temp_catalogue) {
-            size_t i;
-            for (i = 0; i < local_file_headers_count; i++) {
-                if (NULL != temp_catalogue[i].original_filename) {
-                    free(temp_catalogue[i].original_filename);
-                    temp_catalogue[i].original_filename = NULL;
-                }
+    if (NULL != temp_catalogue) {
+        size_t i;
+        for (i = 0; i < local_file_headers_count; i++) {
+            if (NULL != temp_catalogue[i].original_filename) {
+                free(temp_catalogue[i].original_filename);
+                temp_catalogue[i].original_filename = NULL;
             }
-            free(temp_catalogue);
-            temp_catalogue = NULL;
         }
+        free(temp_catalogue);
+        temp_catalogue = NULL;
+    }
 
-        if (NULL != combined_catalogue) {
-            size_t i;
-            for (i = 0; i < total_files_found; i++) {
-                if (NULL != combined_catalogue[i].original_filename) {
-                    free(combined_catalogue[i].original_filename);
-                    combined_catalogue[i].original_filename = NULL;
-                }
+    if (NULL != combined_catalogue) {
+        size_t i;
+        for (i = 0; i < total_files_found; i++) {
+            if (NULL != combined_catalogue[i].original_filename) {
+                free(combined_catalogue[i].original_filename);
+                combined_catalogue[i].original_filename = NULL;
             }
-            free(combined_catalogue);
-            combined_catalogue = NULL;
+        }
+        free(combined_catalogue);
+        combined_catalogue = NULL;
+    }
+
+    return status;
+}
+
+/**
+ * @brief Find the central directory header in a zip file.
+ *
+ * Find the central directory header, first by finding the End Of Central Directory header.
+ *
+ * The End Of Central Directory header is located at the end of the zip file and contains the offset of the central
+ * directory and ends with a variable length comment.
+ * We'll start searching for the magic bytes SIZEOF_END_OF_CENTRAL bytes from the end of the file, and work our way
+ * backwards until we find the End Of Central Directory header magic bytes.
+ *
+ * @param map          The file map
+ * @param fsize        The file size
+ * @param[out] coff    The central directory offset
+ * @return cl_error_t
+ */
+static cl_error_t find_central_directory_header(
+    fmap_t *map,
+    uint32_t fsize,
+    uint32_t *coff)
+{
+    cl_error_t status = CL_ERROR;
+    uint32_t eocoff   = 0;
+
+    cli_dbgmsg("find_central_directory_header: Searching for End Of Central Directory header...\n");
+
+    /*
+     * Find the End Of Central Directory header.
+     */
+    for (eocoff = fsize - SIZEOF_END_OF_CENTRAL; eocoff > 0; eocoff--) {
+        const char *eocptr = fmap_need_off_once(
+            map,
+            eocoff,
+            SIZEOF_END_OF_CENTRAL - 2 /* -2 because don't need to read the comment length */);
+        if (!eocptr) {
+            // Failed to get a pointer within the file at that offset and size.
+            continue;
         }
 
-        if (exceeded_max_files) {
-            status = CL_EMAXFILES;
+        if (cli_readint32(eocptr) == ZIP_MAGIC_CENTRAL_DIRECTORY_RECORD_END) {
+            // Found the End Of Central Directory header.
+            // Use it to find the central directory offset.
+            cli_dbgmsg("find_central_directory_header: Found End Of Central Directory header at offset: 0x%x. "
+                       "Searching for Central Directory header...\n",
+                       eocoff);
+
+            // The offset for the Central Directory header is stored at offset 16 in the End Of Central Directory header.
+            uint32_t maybe_coff = cli_readint32(&eocptr[16]);
+
+            if (!CLI_ISCONTAINED_0_TO(fsize, maybe_coff, SIZEOF_CENTRAL_HEADER)) {
+                // The alleged central directory offset + size of the header is not within the file size.
+                continue;
+            }
+
+            // Found it.
+            cli_dbgmsg("find_central_directory_header: Found Central Directory header at offset: 0x%x\n", maybe_coff);
+            *coff  = maybe_coff;
+            status = CL_SUCCESS;
+            break;
         }
+    }
+
+    if (CL_SUCCESS != status) {
+        cli_dbgmsg("find_central_directory_header: Central directory header not found.\n");
+        status = CL_EPARSE;
     }
 
     return status;
@@ -1619,11 +1758,14 @@ cl_error_t cli_unzip(cli_ctx *ctx)
     cl_error_t status = CL_ERROR;
     cl_error_t ret;
 
-    unsigned int file_count = 0, num_files_unzipped = 0;
-    uint32_t fsize, coff                            = 0;
+    size_t num_files_unzipped = 0;
+    uint32_t fsize;
+    uint32_t coff = 0;
+
     fmap_t *map = ctx->fmap;
-    char *tmpd  = NULL;
-    const char *ptr;
+
+    char *tmpd = NULL;
+
     int toval                        = 0;
     struct zip_record *zip_catalogue = NULL;
     size_t records_count             = 0;
@@ -1642,27 +1784,21 @@ cl_error_t cli_unzip(cli_ctx *ctx)
         goto done;
     }
 
-    for (coff = fsize - 22; coff > 0; coff--) { /* sizeof(EOC)==22 */
-        if (!(ptr = fmap_need_off_once(map, coff, 20)))
-            continue;
-        if (cli_readint32(ptr) == ZIP_MAGIC_CENTRAL_DIRECTORY_RECORD_END) {
-            uint32_t chptr = cli_readint32(&ptr[16]);
-            if (!CLI_ISCONTAINED_0_TO(fsize, chptr, SIZEOF_CENTRAL_HEADER)) continue;
-            coff = chptr;
-            break;
-        }
-    }
-
-    if (coff) {
-        cli_dbgmsg("cli_unzip: central directory header offset: @%x\n", coff);
+    /*
+     * Find the central directory header
+     */
+    ret = find_central_directory_header(
+        map,
+        fsize,
+        &coff);
+    if (CL_SUCCESS == ret) {
+        cli_dbgmsg("cli_unzip: central directory header offset: 0x%x\n", coff);
 
         /*
-         * Index the central directory first.
+         * Index the central directory.
          */
         ret = index_the_central_directory(
             ctx,
-            map,
-            fsize,
             coff,
             &zip_catalogue,
             &records_count);
@@ -1690,7 +1826,7 @@ cl_error_t cli_unzip(cli_ctx *ctx)
     }
 
     /*
-     * Add local file headers not referenced by the central directory
+     * Add local file headers not referenced by the central directory.
      */
     ret = index_local_file_headers(
         ctx,
@@ -1716,7 +1852,7 @@ cl_error_t cli_unzip(cli_ctx *ctx)
             (zip_catalogue[i].compressed_size == zip_catalogue[i - 1].compressed_size)) {
 
             /* Duplicate file entry, skip. */
-            cli_dbgmsg("cli_unzip: Skipping unzipping of duplicate file entry: @ 0x%x\n", zip_catalogue[i].local_header_offset);
+            cli_dbgmsg("cli_unzip: Skipping unzipping of duplicate file entry at offset: 0x%x\n", zip_catalogue[i].local_header_offset);
             continue;
         }
 
@@ -1738,6 +1874,12 @@ cl_error_t cli_unzip(cli_ctx *ctx)
                     tmpd,
                     zip_scan_cb,
                     zip_catalogue[i].original_filename);
+            } else {
+                // If we cannot get a pointer to the compressed data, we cannot decrypt it.
+                // Skip this file.
+                cli_dbgmsg("cli_unzip: Skipping decryption of file entry at offset: 0x%x, size: %u, compressed data not available\n",
+                           zip_catalogue[i].local_header_offset,
+                           zip_catalogue[i].compressed_size);
             }
         } else {
             if (fmap_need_ptr_once(map, compressed_data, zip_catalogue[i].compressed_size)) {
@@ -1753,10 +1895,14 @@ cl_error_t cli_unzip(cli_ctx *ctx)
                     zip_scan_cb,
                     zip_catalogue[i].original_filename,
                     false);
+            } else {
+                // If we cannot get a pointer to the compressed data, we cannot decompress it.
+                // Skip this file.
+                cli_dbgmsg("cli_unzip: Skipping decompression of file entry at offset: 0x%x, size: %u, compressed data not available\n",
+                           zip_catalogue[i].local_header_offset,
+                           zip_catalogue[i].compressed_size);
             }
         }
-
-        file_count++;
 
         if (ctx->engine->maxfiles && num_files_unzipped >= ctx->engine->maxfiles) {
             // Note: this check piggybacks on the MaxFiles setting, but is not actually
@@ -1767,6 +1913,7 @@ cl_error_t cli_unzip(cli_ctx *ctx)
             cli_dbgmsg("cli_unzip: Files limit reached (max: %u)\n", ctx->engine->maxfiles);
             cli_append_potentially_unwanted_if_heur_exceedsmax(ctx, "Heuristics.Limits.Exceeded.MaxFiles");
             status = CL_EMAXFILES;
+            goto done;
         }
 
         if (cli_checktimelimit(ctx) != CL_SUCCESS) {
@@ -1777,11 +1924,16 @@ cl_error_t cli_unzip(cli_ctx *ctx)
 
         if (cli_json_timeout_cycle_check(ctx, &toval) != CL_SUCCESS) {
             status = CL_ETIMEOUT;
+            goto done;
         }
 
-        if (status != CL_SUCCESS) {
+        if (ctx->abort_scan) {
+            // The scan was aborted, stop processing files.
+            // This also takes into account CL_VIRUS status (to abort on detection when not in allmatch mode).
             break;
         }
+
+        // Continue to the next file entry even if the current one failed.
     }
 
 done:
@@ -1808,46 +1960,40 @@ done:
     return status;
 }
 
-cl_error_t unzip_single_internal(cli_ctx *ctx, off_t local_header_offset, zip_cb zcb)
+cl_error_t unzip_single_internal(cli_ctx *ctx, size_t local_header_offset, zip_cb zcb)
 {
     cl_error_t ret = CL_SUCCESS;
 
-    unsigned int num_files_unzipped = 0;
-    uint32_t fsize;
-    fmap_t *map = ctx->fmap;
+    size_t num_files_unzipped = 0;
 
     cli_dbgmsg("in cli_unzip_single\n");
-    fsize = (uint32_t)(map->len - local_header_offset);
-    if ((local_header_offset < 0) ||
-        ((size_t)local_header_offset > map->len) ||
-        ((sizeof(off_t) != sizeof(uint32_t)) && ((size_t)fsize != map->len - local_header_offset))) {
 
-        cli_dbgmsg("cli_unzip: bad offset\n");
-        return CL_SUCCESS;
+    if (NULL == ctx || NULL == ctx->fmap) {
+        cli_dbgmsg("cli_unzip_single: Invalid NULL arguments\n");
+        return CL_ENULLARG;
     }
-    if (fsize < SIZEOF_LOCAL_HEADER) {
+
+    if (local_header_offset + SIZEOF_LOCAL_HEADER > ctx->fmap->len) {
         cli_dbgmsg("cli_unzip: file too short\n");
         return CL_SUCCESS;
     }
 
-    parse_local_file_header(
-        map,
-        local_header_offset,
-        fsize,
-        &num_files_unzipped,
-        0,
-        NULL,
-        &ret,
+    ret = parse_local_file_header(
         ctx,
-        NULL,
-        0,
+        local_header_offset,
+        &num_files_unzipped,
+        0,    /* file_count */
+        NULL, /* central_header*/
+        NULL, /* tmpd */
+        0,    /* detect_encrypted */
         zcb,
-        NULL);
+        NULL,  /* record */
+        NULL); /* file_record_size */
 
     return ret;
 }
 
-cl_error_t cli_unzip_single(cli_ctx *ctx, off_t local_header_offset)
+cl_error_t cli_unzip_single(cli_ctx *ctx, size_t local_header_offset)
 {
     return unzip_single_internal(ctx, local_header_offset, zip_scan_cb);
 }
@@ -1870,62 +2016,53 @@ cl_error_t unzip_search_add(struct zip_requests *requests, const char *name, siz
     return CL_SUCCESS;
 }
 
-cl_error_t unzip_search(cli_ctx *ctx, fmap_t *map, struct zip_requests *requests)
+cl_error_t unzip_search(cli_ctx *ctx, struct zip_requests *requests)
 {
-    unsigned int file_count = 0;
-    fmap_t *zmap            = map;
-    size_t fsize;
-    uint32_t coff = 0;
-    const char *ptr;
-    cl_error_t ret = CL_SUCCESS;
-    uint32_t toval = 0;
+    cl_error_t status = CL_ERROR;
+    cl_error_t ret;
+    size_t file_count = 0;
+    uint32_t coff     = 0;
+    uint32_t toval    = 0;
+
+    size_t file_record_size = 0;
 
     cli_dbgmsg("in unzip_search\n");
 
-    if ((!ctx && !map) || !requests) {
+    if (NULL == ctx || NULL == ctx->fmap) {
         return CL_ENULLARG;
     }
 
-    /* get priority to given map over ctx->fmap */
-    if (ctx && !map)
-        zmap = ctx->fmap;
-    fsize = zmap->len;
-    if (sizeof(off_t) != sizeof(uint32_t) && fsize != zmap->len) {
-        cli_dbgmsg("unzip_search: file too big\n");
-        return CL_SUCCESS;
-    }
-    if (fsize < SIZEOF_CENTRAL_HEADER) {
+    if (ctx->fmap->len < SIZEOF_CENTRAL_HEADER) {
         cli_dbgmsg("unzip_search: file too short\n");
-        return CL_SUCCESS;
+        status = CL_SUCCESS;
+        goto done;
     }
 
-    for (coff = fsize - 22; coff > 0; coff--) { /* sizeof(EOC)==22 */
-        if (!(ptr = fmap_need_off_once(zmap, coff, 20)))
-            continue;
-        if (cli_readint32(ptr) == ZIP_MAGIC_CENTRAL_DIRECTORY_RECORD_END) {
-            uint32_t chptr = cli_readint32(&ptr[16]);
-            if (!CLI_ISCONTAINED_0_TO(fsize, chptr, SIZEOF_CENTRAL_HEADER)) continue;
-            coff = chptr;
-            break;
-        }
-    }
+    /*
+     * Find the central directory header
+     */
+    ret = find_central_directory_header(
+        ctx->fmap,
+        ctx->fmap->len,
+        &coff);
+    if (CL_SUCCESS == ret) {
+        uint32_t central_file_header_offset = coff;
+        cli_dbgmsg("unzip_search: central directory header offset: 0x%x\n", central_file_header_offset);
+        do {
+            ret = parse_central_directory_file_header(
+                ctx,
+                central_file_header_offset,
+                NULL, /* num_files_unzipped */
+                file_count + 1,
+                NULL, /* tmpd */
+                requests,
+                NULL, /* record */
+                &file_record_size);
 
-    if (coff) {
-        cli_dbgmsg("unzip_search: central directory header offset: @%x\n", coff);
-        while ((ret == CL_SUCCESS) &&
-               (coff = parse_central_directory_file_header(
-                    zmap,
-                    coff,
-                    fsize,
-                    NULL,
-                    file_count + 1,
-                    &ret,
-                    ctx,
-                    NULL,
-                    requests,
-                    NULL))) {
             if (requests->match) {
-                ret = CL_VIRUS;
+                // Found a match.
+                status = CL_VIRUS;
+                goto done;
             }
 
             file_count++;
@@ -1934,39 +2071,52 @@ cl_error_t unzip_search(cli_ctx *ctx, fmap_t *map, struct zip_requests *requests
                 //   scanning these files or incrementing the ctx->scannedfiles count
                 cli_dbgmsg("cli_unzip: Files limit reached (max: %u)\n", ctx->engine->maxfiles);
                 cli_append_potentially_unwanted_if_heur_exceedsmax(ctx, "Heuristics.Limits.Exceeded.MaxFiles");
-                ret = CL_EMAXFILES;
+                status = CL_EMAXFILES;
+                goto done;
             }
 
             if (ctx && cli_json_timeout_cycle_check(ctx, (int *)(&toval)) != CL_SUCCESS) {
-                ret = CL_ETIMEOUT;
+                status = CL_ETIMEOUT;
+                goto done;
             }
-        }
+
+            // Increment to the next central file header.
+            central_file_header_offset += file_record_size;
+        } while ((ret == CL_SUCCESS) && (file_record_size > 0));
     } else {
-        cli_dbgmsg("unzip_search: cannot locate central directory\n");
+        cli_dbgmsg("unzip_search: Cannot locate central directory. unzip_search failed.\n");
+        status = CL_EPARSE;
+        goto done;
     }
 
-    return ret;
+done:
+    return status;
 }
 
 cl_error_t unzip_search_single(cli_ctx *ctx, const char *name, size_t nlen, uint32_t *loff)
 {
-    struct zip_requests requests;
-    cl_error_t ret;
+    cl_error_t status            = CL_ERROR;
+    struct zip_requests requests = {0};
 
     cli_dbgmsg("in unzip_search_single\n");
     if (!ctx) {
-        return CL_ENULLARG;
+        status = CL_ENULLARG;
+        goto done;
     }
 
-    memset(&requests, 0, sizeof(struct zip_requests));
-
-    if ((ret = unzip_search_add(&requests, name, nlen)) != CL_SUCCESS) {
-        return ret;
+    // Add the file name to the requests.
+    status = unzip_search_add(&requests, name, nlen);
+    if (CL_SUCCESS != status) {
+        cli_dbgmsg("unzip_search_single: Failed to add file name to requests\n");
+        goto done;
     }
 
-    if ((ret = unzip_search(ctx, NULL, &requests)) == CL_VIRUS) {
+    // Search for the zip file entry in the current layer.
+    status = unzip_search(ctx, &requests);
+    if (CL_VIRUS == status) {
         *loff = requests.loff;
     }
 
-    return ret;
+done:
+    return status;
 }

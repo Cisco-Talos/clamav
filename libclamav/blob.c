@@ -518,7 +518,7 @@ void fileblobPartialSet(fileblob *fb, const char *fullname, const char *arg)
         close(fb->fd);
         return;
     }
-    blobSetFilename(&fb->b, fb->ctx ? fb->ctx->sub_tmpdir : NULL, fullname);
+    blobSetFilename(&fb->b, fb->ctx ? fb->ctx->this_layer_tmpdir : NULL, fullname);
     if (fb->b.data)
         if (fileblobAddData(fb, fb->b.data, fb->b.len) == 0) {
             free(fb->b.data);
@@ -594,8 +594,8 @@ int fileblobAddData(fileblob *fb, const unsigned char *data, size_t len)
                 do_scan = 0;
             if (do_scan) {
                 if (ctx->scanned)
-                    *ctx->scanned += (unsigned long)len / CL_COUNT_PRECISION;
-                fb->bytes_scanned += (unsigned long)len;
+                    *ctx->scanned += len;
+                fb->bytes_scanned += len;
 
                 if ((len > 5) && cli_updatelimits(ctx, len) == CL_CLEAN && (cli_scan_buff(data, (unsigned int)len, 0, ctx->virname, ctx->engine, CL_TYPE_BINARY_DATA, NULL) == CL_VIRUS)) {
                     fb->isInfected = 1;

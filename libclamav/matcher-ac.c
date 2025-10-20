@@ -833,8 +833,9 @@ int cli_ac_chklsig(const char *expr, const char *end, uint32_t *lsigcnt, unsigne
                     return -1;
                 }
 
-                for (i += 2; i + 1 < len && (isdigit(expr[i + 1]) || expr[i + 1] == ','); i++)
-                    ;
+                for (i += 2; i + 1 < len && (isdigit(expr[i + 1]) || expr[i + 1] == ','); i++) {
+                    continue;
+                }
             }
 
             if (&expr[i + 1] == rend)
@@ -1625,19 +1626,23 @@ void cli_ac_freedata(struct cli_ac_data *data)
     }
 }
 
-/* returns only CL_SUCCESS or CL_EMEM */
-inline static int ac_addtype(struct cli_matched_type **list, cli_file_t type, off_t offset, const cli_ctx *ctx)
+/**
+ * @brief Add a match for an object type to the list of matched types.
+ *
+ * Important: The caller is responsible for checking limits!
+ *
+ * @param list Pointer to the list of matched types. *list may be NULL if no types have been added yet.
+ * @param type The type of the embedded object.
+ * @param offset The offset of the embedded object.
+ * @param ctx The context information. May be NULL.
+ * @return cl_error_t CL_SUCCESS regardless if added, or CL_EMEM if memory allocation failed.
+ */
+inline static cl_error_t ac_addtype(struct cli_matched_type **list, cli_file_t type, off_t offset, const cli_ctx *ctx)
 {
-    struct cli_matched_type *tnode, *tnode_last;
+    struct cli_matched_type *tnode;
 
-    if (type == CL_TYPE_ZIPSFX) {
-        if (*list && ctx && ctx->engine->maxfiles && (*list)->cnt > ctx->engine->maxfiles)
-            return CL_SUCCESS;
-    } else if (*list && (*list)->cnt >= MAX_EMBEDDED_OBJ) {
-        return CL_SUCCESS;
-    }
-
-    if (!(tnode = calloc(1, sizeof(struct cli_matched_type)))) {
+    tnode = calloc(1, sizeof(struct cli_matched_type));
+    if (NULL == tnode) {
         cli_errmsg("cli_ac_addtype: Can't allocate memory for new type node\n");
         return CL_EMEM;
     }
@@ -1645,16 +1650,25 @@ inline static int ac_addtype(struct cli_matched_type **list, cli_file_t type, of
     tnode->type   = type;
     tnode->offset = offset;
 
-    tnode_last = *list;
-    while (tnode_last && tnode_last->next)
-        tnode_last = tnode_last->next;
+    if (*list) {
+        // Add to end of existing list.
+        struct cli_matched_type *tnode_last = *list;
 
-    if (tnode_last)
+        while (tnode_last && tnode_last->next) {
+            tnode_last = tnode_last->next;
+        }
         tnode_last->next = tnode;
-    else
+    } else {
+        // First type in the list.
         *list = tnode;
+    }
 
     (*list)->cnt++;
+
+    if (UNLIKELY(cli_get_debug_flag())) {
+        cli_dbgmsg("ac_addtype: added %s embedded object at offset " STDi64 ". Embedded object count: %d\n", cli_ftname(type), (uint64_t)offset, (*list)->cnt);
+    }
+
     return CL_SUCCESS;
 }
 
@@ -1999,14 +2013,65 @@ cl_error_t cli_ac_scanbuff(
 
                                         cli_dbgmsg("Matched signature for file type %s\n", pt->virname);
                                         type = pt->type;
-                                        if ((ftoffset != NULL) &&
-                                            ((*ftoffset == NULL) || (*ftoffset)->cnt < MAX_EMBEDDED_OBJ || type == CL_TYPE_ZIPSFX) && (type >= CL_TYPE_SFX || ((ftype == CL_TYPE_MSEXE || ftype == CL_TYPE_ZIP || ftype == CL_TYPE_MSOLE2) && type == CL_TYPE_MSEXE))) {
-                                            /* FIXME: the first offset in the array is most likely the correct one but
-                                             * it may happen it is not
-                                             */
-                                            for (j = 1; j <= CLI_DEFAULT_AC_TRACKLEN + 1 && offmatrix[0][j] != (uint32_t)-1; j++)
-                                                if (ac_addtype(ftoffset, type, offmatrix[pt->parts - 1][j], ctx))
-                                                    return CL_EMEM;
+
+                                        if (ftoffset != NULL) {
+                                            // Caller provided a pointer to record matched types.
+                                            bool too_many_types = false;
+                                            bool supported_type = false;
+
+                                            if (*ftoffset != NULL) {
+                                                // Have some type matches already. Check limits.
+
+                                                if (ctx && ((type == CL_TYPE_ZIPSFX) ||
+                                                            (type == CL_TYPE_MSEXE && ftype == CL_TYPE_MSEXE))) {
+                                                    // When ctx present, limit the number of type matches using ctx->engine->maxfiles for specific types.
+                                                    // Reasoning:
+                                                    //   ZIP local file header entries likely to be numerous if a single ZIP appended to the scanned file.
+                                                    //   MSEXE can contain many embedded MSEXE entries and MSEXE type false positives matches.
+
+                                                    if (ctx->engine->maxfiles == 0) {
+                                                        // Max-files limit is disabled.
+                                                    } else if ((*ftoffset)->cnt >= ctx->engine->maxfiles) {
+                                                        if (UNLIKELY(cli_get_debug_flag())) {
+                                                            cli_dbgmsg("ac_addtype: Can't add %s type at offset " STDu64 " to list of embedded type matches. Reached maxfiles limit of %u\n", cli_ftname(type), (*ftoffset)->offset, ctx->engine->maxfiles);
+                                                        }
+                                                        too_many_types = true;
+                                                    }
+                                                } else {
+                                                    // Limit the number of type matches using MAX_EMBEDDED_OBJ.
+                                                    if ((*ftoffset)->cnt >= MAX_EMBEDDED_OBJ) {
+                                                        if (UNLIKELY(cli_get_debug_flag())) {
+                                                            cli_dbgmsg("ac_addtype: Can't add %s type at offset " STDu64 " to list of embedded type matches. Reached MAX_EMBEDDED_OBJ limit of %u\n", cli_ftname(type), (*ftoffset)->offset, MAX_EMBEDDED_OBJ);
+                                                        }
+                                                        too_many_types = true;
+                                                    }
+                                                }
+                                            }
+
+                                            // Filter to supported types.
+                                            if (
+                                                // Found type is MBR.
+                                                type == CL_TYPE_MBR ||
+                                                // Found type is any SFX type (i.e., ZIPSFX, RARSFX, 7ZSSFX, etc.).
+                                                type >= CL_TYPE_SFX ||
+                                                // Found type is an MSEXE, but only if host file type is one of MSEXE, ZIP, or MSOLE2.
+                                                (type == CL_TYPE_MSEXE && (ftype == CL_TYPE_MSEXE || ftype == CL_TYPE_ZIP || ftype == CL_TYPE_MSOLE2))) {
+
+                                                supported_type = true;
+                                            }
+
+                                            if (supported_type && !too_many_types) {
+                                                /* FIXME: the first offset in the array is most likely the correct one but
+                                                 * it may happen it is not
+                                                 * Until we're certain and can fix this, we add all offsets in the list.
+                                                 */
+                                                for (j = 1; j <= CLI_DEFAULT_AC_TRACKLEN + 1 && offmatrix[0][j] != (uint32_t)-1; j++) {
+                                                    ret = ac_addtype(ftoffset, type, offmatrix[pt->parts - 1][j], ctx);
+                                                    if (CL_SUCCESS != ret) {
+                                                        return ret;
+                                                    }
+                                                }
+                                            }
                                         }
 
                                         memset(offmatrix[0], (uint32_t)-1, pt->parts * (CLI_DEFAULT_AC_TRACKLEN + 2) * sizeof(uint32_t));
@@ -2066,11 +2131,59 @@ cl_error_t cli_ac_scanbuff(
 
                                     cli_dbgmsg("Matched signature for file type %s at %u\n", pt->virname, realoff);
                                     type = pt->type;
-                                    if ((ftoffset != NULL) &&
-                                        ((*ftoffset == NULL) || (*ftoffset)->cnt < MAX_EMBEDDED_OBJ || type == CL_TYPE_ZIPSFX) && (type == CL_TYPE_MBR || type >= CL_TYPE_SFX || ((ftype == CL_TYPE_MSEXE || ftype == CL_TYPE_ZIP || ftype == CL_TYPE_MSOLE2) && type == CL_TYPE_MSEXE))) {
 
-                                        if (ac_addtype(ftoffset, type, realoff, ctx))
-                                            return CL_EMEM;
+                                    if (ftoffset != NULL) {
+                                        // Caller provided a pointer to record matched types.
+                                        bool too_many_types = false;
+                                        bool supported_type = false;
+
+                                        if (*ftoffset != NULL) {
+                                            // Have some type matches already. Check limits.
+
+                                            if (ctx && ((type == CL_TYPE_ZIPSFX) ||
+                                                        (type == CL_TYPE_MSEXE && ftype == CL_TYPE_MSEXE))) {
+                                                // When ctx present, limit the number of type matches using ctx->engine->maxfiles for specific types.
+                                                // Reasoning:
+                                                //   ZIP local file header entries likely to be numerous if a single ZIP appended to the scanned file.
+                                                //   MSEXE can contain many embedded MSEXE entries and MSEXE type false positives matches.
+
+                                                if (ctx->engine->maxfiles == 0) {
+                                                    // Max-files limit is disabled.
+                                                } else if ((*ftoffset)->cnt >= ctx->engine->maxfiles) {
+                                                    if (UNLIKELY(cli_get_debug_flag())) {
+                                                        cli_dbgmsg("ac_addtype: Can't add %s type at offset " STDu64 " to list of embedded type matches. Reached maxfiles limit of %u\n", cli_ftname(type), (*ftoffset)->offset, ctx->engine->maxfiles);
+                                                    }
+                                                    too_many_types = true;
+                                                }
+                                            } else {
+                                                // Limit the number of type matches using MAX_EMBEDDED_OBJ.
+                                                if ((*ftoffset)->cnt >= MAX_EMBEDDED_OBJ) {
+                                                    if (UNLIKELY(cli_get_debug_flag())) {
+                                                        cli_dbgmsg("ac_addtype: Can't add %s type at offset " STDu64 " to list of embedded type matches. Reached MAX_EMBEDDED_OBJ limit of %u\n", cli_ftname(type), (*ftoffset)->offset, MAX_EMBEDDED_OBJ);
+                                                    }
+                                                    too_many_types = true;
+                                                }
+                                            }
+                                        }
+
+                                        // Filter to supported types.
+                                        if (
+                                            // Found type is MBR.
+                                            type == CL_TYPE_MBR ||
+                                            // Found type is any SFX type (i.e., ZIPSFX, RARSFX, 7ZSSFX, etc.).
+                                            type >= CL_TYPE_SFX ||
+                                            // Found type is an MSEXE, but only if host file type is one of MSEXE, ZIP, or MSOLE2.
+                                            (type == CL_TYPE_MSEXE && (ftype == CL_TYPE_MSEXE || ftype == CL_TYPE_ZIP || ftype == CL_TYPE_MSOLE2))) {
+
+                                            supported_type = true;
+                                        }
+
+                                        if (supported_type && !too_many_types) {
+                                            ret = ac_addtype(ftoffset, type, realoff, ctx);
+                                            if (CL_SUCCESS != ret) {
+                                                return ret;
+                                            }
+                                        }
                                     }
                                 }
                             } else {

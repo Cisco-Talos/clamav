@@ -10,19 +10,19 @@ properties(
         parameters(
             [
                 string(name: 'VERSION',
-                       defaultValue: '1.5.0',
+                       defaultValue: '1.6.0',
                        description: 'ClamAV version string'),
                 string(name: 'FRAMEWORK_BRANCH',
-                       defaultValue: '1.5',
+                       defaultValue: '1.6',
                        description: 'test-framework branch'),
                 string(name: 'TESTS_BRANCH',
-                       defaultValue: '1.5',
+                       defaultValue: '1.6',
                        description: 'tests branch for the package and regular tests'),
                 string(name: 'TESTS_CUSTOM_BRANCH',
-                       defaultValue: '1.5',
+                       defaultValue: '1.6',
                        description: 'tests-custom branch'),
                 string(name: 'TESTS_FUZZ_BRANCH',
-                       defaultValue: '1.5',
+                       defaultValue: '1.6',
                        description: 'tests-fuzz-regression branch'),
                 string(name: 'BUILD_PIPELINES_PATH',
                        defaultValue: 'ClamAV/build-pipelines',
@@ -31,19 +31,19 @@ properties(
                        defaultValue: 'ClamAV/test-pipelines',
                        description: 'test-pipelines path for clamav in Jenkins'),
                 string(name: 'BUILD_PIPELINE',
-                       defaultValue: 'build-1.5',
+                       defaultValue: 'build-1.6',
                        description: 'test-pipelines branch for build acceptance'),
                 string(name: 'PACKAGE_PIPELINE',
-                       defaultValue: 'package-1.5',
+                       defaultValue: 'package-1.6',
                        description: 'test-pipelines branch for package tests.'),
                 string(name: 'REGULAR_PIPELINE',
-                       defaultValue: 'regular-1.5',
+                       defaultValue: 'regular-1.6',
                        description: 'test-pipelines branch for regular tests.'),
                 string(name: 'CUSTOM_PIPELINE',
-                       defaultValue: 'custom-1.5',
+                       defaultValue: 'custom-1.6',
                        description: 'test-pipelines branch for custom tests'),
                 string(name: 'FUZZ_PIPELINE',
-                       defaultValue: 'fuzz-regression-1.5',
+                       defaultValue: 'fuzz-regression-1.6',
                        description: 'test-pipelines branch for fuzz regression tests'),
                 string(name: 'FUZZ_CORPUS_BRANCH',
                        defaultValue: 'master',
@@ -63,19 +63,6 @@ pipeline {
     }
 
     stages {
-
-        stage('GitGuardian Scan') {
-            environment {
-                GITGUARDIAN_API_KEY = credentials('gitguardian-token')
-                GITGUARDIAN_API_URL = 'https://gitguardian.cisco.com/'
-            }
-            agent { label "docker" }
-            steps {
-                withDockerContainer(args: "-i --entrypoint=''", image: 'gitguardian/ggshield:latest') {
-                    sh 'ggshield secret scan ci'
-                }
-            }
-        }
 
         stage('Generate Tarball') {
             steps {
@@ -112,8 +99,9 @@ pipeline {
                             -D LIBXML2_LIBRARY="$HOME/.mussels/install/host-static/lib/libxml2.a" \
                             -D PCRE2_INCLUDE_DIR="$HOME/.mussels/install/host-static/include" \
                             -D PCRE2_LIBRARY="$HOME/.mussels/install/host-static/lib/libpcre2-8.a" \
-                            -D CURSES_INCLUDE_DIR="$HOME/.mussels/install/host-static/include" \
-                            -D CURSES_LIBRARY="$HOME/.mussels/install/host-static/lib/libncurses.a;$HOME/.mussels/install/host-static/lib/libtinfo.a" \
+                            -D NCURSES_INCLUDE_DIR="$HOME/.mussels/install/host-static/include" \
+                            -D CURSES_LIBRARY="$HOME/.mussels/install/host-static/lib/libncurses.a" \
+                            -D TINFO_LIBRARY="$HOME/.mussels/install/host-static/lib/libtinfo.a" \
                             -D ZLIB_INCLUDE_DIR="$HOME/.mussels/install/host-static/include" \
                             -D ZLIB_LIBRARY="$HOME/.mussels/install/host-static/lib/libz.a" \
                             -D LIBCHECK_INCLUDE_DIR="$HOME/.mussels/install/host-static/include" \

@@ -89,6 +89,12 @@ Example
 # Default: hardcoded (depends on installation options)
 #CVDCertsDirectory /etc/clamav/certs
 
+# Enforce FIPS-like limits on using hash algorithms for cryptographic purposes.
+# Will disable MD5 & SHA1 FP sigs and will require '.sign' files to verify
+# CVD authenticity.
+# Default: no
+#FIPSCryptoHashLimits yes
+
 # Only load the official signatures published by the ClamAV project.
 # Default: no
 #OfficialDatabaseOnly no
@@ -295,6 +301,11 @@ Example
 # GenerateMetadataJson is required for this feature.
 # Default: yes (if GenerateMetadataJson is used)
 #JsonStorePDFURIs no
+
+# Calculate MD5 and SHA1 hashes (in addition to SHA2-256) and store to the json metadata.
+# GenerateMetadataJson is required for this feature.
+# Default: no
+#JsonStoreExtraHashes yes
 
 # Permit use of the ALLMATCHSCAN command. If set to no, clamd will reject
 # any ALLMATCHSCAN command as invalid.
