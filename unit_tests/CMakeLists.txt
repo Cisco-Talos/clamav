@@ -197,7 +197,8 @@ if(WIN32)
         file(TO_NATIVE_PATH $<TARGET_FILE_DIR:check_clamav>/sigtool.exe         SIGTOOL)
     endif()
     if(ENABLE_EXAMPLES)
-        set(EX_CL_CVDUNPACK $<TARGET_FILE:ex_cl_cvdunpack>)
+        set(EX_CL_CVDUNPACK_TEST $<TARGET_FILE:ex_cl_cvdunpack>)
+        set(EX_SCAN_CALLBACKS_TEST $<TARGET_FILE:ex_scan_callbacks>)
     endif()
 
     # Convert the CVD_CERTS_DIR to a native path for Windows (replacing forward slashes with backslashes).
@@ -263,7 +264,8 @@ else()
             set(CLAMONACC          $<TARGET_FILE:clamonacc>)
         endif()
         if(ENABLE_EXAMPLES)
-            set(EX_CL_CVDUNPACK $<TARGET_FILE:ex_cl_cvdunpack>)
+            set(EX_CL_CVDUNPACK_TEST $<TARGET_FILE:ex_cl_cvdunpack>)
+            set(EX_SCAN_CALLBACKS_TEST $<TARGET_FILE:ex_scan_callbacks>)
         endif()
     endif()
 endif()
@@ -308,7 +310,8 @@ set(ENVIRONMENT
     SIGTOOL=${SIGTOOL}
     CLAMAV_MILTER=${CLAMAV_MILTER}
     CLAMONACC=${CLAMONACC}
-    EX_CL_CVDUNPACK=${EX_CL_CVDUNPACK}
+    EX_CL_CVDUNPACK_TEST=${EX_CL_CVDUNPACK_TEST}
+    EX_SCAN_CALLBACKS_TEST=${EX_SCAN_CALLBACKS_TEST}
 )
 
 

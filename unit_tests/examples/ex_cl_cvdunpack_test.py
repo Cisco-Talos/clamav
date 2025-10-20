@@ -24,7 +24,7 @@ class TC(testcase.TestCase):
         super(TC, cls).setUpClass()
 
         # Find the example program
-        program_path = os.environ["EX_CL_CVDUNPACK"]
+        program_path = os.environ["EX_CL_CVDUNPACK_TEST"]
 
         shutil.copy(
             str( program_path ),
