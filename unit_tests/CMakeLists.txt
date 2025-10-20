@@ -197,7 +197,7 @@ if(WIN32)
         file(TO_NATIVE_PATH $<TARGET_FILE_DIR:check_clamav>/sigtool.exe         SIGTOOL)
     endif()
     if(ENABLE_EXAMPLES)
-        file(TO_NATIVE_PATH $<TARGET_FILE_DIR:check_clamav>/ex_cl_cvdunpack.exe EX_CL_CVDUNPACK)
+        set(EX_CL_CVDUNPACK $<TARGET_FILE:ex_cl_cvdunpack>)
     endif()
 
     # Convert the CVD_CERTS_DIR to a native path for Windows (replacing forward slashes with backslashes).
