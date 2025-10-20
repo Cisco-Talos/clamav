@@ -49,7 +49,7 @@ endif()
 install(TARGETS clamsubmit COMPONENT programs)
 if(WIN32)
     install(FILES $<TARGET_PDB_FILE:clamsubmit> TYPE BIN OPTIONAL COMPONENT programs)
-    if(ENABLE_WINDOWS_RUNTIME_INSTALLATION)
+    if(ENABLE_WINDOWS_INSTALL_THIRDPARTY_DEPENDENCIES)
         install(CODE [[
             file(GET_RUNTIME_DEPENDENCIES
                 EXECUTABLES

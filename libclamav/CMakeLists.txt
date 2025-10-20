@@ -480,7 +480,7 @@ if(ENABLE_SHARED_LIB)
     install( TARGETS clamav COMPONENT libraries )
     if(WIN32)
 	    install( FILES $<TARGET_PDB_FILE:clamav> TYPE BIN OPTIONAL COMPONENT libraries )
-        if(ENABLE_WINDOWS_RUNTIME_INSTALLATION)
+        if(ENABLE_WINDOWS_INSTALL_THIRDPARTY_DEPENDENCIES)
             # Also install shared library (DLL) dependencies
             install( CODE [[
                 file(GET_RUNTIME_DEPENDENCIES

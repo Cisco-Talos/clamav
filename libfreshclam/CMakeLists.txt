@@ -72,7 +72,7 @@ if(ENABLE_SHARED_LIB)
     install(TARGETS freshclam COMPONENT libraries)
     if(WIN32)
         install(FILES $<TARGET_PDB_FILE:freshclam> TYPE BIN OPTIONAL COMPONENT libraries)
-        if(ENABLE_WINDOWS_RUNTIME_INSTALLATION)
+        if(ENABLE_WINDOWS_INSTALL_THIRDPARTY_DEPENDENCIES)
             # Also install shared library (DLL) dependencies
             install(CODE [[
                 file(GET_RUNTIME_DEPENDENCIES
