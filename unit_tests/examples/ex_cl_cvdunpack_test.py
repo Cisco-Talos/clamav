@@ -8,6 +8,8 @@ import os
 import platform
 import shutil
 import sys
+from pathlib import Path
+
 
 sys.path.append('../unit_tests')
 import testcase
@@ -24,27 +26,9 @@ class TC(testcase.TestCase):
         super(TC, cls).setUpClass()
 
         # Find the example program
-        if operating_system == 'windows':
-            # Windows needs the example program to be in the same directory as libclamav and the rest.
-            shutil.copy(
-                str(TC.path_build / 'examples' / program_name + '.exe'),
-                str(TC.path_build / 'unit_tests' / program_name + '.exe'),
-            )
-
-            TC.example_program = TC.path_build / 'unit_tests' / program_name + '.exe'
-            if not TC.example_program.exists():
-                # Try the static version.
-                TC.example_program = TC.path_build / 'unit_tests' / program_name + '_static.exe'
-                if not TC.example_program.exists():
-                    raise Exception('Could not find the example program.')
-        else:
-            # Linux and macOS can use the LD_LIBRARY_PATH environment variable to find libclamav
-            TC.example_program = TC.path_build / 'examples' / program_name
-            if not TC.example_program.exists():
-                # Try the static version.
-                TC.example_program = TC.path_build / 'examples' / program_name + '_static'
-                if not TC.example_program.exists():
-                    raise Exception('Could not find the example program.')
+        TC.example_program = Path(os.getenv("EX_CL_CVDUNPACK"))
+        if not TC.example_program.exists():
+            raise Exception(f'Could not find the example program {TC.example_program}')
 
         # Copy the test cvd to the temp directory
         shutil.copyfile(

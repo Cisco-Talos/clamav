@@ -41,6 +41,7 @@ import os
 import platform
 import shutil
 import sys
+from pathlib import Path
 
 sys.path.append('../unit_tests')
 import testcase
@@ -58,27 +59,9 @@ class TC(testcase.TestCase):
         super(TC, cls).setUpClass()
 
         # Find the example program
-        if operating_system == 'windows':
-            # Windows needs the example program to be in the same directory as libclamav and the rest.
-            shutil.copy(
-                str(TC.path_build / 'examples' / program_name + '.exe'),
-                str(TC.path_build / 'unit_tests' / program_name + '.exe'),
-            )
-
-            TC.example_program = TC.path_build / 'unit_tests' / program_name + '.exe'
-            if not TC.example_program.exists():
-                # Try the static version.
-                TC.example_program = TC.path_build / 'unit_tests' / program_name + '_static.exe'
-                if not TC.example_program.exists():
-                    raise Exception('Could not find the example program.')
-        else:
-            # Linux and macOS can use the LD_LIBRARY_PATH environment variable to find libclamav
-            TC.example_program = TC.path_build / 'examples' / program_name
-            if not TC.example_program.exists():
-                # Try the static version.
-                TC.example_program = TC.path_build / 'examples' / program_name + '_static'
-                if not TC.example_program.exists():
-                    raise Exception('Could not find the example program.')
+        TC.example_program = Path(os.getenv("EX_SCAN_CALLBACKS"))
+        if not TC.example_program.exists():
+            raise Exception(f'Could not find the example program {TC.example_program}')
 
     @classmethod
     def tearDownClass(cls):
@@ -168,8 +151,8 @@ class TC(testcase.TestCase):
             f.write('2\n') # Return CL_SUCCESS to keep scanning
 
             expected_results += [
-                'Recursion Level:    0',
                 'In POST_SCAN callback',
+                'Recursion Level:    0',
                 'File Name:          clam.zip',
                 'File Type:          CL_TYPE_ZIP'
             ]
@@ -287,8 +270,8 @@ class TC(testcase.TestCase):
             f.write('2\n') # Return CL_SUCCESS to keep scanning
 
             expected_results += [
-                'Recursion Level:    0',
                 'In POST_SCAN callback',
+                'Recursion Level:    0',
                 'File Name:          clam.zip',
                 'File Type:          CL_TYPE_ZIP'
             ]
@@ -401,8 +384,8 @@ class TC(testcase.TestCase):
             f.write('2\n') # Return CL_SUCCESS to keep scanning
 
             expected_results += [
-                'Recursion Level:    0',
                 'In POST_SCAN callback',
+                'Recursion Level:    0',
                 'File Name:          clam.zip',
                 'File Type:          CL_TYPE_ZIP',
             ]
@@ -643,8 +626,8 @@ class TC(testcase.TestCase):
             f.write('3\n') # Return CL_VIRUS to keep scanning and accept the alert
 
             expected_results += [
-                'Recursion Level:    0',
                 'In POST_SCAN callback',
+                'Recursion Level:    0',
                 'File Name:          clam.zip',
                 'File Type:          CL_TYPE_ZIP'
             ]
