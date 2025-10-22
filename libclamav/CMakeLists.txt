@@ -482,43 +482,43 @@ if(ENABLE_SHARED_LIB)
             target_link_options( clamav PRIVATE "-Wl,-z,gnu-version-script-compat")
         endif()
     endif()
+    install( TARGETS clamav COMPONENT libraries )
     if(WIN32)
-        install( TARGETS clamav DESTINATION . COMPONENT libraries )
-        install( FILES $<TARGET_PDB_FILE:clamav> DESTINATION . OPTIONAL COMPONENT libraries )
-        # Also install shared library (DLL) dependencies
-        install( CODE [[
-            file(GET_RUNTIME_DEPENDENCIES
-                LIBRARIES
-                    $<TARGET_FILE:ClamAV::libclamav>
-                RESOLVED_DEPENDENCIES_VAR _r_deps
-                UNRESOLVED_DEPENDENCIES_VAR _u_deps
-                DIRECTORIES
-                    $<TARGET_FILE_DIR:OpenSSL::SSL>
-                    $<TARGET_FILE_DIR:OpenSSL::Crypto>
-                    $<TARGET_FILE_DIR:ZLIB::ZLIB>
-                    $<TARGET_FILE_DIR:BZip2::BZip2>
-                    $<TARGET_FILE_DIR:PCRE2::pcre2>
-                    $<TARGET_FILE_DIR:LibXml2::LibXml2>
-                    $<TARGET_FILE_DIR:JSONC::jsonc>
-                POST_EXCLUDE_REGEXES
-                    "[cC]:[\\/][wW][iI][nN][dD][oO][wW][sS]"
-            )
-            foreach(_file ${_r_deps})
-                string(TOLOWER ${_file} _file_lower)
-                if(NOT ${_file_lower} MATCHES "c:[\\/]windows[\\/]system32.*")
-                    file(INSTALL
-                        DESTINATION "${CMAKE_INSTALL_PREFIX}"
-                        TYPE SHARED_LIBRARY
-                        FOLLOW_SYMLINK_CHAIN
-                        FILES "${_file}"
-                    )
-                endif()
-            endforeach()
-            #message("UNRESOLVED_DEPENDENCIES_VAR: ${_u_deps}")
-            ]]
-            COMPONENT libraries )
-    else()
-        install( TARGETS clamav DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT libraries )
+	    install( FILES $<TARGET_PDB_FILE:clamav> TYPE BIN OPTIONAL COMPONENT libraries )
+        if(ENABLE_WINDOWS_INSTALL_THIRDPARTY_DEPENDENCIES)
+            # Also install shared library (DLL) dependencies
+            install( CODE [[
+                file(GET_RUNTIME_DEPENDENCIES
+                    LIBRARIES
+                        $<TARGET_FILE:ClamAV::libclamav>
+                    RESOLVED_DEPENDENCIES_VAR _r_deps
+                    UNRESOLVED_DEPENDENCIES_VAR _u_deps
+                    DIRECTORIES
+                        $<TARGET_FILE_DIR:OpenSSL::SSL>
+                        $<TARGET_FILE_DIR:OpenSSL::Crypto>
+                        $<TARGET_FILE_DIR:ZLIB::ZLIB>
+                        $<TARGET_FILE_DIR:BZip2::BZip2>
+                        $<TARGET_FILE_DIR:PCRE2::pcre2>
+                        $<TARGET_FILE_DIR:LibXml2::LibXml2>
+                        $<TARGET_FILE_DIR:JSONC::jsonc>
+                    POST_EXCLUDE_REGEXES
+                        "[cC]:[\\/][wW][iI][nN][dD][oO][wW][sS]"
+                )
+                foreach(_file ${_r_deps})
+                    string(TOLOWER ${_file} _file_lower)
+                    if(NOT ${_file_lower} MATCHES "c:[\\/]windows[\\/]system32.*")
+                        file(INSTALL
+                            DESTINATION "${CMAKE_INSTALL_PREFIX}"
+                            TYPE SHARED_LIBRARY
+                            FOLLOW_SYMLINK_CHAIN
+                            FILES "${_file}"
+                        )
+                    endif()
+                endforeach()
+                #message("UNRESOLVED_DEPENDENCIES_VAR: ${_u_deps}")
+                ]]
+                COMPONENT libraries )
+        endif()
     endif()
 
     if(LLVM_FOUND)
@@ -591,11 +591,7 @@ if(ENABLE_STATIC_LIB)
         COMPILE_FLAGS       "${WARNCFLAGS}"
         VERSION ${LIBCLAMAV_VERSION} SOVERSION ${LIBCLAMAV_SOVERSION} )
     target_compile_definitions( clamav_static PUBLIC clamav_staticLIB )
-    if(WIN32)
-        install( TARGETS clamav_static DESTINATION . COMPONENT libraries )
-    else()
-        install( TARGETS clamav_static DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT libraries )
-    endif()
+    install( TARGETS clamav_static COMPONENT libraries )
 
     add_library( ClamAV::libclamav_static ALIAS clamav_static )
     if(NOT ENABLE_SHARED_LIB)
@@ -608,5 +604,5 @@ install(
         clamav.h
         ${CMAKE_BINARY_DIR}/clamav-types.h
         ${CMAKE_BINARY_DIR}/clamav-version.h
-    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    TYPE INCLUDE
     COMPONENT libraries)
