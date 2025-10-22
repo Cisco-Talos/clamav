@@ -144,7 +144,7 @@ set(CMAKE_SYSROOT           /opt/aarch64-wrs-linux-sysroot)
 #set(ENABLE_JSON_SHARED      OFF)
 
 #set(BZIP2_INCLUDE_DIR       "/usr/include/")
-#set(BZIP2_LIBRARY           "/usr/lib64/libbz2.a")
+#set(BZIP2_LIBRARY_RELEASE   "/usr/lib64/libbz2.a")
 
 #set(OPENSSL_ROOT_DIR        "/usr/")
 #set(OPENSSL_INCLUDE_DIR     "/usr/include/")
@@ -214,7 +214,7 @@ set(JSONC_LIBRARY           "/usr/lib/aarch64-linux-gnu/libjson-c.a")
 set(ENABLE_JSON_SHARED      OFF)
 
 set(BZIP2_INCLUDE_DIR       "/usr/include/")
-set(BZIP2_LIBRARY           "/usr/lib/aarch64-linux-gnu/libbz2.a")
+set(BZIP2_LIBRARY_RELEASE   "/usr/lib/aarch64-linux-gnu/libbz2.a")
 
 set(OPENSSL_ROOT_DIR        "/usr/")
 set(OPENSSL_INCLUDE_DIR     "/usr/include/")
