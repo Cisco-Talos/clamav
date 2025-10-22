@@ -47,6 +47,9 @@ target_link_libraries( regex
     PRIVATE
         PCRE2::pcre2
         JSONC::jsonc )
+if(WIN32)
+    target_link_libraries( regex PRIVATE ClamAV::win32_compat )
+endif()
 
 add_library( lzma_sdk OBJECT )
 target_sources( lzma_sdk
@@ -104,6 +107,9 @@ target_link_libraries( lzma_sdk
     PRIVATE
         PCRE2::pcre2
         JSONC::jsonc )
+if(WIN32)
+    target_link_libraries( lzma_sdk PRIVATE ClamAV::win32_compat )
+endif()
 
 if(MAINTAINER_MODE)
     bison_target( yara_grammar
@@ -156,6 +162,9 @@ target_link_libraries( yara
     PRIVATE
         PCRE2::pcre2
         JSONC::jsonc )
+if(WIN32)
+    target_link_libraries( yara PRIVATE ClamAV::win32_compat )
+endif()
 
 # Bytecode Runtime
 add_library( bytecode_runtime OBJECT )
@@ -186,6 +195,9 @@ target_link_libraries( bytecode_runtime
     PRIVATE
         PCRE2::pcre2
         JSONC::jsonc )
+if(WIN32)
+    target_link_libraries( bytecode_runtime PRIVATE ClamAV::win32_compat )
+endif()
 
 # not using an object library for the sake of Xcode compatibility
 # See: https://cmake.org/pipermail/cmake/2016-May/063479.html
