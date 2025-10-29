@@ -340,8 +340,7 @@ struct cl_engine {
     struct cli_cdb *cdb;
 
     /* Phishing .pdb and .wdb databases*/
-    struct regex_matcher *phish_allow_real_and_display_matcher;
-    struct regex_matcher *phish_allow_real_only_matcher;
+    struct regex_matcher *phish_allow_list_matcher;
     struct regex_matcher *phish_protected_domain_matcher;
     struct phishcheck *phishcheck;
 

@@ -563,18 +563,11 @@ cl_error_t load_regex_matcher(struct cl_engine *engine, struct regex_matcher *ma
             return CL_EMALFDB;
         }
 
-        if ((buffer[0] == 'R' && !is_allow_list_lookup) || ((buffer[0] == 'X') && is_allow_list_lookup)) {
+        if ((buffer[0] == 'R' && !is_allow_list_lookup) || ((buffer[0] == 'X') && is_allow_list_lookup) || (buffer[0] == 'Y' && is_allow_list_lookup)) {
             /* regex for hostname*/
             if ((rc = regex_list_add_pattern(matcher, pattern))) {
                 return rc == CL_EMEM ? CL_EMEM : CL_EMALFDB;
             }
-        } else if (buffer[0] == 'Y' && is_allow_list_lookup) {
-            /* regex for real only */
-            if ((rc = regex_list_add_pattern(engine->phish_allow_real_only_matcher, pattern))) {
-                cli_dbgmsg("Failed to add Y-type pattern: %s (rc=%d)\n", pattern, rc);
-                return rc == CL_EMEM ? CL_EMEM : CL_EMALFDB;
-            }
-            cli_dbgmsg("Successfully added Y-type pattern to matcher\n");
         } else if ((buffer[0] == 'H' && !is_allow_list_lookup) || (buffer[0] == 'M' && is_allow_list_lookup)) {
             /*matches displayed host*/
             if ((rc = add_static_pattern(matcher, pattern)))

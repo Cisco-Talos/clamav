@@ -41,8 +41,7 @@
 #include "regex_suffix.h"
 #include "regex_list.h"
 #include "phish_domaincheck_db.h"
-#include "phish_allow_real_and_display.h"
-#include "phish_allow_real_only.h"
+#include "phish_allow_list.h"
 
 #include "clamav_rust.h"
 
@@ -342,36 +341,24 @@ static void psetup_impl(int load2)
     }
     loaded_2 = load2; // Were the allow list tests supposed to be wrapped in if (loaded_2) {} ?
 
-    rc = phish_allow_real_and_display_init(engine);
-    ck_assert_msg(rc == CL_SUCCESS, "phish_allow_real_and_display_init");
-    rc = phish_allow_real_only_init(engine);
-    ck_assert_msg(rc == CL_SUCCESS, "phish_allow_real_only_init");
+    rc = phish_allow_list_init(engine);
+    ck_assert_msg(rc == CL_SUCCESS, "phish_allow_list_init");
 
     f     = fdopen(open_testfile("input" PATHSEP "other_sigs" PATHSEP "daily.wdb", O_RDONLY | O_BINARY), "r");
     signo = 0;
-    rc    = load_regex_matcher(engine, engine->phish_allow_real_and_display_matcher, f, &signo, 0, 1, NULL, 1);
-    ck_assert_msg(rc == CL_SUCCESS, "load_regex_matcher phish_allow_real_and_display");
-    fclose(f);
-
-    f     = fdopen(open_testfile("input" PATHSEP "other_sigs" PATHSEP "daily.wdb", O_RDONLY | O_BINARY), "r");
-    signo = 0;
-    rc    = load_regex_matcher(engine, engine->phish_allow_real_only_matcher, f, &signo, 0, 1, NULL, 1);
-    ck_assert_msg(rc == CL_SUCCESS, "load_regex_matcher phish_allow_real_only");
+    rc    = load_regex_matcher(engine, engine->phish_allow_list_matcher, f, &signo, 0, 1, NULL, 1);
+    ck_assert_msg(rc == CL_SUCCESS, "load_regex_matcher phish_allow_list");
     fclose(f);
 
     ck_assert_msg(signo == 31, "Incorrect number of signatures: %u, expected %u", signo, 31);
 
-    rc = cli_build_regex_list(engine->phish_allow_real_and_display_matcher);
-    ck_assert_msg(rc == CL_SUCCESS, "cli_build_regex_list phish_allow_real_and_display");
-
-    rc = cli_build_regex_list(engine->phish_allow_real_only_matcher);
-    ck_assert_msg(rc == CL_SUCCESS, "cli_build_regex_list phish_allow_real_only");
+    rc = cli_build_regex_list(engine->phish_allow_list_matcher);
+    ck_assert_msg(rc == CL_SUCCESS, "cli_build_regex_list phish_allow_list");
 
     rc = cli_build_regex_list(engine->phish_protected_domain_matcher);
     ck_assert_msg(rc == CL_SUCCESS, "cli_build_regex_list phish_protected_domain");
 
-    ck_assert_msg(is_regex_ok(engine->phish_allow_real_and_display_matcher), "is_regex_ok");
-    ck_assert_msg(is_regex_ok(engine->phish_allow_real_only_matcher), "is_regex_ok");
+    ck_assert_msg(is_regex_ok(engine->phish_allow_list_matcher), "is_regex_ok");
     ck_assert_msg(is_regex_ok(engine->phish_protected_domain_matcher), "is_regex_ok");
 }
 

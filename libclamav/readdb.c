@@ -70,8 +70,7 @@
 #include "asn1.h"
 
 #include "phishcheck.h"
-#include "phish_allow_real_and_display.h"
-#include "phish_allow_real_only.h"
+#include "phish_allow_list.h"
 #include "phish_domaincheck_db.h"
 #include "regex_list.h"
 #include "hashtab.h"
@@ -1598,23 +1597,13 @@ static int cli_loadwdb(FILE *fs, struct cl_engine *engine, unsigned int options,
     if (!(engine->dconf->phishing & PHISHING_CONF_ENGINE))
         return CL_SUCCESS;
 
-    if (!engine->phish_allow_real_and_display_matcher) {
-        if (CL_SUCCESS != (ret = phish_allow_real_and_display_init(engine))) {
+    if (!engine->phish_allow_list_matcher) {
+        if (CL_SUCCESS != (ret = phish_allow_list_init(engine))) {
             return ret;
         }
     }
 
-    if (!engine->phish_allow_real_only_matcher) {
-        if (CL_SUCCESS != (ret = phish_allow_real_only_init(engine))) {
-            return ret;
-        }
-    }
-
-    if (CL_SUCCESS != (ret = load_regex_matcher(engine, engine->phish_allow_real_and_display_matcher, fs, NULL, options, 1, dbio, engine->dconf->other & OTHER_CONF_PREFILTERING))) {
-        return ret;
-    }
-
-    if (CL_SUCCESS != (ret = load_regex_matcher(engine, engine->phish_allow_real_only_matcher, fs, NULL, options, 1, dbio, engine->dconf->other & OTHER_CONF_PREFILTERING))) {
+    if (CL_SUCCESS != (ret = load_regex_matcher(engine, engine->phish_allow_list_matcher, fs, NULL, options, 1, dbio, engine->dconf->other & OTHER_CONF_PREFILTERING))) {
         return ret;
     }
 
@@ -6057,12 +6046,7 @@ cl_error_t cl_engine_compile(struct cl_engine *engine)
         hm_flush(engine->hm_fp);
     TASK_COMPLETE();
 
-    if ((ret = cli_build_regex_list(engine->phish_allow_real_and_display_matcher))) {
-        return ret;
-    }
-    TASK_COMPLETE();
-
-    if ((ret = cli_build_regex_list(engine->phish_allow_real_only_matcher))) {
+    if ((ret = cli_build_regex_list(engine->phish_allow_list_matcher))) {
         return ret;
     }
     TASK_COMPLETE();

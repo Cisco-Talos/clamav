@@ -40,8 +40,7 @@
 #include "htmlnorm.h"
 #include "phishcheck.h"
 #include "phish_domaincheck_db.h"
-#include "phish_allow_real_and_display.h"
-#include "phish_allow_real_only.h"
+#include "phish_allow_list.h"
 #include "regex_list.h"
 #include "iana_tld.h"
 #include "iana_cctld.h"
@@ -862,8 +861,7 @@ void phishing_done(struct cl_engine* engine)
     if (pchk && !pchk->is_disabled) {
         free_regex(&pchk->preg_numeric);
     }
-    phish_allow_real_and_display_done(engine);
-    phish_allow_real_only_done(engine);
+    phish_allow_list_done(engine);
     phish_protected_domain_done(engine);
     if (pchk) {
         cli_dbgmsg("Freeing phishcheck struct\n");
@@ -1141,13 +1139,9 @@ static enum phish_status phishy_map(int phishy, enum phish_status fallback)
         return fallback;
 }
 
-static cl_error_t allow_list_check(const struct cl_engine* engine, struct url_check* urls, int hostOnly)
+static cl_error_t allow_list_check(const struct cl_engine* engine, struct url_check* urls, int hostOnly, int is_allow_list_lookup)
 {
-    int rd = 0;
-    int ro = 0;
-    rd     = phish_allow_real_and_display_match(engine, urls->realLink.data, urls->displayLink.data, hostOnly);
-    ro     = phish_allow_real_only_match(engine, urls->realLink.data, urls->displayLink.data, hostOnly);
-    return ro || rd;
+    return phish_allow_list_match(engine, urls->realLink.data, urls->displayLink.data, hostOnly, is_allow_list_lookup);
 }
 
 static cl_error_t hash_match(const struct regex_matcher* rlist,
@@ -1531,7 +1525,17 @@ static enum phish_status phishingCheck(cli_ctx* ctx, struct url_check* urls)
      * Eg:
      *      X:.+\.benign\.com([/?].*)?:.+\.benign\.de
      */
-    if (allow_list_check(ctx->engine, urls, 0)) { /* if url is allowed don't perform further checks */
+    if (allow_list_check(ctx->engine, urls, 0, 1)) { /* if url is allowed don't perform further checks */
+        phishing_verdict = CL_PHISH_CLEAN;
+        goto done;
+    }
+
+    /*
+     * Allow List Y-type WDB signatures: Y:RealHostname
+     * Eg:
+     *      Y:email.isbenign.com
+     */
+    if (allow_list_check(ctx->engine, urls, 1, 2)) {
         phishing_verdict = CL_PHISH_CLEAN;
         goto done;
     }
@@ -1584,7 +1588,7 @@ static enum phish_status phishingCheck(cli_ctx* ctx, struct url_check* urls)
      * Eg:
      *      M:email.isbenign.com:benign.com
      */
-    if (allow_list_check(ctx->engine, &host_url, 1)) {
+    if (allow_list_check(ctx->engine, &host_url, 1, 1)) {
         phishing_verdict = CL_PHISH_CLEAN;
         goto done;
     }

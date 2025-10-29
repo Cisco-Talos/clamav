@@ -21,14 +21,15 @@
  *  MA 02110-1301, USA.
  */
 
-#ifndef _PHISH_ALLOW_REAL_ONLY_H
-#define _PHISH_ALLOW_REAL_ONLY_H
+#ifndef _PHISH_ALLOW_LIST_H
+#define _PHISH_ALLOW_LIST_H
 
 #include "clamav.h"
 
-cl_error_t phish_allow_real_only_init(struct cl_engine* engine);
-void phish_allow_real_only_done(struct cl_engine* engine);
-int phish_is_allow_real_only_ok(const struct cl_engine* engine);
-cl_error_t phish_allow_real_only_match(const struct cl_engine* engine, char* real_url, const char* display_url, int hostOnly);
+cl_error_t phish_allow_list_init(struct cl_engine* engine);
+void phish_allow_list_done(struct cl_engine* engine);
+void allow_list_cleanup(const struct cl_engine* engine);
+int phish_is_allow_list_ok(const struct cl_engine* engine);
+cl_error_t phish_allow_list_match(const struct cl_engine* engine, char* real_url, const char* display_url, int hostOnly, int is_allow_list_lookup);
 
 #endif

@@ -156,12 +156,9 @@ static inline int filter_isset(const struct filter *m, unsigned pos, uint16_t va
 
 static inline void filter_set_atpos(struct filter *m, unsigned pos, uint16_t val)
 {
-    cli_dbgmsg("filter_set_atpos: Setting filter value 0x%04x at pos %u (before: B[val]=0x%02x)\n",
-               val, pos, m->B[val]);
     if (!filter_isset(m, pos, val)) {
         cli_perf_log_count(FILTER_LOAD, pos);
         m->B[val] &= ~(1 << pos);
-        cli_dbgmsg("  After setting: B[0x%04x] = 0x%02x\n", val, m->B[val]);
     }
 }
 
@@ -759,7 +756,6 @@ long filter_search(const struct filter *m, const unsigned char *data, unsigned l
     for (j = 0; j < len - 1; j++) {
         const uint16_t q0 = cli_readint16(&data[j]);
         uint8_t match_end;
-
         state = (state << 1) | B[q0];
         /* state marks with a 0 bit all active states
          * End[q0] marks with a 0 bit all states where the q-gram 'q' can end a pattern

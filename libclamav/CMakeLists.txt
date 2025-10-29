@@ -344,8 +344,7 @@ set(LIBCLAMAV_SOURCES
     mbox.c                          mbox.h
     message.c                       message.h
     phish_domaincheck_db.c          phish_domaincheck_db.h
-    phish_allow_real_and_display.c  phish_allow_real_and_display.h
-    phish_allow_real_only.c         phish_allow_real_only.h
+    phish_allow_list.c              phish_allow_list.h
     phishcheck.c                    phishcheck.h
     regex_list.c                    regex_list.h
     regex_suffix.c                  regex_suffix.h
