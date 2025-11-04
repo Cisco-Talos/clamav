@@ -200,7 +200,7 @@ cl_error_t regex_list_match(struct regex_matcher *matcher, char *real_url, const
         /* too short, no match possible */
         return CL_SUCCESS;
     }
-    buffer = cli_max_malloc(buffer_len + 1);
+    buffer = cli_max_calloc(buffer_len + 1, sizeof(char));
     if (!buffer) {
         cli_errmsg("regex_list_match: Unable to allocate memory for buffer\n");
         return CL_EMEM;
@@ -213,8 +213,7 @@ cl_error_t regex_list_match(struct regex_matcher *matcher, char *real_url, const
     }
 
     if (is_allow_list_lookup == 2) {
-        buffer[real_len]     = '/';
-        buffer[real_len + 1] = 0;
+        buffer[real_len] = '/';
         buffer_len--;
     } else {
         buffer[real_len] = (!is_allow_list_lookup && hostOnly) ? '/' : ':';
@@ -231,7 +230,6 @@ cl_error_t regex_list_match(struct regex_matcher *matcher, char *real_url, const
 
     if (is_allow_list_lookup == 1) {
         buffer[buffer_len - 1] = '/';
-        buffer[buffer_len]     = 0;
     }
     cli_dbgmsg("Looking up in regex_list: %s\n", buffer);
 
