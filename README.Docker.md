@@ -6,7 +6,7 @@ with Docker, containers or cgroups see [docker.com](https://www.docker.com).
 
 ## The official images on Docker Hub
 
-ClamAV image tags [on Docker Hub](https://hub.docker.com/u/clamav/clamav)
+ClamAV image tags [on Docker Hub](https://hub.docker.com/r/clamav/clamav)
 follow this naming convention:
 
   - `clamav/clamav:<version>`: A release preloaded with signature databases.
