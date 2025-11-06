@@ -39,40 +39,6 @@ if(ENABLE_STATIC_LIB)
     endif()
 endif()
 
-add_executable(ex_prescan_callback)
-target_sources(ex_prescan_callback
-    PRIVATE   ex_prescan_callback.c)
-set_target_properties(ex_prescan_callback PROPERTIES COMPILE_FLAGS "${WARNCFLAGS}")
-target_link_libraries(ex_prescan_callback
-    PRIVATE
-        ClamAV::libclamav)
-if(LLVM_FOUND)
-    target_link_directories( ex_prescan_callback PUBLIC ${LLVM_LIBRARY_DIRS} )
-    target_link_libraries( ex_prescan_callback PUBLIC ${LLVM_LIBRARIES} )
-endif()
-if(WIN32)
-    install(TARGETS ex_prescan_callback DESTINATION .)
-else()
-    install(TARGETS ex_prescan_callback DESTINATION ${CMAKE_INSTALL_BINDIR})
-endif()
-
-add_executable(ex_file_inspection_callback)
-target_sources(ex_file_inspection_callback
-    PRIVATE   ex_file_inspection_callback.c)
-set_target_properties(ex_file_inspection_callback PROPERTIES COMPILE_FLAGS "${WARNCFLAGS}")
-target_link_libraries(ex_file_inspection_callback
-    PRIVATE
-        ClamAV::libclamav)
-if(LLVM_FOUND)
-    target_link_directories( ex_file_inspection_callback PUBLIC ${LLVM_LIBRARY_DIRS} )
-    target_link_libraries( ex_file_inspection_callback PUBLIC ${LLVM_LIBRARIES} )
-endif()
-if(WIN32)
-    install(TARGETS ex_file_inspection_callback DESTINATION .)
-else()
-    install(TARGETS ex_file_inspection_callback DESTINATION ${CMAKE_INSTALL_BINDIR})
-endif()
-
 add_executable(ex_scan_callbacks)
 target_sources(ex_scan_callbacks
     PRIVATE   ex_scan_callbacks.c)
