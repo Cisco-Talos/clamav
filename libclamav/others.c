@@ -1771,6 +1771,10 @@ cl_error_t cli_recursion_stack_push(cli_ctx *ctx, cl_fmap_t *map, cli_file_t typ
     char *new_temp_path = NULL;
     char *fmap_basename = NULL;
 
+#ifdef _WIN32
+    FFIError *mkdir_w32_error = NULL;
+#endif
+
     old_recursion_level = ctx->recursion_level;
 
     // Check the regular limits
@@ -1869,11 +1873,21 @@ cl_error_t cli_recursion_stack_push(cli_ctx *ctx, cl_fmap_t *map, cli_file_t typ
             }
         }
 
-        if (mkdir(new_temp_path, 0700)) {
-            cli_errmsg("cli_magic_scan: Can't create tmp sub-directory for scan: %s.\n", new_temp_path);
+#ifdef _WIN32
+
+        if (!mkdir_w32(new_temp_path, &mkdir_w32_error)) {
+            cli_errmsg("cli_magic_scan: Can't create tmp sub-directory (%s) for scan. Error: %s\n", new_temp_path, ffierror_fmt(mkdir_w32_error));
+            ffierror_free(mkdir_w32_error);
             status = CL_EACCES;
             goto done;
         }
+#else
+        if (mkdir(new_temp_path, 0700)) {
+            cli_errmsg("cli_magic_scan: Can't create tmp sub-directory (%s) for scan. Error: %s\n", new_temp_path, strerror(errno));
+            status = CL_EACCES;
+            goto done;
+        }
+#endif
 
         ctx->recursion_stack[ctx->recursion_level].tmpdir = new_temp_path;
         ctx->this_layer_tmpdir                            = new_temp_path;

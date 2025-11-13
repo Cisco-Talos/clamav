@@ -165,3 +165,20 @@ pub unsafe extern "C" fn glob_rm(glob_str: *const c_char, err: *mut *mut FFIErro
 
     true
 }
+
+/// C interface to create a directory
+///
+/// # Safety
+///
+/// No parameters may be NULL.
+#[export_name = "mkdir_w32"]
+pub unsafe extern "C" fn mkdir_w32(path: *const c_char, err: *mut *mut FFIError) -> bool {
+    let path = validate_str_param!(path);
+
+    if let Err(e) = std::fs::create_dir_all(&path) {
+        warn!("Failed to create directory: {path:?}");
+        return ffi_error!(err = err, Error::IoError(e));
+    }
+
+    true
+}
