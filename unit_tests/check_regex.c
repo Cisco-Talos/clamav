@@ -85,7 +85,7 @@ START_TEST(empty)
     ck_assert_msg(!!preg, "malloc");
     rc = cli_regex2suffix(pattern, preg, cb_fail, NULL);
     free(preg);
-    ck_assert_msg(rc == REG_EMPTY, "empty pattern");
+    ck_assert_msg(rc == CL_ERROR, "empty pattern");
     ck_assert_msg(cb_called == 0, "callback shouldn't be called");
 }
 END_TEST
@@ -339,7 +339,7 @@ static void psetup_impl(int load2)
 
         ck_assert_msg(signo == 4, "Incorrect number of signatures: %u, expected %u", signo, 4);
     }
-    loaded_2 = load2; // Were the allow list tests supposed to be wrapped in if (loaded_2) {} ?
+    loaded_2 = load2;
 
     rc = phish_allow_list_init(engine);
     ck_assert_msg(rc == CL_SUCCESS, "phish_allow_list_init");

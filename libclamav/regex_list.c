@@ -195,7 +195,13 @@ cl_error_t regex_list_match(struct regex_matcher *matcher, char *real_url, const
     if (display_url[0] == '.') display_url++;
     real_len    = strlen(real_url);
     display_len = strlen(display_url);
-    buffer_len  = (hostOnly && is_allow_list_lookup != 1) ? real_len + 1 : real_len + display_len + 1 + 1;
+    if (hostOnly && (is_allow_list_lookup != 1)) {
+        // Buffer is only for real part
+        buffer_len = real_len + 1;
+    } else {
+        // Buffer to hold both parts
+        buffer_len = real_len + display_len + 1 + 1;
+    }
     if (buffer_len < 3) {
         /* too short, no match possible */
         return CL_SUCCESS;
@@ -207,15 +213,13 @@ cl_error_t regex_list_match(struct regex_matcher *matcher, char *real_url, const
     }
 
     if (is_allow_list_lookup == 2) {
+        /* Y-Type signatures only contain the real part */
         strncpy(buffer, real_url, real_len);
-    } else {
-        strncpy(buffer, real_url, buffer_len);
-    }
-
-    if (is_allow_list_lookup == 2) {
         buffer[real_len] = '/';
+        /* This is the number of characters not including null termination */
         buffer_len--;
     } else {
+        strncpy(buffer, real_url, buffer_len);
         buffer[real_len] = (!is_allow_list_lookup && hostOnly) ? '/' : ':';
     }
 
@@ -228,7 +232,7 @@ cl_error_t regex_list_match(struct regex_matcher *matcher, char *real_url, const
         strncpy(buffer + real_len + 1, display_url, buffer_len - real_len);
     }
 
-    if (is_allow_list_lookup == 1) {
+    if (is_allow_list_lookup != 2) {
         buffer[buffer_len - 1] = '/';
     }
     cli_dbgmsg("Looking up in regex_list: %s\n", buffer);
@@ -561,7 +565,7 @@ cl_error_t load_regex_matcher(struct cl_engine *engine, struct regex_matcher *ma
             return CL_EMALFDB;
         }
 
-        if ((buffer[0] == 'R' && !is_allow_list_lookup) || ((buffer[0] == 'X') && is_allow_list_lookup) || (buffer[0] == 'Y' && is_allow_list_lookup)) {
+        if ((buffer[0] == 'R' && !is_allow_list_lookup) || ((buffer[0] == 'X' || buffer[0] == 'Y') && is_allow_list_lookup)) {
             /* regex for hostname*/
             if ((rc = regex_list_add_pattern(matcher, pattern))) {
                 return rc == CL_EMEM ? CL_EMEM : CL_EMALFDB;

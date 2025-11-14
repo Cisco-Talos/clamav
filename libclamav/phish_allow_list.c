@@ -46,10 +46,6 @@ cl_error_t phish_allow_list_match(const struct cl_engine* engine, char* real_url
 {
     const char* info; /*unused*/
     cli_dbgmsg("Phishing: looking up in allow list: %s:%s; host-only:%d\n", real_url, display_url, hostOnly);
-    // if (hostOnly == 2) {
-    //     // Real URL only lookup for Y-type WDB signatures
-    //     return engine->phish_allow_list_matcher ? regex_list_match(engine->phish_allow_list_matcher, real_url, "", NULL, 1, &info, 2) : 0;
-    // }
     return engine->phish_allow_list_matcher ? regex_list_match(engine->phish_allow_list_matcher, real_url, display_url, NULL, hostOnly, &info, is_allow_list_lookup) : 0;
 }
 

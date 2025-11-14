@@ -1533,7 +1533,7 @@ static enum phish_status phishingCheck(cli_ctx* ctx, struct url_check* urls)
     /*
      * Allow List Y-type WDB signatures: Y:RealHostname
      * Eg:
-     *      Y:email.isbenign.com
+     *      Y:^(.+\.)?email\.isbenign\.com$
      */
     if (allow_list_check(ctx->engine, urls, 1, 2)) {
         phishing_verdict = CL_PHISH_CLEAN;
