@@ -48,7 +48,7 @@ The following cache variables may also be set:
 if(NOT NCURSES_INCLUDE_DIR)
   find_package(PkgConfig QUIET)
   # First try for NCurses
-  pkg_search_module (PC_NCurses QUIET ncurses ncursesw)
+  pkg_search_module (PC_NCurses QUIET ncursesw ncurses)
 endif()
 
 find_path(NCURSES_INCLUDE_DIR
@@ -67,10 +67,20 @@ if(NCURSES_NOT_FOUND EQUAL -1)
     if (DEFINED PC_NCurses_LINK_LIBRARIES)
         set(CURSES_LIBRARY ${PC_NCurses_LINK_LIBRARIES})
     else()
-        find_library(CURSES_LIBRARY
-            NAMES ncurses ncursesw
-            PATHS ${PC_NCurses_LIBRARY_DIRS}
-        )
+        if(MINGW)
+            # On MinGW, prefer the shared library import lib (libncursesw.dll.a) over static (libncurses.a)
+            # and prefer wide-char version (ncursesw)
+            set(CMAKE_FIND_LIBRARY_SUFFIXES ".dll.a" ".a")
+            find_library(CURSES_LIBRARY
+                NAMES ncursesw ncurses
+                PATHS ${PC_NCurses_LIBRARY_DIRS}
+            )
+        else()
+            find_library(CURSES_LIBRARY
+                NAMES ncursesw ncurses
+                PATHS ${PC_NCurses_LIBRARY_DIRS}
+            )
+        endif()
     endif()
 
     include(FindPackageHandleStandardArgs)
@@ -134,6 +144,7 @@ else()
             PATHS ${PC_PDCurses_LIBRARY_DIRS}
         )
 
+
         set(CURSES_VERSION ${PC_PDCurses_VERSION})
 
         include(FindPackageHandleStandardArgs)
@@ -153,12 +164,33 @@ else()
         set(CURSES_DEFINITIONS ${PC_PDCurses_CFLAGS_OTHER})
 
         if (NOT TARGET Curses::curses)
-            add_library(Curses::curses UNKNOWN IMPORTED)
-            set_target_properties(Curses::curses PROPERTIES
-                INTERFACE_COMPILE_OPTIONS "${PC_PDCurses_CFLAGS_OTHER}"
-                INTERFACE_INCLUDE_DIRECTORIES "${CURSES_INCLUDE_DIRS}"
-                IMPORTED_LOCATION "${CURSES_LIBRARIES}"
-            )
+            if(MINGW)
+                add_library(Curses::curses SHARED IMPORTED)
+                get_filename_component(_LIB_DIR "${CURSES_LIBRARY}" DIRECTORY)
+                file(GLOB _DLL_GLOB "${_LIB_DIR}/*curses*.dll")
+                if(_DLL_GLOB)
+                    list(GET _DLL_GLOB 0 _DLL_PATH)
+                    set_target_properties(Curses::curses PROPERTIES
+                        INTERFACE_COMPILE_OPTIONS "${PC_PDCurses_CFLAGS_OTHER}"
+                        INTERFACE_INCLUDE_DIRECTORIES "${CURSES_INCLUDE_DIRS}"
+                        IMPORTED_LOCATION "${_DLL_PATH}"
+                        IMPORTED_IMPLIB "${CURSES_LIBRARY}"
+                    )
+                else()
+                    set_target_properties(Curses::curses PROPERTIES
+                        INTERFACE_COMPILE_OPTIONS "${PC_PDCurses_CFLAGS_OTHER}"
+                        INTERFACE_INCLUDE_DIRECTORIES "${CURSES_INCLUDE_DIRS}"
+                        IMPORTED_LOCATION "${CURSES_LIBRARY}"
+                    )
+                endif()
+            else()
+                add_library(Curses::curses UNKNOWN IMPORTED)
+                set_target_properties(Curses::curses PROPERTIES
+                    INTERFACE_COMPILE_OPTIONS "${PC_PDCurses_CFLAGS_OTHER}"
+                    INTERFACE_INCLUDE_DIRECTORIES "${CURSES_INCLUDE_DIRS}"
+                    IMPORTED_LOCATION "${CURSES_LIBRARY}"
+                )
+            endif()
         endif()
     else()
         message(FATAL_ERROR "Unable to find ncurses or pdcurses")

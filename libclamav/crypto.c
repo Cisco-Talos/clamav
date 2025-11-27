@@ -69,21 +69,73 @@
 #include "iowrap.h"
 
 #if defined(_WIN32)
+#if defined(__GNUC__) && !defined(__x86_64__) && !defined(_M_X64)  /* MinGW 32-bit only */
+#define __try1_hash(filter) \
+    { \
+        struct _EXCEPTION_POINTERS *ep = NULL; \
+        int __exception_code = 0; \
+        __asm__ __volatile__( \
+            ".l_startw_hash%=:\n\t" \
+            "pushl %%ebp\n\t" \
+            "movl %%esp, %%ebp\n\t" \
+            : : : "memory"); \
+        if (!(filter(__exception_code, ep))) { \
+            __asm__ __volatile__(".l_endw_hash%=:\n\t" : : :); \
+            goto error_hash; \
+        } \
+    }
+
+#define __except1_hash \
+    goto end_hash; \
+    error_hash: \
+    { \
+        __asm__ __volatile__( \
+            ".section .text\n\t" \
+            ".l_exception_hash%=:\n\t" \
+            ".long .l_startw_hash%=-.+4\n\t" \
+            ".long .l_endw_hash%=-.+4\n\t" \
+            ".previous\n\t" \
+            : : : "memory"); \
+    } \
+    end_hash:
+
+#define __try1_update(filter) \
+    { \
+        struct _EXCEPTION_POINTERS *ep = NULL; \
+        int __exception_code = 0; \
+        __asm__ __volatile__( \
+            ".l_startw_update%=:\n\t" \
+            "pushl %%ebp\n\t" \
+            "movl %%esp, %%ebp\n\t" \
+            : : : "memory"); \
+        if (!(filter(__exception_code, ep))) { \
+            __asm__ __volatile__(".l_endw_update%=:\n\t" : : :); \
+            goto error_update; \
+        } \
+    }
+
+#define __except1_update \
+    goto end_update; \
+    error_update: \
+    { \
+        __asm__ __volatile__( \
+            ".section .text\n\t" \
+            ".l_exception_update%=:\n\t" \
+            ".long .l_startw_update%=-.+4\n\t" \
+            ".long .l_endw_update%=-.+4\n\t" \
+            ".previous\n\t" \
+            : : : "memory"); \
+    } \
+    end_update:
+#endif
 char *strptime(const char *buf, const char *fmt, struct tm *tm);
 #endif
 
-#if defined(_WIN32)
-#define EXCEPTION_PREAMBLE __try {
-#define EXCEPTION_POSTAMBLE                                                 \
-    }                                                                       \
-    __except (filter_memcpy(GetExceptionCode(), GetExceptionInformation())) \
-    {                                                                       \
-        win_exception = true;                                               \
-    }
-#else
+
+
 #define EXCEPTION_PREAMBLE
 #define EXCEPTION_POSTAMBLE
-#endif
+
 
 #if !defined(MIN)
 #define MIN(x, y) ((x) < (y) ? (x) : (y))
@@ -870,7 +922,38 @@ unsigned char *cl_hash_data(const char *alg, const void *buf, size_t len, unsign
     while (cur < len) {
         size_t todo = MIN((unsigned long)EVP_MD_block_size(md), (unsigned long)(len - cur));
 
-        EXCEPTION_PREAMBLE
+#ifdef _WIN32
+#if defined(__GNUC__) && !defined(__x86_64__) && !defined(_M_X64)  /* MinGW 32-bit only */
+        __try1_hash(filter_memcpy) {
+            if (!EVP_DigestUpdate(ctx, (void *)(((unsigned char *)buf) + cur), todo)) {
+                if (!(obuf))
+                    free(ret);
+
+                if ((olen))
+                    *olen = 0;
+
+                EVP_MD_CTX_destroy(ctx);
+                return NULL;
+            }
+        } __except1_hash {
+            winres = 1;
+        }
+#elif defined(_MSC_VER)  /* MSVC */
+        __try {
+            if (!EVP_DigestUpdate(ctx, (void *)(((unsigned char *)buf) + cur), todo)) {
+                if (!(obuf))
+                    free(ret);
+
+                if ((olen))
+                    *olen = 0;
+
+                EVP_MD_CTX_destroy(ctx);
+                return NULL;
+            }
+        } __except(filter_memcpy(GetExceptionCode(), GetExceptionInformation())) {
+            winres = 1;
+        }
+#else  /* MinGW 64-bit or other */
         if (!EVP_DigestUpdate(ctx, (void *)(((unsigned char *)buf) + cur), todo)) {
             if (!(obuf))
                 free(ret);
@@ -885,7 +968,19 @@ unsigned char *cl_hash_data(const char *alg, const void *buf, size_t len, unsign
             EVP_MD_CTX_destroy(ctx);
             return NULL;
         }
-        EXCEPTION_POSTAMBLE
+#endif
+#else
+        if (!EVP_DigestUpdate(ctx, (void *)(((unsigned char *)buf) + cur), todo)) {
+            if (!(obuf))
+                free(ret);
+
+            if ((olen))
+                *olen = 0;
+
+            EVP_MD_CTX_destroy(ctx);
+            return NULL;
+        }
+#endif
 
 #if defined(_WIN32)
         if (win_exception) {
@@ -1044,14 +1139,41 @@ unsigned char *cl_hash_file_fd_ctx(EVP_MD_CTX *ctx, int fd, unsigned int *olen)
 #else
     while ((nread = read(fd, buf, blocksize)) > 0) {
 #endif
-        EXCEPTION_PREAMBLE
+#ifdef _WIN32
+#if defined(__GNUC__) && !defined(__x86_64__) && !defined(_M_X64)  /* MinGW 32-bit only */
+        __try1(filter_memcpy) {
+            if (!EVP_DigestUpdate(ctx, buf, nread)) {
+                free(buf);
+                free(hash);
+                return NULL;
+            }
+        } __except1 {
+            winres = 1;
+        }
+#elif defined(_MSC_VER)  /* MSVC */
+        __try {
+            if (!EVP_DigestUpdate(ctx, buf, nread)) {
+                free(buf);
+                free(hash);
+                return NULL;
+            }
+        } __except(filter_memcpy(GetExceptionCode(), GetExceptionInformation())) {
+            winres = 1;
+        }
+#else  /* MinGW 64-bit or other */
         if (!EVP_DigestUpdate(ctx, buf, nread)) {
             free(buf);
             free(hash);
-
             return NULL;
         }
-        EXCEPTION_POSTAMBLE
+#endif
+#else
+        if (!EVP_DigestUpdate(ctx, buf, nread)) {
+            free(buf);
+            free(hash);
+            return NULL;
+        }
+#endif
 
 #if defined(_WIN32)
         if (win_exception) {
@@ -1907,10 +2029,29 @@ int cl_update_hash(void *ctx, const void *data, size_t sz)
     if (!(ctx) || !(data))
         return -1;
 
-    EXCEPTION_PREAMBLE
+#ifdef _WIN32
+#if defined(__GNUC__) && !defined(__x86_64__) && !defined(_M_X64)  /* MinGW 32-bit only */
+    __try1_update(filter_memcpy) {
+        if (!EVP_DigestUpdate((EVP_MD_CTX *)ctx, data, sz))
+            return -1;
+    } __except1_update {
+        winres = 1;
+    }
+#elif defined(_MSC_VER)  /* MSVC */
+    __try {
+        if (!EVP_DigestUpdate((EVP_MD_CTX *)ctx, data, sz))
+            return -1;
+    } __except(filter_memcpy(GetExceptionCode(), GetExceptionInformation())) {
+        winres = 1;
+    }
+#else  /* MinGW 64-bit or other */
     if (!EVP_DigestUpdate((EVP_MD_CTX *)ctx, data, sz))
         return -1;
-    EXCEPTION_POSTAMBLE
+#endif
+#else
+    if (!EVP_DigestUpdate((EVP_MD_CTX *)ctx, data, sz))
+        return -1;
+#endif
 
 #if defined(_WIN32)
     if (win_exception) {

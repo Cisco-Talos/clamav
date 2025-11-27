@@ -1042,6 +1042,11 @@ else()
     set(LIBMSPACK "MSPack::mspack")
 endif()
 
+if(WIN32 AND CMAKE_C_COMPILER_ID MATCHES "GNU")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--allow-multiple-definition -Wl,--warn-unresolved-symbols")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--allow-multiple-definition -Wl,--warn-unresolved-symbols")
+endif()
+
 if(WIN32)
     add_subdirectory( win32/compat )
 endif()

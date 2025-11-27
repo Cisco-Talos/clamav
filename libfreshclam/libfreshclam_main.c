@@ -35,21 +35,38 @@ BOOL APIENTRY DllMain(HMODULE hm, DWORD why, LPVOID rsrv)
         case DLL_PROCESS_ATTACH:
             if (WSAStartup(MAKEWORD(2, 2), &wsa))
                 return FALSE;
+#ifdef _MSC_VER
             return pthread_win32_process_attach_np();
+#else
+            /* MinGW uses winpthreads which handles this automatically */
+            return TRUE;
+#endif
             break;
 
         case DLL_THREAD_ATTACH:
+#ifdef _MSC_VER
             return pthread_win32_thread_attach_np();
+#else
+            return TRUE;
+#endif
             break;
 
         case DLL_THREAD_DETACH:
+#ifdef _MSC_VER
             return pthread_win32_thread_detach_np();
+#else
+            return TRUE;
+#endif
             break;
 
         case DLL_PROCESS_DETACH:
             WSACleanup();
+#ifdef _MSC_VER
             pthread_win32_thread_detach_np();
             return pthread_win32_process_detach_np();
+#else
+            return TRUE;
+#endif
             break;
     }
 }

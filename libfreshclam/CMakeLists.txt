@@ -75,7 +75,9 @@ if(ENABLE_SHARED_LIB)
         LINK_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/libfreshclam.map)
     if(WIN32)
         install(TARGETS freshclam DESTINATION . COMPONENT libraries)
+        if(MSVC)
         install(FILES $<TARGET_PDB_FILE:freshclam> DESTINATION . OPTIONAL COMPONENT libraries)
+        endif()
         # Also install shared library (DLL) dependencies
         install(CODE [[
             file(GET_RUNTIME_DEPENDENCIES

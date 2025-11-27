@@ -48,7 +48,9 @@ if(APPLE)
 endif()
 if(WIN32)
     install(TARGETS clamsubmit DESTINATION . COMPONENT programs)
-    install(FILES $<TARGET_PDB_FILE:clamsubmit> DESTINATION . OPTIONAL COMPONENT programs)
+    if(MSVC)
+        install(FILES $<TARGET_PDB_FILE:clamsubmit> DESTINATION . OPTIONAL COMPONENT programs)
+    endif()
     # Also install shared library (DLL) dependencies
     install(CODE [[
         file(GET_RUNTIME_DEPENDENCIES

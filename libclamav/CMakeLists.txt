@@ -428,7 +428,6 @@ if(ENABLE_SHARED_LIB)
             yara
             bytecode_runtime
             ${LIBMSPACK}
-            ClamAV::libclamav_rust
             ClamAV::libunrar_iface_iface
             OpenSSL::SSL
             OpenSSL::Crypto
@@ -436,7 +435,12 @@ if(ENABLE_SHARED_LIB)
             BZip2::BZip2
             PCRE2::pcre2
             LibXml2::LibXml2
-            JSONC::jsonc )
+            JSONC::jsonc
+        PRIVATE
+            ClamAV::libclamav_rust )
+    if(WIN32 AND CMAKE_C_COMPILER_ID MATCHES "GNU")
+        target_link_libraries( clamav PRIVATE -Wl,--whole-archive $<TARGET_FILE:ClamAV::libclamav_rust> -Wl,--no-whole-archive )
+    endif()
 
     if(WIN32)
         target_link_libraries( clamav
@@ -472,6 +476,12 @@ if(ENABLE_SHARED_LIB)
 
     if(WIN32)
         set_target_properties( clamav PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON )
+        # Allow undefined symbols from Rust library (circular dependency with libclamav)
+        # The Rust library references libclamav functions, but we're linking it into libclamav.dll
+        # These symbols will be resolved at runtime since they're in the same DLL
+        if(CMAKE_C_COMPILER_ID MATCHES "GNU")
+            target_link_options( clamav PRIVATE "-Wl,--warn-unresolved-symbols" )
+        endif()
     else()
         target_link_libraries( clamav PUBLIC Iconv::Iconv )
     endif()
@@ -484,7 +494,9 @@ if(ENABLE_SHARED_LIB)
     endif()
     if(WIN32)
         install( TARGETS clamav DESTINATION . COMPONENT libraries )
-        install( FILES $<TARGET_PDB_FILE:clamav> DESTINATION . OPTIONAL COMPONENT libraries )
+        if(MSVC)
+            install( FILES $<TARGET_PDB_FILE:clamav> DESTINATION . OPTIONAL COMPONENT libraries )
+        endif()
         # Also install shared library (DLL) dependencies
         install( CODE [[
             file(GET_RUNTIME_DEPENDENCIES

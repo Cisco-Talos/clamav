@@ -53,7 +53,7 @@
 #include "optparser.h"
 #include "misc.h"
 
-#ifndef _WIN32
+#ifndef _MSC_VER
 extern const struct clam_option *clam_options;
 #else
 __declspec(dllimport) extern const struct clam_option *clam_options;

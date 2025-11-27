@@ -23,11 +23,8 @@
 #include "clamav-config.h"
 #endif
 
-#include <WinSock2.h>
-#include <Windows.h>
-#include <sys/types.h>
+#ifndef __MINGW32__
 #include <sys/timeb.h>
-
 #include "gettimeofday.h"
 
 int gettimeofday(struct timeval *tv, struct timezone *tz)
@@ -39,3 +36,4 @@ int gettimeofday(struct timeval *tv, struct timezone *tz)
     tv->tv_usec = t.millitm * 1000;
     return 0;
 }
+#endif

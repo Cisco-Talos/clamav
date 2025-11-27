@@ -288,7 +288,7 @@ fc_error_t download_complete_callback(const char *dbFilename, void *context)
 
     if (fc_context->bTestDatabases) {
 #ifdef _WIN32
-
+#ifdef _MSC_VER
         __try {
             ret = fc_test_database(dbFilename, fc_context->bBytecodeEnabled);
         } __except (logg(LOGG_ERROR, "Exception during database testing, code %08x\n",
@@ -301,6 +301,15 @@ fc_error_t download_complete_callback(const char *dbFilename, void *context)
             status = FC_ETESTFAIL;
             goto done;
         }
+#else
+        /* MinGW doesn't support MSVC's __try/__except */
+        ret = fc_test_database(dbFilename, fc_context->bBytecodeEnabled);
+        if (FC_SUCCESS != ret) {
+            logg(LOGG_WARNING, "Database load exited with \"%s\"\n", fc_strerror(ret));
+            status = FC_ETESTFAIL;
+            goto done;
+        }
+#endif
 
 #else
 

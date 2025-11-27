@@ -60,9 +60,9 @@ endif()
 
 if(NOT PThreadW32_LIBRARIES)
   find_library(PThreadW32_LIBRARY_RELEASE
-    NAMES pthreadVC2 pthreadVC3 PATHS ${PC_PThreadW32_LIBRARY_DIRS})
+    NAMES pthreadVC2 pthreadVC3 pthread winpthread PATHS ${PC_PThreadW32_LIBRARY_DIRS})
   find_library(PThreadW32_LIBRARY_DEBUG
-    NAMES pthreadVC2d pthreadVC3d PATHS ${PC_PThreadW32_LIBRARY_DIRS})
+    NAMES pthreadVC2d pthreadVC3d pthread winpthread PATHS ${PC_PThreadW32_LIBRARY_DIRS})
 
   include(SelectLibraryConfigurations)
   SELECT_LIBRARY_CONFIGURATIONS(PThreadW32)

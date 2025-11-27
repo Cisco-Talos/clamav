@@ -28,7 +28,7 @@
 #if defined(_MSC_VER)
 #include <BaseTsd.h>
 typedef SSIZE_T ssize_t;
-#else
+#elif !defined(__MINGW32__) && !defined(__MINGW64__)
 typedef int ssize_t;
 #endif
 #define SSIZE_T_DEFINED

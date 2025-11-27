@@ -39,7 +39,9 @@ target_link_libraries( clamdtop
         Curses::curses )
 if(WIN32)
     install(TARGETS clamdtop DESTINATION . COMPONENT programs)
-    install(FILES $<TARGET_PDB_FILE:clamdtop> DESTINATION . OPTIONAL COMPONENT programs)
+    if(MSVC)
+        install(FILES $<TARGET_PDB_FILE:clamdtop> DESTINATION . OPTIONAL COMPONENT programs)
+    endif()
     # Also install shared library (DLL) dependencies
     install(CODE [[
         file(GET_RUNTIME_DEPENDENCIES
@@ -48,7 +50,8 @@ if(WIN32)
             RESOLVED_DEPENDENCIES_VAR _r_deps
             UNRESOLVED_DEPENDENCIES_VAR _u_deps
             DIRECTORIES
-                $<TARGET_FILE_DIR:Curses::curses>
+                ${CMAKE_BINARY_DIR}/bin
+                ${CMAKE_BINARY_DIR}
             POST_EXCLUDE_REGEXES
                 "[cC]:[\\/][wW][iI][nN][dD][oO][wW][sS]"
         )

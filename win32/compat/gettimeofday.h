@@ -22,6 +22,8 @@
 #ifndef __GETLOCALTIME_H
 #define __GETLOCALTIME_H
 
+#ifndef __MINGW32__
 int gettimeofday(struct timeval *tv, struct timezone *tz);
+#endif
 
 #endif /* __GETLOCALTIME_H */

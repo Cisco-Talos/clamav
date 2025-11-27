@@ -83,6 +83,10 @@ char *strptime(const char *s, const char *format, struct tm *tm);
 #define O_BINARY 0
 #endif
 
+#ifndef O_LARGEFILE
+#define O_LARGEFILE 0
+#endif
+
 #ifndef	FALSE
 #define FALSE (0)
 #endif

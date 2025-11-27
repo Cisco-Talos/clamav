@@ -64,10 +64,18 @@ typedef struct unrar_metadata_tag {
     uint32_t is_dir;
 } unrar_metadata_t;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 cl_unrar_error_t unrar_open(const char *filename, void **hArchive, char **comment, uint32_t *comment_size, uint8_t debug_flag);
 cl_unrar_error_t unrar_peek_file_header(void *hArchive, unrar_metadata_t *file_metadata);
 cl_unrar_error_t unrar_extract_file(void *hArchive, const char *destPath, char *outputBuffer);
 cl_unrar_error_t unrar_skip_file(void *hArchive);
 void unrar_close(void *hArchive);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
