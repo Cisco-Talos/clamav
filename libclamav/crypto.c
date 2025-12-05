@@ -1748,8 +1748,9 @@ X509 *cl_load_cert(const char *certpath)
 
 struct tm *cl_ASN1_GetTimeT(ASN1_TIME *timeobj)
 {
-    struct tm *t;
-    char *str;
+    struct tm *ret  = NULL;
+    struct tm *t    = NULL;
+    char *str       = NULL;
     const char *fmt = NULL;
     time_t localt;
 #ifdef _WIN32
@@ -1758,16 +1759,19 @@ struct tm *cl_ASN1_GetTimeT(ASN1_TIME *timeobj)
     struct tm localtm;
 #endif
 
-    if (!(timeobj) || !(timeobj->data))
-        return NULL;
+    if (!(timeobj))
+        goto err;
 
-    str = (char *)(timeobj->data);
+    if ((str = strndup(ASN1_STRING_get0_data(timeobj),
+                       ASN1_STRING_length(timeobj))) == NULL)
+        goto err;
+
     if (strlen(str) < 12)
-        return NULL;
+        goto err;
 
     t = (struct tm *)calloc(1, sizeof(struct tm));
     if (!(t))
-        return NULL;
+        goto err;
 
     if (timeobj->type == V_ASN1_UTCTIME) {
         /* two digit year */
@@ -1789,15 +1793,11 @@ struct tm *cl_ASN1_GetTimeT(ASN1_TIME *timeobj)
         }
     }
 
-    if (!(fmt)) {
-        free(t);
-        return NULL;
-    }
+    if (!(fmt))
+        goto err;
 
-    if (!strptime(str, fmt, t)) {
-        free(t);
-        return NULL;
-    }
+    if (!strptime(str, fmt, t))
+        goto err;
 
     /* Convert to local time */
     localt = time(NULL);
@@ -1808,7 +1808,15 @@ struct tm *cl_ASN1_GetTimeT(ASN1_TIME *timeobj)
     localtime_r(&localt, &localtm);
 #endif
     t->tm_isdst = localtm.tm_isdst;
-    return t;
+
+    ret = t;
+    t   = NULL;
+
+err:
+    free(t);
+    free(str);
+
+    return ret;
 }
 
 X509_CRL *cl_load_crl(const char *file)
