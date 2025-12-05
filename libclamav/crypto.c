@@ -1773,7 +1773,7 @@ struct tm *cl_ASN1_GetTimeT(ASN1_TIME *timeobj)
     if (!(t))
         goto err;
 
-    if (timeobj->type == V_ASN1_UTCTIME) {
+    if (ASN1_STRING_type(timeobj) == V_ASN1_UTCTIME) {
         /* two digit year */
         fmt = "%y%m%d%H%M%S";
         if (str[3] == '0') {
@@ -1782,7 +1782,7 @@ struct tm *cl_ASN1_GetTimeT(ASN1_TIME *timeobj)
         } else {
             str[3]--;
         }
-    } else if (timeobj->type == V_ASN1_GENERALIZEDTIME) {
+    } else if (ASN1_STRING_type(timeobj) == V_ASN1_GENERALIZEDTIME) {
         /* four digit year */
         fmt = "%Y%m%d%H%M%S";
         if (str[5] == '0') {
