@@ -67,7 +67,7 @@ static int onas_fan_fd;
 int is_mountpoint(const char *path) {
     struct stat st_path, st_parent_path;
 
-    if (strcmp(path, "/") == 0) {
+    if (0 == strcmp(path, "/")) {
         return 1;
     }
 
@@ -123,7 +123,7 @@ cl_error_t onas_setup_fanotif(struct onas_context **ctx)
     if ((pt = optget((*ctx)->clamdopts, "OnAccessMountPath"))->enabled) {
         while (pt) {
             if (optget((*ctx)->clamdopts, "OnAccessPrevention")->enabled) {
-                if ((pt->strarg == '/') || !is_mountpoint(pt->strarg)) {
+                if ((0 == strcmp("/", pt->strarg)) || !is_mountpoint(pt->strarg)) {
                     logg(LOGG_DEBUG, "ClamFanotif: kernel-level blocking feature disabled for path '%s' ...\n", pt->strarg);
                     logg(LOGG_DEBUG, "ClamFanotif: prevention is only available if path is a mountpoint or not root directory\n");
                     (*ctx)->fan_mask &= ~FAN_ACCESS_PERM & ~FAN_OPEN_PERM;
