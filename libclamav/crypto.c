@@ -1748,10 +1748,10 @@ X509 *cl_load_cert(const char *certpath)
 
 struct tm *cl_ASN1_GetTimeT(ASN1_TIME *timeobj)
 {
-    struct tm *ret  = NULL;
-    struct tm *t    = NULL;
-    char *str       = NULL;
-    const char *fmt = NULL;
+    struct tm *ret = NULL;
+    struct tm *t   = NULL;
+    char *str      = NULL;
+    const char *data, *fmt = NULL;
     time_t localt;
 #ifdef _WIN32
     struct tm localtm, *ltm;
@@ -1759,11 +1759,10 @@ struct tm *cl_ASN1_GetTimeT(ASN1_TIME *timeobj)
     struct tm localtm;
 #endif
 
-    if (!(timeobj))
+    if (timeobj == NULL || (data = ASN1_STRING_get0_data(timeobj)) == NULL)
         goto err;
 
-    if ((str = strndup(ASN1_STRING_get0_data(timeobj),
-                       ASN1_STRING_length(timeobj))) == NULL)
+    if ((str = strndup(data, ASN1_STRING_length(timeobj))) == NULL)
         goto err;
 
     if (strlen(str) < 12)
