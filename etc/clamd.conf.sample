@@ -812,13 +812,11 @@ Example
 # point containing the specified directory will be watched. If any directories
 # are specified, this option will preempt (disable and ignore all options
 # related to) the DDD system. This option will result in verdicts only.
-# Note that prevention is explicitly disallowed to prevent common, fatal
-# misconfigurations. (e.g. watching "/" with prevention on and no exclusions
-# made on vital system directories)
-# It can be used multiple times.
+# Note that prevention is explicitly disallowed on the root directory to
+# prevent common, fatal misconfigurations. It can be used multiple times.
 # Default: disabled
-#OnAccessMountPath /
 #OnAccessMountPath /home/user
+#OnAccessMountPath /media/user/drive
 
 # With this option you can exclude the root UID (0). Processes run under
 # root with be able to access all files without triggering scans or

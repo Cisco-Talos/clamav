@@ -33,6 +33,7 @@
 #include <string.h>
 #include <errno.h>
 #include <time.h>
+#include <libgen.h>
 
 #include <sys/fanotify.h>
 
@@ -63,6 +64,28 @@ extern pthread_t ddd_pid;
 extern pthread_t scan_queue_pid;
 static int onas_fan_fd;
 
+int is_mountpoint(const char *path) {
+    struct stat st_path, st_parent_path;
+
+    if (strcmp(path, "/") == 0) {
+        return 1;
+    }
+
+    if (stat(path, &st_path) == -1) {
+        logg(LOGG_DEBUG, "ClamFanotif: internal error: fail to stat path '%s'\n", path);
+        return 0;
+    }
+
+    char * pathc = strdup(path);
+    char * parent_path = dirname(pathc);
+    if (stat(parent_path, &st_parent_path) == -1) {
+        logg(LOGG_DEBUG, "ClamFanotif: internal error: fail to stat parent path '%s'\n", parent_path);
+        return 0;
+    }
+
+    return (st_path.st_dev != st_parent_path.st_dev);
+}
+
 cl_error_t onas_setup_fanotif(struct onas_context **ctx)
 {
 
@@ -82,14 +105,11 @@ cl_error_t onas_setup_fanotif(struct onas_context **ctx)
     onas_fan_fd      = (*ctx)->fan_fd;
     (*ctx)->fan_mask = fan_mask;
 
-    if (optget((*ctx)->clamdopts, "OnAccessPrevention")->enabled && !optget((*ctx)->clamdopts, "OnAccessMountPath")->enabled) {
+    if (optget((*ctx)->clamdopts, "OnAccessPrevention")->enabled {
         logg(LOGG_DEBUG, "ClamFanotif: kernel-level blocking feature enabled ... preventing malicious files access attempts\n");
         (*ctx)->fan_mask |= FAN_ACCESS_PERM | FAN_OPEN_PERM;
     } else {
         logg(LOGG_DEBUG, "ClamFanotif: kernel-level blocking feature disabled ...\n");
-        if (optget((*ctx)->clamdopts, "OnAccessPrevention")->enabled && optget((*ctx)->clamdopts, "OnAccessMountPath")->enabled) {
-            logg(LOGG_DEBUG, "ClamFanotif: feature not available when watching mounts ... \n");
-        }
         (*ctx)->fan_mask |= FAN_ACCESS | FAN_OPEN;
     }
 
@@ -102,6 +122,18 @@ cl_error_t onas_setup_fanotif(struct onas_context **ctx)
 
     if ((pt = optget((*ctx)->clamdopts, "OnAccessMountPath"))->enabled) {
         while (pt) {
+            if (optget((*ctx)->clamdopts, "OnAccessPrevention")->enabled) {
+                if ((pt->strarg == '/') || !is_mountpoint(pt->strarg)) {
+                    logg(LOGG_DEBUG, "ClamFanotif: kernel-level blocking feature disabled for path '%s' ...\n", pt->strarg);
+                    logg(LOGG_DEBUG, "ClamFanotif: prevention is only available if path is a mountpoint or not root directory\n");
+                    (*ctx)->fan_mask &= ~FAN_ACCESS_PERM & ~FAN_OPEN_PERM;
+                    (*ctx)->fan_mask |= FAN_ACCESS | FAN_OPEN;
+                } else if ((*ctx)->fan_mask & (FAN_ACCESS | FAN_OPEN)) {
+                    (*ctx)->fan_mask &= ~FAN_ACCESS & ~FAN_OPEN;
+                    (*ctx)->fan_mask |= FAN_ACCESS_PERM | FAN_OPEN_PERM;
+                }
+            }
+
             if (fanotify_mark(onas_fan_fd, FAN_MARK_ADD | FAN_MARK_MOUNT, (*ctx)->fan_mask, (*ctx)->fan_fd, pt->strarg) != 0) {
                 logg(LOGG_ERROR, "ClamFanotif: can't include mountpoint '%s'\n", pt->strarg);
                 return CL_EARG;
