@@ -105,7 +105,7 @@ cl_error_t onas_setup_fanotif(struct onas_context **ctx)
     onas_fan_fd      = (*ctx)->fan_fd;
     (*ctx)->fan_mask = fan_mask;
 
-    if (optget((*ctx)->clamdopts, "OnAccessPrevention")->enabled {
+    if (optget((*ctx)->clamdopts, "OnAccessPrevention")->enabled) {
         logg(LOGG_DEBUG, "ClamFanotif: kernel-level blocking feature enabled ... preventing malicious files access attempts\n");
         (*ctx)->fan_mask |= FAN_ACCESS_PERM | FAN_OPEN_PERM;
     } else {
