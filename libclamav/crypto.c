@@ -1760,17 +1760,18 @@ struct tm *cl_ASN1_GetTimeT(ASN1_TIME *timeobj)
 #endif
 
     if (timeobj == NULL || (data = ASN1_STRING_get0_data(timeobj)) == NULL)
-        goto err;
+        goto done;
 
-    if ((str = strndup(data, ASN1_STRING_length(timeobj))) == NULL)
-        goto err;
+    str = CLI_STRNDUP(data, ASN1_STRING_length(timeobj));
+    if (NULL == str)
+        goto done;
 
     if (strlen(str) < 12)
-        goto err;
+        goto done;
 
     t = (struct tm *)calloc(1, sizeof(struct tm));
     if (!(t))
-        goto err;
+        goto done;
 
     if (ASN1_STRING_type(timeobj) == V_ASN1_UTCTIME) {
         /* two digit year */
@@ -1793,10 +1794,10 @@ struct tm *cl_ASN1_GetTimeT(ASN1_TIME *timeobj)
     }
 
     if (!(fmt))
-        goto err;
+        goto done;
 
     if (!strptime(str, fmt, t))
-        goto err;
+        goto done;
 
     /* Convert to local time */
     localt = time(NULL);
@@ -1811,7 +1812,7 @@ struct tm *cl_ASN1_GetTimeT(ASN1_TIME *timeobj)
     ret = t;
     t   = NULL;
 
-err:
+done:
     free(t);
     free(str);
 
