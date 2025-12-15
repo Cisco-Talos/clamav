@@ -386,6 +386,8 @@ function(add_rust_test)
         )
     endif()
 
+    message(STATUS "Environment: ${ARGS_ENVIRONMENT}")
+
     add_test(
         NAME ${ARGS_NAME}
         COMMAND ${CMAKE_COMMAND} -E env "CARGO_CMD=test" "CARGO_TARGET_DIR=${ARGS_BINARY_DIRECTORY}" "RUSTFLAGS=${RUSTFLAGS}" ${cargo_EXECUTABLE} ${MY_CARGO_ARGS} --color always

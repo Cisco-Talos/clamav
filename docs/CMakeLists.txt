@@ -114,7 +114,7 @@ if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/html/index.html)
             COMPONENT documentation)
     else()
         install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/html
-            DESTINATION ${CMAKE_INSTALL_DOCDIR}
+            TYPE DOC
             COMPONENT documentation)
     endif()
 endif()

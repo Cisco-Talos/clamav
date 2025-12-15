@@ -182,6 +182,13 @@ if(APPLE AND NOT DO_NOT_SET_RPATH)
     set(CMAKE_MACOSX_RPATH 1)
 endif()
 
+if(WIN32)
+    set(CMAKE_INSTALL_BINDIR "." CACHE STRING "Installation directory for executables")
+    set(CMAKE_INSTALL_SBINDIR "." CACHE STRING "Installation directory for system executables")
+    set(CMAKE_INSTALL_LIBDIR "." CACHE STRING "Installation directory for libraries")
+    set(CMAKE_INSTALL_INCLUDEDIR "include" CACHE STRING "Installation directory for header files")
+endif()
+
 include(GNUInstallDirs)
 
 if (NOT DEFINED CMAKE_INSTALL_RPATH AND NOT DO_NOT_SET_RPATH)
@@ -339,7 +346,9 @@ set(CPACK_VERBATIM_VARIABLES YES)
 
 if (WIN32)
     set(CMAKE_INSTALL_SYSTEM_RUNTIME_DESTINATION .)
-    include(InstallRequiredSystemLibraries)
+    if(ENABLE_WINDOWS_INSTALL_THIRDPARTY_DEPENDENCIES)
+        include(InstallRequiredSystemLibraries)
+    endif()	
 
     set(CPACK_GENERATOR                  "ZIP;WIX")
     set(CPACK_PACKAGE_VENDOR             "Cisco Systems, Inc.")
@@ -460,6 +469,46 @@ include(CPack)
 
 # libclamav efficacy dependencies
 find_package(OpenSSL REQUIRED)
+# The Rust openssl-sys crate needs to know how to find the OpenSSL headers and libraries.
+get_filename_component(OPENSSL_DIR "${OPENSSL_INCLUDE_DIR}" DIRECTORY)
+
+set(OPENSSL_LIBS "")
+
+# Get the libcrypto library.
+# Depending on the FindOpenSSL script, this can be either a path or a list of
+# configurations and paths, e.g., "optimized;C:/vcpkg/installed/x64-windows/lib/libcrypto.lib;debug;C:/vcpkg/installed/x64-windows/debug/lib/libcrypto.lib"
+foreach(OPENSSL_CRYPTO_LIB IN LISTS OPENSSL_CRYPTO_LIBRARY)
+    if(EXISTS "${OPENSSL_CRYPTO_LIB}")
+        # Get the libcrypto library.
+        # Remove path and extension.
+        get_filename_component(LIBNAME "${OPENSSL_CRYPTO_LIBRARY}" NAME_WLE)
+        # Remove "lib" prefix, if present.
+        string(REGEX REPLACE "^lib" "" LIBNAME "${LIBNAME}")
+        # Add libcrypto.
+        set(OPENSSL_LIBS "${LIBNAME}")
+
+        get_filename_component(OPENSSL_LIB_DIR "${OPENSSL_CRYPTO_LIB}" DIRECTORY)
+        set(OPENSSL_CRYPTO_LIB_FOUND TRUE)
+        break()
+    endif()
+endforeach()
+
+foreach(OPENSSL_SSL_LIB IN LISTS OPENSSL_SSL_LIBRARY)
+    if(EXISTS "${OPENSSL_SSL_LIB}")
+        # Remove path and extension.
+        get_filename_component(LIBNAME "${OPENSSL_SSL_LIB}" NAME_WLE)
+        # Remove "lib" prefix, if present.
+        string(REGEX REPLACE "^lib" "" LIBNAME "${LIBNAME}")
+        # Add libssl.
+        set(OPENSSL_LIBS "${OPENSSL_LIBS}:${LIBNAME}")
+        set(OPENSSL_SSL_LIB_FOUND TRUE)
+        break()
+    endif()
+endforeach()
+
+if(NOT OPENSSL_CRYPTO_LIB_FOUND OR NOT OPENSSL_SSL_LIB_FOUND)
+    message(FATAL_ERROR "Could not deduce the location of OpenSSL libraries from OPENSSL_CRYPTO_LIBRARY: ${OPENSSL_CRYPTO_LIBRARY} and OPENSSL_SSL_LIBRARY: ${OPENSSL_SSL_LIBRARY}.")
+endif()
 
 find_package(ZLIB REQUIRED)
 
@@ -998,7 +1047,7 @@ else()
         ${CMAKE_CURRENT_BINARY_DIR}/clamav-config
         @ONLY)
     install(FILES "${CMAKE_CURRENT_BINARY_DIR}/clamav-config"
-            DESTINATION "${CMAKE_INSTALL_BINDIR}"
+            TYPE BIN
         PERMISSIONS
             OWNER_READ OWNER_WRITE OWNER_EXECUTE
             GROUP_READ             GROUP_EXECUTE

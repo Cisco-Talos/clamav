@@ -52,11 +52,9 @@ target_link_libraries( clamd
     PRIVATE
         ClamAV::libclamav
         ClamAV::common )
+install(TARGETS clamd DESTINATION ${CMAKE_INSTALL_SBINDIR} COMPONENT programs)
 if(WIN32)
-    install(TARGETS clamd DESTINATION . COMPONENT programs)
-    install(FILES $<TARGET_PDB_FILE:clamd> DESTINATION . OPTIONAL COMPONENT programs)
-else()
-    install(TARGETS clamd DESTINATION ${CMAKE_INSTALL_SBINDIR} COMPONENT programs)
+    install(FILES $<TARGET_PDB_FILE:clamd> TYPE SBIN OPTIONAL COMPONENT programs)
 endif()
 
 if(SYSTEMD_FOUND)

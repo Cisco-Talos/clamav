@@ -18,11 +18,16 @@ on:
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
   BUILD_TYPE: Release
-  VCPKG_GIT_REF: 8a9a97315aefb3f8bc5d81bf66ca0025938b9c91
 
 jobs:
   build-windows:
-    runs-on: windows-2019
+    runs-on: windows-latest
+
+    permissions:
+      packages: write
+
+    env:
+      VCPKG_BINARY_SOURCES: "clear;nuget,https://nuget.pkg.github.com/Cisco-Talos/index.json,readwrite"
 
     steps:
       - name: Die, link!!!!!
@@ -44,48 +49,25 @@ jobs:
       # Restore from cache the previously built ports. If cache-miss, download, build vcpkg ports.
       - name: Restore vcpkg ports from cache or install vcpkg
         # Download and build vcpkg, without installing any port. If content is cached already, it is a no-op.
-        uses: lukka/run-vcpkg@v7.4
+        uses: lukka/run-vcpkg@v11
         id: runvcpkg
-        with:
-          vcpkgArguments: "curl[openssl] openssl:x64-windows-static-md json-c libxml2 pcre2 check pthreads zlib pdcurses bzip2"
-          vcpkgGitCommitId: "${{ env.VCPKG_GIT_REF }}"
-          vcpkgTriplet: "x64-windows"
 
-      - name: Print the VCPKG_ROOT & VCPKG_TRIPLET (for debugging)
+      - name: Print the VCPKG_ROOT (for debugging)
         shell: bash
-        run: echo "'${{ steps.runvcpkg.outputs.RUNVCPKG_VCPKG_ROOT_OUT }}' '${{ steps.runvcpkg.outputs.RUNVCPKG_VCPKG_TRIPLET_OUT }}' "
+        run: echo "'${{ steps.runvcpkg.outputs.RUNVCPKG_VCPKG_ROOT_OUT }}'"
 
       - name: dir the VCPKG_ROOT
         run: dir ${{ steps.runvcpkg.outputs.RUNVCPKG_VCPKG_ROOT_OUT }}
 
-      - name: Create Build Directory
-        shell: bash
-        # Some projects don't allow in-source building, so create a separate build directory
-        # We'll use this as our working directory for all subsequent commands
-        run: cmake -E make_directory ${{runner.workspace}}/build
-
-      - name: Run CMake+Ninja with triplet (cmd)
-        uses: lukka/run-cmake@v3.4
+      - name: Run CMake+Ninja
+        uses: lukka/run-cmake@v10
         id: runcmake_cmd
         with:
-          cmakeGenerator: "Ninja" # Visual Studio 15 2017
-          cmakeListsOrSettingsJson: "CMakeListsTxtBasic"
           cmakeListsTxtPath: "${{runner.workspace}}/clamav/CMakeLists.txt"
-          useVcpkgToolchainFile: true
-          cmakeAppendedArgs: '-A x64 -DCMAKE_TOOLCHAIN_FILE="$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" -DENABLE_EXAMPLES=ON -DENABLE_STATIC_LIB=ON -- -v'
-          cmakeBuildType: "${{ env.BUILD_TYPE }}"
-          vcpkgTriplet: ${{ steps.runvcpkg.outputs.RUNVCPKG_VCPKG_TRIPLET_OUT }}
-          buildDirectory: "${{runner.workspace}}/build"
-
-      - name: Test
-        working-directory: ${{runner.workspace}}/build
-        # Execute tests defined by the CMake configuration.
-        # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
-        run: ctest -C ${{ env.BUILD_TYPE }} -V
-
-      - name: Create Installer
-        working-directory: ${{runner.workspace}}/build
-        run: cpack -C ${{ env.BUILD_TYPE }}
+          configurePreset: "clamav-windows-ninja-multi"
+          buildPreset: "windows-release"
+          testPreset: "windows-release"
+          packagePreset: "windows-release"
 
   build-macos:
     runs-on: macos-latest
