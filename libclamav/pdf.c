@@ -87,6 +87,7 @@ static void pdf_export_json(struct pdf_struct *);
 
 static void ASCIIHexDecode_cb(struct pdf_struct *, struct pdf_obj *, struct pdfname_action *);
 static void ASCII85Decode_cb(struct pdf_struct *, struct pdf_obj *, struct pdfname_action *);
+static void AutomaticAction_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname_action *act);
 static void EmbeddedFile_cb(struct pdf_struct *, struct pdf_obj *, struct pdfname_action *);
 static void FlateDecode_cb(struct pdf_struct *, struct pdf_obj *, struct pdfname_action *);
 static void Image_cb(struct pdf_struct *, struct pdf_obj *, struct pdfname_action *);
@@ -1653,12 +1654,13 @@ cl_error_t pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t
          * is an object stream. If so, collect the relevant info.
          */
         dict_len = obj->stream - start;
-        if (NULL != (pstr = pdf_getdict(start, &dict_len, "/Type/ObjStm"))) {
+        if (NULL != (pstr = pdf_getdict(start, &dict_len, "/ObjStm"))) {
             int objstm_first  = -1;
             int objstm_length = -1;
             int objstm_n      = -1;
 
-            cli_dbgmsg("pdf_extract_obj: Found /Type/ObjStm\n");
+            cli_dbgmsg("pdf_extract_obj: Found /ObjStm\n");
+            pdf->stats.nobjstream++;
 
             dict_len = obj->stream - start;
             if (-1 == (objstm_first = pdf_readint(start, dict_len, "/First"))) {
@@ -1669,13 +1671,18 @@ cl_error_t pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t
                 cli_warnmsg("pdf_extract_obj: Failed to find num objects in object stream\n");
             } else {
                 /* Add objstm to pdf struct, so it can be freed eventually */
-                pdf->nobjstms++;
-                pdf->objstms = cli_max_realloc_or_free(pdf->objstms, sizeof(struct objstm_struct *) * pdf->nobjstms);
+                if (!pdf->objstms) {
+                    pdf->objstms = malloc(sizeof(struct objstm_struct *));
+                } else {
+                    pdf->objstms = cli_max_realloc_or_free(pdf->objstms, sizeof(struct objstm_struct *) * (pdf->nobjstms + 1));
+                }
                 if (!pdf->objstms) {
                     cli_warnmsg("pdf_extract_obj: out of memory parsing object stream (%u)\n", pdf->nobjstms);
                     status = CL_EMEM;
                     goto done;
                 }
+
+                pdf->nobjstms++;
 
                 CLI_CALLOC_OR_GOTO_DONE(
                     objstm, 1, sizeof(struct objstm_struct),
@@ -1953,6 +1960,7 @@ struct pdfname_action {
 };
 
 static struct pdfname_action pdfname_actions[] = {
+    {"AA", OBJ_DICT, STATE_NONE, STATE_NONE, NAMEFLAG_NONE, AutomaticAction_cb},
     {"ASCIIHexDecode", OBJ_FILTER_AH, STATE_FILTER, STATE_FILTER, NAMEFLAG_HEURISTIC, ASCIIHexDecode_cb},
     {"ASCII85Decode", OBJ_FILTER_A85, STATE_FILTER, STATE_FILTER, NAMEFLAG_HEURISTIC, ASCII85Decode_cb},
     {"A85", OBJ_FILTER_A85, STATE_FILTER, STATE_FILTER, NAMEFLAG_HEURISTIC, ASCII85Decode_cb},
@@ -2137,7 +2145,7 @@ static void pdf_parse_encrypt(struct pdf_struct *pdf, const char *enc, int len)
 static void pdf_parse_trailer(struct pdf_struct *pdf, const char *s, long length)
 {
     const char *enc;
-
+    pdf->stats.ntrailer++;
     enc = cli_memstr(s, length, "/Encrypt", 8);
     if (enc) {
         char *newID;
@@ -2221,6 +2229,7 @@ void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
         if ((CL_SUCCESS == has_stream) ||
             (CL_EFORMAT == has_stream)) {
             /* Stream found. Store this fact and the stream bounds. */
+            pdf->stats.nstream++;
             cli_dbgmsg("pdf_parseobj: %u %u contains stream, size: %zu\n", obj->id >> 8, obj->id & 0xff, stream_size);
             obj->flags |= (1 << OBJ_STREAM);
             obj->stream      = stream;
@@ -3900,6 +3909,8 @@ cl_error_t cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
                 if (!q || xrefCheck(q, q + bytesleft) == -1) {
                     cli_dbgmsg("cli_pdf: did not find valid xref\n");
                     pdf.flags |= 1 << BAD_PDF_TRAILER;
+                } else {
+                    pdf.stats.nxref++;
                 }
             }
         }
@@ -4562,26 +4573,47 @@ static void Subject_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfna
     }
 }
 
-static void RichMedia_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname_action *act)
-{
-    UNUSEDPARAM(obj);
-    UNUSEDPARAM(act);
-
-    if (NULL == pdf)
-        return;
-
-    pdf->stats.nrichmedia++;
-}
-
 static void AcroForm_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname_action *act)
 {
     UNUSEDPARAM(obj);
     UNUSEDPARAM(act);
 
-    if (NULL == pdf)
+    cli_ctx *ctx = pdf->ctx;
+
+    if (!(pdf) || !(pdf->ctx->this_layer_metadata_json) || !(SCAN_COLLECT_METADATA)) {
         return;
+    }
 
     pdf->stats.nacroform++;
+}
+
+static void AutomaticAction_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname_action *act)
+{
+    UNUSEDPARAM(obj);
+    UNUSEDPARAM(act);
+
+    cli_ctx *ctx         = pdf->ctx;
+
+    if (!(pdf) || !(pdf->ctx->this_layer_metadata_json) || !(SCAN_COLLECT_METADATA)) {
+        return;
+    }
+
+    // ToDO: Find a way to not count references to the same automatic action multiple times
+    pdf->stats.naa++;
+}
+
+static void RichMedia_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname_action *act)
+{
+    UNUSEDPARAM(obj);
+    UNUSEDPARAM(act);
+
+    cli_ctx *ctx = pdf->ctx;
+
+    if (!(pdf) || !(pdf->ctx->this_layer_metadata_json) || !(SCAN_COLLECT_METADATA)) {
+        return;
+    }
+
+    pdf->stats.nrichmedia++;
 }
 
 static void XFA_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname_action *act)
@@ -4589,8 +4621,11 @@ static void XFA_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname_a
     UNUSEDPARAM(obj);
     UNUSEDPARAM(act);
 
-    if (NULL == pdf)
+    cli_ctx *ctx = pdf->ctx;
+
+    if (!(pdf) || !(pdf->ctx->this_layer_metadata_json) || !(SCAN_COLLECT_METADATA)) {
         return;
+    }
 
     pdf->stats.nxfa++;
 }
@@ -4758,6 +4793,8 @@ static void URI_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname_a
     if (obj->size == 0) {
         return;
     }
+
+    pdf->stats.nuri++;
 
     if (obj->objstm) {
         bytesleft = MIN(obj->size, obj->objstm->streambuf_len - obj->start);
@@ -5118,6 +5155,20 @@ static void pdf_export_json(struct pdf_struct *pdf)
         cli_jsonint(pdfobj, "AcroFormCount", pdf->stats.nacroform);
     if (pdf->stats.nxfa)
         cli_jsonint(pdfobj, "XFACount", pdf->stats.nxfa);
+    if (pdf->stats.naa)
+        cli_jsonint(pdfobj, "AutomaticActionCount", pdf->stats.naa);
+    if (pdf->stats.nstream)
+        cli_jsonint(pdfobj, "StreamCount", pdf->stats.nstream);
+    if (pdf->nobjs)
+        cli_jsonint(pdfobj, "ObjectCount", pdf->nobjs);
+    if (pdf->stats.nobjstream)
+        cli_jsonint(pdfobj, "ObjectStreamCount", pdf->stats.nobjstream);
+    if (pdf->stats.ntrailer)
+        cli_jsonint(pdfobj, "TrailerCount", pdf->stats.ntrailer);
+    if (pdf->stats.nuri)
+        cli_jsonint(pdfobj, "URICount", pdf->stats.nuri);
+    if (pdf->stats.nxref)
+        cli_jsonint(pdfobj, "XRefCount", pdf->stats.nxref);
     if (pdf->flags & (1 << BAD_PDF_VERSION))
         cli_jsonbool(pdfobj, "BadVersion", 1);
     if (pdf->flags & (1 << BAD_PDF_HEADERPOS))
