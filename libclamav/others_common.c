@@ -218,7 +218,7 @@ int cli_matchregex(const char *str, const char *regex)
 }
 void *cli_max_malloc(size_t size)
 {
-    void *alloc;
+    void *alloc = NULL;
 
     if (0 == size || size > CLI_MAX_ALLOCATION) {
         cli_warnmsg("cli_max_malloc(): File or section is too large to scan (%zu bytes). For your safety, ClamAV limits how much memory an operation can allocate to %d bytes\n",
@@ -239,7 +239,7 @@ void *cli_max_malloc(size_t size)
 
 void *cli_max_calloc(size_t nmemb, size_t size)
 {
-    void *alloc;
+    void *alloc = NULL;
 
     if (!nmemb || 0 == size || size > CLI_MAX_ALLOCATION || nmemb > CLI_MAX_ALLOCATION || (nmemb * size > CLI_MAX_ALLOCATION)) {
         cli_warnmsg("cli_max_calloc(): File or section is too large to scan (%zu bytes). For your safety, ClamAV limits how much memory an operation can allocate to %d bytes\n",
@@ -260,7 +260,7 @@ void *cli_max_calloc(size_t nmemb, size_t size)
 
 void *cli_safer_realloc(void *ptr, size_t size)
 {
-    void *alloc;
+    void *alloc = NULL;
 
     if (0 == size) {
         cli_errmsg("cli_max_realloc(): Attempt to allocate 0 bytes. Please report to https://github.com/Cisco-Talos/clamav/issues\n");
@@ -280,7 +280,7 @@ void *cli_safer_realloc(void *ptr, size_t size)
 
 void *cli_safer_realloc_or_free(void *ptr, size_t size)
 {
-    void *alloc;
+    void *alloc = NULL;
 
     if (0 == size) {
         cli_errmsg("cli_max_realloc_or_free(): Attempt to allocate 0 bytes. Please report to https://github.com/Cisco-Talos/clamav/issues\n");
@@ -306,7 +306,7 @@ void *cli_safer_realloc_or_free(void *ptr, size_t size)
 
 void *cli_max_realloc(void *ptr, size_t size)
 {
-    void *alloc;
+    void *alloc = NULL;
 
     if (0 == size || size > CLI_MAX_ALLOCATION) {
         cli_warnmsg("cli_max_realloc(): File or section is too large to scan (%zu bytes). For your safety, ClamAV limits how much memory an operation can allocate to %d bytes\n",
@@ -327,7 +327,7 @@ void *cli_max_realloc(void *ptr, size_t size)
 
 void *cli_max_realloc_or_free(void *ptr, size_t size)
 {
-    void *alloc;
+    void *alloc = NULL;
 
     if (0 == size || size > CLI_MAX_ALLOCATION) {
         cli_warnmsg("cli_max_realloc_or_free(): File or section is too large to scan (%zu bytes). For your safety, ClamAV limits how much memory an operation can allocate to %d bytes\n",
@@ -354,7 +354,7 @@ void *cli_max_realloc_or_free(void *ptr, size_t size)
 
 char *cli_safer_strdup(const char *s)
 {
-    char *alloc;
+    char *alloc = NULL;
 
     if (s == NULL) {
         cli_errmsg("cli_safer_strdup(): passed reference is NULL, nothing to duplicate\n");
@@ -375,7 +375,7 @@ char *cli_safer_strdup(const char *s)
 /* returns converted timestamp, in case of error the returned string contains at least one character */
 const char *cli_ctime(const time_t *timep, char *buf, const size_t bufsize)
 {
-    const char *ret;
+    const char *ret = NULL;
     if (bufsize < 26) {
         /* standard says we must have at least 26 bytes buffer */
         cli_warnmsg("buffer too small for ctime\n");
@@ -431,7 +431,7 @@ size_t cli_readn(int fd, void *buff, size_t count)
 {
     ssize_t retval;
     size_t todo;
-    unsigned char *current;
+    unsigned char *current = NULL;
 
     todo    = count;
     current = (unsigned char *)buff;
@@ -475,7 +475,7 @@ size_t cli_writen(int fd, const void *buff, size_t count)
 {
     ssize_t retval;
     size_t todo;
-    const unsigned char *current;
+    const unsigned char *current = NULL;
 
     if (!buff) {
         cli_errmsg("cli_writen: invalid NULL buff argument\n");
@@ -825,7 +825,7 @@ done:
 
 static cl_error_t cli_ftw_dir(const char *dirname, int flags, int maxdepth, cli_ftw_cb callback, struct cli_ftw_cbdata *data, cli_ftw_pathchk pathchk)
 {
-    DIR *dd;
+    DIR *dd                     = NULL;
     struct dirent_data *entries = NULL;
     size_t i, entries_cnt = 0;
     cl_error_t ret;
@@ -980,7 +980,7 @@ static cl_error_t cli_ftw_dir(const char *dirname, int flags, int maxdepth, cli_
  * used */
 const char *cli_strerror(int errnum, char *buf, size_t len)
 {
-    const char *err;
+    const char *err = NULL;
 #ifdef CL_THREAD_SAFE
     pthread_mutex_lock(&cli_strerror_mutex);
 #endif
@@ -996,7 +996,8 @@ const char *cli_strerror(int errnum, char *buf, size_t len)
 static char *cli_md5buff(const unsigned char *buffer, unsigned int len, unsigned char *dig)
 {
     unsigned char digest[16] = {0};
-    char *md5str, *pt;
+    char *md5str             = NULL;
+    char *pt                 = NULL;
     int i;
 
     cl_hash_data("md5", buffer, len, digest, NULL);
@@ -1183,7 +1184,7 @@ char *cli_genfname(const char *prefix)
     char *sanitized_prefix_base = NULL;
     char *fname                 = NULL;
     unsigned char salt[16 + 32];
-    char *tmp;
+    char *tmp = NULL;
     int i;
     size_t len;
 
@@ -1245,8 +1246,8 @@ char *cli_genfname(const char *prefix)
 
 char *cli_newfilepath(const char *dir, const char *fname)
 {
-    char *fullpath;
-    const char *mdir;
+    char *fullpath   = NULL;
+    const char *mdir = NULL;
     size_t len;
 
     mdir = dir ? dir : cli_gettmpdir();
@@ -1298,9 +1299,9 @@ cl_error_t cli_newfilepathfd(const char *dir, char *fname, char **name, int *fd)
 
 char *cli_gentemp_with_prefix(const char *dir, const char *prefix)
 {
-    char *fname;
-    char *fullpath;
-    const char *mdir;
+    char *fname      = NULL;
+    char *fullpath   = NULL;
+    const char *mdir = NULL;
     size_t len;
 
     mdir = dir ? dir : cli_gettmpdir();

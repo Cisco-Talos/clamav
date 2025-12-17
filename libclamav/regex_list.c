@@ -195,30 +195,46 @@ cl_error_t regex_list_match(struct regex_matcher *matcher, char *real_url, const
     if (display_url[0] == '.') display_url++;
     real_len    = strlen(real_url);
     display_len = strlen(display_url);
-    buffer_len  = (hostOnly && !is_allow_list_lookup) ? real_len + 1 : real_len + display_len + 1 + 1;
+    if (hostOnly && (is_allow_list_lookup != 1)) {
+        // Buffer is only for real part
+        buffer_len = real_len + 1;
+    } else {
+        // Buffer to hold both parts
+        buffer_len = real_len + display_len + 1 + 1;
+    }
     if (buffer_len < 3) {
         /* too short, no match possible */
         return CL_SUCCESS;
     }
-    buffer = cli_max_malloc(buffer_len + 1);
+    buffer = cli_max_calloc(buffer_len + 1, sizeof(char));
     if (!buffer) {
         cli_errmsg("regex_list_match: Unable to allocate memory for buffer\n");
         return CL_EMEM;
     }
 
-    strncpy(buffer, real_url, buffer_len);
-    buffer[real_len] = (!is_allow_list_lookup && hostOnly) ? '/' : ':';
+    if (is_allow_list_lookup == 2) {
+        /* Y-Type signatures only contain the real part */
+        strncpy(buffer, real_url, real_len);
+        buffer[real_len] = '/';
+        /* This is the number of characters not including null termination */
+        buffer_len--;
+    } else {
+        strncpy(buffer, real_url, buffer_len);
+        buffer[real_len] = (!is_allow_list_lookup && hostOnly) ? '/' : ':';
+    }
 
     /*
      * For H-type PDB signatures, real_url is actually the DisplayedHostname.
      * RealHostname is not used.
      */
-    if (!hostOnly || is_allow_list_lookup) {
+    if (is_allow_list_lookup != 2 && (!hostOnly || is_allow_list_lookup == 1)) {
         /* For all other PDB and WDB signatures concatenate Real:Displayed. */
         strncpy(buffer + real_len + 1, display_url, buffer_len - real_len);
     }
-    buffer[buffer_len - 1] = '/';
-    buffer[buffer_len]     = 0;
+
+    if (is_allow_list_lookup != 2) {
+        buffer[buffer_len - 1] = '/';
+    }
     cli_dbgmsg("Looking up in regex_list: %s\n", buffer);
 
     if (CL_SUCCESS != (rc = cli_ac_initdata(&mdata, 0, 0, 0, CLI_DEFAULT_AC_TRACKLEN)))
@@ -231,6 +247,7 @@ cl_error_t regex_list_match(struct regex_matcher *matcher, char *real_url, const
     reverse_string(bufrev);
 
     filter_search_rc = filter_search(&matcher->filter, (const unsigned char *)bufrev, buffer_len);
+
     if (filter_search_rc == -1) {
         free(buffer);
         free(bufrev);
@@ -884,6 +901,7 @@ cl_error_t regex_list_add_pattern(struct regex_matcher *matcher, char *pattern)
     cl_error_t rc;
     regex_t *preg;
     size_t len;
+
     /* we only match the host, so remove useless stuff */
     const char remove_end[]  = "([/?].*)?/";
     const char remove_end2[] = "([/?].*)/";

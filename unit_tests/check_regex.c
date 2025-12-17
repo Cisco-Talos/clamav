@@ -85,7 +85,7 @@ START_TEST(empty)
     ck_assert_msg(!!preg, "malloc");
     rc = cli_regex2suffix(pattern, preg, cb_fail, NULL);
     free(preg);
-    ck_assert_msg(rc == REG_EMPTY, "empty pattern");
+    ck_assert_msg(rc == CL_ERROR, "empty pattern");
     ck_assert_msg(cb_called == 0, "callback shouldn't be called");
 }
 END_TEST
@@ -294,7 +294,7 @@ START_TEST(regex_list_match_test)
 
     realurl = cli_safer_strdup(rtest->realurl);
     rc      = regex_list_match(&matcher, realurl, rtest->displayurl, NULL, 1, &info, 1);
-    ck_assert_msg(rc == rtest->result, "regex_list_match");
+    ck_assert_msg(rc == (cl_error_t)rtest->result, "regex_list_match");
     /* regex_list_match is not supposed to modify realurl in this case */
     ck_assert_msg(!strcmp(realurl, rtest->realurl), "realurl altered");
     free(realurl);
@@ -316,13 +316,13 @@ static void psetup_impl(int load2)
     phishing_init(engine);
     ck_assert_msg(!!engine->phishcheck, "phishing_init");
 
-    rc = init_domain_list(engine);
+    rc = phish_protected_domain_init(engine);
     ck_assert_msg(rc == CL_SUCCESS, "init_domain_list");
 
     f = fdopen(open_testfile("input" PATHSEP "other_sigs" PATHSEP "daily.pdb", O_RDONLY | O_BINARY), "r");
     ck_assert_msg(!!f, "fopen daily.pdb");
 
-    rc = load_regex_matcher(engine, engine->domain_list_matcher, f, &signo, 0, 0, NULL, 1);
+    rc = load_regex_matcher(engine, engine->phish_protected_domain_matcher, f, &signo, 0, 0, NULL, 1);
     ck_assert_msg(rc == CL_SUCCESS, "load_regex_matcher");
     fclose(f);
 
@@ -333,7 +333,7 @@ static void psetup_impl(int load2)
         ck_assert_msg(!!f, "fopen daily.gdb");
 
         signo = 0;
-        rc    = load_regex_matcher(engine, engine->domain_list_matcher, f, &signo, 0, 0, NULL, 1);
+        rc    = load_regex_matcher(engine, engine->phish_protected_domain_matcher, f, &signo, 0, 0, NULL, 1);
         ck_assert_msg(rc == CL_SUCCESS, "load_regex_matcher");
         fclose(f);
 
@@ -341,25 +341,25 @@ static void psetup_impl(int load2)
     }
     loaded_2 = load2;
 
-    rc = init_allow_list(engine);
-    ck_assert_msg(rc == CL_SUCCESS, "init_allow_list");
+    rc = phish_allow_list_init(engine);
+    ck_assert_msg(rc == CL_SUCCESS, "phish_allow_list_init");
 
     f     = fdopen(open_testfile("input" PATHSEP "other_sigs" PATHSEP "daily.wdb", O_RDONLY | O_BINARY), "r");
     signo = 0;
-    rc    = load_regex_matcher(engine, engine->allow_list_matcher, f, &signo, 0, 1, NULL, 1);
-    ck_assert_msg(rc == CL_SUCCESS, "load_regex_matcher");
+    rc    = load_regex_matcher(engine, engine->phish_allow_list_matcher, f, &signo, 0, 1, NULL, 1);
+    ck_assert_msg(rc == CL_SUCCESS, "load_regex_matcher phish_allow_list");
     fclose(f);
 
     ck_assert_msg(signo == 31, "Incorrect number of signatures: %u, expected %u", signo, 31);
 
-    rc = cli_build_regex_list(engine->allow_list_matcher);
-    ck_assert_msg(rc == CL_SUCCESS, "cli_build_regex_list");
+    rc = cli_build_regex_list(engine->phish_allow_list_matcher);
+    ck_assert_msg(rc == CL_SUCCESS, "cli_build_regex_list phish_allow_list");
 
-    rc = cli_build_regex_list(engine->domain_list_matcher);
-    ck_assert_msg(rc == CL_SUCCESS, "cli_build_regex_list");
+    rc = cli_build_regex_list(engine->phish_protected_domain_matcher);
+    ck_assert_msg(rc == CL_SUCCESS, "cli_build_regex_list phish_protected_domain");
 
-    ck_assert_msg(is_regex_ok(engine->allow_list_matcher), "is_regex_ok");
-    ck_assert_msg(is_regex_ok(engine->domain_list_matcher), "is_regex_ok");
+    ck_assert_msg(is_regex_ok(engine->phish_allow_list_matcher), "is_regex_ok");
+    ck_assert_msg(is_regex_ok(engine->phish_protected_domain_matcher), "is_regex_ok");
 }
 
 static void psetup(void)

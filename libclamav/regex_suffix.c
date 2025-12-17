@@ -480,11 +480,11 @@ cl_error_t cli_regex2suffix(const char *pattern, regex_t *preg, suffix_callback 
     struct node *n          = NULL;
     size_t last             = 0;
     int rc;
+    cl_error_t ret = CL_SUCCESS;
 
     if (NULL == pattern) {
         cli_errmsg("cli_regex2suffix: pattern can't be NULL\n");
-        rc = REG_INVARG;
-        goto done;
+        return CL_ENULLARG;
     }
 
     regex.preg = preg;
@@ -499,27 +499,49 @@ cl_error_t cli_regex2suffix(const char *pattern, regex_t *preg, suffix_callback 
         } else {
             cli_errmsg(MODULE "Error compiling regular expression: %s\n", pattern);
         }
-        return rc;
+        switch (rc) {
+            case REG_BADBR:
+            case REG_BADPAT:
+            case REG_BADRPT:
+            case REG_EBRACE:
+            case REG_EBRACK:
+            case REG_ECOLLATE:
+            case REG_ECTYPE:
+            case REG_EPAREN:
+            case REG_ERANGE:
+            case REG_ESUBREG:
+            case REG_INVARG:
+                ret = CL_EPARSE;
+                break;
+            case REG_ESPACE:
+                ret = CL_EMEM;
+                break;
+            default:
+                ret = CL_ERROR;
+                break;
+        }
+        return ret;
     }
+
     regex.nxt = NULL;
     CLI_SAFER_STRDUP_OR_GOTO_DONE(pattern, regex.pattern,
                                   cli_errmsg("cli_regex2suffix: unable to strdup regex.pattern\n");
-                                  rc = REG_ESPACE);
+                                  ret = CL_EMEM);
 
     n = parse_regex((const uint8_t *)pattern, strlen(pattern), &last);
     if (!n) {
-        rc = REG_ESPACE;
+        ret = CL_EMEM;
         goto done;
     }
     memset(&buf, 0, sizeof(buf));
     memset(&root_node, 0, sizeof(root_node));
     n->parent = &root_node;
 
-    rc = build_suffixtree_descend(n, &buf, cb, cbdata, &regex);
+    ret = build_suffixtree_descend(n, &buf, cb, cbdata, &regex);
 
 done:
     CLI_FREE_AND_SET_NULL(regex.pattern);
     CLI_FREE_AND_SET_NULL(buf.data);
     destroy_tree(n);
-    return rc;
+    return ret;
 }

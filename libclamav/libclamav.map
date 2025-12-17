@@ -308,8 +308,8 @@ CLAMAV_PRIVATE {
     cli_infomsg_simple;
     cli_set_debug_flag;
     fmap_dump_to_file;
-    init_allow_list;
-    init_domain_list;
+    phish_allow_list_init;
+    phish_protected_domain_init;
     lsig_increment_subsig_match;
     readdb_parse_ldb_subsignature;
     fuzzy_hash_calculate_image;

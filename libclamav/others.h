@@ -340,8 +340,8 @@ struct cl_engine {
     struct cli_cdb *cdb;
 
     /* Phishing .pdb and .wdb databases*/
-    struct regex_matcher *allow_list_matcher;
-    struct regex_matcher *domain_list_matcher;
+    struct regex_matcher *phish_allow_list_matcher;
+    struct regex_matcher *phish_protected_domain_matcher;
     struct phishcheck *phishcheck;
 
     /* Dynamic configuration */
@@ -575,16 +575,16 @@ extern LIBCLAMAV_EXPORT int have_rar;
 
 /* based on macros from A. Melnikoff */
 #define cbswap16(v) (((v & 0xff) << 8) | (((v) >> 8) & 0xff))
-#define cbswap32(v) ((((v) & 0x000000ff) << 24) | (((v) & 0x0000ff00) << 8) | \
-                     (((v) & 0x00ff0000) >> 8) | (((v) & 0xff000000) >> 24))
-#define cbswap64(v) ((((v) & 0x00000000000000ffULL) << 56) | \
-                     (((v) & 0x000000000000ff00ULL) << 40) | \
-                     (((v) & 0x0000000000ff0000ULL) << 24) | \
-                     (((v) & 0x00000000ff000000ULL) << 8) |  \
-                     (((v) & 0x000000ff00000000ULL) >> 8) |  \
-                     (((v) & 0x0000ff0000000000ULL) >> 24) | \
-                     (((v) & 0x00ff000000000000ULL) >> 40) | \
-                     (((v) & 0xff00000000000000ULL) >> 56))
+#define cbswap32(v) ((((v)&0x000000ff) << 24) | (((v)&0x0000ff00) << 8) | \
+                     (((v)&0x00ff0000) >> 8) | (((v)&0xff000000) >> 24))
+#define cbswap64(v) ((((v)&0x00000000000000ffULL) << 56) | \
+                     (((v)&0x000000000000ff00ULL) << 40) | \
+                     (((v)&0x0000000000ff0000ULL) << 24) | \
+                     (((v)&0x00000000ff000000ULL) << 8) |  \
+                     (((v)&0x000000ff00000000ULL) >> 8) |  \
+                     (((v)&0x0000ff0000000000ULL) >> 24) | \
+                     (((v)&0x00ff000000000000ULL) >> 40) | \
+                     (((v)&0xff00000000000000ULL) >> 56))
 
 #ifndef HAVE_ATTRIB_PACKED
 #define __attribute__(x)
@@ -833,8 +833,8 @@ cl_error_t cli_dispatch_scan_callback(cli_ctx *ctx, cl_scan_callback_t location)
 /* used by: spin, yc (C) aCaB */
 #define __SHIFTBITS(a) (sizeof(a) << 3)
 #define __SHIFTMASK(a) (__SHIFTBITS(a) - 1)
-#define CLI_ROL(a, b) a = (a << ((b) & __SHIFTMASK(a))) | (a >> ((__SHIFTBITS(a) - (b)) & __SHIFTMASK(a)))
-#define CLI_ROR(a, b) a = (a >> ((b) & __SHIFTMASK(a))) | (a << ((__SHIFTBITS(a) - (b)) & __SHIFTMASK(a)))
+#define CLI_ROL(a, b) a = (a << ((b)&__SHIFTMASK(a))) | (a >> ((__SHIFTBITS(a) - (b)) & __SHIFTMASK(a)))
+#define CLI_ROR(a, b) a = (a >> ((b)&__SHIFTMASK(a))) | (a << ((__SHIFTBITS(a) - (b)) & __SHIFTMASK(a)))
 
 /* Implementation independent sign-extended signed right shift */
 #ifdef HAVE_SAR
