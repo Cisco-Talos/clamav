@@ -5138,12 +5138,6 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
                 ret = cli_scanishield_msi(ctx, 14);
             break;
 
-        case CL_TYPE_BINARY_DATA:
-        case CL_TYPE_TEXT_UTF16BE:
-            if (SCAN_HEURISTICS && (DCONF_OTHER & OTHER_CONF_MYDOOMLOG))
-                ret = cli_check_mydoom_log(ctx);
-            break;
-
         case CL_TYPE_TEXT_ASCII:
             if (SCAN_HEURISTIC_STRUCTURED && (DCONF_OTHER & OTHER_CONF_DLP))
                 /* TODO: consider calling this from cli_scanscript() for
