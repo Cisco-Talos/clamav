@@ -267,7 +267,17 @@ cl_error_t scan_callback(STATBUF *sb, char *filename, const char *msg, enum cli_
     context.filename = filename;
     context.virsize  = 0;
     context.scandata = scandata;
+
+    struct timeval scan_start, scan_end;
+    gettimeofday(&scan_start, NULL);
+    off_t file_size = sb ? sb->st_size : 0;
+
     ret              = cl_scanfile_callback(filename, &virname, &scandata->scanned, scandata->engine, scandata->options, &context);
+
+    gettimeofday(&scan_end, NULL);
+    double scan_time_ms = (scan_end.tv_sec - scan_start.tv_sec) * 1000.0 +
+                          (scan_end.tv_usec - scan_start.tv_usec) / 1000.0;
+
     thrmgr_setactivetask(NULL, NULL);
 
     if (thrmgr_group_need_terminate(scandata->conn->group)) {
@@ -315,6 +325,8 @@ cl_error_t scan_callback(STATBUF *sb, char *filename, const char *msg, enum cli_
             else
                 logg(LOGG_INFO, "%s: %s FOUND\n", filename, virname);
         }
+        logg(LOGG_DEBUG, "METRICS: file=%s size=%lld time_ms=%.3f result=INFECTED\n",
+             filename, (long long)file_size, scan_time_ms);
     } else if (ret != CL_CLEAN) {
         scandata->errors++;
         if (conn_reply(scandata->conn, filename, cl_strerror(ret), "ERROR") == -1) {
@@ -322,8 +334,14 @@ cl_error_t scan_callback(STATBUF *sb, char *filename, const char *msg, enum cli_
             return CL_ETIMEOUT;
         }
         logg(LOGG_INFO, "%s: %s ERROR\n", filename, cl_strerror(ret));
+        logg(LOGG_DEBUG, "METRICS: file=%s size=%lld time_ms=%.3f result=ERROR\n",
+             filename, (long long)file_size, scan_time_ms);
     } else if (logok) {
         logg(LOGG_INFO, "%s: OK\n", filename);
+    }
+    if (ret == CL_CLEAN) {
+        logg(LOGG_DEBUG, "METRICS: file=%s size=%lld time_ms=%.3f result=CLEAN\n",
+             filename, (long long)file_size, scan_time_ms);
     }
 
     free(filename);
@@ -427,7 +445,17 @@ cl_error_t scanfd(
     context.filename = fdstr;
     context.virsize  = 0;
     context.scandata = NULL;
+
+    struct timeval scan_start, scan_end;
+    gettimeofday(&scan_start, NULL);
+    off_t file_size = statbuf.st_size;
+
     ret              = cl_scandesc_callback(fd, log_filename, &virname, scanned, engine, options, &context);
+
+    gettimeofday(&scan_end, NULL);
+    double scan_time_ms = (scan_end.tv_sec - scan_start.tv_sec) * 1000.0 +
+                          (scan_end.tv_usec - scan_start.tv_usec) / 1000.0;
+
     thrmgr_setactivetask(NULL, NULL);
 
     if (thrmgr_group_need_terminate(conn->group)) {
@@ -444,15 +472,21 @@ cl_error_t scanfd(
             logg(LOGG_INFO, "%s: %s(%s:%llu) FOUND\n", log_filename, virname, context.virhash, context.virsize);
         else
             logg(LOGG_INFO, "%s: %s FOUND\n", log_filename, virname);
+        logg(LOGG_DEBUG, "METRICS: file=%s size=%lld time_ms=%.3f result=INFECTED\n",
+             log_filename, (long long)file_size, scan_time_ms);
     } else if (ret != CL_CLEAN) {
         if (conn_reply(conn, reply_fdstr, cl_strerror(ret), "ERROR") == -1)
             ret = CL_ETIMEOUT;
+        logg(LOGG_DEBUG, "METRICS: file=%s size=%lld time_ms=%.3f result=ERROR\n",
+             log_filename, (long long)file_size, scan_time_ms);
         logg(LOGG_INFO, "%s: %s ERROR\n", log_filename, cl_strerror(ret));
     } else {
         if (conn_reply_single(conn, reply_fdstr, "OK") == CL_ETIMEOUT)
             ret = CL_ETIMEOUT;
         if (logok)
             logg(LOGG_INFO, "%s: OK\n", log_filename);
+        logg(LOGG_DEBUG, "METRICS: file=%s size=%lld time_ms=%.3f result=CLEAN\n",
+             log_filename, (long long)file_size, scan_time_ms);
     }
 
 done:
