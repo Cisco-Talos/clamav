@@ -475,8 +475,10 @@ static int dispatch_command(client_conn_t *conn, enum commands cmd, const char *
 static int print_ver(int desc, char term, const struct cl_engine *engine)
 {
     uint32_t ver;
+    long long num_sigs;
 
     ver = cl_engine_get_num(engine, CL_ENGINE_DB_VERSION, NULL);
+    num_sigs = cl_engine_get_num(engine, CL_ENGINE_NUM_SIGNATURES, NULL);
     if (ver) {
         char timestr[32];
         const char *tstr;
@@ -485,7 +487,13 @@ static int print_ver(int desc, char term, const struct cl_engine *engine)
         tstr = cli_ctime(&t, timestr, sizeof(timestr));
         /* cut trailing \n */
         timestr[strlen(tstr) - 1] = '\0';
+        if (num_sigs > 0) {
+            return mdprintf(desc, "ClamAV %s/%u/%s/%llu%c", get_version(), (unsigned int)ver, tstr, num_sigs, term);
+        }
         return mdprintf(desc, "ClamAV %s/%u/%s%c", get_version(), (unsigned int)ver, tstr, term);
+    }
+    if (num_sigs > 0) {
+        return mdprintf(desc, "ClamAV %s/%llu%c", get_version(), num_sigs, term);
     }
     return mdprintf(desc, "ClamAV %s%c", get_version(), term);
 }

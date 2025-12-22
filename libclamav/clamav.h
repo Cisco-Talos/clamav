@@ -345,6 +345,7 @@ enum cl_engine_field {
     CL_ENGINE_CVDCERTSDIR,         /** (char *) */
     CL_ENGINE_TMPDIR_RECURSION,    /** uint32_t */
     CL_ENGINE_FIPS_LIMITS,         /** uint32_t */
+    CL_ENGINE_NUM_SIGNATURES,      /** size_t */
 };
 
 enum bytecode_security {
