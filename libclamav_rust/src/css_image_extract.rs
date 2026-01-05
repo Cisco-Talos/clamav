@@ -23,7 +23,7 @@
 use std::{ffi::CStr, os::raw::c_char};
 
 use base64::{engine::general_purpose as base64_engine_standard, Engine as _};
-use log::{debug, error, warn};
+use log::{debug, warn};
 use unicode_segmentation::UnicodeSegmentation;
 
 use crate::{

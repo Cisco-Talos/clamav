@@ -43,7 +43,7 @@ use clam_sigutil::{
     SigType, Signature,
 };
 
-use log::{debug, error, warn};
+use log::{debug, warn};
 
 use crate::{ffi_error, ffi_util::FFIError, sys::cl_retflevel, validate_str_param};
 
