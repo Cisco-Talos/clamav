@@ -3,6 +3,30 @@
 Note: This file refers to the official packages. Things described here may
 differ slightly from third-party binary packages.
 
+## 1.4.4
+
+ClamAV 1.4.4 is a patch release with the following fixes:
+
+- [CVE-2026-20031](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2026-20031):
+  Fixed an error handling bug in the HTML file parser that may crash the program
+  and cause a denial-of-service (DoS) condition.
+
+  This issue was introduced in version 1.1.0.
+  The fix is included in 1.5.2 and 1.4.4.
+
+- Fixed a possible crash when scanning some TIFF files by upgrading the
+  affected ClamAV dependency, a Rust image library.
+
+  Unfortunately, this change requires a newer Rust compiler for ClamAV.
+  The minimum Rust version for ClamAV 1.4.3 was 1.70.0.
+  The minimum Rust version for ClamAV 1.4.4 is now 1.87.0.
+
+- Upgraded the Rust `bytes` dependency to a newer version to resolve the
+  RUSTSEC-2026-0007 advisory.
+
+- Fixed a possible crash caused by invalid pointer alignment on some platforms.
+  This fix is courtesy of Hsuan-Ming Chen at Synology PSIRT.
+
 ## 1.4.3
 
 ClamAV 1.4.3 is a patch release with the following fixes:
