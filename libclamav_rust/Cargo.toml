@@ -27,6 +27,9 @@ bzip2-rs = "0.1"
 byteorder = "1.5"
 delharc = "0.6"
 
+[features]
+not_ready = []
+
 [lib]
 crate-type = ["staticlib"]
 name = "clamav_rust"
