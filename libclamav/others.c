@@ -1766,9 +1766,12 @@ cl_error_t cli_recursion_stack_push(cli_ctx *ctx, cl_fmap_t *map, cli_file_t typ
 
     cli_scan_layer_t *current_layer = NULL;
     cli_scan_layer_t *new_layer     = NULL;
+    uint32_t old_recursion_level    = 0;
 
     char *new_temp_path = NULL;
     char *fmap_basename = NULL;
+
+    old_recursion_level = ctx->recursion_level;
 
     // Check the regular limits
     if (CL_SUCCESS != (status = cli_checklimits("cli_recursion_stack_push", ctx, map->len, 0, 0))) {
@@ -1995,6 +1998,18 @@ cl_error_t cli_recursion_stack_push(cli_ctx *ctx, cl_fmap_t *map, cli_file_t typ
     }
 
 done:
+
+    if (CL_SUCCESS != status) {
+        // The push failed, so roll back the recursion level change.
+        ctx->recursion_level = old_recursion_level;
+
+        ctx->this_layer_tmpdir = ctx->recursion_stack[ctx->recursion_level].tmpdir;
+        ctx->fmap              = ctx->recursion_stack[ctx->recursion_level].fmap;
+
+        if (SCAN_COLLECT_METADATA) {
+            ctx->this_layer_metadata_json = ctx->recursion_stack[ctx->recursion_level].metadata_json;
+        }
+    }
 
     if (new_temp_path) {
         free(new_temp_path);
