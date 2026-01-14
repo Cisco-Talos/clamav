@@ -1597,13 +1597,13 @@ static int cli_loadwdb(FILE *fs, struct cl_engine *engine, unsigned int options,
     if (!(engine->dconf->phishing & PHISHING_CONF_ENGINE))
         return CL_SUCCESS;
 
-    if (!engine->allow_list_matcher) {
-        if (CL_SUCCESS != (ret = init_allow_list(engine))) {
+    if (!engine->phish_allow_list_matcher) {
+        if (CL_SUCCESS != (ret = phish_allow_list_init(engine))) {
             return ret;
         }
     }
 
-    if (CL_SUCCESS != (ret = load_regex_matcher(engine, engine->allow_list_matcher, fs, NULL, options, 1, dbio, engine->dconf->other & OTHER_CONF_PREFILTERING))) {
+    if (CL_SUCCESS != (ret = load_regex_matcher(engine, engine->phish_allow_list_matcher, fs, NULL, options, 1, dbio, engine->dconf->other & OTHER_CONF_PREFILTERING))) {
         return ret;
     }
 
@@ -1617,13 +1617,13 @@ static int cli_loadpdb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
     if (!(engine->dconf->phishing & PHISHING_CONF_ENGINE))
         return CL_SUCCESS;
 
-    if (!engine->domain_list_matcher) {
-        if (CL_SUCCESS != (ret = init_domain_list(engine))) {
+    if (!engine->phish_protected_domain_matcher) {
+        if (CL_SUCCESS != (ret = phish_protected_domain_init(engine))) {
             return ret;
         }
     }
 
-    if (CL_SUCCESS != (ret = load_regex_matcher(engine, engine->domain_list_matcher, fs, signo, options, 0, dbio, engine->dconf->other & OTHER_CONF_PREFILTERING))) {
+    if (CL_SUCCESS != (ret = load_regex_matcher(engine, engine->phish_protected_domain_matcher, fs, signo, options, 0, dbio, engine->dconf->other & OTHER_CONF_PREFILTERING))) {
         return ret;
     }
 
@@ -6045,12 +6045,12 @@ cl_error_t cl_engine_compile(struct cl_engine *engine)
         hm_flush(engine->hm_fp);
     TASK_COMPLETE();
 
-    if ((ret = cli_build_regex_list(engine->allow_list_matcher))) {
+    if ((ret = cli_build_regex_list(engine->phish_allow_list_matcher))) {
         return ret;
     }
     TASK_COMPLETE();
 
-    if ((ret = cli_build_regex_list(engine->domain_list_matcher))) {
+    if ((ret = cli_build_regex_list(engine->phish_protected_domain_matcher))) {
         return ret;
     }
     TASK_COMPLETE();

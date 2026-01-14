@@ -352,14 +352,14 @@ set(LIBCLAMAV_SOURCES
     # mail & phishing
     iana_cctld.h
     iana_tld.h
-    line.c              line.h
-    mbox.c              mbox.h
-    message.c           message.h
-    phish_domaincheck_db.c phish_domaincheck_db.h
-    phish_allow_list.c  phish_allow_list.h
-    phishcheck.c        phishcheck.h
-    regex_list.c        regex_list.h
-    regex_suffix.c      regex_suffix.h
+    line.c                          line.h
+    mbox.c                          mbox.h
+    message.c                       message.h
+    phish_domaincheck_db.c          phish_domaincheck_db.h
+    phish_allow_list.c              phish_allow_list.h
+    phishcheck.c                    phishcheck.h
+    regex_list.c                    regex_list.h
+    regex_suffix.c                  regex_suffix.h
     # sis
     sis.c               sis.h
     # tnef

@@ -26,10 +26,10 @@
 
 #include "clamav.h"
 
-cl_error_t init_allow_list(struct cl_engine* engine);
-void allow_list_done(struct cl_engine* engine);
+cl_error_t phish_allow_list_init(struct cl_engine* engine);
+void phish_allow_list_done(struct cl_engine* engine);
 void allow_list_cleanup(const struct cl_engine* engine);
-int is_allow_list_ok(const struct cl_engine* engine);
-cl_error_t allow_list_match(const struct cl_engine* engine, char* real_url, const char* display_url, int hostOnly);
+int phish_is_allow_list_ok(const struct cl_engine* engine);
+cl_error_t phish_allow_list_match(const struct cl_engine* engine, char* real_url, const char* display_url, int hostOnly, int is_allow_list_lookup);
 
 #endif

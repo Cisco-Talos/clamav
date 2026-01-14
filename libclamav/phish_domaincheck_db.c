@@ -41,38 +41,38 @@
 #include "phish_domaincheck_db.h"
 #include "regex_list.h"
 
-int domain_list_match(const struct cl_engine* engine, char* real_url, const char* display_url, const struct pre_fixup_info* pre_fixup, int hostOnly)
+int phish_protected_domain_match(const struct cl_engine* engine, char* real_url, const char* display_url, const struct pre_fixup_info* pre_fixup, int hostOnly)
 {
     const char* info;
-    int rc = engine->domain_list_matcher ? regex_list_match(engine->domain_list_matcher, real_url, display_url, hostOnly ? pre_fixup : NULL, hostOnly, &info, 0) : 0;
+    int rc = engine->phish_protected_domain_matcher ? regex_list_match(engine->phish_protected_domain_matcher, real_url, display_url, hostOnly ? pre_fixup : NULL, hostOnly, &info, 0) : 0;
     return rc;
 }
 
-int init_domain_list(struct cl_engine* engine)
+int phish_protected_domain_init(struct cl_engine* engine)
 {
     if (engine) {
-        engine->domain_list_matcher = (struct regex_matcher*)malloc(sizeof(struct regex_matcher));
-        if (!engine->domain_list_matcher) {
+        engine->phish_protected_domain_matcher = (struct regex_matcher*)malloc(sizeof(struct regex_matcher));
+        if (!engine->phish_protected_domain_matcher) {
             cli_errmsg("Phishcheck: Unable to allocate memory for init_domain_list\n");
             return CL_EMEM;
         }
 #ifdef USE_MPOOL
-        ((struct regex_matcher*)engine->domain_list_matcher)->mempool = engine->mempool;
+        ((struct regex_matcher*)engine->phish_protected_domain_matcher)->mempool = engine->mempool;
 #endif
-        return init_regex_list(engine->domain_list_matcher, engine->dconf->other & OTHER_CONF_PREFILTERING);
+        return init_regex_list(engine->phish_protected_domain_matcher, engine->dconf->other & OTHER_CONF_PREFILTERING);
     } else
         return CL_ENULLARG;
 }
 
-int is_domain_list_ok(const struct cl_engine* engine)
+int phish_is_protected_domain_ok(const struct cl_engine* engine)
 {
-    return (engine && engine->domain_list_matcher) ? is_regex_ok(engine->domain_list_matcher) : 1;
+    return (engine && engine->phish_protected_domain_matcher) ? is_regex_ok(engine->phish_protected_domain_matcher) : 1;
 }
 
-void domain_list_done(struct cl_engine* engine)
+void phish_protected_domain_done(struct cl_engine* engine)
 {
-    if (engine && engine->domain_list_matcher) {
-        regex_list_done(engine->domain_list_matcher);
-        free(engine->domain_list_matcher);
+    if (engine && engine->phish_protected_domain_matcher) {
+        regex_list_done(engine->phish_protected_domain_matcher);
+        free(engine->phish_protected_domain_matcher);
     }
 }
