@@ -833,6 +833,10 @@ static cl_error_t add_pattern_suffix(void *cbdata, const char *suffix, size_t su
 
         if (CL_SUCCESS != ret) {
             cli_hashtab_delete(&matcher->suffix_hash, suffix, suffix_len);
+            /* Check if there is anything to shrink back to */
+            if (n == 0) {
+                goto done;
+            }
             /*shrink the size back to what it was.*/
             CLI_MAX_REALLOC_OR_GOTO_DONE(matcher->suffix_regexes, n * sizeof(*matcher->suffix_regexes));
         } else {
