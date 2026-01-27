@@ -1,7 +1,7 @@
 /*
  *  Onenote document parser to extract embedded files.
  *
- *  Copyright (C) 2023-2025 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2023-2026 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *
  *  Authors: Micah Snyder
  *
