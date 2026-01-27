@@ -1,7 +1,7 @@
 /*
  * Text detection based on ascmagic.c from the file(1) utility.
  *
- * Portions Copyright (C) 2013-2025 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ * Portions Copyright (C) 2013-2026 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  * Portions Copyright (C) 2008-2013 Sourcefire, Inc.
  *
  * Copyright (c) Ian F. Darwin 1986-1995.

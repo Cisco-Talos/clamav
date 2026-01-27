@@ -1,4 +1,4 @@
-# Copyright (C) 2017-2025 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+# Copyright (C) 2017-2026 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
 
 """
 Wrapper for unittest to provide ClamAV specific test environment features.
