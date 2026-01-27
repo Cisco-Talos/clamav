@@ -1,7 +1,7 @@
 /*
  *  OpenSSL certificate verification for Linux.
  *
- *  Copyright (C) 2016-2025 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2016-2026 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *
  *  Authors: Russ Kubik
  *

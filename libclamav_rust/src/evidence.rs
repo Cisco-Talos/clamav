@@ -1,7 +1,7 @@
 /*
  *  Functions and structures for recording, reporting evidence towards a scan verdict.
  *
- *  Copyright (C) 2022-2025 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2022-2026 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *
  *  Authors: Micah Snyder
  *
