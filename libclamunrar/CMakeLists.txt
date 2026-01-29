@@ -1,4 +1,4 @@
-# Copyright (C) 2019-2025 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+# Copyright (C) 2019-2026 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
 
 add_compile_definitions(RARDLL)
 add_compile_definitions(_FILE_OFFSET_BITS=64)
