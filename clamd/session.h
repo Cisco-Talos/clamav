@@ -49,6 +49,8 @@
 #define CMD23 "GET / HTTP/2"
 #define CMD24 ""
 
+#define CMD25 "SELFCHECK"
+
 // libclamav
 #include "clamav.h"
 
@@ -62,6 +64,7 @@ enum commands {
     COMMAND_UNKNOWN  = 0,
     COMMAND_SHUTDOWN = 1,
     COMMAND_RELOAD,
+    COMMAND_SELFCHECK,
     COMMAND_END,
     COMMAND_SCAN,
     COMMAND_PING,
