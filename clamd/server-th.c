@@ -571,7 +571,7 @@ static void *acceptloop_th(void *arg)
             /* don't accept unlimited number of connections, or
              * we'll run out of file descriptors */
             pthread_mutex_lock(recv_fds->buf_mutex);
-            while (recv_fds->nfds > (unsigned)max_queue) {
+            while (recv_fds->nfds >= (unsigned)max_queue) {
                 pthread_mutex_lock(&exit_mutex);
                 if (progexit) {
                     pthread_mutex_unlock(&exit_mutex);
@@ -1580,7 +1580,7 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
         pthread_mutex_lock(fds->buf_mutex);
         fds_cleanup(fds);
         /* signal that we can accept more connections */
-        if (fds->nfds <= (unsigned)max_queue)
+        if (fds->nfds < (unsigned)max_queue)
             pthread_cond_signal(&acceptdata.cond_nfds);
         new_sd = fds_poll_recv(fds, selfchk ? (int)selfchk : -1, 1, event_wake_recv);
 #ifdef _WIN32
