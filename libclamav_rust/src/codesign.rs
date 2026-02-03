@@ -576,7 +576,13 @@ impl Verifier {
             if path.is_file() {
                 let ext = path.extension();
                 if ext.is_some() && (ext.unwrap() == "pem" || ext.unwrap() == "crt") {
-                    let certs_in_file = X509::stack_from_pem(&std::fs::read(path)?)?;
+                    let read_result = std::fs::read(&path);
+                    if let Err(e) = read_result {
+                        debug!("Error reading certificate file '{:?}': {}", path, e);
+                        continue;
+                    }
+                    let certs_in_file = X509::stack_from_pem(&read_result.unwrap())?;
+
                     for cert in certs_in_file {
                         // get cert common name
                         let common_name = cert
