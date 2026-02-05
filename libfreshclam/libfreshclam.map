@@ -5,6 +5,7 @@ FRESHCLAM_PUBLIC {
     fc_cleanup;
     fc_prune_database_directory;
     fc_test_database;
+    fc_test_database_ex;
     fc_dns_query_update_info;
     fc_download_url_database;
     fc_download_url_databases;

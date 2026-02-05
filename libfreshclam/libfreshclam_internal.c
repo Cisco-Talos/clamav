@@ -224,7 +224,7 @@ fc_error_t load_freshclam_dat(void)
 
             size_t minSize = strlen(MIRRORS_DAT_MAGIC) + sizeof(freshclam_dat_v1_t);
             if (minSize > (size_t)file_size) {
-                logg(LOGG_DEBUG, "freshclam.dat is smaller than expected: %zu != %ld\n", sizeof(freshclam_dat_v1_t), file_size);
+                logg(LOGG_DEBUG, "freshclam.dat is smaller than expected: %zu != %lld\n", sizeof(freshclam_dat_v1_t), (long long)file_size);
                 goto done;
             }
 
