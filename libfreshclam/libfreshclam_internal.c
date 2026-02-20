@@ -224,7 +224,7 @@ fc_error_t load_freshclam_dat(void)
 
             size_t minSize = strlen(MIRRORS_DAT_MAGIC) + sizeof(freshclam_dat_v1_t);
             if (minSize > (size_t)file_size) {
-                logg(LOGG_DEBUG, "freshclam.dat is smaller than expected: %zu != %ld\n", sizeof(freshclam_dat_v1_t), file_size);
+                logg(LOGG_DEBUG, "freshclam.dat is smaller than expected: %zu != %lld\n", sizeof(freshclam_dat_v1_t), (long long)file_size);
                 goto done;
             }
 
@@ -1471,6 +1471,7 @@ static fc_error_t getcvd(
 
     struct cl_cvd *cvd = NULL;
     char extension[5]  = {0};
+    cvd_type dbtype    = CVD_TYPE_UNKNOWN;
 
     char *tmpsignfile     = NULL;
     size_t tmpsignfileLen = 0;
@@ -1509,51 +1510,64 @@ static fc_error_t getcvd(
     // grab the extension from the cvdfile
     strncpy(extension, cvdfile + strlen(cvdfile) - 4, 4);
 
+    // set the cvd type based on the extension
+    if (0 == strncmp(extension, ".cvd", 4)) {
+        dbtype = CVD_TYPE_CVD;
+    } else if (0 == strncmp(extension, ".cld", 4)) {
+        dbtype = CVD_TYPE_CLD;
+    } else {
+        logg(LOGG_ERROR, "Unknown database extension: %s\n", extension);
+        status = FC_EBADCVD;
+        goto done;
+    }
+
     if (NULL == (cvd = cl_cvdhead(tmpfile))) {
         logg(LOGG_ERROR, "Can't read CVD header of new %s database.\n", cvdfile);
         status = FC_EBADCVD;
         goto done;
     }
 
-    // try to get the sign file before verifying the cvd
-    // use the cvd name + version to get the signature file
-    // sign-file = database + "-" + version + ".sign"
-    sign_filenameLen = strlen(database) + strlen("-") + 10 + strlen(".cvd") + strlen(".sign");
-    sign_filename    = malloc(sign_filenameLen + 1);
-    snprintf(sign_filename, sign_filenameLen + 1, "%s-%u%s.sign", database, cvd->version, extension);
+    if (dbtype == CVD_TYPE_CVD) {
+        // try to get the sign file before verifying the cvd
+        // use the cvd name + version to get the signature file
+        // sign-file = database + "-" + version + ".sign"
+        sign_filenameLen = strlen(database) + strlen("-") + 10 + strlen(".cvd") + strlen(".sign");
+        sign_filename    = malloc(sign_filenameLen + 1);
+        snprintf(sign_filename, sign_filenameLen + 1, "%s-%u%s.sign", database, cvd->version, extension);
 
-    // sign-file-url = server + "/" + sign_filename
-    sign_file_urlLen = strlen(server) + strlen("/") + strlen(sign_filename);
-    sign_file_url    = malloc(sign_file_urlLen + 1);
-    snprintf(sign_file_url, sign_file_urlLen + 1, "%s/%s", server, sign_filename);
+        // sign-file-url = server + "/" + sign_filename
+        sign_file_urlLen = strlen(server) + strlen("/") + strlen(sign_filename);
+        sign_file_url    = malloc(sign_file_urlLen + 1);
+        snprintf(sign_file_url, sign_file_urlLen + 1, "%s/%s", server, sign_filename);
 
-    // sign-file-tempfilename = g_tempDirectory + sign_filename
-    tmpsignfileLen = strlen(g_tempDirectory) + strlen(PATHSEP) + strlen(sign_filename);
-    tmpsignfile    = malloc(tmpsignfileLen + 1);
-    snprintf(tmpsignfile, tmpsignfileLen + 1, "%s" PATHSEP "%s", g_tempDirectory, sign_filename);
+        // sign-file-tempfilename = g_tempDirectory + sign_filename
+        tmpsignfileLen = strlen(g_tempDirectory) + strlen(PATHSEP) + strlen(sign_filename);
+        tmpsignfile    = malloc(tmpsignfileLen + 1);
+        snprintf(tmpsignfile, tmpsignfileLen + 1, "%s" PATHSEP "%s", g_tempDirectory, sign_filename);
 
-    ret = downloadFile(sign_file_url, tmpsignfile, 1, logerr, 1, 0);
-    if (ret != FC_SUCCESS) {
-        logg(LOGG_DEBUG, "No external .sign digital signature file for %s-%u\n", database, cvd->version);
-        // It's not an error if the .sign file doesn't exist.
-        // Just continue with the cvd verification and hope we can use the legacy md5-based rsa method.
-    } else {
-        // Set the output variable to the sign file name so we can move it later.
-        logg(LOGG_DEBUG, "Downloaded digital signature file: %s\n", tmpsignfile);
-        if (NULL != sign_file) {
-            CLI_SAFER_STRDUP_OR_GOTO_DONE(
-                tmpsignfile,
-                *sign_file,
-                logg(LOGG_ERROR, "getcvd: Failed to duplicate sign file name.\n");
-                status = FC_EMEM);
+        ret = downloadFile(sign_file_url, tmpsignfile, 1, logerr, 1, 0);
+        if (ret != FC_SUCCESS) {
+            logg(LOGG_DEBUG, "No external .sign digital signature file for %s-%u\n", database, cvd->version);
+            // It's not an error if the .sign file doesn't exist.
+            // Just continue with the cvd verification and hope we can use the legacy md5-based rsa method.
+        } else {
+            // Set the output variable to the sign file name so we can move it later.
+            logg(LOGG_DEBUG, "Downloaded digital signature file: %s\n", tmpsignfile);
+            if (NULL != sign_file) {
+                CLI_SAFER_STRDUP_OR_GOTO_DONE(
+                    tmpsignfile,
+                    *sign_file,
+                    logg(LOGG_ERROR, "getcvd: Failed to duplicate sign file name.\n");
+                    status = FC_EMEM);
+            }
         }
-    }
 
-    // Now that we have the cvd and the sign file, we can verify the cvd.
-    if (CL_SUCCESS != (cl_ret = cli_cvdverify(tmpfile, g_bFipsLimits, g_signVerifier))) {
-        logg(LOGG_ERROR, "Verification: %s\n", cl_strerror(cl_ret));
-        status = FC_EBADCVD;
-        goto done;
+        // Now that we have the cvd and the sign file, we can verify the cvd.
+        if (CL_SUCCESS != (cl_ret = cli_cvdverify(tmpfile, g_bFipsLimits, g_signVerifier))) {
+            logg(LOGG_ERROR, "Verification: %s\n", cl_strerror(cl_ret));
+            status = FC_EBADCVD;
+            goto done;
+        }
     }
 
     if (cvd->version < remoteVersion) {

@@ -150,6 +150,20 @@ fc_error_t fc_test_database(
     int bBytecodeEnabled);
 
 /**
+ * @brief Test if database loads without errors, with option to set certs directory.
+ *
+ * @param dbFilename       Filename of database.
+ * @param bBytecodeEnabled Non-zero if database has bytecode signatures, and should be tested.
+ * @param certsDirectory   (optional) Directory containing CA certificates to verify digital signatures.
+ * @return fc_error_t      FC_SUCCESS if loaded correctly.
+ * @return fc_error_t      FC_EARG callback was passed invalid arguments.
+ */
+fc_error_t fc_test_database_ex(
+    const char *dbFilename,
+    int bBytecodeEnabled,
+    char *certsDirectory);
+
+/**
  * @brief Query Update Info via DNS to get database version info, and ClamAV version info.
  *
  * Caller must free dnsUpdateInfo.

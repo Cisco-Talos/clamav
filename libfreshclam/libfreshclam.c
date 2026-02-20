@@ -462,6 +462,11 @@ int version_string_compare(char *v1, size_t v1_len, char *v2, size_t v2_len)
 
 fc_error_t fc_test_database(const char *dbFilename, int bBytecodeEnabled)
 {
+    return fc_test_database_ex(dbFilename, bBytecodeEnabled, NULL);
+}
+
+fc_error_t fc_test_database_ex(const char *dbFilename, int bBytecodeEnabled, char *certsDirectory)
+{
     fc_error_t status        = FC_EARG;
     struct cl_engine *engine = NULL;
     unsigned newsigs         = 0;
@@ -482,6 +487,12 @@ fc_error_t fc_test_database(const char *dbFilename, int bBytecodeEnabled)
     // Disable cache as testing the database doesn't need caching,
     // having cache will only waste time and memory.
     engine->engine_options |= ENGINE_OPTIONS_DISABLE_CACHE;
+
+    if ((cl_ret = cl_engine_set_str(engine, CL_ENGINE_CVDCERTSDIR, certsDirectory))) {
+        logg(LOGG_ERROR, "Failed to set certs directory when testing database: %s\n", cl_strerror(cl_ret));
+        status = FC_ETESTFAIL;
+        goto done;
+    }
 
     cl_engine_set_clcb_stats_submit(engine, NULL);
 
