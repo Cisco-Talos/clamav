@@ -1,7 +1,7 @@
 /*
  *  ALZ archive extraction.
  *
- *  Copyright (C) 2024-2025 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2024-2026 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *
  *  Authors: Andy Ragusa
  *

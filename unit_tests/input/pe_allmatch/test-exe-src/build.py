@@ -1,6 +1,6 @@
 #!/bin/env python3
 
-# Copyright (C) 2022-2025 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+# Copyright (C) 2022-2026 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
 #
 # Authors: Andrew Williams
 #

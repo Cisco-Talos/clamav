@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 #
-# Copyright (C) 2025 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+# Copyright (C) 2025-2026 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
 
 FROM index.docker.io/library/debian:12-slim AS clamav-debian-devcontainer
 

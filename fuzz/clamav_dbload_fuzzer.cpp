@@ -1,7 +1,7 @@
 /*
  * Fuzz target for cl_load()
  *
- * Copyright (C) 2018-2025 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ * Copyright (C) 2018-2026 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  * Authors: Micah Snyder
  *
  * Redistribution and use in source and binary forms, with or without

@@ -1,7 +1,7 @@
 /*
  *  Extract XLM (Excel 4.0) macro source code for component MS Office Documents
  *
- *  Copyright (C) 2020-2025 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2020-2026 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *
  *  Authors: Jonas Zaddach
  *
