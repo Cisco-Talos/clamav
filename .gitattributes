@@ -8,6 +8,7 @@
 
 # Files that should be left untouched (binary is macro for -text -diff)
 *.ref           binary
+*.pdf           binary
 
 # Preserve signature for .cargo/vendor files (from the tarabll)
 +/.cargo/vendor binary
