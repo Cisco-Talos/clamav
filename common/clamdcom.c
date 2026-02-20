@@ -23,6 +23,9 @@
 #include "clamav-config.h"
 #endif
 
+/* must be first because it may define _XOPEN_SOURCE */
+#include "fdpassing.h"
+
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>

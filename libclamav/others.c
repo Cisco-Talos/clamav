@@ -954,6 +954,8 @@ long long cl_engine_get_num(const struct cl_engine *engine, enum cl_engine_field
             return engine->pcre_recmatch_limit;
         case CL_ENGINE_PCRE_MAX_FILESIZE:
             return engine->pcre_max_filesize;
+        case CL_ENGINE_NUM_SIGNATURES:
+            return (long long)engine->num_total_signatures;
         default:
             cli_errmsg("cl_engine_get: Incorrect field number\n");
             if (err)

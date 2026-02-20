@@ -30,6 +30,7 @@
 int client(const struct optstruct *opts, int *infected, int *err);
 int get_clamd_version(const struct optstruct *opts);
 int reload_clamd_database(const struct optstruct *opts);
+int get_clamd_signature_count(const struct optstruct *opts, unsigned long long *sigs);
 int16_t ping_clamd(const struct optstruct *opts);
 
 #endif

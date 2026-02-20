@@ -402,6 +402,70 @@ int reload_clamd_database(const struct optstruct *opts)
     return 0;
 }
 
+int get_clamd_signature_count(const struct optstruct *opts, unsigned long long *sigs)
+{
+    char *buff;
+    int len, sockd;
+    struct RCVLN rcv;
+    const char zVERSION[] = "zVERSION";
+    char *last_slash, *endptr;
+
+    if (!sigs) {
+        return 2;
+    }
+
+    *sigs = 0;
+
+    isremote(opts);
+    if ((sockd = dconnect(clamdopts)) < 0) return 2;
+    recvlninit(&rcv, sockd);
+
+    if (sendln(sockd, zVERSION, sizeof(zVERSION))) {
+        closesocket(sockd);
+        return 2;
+    }
+
+    while ((len = recvln(&rcv, &buff, NULL))) {
+        if (len == -1) {
+            logg(LOGG_ERROR, "Error occurred while receiving version information.\n");
+            break;
+        }
+
+        /* Check if the response was "COMMAND UNAVAILABLE" */
+        if (len >= 19 && memcmp(buff, "COMMAND UNAVAILABLE", 19) == 0) {
+            closesocket(sockd);
+            return 2;
+        }
+
+        /* Parse the VERSION response format:
+         * "ClamAV version/dbversion/timestamp/signatures" (if ver and sigs > 0)
+         * "ClamAV version/dbversion/timestamp" (if ver but sigs == 0)
+         * "ClamAV version/signatures" (if no ver but sigs > 0)
+         * "ClamAV version" (if no ver and no sigs)
+         */
+        /* Only parse lines that start with "ClamAV" */
+        if (len >= 6 && memcmp(buff, "ClamAV", 6) == 0) {
+            /* Find the last '/' to get the signature count */
+            last_slash = strrchr(buff, '/');
+            if (last_slash) {
+                last_slash++;
+                /* Try to parse as number - if it's a number, it's the signature count */
+                *sigs = strtoull(last_slash, &endptr, 10);
+                if (endptr == last_slash || (*endptr != '\0' && *endptr != '\n' && *endptr != '\r')) {
+                    /* Last field is not a number, so no signature count in response */
+                    *sigs = 0;
+                } else if (*sigs > 0) {
+                    /* Successfully parsed signature count, we're done */
+                    break;
+                }
+            }
+        }
+    }
+
+    closesocket(sockd);
+    return (*sigs > 0) ? 0 : 2;
+}
+
 int client(const struct optstruct *opts, int *infected, int *err)
 {
     int remote, scantype, session = 0, errors = 0, scandash = 0, maxrec, flags = 0;
