@@ -720,9 +720,7 @@ static fc_error_t create_curl_handle(
         if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_PROXYPORT, g_proxyPort)) {
             logg(LOGG_ERROR, "create_curl_handle: Failed to set CURLOPT_PROXYPORT (%u)!\n", g_proxyPort);
         }
-        if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_HTTPPROXYTUNNEL, 1L)) { // Necessary?
-            logg(LOGG_ERROR, "create_curl_handle: Failed to set CURLOPT_HTTPPROXYTUNNEL (1)!\n");
-        }
+        /* We do not need to set CURLOPT_HTTPPROXYTUNNEL because Curl handles this automatically */
 #ifdef CURLOPT_SUPPRESS_CONNECT_HEADERS
         if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_SUPPRESS_CONNECT_HEADERS, 1L)) { // Necessary?
             logg(LOGG_ERROR, "create_curl_handle: Failed to set CURLOPT_SUPPRESS_CONNECT_HEADERS (1)!\n");
