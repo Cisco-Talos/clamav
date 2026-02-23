@@ -126,11 +126,40 @@ char *freshdbdir(void)
 
 void print_version(const char *dbdir)
 {
-    char *fdbdir = NULL, *path;
-    const char *pt;
-    struct cl_cvd *daily;
-    time_t db_time;
     unsigned int db_version = 0;
+    time_t db_time = 0;
+    int got = 0;
+
+    got = cl_get_db_build_info(dbdir, &db_version, &db_time);
+
+    if (got < 0) {
+        /* error while trying to determine DB info */
+        printf("ClamAV %s\n", get_version());
+        return;
+    }
+
+    if (got) {
+        printf("ClamAV %s/%u/%s", get_version(), db_version, ctime(&db_time));
+    } else {
+        printf("ClamAV %s\n", get_version());
+    }
+}
+
+/*
+ * cl_get_db_build_info - locate the freshest daily DB in the provided
+ * directory (or the default directories if dbdir is NULL) and return
+ * the database version and build time.
+ *
+ * Returns: 1 if db info was found and filled, 0 if no daily DB found,
+ * and -1 on error (e.g. allocation failure).
+ */
+int cl_get_db_build_info(const char *dbdir, unsigned int *out_version, time_t *out_time)
+{
+    char *fdbdir = NULL, *path = NULL;
+    const char *pt;
+    struct cl_cvd *daily = NULL;
+    unsigned int db_version = 0;
+    time_t db_time = 0;
 
     if (dbdir)
         pt = dbdir;
@@ -138,14 +167,14 @@ void print_version(const char *dbdir)
         pt = fdbdir = freshdbdir();
 
     if (!pt) {
-        printf("ClamAV %s\n", get_version());
-        return;
+        return 0; /* nothing found */
     }
 
-    if (!(path = malloc(strlen(pt) + 11))) {
+    path = malloc(strlen(pt) + 11);
+    if (!path) {
         if (!dbdir)
             free(fdbdir);
-        return;
+        return -1;
     }
 
     sprintf(path, "%s" PATHSEP "daily.cvd", pt);
@@ -170,16 +199,19 @@ void print_version(const char *dbdir)
         }
     }
 
+    free(path);
     if (!dbdir)
         free(fdbdir);
 
     if (db_version) {
-        printf("ClamAV %s/%u/%s", get_version(), db_version, ctime(&db_time));
-    } else {
-        printf("ClamAV %s\n", get_version());
+        if (out_version)
+            *out_version = db_version;
+        if (out_time)
+            *out_time = db_time;
+        return 1;
     }
 
-    free(path);
+    return 0;
 }
 
 int check_flevel(void)
