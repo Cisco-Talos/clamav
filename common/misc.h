@@ -109,4 +109,9 @@ unsigned int countlines(const char *filename);
 /* Checks if a virus database file or directory is older than 'days'. */
 cl_error_t check_if_cvd_outdated(const char *path, long long days);
 
+/* Retrieve DB build info: version and build time.
+ * Returns 1 if found, 0 if no DB found, -1 on error.
+ */
+int cl_get_db_build_info(const char *dbdir, unsigned int *out_version, time_t *out_time);
+
 #endif
