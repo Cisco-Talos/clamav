@@ -110,6 +110,7 @@ endif()
 set(ENABLE_DOXYGEN_DEFAULT          OFF)
 set(ENABLE_UNRAR_DEFAULT            ON)
 set(ENABLE_SYSTEMD_DEFAULT          ON)
+set(ENABLE_PDFIUM_DEFAULT           ON)
 
 # See CMakeOptions.cmake for additional options.
 include(CMakeOptions.cmake)
@@ -531,6 +532,16 @@ if(NOT WIN32)
     find_package(Iconv REQUIRED)
     # Set variable required by libclamav to use iconv
     set(HAVE_ICONV 1)
+endif()
+
+if(ENABLE_PDFIUM)
+    find_package(PDFIUM QUIET)
+    if(PDFIUM_FOUND)
+        set(HAVE_PDFIUM 1)
+    else()
+        set(ENABLE_PDFIUM OFF)
+        message(STATUS "PDFium not found; PDFium support disabled")
+    endif()
 endif()
 
 if(ENABLE_JSON_SHARED)

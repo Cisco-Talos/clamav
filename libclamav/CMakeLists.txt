@@ -450,6 +450,11 @@ if(ENABLE_SHARED_LIB)
             LibXml2::LibXml2
             JSONC::jsonc )
 
+    if(ENABLE_PDFIUM AND PDFIUM_FOUND)
+        target_link_libraries( clamav PUBLIC ${PDFIUM_LIBRARY} )
+        target_compile_definitions( clamav PRIVATE HAVE_PDFIUM=1 )
+    endif()
+
     if(WIN32)
         target_link_libraries( clamav
             PUBLIC
@@ -573,6 +578,10 @@ if(ENABLE_STATIC_LIB)
             PCRE2::pcre2
             LibXml2::LibXml2
             JSONC::jsonc )
+        if(ENABLE_PDFIUM AND PDFIUM_FOUND)
+            target_link_libraries( clamav_static PUBLIC ${PDFIUM_LIBRARY} )
+            target_compile_definitions( clamav_static PRIVATE HAVE_PDFIUM=1 )
+        endif()
         if (ENABLE_UNRAR)
             target_link_libraries( clamav_static PUBLIC ClamAV::libunrar_iface_static ClamAV::libunrar_iface_iface)
         endif()
