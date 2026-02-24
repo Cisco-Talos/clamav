@@ -4044,7 +4044,9 @@ static cl_error_t parse_formula(FILE *out_file, char data[], unsigned data_size)
                     goto done;
                 }
 
-                double val = *(double *)&data[data_pos + 1];
+                double val;
+                /* Avoid unaligned double loads (may SIGBUS on 32-bit ARM). */
+                memcpy(&val, &data[data_pos + 1], sizeof(val));
 
                 len = fprintf(out_file, " %f", val);
                 if (len < 0) {
