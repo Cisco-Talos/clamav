@@ -349,7 +349,7 @@ if (WIN32)
     set(CMAKE_INSTALL_SYSTEM_RUNTIME_DESTINATION .)
     if(ENABLE_WINDOWS_INSTALL_THIRDPARTY_DEPENDENCIES)
         include(InstallRequiredSystemLibraries)
-    endif()	
+    endif()
 
     set(CPACK_GENERATOR                  "ZIP;WIX")
     set(CPACK_PACKAGE_VENDOR             "Cisco Systems, Inc.")
@@ -535,13 +535,7 @@ if(NOT WIN32)
 endif()
 
 if(ENABLE_PDFIUM)
-    find_package(PDFIUM QUIET)
-    if(PDFIUM_FOUND)
-        set(HAVE_PDFIUM 1)
-    else()
-        set(ENABLE_PDFIUM OFF)
-        message(STATUS "PDFium not found; PDFium support disabled")
-    endif()
+    find_package(PDFIUM REQUIRED MODULE)
 endif()
 
 if(ENABLE_JSON_SHARED)
@@ -1270,6 +1264,14 @@ ${b}        JSON support:       ${e}
 ${_}            json-c          ${e}${JSONC_INCLUDE_DIRS}
 ${_}                            ${e}${JSONC_LIBRARIES}
 ${b}        Threading support:  ${e}")
+if(ENABLE_PDFIUM)
+message("\
+${_}            pdfium          ${e}${PDFIUM_INCLUDE_DIRS}
+${_}                            ${e}${PDFIUM_LIBRARIES}")
+else()
+message("\
+${o}            no              ${e}")
+endif()
 if(WIN32)
 message("\
 ${_}            pthread-win32   ${e}${PThreadW32_INCLUDE_DIRS}
