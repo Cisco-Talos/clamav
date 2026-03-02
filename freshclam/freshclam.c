@@ -81,6 +81,7 @@ char g_freshclamTempDirectory[PATH_MAX] = {0};
 typedef struct fc_ctx_ {
     uint32_t bTestDatabases;
     uint32_t bBytecodeEnabled;
+    char *certsDirectory;
 } fc_ctx;
 
 static void
@@ -283,6 +284,7 @@ fc_error_t download_complete_callback(const char *dbFilename, void *context)
     logg(LOGG_DEBUG, "download_complete_callback: Download complete for database : %s\n", dbFilename);
     logg(LOGG_DEBUG, "download_complete_callback:   fc_context->bTestDatabases   : %u\n", fc_context->bTestDatabases);
     logg(LOGG_DEBUG, "download_complete_callback:   fc_context->bBytecodeEnabled : %u\n", fc_context->bBytecodeEnabled);
+    logg(LOGG_DEBUG, "download_complete_callback:   fc_context->certsDirectory   : %s\n", fc_context->certsDirectory);
 
     logg(LOGG_INFO, "Testing database: '%s' ...\n", dbFilename);
 
@@ -290,7 +292,7 @@ fc_error_t download_complete_callback(const char *dbFilename, void *context)
 #ifdef _WIN32
 
         __try {
-            ret = fc_test_database(dbFilename, fc_context->bBytecodeEnabled);
+            ret = fc_test_database_ex(dbFilename, fc_context->bBytecodeEnabled, fc_context->certsDirectory);
         } __except (logg(LOGG_ERROR, "Exception during database testing, code %08x\n",
                          GetExceptionCode()),
                     EXCEPTION_CONTINUE_SEARCH) {
@@ -310,7 +312,7 @@ fc_error_t download_complete_callback(const char *dbFilename, void *context)
              * Test database without using pipe & child process.
              */
             logg(LOGG_WARNING, "pipe() failed: %s\n", strerror(errno));
-            ret = fc_test_database(dbFilename, fc_context->bBytecodeEnabled);
+            ret = fc_test_database_ex(dbFilename, fc_context->bBytecodeEnabled, fc_context->certsDirectory);
             if (FC_SUCCESS != ret) {
                 logg(LOGG_WARNING, "Database load exited with \"%s\"\n", fc_strerror(ret));
                 status = FC_ETESTFAIL;
@@ -336,7 +338,7 @@ fc_error_t download_complete_callback(const char *dbFilename, void *context)
                     logg(LOGG_WARNING, "fork() to test database failed: %s\n", strerror(errno));
 
                     /* Test the database without forking. */
-                    ret = fc_test_database(dbFilename, fc_context->bBytecodeEnabled);
+                    ret = fc_test_database_ex(dbFilename, fc_context->bBytecodeEnabled, fc_context->certsDirectory);
                     if (FC_SUCCESS != ret) {
                         logg(LOGG_WARNING, "Database load exited with \"%s\"\n", fc_strerror(ret));
                         status = FC_ETESTFAIL;
@@ -356,7 +358,7 @@ fc_error_t download_complete_callback(const char *dbFilename, void *context)
                     }
 
                     /* Test the database */
-                    status = fc_test_database(dbFilename, fc_context->bBytecodeEnabled);
+                    status = fc_test_database_ex(dbFilename, fc_context->bBytecodeEnabled, fc_context->certsDirectory);
                     exit(status);
                 }
                 default: {
@@ -738,7 +740,7 @@ done:
     return status;
 }
 
-static fc_error_t initialize(struct optstruct *opts)
+static fc_error_t initialize(struct optstruct *opts, fc_ctx *fc_context)
 {
     fc_error_t ret;
     fc_error_t status = FC_EARG;
@@ -830,6 +832,9 @@ static fc_error_t initialize(struct optstruct *opts)
             fcConfig.certsDirectory = OPT_CERTSDIR;
         }
     }
+
+    // Add the certs directory to the context for use in the download complete callback
+    fc_context->certsDirectory = (char *)fcConfig.certsDirectory;
 
 #ifdef HAVE_PWD_H
     /* Drop database privileges here if we are not planning on daemonizing.  If
@@ -1896,7 +1901,7 @@ int main(int argc, char **argv)
     /*
      * Initialize libraries and configuration options.
      */
-    if (FC_SUCCESS != initialize(opts)) {
+    if (FC_SUCCESS != initialize(opts, &fc_context)) {
         mprintf(LOGG_ERROR, "Initialization error!\n");
         status = FC_EINIT;
         goto done;
