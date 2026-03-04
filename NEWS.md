@@ -3,6 +3,38 @@
 Note: This file refers to the official packages. Things described here may
 differ slightly from third-party binary packages.
 
+## 1.5.2
+
+ClamAV 1.5.2 is a patch release with the following fixes:
+
+- [CVE-2026-20031](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2026-20031):
+  Fixed an error handling bug in the HTML file parser that may crash the program
+  and cause a denial-of-service (DoS) condition.
+
+  This issue was introduced in version 1.1.0.
+  The fix is included in 1.5.2 and 1.4.4.
+
+- Fixed a possible infinite loop when scanning some JPEG files by upgrading
+  affected ClamAV dependency, a Rust image library.
+
+  Unfortunately, this change requires a newer Rust compiler for ClamAV.
+  The minimum Rust version for ClamAV 1.4.3 was 1.85.1.
+  The minimum Rust version for ClamAV 1.4.4 is now 1.87.0.
+
+- Fixed a possible crash on Windows when scanning some files while using the
+  `LeaveTemporaryFiles` and `TemporaryDirectory` features.
+
+- The CVD verification process will now ignore certificate files in the CVD
+  certs directory when the user lacks read permissions.
+
+- Freshclam: Fixed CLD verification bug with `PrivateMirror` option.
+
+- Upgraded the Rust `bytes` dependency to a newer version to resolve the
+  RUSTSEC-2026-0007 advisory.
+
+- Fixed a possible crash caused by invalid pointer alignment on some platforms.
+  This fix is courtesy of Hsuan-Ming Chen at Synology PSIRT.
+
 ## 1.5.1
 
 ClamAV 1.5.1 is a patch release with the following fixes:

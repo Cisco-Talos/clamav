@@ -22,7 +22,7 @@
 
 use std::convert::TryFrom;
 
-use log::{debug, error};
+use log::debug;
 
 use crate::{sys, util::str_from_ptr};
 

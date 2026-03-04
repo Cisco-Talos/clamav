@@ -59,6 +59,7 @@ include = [
   "scanners::scan_onenote",
   "scanners::cli_scanalz",
   "util::glob_rm",
+  "util::mkdir_w32",
 ]
 
 # prefix = "CAPI_"
