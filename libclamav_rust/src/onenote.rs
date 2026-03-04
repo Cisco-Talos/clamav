@@ -27,7 +27,7 @@ use std::{
 };
 
 use hex_literal::hex;
-use log::{debug, error};
+use log::debug;
 use onenote_parser;
 
 /// Error enumerates all possible errors returned by this library.

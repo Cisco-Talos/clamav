@@ -12,7 +12,7 @@ log = { version = "0.4", features = ["std"] }
 sha2 = "0.10"
 tempfile = "3"
 thiserror = "1"
-image = "0.24"
+image = "0.25"
 rustdct = "0.7"
 transpose = "0.2"
 num-traits = "0.2"
@@ -26,6 +26,9 @@ inflate = "0.4"
 bzip2-rs = "0.1"
 byteorder = "1.5"
 delharc = "0.6"
+
+[features]
+not_ready = []
 
 [lib]
 crate-type = ["staticlib"]

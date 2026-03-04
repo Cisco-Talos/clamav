@@ -22,7 +22,7 @@
 
 use std::{collections::HashMap, ffi::CStr, mem::ManuallyDrop, os::raw::c_char};
 
-use log::{debug, error, warn};
+use log::{debug, warn};
 
 use crate::{ffi_util::FFIError, rrf_call, sys, validate_str_param};
 
