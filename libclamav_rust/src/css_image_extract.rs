@@ -66,10 +66,15 @@ impl<'a> CssImageExtractor<'a> {
         'outer: loop {
             // Find occurrence of "url" with
             if let Some(pos) = self.remaining.find("url") {
-                (_, self.remaining) = self.remaining.split_at(pos + "url".len());
-                // Found 'url'.
+                // Found 'url'. Get the stuff after it.
+                if let Some((_, rest)) = self.remaining.split_at_checked(pos + "url".len()) {
+                    self.remaining = rest;
+                } else {
+                    // Split failed.
+                    self.remaining = "";
+                    return None;
+                }
             } else {
-                // No occurrence of "url"
                 // No more 'url's.
                 self.remaining = "";
                 return None;
@@ -78,8 +83,14 @@ impl<'a> CssImageExtractor<'a> {
             // Skip whitespace until we find '('
             for (pos, c) in self.remaining.grapheme_indices(true) {
                 if c == "(" {
-                    // Found left-paren.
-                    (_, self.remaining) = self.remaining.split_at(pos + 1);
+                    // Found left-paren. Get the stuff after it.
+                    self.remaining =
+                        if let Some((_, rest)) = self.remaining.split_at_checked(pos + 1) {
+                            rest
+                        } else {
+                            // Split failed. Was not whitespace or '(', and maybe not a legal char.
+                            continue 'outer;
+                        };
                     break;
                 } else if c.contains(char::is_whitespace) {
                     // Skipping whitespace.
@@ -103,7 +114,13 @@ impl<'a> CssImageExtractor<'a> {
                         depth -= 1;
                     } else {
                         // Found right-paren.
-                        let (contents, remaining) = self.remaining.split_at(pos);
+                        let (contents, remaining) =
+                            if let Some((c, r)) = self.remaining.split_at_checked(pos) {
+                                (c, r)
+                            } else {
+                                // Split failed.
+                                continue;
+                            };
                         url_parameter = Some(contents);
 
                         // Set the remaining bytes so we can look for more later.
@@ -123,65 +140,14 @@ impl<'a> CssImageExtractor<'a> {
 
             // Strip optional whitespace and quotes from front and back.
 
-            // Trim off whitespace at beginning
-            for (pos, c) in url_parameter.grapheme_indices(true) {
-                if c.contains(char::is_whitespace) {
-                    // Skipping whitespace before url contents.
-                    continue;
-                } else {
-                    (_, url_parameter) = url_parameter.split_at(pos);
-                    break;
-                }
-            }
+            // Trim off whitespace at beginning and end.
+            url_parameter = url_parameter.trim();
 
-            // Trim off whitespace at end
-            for (pos, c) in url_parameter.graphemes(true).rev().enumerate() {
-                if c.contains(char::is_whitespace) {
-                    // Skipping whitespace after url contents.
-                    continue;
-                } else {
-                    (url_parameter, _) = url_parameter.split_at(url_parameter.len() - pos);
-                    break;
-                }
-            }
+            // Trim off " at beginning and end.
+            url_parameter = url_parameter.trim_matches('"');
 
-            // Trim off " at beginning.
-            let c = url_parameter.graphemes(true).next();
-            if let Some(c) = c {
-                if c == "\"" {
-                    (_, url_parameter) = url_parameter.split_at(1);
-                }
-            };
-
-            // Trim off " at end.
-            let c = url_parameter.graphemes(true).next_back();
-            if let Some(c) = c {
-                if c == "\"" {
-                    (url_parameter, _) = url_parameter.split_at(url_parameter.len() - 1);
-                }
-            };
-
-            // Trim off whitespace at beginning.
-            for (pos, c) in url_parameter.grapheme_indices(true) {
-                if c.contains(char::is_whitespace) {
-                    // Skipping whitespace before url contents.
-                    continue;
-                } else {
-                    (_, url_parameter) = url_parameter.split_at(pos);
-                    break;
-                }
-            }
-
-            // Trim off whitespace at end.
-            for (pos, c) in url_parameter.graphemes(true).rev().enumerate() {
-                if c.contains(char::is_whitespace) {
-                    // Skipping whitespace after url contents.
-                    continue;
-                } else {
-                    (url_parameter, _) = url_parameter.split_at(url_parameter.len() - pos);
-                    break;
-                }
-            }
+            // Trim off more whitespace at beginning and end which had been inside the quotes.
+            url_parameter = url_parameter.trim();
 
             // Check for embedded image data for the "url"
             if !url_parameter.starts_with("data:") {
@@ -190,7 +156,12 @@ impl<'a> CssImageExtractor<'a> {
             }
 
             // Found "data:"
-            (_, url_parameter) = url_parameter.split_at("data:".len());
+            if let Some((_, rest)) = url_parameter.split_at_checked("data:".len()) {
+                url_parameter = rest;
+            } else {
+                // Split failed. Let's move along.
+                continue;
+            }
 
             // The exact image type doesn't matter at all to a browser.
             // They really don't care if it's "image/gif" or "blah blah blah".
@@ -198,8 +169,13 @@ impl<'a> CssImageExtractor<'a> {
 
             // Find contents after ";"
             if let Some(pos) = url_parameter.find(';') {
-                (_, url_parameter) = url_parameter.split_at(pos + ";".len());
-                // Found ";"
+                // Found ";". Get the stuff after it.
+                if let Some((_, rest)) = url_parameter.split_at_checked(pos + ";".len()) {
+                    url_parameter = rest;
+                } else {
+                    // Split failed. Something in this data appears to be malformed. Let's move along.
+                    continue 'outer;
+                }
             } else {
                 // No occurrence of ";" in the url() parameter.
                 continue 'outer;
@@ -209,7 +185,12 @@ impl<'a> CssImageExtractor<'a> {
             for (pos, c) in url_parameter.grapheme_indices(true) {
                 if c == "b" {
                     // Found 'b'.
-                    (_, url_parameter) = url_parameter.split_at(pos + 1);
+                    if let Some((_, rest)) = url_parameter.split_at_checked(pos + 1) {
+                        url_parameter = rest;
+                    } else {
+                        // Split failed. Was not whitespace or 'b', and maybe not a legal char.
+                        continue 'outer;
+                    }
                     break;
                 } else if c.contains(char::is_whitespace) {
                     // Skipping whitespace.
@@ -227,13 +208,23 @@ impl<'a> CssImageExtractor<'a> {
             }
 
             // Found "base64"
-            (_, url_parameter) = url_parameter.split_at("ase64".len());
+            if let Some((_, rest)) = url_parameter.split_at_checked("ase64".len()) {
+                url_parameter = rest;
+            } else {
+                // Split failed. Something in this data appears to be malformed. Let's move along.
+                continue 'outer;
+            }
 
             // Skip whitespace until we find ','
             for (pos, c) in url_parameter.grapheme_indices(true) {
                 if c == "," {
-                    // Found ','.
-                    (_, url_parameter) = url_parameter.split_at(pos + 1);
+                    // Found ','. Get the stuff after it.
+                    if let Some((_, rest)) = url_parameter.split_at_checked(pos + 1) {
+                        url_parameter = rest;
+                    } else {
+                        // Split failed. Was not whitespace or ',', and maybe not a legal char.
+                        continue 'outer;
+                    }
                     break;
                 } else if c.contains(char::is_whitespace) {
                     // Skipping whitespace.
@@ -245,15 +236,7 @@ impl<'a> CssImageExtractor<'a> {
             }
 
             // Trim off whitespace at beginning.
-            for (pos, c) in url_parameter.grapheme_indices(true) {
-                if c.contains(char::is_whitespace) {
-                    // Skipping whitespace before url contents.
-                    continue;
-                } else {
-                    (_, url_parameter) = url_parameter.split_at(pos);
-                    break;
-                }
-            }
+            url_parameter = url_parameter.trim_start();
 
             debug!("Found base64'd image data CSS url() function args.");
             return Some(url_parameter);
