@@ -127,8 +127,8 @@ char *freshdbdir(void)
 void print_version(const char *dbdir)
 {
     unsigned int db_version = 0;
-    time_t db_time = 0;
-    int got = 0;
+    time_t db_time          = 0;
+    int got                 = 0;
 
     got = cl_get_db_build_info(dbdir, &db_version, &db_time);
 
@@ -157,9 +157,9 @@ int cl_get_db_build_info(const char *dbdir, unsigned int *out_version, time_t *o
 {
     char *fdbdir = NULL, *path = NULL;
     const char *pt;
-    struct cl_cvd *daily = NULL;
+    struct cl_cvd *daily    = NULL;
     unsigned int db_version = 0;
-    time_t db_time = 0;
+    time_t db_time          = 0;
 
     if (dbdir)
         pt = dbdir;
