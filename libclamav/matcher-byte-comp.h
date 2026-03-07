@@ -1,7 +1,7 @@
 /*
  *  Support for matcher using byte compare
  *
- *  Copyright (C) 2018-2025 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2018-2026 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *
  *  Authors: Mickey Sola
  *
