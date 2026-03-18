@@ -484,6 +484,33 @@ if(EXISTS "${CMAKE_SOURCE_DIR}/.cargo/vendor")
     list(APPEND CARGO_ARGS "--offline")
 endif()
 
+string(STRIP "${RUSTFLAGS} $ENV{RUSTFLAGS}" RUSTFLAGS)
+
+if(RUSTFLAGS MATCHES "(^| )-Zsanitizer=[^ ]+($| )")
+    if(NOT rustc_VERSION MATCHES "-nightly")
+        message(FATAL_ERROR
+            "Rust sanitizer support requires a nightly Rust toolchain because "
+            "`-Zsanitizer` is unstable."
+        )
+    endif()
+endif()
+
+if(RUSTFLAGS MATCHES "(^| )-Zsanitizer=memory($| )")
+    if(NOT "${RUST_COMPILER_TARGET}" MATCHES "^(aarch64|x86_64)-unknown-linux-gnu$")
+        message(FATAL_ERROR
+            "Rust MemorySanitizer requires a target whose standard library can be "
+            "rebuilt with `-Zbuild-std`, and `${RUST_COMPILER_TARGET}` is not a "
+            "supported Rust MSan target. Use a supported Linux target or remove "
+            "`-Zsanitizer=memory` from RUSTFLAGS."
+        )
+    endif()
+
+    list(APPEND CARGO_ARGS
+        "-Zbuild-std=core,alloc,std,proc_macro,panic_abort"
+        "-Zbuild-std-features=panic_immediate_abort"
+    )
+endif()
+
 if(NOT "${RUST_COMPILER_TARGET}" MATCHES "^universal-apple-darwin$")
     # Don't specify the target for macOS universal builds, we'll do that manually for each build.
     list(APPEND CARGO_ARGS "--target" ${RUST_COMPILER_TARGET})
@@ -501,7 +528,7 @@ elseif(${CMAKE_BUILD_TYPE} STREQUAL "RelWithDebInfo")
 else()
     set(CARGO_BUILD_TYPE "debug")
 endif()
-string(STRIP "${RUSTFLAGS} $ENV{RUSTFLAGS}" RUSTFLAGS)
+string(STRIP "${RUSTFLAGS}" RUSTFLAGS)
 
 find_package_handle_standard_args(Rust
     REQUIRED_VARS cargo_EXECUTABLE
