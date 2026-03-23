@@ -35,5 +35,6 @@ pub mod fmap;
 pub mod fuzzy_hash;
 pub mod logging;
 pub mod onenote;
+pub mod pdf_render;
 pub mod scanners;
 pub mod util;

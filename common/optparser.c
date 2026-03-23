@@ -482,6 +482,12 @@ const struct clam_option __clam_options[] = {
 
     {"ScanImageFuzzyHash", "scan-image-fuzzy-hash", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option enables detection by calculating a fuzzy hash of image (graphics)\nfiles\nSignatures using image fuzzy hashes typically match files and documents by\nidentifying images embedded or attached to those files.\nIf you turn off this option, then some files may no longer be detected.", "yes"},
 
+    {"ScanPDFImageFuzzyHash", "scan-pdf-image-fuzzy-hash", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option enables PDF rendering plus image fuzzy hash detection for PDF files.\nIf you turn off this option, PDFs will still be scanned, but the PDFium-based\nrender and fuzzy hash step will be skipped.", "yes"},
+
+    {"PDFRenderDPI", "pdf-render-dpi", 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Render PDF pages for fuzzy hash calculation at the specified DPI.\nThis option is mutually exclusive with PDFRenderCanvas / --pdf-render-canvas.\nThe value must be greater than 0.", "0"},
+
+    {"PDFRenderCanvas", "pdf-render-canvas", 0, CLOPT_TYPE_STRING, NULL, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Render PDF pages for fuzzy hash calculation to fit within a canvas specified\nas WIDTHxHEIGHT pixels.\nThis option is mutually exclusive with PDFRenderDPI / --pdf-render-dpi.\nExample: 1920x1080.", "2000x2000"},
+
     {"ForceToDisk", "force-to-disk", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option causes memory or nested map scans to dump the content to disk.\nIf you turn on this option, more data is written to disk and is available\nwhen the leave-temps option is enabled at the cost of more disk writes.", "no"},
 
     {"MaxScanTime", "max-scantime", 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option sets the maximum amount of time a scan may take to complete.\nThe value of 0 disables the limit.\nWARNING: disabling this limit or setting it too high may result allow scanning\nof certain files to lock up the scanning process/threads resulting in a Denial of Service.\nThe value is in milliseconds.", "120000"},

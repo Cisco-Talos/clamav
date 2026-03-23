@@ -1,0 +1,70 @@
+# Copyright (C) 2020-2025 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+
+"""
+Run clamscan tests.
+"""
+
+import sys
+
+sys.path.append('../unit_tests')
+import testcase
+
+
+class TC(testcase.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        super(TC, cls).setUpClass()
+
+    @classmethod
+    def tearDownClass(cls):
+        super(TC, cls).tearDownClass()
+
+    def setUp(self):
+        super(TC, self).setUp()
+
+    def tearDown(self):
+        super(TC, self).tearDown()
+        self.verify_valgrind_log()
+
+    def test_pdf_render_canvas_valid(self):
+        self.step_name('Test valid PDF render canvas option')
+
+        testfile = TC.path_source / 'unit_tests' / 'input' / 'other_scanfiles' / 'pdf' / 'pdf-stats-test.pdf'
+        command = '{valgrind} {valgrind_args} {clamscan} -d {path_db} {testfile} --scan-pdf-image-fuzzy-hash=no --pdf-render-canvas=1920x1080'.format(
+            valgrind=TC.valgrind,
+            valgrind_args=TC.valgrind_args,
+            clamscan=TC.clamscan,
+            path_db=TC.path_source / 'unit_tests' / 'input' / 'other_sigs' / 'Clamav-Unit-Test-Signature.ndb',
+            testfile=testfile,
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 0  # clean
+
+    def test_pdf_render_canvas_invalid(self):
+        self.step_name('Test invalid PDF render canvas option')
+
+        testfile = TC.path_source / 'unit_tests' / 'input' / 'other_scanfiles' / 'pdf' / 'pdf-stats-test.pdf'
+
+        invalid_values = [
+            '1920',
+            '1920x0',
+            'x1080',
+        ]
+
+        for invalid_value in invalid_values:
+            command = '{valgrind} {valgrind_args} {clamscan} -d {path_db} {testfile} --pdf-render-canvas={invalid_value}'.format(
+                valgrind=TC.valgrind,
+                valgrind_args=TC.valgrind_args,
+                clamscan=TC.clamscan,
+                path_db=TC.path_source / 'unit_tests' / 'input' / 'other_sigs' / 'Clamav-Unit-Test-Signature.ndb',
+                testfile=testfile,
+                invalid_value=invalid_value,
+            )
+            output = self.execute_command(command)
+
+            assert output.ec == 2  # error
+            self.verify_output(
+                output.err,
+                expected=['--pdf-render-canvas must be in WIDTHxHEIGHT format, for example 1920x1080.'],
+            )

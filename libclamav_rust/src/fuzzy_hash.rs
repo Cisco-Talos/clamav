@@ -35,7 +35,7 @@ use num_traits::{NumCast, ToPrimitive, Zero};
 use rustdct::DctPlanner;
 use transpose::transpose;
 
-use crate::{ffi_error, ffi_util::FFIError, rrf_call, sys, validate_str_param};
+use crate::{ffi_error, ffi_util::FFIError, pdf_render, rrf_call, sys, validate_str_param};
 
 /// Error enumerates all possible errors returned by this library.
 #[derive(thiserror::Error, Debug)]
@@ -69,6 +69,9 @@ pub enum Error {
 
     #[error("{0} hash must be {1} characters in length")]
     InvalidHashLength(&'static str, usize),
+
+    #[error("{0}")]
+    PdfRenderError(#[from] pdf_render::PdfRenderError),
 }
 
 #[derive(PartialEq, Eq, Hash, Debug)]
@@ -203,6 +206,8 @@ pub unsafe extern "C" fn _fuzzy_hash_calculate_image(
     file_size: usize,
     hash_out: *mut u8,
     hash_out_len: usize,
+    file_type: sys::cli_file_t,
+    pdf_config: *const pdf_render::PdfImageFuzzyHashConfig,
     err: *mut *mut FFIError,
 ) -> bool {
     if hash_out.is_null() {
@@ -215,7 +220,17 @@ pub unsafe extern "C" fn _fuzzy_hash_calculate_image(
         slice::from_raw_parts(file_bytes, file_size)
     };
 
-    let hash_result = fuzzy_hash_calculate_image(buffer);
+    let hash_result = match file_type {
+        sys::cli_file_CL_TYPE_PDF => {
+            let pdf_config = pdf_config.as_ref();
+            let dynamic_image = match pdf_render::render(buffer, pdf_config) {
+                Ok(dynamic_image) => dynamic_image,
+                Err(error) => return ffi_error!(err = err, error),
+            };
+            fuzzy_hash_calculate_dynamic_image(dynamic_image)
+        }
+        _ => fuzzy_hash_calculate_image(buffer),
+    };
     let hash_bytes = match hash_result {
         Ok(hash) => hash,
         Err(error) => return ffi_error!(err = err, error),
@@ -422,6 +437,10 @@ pub fn fuzzy_hash_calculate_image(buffer: &[u8]) -> Result<Vec<u8>, Error> {
         Err(_) => return Err(Error::ImageLoadPanic()),
     };
 
+    fuzzy_hash_calculate_dynamic_image(og_image)
+}
+
+pub fn fuzzy_hash_calculate_dynamic_image(og_image: DynamicImage) -> Result<Vec<u8>, Error> {
     // Drop the alpha channel (if exists).
     let buff_rgb8 = og_image.to_rgb8();
 

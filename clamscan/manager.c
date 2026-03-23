@@ -48,6 +48,7 @@
 #include <signal.h>
 #include <errno.h>
 #include <math.h>
+#include <stdint.h>
 
 // libclamav
 #include "clamav.h"
@@ -74,6 +75,32 @@
 #ifdef C_LINUX
 dev_t procdev;
 #endif
+
+static int parse_pdf_render_canvas(const char *value, uint32_t *width, uint32_t *height)
+{
+    unsigned int parsed_width  = 0;
+    unsigned int parsed_height = 0;
+    char trailing              = '\0';
+
+    if ((NULL == value) || (NULL == width) || (NULL == height)) {
+        return 0;
+    }
+
+    if ((2 != sscanf(value, "%ux%u", &parsed_width, &parsed_height)) ||
+        (0 == parsed_width) ||
+        (0 == parsed_height)) {
+        return 0;
+    }
+
+    if (3 == sscanf(value, "%ux%u%c", &parsed_width, &parsed_height, &trailing)) {
+        return 0;
+    }
+
+    *width  = parsed_width;
+    *height = parsed_height;
+
+    return 1;
+}
 
 #ifdef _WIN32
 /* FIXME: If possible, handle users correctly */
@@ -1681,6 +1708,47 @@ int scanmanager(const struct optstruct *opts)
         }
     }
 
+    if (optget(opts, "pdf-render-dpi")->active && optget(opts, "pdf-render-canvas")->active) {
+        logg(LOGG_ERROR, "Cannot use --pdf-render-dpi and --pdf-render-canvas together.\n");
+        ret = 2;
+        goto done;
+    }
+
+    if ((opt = optget(opts, "pdf-render-dpi"))->active) {
+        if (opt->numarg <= 0) {
+            logg(LOGG_ERROR, "--pdf-render-dpi must be greater than 0.\n");
+            ret = 2;
+            goto done;
+        }
+        if ((ret = cl_engine_set_num(engine, CL_ENGINE_PDF_RENDER_DPI, opt->numarg))) {
+            logg(LOGG_ERROR, "cli_engine_set_num(CL_ENGINE_PDF_RENDER_DPI) failed: %s\n", cl_strerror(ret));
+            ret = 2;
+            goto done;
+        }
+    }
+
+    if ((opt = optget(opts, "pdf-render-canvas"))->active) {
+        uint32_t canvas_width  = 0;
+        uint32_t canvas_height = 0;
+
+        if (!parse_pdf_render_canvas(opt->strarg, &canvas_width, &canvas_height)) {
+            logg(LOGG_ERROR, "--pdf-render-canvas must be in WIDTHxHEIGHT format, for example 1920x1080.\n");
+            ret = 2;
+            goto done;
+        }
+
+        if ((ret = cl_engine_set_num(engine, CL_ENGINE_PDF_RENDER_CANVAS_WIDTH, canvas_width))) {
+            logg(LOGG_ERROR, "cli_engine_set_num(CL_ENGINE_PDF_RENDER_CANVAS_WIDTH) failed: %s\n", cl_strerror(ret));
+            ret = 2;
+            goto done;
+        }
+        if ((ret = cl_engine_set_num(engine, CL_ENGINE_PDF_RENDER_CANVAS_HEIGHT, canvas_height))) {
+            logg(LOGG_ERROR, "cli_engine_set_num(CL_ENGINE_PDF_RENDER_CANVAS_HEIGHT) failed: %s\n", cl_strerror(ret));
+            ret = 2;
+            goto done;
+        }
+    }
+
     /* set scan options */
     if (optget(opts, "allmatch")->enabled) {
         options.general |= CL_SCAN_GENERAL_ALLMATCHES;
@@ -1771,6 +1839,9 @@ int scanmanager(const struct optstruct *opts)
 
     if (optget(opts, "scan-image-fuzzy-hash")->enabled)
         options.parse |= CL_SCAN_PARSE_IMAGE_FUZZY_HASH;
+
+    if (optget(opts, "scan-pdf-image-fuzzy-hash")->enabled)
+        options.parse |= CL_SCAN_PARSE_PDF_IMAGE_FUZZY_HASH;
 
     /* TODO: Remove deprecated option in a future feature release */
     if ((optget(opts, "algorithmic-detection")->enabled) && /* && used due to default-yes for both options */

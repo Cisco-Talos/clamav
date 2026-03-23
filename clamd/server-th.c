@@ -26,6 +26,7 @@
 
 #include <pthread.h>
 #include <errno.h>
+#include <stdint.h>
 #include <signal.h>
 #include <stdio.h>
 #include <string.h>
@@ -57,6 +58,32 @@
 #include "optparser.h"
 #include "misc.h"
 #include "idmef_logging.h"
+
+static int parse_pdf_render_canvas(const char *value, uint32_t *width, uint32_t *height)
+{
+    unsigned int parsed_width  = 0;
+    unsigned int parsed_height = 0;
+    char trailing              = '\0';
+
+    if ((NULL == value) || (NULL == width) || (NULL == height)) {
+        return 0;
+    }
+
+    if ((2 != sscanf(value, "%ux%u", &parsed_width, &parsed_height)) ||
+        (0 == parsed_width) ||
+        (0 == parsed_height)) {
+        return 0;
+    }
+
+    if (3 == sscanf(value, "%ux%u%c", &parsed_width, &parsed_height, &trailing)) {
+        return 0;
+    }
+
+    *width  = parsed_width;
+    *height = parsed_height;
+
+    return 1;
+}
 
 #include "server.h"
 #include "thrmgr.h"
@@ -1122,6 +1149,55 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
     val = cl_engine_get_num(engine, CL_ENGINE_PCRE_MAX_FILESIZE, NULL);
     logg(LOGG_INFO, "Limits: PCREMaxFileSize limit set to %llu.\n", val);
 
+    if (optget(opts, "PDFRenderDPI")->active && optget(opts, "PDFRenderCanvas")->active) {
+        logg(LOGG_ERROR, "Cannot set both PDFRenderDPI and PDFRenderCanvas.\n");
+        cl_engine_free(engine);
+        return 1;
+    }
+
+    if ((opt = optget(opts, "PDFRenderDPI"))->active) {
+        if (opt->numarg <= 0) {
+            logg(LOGG_ERROR, "PDFRenderDPI must be greater than 0.\n");
+            cl_engine_free(engine);
+            return 1;
+        }
+        if ((ret = cl_engine_set_num(engine, CL_ENGINE_PDF_RENDER_DPI, opt->numarg))) {
+            logg(LOGG_ERROR, "cli_engine_set_num(PDFRenderDPI) failed: %s\n", cl_strerror(ret));
+            cl_engine_free(engine);
+            return 1;
+        }
+    }
+    val = cl_engine_get_num(engine, CL_ENGINE_PDF_RENDER_DPI, NULL);
+    if (val > 0) {
+        logg(LOGG_INFO, "PDF rendering: DPI set to %llu.\n", val);
+    }
+
+    if ((opt = optget(opts, "PDFRenderCanvas"))->active) {
+        uint32_t canvas_width  = 0;
+        uint32_t canvas_height = 0;
+
+        if (!parse_pdf_render_canvas(opt->strarg, &canvas_width, &canvas_height)) {
+            logg(LOGG_ERROR, "PDFRenderCanvas must be in WIDTHxHEIGHT format, for example 1920x1080.\n");
+            cl_engine_free(engine);
+            return 1;
+        }
+
+        if ((ret = cl_engine_set_num(engine, CL_ENGINE_PDF_RENDER_CANVAS_WIDTH, canvas_width))) {
+            logg(LOGG_ERROR, "cli_engine_set_num(PDFRenderCanvasWidth) failed: %s\n", cl_strerror(ret));
+            cl_engine_free(engine);
+            return 1;
+        }
+        if ((ret = cl_engine_set_num(engine, CL_ENGINE_PDF_RENDER_CANVAS_HEIGHT, canvas_height))) {
+            logg(LOGG_ERROR, "cli_engine_set_num(PDFRenderCanvasHeight) failed: %s\n", cl_strerror(ret));
+            cl_engine_free(engine);
+            return 1;
+        }
+    }
+    val = cl_engine_get_num(engine, CL_ENGINE_PDF_RENDER_CANVAS_WIDTH, NULL);
+    logg(LOGG_INFO, "PDF rendering: canvas width set to %llu.\n", val);
+    val = cl_engine_get_num(engine, CL_ENGINE_PDF_RENDER_CANVAS_HEIGHT, NULL);
+    logg(LOGG_INFO, "PDF rendering: canvas height set to %llu.\n", val);
+
     if (optget(opts, "ScanArchive")->enabled) {
         logg(LOGG_INFO, "Archive support enabled.\n");
         options.parse |= CL_SCAN_PARSE_ARCHIVE;
@@ -1141,6 +1217,13 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
         options.parse |= CL_SCAN_PARSE_IMAGE_FUZZY_HASH;
     } else {
         logg(LOGG_INFO, "Detection using image fuzzy hash disabled.\n");
+    }
+
+    if (optget(opts, "ScanPDFImageFuzzyHash")->enabled) {
+        logg(LOGG_INFO, "Detection using PDF render image fuzzy hash enabled.\n");
+        options.parse |= CL_SCAN_PARSE_PDF_IMAGE_FUZZY_HASH;
+    } else {
+        logg(LOGG_INFO, "Detection using PDF render image fuzzy hash disabled.\n");
     }
 
     /* TODO: Remove deprecated option in a future feature release. */

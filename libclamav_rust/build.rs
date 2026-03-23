@@ -95,6 +95,11 @@ const C_HEADER_OUTPUT: &str = "clamav_rust.h";
 const ENV_PATTERNS: &[&str] = &["CARGO_", "RUST", "LIB"];
 
 fn main() -> Result<(), &'static str> {
+    println!("cargo:rerun-if-changed=build.rs");
+    println!("cargo:rerun-if-changed=cbindgen.toml");
+    println!("cargo:rerun-if-changed=src/fuzzy_hash.rs");
+    println!("cargo:rerun-if-changed=src/pdf_render.rs");
+
     // Dump the command line and interesting environment variables for diagnostic
     // purposes. These will end up in a 'stderr' file under the target directory,
     // in a ".../clamav_rust-<hex>" subdirectory

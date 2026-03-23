@@ -445,6 +445,9 @@ struct cl_engine {
     uint64_t pcre_match_limit;
     uint64_t pcre_recmatch_limit;
     uint64_t pcre_max_filesize;
+    uint32_t pdf_render_dpi;
+    uint32_t pdf_render_canvas_width;
+    uint32_t pdf_render_canvas_height;
 
 #ifdef HAVE_YARA
     /* YARA */
@@ -523,6 +526,9 @@ struct cl_settings {
     uint64_t pcre_match_limit;
     uint64_t pcre_recmatch_limit;
     uint64_t pcre_max_filesize;
+    uint32_t pdf_render_dpi;
+    uint32_t pdf_render_canvas_width;
+    uint32_t pdf_render_canvas_height;
 };
 
 extern cl_unrar_error_t (*cli_unrar_open)(const char *filename, void **hArchive, char **comment, uint32_t *comment_size, uint8_t debug_flag);

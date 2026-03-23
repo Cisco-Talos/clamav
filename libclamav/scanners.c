@@ -4355,6 +4355,8 @@ static cl_error_t calculate_fuzzy_image_hash(cli_ctx *ctx, cli_file_t type)
     const uint8_t *offset   = NULL;
     image_fuzzy_hash_t hash = {0};
     json_object *header     = NULL;
+    char *rendered_image_path = NULL;
+    PdfImageFuzzyHashConfig config = {0};
 
     FFIError *fuzzy_hash_calc_error = NULL;
 
@@ -4368,7 +4370,28 @@ static cl_error_t calculate_fuzzy_image_hash(cli_ctx *ctx, cli_file_t type)
         }
     }
 
-    if (!fuzzy_hash_calculate_image(offset, ctx->fmap->real_len, hash.hash, 8, &fuzzy_hash_calc_error)) {
+    if (type == CL_TYPE_PDF) {
+        if (ctx->engine->pdf_render_dpi > 0) {
+            config.render_mode = PDF_IMAGE_FUZZY_HASH_RENDER_MODE_DPI;
+            config.dpi         = ctx->engine->pdf_render_dpi;
+        } else {
+            config.render_mode   = PDF_IMAGE_FUZZY_HASH_RENDER_MODE_CANVAS;
+            config.canvas_width  = ctx->engine->pdf_render_canvas_width;
+            config.canvas_height = ctx->engine->pdf_render_canvas_height;
+        }
+
+        if (ctx->engine->keeptmp) {
+            rendered_image_path = cli_gentemp_with_prefix(ctx->this_layer_tmpdir, "pdf-render");
+            if (NULL == rendered_image_path) {
+                cli_errmsg("Failed to allocate path for rendered PDF image\n");
+                status = CL_EMEM;
+                goto done;
+            }
+            config.output_path = rendered_image_path;
+        }
+    }
+
+    if (!fuzzy_hash_calculate_image(offset, ctx->fmap->real_len, hash.hash, 8, type, &config, &fuzzy_hash_calc_error)) {
         cli_dbgmsg("Failed to calculate image fuzzy hash for %s: %s\n",
                    cli_ftname(type),
                    ffierror_fmt(fuzzy_hash_calc_error));
@@ -4386,6 +4409,9 @@ static cl_error_t calculate_fuzzy_image_hash(cli_ctx *ctx, cli_file_t type)
                  hash.hash[0], hash.hash[1], hash.hash[2], hash.hash[3],
                  hash.hash[4], hash.hash[5], hash.hash[6], hash.hash[7]);
         (void)cli_jsonstr(header, "Hash", hashstr);
+        if (rendered_image_path != NULL) {
+            (void)cli_jsonstr(header, "RenderedImage", rendered_image_path);
+        }
     }
 
     ctx->recursion_stack[ctx->recursion_level].image_fuzzy_hash            = hash;
@@ -4397,6 +4423,7 @@ done:
     if (NULL != fuzzy_hash_calc_error) {
         ffierror_free(fuzzy_hash_calc_error);
     }
+    free(rendered_image_path);
     return status;
 }
 
@@ -5252,6 +5279,9 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
         case CL_TYPE_PDF: /* FIXMELIMITS: pdf should be an archive! */
             if (SCAN_PARSE_PDF && (DCONF_DOC & DOC_CONF_PDF)) {
                 ret = cli_scanpdf(ctx, 0);
+                if ((CL_SUCCESS == ret) && (ctx->options->parse & CL_SCAN_PARSE_PDF_IMAGE_FUZZY_HASH)) {
+                    ret = calculate_fuzzy_image_hash(ctx, type);
+                }
             }
             break;
 
