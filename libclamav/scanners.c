@@ -289,7 +289,7 @@ static cl_error_t cli_scanrar_file(const char *filepath, int desc, cli_ctx *ctx)
         }
 
         /* Scan the comment */
-        status = cli_magic_scan_buff(comment, comment_size, ctx, NULL, LAYER_ATTRIBUTES_NONE);
+        status = cli_magic_scan_buff(comment, comment_size, ctx, CL_TYPE_ANY, NULL, LAYER_ATTRIBUTES_NONE);
         if (status != CL_SUCCESS) {
             goto done;
         }
@@ -703,7 +703,7 @@ static cl_error_t cli_scanegg(cli_ctx *ctx)
             /*
              * Scan the comment.
              */
-            status = cli_magic_scan_buff(comments[i], strlen(comments[i]), ctx, NULL, LAYER_ATTRIBUTES_NONE);
+            status = cli_magic_scan_buff(comments[i], strlen(comments[i]), ctx, CL_TYPE_ANY, NULL, LAYER_ATTRIBUTES_NONE);
             if (status != CL_SUCCESS) {
                 goto done;
             }
@@ -863,7 +863,7 @@ static cl_error_t cli_scanegg(cli_ctx *ctx)
                      * Scan the extracted file...
                      */
                     cli_dbgmsg("EGG: Extraction complete.  Scanning now...\n");
-                    status = cli_magic_scan_buff(extract_buffer, extract_buffer_len, ctx, filename_base, LAYER_ATTRIBUTES_NONE);
+                    status = cli_magic_scan_buff(extract_buffer, extract_buffer_len, ctx, CL_TYPE_ANY, filename_base, LAYER_ATTRIBUTES_NONE);
                     if (status != CL_SUCCESS) {
                         goto done;
                     }
@@ -4349,15 +4349,28 @@ static cl_error_t dispatch_prescan_callback(clcb_pre_scan cb, cli_ctx *ctx, cons
     return status;
 }
 
+static bool should_calculate_image_fuzzy_hash(cli_ctx *ctx)
+{
+    if (SCAN_PARSE_IMAGE_FUZZY_HASH && (DCONF_OTHER & OTHER_CONF_IMAGE_FUZZY_HASH)) {
+        return true;
+    }
+
+    if ((ctx->options->parse & CL_SCAN_PARSE_PDF_IMAGE_FUZZY_HASH) &&
+        (ctx->recursion_level > 0) &&
+        (ctx->recursion_stack[ctx->recursion_level].attributes & LAYER_ATTRIBUTES_NORMALIZED) &&
+        (ctx->recursion_stack[ctx->recursion_level - 1].type == CL_TYPE_PDF)) {
+        return true;
+    }
+
+    return false;
+}
+
 static cl_error_t calculate_fuzzy_image_hash(cli_ctx *ctx, cli_file_t type)
 {
     cl_error_t status       = CL_EPARSE;
     const uint8_t *offset   = NULL;
     image_fuzzy_hash_t hash = {0};
     json_object *header     = NULL;
-    char *rendered_image_path = NULL;
-    PdfImageFuzzyHashConfig config = {0};
-
     FFIError *fuzzy_hash_calc_error = NULL;
 
     offset = fmap_need_off(ctx->fmap, 0, ctx->fmap->real_len);
@@ -4370,28 +4383,7 @@ static cl_error_t calculate_fuzzy_image_hash(cli_ctx *ctx, cli_file_t type)
         }
     }
 
-    if (type == CL_TYPE_PDF) {
-        if (ctx->engine->pdf_render_dpi > 0) {
-            config.render_mode = PDF_IMAGE_FUZZY_HASH_RENDER_MODE_DPI;
-            config.dpi         = ctx->engine->pdf_render_dpi;
-        } else {
-            config.render_mode   = PDF_IMAGE_FUZZY_HASH_RENDER_MODE_CANVAS;
-            config.canvas_width  = ctx->engine->pdf_render_canvas_width;
-            config.canvas_height = ctx->engine->pdf_render_canvas_height;
-        }
-
-        if (ctx->engine->keeptmp) {
-            rendered_image_path = cli_gentemp_with_prefix(ctx->this_layer_tmpdir, "pdf-render");
-            if (NULL == rendered_image_path) {
-                cli_errmsg("Failed to allocate path for rendered PDF image\n");
-                status = CL_EMEM;
-                goto done;
-            }
-            config.output_path = rendered_image_path;
-        }
-    }
-
-    if (!fuzzy_hash_calculate_image(offset, ctx->fmap->real_len, hash.hash, 8, type, &config, &fuzzy_hash_calc_error)) {
+    if (!fuzzy_hash_calculate_image(offset, ctx->fmap->real_len, hash.hash, 8, &fuzzy_hash_calc_error)) {
         cli_dbgmsg("Failed to calculate image fuzzy hash for %s: %s\n",
                    cli_ftname(type),
                    ffierror_fmt(fuzzy_hash_calc_error));
@@ -4409,9 +4401,6 @@ static cl_error_t calculate_fuzzy_image_hash(cli_ctx *ctx, cli_file_t type)
                  hash.hash[0], hash.hash[1], hash.hash[2], hash.hash[3],
                  hash.hash[4], hash.hash[5], hash.hash[6], hash.hash[7]);
         (void)cli_jsonstr(header, "Hash", hashstr);
-        if (rendered_image_path != NULL) {
-            (void)cli_jsonstr(header, "RenderedImage", rendered_image_path);
-        }
     }
 
     ctx->recursion_stack[ctx->recursion_level].image_fuzzy_hash            = hash;
@@ -4423,7 +4412,76 @@ done:
     if (NULL != fuzzy_hash_calc_error) {
         ffierror_free(fuzzy_hash_calc_error);
     }
-    free(rendered_image_path);
+    return status;
+}
+
+static cl_error_t scan_rendered_pdf_image(cli_ctx *ctx)
+{
+    cl_error_t status                 = CL_EPARSE;
+    const uint8_t *offset             = NULL;
+    FFIError *pdf_render_error        = NULL;
+    RenderedPdfImage rendered_image   = {0};
+    PdfImageFuzzyHashConfig config    = {0};
+    char *rendered_image_path         = NULL;
+    int rendered_image_fd             = -1;
+    const char *rendered_image_name   = NULL;
+
+    offset = fmap_need_off(ctx->fmap, 0, ctx->fmap->real_len);
+    if (NULL == offset) {
+        return CL_EMAP;
+    }
+
+    if (ctx->engine->pdf_render_dpi > 0) {
+        config.render_mode = PDF_IMAGE_FUZZY_HASH_RENDER_MODE_DPI;
+        config.dpi         = ctx->engine->pdf_render_dpi;
+    } else {
+        config.render_mode   = PDF_IMAGE_FUZZY_HASH_RENDER_MODE_CANVAS;
+        config.canvas_width  = ctx->engine->pdf_render_canvas_width;
+        config.canvas_height = ctx->engine->pdf_render_canvas_height;
+    }
+    config.image_format = ctx->engine->pdf_render_format;
+
+    if (!pdf_render_to_image(offset, ctx->fmap->real_len, &config, &rendered_image, &pdf_render_error)) {
+        cli_dbgmsg("Failed to render PDF for normalized image scan: %s\n", ffierror_fmt(pdf_render_error));
+        goto done;
+    }
+
+    rendered_image_name = (rendered_image.image_type == CL_TYPE_JPEG) ? "pdf-render.jpeg" : "pdf-render.png";
+
+    if (ctx->engine->keeptmp) {
+        status = cli_gentempfd_with_prefix(ctx->this_layer_tmpdir, rendered_image_name, &rendered_image_path, &rendered_image_fd);
+        if (status != CL_SUCCESS) {
+            goto done;
+        }
+
+        if (cli_writen(rendered_image_fd, rendered_image.image_data, rendered_image.image_len) == (size_t)-1) {
+            cli_errmsg("Failed writing rendered PDF image tempfile\n");
+            status = CL_EWRITE;
+            goto done;
+        }
+
+        cli_dbgmsg("Rendered PDF image written to %s\n", rendered_image_path);
+
+        status = cli_magic_scan_desc_type(rendered_image_fd, rendered_image_path, ctx, rendered_image.image_type,
+                                          rendered_image_name, LAYER_ATTRIBUTES_NORMALIZED);
+    } else {
+        status = cli_magic_scan_buff(rendered_image.image_data, rendered_image.image_len, ctx,
+                                     rendered_image.image_type, rendered_image_name, LAYER_ATTRIBUTES_NORMALIZED);
+    }
+
+done:
+    if (rendered_image_fd >= 0) {
+        close(rendered_image_fd);
+    }
+    if (NULL != rendered_image_path) {
+        free(rendered_image_path);
+    }
+    if (NULL != rendered_image.image_data) {
+        pdf_rendered_image_free(rendered_image.image_data, rendered_image.image_len);
+    }
+    if (NULL != pdf_render_error) {
+        ffierror_free(pdf_render_error);
+    }
     return status;
 }
 
@@ -5030,7 +5088,7 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
                  * JPEG 2000 is not handled by cli_parsejpeg.
                  */
 
-                if (SCAN_PARSE_IMAGE_FUZZY_HASH && (DCONF_OTHER & OTHER_CONF_IMAGE_FUZZY_HASH)) {
+                if (should_calculate_image_fuzzy_hash(ctx)) {
                     // It's okay if it fails to calculate the fuzzy hash.
                     (void)calculate_fuzzy_image_hash(ctx, type);
                 }
@@ -5051,7 +5109,7 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
                     }
                 }
 
-                if (SCAN_PARSE_IMAGE_FUZZY_HASH && (DCONF_OTHER & OTHER_CONF_IMAGE_FUZZY_HASH)) {
+                if (should_calculate_image_fuzzy_hash(ctx)) {
                     // It's okay if it fails to calculate the fuzzy hash.
                     (void)calculate_fuzzy_image_hash(ctx, type);
                 }
@@ -5072,7 +5130,7 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
                     }
                 }
 
-                if (SCAN_PARSE_IMAGE_FUZZY_HASH && (DCONF_OTHER & OTHER_CONF_IMAGE_FUZZY_HASH)) {
+                if (should_calculate_image_fuzzy_hash(ctx)) {
                     // It's okay if it fails to calculate the fuzzy hash.
                     (void)calculate_fuzzy_image_hash(ctx, type);
                 }
@@ -5280,7 +5338,7 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
             if (SCAN_PARSE_PDF && (DCONF_DOC & DOC_CONF_PDF)) {
                 ret = cli_scanpdf(ctx, 0);
                 if ((CL_SUCCESS == ret) && (ctx->options->parse & CL_SCAN_PARSE_PDF_IMAGE_FUZZY_HASH)) {
-                    ret = calculate_fuzzy_image_hash(ctx, type);
+                    ret = scan_rendered_pdf_image(ctx);
                 }
             }
             break;
@@ -5615,7 +5673,7 @@ cl_error_t cli_magic_scan_nested_fmap_type(cl_fmap_t *map, size_t offset, size_t
     return ret;
 }
 
-cl_error_t cli_magic_scan_buff(const void *buffer, size_t length, cli_ctx *ctx, const char *name, uint32_t attributes)
+cl_error_t cli_magic_scan_buff(const void *buffer, size_t length, cli_ctx *ctx, cli_file_t type, const char *name, uint32_t attributes)
 {
     cl_error_t ret;
     fmap_t *map = NULL;
@@ -5625,7 +5683,7 @@ cl_error_t cli_magic_scan_buff(const void *buffer, size_t length, cli_ctx *ctx, 
         return CL_EMAP;
     }
 
-    ret = cli_magic_scan_nested_fmap_type(map, 0, length, ctx, CL_TYPE_ANY, name, attributes);
+    ret = cli_magic_scan_nested_fmap_type(map, 0, length, ctx, type, name, attributes);
 
     fmap_free(map);
 
@@ -5991,7 +6049,7 @@ static cl_error_t scan_common(
             if (status != CL_VIRUS && (iroot->ac_lsigs || iroot->ac_patterns || iroot->pcre_metas)) {
                 cli_dbgmsg("scan_common: running deprecated preclass bytecodes for target type 13\n");
                 ctx.options->general &= ~CL_SCAN_GENERAL_COLLECT_METADATA;
-                status = cli_magic_scan_buff(jstring, strlen(jstring), &ctx, NULL, LAYER_ATTRIBUTES_NONE);
+                status = cli_magic_scan_buff(jstring, strlen(jstring), &ctx, CL_TYPE_ANY, NULL, LAYER_ATTRIBUTES_NONE);
             }
         }
 

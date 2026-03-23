@@ -507,6 +507,11 @@ TCPAddr localhost
 # Default: 2000x2000
 #PDFRenderCanvas 1920x1080
 
+# Render PDF pages for fuzzy hash calculation as either PNG or JPEG.
+# Supported values are 'png' and 'jpeg'.
+# Default: png
+#PDFRenderFormat png
+
 
 ##
 ## Mail files

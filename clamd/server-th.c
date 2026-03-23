@@ -85,6 +85,25 @@ static int parse_pdf_render_canvas(const char *value, uint32_t *width, uint32_t 
     return 1;
 }
 
+static int parse_pdf_render_format(const char *value, uint32_t *format)
+{
+    if ((NULL == value) || (NULL == format)) {
+        return 0;
+    }
+
+    if (0 == strcmp(value, "png")) {
+        *format = 1;
+        return 1;
+    }
+
+    if ((0 == strcmp(value, "jpeg")) || (0 == strcmp(value, "jpg"))) {
+        *format = 2;
+        return 1;
+    }
+
+    return 0;
+}
+
 #include "server.h"
 #include "thrmgr.h"
 #include "session.h"
@@ -1197,6 +1216,24 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
     logg(LOGG_INFO, "PDF rendering: canvas width set to %llu.\n", val);
     val = cl_engine_get_num(engine, CL_ENGINE_PDF_RENDER_CANVAS_HEIGHT, NULL);
     logg(LOGG_INFO, "PDF rendering: canvas height set to %llu.\n", val);
+
+    if ((opt = optget(opts, "PDFRenderFormat"))->active) {
+        uint32_t render_format = 0;
+
+        if (!parse_pdf_render_format(opt->strarg, &render_format)) {
+            logg(LOGG_ERROR, "PDFRenderFormat must be either png or jpeg.\n");
+            cl_engine_free(engine);
+            return 1;
+        }
+
+        if ((ret = cl_engine_set_num(engine, CL_ENGINE_PDF_RENDER_FORMAT, render_format))) {
+            logg(LOGG_ERROR, "cli_engine_set_num(PDFRenderFormat) failed: %s\n", cl_strerror(ret));
+            cl_engine_free(engine);
+            return 1;
+        }
+    }
+    val = cl_engine_get_num(engine, CL_ENGINE_PDF_RENDER_FORMAT, NULL);
+    logg(LOGG_INFO, "PDF rendering: format set to %s.\n", (2 == val) ? "jpeg" : "png");
 
     if (optget(opts, "ScanArchive")->enabled) {
         logg(LOGG_INFO, "Archive support enabled.\n");

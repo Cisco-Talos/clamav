@@ -349,6 +349,7 @@ enum cl_engine_field {
     CL_ENGINE_PDF_RENDER_DPI,      /** uint32_t */
     CL_ENGINE_PDF_RENDER_CANVAS_WIDTH, /** uint32_t */
     CL_ENGINE_PDF_RENDER_CANVAS_HEIGHT, /** uint32_t */
+    CL_ENGINE_PDF_RENDER_FORMAT,   /** uint32_t */
 };
 
 enum bytecode_security {

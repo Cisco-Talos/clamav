@@ -102,6 +102,25 @@ static int parse_pdf_render_canvas(const char *value, uint32_t *width, uint32_t 
     return 1;
 }
 
+static int parse_pdf_render_format(const char *value, uint32_t *format)
+{
+    if ((NULL == value) || (NULL == format)) {
+        return 0;
+    }
+
+    if (0 == strcmp(value, "png")) {
+        *format = 1;
+        return 1;
+    }
+
+    if ((0 == strcmp(value, "jpeg")) || (0 == strcmp(value, "jpg"))) {
+        *format = 2;
+        return 1;
+    }
+
+    return 0;
+}
+
 #ifdef _WIN32
 /* FIXME: If possible, handle users correctly */
 static int checkaccess(const char *path, const char *username, int mode)
@@ -1744,6 +1763,22 @@ int scanmanager(const struct optstruct *opts)
         }
         if ((ret = cl_engine_set_num(engine, CL_ENGINE_PDF_RENDER_CANVAS_HEIGHT, canvas_height))) {
             logg(LOGG_ERROR, "cli_engine_set_num(CL_ENGINE_PDF_RENDER_CANVAS_HEIGHT) failed: %s\n", cl_strerror(ret));
+            ret = 2;
+            goto done;
+        }
+    }
+
+    if ((opt = optget(opts, "pdf-render-format"))->active) {
+        uint32_t render_format = 0;
+
+        if (!parse_pdf_render_format(opt->strarg, &render_format)) {
+            logg(LOGG_ERROR, "--pdf-render-format must be either png or jpeg.\n");
+            ret = 2;
+            goto done;
+        }
+
+        if ((ret = cl_engine_set_num(engine, CL_ENGINE_PDF_RENDER_FORMAT, render_format))) {
+            logg(LOGG_ERROR, "cli_engine_set_num(CL_ENGINE_PDF_RENDER_FORMAT) failed: %s\n", cl_strerror(ret));
             ret = 2;
             goto done;
         }

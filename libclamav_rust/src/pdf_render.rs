@@ -20,9 +20,9 @@
  *  MA 02110-1301, USA.
  */
 
-use image::DynamicImage;
+use image::{DynamicImage, ImageFormat};
 use pdfium_render::prelude::*;
-use std::{ffi::CStr, os::raw::c_char, path::Path};
+use std::io::Cursor;
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -31,12 +31,22 @@ pub struct PdfImageFuzzyHashConfig {
     pub dpi: u32,
     pub canvas_width: u32,
     pub canvas_height: u32,
-    pub output_path: *const c_char,
+    pub image_format: u32,
+}
+
+#[repr(C)]
+#[derive(Debug)]
+pub struct RenderedPdfImage {
+    pub image_data: *mut u8,
+    pub image_len: usize,
+    pub image_type: crate::sys::cli_file_t,
 }
 
 pub const PDF_IMAGE_FUZZY_HASH_RENDER_MODE_DEFAULT: u32 = 0;
 pub const PDF_IMAGE_FUZZY_HASH_RENDER_MODE_DPI: u32 = 1;
 pub const PDF_IMAGE_FUZZY_HASH_RENDER_MODE_CANVAS: u32 = 2;
+pub const PDF_IMAGE_FUZZY_HASH_IMAGE_FORMAT_PNG: u32 = 1;
+pub const PDF_IMAGE_FUZZY_HASH_IMAGE_FORMAT_JPEG: u32 = 2;
 
 #[derive(thiserror::Error, Debug)]
 pub enum PdfRenderError {
@@ -44,13 +54,10 @@ pub enum PdfRenderError {
     PDFRenderError(#[from] PdfiumError),
 
     #[error("PDF Rendering error : {0}")]
-    ImageSaveError(#[from] image::ImageError),
+    ImageEncodeError(#[from] image::ImageError),
 
     #[error("PDF Rendering error : empty document")]
     PDFRenderEmpty,
-
-    #[error("PDF Rendering error : invalid rendered image path")]
-    InvalidOutputPath,
 }
 
 impl Default for PdfImageFuzzyHashConfig {
@@ -60,7 +67,7 @@ impl Default for PdfImageFuzzyHashConfig {
             dpi: 0,
             canvas_width: 2000,
             canvas_height: 2000,
-            output_path: std::ptr::null(),
+            image_format: PDF_IMAGE_FUZZY_HASH_IMAGE_FORMAT_PNG,
         }
     }
 }
@@ -104,12 +111,79 @@ pub fn render(
         .render_with_config(&render_config)?
         .as_image();
 
-    if !config.output_path.is_null() {
-        let output_path = unsafe { CStr::from_ptr(config.output_path) }
-            .to_str()
-            .map_err(|_| PdfRenderError::InvalidOutputPath)?;
-        image.save_with_format(Path::new(output_path), image::ImageFormat::Png)?;
+    Ok(image)
+}
+
+pub fn render_to_image(
+    data: &[u8],
+    config: Option<&PdfImageFuzzyHashConfig>,
+) -> Result<(Vec<u8>, crate::sys::cli_file_t), PdfRenderError> {
+    let image = render(data, config)?;
+    let config = config.copied().unwrap_or_default();
+    let mut cursor = Cursor::new(Vec::new());
+    let image_type = match config.image_format {
+        PDF_IMAGE_FUZZY_HASH_IMAGE_FORMAT_JPEG => {
+            image.write_to(&mut cursor, ImageFormat::Jpeg)?;
+            crate::sys::cli_file_CL_TYPE_JPEG
+        }
+        _ => {
+            image.write_to(&mut cursor, ImageFormat::Png)?;
+            crate::sys::cli_file_CL_TYPE_PNG
+        }
+    };
+    Ok((cursor.into_inner(), image_type))
+}
+
+#[export_name = "pdf_render_to_image"]
+pub unsafe extern "C" fn _pdf_render_to_image(
+    file_bytes: *const u8,
+    file_size: usize,
+    config: *const PdfImageFuzzyHashConfig,
+    rendered_image_out: *mut RenderedPdfImage,
+    err: *mut *mut crate::ffi_util::FFIError,
+) -> bool {
+    if rendered_image_out.is_null() {
+        return crate::ffi_error!(
+            err = err,
+            crate::ffi_util::Error::NullParameter("rendered_image_out".to_string())
+        );
+    }
+    if file_bytes.is_null() {
+        return crate::ffi_error!(
+            err = err,
+            crate::ffi_util::Error::NullParameter("file_bytes".to_string())
+        );
     }
 
-    Ok(image)
+    let buffer = std::slice::from_raw_parts(file_bytes, file_size);
+    let render_result = render_to_image(buffer, config.as_ref());
+
+    match render_result {
+        Ok((image_data, image_type)) => {
+            let len = image_data.len();
+            let boxed = image_data.into_boxed_slice();
+            let ptr = Box::into_raw(boxed) as *mut u8;
+
+            *rendered_image_out = RenderedPdfImage {
+                image_data: ptr,
+                image_len: len,
+                image_type,
+            };
+            true
+        }
+        Err(e) => {
+            *err = Box::into_raw(Box::new(e.into()));
+            false
+        }
+    }
+}
+
+#[export_name = "pdf_rendered_image_free"]
+pub unsafe extern "C" fn _pdf_rendered_image_free(image_data: *mut u8, image_len: usize) {
+    if image_data.is_null() {
+        return;
+    }
+
+    let slice_ptr = std::ptr::slice_from_raw_parts_mut(image_data, image_len);
+    drop(Box::from_raw(slice_ptr));
 }

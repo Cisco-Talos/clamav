@@ -68,3 +68,40 @@ class TC(testcase.TestCase):
                 output.err,
                 expected=['--pdf-render-canvas must be in WIDTHxHEIGHT format, for example 1920x1080.'],
             )
+
+    def test_pdf_render_format_valid(self):
+        self.step_name('Test valid PDF render format option')
+
+        testfile = TC.path_source / 'unit_tests' / 'input' / 'other_scanfiles' / 'pdf' / 'pdf-stats-test.pdf'
+
+        for image_format in ['png', 'jpeg']:
+            command = '{valgrind} {valgrind_args} {clamscan} -d {path_db} {testfile} --scan-pdf-image-fuzzy-hash=no --pdf-render-format={image_format}'.format(
+                valgrind=TC.valgrind,
+                valgrind_args=TC.valgrind_args,
+                clamscan=TC.clamscan,
+                path_db=TC.path_source / 'unit_tests' / 'input' / 'other_sigs' / 'Clamav-Unit-Test-Signature.ndb',
+                testfile=testfile,
+                image_format=image_format,
+            )
+            output = self.execute_command(command)
+
+            assert output.ec == 0  # clean
+
+    def test_pdf_render_format_invalid(self):
+        self.step_name('Test invalid PDF render format option')
+
+        testfile = TC.path_source / 'unit_tests' / 'input' / 'other_scanfiles' / 'pdf' / 'pdf-stats-test.pdf'
+        command = '{valgrind} {valgrind_args} {clamscan} -d {path_db} {testfile} --pdf-render-format=gif'.format(
+            valgrind=TC.valgrind,
+            valgrind_args=TC.valgrind_args,
+            clamscan=TC.clamscan,
+            path_db=TC.path_source / 'unit_tests' / 'input' / 'other_sigs' / 'Clamav-Unit-Test-Signature.ndb',
+            testfile=testfile,
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 2  # error
+        self.verify_output(
+            output.err,
+            expected=['--pdf-render-format must be either png or jpeg.'],
+        )

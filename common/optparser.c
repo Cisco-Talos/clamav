@@ -488,6 +488,8 @@ const struct clam_option __clam_options[] = {
 
     {"PDFRenderCanvas", "pdf-render-canvas", 0, CLOPT_TYPE_STRING, NULL, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Render PDF pages for fuzzy hash calculation to fit within a canvas specified\nas WIDTHxHEIGHT pixels.\nThis option is mutually exclusive with PDFRenderDPI / --pdf-render-dpi.\nExample: 1920x1080.", "2000x2000"},
 
+    {"PDFRenderFormat", "pdf-render-format", 0, CLOPT_TYPE_STRING, NULL, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Render PDF pages for fuzzy hash calculation as either PNG or JPEG.\nSupported values are 'png' and 'jpeg'.", "png"},
+
     {"ForceToDisk", "force-to-disk", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option causes memory or nested map scans to dump the content to disk.\nIf you turn on this option, more data is written to disk and is available\nwhen the leave-temps option is enabled at the cost of more disk writes.", "no"},
 
     {"MaxScanTime", "max-scantime", 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option sets the maximum amount of time a scan may take to complete.\nThe value of 0 disables the limit.\nWARNING: disabling this limit or setting it too high may result allow scanning\nof certain files to lock up the scanning process/threads resulting in a Denial of Service.\nThe value is in milliseconds.", "120000"},

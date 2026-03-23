@@ -90,17 +90,18 @@ cl_error_t cli_magic_scan_nested_fmap_type(cl_fmap_t *map, size_t offset, size_t
 /**
  * @brief   Convenience wrapper for cli_magic_scan_nested_fmap_type().
  *
- * Creates an fmap and calls cli_magic_scan_nested_fmap_type() for you, with type CL_TYPE_ANY.
+ * Creates an fmap and calls cli_magic_scan_nested_fmap_type() for you.
  *
  * @param buffer        Pointer to the buffer to be scanned.
  * @param length        Size in bytes of the buffer being scanned.
  * @param ctx           Scanning context structure.
+ * @param type          CL_TYPE of data to be scanned.
  * @param name          (optional) Original name of the file (to set fmap name metadata)
  * @param attributes    Layer attributes of the file being scanned (is it normalized, decrypted, etc)
  * @return int          CL_SUCCESS, or an error code.
  */
 cl_error_t cli_magic_scan_buff(const void *buffer, size_t length, cli_ctx *ctx,
-                               const char *name, uint32_t attributes);
+                               cli_file_t type, const char *name, uint32_t attributes);
 
 /**
  * @brief   Internal-use version of cl_scanfile.
