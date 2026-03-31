@@ -709,12 +709,16 @@ extern cl_error_t cl_hash_file_fd_ex(
     }
 
     do {
-        blocksize = MIN(blocksize, length - byte_read);
+        size_t read_size = blocksize;
+
+        if (length != 0) {
+            read_size = MIN(read_size, length - byte_read);
+        }
 
 #ifdef _WIN32
-        nread = _read(fd, block, blocksize);
+        nread = _read(fd, block, read_size);
 #else
-        nread = read(fd, block, blocksize);
+        nread = read(fd, block, read_size);
 #endif
         if (nread < 0) {
             cli_errmsg("cl_hash_data_ex: Failed to read from file descriptor %d: %s\n", fd, cl_strerror(CL_EREAD));
