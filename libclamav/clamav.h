@@ -1959,13 +1959,12 @@ extern cl_error_t cl_cvdverify(const char *file);
 /**
  * @brief Verify a CVD file by loading and unloading it.
  *
- * May also verify the CVD digital signature.
+ * For `.cvd` files, this also verifies the CVD digital signature.
  *
  * @param file              Filepath of CVD file.
  * @param certs_directory   Directory containing CA certificates required to verify the CVD digital signature.
  * @param dboptions         Bitmask of flags to modify behavior.
  *                          Set CL_DB_FIPS_LIMITS to require the CVD to be signed with a FIPS-compliant external '.sign' file.
- *                          Set CL_DB_UNSIGNED to disable verification of CVD digital signatures. Allow load testing unsigned CVD files.
  * @return cl_error_t       CL_SUCCESS if success, else a CL_E* error code.
  */
 extern cl_error_t cl_cvdverify_ex(const char *file, const char *certs_directory, uint32_t dboptions);
