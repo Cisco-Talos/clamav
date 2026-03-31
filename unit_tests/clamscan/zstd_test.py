@@ -43,3 +43,21 @@ class TC(testcase.TestCase):
             'ZSTD_TEST_FILE.UNOFFICIAL FOUND',
         ]
         self.verify_output(output.out, expected=expected_results)
+
+    def test_zstd_concatenated(self):
+        self.step_name('Test scanning a zstd file with concatenated frames')
+
+        testfile = TC.path_source / 'unit_tests' / 'input' / 'other_scanfiles' / 'zstd' / 'concat.txt.zst'
+        command = '{valgrind} {valgrind_args} {clamscan} -d {path_db} {testfile}'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan,
+            path_db=TC.path_source / 'unit_tests' / 'input' / 'other_sigs' / 'zstd.hdb',
+            testfile=testfile,
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 1  # virus
+
+        expected_results = [
+            'ZSTD_TEST_FILE.UNOFFICIAL FOUND',
+        ]
+        self.verify_output(output.out, expected=expected_results)

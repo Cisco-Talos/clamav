@@ -1513,8 +1513,8 @@ static cl_error_t cli_scanzstd(cli_ctx *ctx)
             }
 
             if (ores == 0) {
-                /* frame complete */
-                goto zstd_scan;
+                /* frame complete; reset to handle concatenated frames */
+                ZSTD_DCtx_reset(dstrm, ZSTD_reset_session_only);
             }
         }
     } while (1);
