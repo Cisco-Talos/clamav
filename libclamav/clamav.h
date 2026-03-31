@@ -591,7 +591,7 @@ extern cl_error_t cl_fmap_set_name(cl_fmap_t *map, const char *name);
  *
  * @param map           The file map to query.
  * @param[out] name_out Pointer to a variable to receive the name of the file map.
- * @return const char*  The name of the file map, or NULL if not set.
+ * @return cl_error_t   CL_SUCCESS if the name was retrieved successfully.
  */
 extern cl_error_t cl_fmap_get_name(cl_fmap_t *map, const char **name_out);
 
