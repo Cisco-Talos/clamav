@@ -1641,7 +1641,7 @@ extern cl_error_t cl_scandesc_callback(
  *
  * This variant also upgrades the `scanned` output parameter to a 64-bit integer.
  *
- * @param desc               File descriptor of an open file. The caller must provide this or the map.
+ * @param desc               File descriptor of an open file.
  * @param filename           (Optional) Filepath of the open file descriptor or file map.
  * @param[out] verdict_out   A pointer to a cl_verdict_t that will be set to the scan verdict.
  *                           You should check the verdict even if the function returns an error.
