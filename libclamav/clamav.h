@@ -1636,7 +1636,7 @@ extern cl_error_t cl_scandesc_callback(
  * This callback variant allows the caller to provide a context structure that
  * caller provided callback functions can interpret.
  *
- * This extended version of cl_scanmap_callback allows the caller to provide
+ * This extended version of cl_scandesc_callback allows the caller to provide
  * additional hints to the scanning engine, such as a file hash and file type.
  *
  * This variant also upgrades the `scanned` output parameter to a 64-bit integer.
@@ -1737,7 +1737,7 @@ extern cl_error_t cl_scanfile_callback(
  * This callback variant allows the caller to provide a context structure that
  * caller provided callback functions can interpret.
  *
- * This extended version of cl_scanmap_callback allows the caller to provide
+ * This extended version of cl_scanfile_callback allows the caller to provide
  * additional hints to the scanning engine, such as a file hash and file type.
  *
  * This variant also upgrades the `scanned` output parameter to a 64-bit integer.
