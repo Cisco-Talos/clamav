@@ -1797,7 +1797,7 @@ extern cl_error_t cl_scanfile_ex(
  * - `cl_fmap_open_handle()` for a file handle, or
  * - `cl_fmap_open_memory()` for a memory buffer.
  *
- * After the scan, you can also get the file hash with `cl_fmap_get_file_hash()`.
+ * After the scan, you can also get the file hash with `cl_fmap_get_hash()`.
  *
  * @param map           Buffer to be scanned, in form of a cl_fmap_t.
  * @param filename      Name of data origin. Does not need to be an actual
@@ -1831,7 +1831,7 @@ extern cl_error_t cl_scanmap_callback(
  * - `cl_fmap_open_handle()` for a file handle, or
  * - `cl_fmap_open_memory()` for a memory buffer.
  *
- * After the scan, you can also get the file hash with `cl_fmap_get_file_hash()`.
+ * After the scan, you can also get the file hash with `cl_fmap_get_hash()`.
  *
  * This extended version of cl_scanmap_callback allows the caller to provide
  * additional hints to the scanning engine, such as a file hash and file type.
