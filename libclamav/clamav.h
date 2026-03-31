@@ -635,7 +635,7 @@ extern cl_error_t cl_fmap_set_path(cl_fmap_t *map, const char *path);
  * @param[out] offset_out (optional) Pointer to a variable to receive the offset of the current layer within the given file.
  * @param[out] len_out    (optional) Pointer to a variable to receive the length of the current layer within the given file.
  * @return cl_error_t     CL_SUCCESS if the path was successfully retrieved.
- *                        CL_EACCES if the map does not have a file descriptor.
+ *                        CL_EACCES if the map does not have a stored path.
  *                        CL_ENULLARG if null arguments were provided.
  */
 extern cl_error_t cl_fmap_get_path(cl_fmap_t *map, const char **path_out, size_t *offset_out, size_t *len_out);
