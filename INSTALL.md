@@ -39,6 +39,7 @@ configuration options.
     - [`libcheck`](#libcheck)
     - [`bzip2`](#bzip2)
     - [`zlib`](#zlib)
+    - [`zstd`](#zstd)
     - [`libxml2`](#libxml2)
     - [`libpcre2`](#libpcre2)
     - [`openssl` (`libcrypto`, `libssl`)](#openssl-libcrypto-libssl)
@@ -114,6 +115,7 @@ libclamav requires these library dependencies:
 
 - `libbz2` / `bzip2`
 - `libz` / `zlib`
+- `libzstd` / `zstd`
 - `libxml2`
 - `libpcre2`
 - `openssl`
@@ -567,6 +569,13 @@ But if you:
 ```sh
   -D ZLIB_INCLUDE_DIR="_filepath of zlib header directory_"
   -D ZLIB_LIBRARY="_filepath of zlib library_"
+```
+
+### `zstd`
+
+```sh
+  -D ZSTD_INCLUDE_DIR="_filepath of zstd header directory_"
+  -D ZSTD_LIBRARY="_filepath of zstd library_"
 ```
 
 ### `libxml2`

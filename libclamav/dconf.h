@@ -99,6 +99,7 @@ struct cli_dconf {
 #define ARCH_CONF_UDF     0x8000000
 #define ARCH_CONF_LHA_LZH 0x10000000
 #define ARCH_CONF_ALZ     0x20000000
+#define ARCH_CONF_ZSTD    0x40000000
 
 /* Document flags */
 #define DOC_CONF_HTML         0x1

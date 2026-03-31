@@ -446,6 +446,7 @@ if(ENABLE_SHARED_LIB)
             OpenSSL::Crypto
             ZLIB::ZLIB
             BZip2::BZip2
+            ZSTD::zstd
             PCRE2::pcre2
             LibXml2::LibXml2
             JSONC::jsonc )
@@ -570,6 +571,7 @@ if(ENABLE_STATIC_LIB)
             OpenSSL::Crypto
             ZLIB::ZLIB
             BZip2::BZip2
+            ZSTD::zstd
             PCRE2::pcre2
             LibXml2::LibXml2
             JSONC::jsonc )

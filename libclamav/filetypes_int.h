@@ -163,6 +163,7 @@ static const char *ftypes_int[] = {
     "0:0:78617221:XAR container file:CL_TYPE_ANY:CL_TYPE_XAR:75",
     "1:EOF-512:6b6f6c79:DMG container file:CL_TYPE_ANY:CL_TYPE_DMG:75",
     "0:0:fd377a585a00:XZ container file:CL_TYPE_ANY:CL_TYPE_XZ:76",
+    "0:0:28b52ffd:Zstandard compressed file:CL_TYPE_ANY:CL_TYPE_ZSTD:76",
     "4:1024:482B0004:HFS+ partition:CL_TYPE_PART_ANY:CL_TYPE_PART_HFSPLUS:75",
     "4:1024:48580005:HFSX partition:CL_TYPE_PART_ANY:CL_TYPE_PART_HFSPLUS:75",
     "1:0:3c3f786d6c2076657273696f6e3d22312e3022{0-1024}3c576f726b626f6f6b:Microsoft Excel 2003 XML Document:CL_TYPE_ANY:CL_TYPE_XML_XL:80",
