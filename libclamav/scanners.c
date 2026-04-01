@@ -1471,10 +1471,6 @@ static cl_error_t cli_scanzstd(cli_ctx *ctx)
         const void *next_in = fmap_need_off_once_len(ctx->fmap, off, ibuf_size, &avail);
 
         if (!next_in || avail == 0) {
-            if (size == 0) {
-                cli_dbgmsg("cli_scanzstd: premature end of compressed stream\n");
-                ret = CL_EFORMAT;
-            }
             break;
         }
         off += avail;
@@ -1492,8 +1488,8 @@ static cl_error_t cli_scanzstd(cli_ctx *ctx)
             ores = ZSTD_decompressStream(dstrm, &out, &in);
             if (ZSTD_isError(ores)) {
                 cli_dbgmsg("cli_scanzstd: decompress error: %s\n", ZSTD_getErrorName(ores));
-                ret = CL_EFORMAT;
-                goto zstd_exit;
+                /* Still scan whatever we've decompressed so far */
+                goto zstd_scan;
             }
 
             if (out.pos > 0) {
