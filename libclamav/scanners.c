@@ -1423,17 +1423,20 @@ xz_exit:
 
 static cl_error_t cli_scanzstd(cli_ctx *ctx)
 {
-    cl_error_t ret = CL_SUCCESS;
-    int fd;
-    char *tmpname;
-    size_t off         = 0;
-    unsigned long size = 0;
-
-    ZSTD_DStream *dstrm = NULL;
-    size_t ores;
+    cl_error_t ret         = CL_SUCCESS;
+    int fd                 = -1;
+    char *tmpname          = NULL;
+    size_t off             = 0;
+    unsigned long size     = 0;
+    ZSTD_DStream *dstrm    = NULL;
+    size_t ores            = 0;
     size_t const obuf_size = ZSTD_DStreamOutSize();
     size_t const ibuf_size = ZSTD_DStreamInSize();
     unsigned char *obuf    = NULL;
+    size_t avail;
+    const void *next_in;
+    ZSTD_inBuffer in;
+    ZSTD_outBuffer out;
 
     cli_dbgmsg("in cli_scanzstd()\n");
 
@@ -1466,9 +1469,7 @@ static cl_error_t cli_scanzstd(cli_ctx *ctx)
     cli_dbgmsg("cli_scanzstd: decompressing to file %s\n", tmpname);
 
     do {
-        size_t avail;
-        ZSTD_inBuffer in;
-        const void *next_in = fmap_need_off_once_len(ctx->fmap, off, ibuf_size, &avail);
+        next_in = fmap_need_off_once_len(ctx->fmap, off, ibuf_size, &avail);
 
         if (!next_in || avail == 0) {
             break;
@@ -1479,8 +1480,7 @@ static cl_error_t cli_scanzstd(cli_ctx *ctx)
         in.size = avail;
         in.pos  = 0;
 
-        while (in.pos < in.size) {
-            ZSTD_outBuffer out;
+        do {
             out.dst  = obuf;
             out.size = obuf_size;
             out.pos  = 0;
@@ -1512,7 +1512,7 @@ static cl_error_t cli_scanzstd(cli_ctx *ctx)
                 /* frame complete; reset to handle concatenated frames */
                 ZSTD_DCtx_reset(dstrm, ZSTD_reset_session_only);
             }
-        }
+        } while (in.pos < in.size || out.pos == out.size);
     } while (1);
 
 zstd_scan:
