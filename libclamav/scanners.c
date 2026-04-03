@@ -4422,9 +4422,10 @@ static cl_error_t scan_rendered_pdf_image(cli_ctx *ctx)
     FFIError *pdf_render_error        = NULL;
     RenderedPdfImage rendered_image   = {0};
     PdfImageFuzzyHashConfig config    = {0};
+    char *source_basename             = NULL;
     char *rendered_image_path         = NULL;
     int rendered_image_fd             = -1;
-    const char *rendered_image_name   = NULL;
+    char *rendered_image_name         = NULL;
 
     offset = fmap_need_off(ctx->fmap, 0, ctx->fmap->real_len);
     if (NULL == offset) {
@@ -4446,7 +4447,26 @@ static cl_error_t scan_rendered_pdf_image(cli_ctx *ctx)
         goto done;
     }
 
-    rendered_image_name = (rendered_image.image_type == CL_TYPE_JPEG) ? "pdf-render.jpeg" : "pdf-render.png";
+    if ((NULL != ctx->fmap->name) &&
+        (CL_SUCCESS == cli_basename(ctx->fmap->name, strlen(ctx->fmap->name), &source_basename,
+                                    true /* posix_support_backslash_pathsep */))) {
+        const char *image_ext = (rendered_image.image_type == CL_TYPE_JPEG) ? "jpeg" : "png";
+        size_t rendered_name_len = strlen("pdf-render-") + strlen(source_basename) + strlen(".") + strlen(image_ext) + 1;
+
+        rendered_image_name = cli_max_malloc(rendered_name_len);
+        if (NULL == rendered_image_name) {
+            status = CL_EMEM;
+            goto done;
+        }
+
+        snprintf(rendered_image_name, rendered_name_len, "pdf-render-%s.%s", source_basename, image_ext);
+    } else {
+        rendered_image_name = cli_safer_strdup((rendered_image.image_type == CL_TYPE_JPEG) ? "pdf-render.jpeg" : "pdf-render.png");
+        if (NULL == rendered_image_name) {
+            status = CL_EMEM;
+            goto done;
+        }
+    }
 
     if (ctx->engine->keeptmp) {
         status = cli_gentempfd_with_prefix(ctx->this_layer_tmpdir, rendered_image_name, &rendered_image_path, &rendered_image_fd);
@@ -4475,6 +4495,12 @@ done:
     }
     if (NULL != rendered_image_path) {
         free(rendered_image_path);
+    }
+    if (NULL != rendered_image_name) {
+        free(rendered_image_name);
+    }
+    if (NULL != source_basename) {
+        free(source_basename);
     }
     if (NULL != rendered_image.image_data) {
         pdf_rendered_image_free(rendered_image.image_data, rendered_image.image_len);
@@ -5154,7 +5180,7 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
                     }
                 }
 
-                if (SCAN_PARSE_IMAGE_FUZZY_HASH && (DCONF_OTHER & OTHER_CONF_IMAGE_FUZZY_HASH)) {
+                if (should_calculate_image_fuzzy_hash(ctx)) {
                     // It's okay if it fails to calculate the fuzzy hash.
                     (void)calculate_fuzzy_image_hash(ctx, type);
                 }

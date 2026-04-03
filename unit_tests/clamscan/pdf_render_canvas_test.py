@@ -5,6 +5,8 @@ Run clamscan tests.
 """
 
 import sys
+import os
+import shutil
 
 sys.path.append('../unit_tests')
 import testcase
@@ -24,6 +26,10 @@ class TC(testcase.TestCase):
 
     def tearDown(self):
         super(TC, self).tearDown()
+
+        if (self.path_tmp / "TD").exists():
+            shutil.rmtree(self.path_tmp / "TD")
+
         self.verify_valgrind_log()
 
     def test_pdf_render_canvas_valid(self):
@@ -105,3 +111,31 @@ class TC(testcase.TestCase):
             output.err,
             expected=['--pdf-render-format must be either png or jpeg.'],
         )
+
+    def test_pdf_render_jpeg_honors_pdf_fuzzy_hash_option(self):
+        self.step_name('Test JPEG PDF render honors PDF fuzzy hash option')
+
+        tempdir = self.path_tmp / "TD"
+        if not os.path.isdir(tempdir):
+            os.makedirs(tempdir)
+
+        testfile = TC.path_source / 'unit_tests' / 'input' / 'other_scanfiles' / 'pdf' / 'pdf-stats-test.pdf'
+        command = '{valgrind} {valgrind_args} {clamscan} -d {path_db} --gen-json --leave-temps --tempdir={tempdir} {testfile} --scan-pdf-image-fuzzy-hash=yes --scan-image-fuzzy-hash=no --pdf-render-format=jpeg'.format(
+            valgrind=TC.valgrind,
+            valgrind_args=TC.valgrind_args,
+            clamscan=TC.clamscan,
+            path_db=TC.path_source / 'unit_tests' / 'input' / 'other_sigs' / 'Clamav-Unit-Test-Signature.ndb',
+            tempdir=tempdir,
+            testfile=testfile,
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 0  # clean
+
+        expected_strings = [
+            '"FileName":"pdf-render-pdf-stats-test.pdf.jpeg"',
+            '"Normalized":true',
+            '"FileType":"CL_TYPE_JPEG"',
+            '"ImageFuzzyHash":{',
+        ]
+        self.verify_metadata_json(tempdir, expected_strings)
