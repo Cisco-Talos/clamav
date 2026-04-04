@@ -7,11 +7,13 @@ Run clamscan tests.
 import sys
 import os
 import shutil
+import unittest
 
 sys.path.append('../unit_tests')
 import testcase
 
 
+@unittest.skipUnless(os.getenv("HAVE_PDFIUM") == "1", "requires PDFium support")
 class TC(testcase.TestCase):
     @classmethod
     def setUpClass(cls):

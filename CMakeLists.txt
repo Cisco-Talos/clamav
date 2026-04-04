@@ -536,6 +536,7 @@ endif()
 
 if(ENABLE_PDFIUM)
     find_package(PDFIUM REQUIRED MODULE)
+    set(HAVE_PDFIUM 1)
 endif()
 
 if(ENABLE_JSON_SHARED)

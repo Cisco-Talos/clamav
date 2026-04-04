@@ -333,10 +333,12 @@ void help(void)
     mprintf(LOGG_INFO, "    --scan-archive[=yes(*)/no]           Scan archive files (supported by libclamav).\n");
     mprintf(LOGG_INFO, "    --scan-image[=yes(*)/no]             Scan image (graphics) files.\n");
     mprintf(LOGG_INFO, "    --scan-image-fuzzy-hash[=yes(*)/no]  Detect files by calculating image (graphics) fuzzy hashes.\n");
+#ifdef HAVE_PDFIUM
     mprintf(LOGG_INFO, "    --scan-pdf-image-fuzzy-hash[=yes(*)/no] Detect PDFs by rendering the first page and calculating an image fuzzy hash.\n");
     mprintf(LOGG_INFO, "    --pdf-render-dpi=#n                  Render PDF pages for fuzzy hashing at the specified DPI.\n");
     mprintf(LOGG_INFO, "    --pdf-render-canvas=WxH              Render PDF pages for fuzzy hashing to fit within a WIDTH x HEIGHT canvas.\n");
     mprintf(LOGG_INFO, "    --pdf-render-format=TYPE             Render PDF pages as either png or jpeg.\n");
+#endif
     mprintf(LOGG_INFO, "    --alert-broken[=yes/no(*)]           Alert on broken executable files (PE & ELF).\n");
     mprintf(LOGG_INFO, "    --alert-broken-media[=yes/no(*)]     Alert on broken graphics files (JPEG, TIFF, PNG, GIF).\n");
     mprintf(LOGG_INFO, "    --alert-encrypted[=yes/no(*)]        Alert on encrypted archives and documents.\n");

@@ -1169,12 +1169,21 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
     logg(LOGG_INFO, "Limits: PCREMaxFileSize limit set to %llu.\n", val);
 
     if (optget(opts, "PDFRenderDPI")->active && optget(opts, "PDFRenderCanvas")->active) {
+#ifndef HAVE_PDFIUM
+        logg(LOGG_ERROR, "PDFRenderDPI and PDFRenderCanvas require ClamAV to be built with PDFium support.\n");
+#else
         logg(LOGG_ERROR, "Cannot set both PDFRenderDPI and PDFRenderCanvas.\n");
+#endif
         cl_engine_free(engine);
         return 1;
     }
 
     if ((opt = optget(opts, "PDFRenderDPI"))->active) {
+#ifndef HAVE_PDFIUM
+        logg(LOGG_ERROR, "PDFRenderDPI requires ClamAV to be built with PDFium support.\n");
+        cl_engine_free(engine);
+        return 1;
+#else
         if (opt->numarg <= 0) {
             logg(LOGG_ERROR, "PDFRenderDPI must be greater than 0.\n");
             cl_engine_free(engine);
@@ -1185,13 +1194,23 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
             cl_engine_free(engine);
             return 1;
         }
+#endif
     }
+#ifdef HAVE_PDFIUM
     val = cl_engine_get_num(engine, CL_ENGINE_PDF_RENDER_DPI, NULL);
     if (val > 0) {
         logg(LOGG_INFO, "PDF rendering: DPI set to %llu.\n", val);
     }
+#else
+    logg(LOGG_INFO, "PDF rendering unavailable: built without PDFium support.\n");
+#endif
 
     if ((opt = optget(opts, "PDFRenderCanvas"))->active) {
+#ifndef HAVE_PDFIUM
+        logg(LOGG_ERROR, "PDFRenderCanvas requires ClamAV to be built with PDFium support.\n");
+        cl_engine_free(engine);
+        return 1;
+#else
         uint32_t canvas_width  = 0;
         uint32_t canvas_height = 0;
 
@@ -1211,13 +1230,21 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
             cl_engine_free(engine);
             return 1;
         }
+#endif
     }
+#ifdef HAVE_PDFIUM
     val = cl_engine_get_num(engine, CL_ENGINE_PDF_RENDER_CANVAS_WIDTH, NULL);
     logg(LOGG_INFO, "PDF rendering: canvas width set to %llu.\n", val);
     val = cl_engine_get_num(engine, CL_ENGINE_PDF_RENDER_CANVAS_HEIGHT, NULL);
     logg(LOGG_INFO, "PDF rendering: canvas height set to %llu.\n", val);
+#endif
 
     if ((opt = optget(opts, "PDFRenderFormat"))->active) {
+#ifndef HAVE_PDFIUM
+        logg(LOGG_ERROR, "PDFRenderFormat requires ClamAV to be built with PDFium support.\n");
+        cl_engine_free(engine);
+        return 1;
+#else
         uint32_t render_format = 0;
 
         if (!parse_pdf_render_format(opt->strarg, &render_format)) {
@@ -1231,9 +1258,12 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
             cl_engine_free(engine);
             return 1;
         }
+#endif
     }
+#ifdef HAVE_PDFIUM
     val = cl_engine_get_num(engine, CL_ENGINE_PDF_RENDER_FORMAT, NULL);
     logg(LOGG_INFO, "PDF rendering: format set to %s.\n", (2 == val) ? "jpeg" : "png");
+#endif
 
     if (optget(opts, "ScanArchive")->enabled) {
         logg(LOGG_INFO, "Archive support enabled.\n");
@@ -1256,9 +1286,22 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
         logg(LOGG_INFO, "Detection using image fuzzy hash disabled.\n");
     }
 
+#ifndef HAVE_PDFIUM
+    if (optget(opts, "ScanPDFImageFuzzyHash")->active &&
+        optget(opts, "ScanPDFImageFuzzyHash")->enabled) {
+        logg(LOGG_ERROR, "ScanPDFImageFuzzyHash requires ClamAV to be built with PDFium support.\n");
+        cl_engine_free(engine);
+        return 1;
+    }
+#endif
+
     if (optget(opts, "ScanPDFImageFuzzyHash")->enabled) {
+#ifdef HAVE_PDFIUM
         logg(LOGG_INFO, "Detection using PDF render image fuzzy hash enabled.\n");
         options.parse |= CL_SCAN_PARSE_PDF_IMAGE_FUZZY_HASH;
+#else
+        logg(LOGG_INFO, "Detection using PDF render image fuzzy hash unavailable: built without PDFium support.\n");
+#endif
     } else {
         logg(LOGG_INFO, "Detection using PDF render image fuzzy hash disabled.\n");
     }

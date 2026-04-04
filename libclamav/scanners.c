@@ -4415,6 +4415,7 @@ done:
     return status;
 }
 
+#ifdef HAVE_PDFIUM
 static cl_error_t scan_rendered_pdf_image(cli_ctx *ctx)
 {
     cl_error_t status                 = CL_EPARSE;
@@ -4510,6 +4511,7 @@ done:
     }
     return status;
 }
+#endif
 
 /**
  * @brief A unified list of reasons why a scan result inside the magic_scan function
@@ -5363,9 +5365,11 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
         case CL_TYPE_PDF: /* FIXMELIMITS: pdf should be an archive! */
             if (SCAN_PARSE_PDF && (DCONF_DOC & DOC_CONF_PDF)) {
                 ret = cli_scanpdf(ctx, 0);
+#ifdef HAVE_PDFIUM
                 if ((CL_SUCCESS == ret) && (ctx->options->parse & CL_SCAN_PARSE_PDF_IMAGE_FUZZY_HASH)) {
                     ret = scan_rendered_pdf_image(ctx);
                 }
+#endif
             }
             break;
 
