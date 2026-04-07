@@ -615,6 +615,25 @@ static int ac_maketrans(struct cli_matcher *root)
 
                 child->trans = child->fail->trans;
             } else {
+                struct cli_ac_list *fail_list = child->fail->list;
+
+                if (fail_list) {
+                    if (child->list) {
+                        struct cli_ac_list *list = child->list;
+
+                        while (list->next) {
+                            if (list->next == fail_list)
+                                break;
+                            list = list->next;
+                        }
+
+                        if (!list->next)
+                            list->next = fail_list;
+                    } else {
+                        child->list = fail_list;
+                    }
+                }
+
                 if ((ret = bfs_enqueue(&bfs, &bfs_last, child)) != 0)
                     return ret;
             }
