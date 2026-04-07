@@ -610,14 +610,30 @@ static cl_error_t hfsplus_check_attribute(cli_ctx *ctx, hfsPlusVolumeHeader *vol
                 goto done;
             }
 
-            if (recordStart + sizeof(hfsPlusAttributeKey) + attrKey.nameLength >= topOfOffsets) {
+            uint32_t nameBytes;
+            uint32_t attrRecordStart;
+            uint32_t attrDataStart;
+            uint32_t bytesRemaining;
+
+            nameBytes       = (uint32_t)attrKey.nameLength * 2;
+            attrRecordStart = recordStart + sizeof(hfsPlusAttributeKey) + nameBytes;
+
+            if (attrRecordStart >= topOfOffsets) {
                 cli_dbgmsg("hfsplus_check_attribute: Attribute name is longer than expected: %u\n", attrKey.nameLength);
                 status = CL_EFORMAT;
                 goto done;
             }
 
-            if (attrKey.cnid == expectedCnid && attrKey.nameLength * 2 == nameLen && memcmp(&nodeBuf[recordStart + 14], name, nameLen) == 0) {
-                memcpy(&attrRec, &(nodeBuf[recordStart + sizeof(hfsPlusAttributeKey) + attrKey.nameLength * 2]), sizeof(attrRec));
+            bytesRemaining = topOfOffsets - attrRecordStart;
+            if (bytesRemaining < sizeof(attrRec)) {
+                cli_dbgmsg("hfsplus_check_attribute: Not enough data for an attribute record at location %x for %u!\n",
+                           nextStart, recordNum);
+                status = CL_EFORMAT;
+                goto done;
+            }
+
+            if (attrKey.cnid == expectedCnid && nameBytes == nameLen && memcmp(&nodeBuf[recordStart + 14], name, nameLen) == 0) {
+                memcpy(&attrRec, &(nodeBuf[attrRecordStart]), sizeof(attrRec));
                 attrRec.recordType    = be32_to_host(attrRec.recordType);
                 attrRec.attributeSize = be32_to_host(attrRec.attributeSize);
 
@@ -631,7 +647,15 @@ static cl_error_t hfsplus_check_attribute(cli_ctx *ctx, hfsPlusVolumeHeader *vol
                     goto done;
                 }
 
-                memcpy(record, &(nodeBuf[recordStart + sizeof(hfsPlusAttributeKey) + attrKey.nameLength * 2 + sizeof(attrRec)]), attrRec.attributeSize);
+                attrDataStart = attrRecordStart + sizeof(attrRec);
+                if (attrDataStart > topOfOffsets || topOfOffsets - attrDataStart < attrRec.attributeSize) {
+                    cli_dbgmsg("hfsplus_check_attribute: Attribute data overruns node at location %x for %u!\n",
+                               nextStart, recordNum);
+                    status = CL_EFORMAT;
+                    goto done;
+                }
+
+                memcpy(record, &(nodeBuf[attrDataStart]), attrRec.attributeSize);
                 *recordSize = attrRec.attributeSize;
 
                 if (found) {
