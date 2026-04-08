@@ -104,6 +104,36 @@ class TC(testcase.TestCase):
 
         assert output.out.count('FOUND') == 1 # only finds one of these (order not guaranteed afaik, so don't care which)
 
+    def test_regression_ac_low_depth_does_not_suppress_short_suffix_match(self):
+        self.step_name('Test that AC-only mode at depth 8 still reports a shorter suffix match.')
+
+        db_file = TC.path_db / 'ac-low-depth-suffix.ldb'
+        db_file.write_text(
+            "Test.space.Dim.kk;Engine:90-255,Target:0;0;2044696d206b6b\n"
+            "Test.Dim;Engine:90-255,Target:0;0;44696d\n"
+        )
+
+        testfile = TC.path_tmp / 'ac-low-depth-suffix.txt'
+        testfile.write_text("hello Dim world ")
+
+        command = '{valgrind} {valgrind_args} {clamscan} --dev-ac-only --dev-ac-depth 8 --normalize=no --allmatch -d {db_file} {testfiles}'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan,
+            db_file=db_file,
+            testfiles=testfile,
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 1  # virus
+
+        expected_results = [
+            'Test.Dim.UNOFFICIAL FOUND',
+        ]
+        unexpected_results = [
+            'Test.space.Dim.kk.UNOFFICIAL FOUND',
+        ]
+        self.verify_output(output.out, expected=expected_results, unexpected=unexpected_results)
+        assert output.out.count('FOUND') == 1
+
     def test_regression_imphash_nosize(self):
         self.step_name('Test an import hash with wildcard size when all-match mode is disabled.')
 
