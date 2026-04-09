@@ -101,6 +101,21 @@ static inline int insert_list(struct cli_matcher *root, struct cli_ac_patt *patt
     }
     new->me   = pattern;
     new->node = pt;
+    if (pattern->depth >= pattern->length[0]) {
+        new->match_meta_kind = 1;
+    } else {
+        uint16_t value = pattern->pattern[pattern->depth];
+
+        if ((value & CLI_MATCH_METADATA) == CLI_MATCH_CHAR) {
+            new->match_meta_kind = 2;
+            new->match_meta_byte = (uint8_t)(value & 0xff);
+        } else if ((value & CLI_MATCH_METADATA) == CLI_MATCH_NOCASE) {
+            uint8_t lower = (uint8_t)(value & 0xff);
+            new->match_meta_kind     = 3;
+            new->match_meta_byte     = lower;
+            new->match_meta_alt_byte = CLI_NOCASEI(lower);
+        }
+    }
 
     root->ac_lists++;
     newtable = MPOOL_REALLOC(root->mempool, root->ac_listtable, root->ac_lists * sizeof(struct cli_ac_list *));
@@ -291,6 +306,92 @@ static inline int link_chain_contains_head(struct cli_ac_list *head, struct cli_
     }
 
     return 0;
+}
+
+enum {
+    HEAD_META_NONE     = 0,
+    HEAD_META_COMPLETE = 1,
+    HEAD_META_EXACT    = 2,
+    HEAD_META_NOCASE   = 3
+};
+
+static inline int static_window_byte(uint16_t value, uint8_t *byte)
+{
+    switch (value & CLI_MATCH_METADATA) {
+        case CLI_MATCH_CHAR:
+        case CLI_MATCH_NOCASE:
+            *byte = (uint8_t)(value & 0xff);
+            return 1;
+        default:
+            return 0;
+    }
+}
+
+static uint16_t select_repeated_prefix_exact_window(const uint16_t *pattern, uint16_t length, uint8_t ac_maxdepth)
+{
+    uint8_t repeated;
+    uint16_t start, idx;
+    uint16_t depth = ac_maxdepth;
+    uint16_t best_start = UINT16_MAX;
+    uint16_t best_repeated_count;
+    uint16_t best_distinct_count = 0;
+
+    if (!pattern || length <= depth)
+        return UINT16_MAX;
+
+    if (!static_window_byte(pattern[0], &repeated))
+        return UINT16_MAX;
+
+    for (idx = 1; idx < length; idx++) {
+        uint8_t byte;
+        if (!static_window_byte(pattern[idx], &byte) || byte != repeated)
+            break;
+    }
+    if (idx < depth)
+        return UINT16_MAX;
+
+    best_repeated_count = depth + 1;
+
+    for (start = 1; start + depth <= length; start++) {
+        uint8_t seen[256] = {0};
+        uint16_t repeated_count = 0;
+        uint16_t distinct_count = 0;
+        int valid = 1;
+
+        for (idx = start; idx < start + depth; idx++) {
+            uint8_t byte;
+            if (!static_window_byte(pattern[idx], &byte)) {
+                valid = 0;
+                break;
+            }
+
+            if (byte == repeated)
+                repeated_count++;
+
+            if (!seen[byte]) {
+                seen[byte] = 1;
+                distinct_count++;
+            }
+        }
+
+        if (!valid || repeated_count >= depth)
+            continue;
+
+        if ((repeated_count < best_repeated_count) ||
+            ((repeated_count == best_repeated_count) && (distinct_count > best_distinct_count)) ||
+            ((repeated_count == best_repeated_count) && (distinct_count == best_distinct_count) &&
+             (best_start != UINT16_MAX) && (start > best_start))) {
+            best_start          = start;
+            best_repeated_count = repeated_count;
+            best_distinct_count = distinct_count;
+        } else if (best_start == UINT16_MAX) {
+            best_start          = start;
+            best_repeated_count = repeated_count;
+            best_distinct_count = distinct_count;
+        }
+    }
+
+    return best_start;
 }
 
 static void link_lists(struct cli_matcher *root)
@@ -1887,6 +1988,7 @@ cl_error_t cli_ac_scanbuff(
 
         if (UNLIKELY(IS_FINAL(current))) {
             struct cli_ac_list *faillist = current->fail->list;
+            const uint8_t *next_byte     = (i + 1 < length) ? &buffer[i + 1] : NULL;
             pattN                        = current->list;
             while (pattN) {
                 patt = pattN->me;
@@ -1922,6 +2024,19 @@ cl_error_t cli_ac_scanbuff(
                 }
 
                 ptN = pattN;
+                if (pattN->match_meta_kind == HEAD_META_EXACT) {
+                    if (!next_byte || *next_byte != pattN->match_meta_byte) {
+                        pattN = pattN->next;
+                        continue;
+                    }
+                } else if (pattN->match_meta_kind == HEAD_META_NOCASE) {
+                    if (!next_byte ||
+                        ((*next_byte != pattN->match_meta_byte) &&
+                         (*next_byte != pattN->match_meta_alt_byte))) {
+                        pattN = pattN->next;
+                        continue;
+                    }
+                }
                 if (ac_findmatch(buffer, bp, offset + bp, length, patt, &matchstart, &matchend)) {
                     while (ptN) {
                         pt = ptN->me;
@@ -3218,6 +3333,19 @@ cl_error_t cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
         new->length[0] -= new->prefix_length[0];
         new->length[1] -= new->prefix_length[1];
         new->length[2] -= new->prefix_length[2];
+    } else {
+        uint16_t repeated_ppos = select_repeated_prefix_exact_window(
+            new->pattern, new->length[0], root->ac_maxdepth);
+        if (repeated_ppos != UINT16_MAX) {
+            new->prefix       = new->pattern;
+            new->prefix_length[0] = repeated_ppos;
+            new->prefix_length[1] = repeated_ppos;
+            new->prefix_length[2] = repeated_ppos;
+            new->pattern          = &new->prefix[repeated_ppos];
+            new->length[0] -= repeated_ppos;
+            new->length[1] -= repeated_ppos;
+            new->length[2] -= repeated_ppos;
+        }
     }
 
     if (new->length[2] + new->prefix_length[2] > root->maxpatlen) {
