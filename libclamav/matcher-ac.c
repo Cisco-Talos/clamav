@@ -282,6 +282,17 @@ static inline void link_node_lists(struct cli_ac_list **listtable, unsigned int 
     listtable[nheads - 1]->next = NULL;
 }
 
+static inline int link_chain_contains_head(struct cli_ac_list *head, struct cli_ac_list *target)
+{
+    while (head) {
+        if (head == target)
+            return 1;
+        head = head->next;
+    }
+
+    return 0;
+}
+
 static void link_lists(struct cli_matcher *root)
 {
     struct cli_ac_node *curnode;
@@ -1880,8 +1891,13 @@ cl_error_t cli_ac_scanbuff(
             while (pattN) {
                 patt = pattN->me;
                 if (patt->partno > mdata->min_partno) {
-                    pattN    = faillist;
-                    faillist = NULL;
+                    if (faillist && !link_chain_contains_head(faillist, pattN)) {
+                        pattN    = faillist;
+                        faillist = NULL;
+                        continue;
+                    }
+
+                    pattN = pattN->next;
                     continue;
                 }
                 bp = i + 1 - patt->depth;
