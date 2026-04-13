@@ -3734,7 +3734,7 @@ static int testsigs(const struct optstruct *opts)
 
     fd = open(opts->filename[0], O_RDONLY | O_BINARY);
     if (fd == -1) {
-        mprintf(LOGG_ERROR, "testsigs: Can't open file %s\n", optget(opts, "test-sigs")->strarg);
+        mprintf(LOGG_ERROR, "testsigs: Can't open file %s\n", opts->filename[0]);
         fclose(sigs);
         return -1;
     }
