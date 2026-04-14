@@ -564,7 +564,7 @@ cl_error_t onas_rm_listnode(struct onas_lnode *head, const char *dirname)
         if (NULL == curr->dirname) {
             logg(LOGG_DEBUG, "ClamHash: node's directory name is NULL!\n");
             return CL_ERROR;
-        } else if (!strncmp(curr->dirname, dirname, n)) {
+        } else if (strlen(curr->dirname) == n && !memcmp(curr->dirname, dirname, n)) {
             if (curr->next != NULL)
                 curr->next->prev = curr->prev;
             if (curr->prev != NULL)
