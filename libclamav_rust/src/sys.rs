@@ -1265,11 +1265,12 @@ extern "C" {
     ) -> *mut ::std::os::raw::c_char;
 }
 extern "C" {
-    #[doc = " @brief   Convenience wrapper for cli_magic_scan_nested_fmap_type().\n\n Creates an fmap and calls cli_magic_scan_nested_fmap_type() for you, with type CL_TYPE_ANY.\n\n @param buffer        Pointer to the buffer to be scanned.\n @param length        Size in bytes of the buffer being scanned.\n @param ctx           Scanning context structure.\n @param name          (optional) Original name of the file (to set fmap name metadata)\n @param attributes    Layer attributes of the file being scanned (is it normalized, decrypted, etc)\n @return int          CL_SUCCESS, or an error code."]
+    #[doc = " @brief   Convenience wrapper for cli_magic_scan_nested_fmap_type().\n\n Creates an fmap and calls cli_magic_scan_nested_fmap_type() for you.\n\n @param buffer        Pointer to the buffer to be scanned.\n @param length        Size in bytes of the buffer being scanned.\n @param ctx           Scanning context structure.\n @param type          CL_TYPE of data to be scanned.\n @param name          (optional) Original name of the file (to set fmap name metadata)\n @param attributes    Layer attributes of the file being scanned (is it normalized, decrypted, etc)\n @return int          CL_SUCCESS, or an error code."]
     pub fn cli_magic_scan_buff(
         buffer: *const ::std::os::raw::c_void,
         length: usize,
         ctx: *mut cli_ctx,
+        type_: cli_file,
         name: *const ::std::os::raw::c_char,
         attributes: u32,
     ) -> cl_error_t;

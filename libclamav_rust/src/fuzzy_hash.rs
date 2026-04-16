@@ -422,6 +422,10 @@ pub fn fuzzy_hash_calculate_image(buffer: &[u8]) -> Result<Vec<u8>, Error> {
         Err(_) => return Err(Error::ImageLoadPanic()),
     };
 
+    fuzzy_hash_calculate_dynamic_image(og_image)
+}
+
+pub fn fuzzy_hash_calculate_dynamic_image(og_image: DynamicImage) -> Result<Vec<u8>, Error> {
     // Drop the alpha channel (if exists).
     let buff_rgb8 = og_image.to_rgb8();
 

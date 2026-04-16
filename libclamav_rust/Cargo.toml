@@ -5,6 +5,7 @@ name = "clamav_rust"
 version = "0.0.1"
 
 [dependencies]
+pdfium-render = { version = "0.8.37", features = ["static"] }
 flate2 = "1"
 hex = "0.4"
 libc = "0.2"
@@ -41,5 +42,5 @@ crate-type = ["staticlib"]
 name = "clamav_rust"
 
 [build-dependencies]
-cbindgen = { version ="0.25", default-features = false }
+cbindgen = { version = "0.25", default-features = false }
 bindgen = "0.65"

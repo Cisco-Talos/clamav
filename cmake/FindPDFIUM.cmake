@@ -43,6 +43,20 @@ if(PDFIUM_FOUND AND NOT TARGET PDFIUM::pdfium)
     add_library(PDFIUM::pdfium UNKNOWN IMPORTED)
     set_target_properties(PDFIUM::pdfium PROPERTIES
         IMPORTED_LOCATION "${PDFIUM_LIBRARY}")
+
+    if(APPLE AND PDFIUM_LIBRARY MATCHES "\\.a$")
+        get_filename_component(_PDFIUM_LIBDIR "${PDFIUM_LIBRARY}" DIRECTORY)
+        set(_PDFIUM_INTERFACE_LIBRARIES
+            "c++"
+            "-framework CoreGraphics")
+        if(PDFIUM_EXTRA_LIBRARIES)
+            list(APPEND _PDFIUM_INTERFACE_LIBRARIES ${PDFIUM_EXTRA_LIBRARIES})
+        endif()
+
+        set_target_properties(PDFIUM::pdfium PROPERTIES
+            INTERFACE_LINK_LIBRARIES "${_PDFIUM_INTERFACE_LIBRARIES}")
+    endif()
+
     if(PDFIUM_INCLUDE_DIR)
         set_target_properties(PDFIUM::pdfium PROPERTIES
             INTERFACE_INCLUDE_DIRECTORIES "${PDFIUM_INCLUDE_DIR}")

@@ -186,6 +186,7 @@ static inline cl_error_t matcher_run(const struct cli_matcher *root,
     }
 
     switch (ftype) {
+        case CL_TYPE_PDF:
         case CL_TYPE_GIF:
         case CL_TYPE_TIFF:
         case CL_TYPE_JPEG:
