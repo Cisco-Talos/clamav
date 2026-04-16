@@ -254,10 +254,12 @@ int onas_ht_insert(struct onas_ht *ht, struct onas_element *elem)
     int idx                  = onas_hash(elem->key, elem->klen, ht->size);
     struct onas_bucket *bckt = ht->htable[idx];
 
-    int ret        = 0;
-    uint32_t bsize = 0;
+    int ret          = 0;
+    uint32_t bsize   = 0;
+    bool bckt_is_new = false;
 
     if (bckt == NULL) {
+        bckt_is_new     = true;
         ht->htable[idx] = onas_bucket_init();
         if (ht->htable[idx] == NULL) return CL_EMEM;
 
@@ -270,7 +272,7 @@ int onas_ht_insert(struct onas_ht *ht, struct onas_element *elem)
         ht->tail   = bckt;
         bckt->prev = NULL;
         bckt->next = NULL;
-    } else {
+    } else if (bckt_is_new) { // bckts are never removed from the linked list
         struct onas_bucket *ht_tail = ht->tail;
         ht_tail->next               = bckt;
         bckt->prev                  = ht_tail;
