@@ -346,6 +346,16 @@ if(Valgrind_FOUND)
     set_property(TEST libclamav_valgrind PROPERTY ENVIRONMENT ${ENVIRONMENT} VALGRIND=${Valgrind_EXECUTABLE})
 endif()
 
+add_test(NAME upx_tests
+    COMMAND ${PythonTest_COMMAND};upx_test.py
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+set_property(TEST upx_tests PROPERTY ENVIRONMENT ${ENVIRONMENT})
+if(Valgrind_FOUND)
+    add_test(NAME upx_tests_valgrind COMMAND ${PythonTest_COMMAND};upx_test.py
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+    set_property(TEST upx_tests_valgrind PROPERTY ENVIRONMENT ${ENVIRONMENT} VALGRIND=${Valgrind_EXECUTABLE})
+endif()
+
 add_rust_test(NAME libclamav_rust
     SOURCE_DIRECTORY "${CMAKE_SOURCE_DIR}/libclamav_rust"
     BINARY_DIRECTORY "${CMAKE_BINARY_DIR}"
