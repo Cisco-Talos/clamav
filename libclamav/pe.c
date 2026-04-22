@@ -99,14 +99,6 @@
 #define PE32P_SIGNATURE 0x020b
 #define OPT_HDR_SIZE_DIFF (sizeof(struct pe_image_optional_hdr64) - sizeof(struct pe_image_optional_hdr32))
 
-#define UPX_NRV2B "\x11\xdb\x11\xc9\x01\xdb\x75\x07\x8b\x1e\x83\xee\xfc\x11\xdb\x11\xc9\x11\xc9\x75\x20\x41\x01\xdb"
-#define UPX_NRV2D "\x83\xf0\xff\x74\x78\xd1\xf8\x89\xc5\xeb\x0b\x01\xdb\x75\x07\x8b\x1e\x83\xee\xfc\x11\xdb\x11\xc9"
-#define UPX_NRV2E "\xeb\x52\x31\xc9\x83\xe8\x03\x72\x11\xc1\xe0\x08\x8a\x06\x46\x83\xf0\xff\x74\x75\xd1\xf8\x89\xc5"
-#define UPX_LZMA1_FIRST "\x56\x83\xc3\x04\x53\x50\xc7\x03"
-#define UPX_LZMA1_SECOND "\x90\x90\x90\x55\x57\x56\x53\x83"
-#define UPX_LZMA0 "\x56\x83\xc3\x04\x53\x50\xc7\x03\x03\x00\x00\x00\x90\x90\x90\x55\x57\x56\x53\x83"
-#define UPX_LZMA2 "\x56\x83\xc3\x04\x53\x50\xc7\x03\x03\x00\x02\x00\x90\x90\x90\x90\x90\x55\x57\x56"
-
 #define PE_MAXNAMESIZE 256
 #define PE_MAXIMPORTS 1024
 
@@ -2736,7 +2728,6 @@ int cli_scanpe(cli_ctx *ctx)
     size_t bytes;
     unsigned int i, j, found, upx_success = 0, err;
     unsigned int ssize = 0, dsize = 0, corrupted_cur;
-    int (*upxfn)(const char *, uint32_t, char *, uint32_t *, uint32_t, uint32_t, uint32_t) = NULL;
     const char *src                                                                        = NULL;
     char *dest                                                                             = NULL;
     int ndesc;
@@ -2845,6 +2836,143 @@ int cli_scanpe(cli_ctx *ctx)
             }
         }
     }
+
+    /* =========================================================
+     * UPX PE32+ (x64) UNPACKER
+
+     * All detection and decompression logic lives in upx_pe.c:
+     *   is_upx_pe64()     -- detect section pair, identify stub variant
+     *   upx_unpack_pe64() -- dispatch to inflate*_pe64() engine
+     *
+     * We attempt UPX decompression here, before the PE32+ bail below,
+     * then return.  Non-UPX PE32+ files fall through to the bail
+     * unchanged.  The existing x86 UPX block is completely untouched.
+     * ========================================================= */
+    if (peinfo->is_pe32plus && (DCONF & PE_CONF_UPX)) {
+        unsigned int upx64_i    = 0;
+        uint32_t     magic[3]   = {0, 0, 0};
+        int          stub_type  = 0;
+        int          upx64_nsect = peinfo->nsections;
+        upx_pe_section_t *upx64_sects = NULL;
+        int s64;
+
+        char   upx64_epbuf[4096];
+        size_t upx64_epsize = fmap_readn(map, upx64_epbuf,
+                                         peinfo->ep,
+                                         sizeof(upx64_epbuf));
+        if ((size_t)-1 == upx64_epsize)
+            upx64_epsize = 0;
+
+        /* Populate upx_pe_section_t array from peinfo->sections */
+        upx64_sects = (upx_pe_section_t *)cli_max_calloc(
+                          (size_t)upx64_nsect, sizeof(upx_pe_section_t));
+        if (!upx64_sects)
+            goto upx64_bail;
+
+        for (s64 = 0; s64 < upx64_nsect; s64++) {
+            upx64_sects[s64].rsz = peinfo->sections[s64].rsz;
+            upx64_sects[s64].vsz = peinfo->sections[s64].vsz;
+        }
+
+        if (is_upx_pe64(upx64_sects, upx64_nsect,
+                        upx64_epbuf, upx64_epsize,
+                        &upx64_i, magic, &stub_type)) {
+
+            unsigned int upx64_ssize = peinfo->sections[upx64_i + 1].rsz;
+            unsigned int upx64_dsize = peinfo->sections[upx64_i].vsz +
+                                       peinfo->sections[upx64_i + 1].vsz;
+            const char  *upx64_src   = NULL;
+            char        *upx64_dest  = NULL;
+
+            cli_dbgmsg("cli_scanpe: UPX64: detected (stub_type=%d "
+                       "sect=%u ssize=%u dsize=%u)\n",
+                       stub_type, upx64_i, upx64_ssize, upx64_dsize);
+
+            CLI_UNPSIZELIMITS("cli_scanpe: UPX64",
+                              MAX(upx64_dsize, upx64_ssize));
+
+            if (upx64_ssize <= 0x19 || upx64_dsize <= upx64_ssize ||
+                upx64_dsize > CLI_MAX_ALLOCATION) {
+                cli_dbgmsg("cli_scanpe: UPX64: size sanity check failed "
+                           "(ssize=%u dsize=%u)\n",
+                           upx64_ssize, upx64_dsize);
+                goto upx64_bail;
+            }
+
+            if (!peinfo->sections[upx64_i + 1].rsz ||
+                !(upx64_src = fmap_need_off_once(
+                                  map,
+                                  peinfo->sections[upx64_i + 1].raw,
+                                  upx64_ssize))) {
+                cli_dbgmsg("cli_scanpe: UPX64: can't read section %u\n",
+                           upx64_i + 1);
+                goto upx64_bail;
+            }
+
+            if (!(upx64_dest = (char *)cli_max_calloc(
+                                   upx64_dsize + UPX_REBUILD_HEADROOM, sizeof(char)))) {
+                goto upx64_bail;
+            }
+
+            if (upx_unpack_pe64(upx64_src, upx64_ssize,
+                                upx64_dest, &upx64_dsize,
+                                peinfo->sections[upx64_i].rva,
+                                peinfo->sections[upx64_i + 1].rva,
+                                peinfo->vep,
+                                upx64_epbuf, upx64_epsize,
+                                magic, stub_type) >= 0) {
+
+                cli_dbgmsg("cli_scanpe: UPX64: successfully decompressed "
+                           "(%u bytes)\n", upx64_dsize);
+
+                CLI_UNPTEMP("cli_scanpe: UPX64", (upx64_dest, 0));
+
+                if (pe_json != NULL)
+                    cli_jsonstr(pe_json, "Packer", "UPX");
+
+                if ((unsigned int)write(ndesc, upx64_dest, upx64_dsize)
+                        != upx64_dsize) {
+                    cli_dbgmsg("cli_scanpe: UPX64: write failed\n");
+                    free(upx64_dest);
+                    free(tempfile);
+                    close(ndesc);
+                    cli_exe_info_destroy(peinfo);
+                    return CL_EWRITE;
+                }
+                free(upx64_dest);
+
+                if (lseek(ndesc, 0, SEEK_SET) == -1) {
+                    close(ndesc);
+                    CLI_TMPUNLK();
+                    free(tempfile);
+                    cli_exe_info_destroy(peinfo);
+                    return CL_ESEEK;
+                }
+
+                if (ctx->engine->keeptmp)
+                    cli_dbgmsg("cli_scanpe: UPX64: saved in %s\n",
+                               tempfile);
+
+                cli_dbgmsg("***** Scanning decompressed PE32+ *****\n");
+                ret = cli_magic_scan_desc(ndesc, tempfile, ctx, NULL,
+                                         LAYER_ATTRIBUTES_NONE);
+                close(ndesc);
+                CLI_TMPUNLK();
+                free(tempfile);
+                cli_exe_info_destroy(peinfo);
+                free(upx64_sects);
+                return ret;
+
+            } else {
+                cli_dbgmsg("cli_scanpe: UPX64: decompression failed\n");
+                free(upx64_dest);
+            }
+        }
+upx64_bail:
+        free(upx64_sects);
+        ; /* fall through to PE32+ bail below */
+    }
+    /* ========= END UPX PE32+ BLOCK ========= */
 
     // TODO Don't bail out here
     if (peinfo->is_pe32plus) { /* Do not continue for PE32+ files */
@@ -3750,11 +3878,15 @@ int cli_scanpe(cli_ctx *ctx)
         dsize = peinfo->sections[i].vsz + peinfo->sections[i + 1].vsz;
 
         /*
-         * UPX support
-         * we assume (i + 1) is UPX1
+         * UPX PE32 (x86) support.
+         *
+         * Detection (empty section pair) was done above by the shared
+         * found/i scan.  Decompression is delegated entirely to
+         * upx_unpack_pe32() in upx_pe.c, which tries all three NRV
+         * variants with the full skew cascade then LZMA -- identical
+         * to the original logic here but centralized so the standalone
+         * test harness (clam_upx) exercises the same code path.
          */
-
-        /* cli_dbgmsg("UPX: ssize %u dsize %u\n", ssize, dsize); */
 
         CLI_UNPSIZELIMITS("cli_scanpe: UPX", MAX(dsize, ssize));
 
@@ -3770,106 +3902,20 @@ int cli_scanpe(cli_ctx *ctx)
             return CL_EREAD;
         }
 
-        if ((dest = (char *)cli_max_calloc(dsize + 8192, sizeof(char))) == NULL) {
+        if ((dest = (char *)cli_max_calloc(dsize + UPX_REBUILD_HEADROOM, sizeof(char))) == NULL) {
             cli_exe_info_destroy(peinfo);
             return CL_EMEM;
         }
 
-        /* try to detect UPX code */
-        if (cli_memstr(UPX_NRV2B, 24, epbuff + 0x69, 13) || cli_memstr(UPX_NRV2B, 24, epbuff + 0x69 + 8, 13)) {
-            cli_dbgmsg("cli_scanpe: UPX: Looks like a NRV2B decompression routine\n");
-            upxfn = upx_inflate2b;
-        } else if (cli_memstr(UPX_NRV2D, 24, epbuff + 0x69, 13) || cli_memstr(UPX_NRV2D, 24, epbuff + 0x69 + 8, 13)) {
-            cli_dbgmsg("cli_scanpe: UPX: Looks like a NRV2D decompression routine\n");
-            upxfn = upx_inflate2d;
-        } else if (cli_memstr(UPX_NRV2E, 24, epbuff + 0x69, 13) || cli_memstr(UPX_NRV2E, 24, epbuff + 0x69 + 8, 13)) {
-            cli_dbgmsg("cli_scanpe: UPX: Looks like a NRV2E decompression routine\n");
-            upxfn = upx_inflate2e;
-        }
-
-        if (upxfn) {
-            int skew = cli_readint32(epbuff + 2) - EC32(peinfo->pe_opt.opt32.ImageBase) - peinfo->sections[i + 1].rva;
-
-            if (epbuff[1] != '\xbe' || skew <= 0 || skew > 0xfff) {
-                /* FIXME: legit skews?? */
-                skew = 0;
-            } else if ((unsigned int)skew > ssize) {
-                /* Ignore suggested skew larger than section size */
-                skew = 0;
-            } else {
-                cli_dbgmsg("cli_scanpe: UPX: UPX1 seems skewed by %d bytes\n", skew);
-            }
-
-            /* Try skewed first (skew may be zero) */
-            if (upxfn(src + skew, ssize - skew, dest, &dsize, peinfo->sections[i].rva, peinfo->sections[i + 1].rva, peinfo->vep - skew) >= 0) {
-                upx_success = 1;
-            }
-            /* If skew not successful and non-zero, try no skew */
-            else if (skew && (upxfn(src, ssize, dest, &dsize, peinfo->sections[i].rva, peinfo->sections[i + 1].rva, peinfo->vep) >= 0)) {
-                upx_success = 1;
-            }
-
-            if (upx_success)
-                cli_dbgmsg("cli_scanpe: UPX: Successfully decompressed\n");
-            else
-                cli_dbgmsg("cli_scanpe: UPX: Preferred decompressor failed\n");
-        }
-
-        if (!upx_success && upxfn != upx_inflate2b) {
-            if (upx_inflate2b(src, ssize, dest, &dsize, peinfo->sections[i].rva, peinfo->sections[i + 1].rva, peinfo->vep) == -1 && upx_inflate2b(src + 0x15, ssize - 0x15, dest, &dsize, peinfo->sections[i].rva, peinfo->sections[i + 1].rva, peinfo->vep - 0x15) == -1) {
-
-                cli_dbgmsg("cli_scanpe: UPX: NRV2B decompressor failed\n");
-            } else {
-                upx_success = 1;
-                cli_dbgmsg("cli_scanpe: UPX: Successfully decompressed with NRV2B\n");
-            }
-        }
-
-        if (!upx_success && upxfn != upx_inflate2d) {
-            if (upx_inflate2d(src, ssize, dest, &dsize, peinfo->sections[i].rva, peinfo->sections[i + 1].rva, peinfo->vep) == -1 && upx_inflate2d(src + 0x15, ssize - 0x15, dest, &dsize, peinfo->sections[i].rva, peinfo->sections[i + 1].rva, peinfo->vep - 0x15) == -1) {
-
-                cli_dbgmsg("cli_scanpe: UPX: NRV2D decompressor failed\n");
-            } else {
-                upx_success = 1;
-                cli_dbgmsg("cli_scanpe: UPX: Successfully decompressed with NRV2D\n");
-            }
-        }
-
-        if (!upx_success && upxfn != upx_inflate2e) {
-            if (upx_inflate2e(src, ssize, dest, &dsize, peinfo->sections[i].rva, peinfo->sections[i + 1].rva, peinfo->vep) == -1 && upx_inflate2e(src + 0x15, ssize - 0x15, dest, &dsize, peinfo->sections[i].rva, peinfo->sections[i + 1].rva, peinfo->vep - 0x15) == -1) {
-                cli_dbgmsg("cli_scanpe: UPX: NRV2E decompressor failed\n");
-            } else {
-                upx_success = 1;
-                cli_dbgmsg("cli_scanpe: UPX: Successfully decompressed with NRV2E\n");
-            }
-        }
-
-        if (cli_memstr(UPX_LZMA2, 20, epbuff + 0x2f, 20)) {
-            uint32_t strictdsize = cli_readint32(epbuff + 0x21), skew = 0;
-            if (ssize > 0x15 && epbuff[0] == '\x60' && epbuff[1] == '\xbe') {
-                // TODO Add EC32
-                skew = cli_readint32(epbuff + 2) - peinfo->sections[i + 1].rva - peinfo->pe_opt.opt32.ImageBase;
-                if (skew != 0x15)
-                    skew = 0;
-            }
-
-            if (strictdsize <= dsize)
-                upx_success = upx_inflatelzma(src + skew, ssize - skew, dest, &strictdsize, peinfo->sections[i].rva, peinfo->sections[i + 1].rva, peinfo->vep, 0x20003) >= 0;
-        } else if (cli_memstr(UPX_LZMA1_FIRST, 8, epbuff + 0x39, 8) && cli_memstr(UPX_LZMA1_SECOND, 8, epbuff + 0x45, 8)) {
-            uint32_t strictdsize = cli_readint32(epbuff + 0x2b), skew = 0;
-            uint32_t properties = cli_readint32(epbuff + 0x41);
-            if (ssize > 0x15 && epbuff[0] == '\x60' && epbuff[1] == '\xbe') {
-                // TODO Add EC32
-                skew = cli_readint32(epbuff + 2) - peinfo->sections[i + 1].rva - peinfo->pe_opt.opt32.ImageBase;
-                if (skew != 0x15)
-                    skew = 0;
-            }
-
-            if (strictdsize <= dsize)
-                upx_success = upx_inflatelzma(src + skew, ssize - skew, dest, &strictdsize, peinfo->sections[i].rva, peinfo->sections[i + 1].rva, peinfo->vep, properties) >= 0;
-        }
-
-        if (!upx_success) {
+        if (upx_unpack_pe32(src, ssize, dest, &dsize,
+                            peinfo->sections[i].rva,
+                            peinfo->sections[i + 1].rva,
+                            peinfo->vep,
+                            EC32(peinfo->pe_opt.opt32.ImageBase),
+                            epbuff, epsize) >= 0) {
+            upx_success = 1;
+            cli_dbgmsg("cli_scanpe: UPX: Successfully decompressed\n");
+        } else {
             cli_dbgmsg("cli_scanpe: UPX: All decompressors failed\n");
             free(dest);
         }
