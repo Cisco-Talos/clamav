@@ -1277,9 +1277,10 @@ static cl_error_t hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHea
                                             off_t blockOffset = dataOffset + table[curBlock].offset;
                                             size_t curOffset;
                                             size_t readLen;
-                                            z_stream stream;
+                                            z_stream stream = {0};
                                             int streamBeginning  = 1;
                                             int streamCompressed = 0;
+                                            int streamInitialized = 0;
 
                                             cli_dbgmsg("Handling block %u of %" PRIu32 " at offset %" PRIi64 " (size %u)\n", curBlock, numBlocks, (int64_t)blockOffset, table[curBlock].length);
 
@@ -1319,6 +1320,7 @@ static cl_error_t hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHea
                                                             status = CL_EFORMAT;
                                                             goto done;
                                                         }
+                                                        streamInitialized = 1;
                                                     }
                                                 }
 
@@ -1367,10 +1369,12 @@ static cl_error_t hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHea
                                                 streamBeginning = 0;
                                             }
 
-                                            if (Z_OK != (z_ret = inflateEnd(&stream))) {
-                                                cli_dbgmsg("hfsplus_walk_catalog: inflateEnd failed (%d)\n", z_ret);
-                                                status = CL_EFORMAT;
-                                                goto done;
+                                            if (streamInitialized) {
+                                                if (Z_OK != (z_ret = inflateEnd(&stream))) {
+                                                    cli_dbgmsg("hfsplus_walk_catalog: inflateEnd failed (%d)\n", z_ret);
+                                                    status = CL_EFORMAT;
+                                                    goto done;
+                                                }
                                             }
                                         }
 
