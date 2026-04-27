@@ -896,17 +896,27 @@ done:
  * The caller is responsible for freeing the table.
  *
  * @param fd                File descriptor of the file to read from.
+ * @param resourceLen       Length of the cmpf resource payload, excluding the
+ *                          leading resource length field.
  * @param [out] numBlocks   Number of blocks in the table, as determined from reading the file.
  * @param [out] table       Will be allocated and populated with table data.
  * @return cl_error_t  CL_SUCCESS on success, CL_E* on failure.
  */
-static cl_error_t hfsplus_read_block_table(int fd, uint32_t *numBlocks, hfsPlusResourceBlockTable **table)
+static cl_error_t hfsplus_read_block_table(int fd, size_t resourceLen, uint32_t *numBlocks, hfsPlusResourceBlockTable **table)
 {
     cl_error_t status = CL_SUCCESS;
     uint32_t i;
+    size_t tableBytes;
+    size_t minBlockOffset;
 
     if (!table || !numBlocks) {
         status = CL_ENULLARG;
+        goto done;
+    }
+
+    if (resourceLen < sizeof(*numBlocks)) {
+        cli_dbgmsg("hfsplus_read_block_table: Resource is too small to contain a block count\n");
+        status = CL_EFORMAT;
         goto done;
     }
 
@@ -917,22 +927,48 @@ static cl_error_t hfsplus_read_block_table(int fd, uint32_t *numBlocks, hfsPlusR
     }
 
     *numBlocks = le32_to_host(*numBlocks); // Let's do a little little endian just for fun, shall we?
-    *table     = cli_max_malloc(sizeof(hfsPlusResourceBlockTable) * *numBlocks);
+    if ((size_t)*numBlocks > (SIZE_MAX / sizeof(hfsPlusResourceBlockTable))) {
+        cli_dbgmsg("hfsplus_read_block_table: Block count is too large\n");
+        status = CL_EFORMAT;
+        goto done;
+    }
+
+    tableBytes = sizeof(hfsPlusResourceBlockTable) * *numBlocks;
+    if (tableBytes > resourceLen - sizeof(*numBlocks)) {
+        cli_dbgmsg("hfsplus_read_block_table: Block table exceeds cmpf resource length\n");
+        status = CL_EFORMAT;
+        goto done;
+    }
+
+    *table = cli_max_malloc(tableBytes);
     if (!*table) {
         cli_dbgmsg("hfsplus_read_block_table: Failed to allocate memory for block table\n");
         status = CL_EMEM;
         goto done;
     }
 
-    if (cli_readn(fd, *table, *numBlocks * sizeof(hfsPlusResourceBlockTable)) != *numBlocks * sizeof(hfsPlusResourceBlockTable)) {
+    if (cli_readn(fd, *table, tableBytes) != tableBytes) {
         cli_dbgmsg("hfsplus_read_block_table: Failed to read table\n");
         status = CL_EREAD;
         goto done;
     }
 
+    minBlockOffset = sizeof(*numBlocks) + tableBytes;
     for (i = 0; i < *numBlocks; ++i) {
         (*table)[i].offset = le32_to_host((*table)[i].offset);
         (*table)[i].length = le32_to_host((*table)[i].length);
+
+        if ((*table)[i].offset < minBlockOffset) {
+            cli_dbgmsg("hfsplus_read_block_table: Block %" PRIu32 " overlaps the cmpf block table\n", i);
+            status = CL_EFORMAT;
+            goto done;
+        }
+
+        if ((*table)[i].length > resourceLen - (*table)[i].offset) {
+            cli_dbgmsg("hfsplus_read_block_table: Block %" PRIu32 " extends past the cmpf resource length\n", i);
+            status = CL_EFORMAT;
+            goto done;
+        }
     }
 
 done:
@@ -1151,8 +1187,9 @@ static cl_error_t hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHea
 
                                 written = cli_writen(ofd, &attribute[sizeof(header) + 1], header.fileSize);
                             } else {
-                                z_stream stream;
+                                z_stream stream = {0};
                                 int z_ret;
+                                int streamInitialized = 0;
 
                                 if (header.fileSize > 65536) {
                                     cli_dbgmsg("hfsplus_walk_catalog: Uncompressed file seems too big, something is probably wrong\n");
@@ -1195,17 +1232,25 @@ static cl_error_t hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHea
                                     status = CL_EFORMAT;
                                     goto done;
                                 }
+                                streamInitialized = 1;
 
                                 z_ret = inflate(&stream, Z_NO_FLUSH);
                                 if (z_ret != Z_OK && z_ret != Z_STREAM_END) {
                                     cli_dbgmsg("hfsplus_walk_catalog: inflateSync failed to extract compressed stream (%d)\n", z_ret);
+                                    if (streamInitialized) {
+                                        (void)inflateEnd(&stream);
+                                        streamInitialized = 0;
+                                    }
                                     status = CL_EFORMAT;
                                     goto done;
                                 }
 
-                                z_ret = inflateEnd(&stream);
-                                if (z_ret == Z_STREAM_ERROR) {
-                                    cli_dbgmsg("hfsplus_walk_catalog: inflateEnd failed (%d)\n", z_ret);
+                                if (streamInitialized) {
+                                    z_ret = inflateEnd(&stream);
+                                    streamInitialized = 0;
+                                    if (z_ret == Z_STREAM_ERROR) {
+                                        cli_dbgmsg("hfsplus_walk_catalog: inflateEnd failed (%d)\n", z_ret);
+                                    }
                                 }
 
                                 written = cli_writen(ofd, uncompressed, header.fileSize);
@@ -1263,9 +1308,15 @@ static cl_error_t hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHea
                                     cli_dbgmsg("hfsplus_walk_catalog: Failed to find cmpf resource in resource fork\n");
                                 } else {
                                     uint32_t numBlocks;
-                                    uint32_t dataOffset = lseek(ifd, 0, SEEK_CUR);
+                                    off_t dataOffset;
 
-                                    if (CL_SUCCESS != (status = hfsplus_read_block_table(ifd, &numBlocks, &table))) {
+                                    if ((off_t)-1 == (dataOffset = lseek(ifd, 0, SEEK_CUR))) {
+                                        cli_dbgmsg("hfsplus_walk_catalog: Failed to determine cmpf data offset\n");
+                                        status = CL_ESEEK;
+                                        goto done;
+                                    }
+
+                                    if (CL_SUCCESS != (status = hfsplus_read_block_table(ifd, resourceLen, &numBlocks, &table))) {
                                         cli_dbgmsg("hfsplus_walk_catalog: Failed to read block table\n");
                                     } else {
                                         uint8_t block[4096];
@@ -1287,7 +1338,7 @@ static cl_error_t hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHea
                                             if (lseek(ifd, blockOffset, SEEK_SET) != blockOffset) {
                                                 cli_dbgmsg("hfsplus_walk_catalog: Failed to seek to beginning of block\n");
                                                 status = CL_ESEEK;
-                                                goto done;
+                                                goto cmpf_block_done;
                                             }
 
                                             for (curOffset = 0; curOffset < table[curBlock].length;) {
@@ -1299,7 +1350,7 @@ static cl_error_t hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHea
                                                 if (cli_readn(ifd, block, readLen) != readLen) {
                                                     cli_dbgmsg("hfsplus_walk_catalog: Failed to read block from temporary file\n");
                                                     status = CL_EREAD;
-                                                    goto done;
+                                                    goto cmpf_block_done;
                                                 }
 
                                                 if (streamBeginning) {
@@ -1318,7 +1369,7 @@ static cl_error_t hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHea
                                                         if (Z_OK != (z_ret = inflateInit2(&stream, 15))) {
                                                             cli_dbgmsg("hfsplus_walk_catalog: inflateInit2 failed (%d)\n", z_ret);
                                                             status = CL_EFORMAT;
-                                                            goto done;
+                                                            goto cmpf_block_done;
                                                         }
                                                         streamInitialized = 1;
                                                     }
@@ -1335,13 +1386,13 @@ static cl_error_t hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHea
                                                         if (z_ret != Z_OK && z_ret != Z_STREAM_END) {
                                                             cli_dbgmsg("hfsplus_walk_catalog: Failed to extract (%d)\n", z_ret);
                                                             status = CL_EFORMAT;
-                                                            goto done;
+                                                            goto cmpf_block_done;
                                                         }
 
                                                         if (cli_writen(ofd, &uncompressed_block, sizeof(uncompressed_block) - stream.avail_out) != sizeof(uncompressed_block) - stream.avail_out) {
                                                             cli_dbgmsg("hfsplus_walk_catalog: Failed to write to temporary file\n");
                                                             status = CL_EWRITE;
-                                                            goto done;
+                                                            goto cmpf_block_done;
                                                         }
                                                         written += sizeof(uncompressed_block) - stream.avail_out;
                                                         stream.avail_out = sizeof(uncompressed_block);
@@ -1358,7 +1409,7 @@ static cl_error_t hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHea
                                                     if (cli_writen(ofd, &block[streamBeginning ? 1 : 0], readLen - (streamBeginning ? 1 : 0)) != readLen - (streamBeginning ? 1 : 0)) {
                                                         cli_dbgmsg("hfsplus_walk_catalog: Failed to write to temporary file\n");
                                                         status = CL_EWRITE;
-                                                        goto done;
+                                                        goto cmpf_block_done;
                                                     }
                                                     written += readLen - (streamBeginning ? 1 : 0);
 
@@ -1369,12 +1420,19 @@ static cl_error_t hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHea
                                                 streamBeginning = 0;
                                             }
 
+cmpf_block_done:
                                             if (streamInitialized) {
-                                                if (Z_OK != (z_ret = inflateEnd(&stream))) {
-                                                    cli_dbgmsg("hfsplus_walk_catalog: inflateEnd failed (%d)\n", z_ret);
-                                                    status = CL_EFORMAT;
-                                                    goto done;
+                                                int z_end_ret = inflateEnd(&stream);
+                                                streamInitialized = 0;
+                                                if (Z_OK != z_end_ret) {
+                                                    cli_dbgmsg("hfsplus_walk_catalog: inflateEnd failed (%d)\n", z_end_ret);
+                                                    if (CL_SUCCESS == status) {
+                                                        status = CL_EFORMAT;
+                                                    }
                                                 }
+                                            }
+                                            if (status != CL_SUCCESS) {
+                                                goto done;
                                             }
                                         }
 
@@ -1489,8 +1547,9 @@ done:
     if (NULL != tmpname) {
         if (!ctx->engine->keeptmp) {
             if (cli_unlink(tmpname)) {
-                status = CL_EUNLINK;
-                goto done;
+                if (CL_SUCCESS == status) {
+                    status = CL_EUNLINK;
+                }
             }
         }
         free(tmpname);
