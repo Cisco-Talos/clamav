@@ -533,6 +533,53 @@ START_TEST(test_cl_strerror)
 }
 END_TEST
 
+START_TEST(test_cl_fmap_set_hash_hex)
+{
+    static const unsigned char map_data[] = "fmap hash test";
+    static const char expected_sha256[]   = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+    static const char invalid_sha256[]    = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdeg";
+    cl_fmap_t *map                        = NULL;
+    cl_error_t ret                        = CL_ERROR;
+    bool have_hash                        = true;
+    char *hash_out                        = NULL;
+
+    map = cl_fmap_open_memory(map_data, sizeof(map_data) - 1);
+    ck_assert_msg(NULL != map, "cl_fmap_open_memory failed");
+
+    ret = cl_fmap_have_hash(map, "sha256", &have_hash);
+    ck_assert_msg(CL_SUCCESS == ret, "cl_fmap_have_hash before set failed: %s", cl_strerror(ret));
+    ck_assert_msg(false == have_hash, "sha256 hash should not exist before cl_fmap_set_hash");
+
+    ret = cl_fmap_set_hash(map, "sha256", expected_sha256);
+    ck_assert_msg(CL_SUCCESS == ret, "cl_fmap_set_hash failed: %s", cl_strerror(ret));
+
+    ret = cl_fmap_have_hash(map, "sha2-256", &have_hash);
+    ck_assert_msg(CL_SUCCESS == ret, "cl_fmap_have_hash after set failed: %s", cl_strerror(ret));
+    ck_assert_msg(true == have_hash, "sha256 hash should exist after cl_fmap_set_hash");
+
+    ret = cl_fmap_get_hash(map, "sha2-256", &hash_out);
+    ck_assert_msg(CL_SUCCESS == ret, "cl_fmap_get_hash failed: %s", cl_strerror(ret));
+    ck_assert_msg(NULL != hash_out, "cl_fmap_get_hash did not return a hash string");
+    ck_assert_msg(0 == strcmp(expected_sha256, hash_out), "unexpected sha256 hash string: %s", hash_out);
+    free(hash_out);
+    hash_out = NULL;
+
+    ret = cl_fmap_set_hash(map, "sha256", "abcd");
+    ck_assert_msg(CL_EARG == ret, "cl_fmap_set_hash should reject the wrong hash length, got: %s", cl_strerror(ret));
+
+    ret = cl_fmap_set_hash(map, "sha256", invalid_sha256);
+    ck_assert_msg(CL_EFORMAT == ret, "cl_fmap_set_hash should reject invalid hex, got: %s", cl_strerror(ret));
+
+    ret = cl_fmap_get_hash(map, "sha256", &hash_out);
+    ck_assert_msg(CL_SUCCESS == ret, "cl_fmap_get_hash after invalid input failed: %s", cl_strerror(ret));
+    ck_assert_msg(NULL != hash_out, "cl_fmap_get_hash after invalid input did not return a hash string");
+    ck_assert_msg(0 == strcmp(expected_sha256, hash_out), "sha256 hash changed after invalid input: %s", hash_out);
+
+    free(hash_out);
+    cl_fmap_close(map);
+}
+END_TEST
+
 static char **testfiles     = NULL;
 static unsigned testfiles_n = 0;
 
@@ -1324,6 +1371,7 @@ static Suite *test_cl_suite(void)
     tcase_add_test(tc_cl, test_cl_statchkdir);
     tcase_add_test(tc_cl, test_cl_settempdir);
     tcase_add_test(tc_cl, test_cl_strerror);
+    tcase_add_test(tc_cl, test_cl_fmap_set_hash_hex);
 
     suite_add_tcase(s, tc_cl_scan);
     tcase_add_checked_fixture(tc_cl_scan, engine_setup, engine_teardown);

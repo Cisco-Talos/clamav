@@ -685,10 +685,11 @@ extern cl_error_t cl_fmap_get_size(const cl_fmap_t *map, size_t *size_out);
  *
  * @param map           The file map to modify.
  * @param hash_alg      The hash algorithm to use (e.g., "md5", "sha1", "sha2-256").
- * @param hash          The hash value to set.
+ * @param hash          The NUL-terminated hexadecimal hash string to set.
+ *                      This must match the format returned by `cl_fmap_get_hash()`.
  * @return cl_error_t   CL_SUCCESS if the hash was successfully set.
  */
-extern cl_error_t cl_fmap_set_hash(const cl_fmap_t *map, const char *hash_alg, char hash);
+extern cl_error_t cl_fmap_set_hash(const cl_fmap_t *map, const char *hash_alg, const char *hash);
 
 /**
  * @brief Check if we already calculated a file hash of a specific type.
