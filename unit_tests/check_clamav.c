@@ -555,7 +555,7 @@ START_TEST(test_cl_fmap_set_hash_hex)
 
     ret = cl_fmap_have_hash(map, "sha2-256", &have_hash);
     ck_assert_msg(CL_SUCCESS == ret, "cl_fmap_have_hash after set failed: %s", cl_strerror(ret));
-    ck_assert_msg(true == have_hash, "sha256 hash should exist after cl_fmap_set_hash");
+    ck_assert_msg(true == have_hash, "sha2-256 hash should exist after cl_fmap_set_hash");
 
     ret = cl_fmap_get_hash(map, "sha2-256", &hash_out);
     ck_assert_msg(CL_SUCCESS == ret, "cl_fmap_get_hash failed: %s", cl_strerror(ret));
