@@ -214,7 +214,8 @@ static cl_error_t hfsplus_readheader(cli_ctx *ctx, hfsPlusVolumeHeader *volHeade
                                      hfsHeaderRecord *headerRec, int headerType, const char *name)
 {
     const uint8_t *mPtr = NULL;
-    off_t offset;
+    uint32_t startBlock;
+    size_t offset;
     uint32_t minSize, maxSize;
 
     /* From TN1150: Node Size must be power of 2 between 512 and 32768 */
@@ -222,29 +223,41 @@ static cl_error_t hfsplus_readheader(cli_ctx *ctx, hfsPlusVolumeHeader *volHeade
     maxSize = 32768; /* Doesn't seem to vary */
     switch (headerType) {
         case HFS_FILETREE_ALLOCATION:
-            offset  = volHeader->allocationFile.extents[0].startBlock * volHeader->blockSize;
+            startBlock = volHeader->allocationFile.extents[0].startBlock;
             minSize = 512;
             break;
         case HFS_FILETREE_EXTENTS:
-            offset  = volHeader->extentsFile.extents[0].startBlock * volHeader->blockSize;
+            startBlock = volHeader->extentsFile.extents[0].startBlock;
             minSize = 512;
             break;
         case HFS_FILETREE_CATALOG:
-            offset  = volHeader->catalogFile.extents[0].startBlock * volHeader->blockSize;
+            startBlock = volHeader->catalogFile.extents[0].startBlock;
             minSize = 4096;
             break;
         case HFS_FILETREE_ATTRIBUTES:
-            offset  = volHeader->attributesFile.extents[0].startBlock * volHeader->blockSize;
+            startBlock = volHeader->attributesFile.extents[0].startBlock;
             minSize = 4096;
             break;
         case HFS_FILETREE_STARTUP:
-            offset  = volHeader->startupFile.extents[0].startBlock * volHeader->blockSize;
+            startBlock = volHeader->startupFile.extents[0].startBlock;
             minSize = 512;
             break;
         default:
             cli_errmsg("hfsplus_readheader: %s: invalid headerType %d\n", name, headerType);
             return CL_EARG;
     }
+
+    if (startBlock >= volHeader->totalBlocks) {
+        cli_dbgmsg("hfsplus_readheader: %s: headerNode block is out-of-range\n", name);
+        return CL_EFORMAT;
+    }
+
+    if (startBlock != 0 && volHeader->blockSize > SIZE_MAX / startBlock) {
+        cli_dbgmsg("hfsplus_readheader: %s: headerNode offset overflow\n", name);
+        return CL_EFORMAT;
+    }
+    offset = (size_t)startBlock * volHeader->blockSize;
+
     mPtr = fmap_need_off_once(ctx->fmap, offset, volHeader->blockSize);
     if (!mPtr) {
         cli_dbgmsg("hfsplus_readheader: %s: headerNode is out-of-range\n", name);
@@ -394,18 +407,26 @@ static cl_error_t hfsplus_scanfile(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader,
         }
 
         currBlock = currExt->startBlock;
-        endBlock  = currExt->startBlock + currExt->blockCount - 1;
-        if ((currBlock > volHeader->totalBlocks) || (endBlock > volHeader->totalBlocks) || (currExt->blockCount > volHeader->totalBlocks)) {
+        if ((currBlock >= volHeader->totalBlocks) ||
+            (currExt->blockCount > volHeader->totalBlocks - currBlock)) {
             cli_dbgmsg("hfsplus_scanfile: bad extent!\n");
             status = CL_EFORMAT;
             goto done;
         }
+        endBlock = currBlock + currExt->blockCount - 1;
 
         /* Write the blocks, walking the map */
         while (currBlock <= endBlock) {
             size_t to_write = MIN(targetSize, volHeader->blockSize);
             size_t written;
-            off_t offset = currBlock * volHeader->blockSize;
+            size_t offset;
+
+            if (currBlock != 0 && volHeader->blockSize > SIZE_MAX / currBlock) {
+                cli_dbgmsg("hfsplus_scanfile: block offset overflow\n");
+                status = CL_EFORMAT;
+                goto done;
+            }
+            offset = (size_t)currBlock * volHeader->blockSize;
 
             /* move map to next block */
             mPtr = fmap_need_off_once(ctx->fmap, offset, volHeader->blockSize);
@@ -487,11 +508,11 @@ static cl_error_t hfsplus_validate_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *vo
         cli_dbgmsg("hfsplus_validate_catalog: catFork totalBlocks too large!\n");
         return CL_EFORMAT;
     }
-    if (catFork->logicalSize > (catFork->totalBlocks * volHeader->blockSize)) {
+    if (catFork->logicalSize > ((uint64_t)catFork->totalBlocks * volHeader->blockSize)) {
         cli_dbgmsg("hfsplus_validate_catalog: catFork logicalSize too large!\n");
         return CL_EFORMAT;
     }
-    if (catFork->logicalSize < (catHeader->totalNodes * catHeader->nodeSize)) {
+    if (catFork->logicalSize < ((uint64_t)catHeader->totalNodes * catHeader->nodeSize)) {
         cli_dbgmsg("hfsplus_validate_catalog: too many nodes for catFile\n");
         return CL_EFORMAT;
     }
@@ -685,6 +706,9 @@ static cl_error_t hfsplus_fetch_node(cli_ctx *ctx, hfsPlusVolumeHeader *volHeade
 {
     bool foundBlock = false;
     uint64_t catalogOffset;
+    uint64_t endOffset;
+    uint64_t startBlock64;
+    uint64_t endBlock64;
     uint32_t startBlock, startOffset;
     uint32_t endBlock, endSize;
     uint32_t curBlock;
@@ -705,11 +729,19 @@ static cl_error_t hfsplus_fetch_node(cli_ctx *ctx, hfsPlusVolumeHeader *volHeade
     /* Need one block */
     /* First, calculate the node's offset within the catalog */
     catalogOffset = (uint64_t)node * catHeader->nodeSize;
+    endOffset     = catalogOffset + catHeader->nodeSize - 1;
     /* Determine which block of the catalog we need */
-    startBlock  = (uint32_t)(catalogOffset / volHeader->blockSize);
+    startBlock64 = catalogOffset / volHeader->blockSize;
+    endBlock64   = endOffset / volHeader->blockSize;
+    if (startBlock64 > UINT32_MAX || endBlock64 > UINT32_MAX) {
+        cli_dbgmsg("hfsplus_fetch_node: block number overflow\n");
+        return CL_EFORMAT;
+    }
+
+    startBlock  = (uint32_t)startBlock64;
     startOffset = (uint32_t)(catalogOffset % volHeader->blockSize);
-    endBlock    = (uint32_t)((catalogOffset + catHeader->nodeSize - 1) / volHeader->blockSize);
-    endSize     = (uint32_t)(((catalogOffset + catHeader->nodeSize - 1) % volHeader->blockSize) + 1);
+    endBlock    = (uint32_t)endBlock64;
+    endSize     = (uint32_t)((endOffset % volHeader->blockSize) + 1);
     cli_dbgmsg("hfsplus_fetch_node: need catalog block " STDu32 "\n", startBlock);
     if (startBlock >= catFork->totalBlocks || endBlock >= catFork->totalBlocks) {
         cli_dbgmsg("hfsplus_fetch_node: block number invalid!\n");
@@ -737,6 +769,10 @@ static cl_error_t hfsplus_fetch_node(cli_ctx *ctx, hfsPlusVolumeHeader *volHeade
             /* Check if block found in current extent */
             if (searchBlock < currExt->blockCount) {
                 cli_dbgmsg("hfsplus_fetch_node: found block in extent " STDu32 "\n", extentNum);
+                if (currExt->startBlock > UINT32_MAX - searchBlock) {
+                    cli_dbgmsg("hfsplus_fetch_node: extent block offset overflow\n");
+                    return CL_EFORMAT;
+                }
                 realFileBlock = currExt->startBlock + searchBlock;
                 foundBlock    = true;
                 break;
@@ -757,11 +793,24 @@ static cl_error_t hfsplus_fetch_node(cli_ctx *ctx, hfsPlusVolumeHeader *volHeade
             cli_dbgmsg("hfsplus_fetch_node: block past end of volume\n");
             return CL_EFORMAT;
         }
-        fileOffset = realFileBlock * volHeader->blockSize;
+        if (realFileBlock != 0 && volHeader->blockSize > SIZE_MAX / realFileBlock) {
+            cli_dbgmsg("hfsplus_fetch_node: block offset overflow\n");
+            return CL_EFORMAT;
+        }
+        fileOffset = (size_t)realFileBlock * volHeader->blockSize;
         readSize   = volHeader->blockSize;
 
         if (curBlock == startBlock) {
+            if (fileOffset > SIZE_MAX - startOffset) {
+                cli_dbgmsg("hfsplus_fetch_node: block offset overflow\n");
+                return CL_EFORMAT;
+            }
             fileOffset += startOffset;
+            if (curBlock == endBlock) {
+                readSize = endSize - startOffset;
+            } else {
+                readSize -= startOffset;
+            }
         } else if (curBlock == endBlock) {
             readSize = endSize;
         }
@@ -792,10 +841,26 @@ static cl_error_t hfsplus_seek_to_cmpf_resource(int fd, size_t *size)
     int cmpfInstanceIdx = -1;
     int curInstanceIdx  = 0;
     size_t dataOffset;
+    uint64_t resourceForkSize;
+    uint64_t resourceOffset;
+    off_t seekOffset;
     uint32_t dataLength;
 
     if (!size) {
         status = CL_ENULLARG;
+        goto done;
+    }
+
+    if ((seekOffset = lseek(fd, 0, SEEK_END)) < 0) {
+        cli_dbgmsg("hfsplus_seek_to_cmpf_resource: Failed to determine resource fork size\n");
+        status = CL_ESEEK;
+        goto done;
+    }
+    resourceForkSize = (uint64_t)seekOffset;
+
+    if (lseek(fd, 0, SEEK_SET) != 0) {
+        cli_dbgmsg("hfsplus_seek_to_cmpf_resource: Failed to seek to start of resource fork\n");
+        status = CL_ESEEK;
         goto done;
     }
 
@@ -810,7 +875,22 @@ static cl_error_t hfsplus_seek_to_cmpf_resource(int fd, size_t *size)
     resourceHeader.dataLength = be32_to_host(resourceHeader.dataLength);
     resourceHeader.mapLength  = be32_to_host(resourceHeader.mapLength);
 
+    if ((uint64_t)resourceHeader.dataOffset > resourceForkSize ||
+        (uint64_t)resourceHeader.mapOffset > resourceForkSize ||
+        (uint64_t)resourceHeader.dataLength > resourceForkSize - resourceHeader.dataOffset ||
+        (uint64_t)resourceHeader.mapLength > resourceForkSize - resourceHeader.mapOffset) {
+        cli_dbgmsg("hfsplus_seek_to_cmpf_resource: Resource header extends past the resource fork\n");
+        status = CL_EFORMAT;
+        goto done;
+    }
+
     // TODO: Need to get offset of cmpf resource in data stream
+
+    if (resourceHeader.mapLength < sizeof(resourceMap)) {
+        cli_dbgmsg("hfsplus_seek_to_cmpf_resource: Resource map is too small\n");
+        status = CL_EFORMAT;
+        goto done;
+    }
 
     if (lseek(fd, resourceHeader.mapOffset, SEEK_SET) != resourceHeader.mapOffset) {
         cli_dbgmsg("hfsplus_seek_to_cmpf_resource: Failed to seek to map in temporary file\n");
@@ -872,7 +952,23 @@ static cl_error_t hfsplus_seek_to_cmpf_resource(int fd, size_t *size)
 
     dataOffset = (entry.resourceDataOffset[0] << 16) | (entry.resourceDataOffset[1] << 8) | entry.resourceDataOffset[2];
 
-    if (lseek(fd, resourceHeader.dataOffset + dataOffset, SEEK_SET) < 0) {
+    if ((uint64_t)dataOffset > resourceHeader.dataLength ||
+        (uint64_t)sizeof(dataLength) > resourceHeader.dataLength - dataOffset) {
+        cli_dbgmsg("hfsplus_seek_to_cmpf_resource: Resource data offset extends past the data section\n");
+        status = CL_EFORMAT;
+        goto done;
+    }
+
+    resourceOffset = (uint64_t)resourceHeader.dataOffset + dataOffset;
+    if (resourceOffset > resourceForkSize ||
+        (uint64_t)sizeof(dataLength) > resourceForkSize - resourceOffset ||
+        (uint64_t)(off_t)resourceOffset != resourceOffset) {
+        cli_dbgmsg("hfsplus_seek_to_cmpf_resource: Resource data offset extends past the resource fork\n");
+        status = CL_EFORMAT;
+        goto done;
+    }
+
+    if (lseek(fd, (off_t)resourceOffset, SEEK_SET) != (off_t)resourceOffset) {
         cli_dbgmsg("hfsplus_seek_to_cmpf_resource: Failed to seek to data offset\n");
         status = CL_ESEEK;
         goto done;
@@ -885,6 +981,11 @@ static cl_error_t hfsplus_seek_to_cmpf_resource(int fd, size_t *size)
     }
 
     *size = be32_to_host(dataLength);
+    if ((uint64_t)*size > resourceHeader.dataLength - dataOffset - sizeof(dataLength)) {
+        cli_dbgmsg("hfsplus_seek_to_cmpf_resource: Resource length extends past the data section\n");
+        status = CL_EFORMAT;
+        goto done;
+    }
 
 done:
     return status;
@@ -960,6 +1061,12 @@ static cl_error_t hfsplus_read_block_table(int fd, size_t resourceLen, uint32_t 
 
         if ((*table)[i].offset < minBlockOffset) {
             cli_dbgmsg("hfsplus_read_block_table: Block %" PRIu32 " overlaps the cmpf block table\n", i);
+            status = CL_EFORMAT;
+            goto done;
+        }
+
+        if ((*table)[i].offset > resourceLen) {
+            cli_dbgmsg("hfsplus_read_block_table: Block %" PRIu32 " starts past the cmpf resource length\n", i);
             status = CL_EFORMAT;
             goto done;
         }
@@ -1308,6 +1415,7 @@ static cl_error_t hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHea
                                     cli_dbgmsg("hfsplus_walk_catalog: Failed to find cmpf resource in resource fork\n");
                                 } else {
                                     uint32_t numBlocks;
+                                    size_t dataStart;
                                     off_t dataOffset;
 
                                     if ((off_t)-1 == (dataOffset = lseek(ifd, 0, SEEK_CUR))) {
@@ -1315,6 +1423,12 @@ static cl_error_t hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHea
                                         status = CL_ESEEK;
                                         goto done;
                                     }
+                                    if (dataOffset < 0 || (uint64_t)dataOffset > SIZE_MAX) {
+                                        cli_dbgmsg("hfsplus_walk_catalog: cmpf data offset overflow\n");
+                                        status = CL_EFORMAT;
+                                        goto done;
+                                    }
+                                    dataStart = (size_t)dataOffset;
 
                                     if (CL_SUCCESS != (status = hfsplus_read_block_table(ifd, resourceLen, &numBlocks, &table))) {
                                         cli_dbgmsg("hfsplus_walk_catalog: Failed to read block table\n");
@@ -1325,7 +1439,8 @@ static cl_error_t hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHea
 
                                         for (curBlock = 0; status == CL_SUCCESS && curBlock < numBlocks; ++curBlock) {
                                             int z_ret;
-                                            off_t blockOffset = dataOffset + table[curBlock].offset;
+                                            size_t blockOffset;
+                                            off_t seekOffset;
                                             size_t curOffset;
                                             size_t readLen;
                                             z_stream stream = {0};
@@ -1333,9 +1448,22 @@ static cl_error_t hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHea
                                             int streamCompressed = 0;
                                             int streamInitialized = 0;
 
-                                            cli_dbgmsg("Handling block %u of %" PRIu32 " at offset %" PRIi64 " (size %u)\n", curBlock, numBlocks, (int64_t)blockOffset, table[curBlock].length);
+                                            if (dataStart > SIZE_MAX - table[curBlock].offset) {
+                                                cli_dbgmsg("hfsplus_walk_catalog: cmpf block offset overflow\n");
+                                                status = CL_EFORMAT;
+                                                goto cmpf_block_done;
+                                            }
+                                            blockOffset = dataStart + table[curBlock].offset;
+                                            if ((off_t)blockOffset < 0 || (size_t)(off_t)blockOffset != blockOffset) {
+                                                cli_dbgmsg("hfsplus_walk_catalog: cmpf block offset overflow\n");
+                                                status = CL_EFORMAT;
+                                                goto cmpf_block_done;
+                                            }
+                                            seekOffset = (off_t)blockOffset;
 
-                                            if (lseek(ifd, blockOffset, SEEK_SET) != blockOffset) {
+                                            cli_dbgmsg("Handling block %u of %" PRIu32 " at offset %" PRIi64 " (size %u)\n", curBlock, numBlocks, (int64_t)seekOffset, table[curBlock].length);
+
+                                            if (lseek(ifd, seekOffset, SEEK_SET) != seekOffset) {
                                                 cli_dbgmsg("hfsplus_walk_catalog: Failed to seek to beginning of block\n");
                                                 status = CL_ESEEK;
                                                 goto cmpf_block_done;
