@@ -661,6 +661,53 @@ messageGetArgument(const message *m, size_t arg)
     return (m->mimeArguments[arg]) ? m->mimeArguments[arg] : "";
 }
 
+static char *
+messageArgumentValue(const char *ptr, const char *variable)
+{
+    size_t len;
+
+    if ((ptr == NULL) || (*ptr == '\0') || variable == NULL)
+        return NULL;
+
+    len = strlen(variable);
+    if (strncasecmp(ptr, variable, len) == 0) {
+        ptr = &ptr[len];
+        while (isspace(*ptr))
+            ptr++;
+        if (*ptr != '=') {
+            cli_dbgmsg("messageArgumentValue: no '=' sign found in MIME header '%s' (%s)\n", variable, ptr);
+            return NULL;
+        }
+        ptr++;
+        if ((strlen(ptr) > 1) && (*ptr == '"') && (strchr(&ptr[1], '"') != NULL)) {
+            /* Remove any quote characters */
+            char *ret = cli_safer_strdup(++ptr);
+            char *p;
+
+            if (ret == NULL)
+                return NULL;
+
+            /*
+             * fix un-quoting of boundary strings from
+             * header, occurs if boundary was given as
+             *    'boundary="_Test_";'
+             *
+             * At least two quotes in string, assume
+             * quoted argument
+             * end string at next quote
+             */
+            if ((p = strchr(ret, '"')) != NULL) {
+                ret[strlen(ret) - 1] = '\0';
+                *p                   = '\0';
+            }
+            return ret;
+        }
+        return cli_safer_strdup(ptr);
+    }
+
+    return NULL;
+}
+
 /*
  * Find a MIME variable from the header and return a COPY to the value of that
  * variable. The caller must free the copy
@@ -669,61 +716,60 @@ char *
 messageFindArgument(const message *m, const char *variable)
 {
     size_t i;
-    size_t len;
 
     if (m == NULL || variable == NULL) {
         cli_errmsg("Internal email parser error: invalid arguments when finding message arguments\n");
         return NULL;
     }
 
-    len = strlen(variable);
-
     for (i = 0; i < m->numberOfArguments; i++) {
         const char *ptr;
+        char *ret;
 
         ptr = messageGetArgument(m, i);
         if ((ptr == NULL) || (*ptr == '\0'))
             continue;
 #ifdef CL_DEBUG
-        cli_dbgmsg("messageFindArgument: compare %lu bytes of %s with %s\n",
-                   (unsigned long)len, variable, ptr);
+        cli_dbgmsg("messageFindArgument: compare %s with %s\n", variable, ptr);
 #endif
-        if (strncasecmp(ptr, variable, len) == 0) {
-            ptr = &ptr[len];
-            while (isspace(*ptr))
-                ptr++;
-            if (*ptr != '=') {
-                cli_dbgmsg("messageFindArgument: no '=' sign found in MIME header '%s' (%s)\n", variable, messageGetArgument(m, i));
-                return NULL;
-            }
-            ptr++;
-            if ((strlen(ptr) > 1) && (*ptr == '"') && (strchr(&ptr[1], '"') != NULL)) {
-                /* Remove any quote characters */
-                char *ret = cli_safer_strdup(++ptr);
-                char *p;
-
-                if (ret == NULL)
-                    return NULL;
-
-                /*
-                 * fix un-quoting of boundary strings from
-                 * header, occurs if boundary was given as
-                 *    'boundary="_Test_";'
-                 *
-                 * At least two quotes in string, assume
-                 * quoted argument
-                 * end string at next quote
-                 */
-                if ((p = strchr(ret, '"')) != NULL) {
-                    ret[strlen(ret) - 1] = '\0';
-                    *p                   = '\0';
-                }
-                return ret;
-            }
-            return cli_safer_strdup(ptr);
-        }
+        ret = messageArgumentValue(ptr, variable);
+        if (ret)
+            return ret;
     }
     return NULL;
+}
+
+/*
+ * Find the last MIME variable from the header and return a COPY to the value
+ * of that variable. The caller must free the copy.
+ */
+char *
+messageFindArgumentLast(const message *m, const char *variable)
+{
+    size_t i;
+    char *match = NULL;
+
+    if (m == NULL || variable == NULL) {
+        cli_errmsg("Internal email parser error: invalid arguments when finding message arguments\n");
+        return NULL;
+    }
+
+    for (i = 0; i < m->numberOfArguments; i++) {
+        const char *ptr;
+        char *ret;
+
+        ptr = messageGetArgument(m, i);
+#ifdef CL_DEBUG
+        cli_dbgmsg("messageFindArgumentLast: compare %s with %s\n", variable, ptr);
+#endif
+        ret = messageArgumentValue(ptr, variable);
+        if (ret) {
+            free(match);
+            match = ret;
+        }
+    }
+
+    return match;
 }
 
 char *

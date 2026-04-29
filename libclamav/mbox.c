@@ -922,7 +922,7 @@ parseEmailFile(fmap_t *map, size_t *at, const table_t *rfc821, const char *first
                     }
 
                     if (boundary ||
-                        ((boundary = (char *)messageFindArgument(ret, "boundary")) != NULL)) {
+                        ((boundary = (char *)messageFindArgumentLast(ret, "boundary")) != NULL)) {
                         lastWasBlank = true;
                         continue;
                     }
@@ -941,12 +941,11 @@ parseEmailFile(fmap_t *map, size_t *at, const table_t *rfc821, const char *first
                 inHeader    = false;
                 bodyIsEmpty = true;
             } else {
-                char *ptr;
                 const char *lookahead;
                 bool lineAdded = true;
 
                 if (0 == head->bufferLen) {
-                    char cmd[RFC2821LENGTH + 1], out[RFC2821LENGTH + 1];
+                    char cmd[RFC2821LENGTH + 1];
 
                     /*
                      * Continuation of line we're ignoring?
@@ -964,8 +963,7 @@ parseEmailFile(fmap_t *map, size_t *at, const table_t *rfc821, const char *first
                         continue;
                     }
 
-                    ptr           = rfc822comments(cmd, out);
-                    commandNumber = tableFind(rfc821, ptr ? ptr : cmd);
+                    commandNumber = tableFind(rfc821, cmd);
 
                     switch (commandNumber) {
                         case CONTENT_TRANSFER_ENCODING:
@@ -1204,10 +1202,7 @@ parseEmailHeaders(message *m, const table_t *rfc821, bool *heuristicFound)
                         continue;
                     }
 
-                    ptr           = rfc822comments(cmd, NULL);
-                    commandNumber = tableFind(rfc821, ptr ? ptr : cmd);
-                    if (ptr)
-                        free(ptr);
+                    commandNumber = tableFind(rfc821, cmd);
 
                     switch (commandNumber) {
                         case CONTENT_TRANSFER_ENCODING:
@@ -1253,12 +1248,6 @@ parseEmailHeaders(message *m, const table_t *rfc821, bool *heuristicFound)
 
                 if (count_quotes(fullline) & 1)
                     continue;
-
-                ptr = rfc822comments(fullline, NULL);
-                if (ptr) {
-                    free(fullline);
-                    fullline = ptr;
-                }
 
                 totalHeaderCnt++;
                 if (haveTooManyEmailHeaders(totalHeaderCnt, m->ctx, heuristicFound)) {
@@ -1722,7 +1711,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                 break;
             case MULTIPART:
                 cli_dbgmsg("Content-type 'multipart' handler\n");
-                boundary = messageFindArgument(mainMessage, "boundary");
+                boundary = messageFindArgumentLast(mainMessage, "boundary");
 
                 if (mctx->wrkobj != NULL)
                     cli_jsonstr(mctx->wrkobj, "Boundary", boundary);
@@ -3094,6 +3083,85 @@ strstrip(char *s)
     return (strip(s, strlen(s) + 1));
 }
 
+static bool
+isMimeParameter(const char *arg, const char *variable)
+{
+    size_t len;
+
+    if (arg == NULL || variable == NULL)
+        return false;
+
+    while (isspace((unsigned char)*arg))
+        arg++;
+
+    len = strlen(variable);
+    if (strncasecmp(arg, variable, len) != 0)
+        return false;
+
+    arg += len;
+    while (isspace((unsigned char)*arg))
+        arg++;
+
+    return (*arg == '=') || (*arg == ':');
+}
+
+static const char *
+nextMimeArgument(const char *ptr, char *buf, size_t buflen)
+{
+    const char *p;
+
+    if (ptr == NULL || buf == NULL || buflen == 0)
+        return NULL;
+
+    p = ptr;
+    for (;;) {
+        bool inquote = false, backslash = false;
+        char *out = buf;
+
+        while (*p && *p != ';')
+            p++;
+        if (*p == '\0')
+            return NULL;
+        p++;
+
+        while (isspace((unsigned char)*p))
+            p++;
+
+        while (*p) {
+            if (backslash) {
+                backslash = false;
+            } else {
+                switch (*p) {
+                    case '\\':
+                        backslash = true;
+                        break;
+                    case '"':
+                        inquote = !inquote;
+                        break;
+                    case ';':
+                        if (!inquote)
+                            goto done;
+                        break;
+                }
+            }
+
+            if ((size_t)(out - buf) < buflen - 1)
+                *out++ = *p;
+            p++;
+        }
+
+    done:
+        *out = '\0';
+        strstrip(buf);
+
+        if (buf[0] != '\0')
+            return p;
+
+        if (*p == '\0')
+            return NULL;
+    }
+}
+
 /*
  * Returns 0 for OK, -1 for error
  */
@@ -3109,13 +3177,7 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 
     cli_dbgmsg("parseMimeHeader: cmd='%s', arg='%s'\n", cmd, arg);
 
-    copy = rfc822comments(cmd, NULL);
-    if (copy) {
-        commandNumber = tableFind(rfc821Table, copy);
-        free(copy);
-    } else {
-        commandNumber = tableFind(rfc821Table, cmd);
-    }
+    commandNumber = tableFind(rfc821Table, cmd);
 
     copy = rfc822comments(arg, NULL);
 
@@ -3155,8 +3217,6 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
                  */
                 cli_dbgmsg("Invalid content-type '%s' received, no subtype specified, assuming text/plain; charset=us-ascii\n", ptr);
             else {
-                int i;
-
                 buf = cli_max_malloc(strlen(ptr) + 1);
                 if (buf == NULL) {
                     cli_errmsg("parseMimeHeader: Unable to allocate memory for buf %llu\n", (long long unsigned)(strlen(ptr) + 1));
@@ -3254,8 +3314,8 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
                  * Content-Type:', arg='multipart/mixed; boundary=foo
                  * we find the boundary argument set it
                  */
-                i = 1;
-                while (cli_strtokbuf(ptr, i++, ";", buf) != NULL) {
+                ptr = nextMimeArgument(ptr, buf, strlen(ptr) + 1);
+                while (ptr != NULL) {
                     cli_dbgmsg("mimeArgs = '%s'\n", buf);
 
                     argCnt++;
@@ -3263,6 +3323,7 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
                         break;
                     }
                     messageAddArguments(m, buf);
+                    ptr = nextMimeArgument(ptr, buf, strlen(ptr) + 1);
                 }
             }
             break;
@@ -3279,8 +3340,15 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
             }
             p = cli_strtokbuf(ptr, 0, ";", buf);
             if (p && *p) {
+                const char *disposition_arg;
+
                 messageSetDispositionType(m, p);
-                messageAddArgument(m, cli_strtokbuf(ptr, 1, ";", buf));
+                disposition_arg = cli_strtokbuf(ptr, 1, ";", buf);
+                if (isMimeParameter(disposition_arg, "boundary")) {
+                    cli_dbgmsg("Ignoring boundary parameter in Content-Disposition header\n");
+                } else {
+                    messageAddArgument(m, disposition_arg);
+                }
             }
             if (!messageHasFilename(m))
                 /*

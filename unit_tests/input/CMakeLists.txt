@@ -29,6 +29,11 @@ set(ENCRYPTED_TESTFILES
     clamav_hdb_scanfiles/clam.mail
     clamav_hdb_scanfiles/clam.ppt
     clamav_hdb_scanfiles/clam.tnef
+    clamav_hdb_scanfiles/clam.mail-multiple-content-type.eml
+    clamav_hdb_scanfiles/clam.mail-comment-header-name.eml
+    clamav_hdb_scanfiles/clam.mail-multiple-boundaries.eml
+    clamav_hdb_scanfiles/clam.mail-boundary-content-disposition.eml
+    clamav_hdb_scanfiles/clam.mail-semicolon-boundary.eml
     clamav_hdb_scanfiles/clam.ea05.exe
     clamav_hdb_scanfiles/clam.ea06.exe
     clamav_hdb_scanfiles/clam.d64.zip
