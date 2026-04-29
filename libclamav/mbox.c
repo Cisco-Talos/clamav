@@ -699,15 +699,17 @@ static bool
 doContinueMultipleEmptyOptions(const char *const line, bool *lastWasOnlySemi)
 {
     if (line) {
-        size_t i   = 0;
-        int doCont = 1;
-        for (; i < strlen(line); i++) {
-            if (isblank((unsigned char)line[i])) {
-            } else if (';' == line[i]) {
+        const char *p = line;
+        int doCont    = 1;
+
+        while (*p) {
+            if (isblank((unsigned char)*p)) {
+            } else if (';' == *p) {
             } else {
                 doCont = 0;
                 break;
             }
+            p++;
         }
 
         if (1 == doCont) {
@@ -2853,6 +2855,15 @@ boundaryStart(const char *line, const char *boundary)
     if (boundary == NULL)
         return 0;
 
+    if ((*line != '-') && (*line != '('))
+        return 0;
+
+    if ((*line == '-') && (line[1] != '-'))
+        return 0;
+
+    if (strchr(line, '-') == NULL)
+        return 0;
+
     newline = strdup(line);
     if (!(newline))
         newline = (char *)line;
@@ -2970,75 +2981,41 @@ static int
 boundaryEnd(const char *line, const char *boundary)
 {
     size_t len;
-    char *newline, *p, *p2;
+    const char *p;
 
     if (line == NULL || *line == '\0')
         return 0;
 
-    p = newline = strdup(line);
-    if (!(newline)) {
-        p       = (char *)line;
-        newline = (char *)line;
-    }
+    if (boundary == NULL)
+        return 0;
 
-    if (newline != line && strlen(line)) {
-        /* Trim trailing spaces */
-        p2 = newline + strlen(line) - 1;
-        while (p2 >= newline && *p2 == ' ')
-            *(p2--) = '\0';
-    }
+    /* cli_dbgmsg("boundaryEnd: line = '%s' boundary = '%s'\n", line, boundary); */
 
-    /* cli_dbgmsg("boundaryEnd: line = '%s' boundary = '%s'\n", newline, boundary); */
+    p = line;
 
     if (*p++ != '-') {
-        if (newline != line)
-            free(newline);
         return 0;
     }
 
     if (*p++ != '-') {
-        if (newline != line)
-            free(newline);
-
         return 0;
     }
 
     len = strlen(boundary);
     if (strncasecmp(p, boundary, len) != 0) {
-        if (newline != line)
-            free(newline);
-
-        return 0;
-    }
-    /*
-     * Use < rather than == because some broken mails have white
-     * space after the boundary
-     */
-    if (strlen(p) < (len + 2)) {
-        if (newline != line)
-            free(newline);
-
         return 0;
     }
 
-    p = &p[len];
-    if (*p++ != '-') {
-        if (newline != line)
-            free(newline);
-
+    if (p[len] != '-') {
         return 0;
     }
+
+    p = &p[len + 1];
 
     if (*p == '-') {
         /* cli_dbgmsg("boundaryEnd: found %s in %s\n", boundary, p); */
-        if (newline != line)
-            free(newline);
-
         return 1;
     }
-
-    if (newline != line)
-        free(newline);
 
     return 0;
 }
@@ -3272,6 +3249,7 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
     const char *ptr;
     int commandNumber;
     size_t argCnt = 0;
+    size_t buflen = 0;
 
     *heuristicFound = false;
 
@@ -3317,9 +3295,10 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
                  */
                 cli_dbgmsg("Invalid content-type '%s' received, no subtype specified, assuming text/plain; charset=us-ascii\n", ptr);
             else {
-                buf = cli_max_malloc(strlen(ptr) + 1);
+                buflen = strlen(ptr) + 1;
+                buf    = cli_max_malloc(buflen);
                 if (buf == NULL) {
-                    cli_errmsg("parseMimeHeader: Unable to allocate memory for buf %llu\n", (long long unsigned)(strlen(ptr) + 1));
+                    cli_errmsg("parseMimeHeader: Unable to allocate memory for buf %llu\n", (long long unsigned)buflen);
                     if (copy)
                         free(copy);
                     return -1;
@@ -3414,7 +3393,7 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
                  * Content-Type:', arg='multipart/mixed; boundary=foo
                  * we find the boundary argument set it
                  */
-                ptr = nextMimeArgument(ptr, buf, strlen(ptr) + 1);
+                ptr = nextMimeArgument(ptr, buf, buflen);
                 while (ptr != NULL) {
                     cli_dbgmsg("mimeArgs = '%s'\n", buf);
 
@@ -3423,7 +3402,7 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
                         break;
                     }
                     messageAddArguments(m, buf);
-                    ptr = nextMimeArgument(ptr, buf, strlen(ptr) + 1);
+                    ptr = nextMimeArgument(ptr, buf, buflen);
                 }
             }
             break;
@@ -3431,9 +3410,10 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
             messageSetEncoding(m, ptr);
             break;
         case CONTENT_DISPOSITION:
-            buf = cli_max_malloc(strlen(ptr) + 1);
+            buflen = strlen(ptr) + 1;
+            buf    = cli_max_malloc(buflen);
             if (buf == NULL) {
-                cli_errmsg("parseMimeHeader: Unable to allocate memory for buf %llu\n", (long long unsigned)(strlen(ptr) + 1));
+                cli_errmsg("parseMimeHeader: Unable to allocate memory for buf %llu\n", (long long unsigned)buflen);
                 if (copy)
                     free(copy);
                 return -1;
