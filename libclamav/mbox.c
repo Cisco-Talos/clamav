@@ -2864,6 +2864,23 @@ boundaryStart(const char *line, const char *boundary)
     if (strchr(line, '-') == NULL)
         return 0;
 
+    if ((line[0] == '-') && (line[1] == '-')) {
+        size_t boundary_len = strlen(boundary);
+        const char *tail    = &line[2];
+
+        if (strncasecmp(tail, boundary, boundary_len) == 0) {
+            tail += boundary_len;
+            while (*tail == ' ')
+                tail++;
+            if ((*tail == '\0') || (*tail == '\r') || (*tail == '\n')) {
+                cli_dbgmsg("boundaryStart: found %s in %s\n", boundary, line);
+                return 1;
+            }
+            if ((tail[0] == '-') && (tail[1] == '-'))
+                return 0;
+        }
+    }
+
     newline = strdup(line);
     if (!(newline))
         newline = (char *)line;
@@ -3423,11 +3440,14 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
                 const char *disposition_arg;
 
                 messageSetDispositionType(m, p);
-                disposition_arg = cli_strtokbuf(ptr, 1, ";", buf);
-                if (isMimeParameter(disposition_arg, "boundary")) {
-                    cli_dbgmsg("Ignoring boundary parameter in Content-Disposition header\n");
-                } else {
-                    messageAddArgument(m, disposition_arg);
+                disposition_arg = nextMimeArgument(ptr, buf, buflen);
+                while (disposition_arg != NULL) {
+                    if (isMimeParameter(buf, "boundary")) {
+                        cli_dbgmsg("Ignoring boundary parameter in Content-Disposition header\n");
+                    } else {
+                        messageAddArgument(m, buf);
+                    }
+                    disposition_arg = nextMimeArgument(disposition_arg, buf, buflen);
                 }
             }
             if (!messageHasFilename(m))
@@ -3675,12 +3695,236 @@ rfc2047(const char *in)
 /*
  * Handle partial messages
  */
+static void
+freePartialPartFiles(char **partfiles, unsigned int total_parts)
+{
+    unsigned int n;
+
+    if (partfiles == NULL)
+        return;
+
+    for (n = 1; n <= total_parts; n++)
+        free(partfiles[n]);
+    free(partfiles);
+}
+
+static unsigned int
+partialFilenamePartNumber(const char *filename, const char *md5_hex, unsigned int max_part)
+{
+    const char *idpart;
+    const char *partstr;
+    char *end = NULL;
+    unsigned long parsed;
+    size_t md5_len;
+
+    if ((filename == NULL) || (md5_hex == NULL))
+        return 0;
+
+    idpart = strchr(filename, '_');
+    if (idpart == NULL)
+        return 0;
+    idpart++;
+
+    md5_len = strlen(md5_hex);
+    if ((strncmp(idpart, md5_hex, md5_len) != 0) || (idpart[md5_len] != '-'))
+        return 0;
+
+    partstr = &idpart[md5_len + 1];
+    if (*partstr == '\0')
+        return 0;
+
+    errno  = 0;
+    parsed = strtoul(partstr, &end, 10);
+    if ((errno != 0) || (end == partstr) || (*end != '\0') ||
+        (parsed == 0) || (parsed > max_part) || (parsed > UINT_MAX))
+        return 0;
+
+    return (unsigned int)parsed;
+}
+
+static int
+removeOldPartialFile(const char *fullname, time_t now)
+{
+    int test_fd;
+    STATBUF statb;
+
+    test_fd = open(fullname, O_RDONLY | O_BINARY);
+    if (test_fd < 0)
+        return 0;
+
+    if (FSTAT(test_fd, &statb) == 0) {
+        if ((now > statb.st_mtime) &&
+            (now - statb.st_mtime > (time_t)(7 * 24 * 3600))) {
+            if (cli_unlink(fullname)) {
+                close(test_fd);
+                return -1;
+            }
+        }
+    }
+
+    close(test_fd);
+    return 0;
+}
+
+static int
+reassemblePartialMessage(mbox_ctx *mctx, message *m, const char *pdir, char *id, const char *md5_hex, unsigned int total_parts)
+{
+    DIR *dd;
+    struct dirent *dent;
+    char **partfiles = NULL;
+    char outname[PATH_MAX + 1];
+    FILE *fout = NULL;
+    time_t now;
+    unsigned int n;
+    int rc = 0;
+    bool keep_tmp;
+
+    dd = opendir(pdir);
+    if (dd == NULL)
+        return 0;
+
+    partfiles = cli_max_calloc((size_t)total_parts + 1, sizeof(*partfiles));
+    if (partfiles == NULL) {
+        closedir(dd);
+        return CL_EMEM;
+    }
+
+    keep_tmp = (m->ctx && m->ctx->engine && m->ctx->engine->keeptmp);
+    time(&now);
+
+    while ((dent = readdir(dd)) != NULL) {
+        char fullname[PATH_MAX + 1];
+        unsigned int part;
+        int pathlen;
+
+        if (dent->d_ino == 0)
+            continue;
+
+        if (!strcmp(".", dent->d_name) || !strcmp("..", dent->d_name))
+            continue;
+
+        pathlen = snprintf(fullname, sizeof(fullname), "%s" PATHSEP "%s", pdir, dent->d_name);
+        if ((pathlen < 0) || ((size_t)pathlen >= sizeof(fullname))) {
+            cli_dbgmsg("reassemblePartialMessage: partial path is too long\n");
+            continue;
+        }
+
+        part = partialFilenamePartNumber(dent->d_name, md5_hex, total_parts);
+        if (part == 0) {
+            if (keep_tmp && (removeOldPartialFile(fullname, now) < 0)) {
+                rc = -1;
+                break;
+            }
+            continue;
+        }
+
+        if (partfiles[part] != NULL)
+            continue;
+
+        partfiles[part] = cli_safer_strdup(fullname);
+        if (partfiles[part] == NULL) {
+            rc = CL_EMEM;
+            break;
+        }
+    }
+    closedir(dd);
+
+    if (rc != 0)
+        goto done;
+
+    for (n = 1; n <= total_parts; n++) {
+        if (partfiles[n] == NULL) {
+            cli_dbgmsg("reassemblePartialMessage: missing partial message part %u of %u\n", n, total_parts);
+            goto done;
+        }
+    }
+
+    sanitiseName(id);
+
+    {
+        int pathlen = snprintf(outname, sizeof(outname), "%s" PATHSEP "%s", mctx->dir, id);
+
+        if ((pathlen < 0) || ((size_t)pathlen >= sizeof(outname))) {
+            cli_errmsg("reassemblePartialMessage: output filename is too long\n");
+            rc = -1;
+            goto done;
+        }
+    }
+
+    cli_dbgmsg("outname: %s\n", outname);
+
+    fout = fopen(outname, "wb");
+    if (fout == NULL) {
+        cli_errmsg("Can't open '%s' for writing", outname);
+        rc = -1;
+        goto done;
+    }
+
+    for (n = 1; n <= total_parts; n++) {
+        FILE *fin;
+        char buffer[BUFSIZ];
+        int nblanks = 0;
+
+        fin = fopen(partfiles[n], "rb");
+        if (fin == NULL) {
+            cli_errmsg("Can't open '%s' for reading", partfiles[n]);
+            rc = -1;
+            break;
+        }
+
+        while (fgets(buffer, sizeof(buffer) - 1, fin) != NULL) {
+            if (buffer[0] == '\n') {
+                nblanks++;
+                continue;
+            }
+
+            while (nblanks > 0) {
+                if (putc('\n', fout) == EOF) {
+                    rc = -1;
+                    break;
+                }
+                nblanks--;
+            }
+            if (rc != 0)
+                break;
+
+            if (fputs(buffer, fout) == EOF) {
+                rc = -1;
+                break;
+            }
+        }
+
+        if (ferror(fin))
+            rc = -1;
+        fclose(fin);
+
+        if (rc != 0)
+            break;
+
+        if (!keep_tmp && cli_unlink(partfiles[n])) {
+            rc = -1;
+            break;
+        }
+    }
+
+done:
+    if (fout != NULL) {
+        if ((fclose(fout) != 0) && (rc == 0))
+            rc = -1;
+        if (rc != 0)
+            cli_unlink(outname);
+    }
+    freePartialPartFiles(partfiles, total_parts);
+
+    return rc;
+}
+
 static int
 rfc1341(mbox_ctx *mctx, message *m)
 {
     char *arg, *id, *number, *total, *oldfilename;
     const char *tmpdir = NULL;
-    unsigned int n, part_number, total_parts = 0;
+    unsigned int part_number, total_parts = 0;
     bool have_total = false;
     char pdir[PATH_MAX + 1];
     unsigned char md5_val[16];
@@ -3703,13 +3947,27 @@ rfc1341(mbox_ctx *mctx, message *m)
         tmpdir = cli_gettmpdir();
     }
 
-    snprintf(pdir, sizeof(pdir) - 1, "%s" PATHSEP "clamav-partial", tmpdir);
+    {
+        int pathlen = snprintf(pdir, sizeof(pdir), "%s" PATHSEP "clamav-partial", tmpdir);
 
-    if ((mkdir(pdir, S_IRUSR | S_IWUSR) < 0) && (errno != EEXIST)) {
-        cli_errmsg("Can't create the directory '%s'\n", pdir);
-        free(id);
-        return -1;
-    } else if (errno == EEXIST) {
+        if ((pathlen < 0) || ((size_t)pathlen >= sizeof(pdir))) {
+            cli_errmsg("Partial directory path is too long\n");
+            free(id);
+            return -1;
+        }
+    }
+
+    if (mkdir(pdir, S_IRWXU) < 0) {
+        int mkdir_errno = errno;
+
+        if (mkdir_errno != EEXIST) {
+            cli_errmsg("Can't create the directory '%s'\n", pdir);
+            free(id);
+            return -1;
+        }
+    }
+
+    {
         STATBUF statb;
 
         if (CLAMSTAT(pdir, &statb) < 0) {
@@ -3719,6 +3977,16 @@ rfc1341(mbox_ctx *mctx, message *m)
             free(id);
             return -1;
         }
+        if (!S_ISDIR(statb.st_mode)) {
+            cli_errmsg("Partial path %s is not a directory\n", pdir);
+            free(id);
+            return -1;
+        }
+#if defined(HAVE_UNISTD_H) && !defined(_WIN32) && !defined(_WIN64)
+        if (statb.st_uid != geteuid())
+            cli_warnmsg("Partial directory %s is owned by uid %lu, expected uid %lu\n",
+                        pdir, (unsigned long)statb.st_uid, (unsigned long)geteuid());
+#endif
         if (statb.st_mode & 077)
             cli_warnmsg("Insecure partial directory %s (mode 0%o)\n",
                         pdir,
@@ -3760,11 +4028,23 @@ rfc1341(mbox_ctx *mctx, message *m)
 
     oldfilename = messageGetFilename(m);
 
-    arg = cli_max_malloc(10 + strlen(id) + strlen(number));
-    if (arg) {
-        sprintf(arg, "filename=%s%s", id, number);
-        messageAddArgument(m, arg);
-        free(arg);
+    {
+        size_t id_len     = strlen(id);
+        size_t number_len = strlen(number);
+        size_t arg_len;
+
+        if (id_len > (size_t)-1 - number_len - sizeof("filename=")) {
+            free(id);
+            free(number);
+            return CL_EMEM;
+        }
+        arg_len = id_len + number_len + sizeof("filename=");
+        arg     = cli_max_malloc(arg_len);
+        if (arg) {
+            snprintf(arg, arg_len, "filename=%s%s", id, number);
+            messageAddArgument(m, arg);
+            free(arg);
+        }
     }
 
     if (oldfilename) {
@@ -3789,143 +4069,19 @@ rfc1341(mbox_ctx *mctx, message *m)
     }
 
     if (have_total) {
-        DIR *dd = NULL;
-
         /*
          * If it's the last one - reassemble it
          * FIXME: this assumes that we receive the parts in order
          */
-        if ((part_number == total_parts) && ((dd = opendir(pdir)) != NULL)) {
-            FILE *fout;
-            char outname[PATH_MAX + 1];
-            time_t now;
+        if (part_number == total_parts) {
+            int reassemble_rc = reassemblePartialMessage(mctx, m, pdir, id, md5_hex, total_parts);
 
-            sanitiseName(id);
-
-            snprintf(outname, sizeof(outname) - 1, "%s" PATHSEP "%s", mctx->dir, id);
-
-            cli_dbgmsg("outname: %s\n", outname);
-
-            fout = fopen(outname, "wb");
-            if (fout == NULL) {
-                cli_errmsg("Can't open '%s' for writing", outname);
-                free(id);
+            if (reassemble_rc != 0) {
                 free(number);
+                free(id);
                 free(md5_hex);
-                closedir(dd);
-                return -1;
+                return reassemble_rc;
             }
-
-            time(&now);
-            for (n = 1; n <= total_parts; n++) {
-                char filename[NAME_MAX + 1];
-                struct dirent *dent;
-
-                snprintf(filename, sizeof(filename), "_%s-%u", md5_hex, n);
-
-                while ((dent = readdir(dd))) {
-                    FILE *fin;
-                    char buffer[BUFSIZ], fullname[PATH_MAX + 1 + 256 + 1];
-                    int nblanks;
-                    STATBUF statb;
-                    const char *dentry_idpart;
-                    int test_fd;
-
-                    if (dent->d_ino == 0)
-                        continue;
-
-                    if (!strcmp(".", dent->d_name) ||
-                        !strcmp("..", dent->d_name))
-                        continue;
-                    snprintf(fullname, sizeof(fullname) - 1,
-                             "%s" PATHSEP "%s", pdir, dent->d_name);
-                    dentry_idpart = strchr(dent->d_name, '_');
-
-                    if (!dentry_idpart ||
-                        strcmp(filename, dentry_idpart) != 0) {
-                        if (!m->ctx->engine->keeptmp)
-                            continue;
-
-                        if ((test_fd = open(fullname, O_RDONLY | O_BINARY)) < 0)
-                            continue;
-
-                        if (FSTAT(test_fd, &statb) < 0) {
-                            close(test_fd);
-                            continue;
-                        }
-
-                        if (now - statb.st_mtime > (time_t)(7 * 24 * 3600)) {
-                            if (cli_unlink(fullname)) {
-                                cli_unlink(outname);
-                                fclose(fout);
-                                free(md5_hex);
-                                free(id);
-                                free(number);
-                                closedir(dd);
-                                close(test_fd);
-                                return -1;
-                            }
-                        }
-
-                        close(test_fd);
-                        continue;
-                    }
-
-                    fin = fopen(fullname, "rb");
-                    if (fin == NULL) {
-                        cli_errmsg("Can't open '%s' for reading", fullname);
-                        fclose(fout);
-                        cli_unlink(outname);
-                        free(md5_hex);
-                        free(id);
-                        free(number);
-                        closedir(dd);
-                        return -1;
-                    }
-                    nblanks = 0;
-                    while (fgets(buffer, sizeof(buffer) - 1, fin) != NULL)
-                        /*
-                         * Ensure that trailing newlines
-                         * aren't copied
-                         */
-                        if (buffer[0] == '\n')
-                            nblanks++;
-                        else {
-                            if (nblanks)
-                                do {
-                                    if (putc('\n', fout) == EOF) break;
-                                } while (--nblanks > 0);
-                            if (nblanks || fputs(buffer, fout) == EOF) {
-                                fclose(fin);
-                                fclose(fout);
-                                cli_unlink(outname);
-                                free(md5_hex);
-                                free(id);
-                                free(number);
-                                closedir(dd);
-                                return -1;
-                            }
-                        }
-                    fclose(fin);
-
-                    /* don't unlink if leave temps */
-                    if (!m->ctx->engine->keeptmp) {
-                        if (cli_unlink(fullname)) {
-                            fclose(fout);
-                            cli_unlink(outname);
-                            free(md5_hex);
-                            free(id);
-                            free(number);
-                            closedir(dd);
-                            return -1;
-                        }
-                    }
-                    break;
-                }
-                rewinddir(dd);
-            }
-            closedir(dd);
-            fclose(fout);
         }
     }
     free(number);

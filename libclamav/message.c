@@ -813,7 +813,7 @@ messageHasArgument(const message *m, const char *variable)
                 ptr++;
             if (*ptr != '=') {
                 cli_dbgmsg("messageHasArgument: no '=' sign found in MIME header '%s' (%s)\n", variable, messageGetArgument(m, i));
-                return 0;
+                continue;
             }
             return 1;
         }
@@ -955,31 +955,49 @@ messageGetEncoding(const message *m)
 
 int messageAddLine(message *m, line_t *line)
 {
+    line_t *linked = NULL;
+    text *new_node = NULL;
+
     if (m == NULL) {
         cli_errmsg("Internal email parser error: invalid arguments when adding line to message.\n");
         return -1;
     }
 
-    if (m->body_first == NULL)
-        m->body_last = m->body_first = (text *)malloc(sizeof(text));
-    else {
-        m->body_last->t_next = (text *)malloc(sizeof(text));
-        m->body_last         = m->body_last->t_next;
+    if (line && lineGetData(line)) {
+        linked = lineLink(line);
+        if (linked == NULL) {
+            cli_errmsg("messageAddLine: out of memory for linked line\n");
+            return -1;
+        }
     }
 
-    if (m->body_last == NULL) {
-        cli_errmsg("messageAddLine: out of memory for m->body_last\n");
+    new_node = (text *)malloc(sizeof(text));
+    if (new_node == NULL) {
+        if (linked)
+            lineUnlink(linked);
+        cli_errmsg("messageAddLine: out of memory for new_node\n");
         return -1;
     }
 
-    m->body_last->t_next = NULL;
+    new_node->t_line = linked;
+    new_node->t_next = NULL;
 
-    if (line && lineGetData(line)) {
-        m->body_last->t_line = lineLink(line);
+    if (m->body_first == NULL)
+        m->body_last = m->body_first = new_node;
+    else {
+        if (m->body_last == NULL) {
+            if (linked)
+                lineUnlink(linked);
+            free(new_node);
+            cli_errmsg("Internal email parser error: message 'body_last' pointer should not be NULL if 'body_first' is set.\n");
+            return -1;
+        }
+        m->body_last->t_next = new_node;
+        m->body_last         = new_node;
+    }
 
+    if (linked)
         messageIsEncoding(m);
-    } else
-        m->body_last->t_line = NULL;
 
     return 1;
 }
@@ -1861,12 +1879,14 @@ decodeLine(message *m, encoding_type et, const char *line, unsigned char *buf, s
     bool softbreak;
     char *p2, *copy;
     char base64buf[RFC2045LENGTH + 1];
+    size_t outleft;
 
     /*cli_dbgmsg("decodeLine(et = %d buflen = %u)\n", (int)et, buflen);*/
-    if (NULL == m || NULL == buf) {
+    if (NULL == m || NULL == buf || buflen == 0) {
         cli_dbgmsg("decodeLine: invalid parameters\n");
         return NULL;
     }
+    outleft = buflen - 1; /* reserve room for the NUL terminator */
 
     switch (et) {
         case BINARY:
@@ -1877,19 +1897,35 @@ decodeLine(message *m, encoding_type et, const char *line, unsigned char *buf, s
         case NOENCODING:
         case EIGHTBIT:
         default:      /* unknown encoding type - try our best */
-            if (line) /* empty line? */
-                buf = (unsigned char *)cli_strrcpy((char *)buf, line);
+            if (line) { /* empty line? */
+                while (outleft && *line) {
+                    *buf++ = *line++;
+                    outleft--;
+                }
+                if (*line)
+                    cli_dbgmsg("decodeLine: output truncated while copying undecoded line\n");
+            }
             /* Put the new line back in */
-            return (unsigned char *)cli_strrcpy((char *)buf, "\n");
+            if (outleft) {
+                *buf++ = '\n';
+            } else {
+                cli_dbgmsg("decodeLine: no room to append newline\n");
+            }
+            break;
 
         case QUOTEDPRINTABLE:
             if (line == NULL) { /* empty line */
-                *buf++ = '\n';
+                if (outleft) {
+                    *buf++ = '\n';
+                    outleft--;
+                } else {
+                    cli_dbgmsg("decodeLine: no room for empty quoted-printable line\n");
+                }
                 break;
             }
 
             softbreak = false;
-            while (buflen && *line) {
+            while (outleft && *line) {
                 if (*line == '=') {
                     unsigned char byte;
 
@@ -1925,11 +1961,15 @@ decodeLine(message *m, encoding_type et, const char *line, unsigned char *buf, s
                     *buf++ = *line;
                 }
                 ++line;
-                --buflen;
+                --outleft;
             }
             if (!softbreak) {
                 /* Put the new line back in */
-                *buf++ = '\n';
+                if (outleft) {
+                    *buf++ = '\n';
+                } else {
+                    cli_dbgmsg("decodeLine: no room to append quoted-printable newline\n");
+                }
             }
             break;
 
@@ -1989,7 +2029,7 @@ decodeLine(message *m, encoding_type et, const char *line, unsigned char *buf, s
                 break;
             len = strlen(line);
 
-            if ((len > buflen) || (reallen > len))
+            if ((reallen > outleft) || (reallen > len))
                 /*
                  * In practice this should never occur since
                  * the maximum length of a uuencoded line is
@@ -2008,13 +2048,17 @@ decodeLine(message *m, encoding_type et, const char *line, unsigned char *buf, s
             if (strncmp(line, "=yend ", 6) == 0)
                 break;
 
-            while (*line)
+            while (outleft && *line) {
                 if (*line == '=') {
                     if (*++line == '\0')
                         break;
                     *buf++ = ((*line++ - 64) & 255);
                 } else
                     *buf++ = ((*line++ - 42) & 255);
+                outleft--;
+            }
+            if (*line)
+                cli_dbgmsg("decodeLine: output truncated while decoding yEnc line\n");
             break;
     }
 
@@ -2301,7 +2345,7 @@ messageDedup(message *m)
 
     t1 = m->dedupedThisFar ? m->dedupedThisFar : m->body_first;
 
-    for (t1 = m->body_first; t1; t1 = t1->t_next) {
+    for (; t1; t1 = t1->t_next) {
         const char *d1;
         text *t2;
         line_t *l1;
