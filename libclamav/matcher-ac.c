@@ -394,6 +394,27 @@ static uint16_t select_repeated_prefix_exact_window(const uint16_t *pattern, uin
     return best_start;
 }
 
+static void recalculate_prefix_metadata(struct cli_ac_patt *pattern)
+{
+    uint16_t i, j;
+
+    pattern->special_pattern = 0;
+    pattern->prefix_length[1] = 0;
+    pattern->prefix_length[2] = 0;
+
+    for (i = 0, j = 0; i < pattern->prefix_length[0]; i++) {
+        if ((pattern->prefix[i] & CLI_MATCH_METADATA) == CLI_MATCH_SPECIAL) {
+            pattern->special_pattern++;
+            pattern->prefix_length[1] += pattern->special_table[j]->len[0];
+            pattern->prefix_length[2] += pattern->special_table[j]->len[1];
+            j++;
+        } else {
+            pattern->prefix_length[1]++;
+            pattern->prefix_length[2]++;
+        }
+    }
+}
+
 static void link_lists(struct cli_matcher *root)
 {
     struct cli_ac_node *curnode;
@@ -3313,19 +3334,7 @@ cl_error_t cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
         new->prefix = new->pattern;
         // The "prefix" length is the number of bytes before the starting position of the pattern that goes in the AC Trie.
         new->prefix_length[0] = ppos;
-        for (i = 0, j = 0; i < new->prefix_length[0]; i++) {
-            if ((new->prefix[i] & CLI_MATCH_WILDCARD) == CLI_MATCH_SPECIAL)
-                new->special_pattern++;
-
-            if ((new->prefix[i] & CLI_MATCH_METADATA) == CLI_MATCH_SPECIAL) {
-                new->prefix_length[1] += new->special_table[j]->len[0];
-                new->prefix_length[2] += new->special_table[j]->len[1];
-                j++;
-            } else {
-                new->prefix_length[1]++;
-                new->prefix_length[2]++;
-            }
-        }
+        recalculate_prefix_metadata(new);
 
         // Update the pattern to start at the shifted position with the static bytes.
         new->pattern = &new->prefix[ppos];
@@ -3337,14 +3346,13 @@ cl_error_t cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
         uint16_t repeated_ppos = select_repeated_prefix_exact_window(
             new->pattern, new->length[0], root->ac_maxdepth);
         if (repeated_ppos != UINT16_MAX) {
-            new->prefix       = new->pattern;
+            new->prefix = new->pattern;
             new->prefix_length[0] = repeated_ppos;
-            new->prefix_length[1] = repeated_ppos;
-            new->prefix_length[2] = repeated_ppos;
-            new->pattern          = &new->prefix[repeated_ppos];
+            recalculate_prefix_metadata(new);
+            new->pattern = &new->prefix[repeated_ppos];
             new->length[0] -= repeated_ppos;
-            new->length[1] -= repeated_ppos;
-            new->length[2] -= repeated_ppos;
+            new->length[1] -= new->prefix_length[1];
+            new->length[2] -= new->prefix_length[2];
         }
     }
 
