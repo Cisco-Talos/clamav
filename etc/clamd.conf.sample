@@ -56,7 +56,7 @@ Example
 # Default: no
 #LogRotate yes
 
-# Enable Prelude output.
+# Enable output for Prelude-SIEM. Abandonware, ignore this.
 # Default: no
 #PreludeEnable yes
 #
