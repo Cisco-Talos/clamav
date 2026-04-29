@@ -104,7 +104,6 @@
 #endif
 #include <string.h>
 #include <ctype.h>
-#include <assert.h>
 #include <stdio.h>
 
 #include "clamav.h"
@@ -198,10 +197,13 @@ textAdd(text *t_head, const text *t)
     cli_dbgmsg("textAdd: count = %d\n", count);
 
     while (t) {
-        t_head->t_next = (text *)malloc(sizeof(text));
-        t_head         = t_head->t_next;
-
-        assert(t_head != NULL);
+        text *next = (text *)malloc(sizeof(text));
+        if (next == NULL) {
+            cli_errmsg("textAdd: Unable to allocate memory for next line\n");
+            return ret;
+        }
+        t_head->t_next = next;
+        t_head         = next;
 
         if (t->t_line)
             t_head->t_line = lineLink(t->t_line);
@@ -222,7 +224,10 @@ textAdd(text *t_head, const text *t)
 text *
 textAddMessage(text *aText, message *aMessage)
 {
-    assert(aMessage != NULL);
+    if (aMessage == NULL) {
+        cli_errmsg("textAddMessage: message is NULL\n");
+        return aText;
+    }
 
     if (messageGetEncoding(aMessage) == NOENCODING)
         return textAdd(aText, messageGetBody(aMessage));
@@ -283,8 +288,6 @@ textMove(text *t_head, text *t)
         return NULL;
     }
     t_head = t_head->t_next;
-
-    assert(t_head != NULL);
 
     if (t->t_line) {
         t_head->t_line = t->t_line;
@@ -364,8 +367,10 @@ textToBlob(text *t, blob *b, int destroy)
 fileblob *
 textToFileblob(text *t, fileblob *fb, int destroy)
 {
-    assert(fb != NULL);
-    assert(t != NULL);
+    if (t == NULL) {
+        cli_errmsg("textToFileBlob: text is NULL\n");
+        return fb;
+    }
 
     if (fb == NULL) {
         cli_dbgmsg("textToFileBlob, destroy = %d\n", destroy);

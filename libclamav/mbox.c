@@ -222,6 +222,7 @@ static bool hitLineFoldCnt(const char *const line, size_t *lineFoldCnt, cli_ctx 
 static bool haveTooManyHeaderBytes(size_t totalLen, cli_ctx *ctx, bool *heuristicFound);
 static bool haveTooManyEmailHeaders(size_t totalHeaderCnt, cli_ctx *ctx, bool *heuristicFound);
 static bool haveTooManyMIMEArguments(size_t argCnt, cli_ctx *ctx, bool *heuristicFound);
+static bool parsePositiveUnsignedArgument(const char *value, unsigned int max, unsigned int *result);
 
 /* Maximum line length according to RFC2821 */
 #define RFC2821LENGTH 1000
@@ -276,6 +277,7 @@ static bool haveTooManyMIMEArguments(size_t argCnt, cli_ctx *ctx, bool *heuristi
 #define HEURISTIC_EMAIL_MAX_HEADERS 1024
 #define HEURISTIC_EMAIL_MAX_MIME_PARTS_PER_MESSAGE 1024
 #define HEURISTIC_EMAIL_MAX_ARGUMENTS_PER_HEADER 256
+#define HEURISTIC_EMAIL_MAX_PARTIAL_MESSAGE_PARTS 1024
 
 static const struct tableinit {
     const char *key;
@@ -700,7 +702,7 @@ doContinueMultipleEmptyOptions(const char *const line, bool *lastWasOnlySemi)
         size_t i   = 0;
         int doCont = 1;
         for (; i < strlen(line); i++) {
-            if (isblank(line[i])) {
+            if (isblank((unsigned char)line[i])) {
             } else if (';' == line[i]) {
             } else {
                 doCont = 0;
@@ -725,7 +727,7 @@ hitLineFoldCnt(const char *const line, size_t *lineFoldCnt, cli_ctx *ctx, bool *
 {
 
     if (line) {
-        if (isblank(line[0])) {
+        if (isblank((unsigned char)line[0])) {
             (*lineFoldCnt)++;
         } else {
             (*lineFoldCnt) = 0;
@@ -804,6 +806,37 @@ haveTooManyMIMEArguments(size_t argCnt, cli_ctx *ctx, bool *heuristicFound)
     return false;
 }
 
+static bool
+parsePositiveUnsignedArgument(const char *value, unsigned int max, unsigned int *result)
+{
+    char *end = NULL;
+    unsigned long parsed;
+
+    if ((value == NULL) || (result == NULL))
+        return false;
+
+    while (isspace((unsigned char)*value))
+        value++;
+
+    if (!isdigit((unsigned char)*value))
+        return false;
+
+    errno  = 0;
+    parsed = strtoul(value, &end, 10);
+    if ((errno != 0) || (end == value) || (parsed == 0) ||
+        (parsed > max) || (parsed > UINT_MAX)) {
+        return false;
+    }
+
+    while (isspace((unsigned char)*end))
+        end++;
+    if (*end != '\0')
+        return false;
+
+    *result = (unsigned int)parsed;
+    return true;
+}
+
 /*
  * Read in an email message from fin, parse it, and return the message
  *
@@ -878,7 +911,7 @@ parseEmailFile(fmap_t *map, size_t *at, const table_t *rfc821, const char *first
              * Ensure wide characters are handled where
              * sizeof(char) > 1
              */
-            if (line && isspace(line[0] & 0xFF)) {
+            if (line && isspace((unsigned char)line[0])) {
                 char copy[sizeof(buffer)];
 
                 strcpy(copy, buffer);
@@ -950,7 +983,7 @@ parseEmailFile(fmap_t *map, size_t *at, const table_t *rfc821, const char *first
                     /*
                      * Continuation of line we're ignoring?
                      */
-                    if (isblank(line[0]))
+                    if (isblank((unsigned char)line[0]))
                         continue;
 
                     /*
@@ -1004,7 +1037,7 @@ parseEmailFile(fmap_t *map, size_t *at, const table_t *rfc821, const char *first
                      *
                      * Add all the arguments on the line
                      */
-                    if (isblank(*lookahead))
+                    if (isblank((unsigned char)*lookahead))
                         continue;
                 }
 
@@ -1189,7 +1222,7 @@ parseEmailHeaders(message *m, const table_t *rfc821, bool *heuristicFound)
                     /*
                      * Continuation of line we're ignoring?
                      */
-                    if (isblank(line[0]))
+                    if (isblank((unsigned char)line[0]))
                         continue;
 
                     /*
@@ -1827,6 +1860,12 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                     message **m;
                     mbox_status old_rc;
 
+                    if (haveTooManyMIMEPartsPerMessage((size_t)multiparts, mctx->ctx, &rc)) {
+                        if (rc == VIRUS)
+                            infected = true;
+                        break;
+                    }
+
                     m = cli_max_realloc(messages, ((multiparts + 1) * sizeof(message *)));
                     if (m == NULL)
                         break;
@@ -1834,13 +1873,14 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 
                     aMessage = messages[multiparts] = messageCreate();
                     if (aMessage == NULL) {
-                        multiparts--;
-                        /* if allocation failed the first time,
-                         * there's no point in retrying, just
-                         * break out */
+                        rc = FAIL;
                         break;
                     }
                     messageSetCTX(aMessage, mctx->ctx);
+
+                    size_t partHeaderBytes = 0;
+                    size_t partHeaderCnt   = 0;
+                    size_t partLineFoldCnt = 0;
 
                     cli_dbgmsg("Now read in part %d\n", multiparts);
 
@@ -1848,11 +1888,14 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                      * Ignore blank lines. There shouldn't be ANY
                      * but some viruses insert them
                      */
-                    while ((t_line = t_line->t_next) != NULL)
-                        if (t_line->t_line &&
+                    while ((t_line = t_line->t_next) != NULL) {
+                        const char *data = t_line->t_line ? lineGetData(t_line->t_line) : NULL;
+
+                        if (data &&
                             /*(cli_chomp(t_line->t_text) > 0))*/
-                            (strlen(lineGetData(t_line->t_line)) > 0))
+                            (strlen(data) > 0))
                             break;
+                    }
 
                     if (t_line == NULL) {
                         cli_dbgmsg("Empty part\n");
@@ -1880,6 +1923,33 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                         t_line->t_next && t_line->t_next->t_line ? lineGetData(t_line->t_next->t_line) : "(null)");
                         */
 
+                        if ((inhead || inMimeHead) && (line != NULL)) {
+                            size_t lineLen;
+
+                            if (hitLineFoldCnt(line, &partLineFoldCnt, mctx->ctx, &heuristicFound)) {
+                                if (heuristicFound) {
+                                    rc       = VIRUS;
+                                    infected = true;
+                                }
+                                break;
+                            }
+
+                            lineLen = strlen(line);
+                            if ((partHeaderBytes > HEURISTIC_EMAIL_MAX_HEADER_BYTES) ||
+                                (lineLen > HEURISTIC_EMAIL_MAX_HEADER_BYTES - partHeaderBytes)) {
+                                partHeaderBytes = HEURISTIC_EMAIL_MAX_HEADER_BYTES + 1;
+                            } else {
+                                partHeaderBytes += lineLen;
+                            }
+                            if (haveTooManyHeaderBytes(partHeaderBytes, mctx->ctx, &heuristicFound)) {
+                                if (heuristicFound) {
+                                    rc       = VIRUS;
+                                    infected = true;
+                                }
+                                break;
+                            }
+                        }
+
                         if (inMimeHead) { /* continuation line */
                             if (line == NULL) {
                                 /*inhead =*/inMimeHead = 0;
@@ -1900,13 +1970,22 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                              * Content-Type: application/octet-stream;
                              * Content-Transfer-Encoding: base64
                              */
+                            partHeaderCnt++;
+                            if (haveTooManyEmailHeaders(partHeaderCnt, mctx->ctx, &heuristicFound)) {
+                                if (heuristicFound) {
+                                    rc       = VIRUS;
+                                    infected = true;
+                                }
+                                break;
+                            }
                             parseEmailHeader(aMessage, line, mctx->rfc821Table, mctx->ctx, &heuristicFound);
                             if (heuristicFound) {
-                                rc = VIRUS;
+                                rc       = VIRUS;
+                                infected = true;
                                 break;
                             }
 
-                            while (isspace((int)*line))
+                            while (isspace((unsigned char)*line))
                                 line++;
 
                             if (*line == '\0') {
@@ -1970,7 +2049,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                                 inhead = 0;
                                 continue;
                             }
-                            if (isspace((int)*line)) {
+                            if (isspace((unsigned char)*line)) {
                                 /*
                                  * The first line is
                                  * continuation line.
@@ -2008,9 +2087,9 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                                 continue;
                             }
 
-                            fullline = rfc822comments(line, NULL);
+                            fullline = cli_safer_strdup(line);
                             if (fullline == NULL)
-                                fullline = cli_safer_strdup(line);
+                                break;
 
                             /*quotes = count_quotes(fullline);*/
 
@@ -2057,10 +2136,21 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                             cli_dbgmsg("Multipart %d: About to parse folded header '%s'\n",
                                        multiparts, fullline);
 
+                            partHeaderCnt++;
+                            if (haveTooManyEmailHeaders(partHeaderCnt, mctx->ctx, &heuristicFound)) {
+                                free(fullline);
+                                if (heuristicFound) {
+                                    rc       = VIRUS;
+                                    infected = true;
+                                }
+                                break;
+                            }
                             parseEmailHeader(aMessage, fullline, mctx->rfc821Table, mctx->ctx, &heuristicFound);
                             free(fullline);
                             if (heuristicFound) {
-                                rc = VIRUS;
+                                rc       = VIRUS;
+                                infected = true;
+                                break;
                             }
                         } else if (boundaryEnd(line, boundary)) {
                             /*
@@ -3058,14 +3148,14 @@ strip(char *buf, int len)
     do
         if (*ptr)
             *ptr = '\0';
-    while ((--len >= 0) && (!isgraph(*--ptr)) && (*ptr != '\n') && (*ptr != '\r'));
+    while ((--len >= 0) && (!isgraph((unsigned char)*--ptr)) && (*ptr != '\n') && (*ptr != '\r'));
 #else /* more characters can be displayed on DOS */
     do
 #ifndef REAL_MODE_DOS
         if (*ptr) /* C8.0 puts into a text area */
 #endif
             *ptr = '\0';
-    while ((--len >= 0) && ((*--ptr == '\0') || isspace((int)(*ptr & 0xFF))));
+    while ((--len >= 0) && ((*--ptr == '\0') || isspace((unsigned char)*ptr)));
 #endif
     return ((size_t)(len + 1));
 }
@@ -3101,6 +3191,16 @@ isMimeParameter(const char *arg, const char *variable)
     arg += len;
     while (isspace((unsigned char)*arg))
         arg++;
+
+    if (*arg == '*') {
+        arg++;
+        while (isdigit((unsigned char)*arg))
+            arg++;
+        if (*arg == '*')
+            arg++;
+        while (isspace((unsigned char)*arg))
+            arg++;
+    }
 
     return (*arg == '=') || (*arg == ':');
 }
@@ -3240,7 +3340,7 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
                      *    the quotes, it doesn't handle
                      *    them properly
                      */
-                    while (isspace((const unsigned char)*ptr))
+                    while (isspace((unsigned char)*ptr))
                         ptr++;
                     if (ptr[0] == '\"')
                         ptr++;
@@ -3282,10 +3382,10 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
                                 if (s == NULL)
                                     break;
                                 if (set) {
-                                    size_t len = strstrip(s) - 1;
-                                    if (s[len] == '\"') {
-                                        s[len] = '\0';
-                                        len    = strstrip(s);
+                                    size_t len = strstrip(s);
+                                    if ((len > 0) && (s[len - 1] == '\"')) {
+                                        s[len - 1] = '\0';
+                                        len        = strstrip(s);
                                     }
                                     if (len) {
                                         if (strchr(s, ' '))
@@ -3413,7 +3513,7 @@ rfc822comments(const char *in, char *out)
         return NULL;
     }
 
-    while (isspace((const unsigned char)*in)) {
+    while (isspace((unsigned char)*in)) {
         in++;
     }
 
@@ -3515,7 +3615,7 @@ rfc2047(const char *in)
         if (*in == '\0')
             break;
         encoding = *++in;
-        encoding = (char)tolower(encoding);
+        encoding = (char)tolower((unsigned char)encoding);
 
         if ((encoding != 'q') && (encoding != 'b')) {
             cli_warnmsg("Unsupported RFC2047 encoding type '%c' - if you believe this file contains a virus, submit it to www.clamav.net\n", encoding);
@@ -3600,7 +3700,8 @@ rfc1341(mbox_ctx *mctx, message *m)
 {
     char *arg, *id, *number, *total, *oldfilename;
     const char *tmpdir = NULL;
-    int n;
+    unsigned int n, part_number, total_parts = 0;
+    bool have_total = false;
     char pdir[PATH_MAX + 1];
     unsigned char md5_val[16];
     char *md5_hex;
@@ -3655,6 +3756,28 @@ rfc1341(mbox_ctx *mctx, message *m)
         return -1;
     }
 
+    if (!parsePositiveUnsignedArgument(number, HEURISTIC_EMAIL_MAX_PARTIAL_MESSAGE_PARTS, &part_number)) {
+        cli_warnmsg("Invalid message/partial number '%s'\n", number);
+        free(id);
+        free(number);
+        return -1;
+    }
+
+    total = (char *)messageFindArgument(m, "total");
+    cli_dbgmsg("rfc1341: %s, %s of %s\n", id, number, (total) ? total : "?");
+    if (total) {
+        have_total = true;
+        if (!parsePositiveUnsignedArgument(total, HEURISTIC_EMAIL_MAX_PARTIAL_MESSAGE_PARTS, &total_parts) ||
+            (part_number > total_parts)) {
+            cli_warnmsg("Invalid message/partial total '%s' for part '%s'\n", total, number);
+            free(total);
+            free(id);
+            free(number);
+            return -1;
+        }
+        free(total);
+    }
+
     oldfilename = messageGetFilename(m);
 
     arg = cli_max_malloc(10 + strlen(id) + strlen(number));
@@ -3669,7 +3792,6 @@ rfc1341(mbox_ctx *mctx, message *m)
         free(oldfilename);
     }
 
-    n = atoi(number);
     cl_hash_data("md5", id, strlen(id), md5_val, NULL);
     md5_hex = cli_str2hex((const char *)md5_val, 16);
 
@@ -3679,25 +3801,21 @@ rfc1341(mbox_ctx *mctx, message *m)
         return CL_EMEM;
     }
 
-    if (messageSavePartial(m, pdir, md5_hex, n) < 0) {
+    if (messageSavePartial(m, pdir, md5_hex, part_number) < 0) {
         free(md5_hex);
         free(id);
         free(number);
         return -1;
     }
 
-    total = (char *)messageFindArgument(m, "total");
-    cli_dbgmsg("rfc1341: %s, %s of %s\n", id, number, (total) ? total : "?");
-    if (total) {
-        int t   = atoi(total);
+    if (have_total) {
         DIR *dd = NULL;
 
-        free(total);
         /*
          * If it's the last one - reassemble it
          * FIXME: this assumes that we receive the parts in order
          */
-        if ((n == t) && ((dd = opendir(pdir)) != NULL)) {
+        if ((part_number == total_parts) && ((dd = opendir(pdir)) != NULL)) {
             FILE *fout;
             char outname[PATH_MAX + 1];
             time_t now;
@@ -3719,7 +3837,7 @@ rfc1341(mbox_ctx *mctx, message *m)
             }
 
             time(&now);
-            for (n = 1; n <= t; n++) {
+            for (n = 1; n <= total_parts; n++) {
                 char filename[NAME_MAX + 1];
                 struct dirent *dent;
 
@@ -4128,7 +4246,7 @@ isBounceStart(mbox_ctx *mctx, const char *line)
         do
             if (*line == ' ')
                 numSpaces++;
-            else if (isdigit((*line) & 0xFF))
+            else if (isdigit((unsigned char)*line))
                 numDigits++;
         while (*++line != '\0');
 
@@ -4593,12 +4711,14 @@ next_is_folded_header(const text *t)
         return false;
 
     data = lineGetData(next->t_line);
+    if (data == NULL)
+        return false;
 
     /*
      * Section B.2 of RFC822 says TAB or SPACE means a continuation of the
      * previous entry.
      */
-    if (isblank(data[0]))
+    if (isblank((unsigned char)data[0]))
         return true;
 
     if (strchr(data, '=') == NULL)
@@ -4625,6 +4745,8 @@ next_is_folded_header(const text *t)
      * verifier we need to handle these
      */
     data = lineGetData(t->t_line);
+    if (data == NULL)
+        return false;
 
     ptr = strchr(data, '\0');
 

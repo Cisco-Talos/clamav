@@ -226,7 +226,7 @@ int messageSetMimeType(message *mess, const char *type)
     cli_dbgmsg("messageSetMimeType: '%s'\n", type);
 
     /* Ignore leading spaces */
-    while (!isalpha(*type))
+    while (!isalpha((unsigned char)*type))
         if (*type++ == '\0')
             return 0;
 
@@ -367,7 +367,7 @@ void messageSetDispositionType(message *m, const char *disptype)
      * that something is wrong if we get that - maybe we should force a
      * scan of this part
      */
-    while (*disptype && isspace((int)*disptype))
+    while (*disptype && isspace((unsigned char)*disptype))
         disptype++;
     if (*disptype) {
         m->mimeDispositionType = cli_safer_strdup(disptype);
@@ -403,7 +403,7 @@ void messageAddArgument(message *m, const char *arg)
     if (arg == NULL)
         return; /* Note: this is not an error condition */
 
-    while (isspace(*arg))
+    while (isspace((unsigned char)*arg))
         arg++;
 
     if (*arg == '\0')
@@ -493,10 +493,10 @@ void messageAddArguments(message *m, const char *s)
 
     while (*string) {
         const char *key, *cptr;
-        char *data, *field;
+        char *data, *field = NULL;
         size_t datasz = 0;
 
-        if (isspace(*string & 0xff) || (*string == ';')) {
+        if (isspace((unsigned char)*string) || (*string == ';')) {
             string++;
             continue;
         }
@@ -538,7 +538,7 @@ void messageAddArguments(message *m, const char *s)
          *        or tspecials>
          * But too many MUAs ignore this
          */
-        while (isspace(*string) && (*string != '\0'))
+        while (isspace((unsigned char)*string) && (*string != '\0'))
             string++;
 
         cptr = string;
@@ -628,7 +628,7 @@ void messageAddArguments(message *m, const char *s)
              * The field is not in quotes, so look for the closing
              * white space
              */
-            while ((*string != '\0') && !isspace(*string))
+            while ((*string != '\0') && !isspace((unsigned char)*string))
                 string++;
 
             len   = (size_t)string - (size_t)key + 1;
@@ -672,7 +672,7 @@ messageArgumentValue(const char *ptr, const char *variable)
     len = strlen(variable);
     if (strncasecmp(ptr, variable, len) == 0) {
         ptr = &ptr[len];
-        while (isspace(*ptr))
+        while (isspace((unsigned char)*ptr))
             ptr++;
         if (*ptr != '=') {
             cli_dbgmsg("messageArgumentValue: no '=' sign found in MIME header '%s' (%s)\n", variable, ptr);
@@ -809,7 +809,7 @@ messageHasArgument(const message *m, const char *variable)
 #endif
         if (strncasecmp(ptr, variable, len) == 0) {
             ptr = &ptr[len];
-            while (isspace(*ptr))
+            while (isspace((unsigned char)*ptr))
                 ptr++;
             if (*ptr != '=') {
                 cli_dbgmsg("messageHasArgument: no '=' sign found in MIME header '%s' (%s)\n", variable, messageGetArgument(m, i));
@@ -839,7 +839,7 @@ void messageSetEncoding(message *m, const char *enctype)
 
     /*m->encodingType = EEXTENSION;*/
 
-    while (isblank(*enctype))
+    while (isblank((unsigned char)*enctype))
         enctype++;
 
     cli_dbgmsg("messageSetEncoding: '%s'\n", enctype);
@@ -861,9 +861,9 @@ void messageSetEncoding(message *m, const char *enctype)
 
         for (e = encoding_map; e->string; e++) {
             int sim;
-            const char lowertype = tolower(type[0]);
+            const char lowertype = (char)tolower((unsigned char)type[0]);
 
-            if ((lowertype != tolower(e->string[0])) && (lowertype != 'x'))
+            if ((lowertype != tolower((unsigned char)e->string[0])) && (lowertype != 'x'))
                 /*
                  * simil is expensive, I'm yet to encounter only
                  * one example of a missent encoding when the
@@ -1011,7 +1011,7 @@ int messageAddStr(message *m, const char *data)
             const char *p;
 
             for (p = data; *p; p++)
-                if (((*p) & 0x80) || !isspace(*p)) {
+                if (((*p) & 0x80) || !isspace((unsigned char)*p)) {
                     iswhite = 0;
                     break;
                 }
@@ -2105,9 +2105,9 @@ decode(message *m, const char *in, unsigned char *out, unsigned char (*decoder)(
             return out;
 
         cli_dbgmsg("base64chars = %d (%c %c %c)\n", m->base64chars,
-                   isalnum(cb1) ? cb1 : '@',
-                   isalnum(cb2) ? cb2 : '@',
-                   isalnum(cb3) ? cb3 : '@');
+                   isalnum((unsigned char)cb1) ? cb1 : '@',
+                   isalnum((unsigned char)cb2) ? cb2 : '@',
+                   isalnum((unsigned char)cb3) ? cb3 : '@');
 
         m->base64chars--;
         b1     = cb1;
@@ -2216,7 +2216,7 @@ decode(message *m, const char *in, unsigned char *out, unsigned char (*decoder)(
 static unsigned char
 hex(char c)
 {
-    if (isdigit(c))
+    if (isdigit((unsigned char)c))
         return c - '0';
     if ((c >= 'A') && (c <= 'F'))
         return c - 'A' + 10;
@@ -2621,7 +2621,7 @@ compare(char *ls1, char **rs1, char *ls2, char **rs2)
 
         if (s1 < end1) {
             while (s1 < end1 && s2 < end2) {
-                if (tolower(*s1) == tolower(*s2)) {
+                if (tolower((unsigned char)*s1) == tolower((unsigned char)*s2)) {
                     some_similarity = true;
                     cs1             = s1;
                     cs2             = s2;
@@ -2634,7 +2634,7 @@ compare(char *ls1, char **rs1, char *ls2, char **rs2)
                             s2++;
                             common++;
                         }
-                    while (tolower(*s1) == tolower(*s2));
+                    while (tolower((unsigned char)*s1) == tolower((unsigned char)*s2));
 
                     if (common > maxchars) {
                         unsigned int diff = common - maxchars;
@@ -2707,6 +2707,6 @@ int isuuencodebegin(const char *line)
         return 0;
 
     return (strncasecmp(line, "begin ", 6) == 0) &&
-           isdigit(line[6]) && isdigit(line[7]) &&
-           isdigit(line[8]) && (line[9] == ' ');
+           isdigit((unsigned char)line[6]) && isdigit((unsigned char)line[7]) &&
+           isdigit((unsigned char)line[8]) && (line[9] == ' ');
 }
