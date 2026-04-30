@@ -249,13 +249,12 @@ textAddMessageWithStatus(text *aText, message *aMessage, int *status)
             int moveStatus = 0;
             text *newHead  = textMoveWithStatus(aText, anotherText, &moveStatus);
 
+            textDestroy(anotherText);
             if (moveStatus < 0) {
-                textDestroy(anotherText);
                 if (status)
                     *status = -1;
                 return aText;
             }
-            free(anotherText);
             return newHead;
         }
         return anotherText;
