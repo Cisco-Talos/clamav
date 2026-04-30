@@ -203,6 +203,7 @@ static int initialiseTables(table_t **rfc821Table, table_t **subtypeTable);
 static int getTextPart(message *const messages[], size_t size);
 static size_t strip(char *buf, int len);
 static int parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const char *arg, cli_ctx *ctx, bool *heuristicFound);
+static int tableFindRfc822Header(const table_t *rfc821Table, const char *cmd);
 static int saveTextPart(mbox_ctx *mctx, message *m, int destroy_text);
 static char *rfc2047(const char *in);
 static char *rfc822comments(const char *in, char *out);
@@ -848,6 +849,27 @@ parsePositiveUnsignedArgument(const char *value, unsigned int max, unsigned int 
     return true;
 }
 
+static int
+tableFindRfc822Header(const table_t *rfc821Table, const char *cmd)
+{
+    char *stripped;
+    int commandNumber;
+
+    if ((rfc821Table == NULL) || (cmd == NULL))
+        return -1;
+
+    stripped = rfc822comments(cmd, NULL);
+    if (stripped) {
+        strstrip(stripped);
+        commandNumber = tableFind(rfc821Table, stripped);
+        free(stripped);
+    } else {
+        commandNumber = tableFind(rfc821Table, cmd);
+    }
+
+    return commandNumber;
+}
+
 /*
  * Read in an email message from fin, parse it, and return the message
  *
@@ -1007,7 +1029,7 @@ parseEmailFile(fmap_t *map, size_t *at, const table_t *rfc821, const char *first
                         continue;
                     }
 
-                    commandNumber = tableFind(rfc821, cmd);
+                    commandNumber = tableFindRfc822Header(rfc821, cmd);
 
                     switch (commandNumber) {
                         case CONTENT_TRANSFER_ENCODING:
@@ -1246,7 +1268,7 @@ parseEmailHeaders(message *m, const table_t *rfc821, bool *heuristicFound)
                         continue;
                     }
 
-                    commandNumber = tableFind(rfc821, cmd);
+                    commandNumber = tableFindRfc822Header(rfc821, cmd);
 
                     switch (commandNumber) {
                         case CONTENT_TRANSFER_ENCODING:
@@ -2004,7 +2026,12 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                                 }
                                 break;
                             }
-                            parseEmailHeader(aMessage, line, mctx->rfc821Table, mctx->ctx, &heuristicFound);
+                            if (parseEmailHeader(aMessage, line, mctx->rfc821Table,
+                                                 mctx->ctx, &heuristicFound) == PARSE_HEADER_ALLOC_FAIL) {
+                                rc         = FAIL;
+                                partFailed = true;
+                                break;
+                            }
                             if (heuristicFound) {
                                 rc       = VIRUS;
                                 infected = true;
@@ -3363,7 +3390,7 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 
     cli_dbgmsg("parseMimeHeader: cmd='%s', arg='%s'\n", cmd, arg);
 
-    commandNumber = tableFind(rfc821Table, cmd);
+    commandNumber = tableFindRfc822Header(rfc821Table, cmd);
 
     copy = rfc822comments(arg, NULL);
 
@@ -4556,7 +4583,7 @@ exportBounceMessage(mbox_ctx *mctx, text *start)
         if (cli_strtokbuf(txt, 0, ":", cmd) == NULL)
             continue;
 
-        switch (tableFind(mctx->rfc821Table, cmd)) {
+        switch (tableFindRfc822Header(mctx->rfc821Table, cmd)) {
             case CONTENT_TRANSFER_ENCODING:
                 if ((strstr(txt, "7bit") == NULL) &&
                     (strstr(txt, "8bit") == NULL))
