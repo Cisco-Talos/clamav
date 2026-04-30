@@ -123,6 +123,11 @@ typedef enum {
     MAXFILES
 } mbox_status;
 
+enum {
+    PARSE_HEADER_MALFORMED  = -1,
+    PARSE_HEADER_ALLOC_FAIL = -2
+};
+
 #ifndef isblank
 #define isblank(c) (((c) == ' ') || ((c) == '\t'))
 #endif
@@ -1316,7 +1321,10 @@ parseEmailHeaders(message *m, const table_t *rfc821, bool *heuristicFound)
             /*if(t->t_line && isuuencodebegin(t->t_line))
                 puts("FIXME: add fast visa here");*/
             cli_dbgmsg("parseEmailHeaders: finished with headers, moving body\n");
-            messageMoveText(ret, t, m);
+            if (messageMoveText(ret, t, m) < 0) {
+                messageDestroy(ret);
+                return NULL;
+            }
             break;
         }
     }
@@ -1356,7 +1364,7 @@ parseEmailHeaders(message *m, const table_t *rfc821, bool *heuristicFound)
 static int
 parseEmailHeader(message *m, const char *line, const table_t *rfc821, cli_ctx *ctx, bool *heuristicFound)
 {
-    int ret = -1;
+    int ret = PARSE_HEADER_MALFORMED;
 #ifdef CL_THREAD_SAFE
     char *strptr;
 #endif
@@ -1376,13 +1384,14 @@ parseEmailHeader(message *m, const char *line, const table_t *rfc821, cli_ctx *c
             break;
 
     if (*separator == '\0')
-        return -1;
+        return PARSE_HEADER_MALFORMED;
 
     copy = rfc2047(line);
     if (copy == NULL) {
         /* an RFC checker would return -1 here */
         copy = cli_safer_strdup(line);
         if (NULL == copy) {
+            ret = PARSE_HEADER_ALLOC_FAIL;
             goto done;
         }
     }
@@ -1717,7 +1726,15 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
         switch (mimeType) {
             case NOMIME:
                 cli_dbgmsg("Not a mime encoded message\n");
-                aText = textAddMessage(aText, mainMessage);
+                {
+                    int textStatus = 0;
+
+                    aText = textAddMessageWithStatus(aText, mainMessage, &textStatus);
+                    if (textStatus < 0) {
+                        rc = FAIL;
+                        break;
+                    }
+                }
 
                 if (!doPhishingScan) {
                     break;
@@ -1861,6 +1878,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                     int lines = 0;
                     message **m;
                     mbox_status old_rc;
+                    bool partFailed = false;
 
                     if (haveTooManyMIMEPartsPerMessage((size_t)multiparts, mctx->ctx, &rc)) {
                         if (rc == VIRUS)
@@ -1869,8 +1887,10 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                     }
 
                     m = cli_max_realloc(messages, ((multiparts + 1) * sizeof(message *)));
-                    if (m == NULL)
+                    if (m == NULL) {
+                        rc = FAIL;
                         break;
+                    }
                     messages = m;
 
                     aMessage = messages[multiparts] = messageCreate();
@@ -2090,8 +2110,11 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                             }
 
                             fullline = cli_safer_strdup(line);
-                            if (fullline == NULL)
+                            if (fullline == NULL) {
+                                rc         = FAIL;
+                                partFailed = true;
                                 break;
+                            }
 
                             /*quotes = count_quotes(fullline);*/
 
@@ -2126,13 +2149,21 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                                 datasz = strlen(fullline) + strlen(data) + 1;
                                 ptr    = cli_max_realloc(fullline, datasz);
 
-                                if (ptr == NULL)
+                                if (ptr == NULL) {
+                                    rc         = FAIL;
+                                    partFailed = true;
                                     break;
+                                }
 
                                 fullline = ptr;
                                 cli_strlcat(fullline, data, datasz);
 
                                 /*quotes = count_quotes(data);*/
+                            }
+
+                            if (partFailed) {
+                                free(fullline);
+                                break;
                             }
 
                             cli_dbgmsg("Multipart %d: About to parse folded header '%s'\n",
@@ -2147,8 +2178,14 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                                 }
                                 break;
                             }
-                            parseEmailHeader(aMessage, fullline, mctx->rfc821Table, mctx->ctx, &heuristicFound);
+                            if (parseEmailHeader(aMessage, fullline, mctx->rfc821Table, mctx->ctx, &heuristicFound) == PARSE_HEADER_ALLOC_FAIL) {
+                                rc         = FAIL;
+                                partFailed = true;
+                            }
                             free(fullline);
+                            if (partFailed) {
+                                break;
+                            }
                             if (heuristicFound) {
                                 rc       = VIRUS;
                                 infected = true;
@@ -2169,14 +2206,25 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                             inhead = 1;
                             break;
                         } else {
-                            if (messageAddLine(aMessage, t_line->t_line) < 0)
+                            if (messageAddLine(aMessage, t_line->t_line) < 0) {
+                                rc         = FAIL;
+                                partFailed = true;
                                 break;
+                            }
                             lines++;
                         }
                     } while ((t_line = t_line->t_next) != NULL);
 
                     cli_dbgmsg("Part %d has %d lines, rc = %d\n",
                                multiparts, lines, (int)rc);
+
+                    if (partFailed || rc == FAIL) {
+                        if (messages[multiparts]) {
+                            messageDestroy(messages[multiparts]);
+                            messages[multiparts] = NULL;
+                        }
+                        break;
+                    }
 
                     /*
                      * Only save in the array of messages if some
@@ -2229,6 +2277,27 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                 }
 
                 free((char *)boundary);
+
+                if (rc == FAIL) {
+                    if (mainMessage && (mainMessage != messageIn)) {
+                        messageDestroy(mainMessage);
+                        mainMessage = NULL;
+                    }
+                    if (aText && (textIn == NULL)) {
+                        textDestroy(aText);
+                        aText = NULL;
+                    }
+                    if (messages) {
+                        for (i = 0; i < multiparts; i++) {
+                            if (messages[i])
+                                messageDestroy(messages[i]);
+                        }
+                        free(messages);
+                        messages = NULL;
+                    }
+                    mctx->wrkobj = saveobj;
+                    return rc;
+                }
 
                 if (haveTooManyMIMEPartsPerMessage(multiparts, mctx->ctx, &rc)) {
                     if (messages) {
@@ -2322,8 +2391,13 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 
                         if (htmltextPart >= 0 && messages) {
                             if (messageGetBody(messages[htmltextPart])) {
+                                int textStatus = 0;
 
-                                aText = textAddMessage(aText, messages[htmltextPart]);
+                                aText = textAddMessageWithStatus(aText, messages[htmltextPart], &textStatus);
+                                if (textStatus < 0) {
+                                    rc = FAIL;
+                                    break;
+                                }
                             }
                         } else {
                             /*
@@ -2603,6 +2677,19 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
             free(messages);
             messages = NULL;
         }
+    }
+
+    if (rc == FAIL) {
+        if (aText && (textIn == NULL)) {
+            textDestroy(aText);
+            aText = NULL;
+        }
+        if (mainMessage && (mainMessage != messageIn)) {
+            messageDestroy(mainMessage);
+            mainMessage = NULL;
+        }
+        mctx->wrkobj = saveobj;
+        return rc;
     }
 
     if (aText && (textIn == NULL)) {
@@ -3257,7 +3344,7 @@ nextMimeArgument(const char *ptr, char *buf, size_t buflen)
 }
 
 /*
- * Returns 0 for OK, -1 for error
+ * Returns 0 for OK, PARSE_HEADER_ALLOC_FAIL for allocation failure.
  */
 static int
 parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const char *arg, cli_ctx *ctx, bool *heuristicFound)
@@ -3318,7 +3405,7 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
                     cli_errmsg("parseMimeHeader: Unable to allocate memory for buf %llu\n", (long long unsigned)buflen);
                     if (copy)
                         free(copy);
-                    return -1;
+                    return PARSE_HEADER_ALLOC_FAIL;
                 }
                 /*
                  * Some clients are broken and
@@ -3361,7 +3448,7 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
                                 if (copy)
                                     free(copy);
                                 free(buf);
-                                return -1;
+                                return PARSE_HEADER_ALLOC_FAIL;
                             }
                             for (;;) {
 #ifdef CL_THREAD_SAFE
@@ -3433,7 +3520,7 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
                 cli_errmsg("parseMimeHeader: Unable to allocate memory for buf %llu\n", (long long unsigned)buflen);
                 if (copy)
                     free(copy);
-                return -1;
+                return PARSE_HEADER_ALLOC_FAIL;
             }
             p = cli_strtokbuf(ptr, 0, ";", buf);
             if (p && *p) {
@@ -3442,6 +3529,10 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
                 messageSetDispositionType(m, p);
                 disposition_arg = nextMimeArgument(ptr, buf, buflen);
                 while (disposition_arg != NULL) {
+                    argCnt++;
+                    if (haveTooManyMIMEArguments(argCnt, ctx, heuristicFound)) {
+                        break;
+                    }
                     if (isMimeParameter(buf, "boundary")) {
                         cli_dbgmsg("Ignoring boundary parameter in Content-Disposition header\n");
                     } else {

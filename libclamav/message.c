@@ -1157,19 +1157,23 @@ int messageMoveText(message *m, text *t, message *old_message)
             m->body_last = m->body_first;
             rc           = 0;
         } else {
-            m->body_last = m->body_first = textMove(NULL, t);
-            if (m->body_first == NULL)
+            int moveStatus = 0;
+
+            m->body_last = m->body_first = textMoveWithStatus(NULL, t, &moveStatus);
+            if ((moveStatus < 0) || (m->body_first == NULL))
                 return -1;
             else
                 rc = 0;
         }
     } else {
-        m->body_last = textMove(m->body_last, t);
-        if (m->body_last == NULL) {
-            rc           = -1;
-            m->body_last = m->body_first;
-        } else
-            rc = 0;
+        int moveStatus = 0;
+        text *newLast  = textMoveWithStatus(m->body_last, t, &moveStatus);
+
+        if (moveStatus < 0)
+            return -1;
+
+        m->body_last = newLast;
+        rc           = 0;
     }
 
     while (m->body_last->t_next) {
@@ -1708,7 +1712,7 @@ messageToText(message *m)
                 if (line == NULL)
                     continue;
 
-            if ((line != NULL) && (strlen(line) > sizeof(data))) {
+            if ((line != NULL) && (strlen(line) >= sizeof(data))) {
                 cli_errmsg("Internal email parser error: line size greater than size of receiving data buffer\n");
                 break;
             }
@@ -1943,6 +1947,7 @@ decodeLine(message *m, encoding_type et, const char *line, unsigned char *buf, s
                          * adhering to RFC2045
                          */
                         *buf++ = byte;
+                        --outleft;
                         break;
                     }
 
