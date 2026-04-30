@@ -120,7 +120,8 @@ typedef enum {
     OK_ATTACHMENTS_NOT_SAVED,
     VIRUS,
     MAXREC,
-    MAXFILES
+    MAXFILES,
+    FORMAT_ERROR
 } mbox_status;
 
 enum {
@@ -578,6 +579,9 @@ cli_parse_mbox(const char *dir, cli_ctx *ctx)
                     cli_append_potentially_unwanted_if_heur_exceedsmax(ctx, "Heuristics.Limits.Exceeded.MaxFiles"); // Doing this now because it's actually tracking email parts,-
                                                                                                                     // not actual files, but it still is aborting with stuff not scanned.
                                                                                                                     // Also, we didn't have access to the ctx when this happened earlier.
+                    break;
+                case FORMAT_ERROR:
+                    retcode = CL_EFORMAT;
                     break;
                 case VIRUS:
                     retcode = CL_VIRUS;
@@ -2525,7 +2529,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                         break;
                     default:
                         cli_dbgmsg("Unexpected mime sub type\n");
-                        rc = CL_EFORMAT;
+                        rc = FORMAT_ERROR;
                         break;
                 }
 
@@ -3877,7 +3881,7 @@ reassemblePartialMessage(mbox_ctx *mctx, message *m, const char *pdir, char *id,
     partfiles = cli_max_calloc((size_t)total_parts + 1, sizeof(*partfiles));
     if (partfiles == NULL) {
         closedir(dd);
-        return CL_EMEM;
+        return -1;
     }
 
     keep_tmp = (m->ctx && m->ctx->engine && m->ctx->engine->keeptmp);
@@ -3914,7 +3918,7 @@ reassemblePartialMessage(mbox_ctx *mctx, message *m, const char *pdir, char *id,
 
         partfiles[part] = cli_safer_strdup(fullname);
         if (partfiles[part] == NULL) {
-            rc = CL_EMEM;
+            rc = -1;
             break;
         }
     }
@@ -4127,7 +4131,7 @@ rfc1341(mbox_ctx *mctx, message *m)
         if (id_len > (size_t)-1 - number_len - sizeof("filename=")) {
             free(id);
             free(number);
-            return CL_EMEM;
+            return -1;
         }
         arg_len = id_len + number_len + sizeof("filename=");
         arg     = cli_max_malloc(arg_len);
@@ -4149,10 +4153,10 @@ rfc1341(mbox_ctx *mctx, message *m)
     if (!md5_hex) {
         free(id);
         free(number);
-        return CL_EMEM;
+        return -1;
     }
 
-    if (messageSavePartial(m, pdir, md5_hex, part_number) < 0) {
+    if (messageSavePartial(m, pdir, md5_hex, part_number) != CL_SUCCESS) {
         free(md5_hex);
         free(id);
         free(number);
