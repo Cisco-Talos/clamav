@@ -143,6 +143,7 @@ static const struct ftmap_s {
     { "CL_TYPE_PYTHON_COMPILED",    CL_TYPE_PYTHON_COMPILED },
     { "CL_TYPE_LHA_LZH",            CL_TYPE_LHA_LZH         },
     { "CL_TYPE_AI_MODEL",           CL_TYPE_AI_MODEL        },
+    { "CL_TYPE_ZSTD",               CL_TYPE_ZSTD            },
     { NULL,                         CL_TYPE_IGNORED         }
 };
 // clang-format on

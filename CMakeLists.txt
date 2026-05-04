@@ -514,6 +514,8 @@ find_package(ZLIB REQUIRED)
 
 find_package(BZip2 REQUIRED)
 
+find_package(ZSTD REQUIRED)
+
 # Disable CMAKE_FIND_PACKAGE_PREFER_CONFIG, temporarily, because
 # we don't presently support the using libxml2's Config.cmake
 set(PACKAGE_PREFER_CONFIG_BAK ${CMAKE_FIND_PACKAGE_PREFER_CONFIG})

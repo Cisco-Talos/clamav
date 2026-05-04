@@ -52,6 +52,7 @@
 #define DCONF_OTHER ctx->dconf->other
 
 #include <zlib.h>
+#include <zstd.h>
 
 #include "clamav_rust.h"
 #include "clamav.h"
@@ -1417,6 +1418,118 @@ xz_exit:
     }
     free(tmpname);
     free(buf);
+    return ret;
+}
+
+static cl_error_t cli_scanzstd(cli_ctx *ctx)
+{
+    cl_error_t ret         = CL_SUCCESS;
+    int fd                 = -1;
+    char *tmpname          = NULL;
+    size_t off             = 0;
+    unsigned long size     = 0;
+    ZSTD_DStream *dstrm    = NULL;
+    size_t ores            = 0;
+    size_t const obuf_size = ZSTD_DStreamOutSize();
+    size_t const ibuf_size = ZSTD_DStreamInSize();
+    unsigned char *obuf    = NULL;
+    size_t avail;
+    const void *next_in;
+    ZSTD_inBuffer in;
+    ZSTD_outBuffer out;
+
+    cli_dbgmsg("in cli_scanzstd()\n");
+
+    dstrm = ZSTD_createDStream();
+    if (dstrm == NULL) {
+        cli_errmsg("cli_scanzstd: failed to create ZSTD_DStream\n");
+        return CL_EMEM;
+    }
+
+    ores = ZSTD_initDStream(dstrm);
+    if (ZSTD_isError(ores)) {
+        cli_errmsg("cli_scanzstd: ZSTD_initDStream failed: %s\n", ZSTD_getErrorName(ores));
+        ZSTD_freeDStream(dstrm);
+        return CL_EOPEN;
+    }
+
+    obuf = malloc(obuf_size);
+    if (obuf == NULL) {
+        cli_errmsg("cli_scanzstd: no memory for decompress buffer\n");
+        ZSTD_freeDStream(dstrm);
+        return CL_EMEM;
+    }
+
+    if ((ret = cli_gentempfd(ctx->this_layer_tmpdir, &tmpname, &fd))) {
+        cli_errmsg("cli_scanzstd: Can't generate temporary file\n");
+        free(obuf);
+        ZSTD_freeDStream(dstrm);
+        return ret;
+    }
+    cli_dbgmsg("cli_scanzstd: decompressing to file %s\n", tmpname);
+
+    do {
+        next_in = fmap_need_off_once_len(ctx->fmap, off, ibuf_size, &avail);
+
+        if (!next_in || avail == 0) {
+            break;
+        }
+        off += avail;
+
+        in.src  = next_in;
+        in.size = avail;
+        in.pos  = 0;
+
+        do {
+            out.dst  = obuf;
+            out.size = obuf_size;
+            out.pos  = 0;
+
+            ores = ZSTD_decompressStream(dstrm, &out, &in);
+            if (ZSTD_isError(ores)) {
+                cli_dbgmsg("cli_scanzstd: decompress error: %s\n", ZSTD_getErrorName(ores));
+                /* Still scan whatever we've decompressed so far */
+                goto zstd_scan;
+            }
+
+            if (out.pos > 0) {
+                if (cli_writen(fd, obuf, out.pos) != out.pos) {
+                    cli_errmsg("cli_scanzstd: Can't write to file\n");
+                    ret = CL_EWRITE;
+                    goto zstd_exit;
+                }
+                size += out.pos;
+
+                if (cli_checklimits("cli_scanzstd", ctx, size, 0, 0) != CL_SUCCESS) {
+                    cli_warnmsg("cli_scanzstd: decompress file size exceeds limits - "
+                                "only scanning %lu bytes\n",
+                                size);
+                    goto zstd_scan;
+                }
+            }
+
+            if (ores == 0) {
+                /* frame complete; reset to handle concatenated frames */
+                ZSTD_DCtx_reset(dstrm, ZSTD_reset_session_only);
+            }
+        } while (in.pos < in.size || out.pos == out.size);
+    } while (1);
+
+zstd_scan:
+    if (ret == CL_SUCCESS) {
+        ret = cli_magic_scan_desc(fd, tmpname, ctx, NULL, LAYER_ATTRIBUTES_NONE);
+    }
+
+zstd_exit:
+    ZSTD_freeDStream(dstrm);
+    close(fd);
+    if (!ctx->engine->keeptmp) {
+        if (cli_unlink(tmpname) && ret == CL_SUCCESS) {
+            ret = CL_EUNLINK;
+        }
+    }
+    free(tmpname);
+    free(obuf);
     return ret;
 }
 
@@ -4852,6 +4965,11 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
         case CL_TYPE_XZ:
             if (SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_XZ))
                 ret = cli_scanxz(ctx);
+            break;
+
+        case CL_TYPE_ZSTD:
+            if (SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_ZSTD))
+                ret = cli_scanzstd(ctx);
             break;
 
         case CL_TYPE_GPT:

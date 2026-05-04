@@ -96,6 +96,7 @@ typedef enum cli_file {
     CL_TYPE_PYTHON_COMPILED,
     CL_TYPE_LHA_LZH,
     CL_TYPE_AI_MODEL,
+    CL_TYPE_ZSTD,
 
     /* Section for partition types */
     CL_TYPE_PART_ANY, /* unknown partition type */
