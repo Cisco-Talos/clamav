@@ -46,8 +46,6 @@
 #include "../client/client.h"
 #include "thread.h"
 
-static pthread_mutex_t onas_scan_lock = PTHREAD_MUTEX_INITIALIZER;
-
 static int onas_scan(struct onas_scan_event *event_data, const char *fname, STATBUF sb, int *infected, int *err, cl_error_t *ret_code);
 static cl_error_t onas_scan_safe(struct onas_scan_event *event_data, const char *fname, STATBUF sb, int *infected, int *err, cl_error_t *ret_code);
 static cl_error_t onas_scan_thread_scanfile(struct onas_scan_event *event_data, const char *fname, STATBUF sb, int *infected, int *err, cl_error_t *ret_code);
@@ -103,11 +101,7 @@ static int onas_scan(struct onas_scan_event *event_data, const char *fname, STAT
 }
 
 /**
- * @brief Thread-safe scan wrapper to ensure there's no process contention over use of the socket.
- *
- * This is noticeably slower, and I had no issues running smaller scale tests with it off, but better than sorry until more testing can be done.
- *
- * TODO: make this configurable?
+ * @brief Scan wrapper that prepares transport-specific state before talking to clamd.
  */
 static cl_error_t onas_scan_safe(struct onas_scan_event *event_data, const char *fname, STATBUF sb, int *infected, int *err, cl_error_t *ret_code)
 {
@@ -125,12 +119,8 @@ static cl_error_t onas_scan_safe(struct onas_scan_event *event_data, const char 
     }
 #endif
 
-    pthread_mutex_lock(&onas_scan_lock);
-
     ret = onas_client_scan(event_data->tcpaddr, event_data->portnum, event_data->scantype, event_data->maxstream,
                            fname, fd, event_data->timeout, sb, infected, err, ret_code);
-
-    pthread_mutex_unlock(&onas_scan_lock);
 
     return ret;
 }
