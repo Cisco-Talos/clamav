@@ -113,6 +113,9 @@ struct cli_ac_list {
         struct cli_ac_list *next;
     };
     struct cli_ac_list *next_same;
+    uint8_t match_meta_kind;
+    uint8_t match_meta_byte;
+    uint8_t match_meta_alt_byte;
 };
 
 struct cli_ac_node {
