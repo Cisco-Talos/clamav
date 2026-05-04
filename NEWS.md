@@ -7,6 +7,14 @@ differ slightly from third-party binary packages.
 
 ClamAV 1.6.0 includes the following improvements and changes:
 
+### Breaking changes
+
+- Changed the public `cl_fmap_set_hash()` API to accept a NUL-terminated
+  hexadecimal hash string, matching the format returned by
+  `cl_fmap_get_hash()`.
+  This changes the exported `libclamav` ABI and is accompanied by a
+  `libclamav` SOVERSION bump.
+
 ### Major changes
 
 ### Other improvements
