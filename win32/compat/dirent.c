@@ -33,6 +33,7 @@ DIR *opendir(const char *name)
     DIR *d;
     DWORD attrs;
     int len;
+    const size_t entry_count = sizeof(d->entry) / sizeof(d->entry[0]);
     struct stat sb;
     wchar_t *wpath;
 
@@ -48,14 +49,16 @@ DIR *opendir(const char *name)
         return NULL;
     }
     wpath = uncpath(name);
-    if (!wpath)
+    if (!wpath) {
+        free(d);
         return NULL;
-    wcsncpy(d->entry, wpath, sizeof(d->entry) / sizeof(d->entry[0]));
+    }
+    wcsncpy(d->entry, wpath, entry_count - 1);
     free(wpath);
-    d->entry[sizeof(d->entry) / sizeof(d->entry[0])] = L'\0';
+    d->entry[entry_count - 1] = L'\0';
     len                                              = wcslen(d->entry);
 
-    if (len >= sizeof(d->entry) / sizeof(d->entry[0]) - 4) {
+    if (len >= (int)entry_count - 4) {
         free(d);
         errno = ENAMETOOLONG;
         return NULL;
