@@ -104,7 +104,6 @@
 #endif
 #include <string.h>
 #include <ctype.h>
-#include <assert.h>
 #include <stdio.h>
 
 #include "clamav.h"
@@ -112,8 +111,8 @@
 
 #include "mbox.h"
 
-static text *textCopy(const text *t_head);
-static text *textAdd(text *t_head, const text *t);
+static text *textCopyWithStatus(const text *t_head, int *status);
+static text *textAddWithStatus(text *t_head, const text *t, int *status);
 static void addToFileblob(const line_t *line, void *arg);
 static void getLength(const line_t *line, void *arg);
 static void addToBlob(const line_t *line, void *arg);
@@ -134,54 +133,73 @@ void textDestroy(text *t_head)
 
 /* Clone the current object */
 static text *
-textCopy(const text *t_head)
+textCopyWithStatus(const text *t_head, int *status)
 {
     text *first = NULL, *last = NULL;
 
-    while (t_head) {
-        if (first == NULL)
-            last = first = (text *)malloc(sizeof(text));
-        else {
-            last->t_next = (text *)malloc(sizeof(text));
-            last         = last->t_next;
-        }
+    if (status)
+        *status = 0;
 
-        if (last == NULL) {
+    while (t_head) {
+        text *next = (text *)malloc(sizeof(text));
+
+        if (next == NULL) {
             cli_errmsg("textCopy: Unable to allocate memory to clone object\n");
             if (first)
                 textDestroy(first);
+            if (status)
+                *status = -1;
             return NULL;
         }
 
-        last->t_next = NULL;
+        next->t_next = NULL;
 
-        if (t_head->t_line)
-            last->t_line = lineLink(t_head->t_line);
-        else
-            last->t_line = NULL;
+        if (t_head->t_line) {
+            next->t_line = lineLink(t_head->t_line);
+            if (next->t_line == NULL) {
+                cli_errmsg("textCopy: Unable to link line while cloning object\n");
+                free(next);
+                if (first)
+                    textDestroy(first);
+                if (status)
+                    *status = -1;
+                return NULL;
+            }
+        } else {
+            next->t_line = NULL;
+        }
+
+        if (first == NULL) {
+            first = next;
+        } else {
+            last->t_next = next;
+        }
+        last = next;
 
         t_head = t_head->t_next;
     }
-
-    if (first)
-        last->t_next = NULL;
 
     return first;
 }
 
 /* Add a copy of a text to the end of the current object */
 static text *
-textAdd(text *t_head, const text *t)
+textAddWithStatus(text *t_head, const text *t, int *status)
 {
     text *ret;
     int count;
 
+    if (status)
+        *status = 0;
+
     if (t_head == NULL) {
         if (t == NULL) {
             cli_errmsg("textAdd fails sanity check\n");
+            if (status)
+                *status = -1;
             return NULL;
         }
-        return textCopy(t);
+        return textCopyWithStatus(t, status);
     }
 
     if (t == NULL)
@@ -197,21 +215,11 @@ textAdd(text *t_head, const text *t)
 
     cli_dbgmsg("textAdd: count = %d\n", count);
 
-    while (t) {
-        t_head->t_next = (text *)malloc(sizeof(text));
-        t_head         = t_head->t_next;
-
-        assert(t_head != NULL);
-
-        if (t->t_line)
-            t_head->t_line = lineLink(t->t_line);
-        else
-            t_head->t_line = NULL;
-
-        t = t->t_next;
+    t_head->t_next = textCopyWithStatus(t, status);
+    if (status && *status < 0) {
+        t_head->t_next = NULL;
+        return ret;
     }
-
-    t_head->t_next = NULL;
 
     return ret;
 }
@@ -220,22 +228,43 @@ textAdd(text *t_head, const text *t)
  * Add a message's content to the end of the current object
  */
 text *
-textAddMessage(text *aText, message *aMessage)
+textAddMessageWithStatus(text *aText, message *aMessage, int *status)
 {
-    assert(aMessage != NULL);
+    if (status)
+        *status = 0;
+
+    if (aMessage == NULL) {
+        cli_errmsg("textAddMessage: message is NULL\n");
+        if (status)
+            *status = -1;
+        return aText;
+    }
 
     if (messageGetEncoding(aMessage) == NOENCODING)
-        return textAdd(aText, messageGetBody(aMessage));
+        return textAddWithStatus(aText, messageGetBody(aMessage), status);
     else {
         text *anotherText = messageToText(aMessage);
 
         if (aText) {
-            text *newHead = textMove(aText, anotherText);
-            free(anotherText);
+            int moveStatus = 0;
+            text *newHead  = textMoveWithStatus(aText, anotherText, &moveStatus);
+
+            textDestroy(anotherText);
+            if (moveStatus < 0) {
+                if (status)
+                    *status = -1;
+                return aText;
+            }
             return newHead;
         }
         return anotherText;
     }
+}
+
+text *
+textAddMessage(text *aText, message *aMessage)
+{
+    return textAddMessageWithStatus(aText, aMessage, NULL);
 }
 
 /*
@@ -244,18 +273,25 @@ textAddMessage(text *aText, message *aMessage)
  * it will have an empty line at the start.
  */
 text *
-textMove(text *t_head, text *t)
+textMoveWithStatus(text *t_head, text *t, int *status)
 {
     text *ret;
+
+    if (status)
+        *status = 0;
 
     if (t_head == NULL) {
         if (t == NULL) {
             cli_errmsg("textMove fails sanity check\n");
+            if (status)
+                *status = -1;
             return NULL;
         }
         t_head = (text *)malloc(sizeof(text));
         if (t_head == NULL) {
             cli_errmsg("textMove: Unable to allocate memory for head\n");
+            if (status)
+                *status = -1;
             return NULL;
         }
         t_head->t_line = t->t_line;
@@ -280,11 +316,11 @@ textMove(text *t_head, text *t)
     t_head->t_next = (text *)malloc(sizeof(text));
     if (t_head->t_next == NULL) {
         cli_errmsg("textMove: Unable to allocate memory for head->next\n");
-        return NULL;
+        if (status)
+            *status = -1;
+        return ret;
     }
     t_head = t_head->t_next;
-
-    assert(t_head != NULL);
 
     if (t->t_line) {
         t_head->t_line = t->t_line;
@@ -296,6 +332,12 @@ textMove(text *t_head, text *t)
     t->t_next      = NULL;
 
     return ret;
+}
+
+text *
+textMove(text *t_head, text *t)
+{
+    return textMoveWithStatus(t_head, t, NULL);
 }
 
 /*
@@ -364,8 +406,10 @@ textToBlob(text *t, blob *b, int destroy)
 fileblob *
 textToFileblob(text *t, fileblob *fb, int destroy)
 {
-    assert(fb != NULL);
-    assert(t != NULL);
+    if (t == NULL) {
+        cli_errmsg("textToFileBlob: text is NULL\n");
+        return fb;
+    }
 
     if (fb == NULL) {
         cli_dbgmsg("textToFileBlob, destroy = %d\n", destroy);

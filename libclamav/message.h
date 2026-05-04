@@ -64,6 +64,7 @@ const char *messageGetDispositionType(const message *m);
 void messageAddArgument(message *m, const char *arg);
 void messageAddArguments(message *m, const char *arg);
 char *messageFindArgument(const message *m, const char *variable);
+char *messageFindArgumentLast(const message *m, const char *variable);
 char *messageGetFilename(const message *m);
 int messageHasFilename(const message *m);
 void messageSetEncoding(message *m, const char *enctype);

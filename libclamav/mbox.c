@@ -120,8 +120,14 @@ typedef enum {
     OK_ATTACHMENTS_NOT_SAVED,
     VIRUS,
     MAXREC,
-    MAXFILES
+    MAXFILES,
+    FORMAT_ERROR
 } mbox_status;
+
+enum {
+    PARSE_HEADER_MALFORMED  = -1,
+    PARSE_HEADER_ALLOC_FAIL = -2
+};
 
 #ifndef isblank
 #define isblank(c) (((c) == ' ') || ((c) == '\t'))
@@ -197,6 +203,7 @@ static int initialiseTables(table_t **rfc821Table, table_t **subtypeTable);
 static int getTextPart(message *const messages[], size_t size);
 static size_t strip(char *buf, int len);
 static int parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const char *arg, cli_ctx *ctx, bool *heuristicFound);
+static int tableFindRfc822Header(const table_t *rfc821Table, const char *cmd);
 static int saveTextPart(mbox_ctx *mctx, message *m, int destroy_text);
 static char *rfc2047(const char *in);
 static char *rfc822comments(const char *in, char *out);
@@ -222,6 +229,7 @@ static bool hitLineFoldCnt(const char *const line, size_t *lineFoldCnt, cli_ctx 
 static bool haveTooManyHeaderBytes(size_t totalLen, cli_ctx *ctx, bool *heuristicFound);
 static bool haveTooManyEmailHeaders(size_t totalHeaderCnt, cli_ctx *ctx, bool *heuristicFound);
 static bool haveTooManyMIMEArguments(size_t argCnt, cli_ctx *ctx, bool *heuristicFound);
+static bool parsePositiveUnsignedArgument(const char *value, unsigned int max, unsigned int *result);
 
 /* Maximum line length according to RFC2821 */
 #define RFC2821LENGTH 1000
@@ -276,6 +284,7 @@ static bool haveTooManyMIMEArguments(size_t argCnt, cli_ctx *ctx, bool *heuristi
 #define HEURISTIC_EMAIL_MAX_HEADERS 1024
 #define HEURISTIC_EMAIL_MAX_MIME_PARTS_PER_MESSAGE 1024
 #define HEURISTIC_EMAIL_MAX_ARGUMENTS_PER_HEADER 256
+#define HEURISTIC_EMAIL_MAX_PARTIAL_MESSAGE_PARTS 1024
 
 static const struct tableinit {
     const char *key;
@@ -572,6 +581,9 @@ cli_parse_mbox(const char *dir, cli_ctx *ctx)
                                                                                                                     // not actual files, but it still is aborting with stuff not scanned.
                                                                                                                     // Also, we didn't have access to the ctx when this happened earlier.
                     break;
+                case FORMAT_ERROR:
+                    retcode = CL_EFORMAT;
+                    break;
                 case VIRUS:
                     retcode = CL_VIRUS;
                     break;
@@ -697,15 +709,17 @@ static bool
 doContinueMultipleEmptyOptions(const char *const line, bool *lastWasOnlySemi)
 {
     if (line) {
-        size_t i   = 0;
-        int doCont = 1;
-        for (; i < strlen(line); i++) {
-            if (isblank(line[i])) {
-            } else if (';' == line[i]) {
+        const char *p = line;
+        int doCont    = 1;
+
+        while (*p) {
+            if (isblank((unsigned char)*p)) {
+            } else if (';' == *p) {
             } else {
                 doCont = 0;
                 break;
             }
+            p++;
         }
 
         if (1 == doCont) {
@@ -725,7 +739,7 @@ hitLineFoldCnt(const char *const line, size_t *lineFoldCnt, cli_ctx *ctx, bool *
 {
 
     if (line) {
-        if (isblank(line[0])) {
+        if (isblank((unsigned char)line[0])) {
             (*lineFoldCnt)++;
         } else {
             (*lineFoldCnt) = 0;
@@ -804,6 +818,58 @@ haveTooManyMIMEArguments(size_t argCnt, cli_ctx *ctx, bool *heuristicFound)
     return false;
 }
 
+static bool
+parsePositiveUnsignedArgument(const char *value, unsigned int max, unsigned int *result)
+{
+    char *end = NULL;
+    unsigned long parsed;
+
+    if ((value == NULL) || (result == NULL))
+        return false;
+
+    while (isspace((unsigned char)*value))
+        value++;
+
+    if (!isdigit((unsigned char)*value))
+        return false;
+
+    errno  = 0;
+    parsed = strtoul(value, &end, 10);
+    if ((errno != 0) || (end == value) || (parsed == 0) ||
+        (parsed > max) || (parsed > UINT_MAX)) {
+        return false;
+    }
+
+    while (isspace((unsigned char)*end))
+        end++;
+    if (*end != '\0')
+        return false;
+
+    *result = (unsigned int)parsed;
+    return true;
+}
+
+static int
+tableFindRfc822Header(const table_t *rfc821Table, const char *cmd)
+{
+    char *stripped;
+    int commandNumber;
+
+    if ((rfc821Table == NULL) || (cmd == NULL))
+        return -1;
+
+    stripped = rfc822comments(cmd, NULL);
+    if (stripped) {
+        strstrip(stripped);
+        commandNumber = tableFind(rfc821Table, stripped);
+        free(stripped);
+    } else {
+        commandNumber = tableFind(rfc821Table, cmd);
+    }
+
+    return commandNumber;
+}
+
 /*
  * Read in an email message from fin, parse it, and return the message
  *
@@ -878,7 +944,7 @@ parseEmailFile(fmap_t *map, size_t *at, const table_t *rfc821, const char *first
              * Ensure wide characters are handled where
              * sizeof(char) > 1
              */
-            if (line && isspace(line[0] & 0xFF)) {
+            if (line && isspace((unsigned char)line[0])) {
                 char copy[sizeof(buffer)];
 
                 strcpy(copy, buffer);
@@ -922,7 +988,7 @@ parseEmailFile(fmap_t *map, size_t *at, const table_t *rfc821, const char *first
                     }
 
                     if (boundary ||
-                        ((boundary = (char *)messageFindArgument(ret, "boundary")) != NULL)) {
+                        ((boundary = (char *)messageFindArgumentLast(ret, "boundary")) != NULL)) {
                         lastWasBlank = true;
                         continue;
                     }
@@ -941,17 +1007,16 @@ parseEmailFile(fmap_t *map, size_t *at, const table_t *rfc821, const char *first
                 inHeader    = false;
                 bodyIsEmpty = true;
             } else {
-                char *ptr;
                 const char *lookahead;
                 bool lineAdded = true;
 
                 if (0 == head->bufferLen) {
-                    char cmd[RFC2821LENGTH + 1], out[RFC2821LENGTH + 1];
+                    char cmd[RFC2821LENGTH + 1];
 
                     /*
                      * Continuation of line we're ignoring?
                      */
-                    if (isblank(line[0]))
+                    if (isblank((unsigned char)line[0]))
                         continue;
 
                     /*
@@ -964,8 +1029,7 @@ parseEmailFile(fmap_t *map, size_t *at, const table_t *rfc821, const char *first
                         continue;
                     }
 
-                    ptr           = rfc822comments(cmd, out);
-                    commandNumber = tableFind(rfc821, ptr ? ptr : cmd);
+                    commandNumber = tableFindRfc822Header(rfc821, cmd);
 
                     switch (commandNumber) {
                         case CONTENT_TRANSFER_ENCODING:
@@ -1006,7 +1070,7 @@ parseEmailFile(fmap_t *map, size_t *at, const table_t *rfc821, const char *first
                      *
                      * Add all the arguments on the line
                      */
-                    if (isblank(*lookahead))
+                    if (isblank((unsigned char)*lookahead))
                         continue;
                 }
 
@@ -1191,7 +1255,7 @@ parseEmailHeaders(message *m, const table_t *rfc821, bool *heuristicFound)
                     /*
                      * Continuation of line we're ignoring?
                      */
-                    if (isblank(line[0]))
+                    if (isblank((unsigned char)line[0]))
                         continue;
 
                     /*
@@ -1204,10 +1268,7 @@ parseEmailHeaders(message *m, const table_t *rfc821, bool *heuristicFound)
                         continue;
                     }
 
-                    ptr           = rfc822comments(cmd, NULL);
-                    commandNumber = tableFind(rfc821, ptr ? ptr : cmd);
-                    if (ptr)
-                        free(ptr);
+                    commandNumber = tableFindRfc822Header(rfc821, cmd);
 
                     switch (commandNumber) {
                         case CONTENT_TRANSFER_ENCODING:
@@ -1254,12 +1315,6 @@ parseEmailHeaders(message *m, const table_t *rfc821, bool *heuristicFound)
                 if (count_quotes(fullline) & 1)
                     continue;
 
-                ptr = rfc822comments(fullline, NULL);
-                if (ptr) {
-                    free(fullline);
-                    fullline = ptr;
-                }
-
                 totalHeaderCnt++;
                 if (haveTooManyEmailHeaders(totalHeaderCnt, m->ctx, heuristicFound)) {
                     break;
@@ -1292,7 +1347,10 @@ parseEmailHeaders(message *m, const table_t *rfc821, bool *heuristicFound)
             /*if(t->t_line && isuuencodebegin(t->t_line))
                 puts("FIXME: add fast visa here");*/
             cli_dbgmsg("parseEmailHeaders: finished with headers, moving body\n");
-            messageMoveText(ret, t, m);
+            if (messageMoveText(ret, t, m) < 0) {
+                messageDestroy(ret);
+                return NULL;
+            }
             break;
         }
     }
@@ -1332,7 +1390,7 @@ parseEmailHeaders(message *m, const table_t *rfc821, bool *heuristicFound)
 static int
 parseEmailHeader(message *m, const char *line, const table_t *rfc821, cli_ctx *ctx, bool *heuristicFound)
 {
-    int ret = -1;
+    int ret = PARSE_HEADER_MALFORMED;
 #ifdef CL_THREAD_SAFE
     char *strptr;
 #endif
@@ -1352,13 +1410,14 @@ parseEmailHeader(message *m, const char *line, const table_t *rfc821, cli_ctx *c
             break;
 
     if (*separator == '\0')
-        return -1;
+        return PARSE_HEADER_MALFORMED;
 
     copy = rfc2047(line);
     if (copy == NULL) {
         /* an RFC checker would return -1 here */
         copy = cli_safer_strdup(line);
         if (NULL == copy) {
+            ret = PARSE_HEADER_ALLOC_FAIL;
             goto done;
         }
     }
@@ -1693,7 +1752,15 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
         switch (mimeType) {
             case NOMIME:
                 cli_dbgmsg("Not a mime encoded message\n");
-                aText = textAddMessage(aText, mainMessage);
+                {
+                    int textStatus = 0;
+
+                    aText = textAddMessageWithStatus(aText, mainMessage, &textStatus);
+                    if (textStatus < 0) {
+                        rc = FAIL;
+                        break;
+                    }
+                }
 
                 if (!doPhishingScan) {
                     break;
@@ -1722,7 +1789,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                 break;
             case MULTIPART:
                 cli_dbgmsg("Content-type 'multipart' handler\n");
-                boundary = messageFindArgument(mainMessage, "boundary");
+                boundary = messageFindArgumentLast(mainMessage, "boundary");
 
                 if (mctx->wrkobj != NULL)
                     cli_jsonstr(mctx->wrkobj, "Boundary", boundary);
@@ -1837,21 +1904,31 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                     int lines = 0;
                     message **m;
                     mbox_status old_rc;
+                    bool partFailed = false;
+
+                    if (haveTooManyMIMEPartsPerMessage((size_t)multiparts, mctx->ctx, &rc)) {
+                        if (rc == VIRUS)
+                            infected = true;
+                        break;
+                    }
 
                     m = cli_max_realloc(messages, ((multiparts + 1) * sizeof(message *)));
-                    if (m == NULL)
+                    if (m == NULL) {
+                        rc = FAIL;
                         break;
+                    }
                     messages = m;
 
                     aMessage = messages[multiparts] = messageCreate();
                     if (aMessage == NULL) {
-                        multiparts--;
-                        /* if allocation failed the first time,
-                         * there's no point in retrying, just
-                         * break out */
+                        rc = FAIL;
                         break;
                     }
                     messageSetCTX(aMessage, mctx->ctx);
+
+                    size_t partHeaderBytes = 0;
+                    size_t partHeaderCnt   = 0;
+                    size_t partLineFoldCnt = 0;
 
                     cli_dbgmsg("Now read in part %d\n", multiparts);
 
@@ -1859,11 +1936,14 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                      * Ignore blank lines. There shouldn't be ANY
                      * but some viruses insert them
                      */
-                    while ((t_line = t_line->t_next) != NULL)
-                        if (t_line->t_line &&
+                    while ((t_line = t_line->t_next) != NULL) {
+                        const char *data = t_line->t_line ? lineGetData(t_line->t_line) : NULL;
+
+                        if (data &&
                             /*(cli_chomp(t_line->t_text) > 0))*/
-                            (strlen(lineGetData(t_line->t_line)) > 0))
+                            (strlen(data) > 0))
                             break;
+                    }
 
                     if (t_line == NULL) {
                         cli_dbgmsg("Empty part\n");
@@ -1891,6 +1971,33 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                         t_line->t_next && t_line->t_next->t_line ? lineGetData(t_line->t_next->t_line) : "(null)");
                         */
 
+                        if ((inhead || inMimeHead) && (line != NULL)) {
+                            size_t lineLen;
+
+                            if (hitLineFoldCnt(line, &partLineFoldCnt, mctx->ctx, &heuristicFound)) {
+                                if (heuristicFound) {
+                                    rc       = VIRUS;
+                                    infected = true;
+                                }
+                                break;
+                            }
+
+                            lineLen = strlen(line);
+                            if ((partHeaderBytes > HEURISTIC_EMAIL_MAX_HEADER_BYTES) ||
+                                (lineLen > HEURISTIC_EMAIL_MAX_HEADER_BYTES - partHeaderBytes)) {
+                                partHeaderBytes = HEURISTIC_EMAIL_MAX_HEADER_BYTES + 1;
+                            } else {
+                                partHeaderBytes += lineLen;
+                            }
+                            if (haveTooManyHeaderBytes(partHeaderBytes, mctx->ctx, &heuristicFound)) {
+                                if (heuristicFound) {
+                                    rc       = VIRUS;
+                                    infected = true;
+                                }
+                                break;
+                            }
+                        }
+
                         if (inMimeHead) { /* continuation line */
                             if (line == NULL) {
                                 /*inhead =*/inMimeHead = 0;
@@ -1911,13 +2018,27 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                              * Content-Type: application/octet-stream;
                              * Content-Transfer-Encoding: base64
                              */
-                            parseEmailHeader(aMessage, line, mctx->rfc821Table, mctx->ctx, &heuristicFound);
+                            partHeaderCnt++;
+                            if (haveTooManyEmailHeaders(partHeaderCnt, mctx->ctx, &heuristicFound)) {
+                                if (heuristicFound) {
+                                    rc       = VIRUS;
+                                    infected = true;
+                                }
+                                break;
+                            }
+                            if (parseEmailHeader(aMessage, line, mctx->rfc821Table,
+                                                 mctx->ctx, &heuristicFound) == PARSE_HEADER_ALLOC_FAIL) {
+                                rc         = FAIL;
+                                partFailed = true;
+                                break;
+                            }
                             if (heuristicFound) {
-                                rc = VIRUS;
+                                rc       = VIRUS;
+                                infected = true;
                                 break;
                             }
 
-                            while (isspace((int)*line))
+                            while (isspace((unsigned char)*line))
                                 line++;
 
                             if (*line == '\0') {
@@ -1981,7 +2102,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                                 inhead = 0;
                                 continue;
                             }
-                            if (isspace((int)*line)) {
+                            if (isspace((unsigned char)*line)) {
                                 /*
                                  * The first line is
                                  * continuation line.
@@ -2019,9 +2140,12 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                                 continue;
                             }
 
-                            fullline = rfc822comments(line, NULL);
-                            if (fullline == NULL)
-                                fullline = cli_safer_strdup(line);
+                            fullline = cli_safer_strdup(line);
+                            if (fullline == NULL) {
+                                rc         = FAIL;
+                                partFailed = true;
+                                break;
+                            }
 
                             /*quotes = count_quotes(fullline);*/
 
@@ -2056,8 +2180,11 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                                 datasz = strlen(fullline) + strlen(data) + 1;
                                 ptr    = cli_max_realloc(fullline, datasz);
 
-                                if (ptr == NULL)
+                                if (ptr == NULL) {
+                                    rc         = FAIL;
+                                    partFailed = true;
                                     break;
+                                }
 
                                 fullline = ptr;
                                 cli_strlcat(fullline, data, datasz);
@@ -2065,13 +2192,35 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                                 /*quotes = count_quotes(data);*/
                             }
 
+                            if (partFailed) {
+                                free(fullline);
+                                break;
+                            }
+
                             cli_dbgmsg("Multipart %d: About to parse folded header '%s'\n",
                                        multiparts, fullline);
 
-                            parseEmailHeader(aMessage, fullline, mctx->rfc821Table, mctx->ctx, &heuristicFound);
+                            partHeaderCnt++;
+                            if (haveTooManyEmailHeaders(partHeaderCnt, mctx->ctx, &heuristicFound)) {
+                                free(fullline);
+                                if (heuristicFound) {
+                                    rc       = VIRUS;
+                                    infected = true;
+                                }
+                                break;
+                            }
+                            if (parseEmailHeader(aMessage, fullline, mctx->rfc821Table, mctx->ctx, &heuristicFound) == PARSE_HEADER_ALLOC_FAIL) {
+                                rc         = FAIL;
+                                partFailed = true;
+                            }
                             free(fullline);
+                            if (partFailed) {
+                                break;
+                            }
                             if (heuristicFound) {
-                                rc = VIRUS;
+                                rc       = VIRUS;
+                                infected = true;
+                                break;
                             }
                         } else if (boundaryEnd(line, boundary)) {
                             /*
@@ -2088,14 +2237,25 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                             inhead = 1;
                             break;
                         } else {
-                            if (messageAddLine(aMessage, t_line->t_line) < 0)
+                            if (messageAddLine(aMessage, t_line->t_line) < 0) {
+                                rc         = FAIL;
+                                partFailed = true;
                                 break;
+                            }
                             lines++;
                         }
                     } while ((t_line = t_line->t_next) != NULL);
 
                     cli_dbgmsg("Part %d has %d lines, rc = %d\n",
                                multiparts, lines, (int)rc);
+
+                    if (partFailed || rc == FAIL) {
+                        if (messages[multiparts]) {
+                            messageDestroy(messages[multiparts]);
+                            messages[multiparts] = NULL;
+                        }
+                        break;
+                    }
 
                     /*
                      * Only save in the array of messages if some
@@ -2148,6 +2308,27 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                 }
 
                 free((char *)boundary);
+
+                if (rc == FAIL) {
+                    if (mainMessage && (mainMessage != messageIn)) {
+                        messageDestroy(mainMessage);
+                        mainMessage = NULL;
+                    }
+                    if (aText && (textIn == NULL)) {
+                        textDestroy(aText);
+                        aText = NULL;
+                    }
+                    if (messages) {
+                        for (i = 0; i < multiparts; i++) {
+                            if (messages[i])
+                                messageDestroy(messages[i]);
+                        }
+                        free(messages);
+                        messages = NULL;
+                    }
+                    mctx->wrkobj = saveobj;
+                    return rc;
+                }
 
                 if (haveTooManyMIMEPartsPerMessage(multiparts, mctx->ctx, &rc)) {
                     if (messages) {
@@ -2241,8 +2422,13 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 
                         if (htmltextPart >= 0 && messages) {
                             if (messageGetBody(messages[htmltextPart])) {
+                                int textStatus = 0;
 
-                                aText = textAddMessage(aText, messages[htmltextPart]);
+                                aText = textAddMessageWithStatus(aText, messages[htmltextPart], &textStatus);
+                                if (textStatus < 0) {
+                                    rc = FAIL;
+                                    break;
+                                }
                             }
                         } else {
                             /*
@@ -2370,7 +2556,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                         break;
                     default:
                         cli_dbgmsg("Unexpected mime sub type\n");
-                        rc = CL_EFORMAT;
+                        rc = FORMAT_ERROR;
                         break;
                 }
 
@@ -2522,6 +2708,19 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
             free(messages);
             messages = NULL;
         }
+    }
+
+    if (rc == FAIL) {
+        if (aText && (textIn == NULL)) {
+            textDestroy(aText);
+            aText = NULL;
+        }
+        if (mainMessage && (mainMessage != messageIn)) {
+            messageDestroy(mainMessage);
+            mainMessage = NULL;
+        }
+        mctx->wrkobj = saveobj;
+        return rc;
     }
 
     if (aText && (textIn == NULL)) {
@@ -2774,6 +2973,32 @@ boundaryStart(const char *line, const char *boundary)
     if (boundary == NULL)
         return 0;
 
+    if ((*line != '-') && (*line != '('))
+        return 0;
+
+    if ((*line == '-') && (line[1] != '-'))
+        return 0;
+
+    if (strchr(line, '-') == NULL)
+        return 0;
+
+    if ((line[0] == '-') && (line[1] == '-')) {
+        size_t boundary_len = strlen(boundary);
+        const char *tail    = &line[2];
+
+        if (strncasecmp(tail, boundary, boundary_len) == 0) {
+            tail += boundary_len;
+            while (*tail == ' ')
+                tail++;
+            if ((*tail == '\0') || (*tail == '\r') || (*tail == '\n')) {
+                cli_dbgmsg("boundaryStart: found %s in %s\n", boundary, line);
+                return 1;
+            }
+            if ((tail[0] == '-') && (tail[1] == '-'))
+                return 0;
+        }
+    }
+
     newline = strdup(line);
     if (!(newline))
         newline = (char *)line;
@@ -2891,75 +3116,41 @@ static int
 boundaryEnd(const char *line, const char *boundary)
 {
     size_t len;
-    char *newline, *p, *p2;
+    const char *p;
 
     if (line == NULL || *line == '\0')
         return 0;
 
-    p = newline = strdup(line);
-    if (!(newline)) {
-        p       = (char *)line;
-        newline = (char *)line;
-    }
+    if (boundary == NULL)
+        return 0;
 
-    if (newline != line && strlen(line)) {
-        /* Trim trailing spaces */
-        p2 = newline + strlen(line) - 1;
-        while (p2 >= newline && *p2 == ' ')
-            *(p2--) = '\0';
-    }
+    /* cli_dbgmsg("boundaryEnd: line = '%s' boundary = '%s'\n", line, boundary); */
 
-    /* cli_dbgmsg("boundaryEnd: line = '%s' boundary = '%s'\n", newline, boundary); */
+    p = line;
 
     if (*p++ != '-') {
-        if (newline != line)
-            free(newline);
         return 0;
     }
 
     if (*p++ != '-') {
-        if (newline != line)
-            free(newline);
-
         return 0;
     }
 
     len = strlen(boundary);
     if (strncasecmp(p, boundary, len) != 0) {
-        if (newline != line)
-            free(newline);
-
-        return 0;
-    }
-    /*
-     * Use < rather than == because some broken mails have white
-     * space after the boundary
-     */
-    if (strlen(p) < (len + 2)) {
-        if (newline != line)
-            free(newline);
-
         return 0;
     }
 
-    p = &p[len];
-    if (*p++ != '-') {
-        if (newline != line)
-            free(newline);
-
+    if (p[len] != '-') {
         return 0;
     }
+
+    p = &p[len + 1];
 
     if (*p == '-') {
         /* cli_dbgmsg("boundaryEnd: found %s in %s\n", boundary, p); */
-        if (newline != line)
-            free(newline);
-
         return 1;
     }
-
-    if (newline != line)
-        free(newline);
 
     return 0;
 }
@@ -3069,14 +3260,14 @@ strip(char *buf, int len)
     do
         if (*ptr)
             *ptr = '\0';
-    while ((--len >= 0) && (!isgraph(*--ptr)) && (*ptr != '\n') && (*ptr != '\r'));
+    while ((--len >= 0) && (!isgraph((unsigned char)*--ptr)) && (*ptr != '\n') && (*ptr != '\r'));
 #else /* more characters can be displayed on DOS */
     do
 #ifndef REAL_MODE_DOS
         if (*ptr) /* C8.0 puts into a text area */
 #endif
             *ptr = '\0';
-    while ((--len >= 0) && ((*--ptr == '\0') || isspace((int)(*ptr & 0xFF))));
+    while ((--len >= 0) && ((*--ptr == '\0') || isspace((unsigned char)*ptr)));
 #endif
     return ((size_t)(len + 1));
 }
@@ -3094,8 +3285,97 @@ strstrip(char *s)
     return (strip(s, strlen(s) + 1));
 }
 
+static bool
+isMimeParameter(const char *arg, const char *variable)
+{
+    size_t len;
+
+    if (arg == NULL || variable == NULL)
+        return false;
+
+    while (isspace((unsigned char)*arg))
+        arg++;
+
+    len = strlen(variable);
+    if (strncasecmp(arg, variable, len) != 0)
+        return false;
+
+    arg += len;
+    while (isspace((unsigned char)*arg))
+        arg++;
+
+    if (*arg == '*') {
+        arg++;
+        while (isdigit((unsigned char)*arg))
+            arg++;
+        if (*arg == '*')
+            arg++;
+        while (isspace((unsigned char)*arg))
+            arg++;
+    }
+
+    return (*arg == '=') || (*arg == ':');
+}
+
+static const char *
+nextMimeArgument(const char *ptr, char *buf, size_t buflen)
+{
+    const char *p;
+
+    if (ptr == NULL || buf == NULL || buflen == 0)
+        return NULL;
+
+    p = ptr;
+    for (;;) {
+        bool inquote = false, backslash = false;
+        char *out = buf;
+
+        while (*p && *p != ';')
+            p++;
+        if (*p == '\0')
+            return NULL;
+        p++;
+
+        while (isspace((unsigned char)*p))
+            p++;
+
+        while (*p) {
+            if (backslash) {
+                backslash = false;
+            } else {
+                switch (*p) {
+                    case '\\':
+                        backslash = true;
+                        break;
+                    case '"':
+                        inquote = !inquote;
+                        break;
+                    case ';':
+                        if (!inquote)
+                            goto done;
+                        break;
+                }
+            }
+
+            if ((size_t)(out - buf) < buflen - 1)
+                *out++ = *p;
+            p++;
+        }
+
+    done:
+        *out = '\0';
+        strstrip(buf);
+
+        if (buf[0] != '\0')
+            return p;
+
+        if (*p == '\0')
+            return NULL;
+    }
+}
+
 /*
- * Returns 0 for OK, -1 for error
+ * Returns 0 for OK, PARSE_HEADER_ALLOC_FAIL for allocation failure.
  */
 static int
 parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const char *arg, cli_ctx *ctx, bool *heuristicFound)
@@ -3104,18 +3384,13 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
     const char *ptr;
     int commandNumber;
     size_t argCnt = 0;
+    size_t buflen = 0;
 
     *heuristicFound = false;
 
     cli_dbgmsg("parseMimeHeader: cmd='%s', arg='%s'\n", cmd, arg);
 
-    copy = rfc822comments(cmd, NULL);
-    if (copy) {
-        commandNumber = tableFind(rfc821Table, copy);
-        free(copy);
-    } else {
-        commandNumber = tableFind(rfc821Table, cmd);
-    }
+    commandNumber = tableFindRfc822Header(rfc821Table, cmd);
 
     copy = rfc822comments(arg, NULL);
 
@@ -3155,14 +3430,13 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
                  */
                 cli_dbgmsg("Invalid content-type '%s' received, no subtype specified, assuming text/plain; charset=us-ascii\n", ptr);
             else {
-                int i;
-
-                buf = cli_max_malloc(strlen(ptr) + 1);
+                buflen = strlen(ptr) + 1;
+                buf    = cli_max_malloc(buflen);
                 if (buf == NULL) {
-                    cli_errmsg("parseMimeHeader: Unable to allocate memory for buf %llu\n", (long long unsigned)(strlen(ptr) + 1));
+                    cli_errmsg("parseMimeHeader: Unable to allocate memory for buf %llu\n", (long long unsigned)buflen);
                     if (copy)
                         free(copy);
-                    return -1;
+                    return PARSE_HEADER_ALLOC_FAIL;
                 }
                 /*
                  * Some clients are broken and
@@ -3180,7 +3454,7 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
                      *    the quotes, it doesn't handle
                      *    them properly
                      */
-                    while (isspace((const unsigned char)*ptr))
+                    while (isspace((unsigned char)*ptr))
                         ptr++;
                     if (ptr[0] == '\"')
                         ptr++;
@@ -3205,7 +3479,7 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
                                 if (copy)
                                     free(copy);
                                 free(buf);
-                                return -1;
+                                return PARSE_HEADER_ALLOC_FAIL;
                             }
                             for (;;) {
 #ifdef CL_THREAD_SAFE
@@ -3222,10 +3496,10 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
                                 if (s == NULL)
                                     break;
                                 if (set) {
-                                    size_t len = strstrip(s) - 1;
-                                    if (s[len] == '\"') {
-                                        s[len] = '\0';
-                                        len    = strstrip(s);
+                                    size_t len = strstrip(s);
+                                    if ((len > 0) && (s[len - 1] == '\"')) {
+                                        s[len - 1] = '\0';
+                                        len        = strstrip(s);
                                     }
                                     if (len) {
                                         if (strchr(s, ' '))
@@ -3254,8 +3528,8 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
                  * Content-Type:', arg='multipart/mixed; boundary=foo
                  * we find the boundary argument set it
                  */
-                i = 1;
-                while (cli_strtokbuf(ptr, i++, ";", buf) != NULL) {
+                ptr = nextMimeArgument(ptr, buf, buflen);
+                while (ptr != NULL) {
                     cli_dbgmsg("mimeArgs = '%s'\n", buf);
 
                     argCnt++;
@@ -3263,6 +3537,7 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
                         break;
                     }
                     messageAddArguments(m, buf);
+                    ptr = nextMimeArgument(ptr, buf, buflen);
                 }
             }
             break;
@@ -3270,17 +3545,32 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
             messageSetEncoding(m, ptr);
             break;
         case CONTENT_DISPOSITION:
-            buf = cli_max_malloc(strlen(ptr) + 1);
+            buflen = strlen(ptr) + 1;
+            buf    = cli_max_malloc(buflen);
             if (buf == NULL) {
-                cli_errmsg("parseMimeHeader: Unable to allocate memory for buf %llu\n", (long long unsigned)(strlen(ptr) + 1));
+                cli_errmsg("parseMimeHeader: Unable to allocate memory for buf %llu\n", (long long unsigned)buflen);
                 if (copy)
                     free(copy);
-                return -1;
+                return PARSE_HEADER_ALLOC_FAIL;
             }
             p = cli_strtokbuf(ptr, 0, ";", buf);
             if (p && *p) {
+                const char *disposition_arg;
+
                 messageSetDispositionType(m, p);
-                messageAddArgument(m, cli_strtokbuf(ptr, 1, ";", buf));
+                disposition_arg = nextMimeArgument(ptr, buf, buflen);
+                while (disposition_arg != NULL) {
+                    argCnt++;
+                    if (haveTooManyMIMEArguments(argCnt, ctx, heuristicFound)) {
+                        break;
+                    }
+                    if (isMimeParameter(buf, "boundary")) {
+                        cli_dbgmsg("Ignoring boundary parameter in Content-Disposition header\n");
+                    } else {
+                        messageAddArgument(m, buf);
+                    }
+                    disposition_arg = nextMimeArgument(disposition_arg, buf, buflen);
+                }
             }
             if (!messageHasFilename(m))
                 /*
@@ -3345,7 +3635,7 @@ rfc822comments(const char *in, char *out)
         return NULL;
     }
 
-    while (isspace((const unsigned char)*in)) {
+    while (isspace((unsigned char)*in)) {
         in++;
     }
 
@@ -3447,7 +3737,7 @@ rfc2047(const char *in)
         if (*in == '\0')
             break;
         encoding = *++in;
-        encoding = (char)tolower(encoding);
+        encoding = (char)tolower((unsigned char)encoding);
 
         if ((encoding != 'q') && (encoding != 'b')) {
             cli_warnmsg("Unsupported RFC2047 encoding type '%c' - if you believe this file contains a virus, submit it to www.clamav.net\n", encoding);
@@ -3527,12 +3817,237 @@ rfc2047(const char *in)
 /*
  * Handle partial messages
  */
+static void
+freePartialPartFiles(char **partfiles, unsigned int total_parts)
+{
+    unsigned int n;
+
+    if (partfiles == NULL)
+        return;
+
+    for (n = 1; n <= total_parts; n++)
+        free(partfiles[n]);
+    free(partfiles);
+}
+
+static unsigned int
+partialFilenamePartNumber(const char *filename, const char *md5_hex, unsigned int max_part)
+{
+    const char *idpart;
+    const char *partstr;
+    char *end = NULL;
+    unsigned long parsed;
+    size_t md5_len;
+
+    if ((filename == NULL) || (md5_hex == NULL))
+        return 0;
+
+    idpart = strchr(filename, '_');
+    if (idpart == NULL)
+        return 0;
+    idpart++;
+
+    md5_len = strlen(md5_hex);
+    if ((strncmp(idpart, md5_hex, md5_len) != 0) || (idpart[md5_len] != '-'))
+        return 0;
+
+    partstr = &idpart[md5_len + 1];
+    if (*partstr == '\0')
+        return 0;
+
+    errno  = 0;
+    parsed = strtoul(partstr, &end, 10);
+    if ((errno != 0) || (end == partstr) || (*end != '\0') ||
+        (parsed == 0) || (parsed > max_part) || (parsed > UINT_MAX))
+        return 0;
+
+    return (unsigned int)parsed;
+}
+
+static int
+removeOldPartialFile(const char *fullname, time_t now)
+{
+    int test_fd;
+    STATBUF statb;
+
+    test_fd = open(fullname, O_RDONLY | O_BINARY);
+    if (test_fd < 0)
+        return 0;
+
+    if (FSTAT(test_fd, &statb) == 0) {
+        if ((now > statb.st_mtime) &&
+            (now - statb.st_mtime > (time_t)(7 * 24 * 3600))) {
+            if (cli_unlink(fullname)) {
+                close(test_fd);
+                return -1;
+            }
+        }
+    }
+
+    close(test_fd);
+    return 0;
+}
+
+static int
+reassemblePartialMessage(mbox_ctx *mctx, message *m, const char *pdir, char *id, const char *md5_hex, unsigned int total_parts)
+{
+    DIR *dd;
+    struct dirent *dent;
+    char **partfiles = NULL;
+    char outname[PATH_MAX + 1];
+    FILE *fout = NULL;
+    time_t now;
+    unsigned int n;
+    int rc = 0;
+    bool keep_tmp;
+
+    dd = opendir(pdir);
+    if (dd == NULL)
+        return 0;
+
+    partfiles = cli_max_calloc((size_t)total_parts + 1, sizeof(*partfiles));
+    if (partfiles == NULL) {
+        closedir(dd);
+        return -1;
+    }
+
+    keep_tmp = (m->ctx && m->ctx->engine && m->ctx->engine->keeptmp);
+    time(&now);
+
+    while ((dent = readdir(dd)) != NULL) {
+        char fullname[PATH_MAX + 1];
+        unsigned int part;
+        int pathlen;
+
+        if (dent->d_ino == 0)
+            continue;
+
+        if (!strcmp(".", dent->d_name) || !strcmp("..", dent->d_name))
+            continue;
+
+        pathlen = snprintf(fullname, sizeof(fullname), "%s" PATHSEP "%s", pdir, dent->d_name);
+        if ((pathlen < 0) || ((size_t)pathlen >= sizeof(fullname))) {
+            cli_dbgmsg("reassemblePartialMessage: partial path is too long\n");
+            continue;
+        }
+
+        part = partialFilenamePartNumber(dent->d_name, md5_hex, total_parts);
+        if (part == 0) {
+            if (keep_tmp && (removeOldPartialFile(fullname, now) < 0)) {
+                rc = -1;
+                break;
+            }
+            continue;
+        }
+
+        if (partfiles[part] != NULL)
+            continue;
+
+        partfiles[part] = cli_safer_strdup(fullname);
+        if (partfiles[part] == NULL) {
+            rc = -1;
+            break;
+        }
+    }
+    closedir(dd);
+
+    if (rc != 0)
+        goto done;
+
+    for (n = 1; n <= total_parts; n++) {
+        if (partfiles[n] == NULL) {
+            cli_dbgmsg("reassemblePartialMessage: missing partial message part %u of %u\n", n, total_parts);
+            goto done;
+        }
+    }
+
+    sanitiseName(id);
+
+    {
+        int pathlen = snprintf(outname, sizeof(outname), "%s" PATHSEP "%s", mctx->dir, id);
+
+        if ((pathlen < 0) || ((size_t)pathlen >= sizeof(outname))) {
+            cli_errmsg("reassemblePartialMessage: output filename is too long\n");
+            rc = -1;
+            goto done;
+        }
+    }
+
+    cli_dbgmsg("outname: %s\n", outname);
+
+    fout = fopen(outname, "wb");
+    if (fout == NULL) {
+        cli_errmsg("Can't open '%s' for writing", outname);
+        rc = -1;
+        goto done;
+    }
+
+    for (n = 1; n <= total_parts; n++) {
+        FILE *fin;
+        char buffer[BUFSIZ];
+        int nblanks = 0;
+
+        fin = fopen(partfiles[n], "rb");
+        if (fin == NULL) {
+            cli_errmsg("Can't open '%s' for reading", partfiles[n]);
+            rc = -1;
+            break;
+        }
+
+        while (fgets(buffer, sizeof(buffer) - 1, fin) != NULL) {
+            if (buffer[0] == '\n') {
+                nblanks++;
+                continue;
+            }
+
+            while (nblanks > 0) {
+                if (putc('\n', fout) == EOF) {
+                    rc = -1;
+                    break;
+                }
+                nblanks--;
+            }
+            if (rc != 0)
+                break;
+
+            if (fputs(buffer, fout) == EOF) {
+                rc = -1;
+                break;
+            }
+        }
+
+        if (ferror(fin))
+            rc = -1;
+        fclose(fin);
+
+        if (rc != 0)
+            break;
+
+        if (!keep_tmp && cli_unlink(partfiles[n])) {
+            rc = -1;
+            break;
+        }
+    }
+
+done:
+    if (fout != NULL) {
+        if ((fclose(fout) != 0) && (rc == 0))
+            rc = -1;
+        if (rc != 0)
+            cli_unlink(outname);
+    }
+    freePartialPartFiles(partfiles, total_parts);
+
+    return rc;
+}
+
 static int
 rfc1341(mbox_ctx *mctx, message *m)
 {
     char *arg, *id, *number, *total, *oldfilename;
     const char *tmpdir = NULL;
-    int n;
+    unsigned int part_number, total_parts = 0;
+    bool have_total = false;
     char pdir[PATH_MAX + 1];
     unsigned char md5_val[16];
     char *md5_hex;
@@ -3554,13 +4069,27 @@ rfc1341(mbox_ctx *mctx, message *m)
         tmpdir = cli_gettmpdir();
     }
 
-    snprintf(pdir, sizeof(pdir) - 1, "%s" PATHSEP "clamav-partial", tmpdir);
+    {
+        int pathlen = snprintf(pdir, sizeof(pdir), "%s" PATHSEP "clamav-partial", tmpdir);
 
-    if ((mkdir(pdir, S_IRUSR | S_IWUSR) < 0) && (errno != EEXIST)) {
-        cli_errmsg("Can't create the directory '%s'\n", pdir);
-        free(id);
-        return -1;
-    } else if (errno == EEXIST) {
+        if ((pathlen < 0) || ((size_t)pathlen >= sizeof(pdir))) {
+            cli_errmsg("Partial directory path is too long\n");
+            free(id);
+            return -1;
+        }
+    }
+
+    if (mkdir(pdir, S_IRWXU) < 0) {
+        int mkdir_errno = errno;
+
+        if (mkdir_errno != EEXIST) {
+            cli_errmsg("Can't create the directory '%s'\n", pdir);
+            free(id);
+            return -1;
+        }
+    }
+
+    {
         STATBUF statb;
 
         if (CLAMSTAT(pdir, &statb) < 0) {
@@ -3570,6 +4099,16 @@ rfc1341(mbox_ctx *mctx, message *m)
             free(id);
             return -1;
         }
+        if (!S_ISDIR(statb.st_mode)) {
+            cli_errmsg("Partial path %s is not a directory\n", pdir);
+            free(id);
+            return -1;
+        }
+#if defined(HAVE_UNISTD_H) && !defined(_WIN32) && !defined(_WIN64)
+        if (statb.st_uid != geteuid())
+            cli_warnmsg("Partial directory %s is owned by uid %lu, expected uid %lu\n",
+                        pdir, (unsigned long)statb.st_uid, (unsigned long)geteuid());
+#endif
         if (statb.st_mode & 077)
             cli_warnmsg("Insecure partial directory %s (mode 0%o)\n",
                         pdir,
@@ -3587,32 +4126,8 @@ rfc1341(mbox_ctx *mctx, message *m)
         return -1;
     }
 
-    oldfilename = messageGetFilename(m);
-
-    arg = cli_max_malloc(10 + strlen(id) + strlen(number));
-    if (arg) {
-        sprintf(arg, "filename=%s%s", id, number);
-        messageAddArgument(m, arg);
-        free(arg);
-    }
-
-    if (oldfilename) {
-        cli_dbgmsg("Must reset to %s\n", oldfilename);
-        free(oldfilename);
-    }
-
-    n = atoi(number);
-    cl_hash_data("md5", id, strlen(id), md5_val, NULL);
-    md5_hex = cli_str2hex((const char *)md5_val, 16);
-
-    if (!md5_hex) {
-        free(id);
-        free(number);
-        return CL_EMEM;
-    }
-
-    if (messageSavePartial(m, pdir, md5_hex, n) < 0) {
-        free(md5_hex);
+    if (!parsePositiveUnsignedArgument(number, HEURISTIC_EMAIL_MAX_PARTIAL_MESSAGE_PARTS, &part_number)) {
+        cli_warnmsg("Invalid message/partial number '%s'\n", number);
         free(id);
         free(number);
         return -1;
@@ -3621,145 +4136,74 @@ rfc1341(mbox_ctx *mctx, message *m)
     total = (char *)messageFindArgument(m, "total");
     cli_dbgmsg("rfc1341: %s, %s of %s\n", id, number, (total) ? total : "?");
     if (total) {
-        int t   = atoi(total);
-        DIR *dd = NULL;
-
+        have_total = true;
+        if (!parsePositiveUnsignedArgument(total, HEURISTIC_EMAIL_MAX_PARTIAL_MESSAGE_PARTS, &total_parts) ||
+            (part_number > total_parts)) {
+            cli_warnmsg("Invalid message/partial total '%s' for part '%s'\n", total, number);
+            free(total);
+            free(id);
+            free(number);
+            return -1;
+        }
         free(total);
+    }
+
+    oldfilename = messageGetFilename(m);
+
+    {
+        size_t id_len     = strlen(id);
+        size_t number_len = strlen(number);
+        size_t arg_len;
+
+        if (id_len > (size_t)-1 - number_len - sizeof("filename=")) {
+            free(id);
+            free(number);
+            return -1;
+        }
+        arg_len = id_len + number_len + sizeof("filename=");
+        arg     = cli_max_malloc(arg_len);
+        if (arg) {
+            snprintf(arg, arg_len, "filename=%s%s", id, number);
+            messageAddArgument(m, arg);
+            free(arg);
+        }
+    }
+
+    if (oldfilename) {
+        cli_dbgmsg("Must reset to %s\n", oldfilename);
+        free(oldfilename);
+    }
+
+    cl_hash_data("md5", id, strlen(id), md5_val, NULL);
+    md5_hex = cli_str2hex((const char *)md5_val, 16);
+
+    if (!md5_hex) {
+        free(id);
+        free(number);
+        return -1;
+    }
+
+    if (messageSavePartial(m, pdir, md5_hex, part_number) != CL_SUCCESS) {
+        free(md5_hex);
+        free(id);
+        free(number);
+        return -1;
+    }
+
+    if (have_total) {
         /*
          * If it's the last one - reassemble it
          * FIXME: this assumes that we receive the parts in order
          */
-        if ((n == t) && ((dd = opendir(pdir)) != NULL)) {
-            FILE *fout;
-            char outname[PATH_MAX + 1];
-            time_t now;
+        if (part_number == total_parts) {
+            int reassemble_rc = reassemblePartialMessage(mctx, m, pdir, id, md5_hex, total_parts);
 
-            sanitiseName(id);
-
-            snprintf(outname, sizeof(outname) - 1, "%s" PATHSEP "%s", mctx->dir, id);
-
-            cli_dbgmsg("outname: %s\n", outname);
-
-            fout = fopen(outname, "wb");
-            if (fout == NULL) {
-                cli_errmsg("Can't open '%s' for writing", outname);
-                free(id);
+            if (reassemble_rc != 0) {
                 free(number);
+                free(id);
                 free(md5_hex);
-                closedir(dd);
-                return -1;
+                return reassemble_rc;
             }
-
-            time(&now);
-            for (n = 1; n <= t; n++) {
-                char filename[NAME_MAX + 1];
-                struct dirent *dent;
-
-                snprintf(filename, sizeof(filename), "_%s-%u", md5_hex, n);
-
-                while ((dent = readdir(dd))) {
-                    FILE *fin;
-                    char buffer[BUFSIZ], fullname[PATH_MAX + 1 + 256 + 1];
-                    int nblanks;
-                    STATBUF statb;
-                    const char *dentry_idpart;
-                    int test_fd;
-
-                    if (dent->d_ino == 0)
-                        continue;
-
-                    if (!strcmp(".", dent->d_name) ||
-                        !strcmp("..", dent->d_name))
-                        continue;
-                    snprintf(fullname, sizeof(fullname) - 1,
-                             "%s" PATHSEP "%s", pdir, dent->d_name);
-                    dentry_idpart = strchr(dent->d_name, '_');
-
-                    if (!dentry_idpart ||
-                        strcmp(filename, dentry_idpart) != 0) {
-                        if (!m->ctx->engine->keeptmp)
-                            continue;
-
-                        if ((test_fd = open(fullname, O_RDONLY | O_BINARY)) < 0)
-                            continue;
-
-                        if (FSTAT(test_fd, &statb) < 0) {
-                            close(test_fd);
-                            continue;
-                        }
-
-                        if (now - statb.st_mtime > (time_t)(7 * 24 * 3600)) {
-                            if (cli_unlink(fullname)) {
-                                cli_unlink(outname);
-                                fclose(fout);
-                                free(md5_hex);
-                                free(id);
-                                free(number);
-                                closedir(dd);
-                                close(test_fd);
-                                return -1;
-                            }
-                        }
-
-                        close(test_fd);
-                        continue;
-                    }
-
-                    fin = fopen(fullname, "rb");
-                    if (fin == NULL) {
-                        cli_errmsg("Can't open '%s' for reading", fullname);
-                        fclose(fout);
-                        cli_unlink(outname);
-                        free(md5_hex);
-                        free(id);
-                        free(number);
-                        closedir(dd);
-                        return -1;
-                    }
-                    nblanks = 0;
-                    while (fgets(buffer, sizeof(buffer) - 1, fin) != NULL)
-                        /*
-                         * Ensure that trailing newlines
-                         * aren't copied
-                         */
-                        if (buffer[0] == '\n')
-                            nblanks++;
-                        else {
-                            if (nblanks)
-                                do {
-                                    if (putc('\n', fout) == EOF) break;
-                                } while (--nblanks > 0);
-                            if (nblanks || fputs(buffer, fout) == EOF) {
-                                fclose(fin);
-                                fclose(fout);
-                                cli_unlink(outname);
-                                free(md5_hex);
-                                free(id);
-                                free(number);
-                                closedir(dd);
-                                return -1;
-                            }
-                        }
-                    fclose(fin);
-
-                    /* don't unlink if leave temps */
-                    if (!m->ctx->engine->keeptmp) {
-                        if (cli_unlink(fullname)) {
-                            fclose(fout);
-                            cli_unlink(outname);
-                            free(md5_hex);
-                            free(id);
-                            free(number);
-                            closedir(dd);
-                            return -1;
-                        }
-                    }
-                    break;
-                }
-                rewinddir(dd);
-            }
-            closedir(dd);
-            fclose(fout);
         }
     }
     free(number);
@@ -4060,7 +4504,7 @@ isBounceStart(mbox_ctx *mctx, const char *line)
         do
             if (*line == ' ')
                 numSpaces++;
-            else if (isdigit((*line) & 0xFF))
+            else if (isdigit((unsigned char)*line))
                 numDigits++;
         while (*++line != '\0');
 
@@ -4139,7 +4583,7 @@ exportBounceMessage(mbox_ctx *mctx, text *start)
         if (cli_strtokbuf(txt, 0, ":", cmd) == NULL)
             continue;
 
-        switch (tableFind(mctx->rfc821Table, cmd)) {
+        switch (tableFindRfc822Header(mctx->rfc821Table, cmd)) {
             case CONTENT_TRANSFER_ENCODING:
                 if ((strstr(txt, "7bit") == NULL) &&
                     (strstr(txt, "8bit") == NULL))
@@ -4525,12 +4969,14 @@ next_is_folded_header(const text *t)
         return false;
 
     data = lineGetData(next->t_line);
+    if (data == NULL)
+        return false;
 
     /*
      * Section B.2 of RFC822 says TAB or SPACE means a continuation of the
      * previous entry.
      */
-    if (isblank(data[0]))
+    if (isblank((unsigned char)data[0]))
         return true;
 
     if (strchr(data, '=') == NULL)
@@ -4557,6 +5003,8 @@ next_is_folded_header(const text *t)
      * verifier we need to handle these
      */
     data = lineGetData(t->t_line);
+    if (data == NULL)
+        return false;
 
     ptr = strchr(data, '\0');
 

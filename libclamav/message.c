@@ -226,7 +226,7 @@ int messageSetMimeType(message *mess, const char *type)
     cli_dbgmsg("messageSetMimeType: '%s'\n", type);
 
     /* Ignore leading spaces */
-    while (!isalpha(*type))
+    while (!isalpha((unsigned char)*type))
         if (*type++ == '\0')
             return 0;
 
@@ -367,7 +367,7 @@ void messageSetDispositionType(message *m, const char *disptype)
      * that something is wrong if we get that - maybe we should force a
      * scan of this part
      */
-    while (*disptype && isspace((int)*disptype))
+    while (*disptype && isspace((unsigned char)*disptype))
         disptype++;
     if (*disptype) {
         m->mimeDispositionType = cli_safer_strdup(disptype);
@@ -403,7 +403,7 @@ void messageAddArgument(message *m, const char *arg)
     if (arg == NULL)
         return; /* Note: this is not an error condition */
 
-    while (isspace(*arg))
+    while (isspace((unsigned char)*arg))
         arg++;
 
     if (*arg == '\0')
@@ -493,10 +493,10 @@ void messageAddArguments(message *m, const char *s)
 
     while (*string) {
         const char *key, *cptr;
-        char *data, *field;
+        char *data, *field = NULL;
         size_t datasz = 0;
 
-        if (isspace(*string & 0xff) || (*string == ';')) {
+        if (isspace((unsigned char)*string) || (*string == ';')) {
             string++;
             continue;
         }
@@ -538,7 +538,7 @@ void messageAddArguments(message *m, const char *s)
          *        or tspecials>
          * But too many MUAs ignore this
          */
-        while (isspace(*string) && (*string != '\0'))
+        while (isspace((unsigned char)*string) && (*string != '\0'))
             string++;
 
         cptr = string;
@@ -628,7 +628,7 @@ void messageAddArguments(message *m, const char *s)
              * The field is not in quotes, so look for the closing
              * white space
              */
-            while ((*string != '\0') && !isspace(*string))
+            while ((*string != '\0') && !isspace((unsigned char)*string))
                 string++;
 
             len   = (size_t)string - (size_t)key + 1;
@@ -661,6 +661,53 @@ messageGetArgument(const message *m, size_t arg)
     return (m->mimeArguments[arg]) ? m->mimeArguments[arg] : "";
 }
 
+static char *
+messageArgumentValue(const char *ptr, const char *variable)
+{
+    size_t len;
+
+    if ((ptr == NULL) || (*ptr == '\0') || variable == NULL)
+        return NULL;
+
+    len = strlen(variable);
+    if (strncasecmp(ptr, variable, len) == 0) {
+        ptr = &ptr[len];
+        while (isspace((unsigned char)*ptr))
+            ptr++;
+        if (*ptr != '=') {
+            cli_dbgmsg("messageArgumentValue: no '=' sign found in MIME header '%s' (%s)\n", variable, ptr);
+            return NULL;
+        }
+        ptr++;
+        if ((strlen(ptr) > 1) && (*ptr == '"') && (strchr(&ptr[1], '"') != NULL)) {
+            /* Remove any quote characters */
+            char *ret = cli_safer_strdup(++ptr);
+            char *p;
+
+            if (ret == NULL)
+                return NULL;
+
+            /*
+             * fix un-quoting of boundary strings from
+             * header, occurs if boundary was given as
+             *    'boundary="_Test_";'
+             *
+             * At least two quotes in string, assume
+             * quoted argument
+             * end string at next quote
+             */
+            if ((p = strchr(ret, '"')) != NULL) {
+                ret[strlen(ret) - 1] = '\0';
+                *p                   = '\0';
+            }
+            return ret;
+        }
+        return cli_safer_strdup(ptr);
+    }
+
+    return NULL;
+}
+
 /*
  * Find a MIME variable from the header and return a COPY to the value of that
  * variable. The caller must free the copy
@@ -669,61 +716,60 @@ char *
 messageFindArgument(const message *m, const char *variable)
 {
     size_t i;
-    size_t len;
 
     if (m == NULL || variable == NULL) {
         cli_errmsg("Internal email parser error: invalid arguments when finding message arguments\n");
         return NULL;
     }
 
-    len = strlen(variable);
-
     for (i = 0; i < m->numberOfArguments; i++) {
         const char *ptr;
+        char *ret;
 
         ptr = messageGetArgument(m, i);
         if ((ptr == NULL) || (*ptr == '\0'))
             continue;
 #ifdef CL_DEBUG
-        cli_dbgmsg("messageFindArgument: compare %lu bytes of %s with %s\n",
-                   (unsigned long)len, variable, ptr);
+        cli_dbgmsg("messageFindArgument: compare %s with %s\n", variable, ptr);
 #endif
-        if (strncasecmp(ptr, variable, len) == 0) {
-            ptr = &ptr[len];
-            while (isspace(*ptr))
-                ptr++;
-            if (*ptr != '=') {
-                cli_dbgmsg("messageFindArgument: no '=' sign found in MIME header '%s' (%s)\n", variable, messageGetArgument(m, i));
-                return NULL;
-            }
-            ptr++;
-            if ((strlen(ptr) > 1) && (*ptr == '"') && (strchr(&ptr[1], '"') != NULL)) {
-                /* Remove any quote characters */
-                char *ret = cli_safer_strdup(++ptr);
-                char *p;
-
-                if (ret == NULL)
-                    return NULL;
-
-                /*
-                 * fix un-quoting of boundary strings from
-                 * header, occurs if boundary was given as
-                 *    'boundary="_Test_";'
-                 *
-                 * At least two quotes in string, assume
-                 * quoted argument
-                 * end string at next quote
-                 */
-                if ((p = strchr(ret, '"')) != NULL) {
-                    ret[strlen(ret) - 1] = '\0';
-                    *p                   = '\0';
-                }
-                return ret;
-            }
-            return cli_safer_strdup(ptr);
-        }
+        ret = messageArgumentValue(ptr, variable);
+        if (ret)
+            return ret;
     }
     return NULL;
+}
+
+/*
+ * Find the last MIME variable from the header and return a COPY to the value
+ * of that variable. The caller must free the copy.
+ */
+char *
+messageFindArgumentLast(const message *m, const char *variable)
+{
+    size_t i;
+    char *match = NULL;
+
+    if (m == NULL || variable == NULL) {
+        cli_errmsg("Internal email parser error: invalid arguments when finding message arguments\n");
+        return NULL;
+    }
+
+    for (i = 0; i < m->numberOfArguments; i++) {
+        const char *ptr;
+        char *ret;
+
+        ptr = messageGetArgument(m, i);
+#ifdef CL_DEBUG
+        cli_dbgmsg("messageFindArgumentLast: compare %s with %s\n", variable, ptr);
+#endif
+        ret = messageArgumentValue(ptr, variable);
+        if (ret) {
+            free(match);
+            match = ret;
+        }
+    }
+
+    return match;
 }
 
 char *
@@ -763,11 +809,11 @@ messageHasArgument(const message *m, const char *variable)
 #endif
         if (strncasecmp(ptr, variable, len) == 0) {
             ptr = &ptr[len];
-            while (isspace(*ptr))
+            while (isspace((unsigned char)*ptr))
                 ptr++;
             if (*ptr != '=') {
                 cli_dbgmsg("messageHasArgument: no '=' sign found in MIME header '%s' (%s)\n", variable, messageGetArgument(m, i));
-                return 0;
+                continue;
             }
             return 1;
         }
@@ -793,7 +839,7 @@ void messageSetEncoding(message *m, const char *enctype)
 
     /*m->encodingType = EEXTENSION;*/
 
-    while (isblank(*enctype))
+    while (isblank((unsigned char)*enctype))
         enctype++;
 
     cli_dbgmsg("messageSetEncoding: '%s'\n", enctype);
@@ -815,9 +861,9 @@ void messageSetEncoding(message *m, const char *enctype)
 
         for (e = encoding_map; e->string; e++) {
             int sim;
-            const char lowertype = tolower(type[0]);
+            const char lowertype = (char)tolower((unsigned char)type[0]);
 
-            if ((lowertype != tolower(e->string[0])) && (lowertype != 'x'))
+            if ((lowertype != tolower((unsigned char)e->string[0])) && (lowertype != 'x'))
                 /*
                  * simil is expensive, I'm yet to encounter only
                  * one example of a missent encoding when the
@@ -909,31 +955,49 @@ messageGetEncoding(const message *m)
 
 int messageAddLine(message *m, line_t *line)
 {
+    line_t *linked = NULL;
+    text *new_node = NULL;
+
     if (m == NULL) {
         cli_errmsg("Internal email parser error: invalid arguments when adding line to message.\n");
         return -1;
     }
 
-    if (m->body_first == NULL)
-        m->body_last = m->body_first = (text *)malloc(sizeof(text));
-    else {
-        m->body_last->t_next = (text *)malloc(sizeof(text));
-        m->body_last         = m->body_last->t_next;
+    if (line && lineGetData(line)) {
+        linked = lineLink(line);
+        if (linked == NULL) {
+            cli_errmsg("messageAddLine: out of memory for linked line\n");
+            return -1;
+        }
     }
 
-    if (m->body_last == NULL) {
-        cli_errmsg("messageAddLine: out of memory for m->body_last\n");
+    new_node = (text *)malloc(sizeof(text));
+    if (new_node == NULL) {
+        if (linked)
+            lineUnlink(linked);
+        cli_errmsg("messageAddLine: out of memory for new_node\n");
         return -1;
     }
 
-    m->body_last->t_next = NULL;
+    new_node->t_line = linked;
+    new_node->t_next = NULL;
 
-    if (line && lineGetData(line)) {
-        m->body_last->t_line = lineLink(line);
+    if (m->body_first == NULL)
+        m->body_last = m->body_first = new_node;
+    else {
+        if (m->body_last == NULL) {
+            if (linked)
+                lineUnlink(linked);
+            free(new_node);
+            cli_errmsg("Internal email parser error: message 'body_last' pointer should not be NULL if 'body_first' is set.\n");
+            return -1;
+        }
+        m->body_last->t_next = new_node;
+        m->body_last         = new_node;
+    }
 
+    if (linked)
         messageIsEncoding(m);
-    } else
-        m->body_last->t_line = NULL;
 
     return 1;
 }
@@ -965,7 +1029,7 @@ int messageAddStr(message *m, const char *data)
             const char *p;
 
             for (p = data; *p; p++)
-                if (((*p) & 0x80) || !isspace(*p)) {
+                if (((*p) & 0x80) || !isspace((unsigned char)*p)) {
                     iswhite = 0;
                     break;
                 }
@@ -1093,19 +1157,23 @@ int messageMoveText(message *m, text *t, message *old_message)
             m->body_last = m->body_first;
             rc           = 0;
         } else {
-            m->body_last = m->body_first = textMove(NULL, t);
-            if (m->body_first == NULL)
+            int moveStatus = 0;
+
+            m->body_last = m->body_first = textMoveWithStatus(NULL, t, &moveStatus);
+            if ((moveStatus < 0) || (m->body_first == NULL))
                 return -1;
             else
                 rc = 0;
         }
     } else {
-        m->body_last = textMove(m->body_last, t);
-        if (m->body_last == NULL) {
-            rc           = -1;
-            m->body_last = m->body_first;
-        } else
-            rc = 0;
+        int moveStatus = 0;
+        text *newLast  = textMoveWithStatus(m->body_last, t, &moveStatus);
+
+        if (moveStatus < 0)
+            return -1;
+
+        m->body_last = newLast;
+        rc           = 0;
     }
 
     while (m->body_last->t_next) {
@@ -1644,7 +1712,7 @@ messageToText(message *m)
                 if (line == NULL)
                     continue;
 
-            if ((line != NULL) && (strlen(line) > sizeof(data))) {
+            if ((line != NULL) && (strlen(line) >= sizeof(data))) {
                 cli_errmsg("Internal email parser error: line size greater than size of receiving data buffer\n");
                 break;
             }
@@ -1815,12 +1883,14 @@ decodeLine(message *m, encoding_type et, const char *line, unsigned char *buf, s
     bool softbreak;
     char *p2, *copy;
     char base64buf[RFC2045LENGTH + 1];
+    size_t outleft;
 
     /*cli_dbgmsg("decodeLine(et = %d buflen = %u)\n", (int)et, buflen);*/
-    if (NULL == m || NULL == buf) {
+    if (NULL == m || NULL == buf || buflen == 0) {
         cli_dbgmsg("decodeLine: invalid parameters\n");
         return NULL;
     }
+    outleft = buflen - 1; /* reserve room for the NUL terminator */
 
     switch (et) {
         case BINARY:
@@ -1831,19 +1901,35 @@ decodeLine(message *m, encoding_type et, const char *line, unsigned char *buf, s
         case NOENCODING:
         case EIGHTBIT:
         default:      /* unknown encoding type - try our best */
-            if (line) /* empty line? */
-                buf = (unsigned char *)cli_strrcpy((char *)buf, line);
+            if (line) { /* empty line? */
+                while (outleft && *line) {
+                    *buf++ = *line++;
+                    outleft--;
+                }
+                if (*line)
+                    cli_dbgmsg("decodeLine: output truncated while copying undecoded line\n");
+            }
             /* Put the new line back in */
-            return (unsigned char *)cli_strrcpy((char *)buf, "\n");
+            if (outleft) {
+                *buf++ = '\n';
+            } else {
+                cli_dbgmsg("decodeLine: no room to append newline\n");
+            }
+            break;
 
         case QUOTEDPRINTABLE:
             if (line == NULL) { /* empty line */
-                *buf++ = '\n';
+                if (outleft) {
+                    *buf++ = '\n';
+                    outleft--;
+                } else {
+                    cli_dbgmsg("decodeLine: no room for empty quoted-printable line\n");
+                }
                 break;
             }
 
             softbreak = false;
-            while (buflen && *line) {
+            while (outleft && *line) {
                 if (*line == '=') {
                     unsigned char byte;
 
@@ -1861,6 +1947,7 @@ decodeLine(message *m, encoding_type et, const char *line, unsigned char *buf, s
                          * adhering to RFC2045
                          */
                         *buf++ = byte;
+                        --outleft;
                         break;
                     }
 
@@ -1879,11 +1966,15 @@ decodeLine(message *m, encoding_type et, const char *line, unsigned char *buf, s
                     *buf++ = *line;
                 }
                 ++line;
-                --buflen;
+                --outleft;
             }
             if (!softbreak) {
                 /* Put the new line back in */
-                *buf++ = '\n';
+                if (outleft) {
+                    *buf++ = '\n';
+                } else {
+                    cli_dbgmsg("decodeLine: no room to append quoted-printable newline\n");
+                }
             }
             break;
 
@@ -1943,7 +2034,7 @@ decodeLine(message *m, encoding_type et, const char *line, unsigned char *buf, s
                 break;
             len = strlen(line);
 
-            if ((len > buflen) || (reallen > len))
+            if ((reallen > outleft) || (reallen > len))
                 /*
                  * In practice this should never occur since
                  * the maximum length of a uuencoded line is
@@ -1962,13 +2053,17 @@ decodeLine(message *m, encoding_type et, const char *line, unsigned char *buf, s
             if (strncmp(line, "=yend ", 6) == 0)
                 break;
 
-            while (*line)
+            while (outleft && *line) {
                 if (*line == '=') {
                     if (*++line == '\0')
                         break;
                     *buf++ = ((*line++ - 64) & 255);
                 } else
                     *buf++ = ((*line++ - 42) & 255);
+                outleft--;
+            }
+            if (*line)
+                cli_dbgmsg("decodeLine: output truncated while decoding yEnc line\n");
             break;
     }
 
@@ -2059,9 +2154,9 @@ decode(message *m, const char *in, unsigned char *out, unsigned char (*decoder)(
             return out;
 
         cli_dbgmsg("base64chars = %d (%c %c %c)\n", m->base64chars,
-                   isalnum(cb1) ? cb1 : '@',
-                   isalnum(cb2) ? cb2 : '@',
-                   isalnum(cb3) ? cb3 : '@');
+                   isalnum((unsigned char)cb1) ? cb1 : '@',
+                   isalnum((unsigned char)cb2) ? cb2 : '@',
+                   isalnum((unsigned char)cb3) ? cb3 : '@');
 
         m->base64chars--;
         b1     = cb1;
@@ -2170,7 +2265,7 @@ decode(message *m, const char *in, unsigned char *out, unsigned char (*decoder)(
 static unsigned char
 hex(char c)
 {
-    if (isdigit(c))
+    if (isdigit((unsigned char)c))
         return c - '0';
     if ((c >= 'A') && (c <= 'F'))
         return c - 'A' + 10;
@@ -2255,7 +2350,7 @@ messageDedup(message *m)
 
     t1 = m->dedupedThisFar ? m->dedupedThisFar : m->body_first;
 
-    for (t1 = m->body_first; t1; t1 = t1->t_next) {
+    for (; t1; t1 = t1->t_next) {
         const char *d1;
         text *t2;
         line_t *l1;
@@ -2575,7 +2670,7 @@ compare(char *ls1, char **rs1, char *ls2, char **rs2)
 
         if (s1 < end1) {
             while (s1 < end1 && s2 < end2) {
-                if (tolower(*s1) == tolower(*s2)) {
+                if (tolower((unsigned char)*s1) == tolower((unsigned char)*s2)) {
                     some_similarity = true;
                     cs1             = s1;
                     cs2             = s2;
@@ -2588,7 +2683,7 @@ compare(char *ls1, char **rs1, char *ls2, char **rs2)
                             s2++;
                             common++;
                         }
-                    while (tolower(*s1) == tolower(*s2));
+                    while (tolower((unsigned char)*s1) == tolower((unsigned char)*s2));
 
                     if (common > maxchars) {
                         unsigned int diff = common - maxchars;
@@ -2661,6 +2756,6 @@ int isuuencodebegin(const char *line)
         return 0;
 
     return (strncasecmp(line, "begin ", 6) == 0) &&
-           isdigit(line[6]) && isdigit(line[7]) &&
-           isdigit(line[8]) && (line[9] == ' ');
+           isdigit((unsigned char)line[6]) && isdigit((unsigned char)line[7]) &&
+           isdigit((unsigned char)line[8]) && (line[9] == ' ');
 }
