@@ -347,6 +347,7 @@ set(LIBCLAMAV_SOURCES
     unsp.c              unsp.h
     upack.c             upack.h
     upx.c               upx.h
+    upx_elf.c           upx_elf.h
     wwunpack.c          wwunpack.h
     yc.c                yc.h
     # mail & phishing

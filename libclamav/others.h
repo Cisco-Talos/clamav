@@ -144,6 +144,30 @@ extern uint8_t cli_always_gen_section_hash;
      (size_t)(sb) + (size_t)(sb_size) <= (size_t)(bb_size) && \
      (size_t)(sb) <= (size_t)(bb_size))
 
+/* CLI_ISCONTAINED */
+/*
+ * Two variants are needed:
+ *
+ * CLI_ISCONTAINED_PTR  - the normal case: buf/ptr are char* pointers.
+ *
+ * CLI_ISCONTAINED_INT  - used in pefromupx() where buf/ptr are
+ *   uint32_t RVA values, not pointers.  Casting integers to pointers
+ *   is a 64-bit MSVC error (C4312/C2440), so we use pure arithmetic.
+ */
+#define CLI_ISCONTAINED_PTR(buf, buflen, ptr, len)              \
+    ( (size_t)(len) > 0 &&                                      \
+      (const char *)(ptr) >= (const char *)(buf) &&             \
+      (size_t)((const char *)(ptr) - (const char *)(buf))       \
+          + (size_t)(len) <= (size_t)(buflen) )
+
+#define CLI_ISCONTAINED_INT(buf, buflen, ptr, len)              \
+    ( (uint32_t)(len) > 0 &&                                    \
+      (uint32_t)(ptr) >= (uint32_t)(buf) &&                     \
+      (uint64_t)((uint32_t)(ptr) - (uint32_t)(buf))             \
+          + (uint64_t)(uint32_t)(len)                           \
+          <= (uint64_t)(uint32_t)(buflen) )
+
+
 #define CLI_MAX_ALLOCATION (1024 * 1024 * 1024)
 
 #ifdef HAVE_SYS_PARAM_H

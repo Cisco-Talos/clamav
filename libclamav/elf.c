@@ -43,6 +43,7 @@
 #include "execs.h"
 #include "matcher.h"
 #include "scanners.h"
+#include "upx_elf.h"   /* upx_unpack_elf_buf() - native UPX ELF unpacker */
 
 #define EC16(v, conv) (conv ? cbswap16(v) : v)
 #define EC32(v, conv) (conv ? cbswap32(v) : v)
@@ -837,6 +838,12 @@ done:
 
 /*
  * ELF file unpacking.
+ *
+ * First attempts native UPX decompression via upx_unpack_elf_buf()
+ * (handles UPX 1.x through 5.x, ELF32 i386 and ELF64 x86-64).
+ * Falls through to the BC_ELF_UNPACKER bytecode hook on any non-UPX
+ * ELF or if the native unpacker declines, preserving backward
+ * compatibility with other ELF unpackers in the bytecode database.
  */
 cl_error_t cli_unpackelf(cli_ctx *ctx)
 {
@@ -845,7 +852,76 @@ cl_error_t cli_unpackelf(cli_ctx *ctx)
     int ndesc      = -1;
     struct cli_bc_ctx *bc_ctx;
 
-    /* Bytecode BC_ELF_UNPACKER hook */
+    /* Native UPX ELF unpacker
+     *
+     * Map the entire file and attempt UPX decompression.
+     * upx_unpack_elf_buf() returns:
+     *    0   success -” outbuf/out_used valid
+     *   -1   not a UPX-packed ELF -” fall through silently
+     *   -2   UPX ELF detected but decompression failed -” fall through
+     */
+    {
+        fmap_t        *map     = ctx->fmap;
+        const uint8_t *filebuf = fmap_need_off_once(map, 0, map->len);
+
+        if (filebuf) {
+            uint8_t  *outbuf   = NULL;
+            uint32_t  out_used = 0;
+            int       upx_ret  = upx_unpack_elf_buf(filebuf, (size_t)map->len,
+                                                    &outbuf, &out_used);
+            if (upx_ret == 0) {
+                /* Decompressed successfully -” write tempfile and scan */
+                if (!(tempfile = cli_gentemp(ctx->this_layer_tmpdir))) {
+                    cli_errmsg("cli_unpackelf: cli_gentemp failed\n");
+                    free(outbuf);
+                    return CL_EMEM;
+                }
+
+                ndesc = open(tempfile,
+                             O_RDWR | O_CREAT | O_TRUNC | O_BINARY,
+                             S_IRUSR | S_IWUSR);
+                if (ndesc < 0) {
+                    cli_dbgmsg("cli_unpackelf: can't create %s\n", tempfile);
+                    free(outbuf);
+                    free(tempfile);
+                    return CL_ETMPFILE;
+                }
+
+                if ((uint32_t)write(ndesc, outbuf, out_used) != out_used) {
+                    cli_dbgmsg("cli_unpackelf: write failed\n");
+                    free(outbuf);
+                    close(ndesc);
+                    if (!ctx->engine->keeptmp) cli_unlink(tempfile);
+                    free(tempfile);
+                    return CL_EWRITE;
+                }
+                free(outbuf);
+                outbuf = NULL;
+
+                lseek(ndesc, 0, SEEK_SET);
+
+                if (ctx->engine->keeptmp)
+                    cli_dbgmsg("cli_unpackelf: UPX decompressed ELF saved in %s\n",
+                               tempfile);
+
+                cli_dbgmsg("***** Scanning UPX-decompressed ELF *****\n");
+                ret = cli_magic_scan_desc(ndesc, tempfile, ctx, NULL,
+                                         LAYER_ATTRIBUTES_NONE);
+                close(ndesc);
+                if (!ctx->engine->keeptmp) cli_unlink(tempfile);
+                free(tempfile);
+                return ret;
+
+            } else if (upx_ret == -2) {
+                cli_dbgmsg("cli_unpackelf: UPX ELF detected but decompression "
+                           "failed -” falling through to bytecode hook\n");
+            }
+            /* upx_ret == -1: not UPX, fall through silently */
+            if (outbuf) free(outbuf);
+        }
+    }
+
+    /* Bytecode BC_ELF_UNPACKER hook (unchanged) */
     bc_ctx = cli_bytecode_context_alloc();
     if (!bc_ctx) {
         cli_errmsg("cli_scanelf: can't allocate memory for bc_ctx\n");
