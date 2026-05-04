@@ -366,7 +366,7 @@ ClamAV 1.5.0 includes the following improvements and changes:
     cl_error_t cl_fmap_get_path(cl_fmap_t *map, const char **path_out, size_t *offset_out, size_t *len_out);
     cl_error_t cl_fmap_get_fd(const cl_fmap_t *map, int *fd_out, size_t *offset_out, size_t *len_out);
     cl_error_t cl_fmap_get_size(const cl_fmap_t *map, size_t *size_out);
-    cl_error_t cl_fmap_set_hash(const cl_fmap_t *map, const char *hash_alg, char hash);
+    cl_error_t cl_fmap_set_hash(const cl_fmap_t *map, const char *hash_alg, const char *hash);
     cl_error_t cl_fmap_have_hash(const cl_fmap_t *map, const char *hash_alg, bool *have_hash_out);
     cl_error_t cl_fmap_will_need_hash_later(const cl_fmap_t *map, const char *hash_alg);
     cl_error_t cl_fmap_get_hash(const cl_fmap_t *map, const char *hash_alg, char **hash_out);

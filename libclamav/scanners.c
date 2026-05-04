@@ -6488,11 +6488,12 @@ cl_error_t cl_scanfile(
         NULL);
 
     if (NULL != scanned) {
-        if (SIZEOF_LONG == 4 && scanned_bytes > UINT32_MAX) {
+        if ((SIZEOF_LONG == 4) &&
+            (scanned_bytes / CL_COUNT_PRECISION > UINT32_MAX)) {
             cli_warnmsg("cl_scanfile_callback: scanned_bytes exceeds UINT32_MAX, setting to UINT32_MAX\n");
             *scanned = UINT32_MAX;
         } else {
-            *scanned = (unsigned long int)scanned_bytes;
+            *scanned = (unsigned long int)(scanned_bytes / CL_COUNT_PRECISION);
         }
     }
 
@@ -6532,11 +6533,12 @@ cl_error_t cl_scanfile_callback(
         NULL);
 
     if (NULL != scanned) {
-        if (SIZEOF_LONG == 4 && scanned_out > UINT32_MAX) {
+        if ((SIZEOF_LONG == 4) &&
+            (scanned_out / CL_COUNT_PRECISION > UINT32_MAX)) {
             cli_warnmsg("cl_scanfile_callback: scanned_out exceeds UINT32_MAX, setting to UINT32_MAX\n");
             *scanned = UINT32_MAX;
         } else {
-            *scanned = (unsigned long int)scanned_out;
+            *scanned = (unsigned long int)(scanned_out / CL_COUNT_PRECISION);
         }
     }
 

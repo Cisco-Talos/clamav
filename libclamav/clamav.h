@@ -591,7 +591,7 @@ extern cl_error_t cl_fmap_set_name(cl_fmap_t *map, const char *name);
  *
  * @param map           The file map to query.
  * @param[out] name_out Pointer to a variable to receive the name of the file map.
- * @return const char*  The name of the file map, or NULL if not set.
+ * @return cl_error_t   CL_SUCCESS if the name was retrieved successfully.
  */
 extern cl_error_t cl_fmap_get_name(cl_fmap_t *map, const char **name_out);
 
@@ -635,7 +635,7 @@ extern cl_error_t cl_fmap_set_path(cl_fmap_t *map, const char *path);
  * @param[out] offset_out (optional) Pointer to a variable to receive the offset of the current layer within the given file.
  * @param[out] len_out    (optional) Pointer to a variable to receive the length of the current layer within the given file.
  * @return cl_error_t     CL_SUCCESS if the path was successfully retrieved.
- *                        CL_EACCES if the map does not have a file descriptor.
+ *                        CL_EACCES if the map does not have a stored path.
  *                        CL_ENULLARG if null arguments were provided.
  */
 extern cl_error_t cl_fmap_get_path(cl_fmap_t *map, const char **path_out, size_t *offset_out, size_t *len_out);
@@ -685,10 +685,10 @@ extern cl_error_t cl_fmap_get_size(const cl_fmap_t *map, size_t *size_out);
  *
  * @param map           The file map to modify.
  * @param hash_alg      The hash algorithm to use (e.g., "md5", "sha1", "sha2-256").
- * @param hash          The hash value to set.
+ * @param hash          Pointer to the hash value to set.
  * @return cl_error_t   CL_SUCCESS if the hash was successfully set.
  */
-extern cl_error_t cl_fmap_set_hash(const cl_fmap_t *map, const char *hash_alg, char hash);
+extern cl_error_t cl_fmap_set_hash(const cl_fmap_t *map, const char *hash_alg, const char *hash);
 
 /**
  * @brief Check if we already calculated a file hash of a specific type.
@@ -1636,12 +1636,12 @@ extern cl_error_t cl_scandesc_callback(
  * This callback variant allows the caller to provide a context structure that
  * caller provided callback functions can interpret.
  *
- * This extended version of cl_scanmap_callback allows the caller to provide
+ * This extended version of cl_scandesc_callback allows the caller to provide
  * additional hints to the scanning engine, such as a file hash and file type.
  *
  * This variant also upgrades the `scanned` output parameter to a 64-bit integer.
  *
- * @param desc               File descriptor of an open file. The caller must provide this or the map.
+ * @param desc               File descriptor of an open file.
  * @param filename           (Optional) Filepath of the open file descriptor or file map.
  * @param[out] verdict_out   A pointer to a cl_verdict_t that will be set to the scan verdict.
  *                           You should check the verdict even if the function returns an error.
@@ -1737,7 +1737,7 @@ extern cl_error_t cl_scanfile_callback(
  * This callback variant allows the caller to provide a context structure that
  * caller provided callback functions can interpret.
  *
- * This extended version of cl_scanmap_callback allows the caller to provide
+ * This extended version of cl_scanfile_callback allows the caller to provide
  * additional hints to the scanning engine, such as a file hash and file type.
  *
  * This variant also upgrades the `scanned` output parameter to a 64-bit integer.
@@ -1797,7 +1797,7 @@ extern cl_error_t cl_scanfile_ex(
  * - `cl_fmap_open_handle()` for a file handle, or
  * - `cl_fmap_open_memory()` for a memory buffer.
  *
- * After the scan, you can also get the file hash with `cl_fmap_get_file_hash()`.
+ * After the scan, you can also get the file hash with `cl_fmap_get_hash()`.
  *
  * @param map           Buffer to be scanned, in form of a cl_fmap_t.
  * @param filename      Name of data origin. Does not need to be an actual
@@ -1831,7 +1831,7 @@ extern cl_error_t cl_scanmap_callback(
  * - `cl_fmap_open_handle()` for a file handle, or
  * - `cl_fmap_open_memory()` for a memory buffer.
  *
- * After the scan, you can also get the file hash with `cl_fmap_get_file_hash()`.
+ * After the scan, you can also get the file hash with `cl_fmap_get_hash()`.
  *
  * This extended version of cl_scanmap_callback allows the caller to provide
  * additional hints to the scanning engine, such as a file hash and file type.
@@ -1959,13 +1959,12 @@ extern cl_error_t cl_cvdverify(const char *file);
 /**
  * @brief Verify a CVD file by loading and unloading it.
  *
- * May also verify the CVD digital signature.
+ * For `.cvd` files, this also verifies the CVD digital signature.
  *
  * @param file              Filepath of CVD file.
  * @param certs_directory   Directory containing CA certificates required to verify the CVD digital signature.
  * @param dboptions         Bitmask of flags to modify behavior.
  *                          Set CL_DB_FIPS_LIMITS to require the CVD to be signed with a FIPS-compliant external '.sign' file.
- *                          Set CL_DB_UNSIGNED to disable verification of CVD digital signatures. Allow load testing unsigned CVD files.
  * @return cl_error_t       CL_SUCCESS if success, else a CL_E* error code.
  */
 extern cl_error_t cl_cvdverify_ex(const char *file, const char *certs_directory, uint32_t dboptions);
