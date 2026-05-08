@@ -735,24 +735,32 @@ doContinueMultipleEmptyOptions(const char *const line, bool *lastWasOnlySemi)
 }
 
 static bool
+hitLineFoldLimit(size_t *lineFoldCnt, cli_ctx *ctx, bool *heuristicFound)
+{
+
+    (*lineFoldCnt)++;
+
+    if ((*lineFoldCnt) >= HEURISTIC_EMAIL_MAX_LINE_FOLDS_PER_HEADER) {
+        if (SCAN_HEURISTIC_EXCEEDS_MAX) {
+            cli_append_potentially_unwanted(ctx, "Heuristics.Limits.Exceeded.EmailLineFoldCnt");
+            *heuristicFound = true;
+        }
+
+        return true;
+    }
+    return false;
+}
+
+static bool
 hitLineFoldCnt(const char *const line, size_t *lineFoldCnt, cli_ctx *ctx, bool *heuristicFound)
 {
 
     if (line) {
         if (isblank((unsigned char)line[0])) {
-            (*lineFoldCnt)++;
-        } else {
-            (*lineFoldCnt) = 0;
+            return hitLineFoldLimit(lineFoldCnt, ctx, heuristicFound);
         }
 
-        if ((*lineFoldCnt) >= HEURISTIC_EMAIL_MAX_LINE_FOLDS_PER_HEADER) {
-            if (SCAN_HEURISTIC_EXCEEDS_MAX) {
-                cli_append_potentially_unwanted(ctx, "Heuristics.Limits.Exceeded.EmailLineFoldCnt");
-                *heuristicFound = true;
-            }
-
-            return true;
-        }
+        (*lineFoldCnt) = 0;
     }
     return false;
 }
@@ -2050,6 +2058,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                         } else if (inhead) { /* handling normal headers */
                             /*int quotes;*/
                             char *fullline, *ptr;
+                            bool stopHeader = false;
 
                             if (line == NULL) {
                                 /*
@@ -2158,11 +2167,36 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                              */
                             while (t_line && next_is_folded_header(t_line)) {
                                 const char *data;
-                                size_t datasz;
+                                size_t dataLen, datasz;
 
                                 t_line = t_line->t_next;
 
                                 data = lineGetData(t_line->t_line);
+
+                                if (hitLineFoldLimit(&partLineFoldCnt, mctx->ctx, &heuristicFound)) {
+                                    if (heuristicFound) {
+                                        rc       = VIRUS;
+                                        infected = true;
+                                    }
+                                    stopHeader = true;
+                                    break;
+                                }
+
+                                dataLen = strlen(data);
+                                if ((partHeaderBytes > HEURISTIC_EMAIL_MAX_HEADER_BYTES) ||
+                                    (dataLen > HEURISTIC_EMAIL_MAX_HEADER_BYTES - partHeaderBytes)) {
+                                    partHeaderBytes = HEURISTIC_EMAIL_MAX_HEADER_BYTES + 1;
+                                } else {
+                                    partHeaderBytes += dataLen;
+                                }
+                                if (haveTooManyHeaderBytes(partHeaderBytes, mctx->ctx, &heuristicFound)) {
+                                    if (heuristicFound) {
+                                        rc       = VIRUS;
+                                        infected = true;
+                                    }
+                                    stopHeader = true;
+                                    break;
+                                }
 
                                 if (data[1] == '\0') {
                                     /*
@@ -2177,7 +2211,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                                     break;
                                 }
 
-                                datasz = strlen(fullline) + strlen(data) + 1;
+                                datasz = strlen(fullline) + dataLen + 1;
                                 ptr    = cli_max_realloc(fullline, datasz);
 
                                 if (ptr == NULL) {
@@ -2192,7 +2226,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                                 /*quotes = count_quotes(data);*/
                             }
 
-                            if (partFailed) {
+                            if (partFailed || stopHeader) {
                                 free(fullline);
                                 break;
                             }
@@ -3147,12 +3181,20 @@ boundaryEnd(const char *line, const char *boundary)
 
     p = &p[len + 1];
 
-    if (*p == '-') {
-        /* cli_dbgmsg("boundaryEnd: found %s in %s\n", boundary, p); */
-        return 1;
+    if (*p++ != '-') {
+        return 0;
     }
 
-    return 0;
+    while (isblank((unsigned char)*p)) {
+        p++;
+    }
+
+    if ((*p != '\0') && (*p != '\r') && (*p != '\n')) {
+        return 0;
+    }
+
+    /* cli_dbgmsg("boundaryEnd: found %s in %s\n", boundary, p); */
+    return 1;
 }
 
 /*
