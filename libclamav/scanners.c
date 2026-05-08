@@ -281,7 +281,7 @@ static cl_error_t cli_scanrar_file(const char *filepath, int desc, cli_ctx *ctx)
                 cli_dbgmsg("RAR: ERROR: Failed to open output file\n");
             } else {
                 cli_dbgmsg("RAR: Writing the archive comment to temp file: %s\n", comment_fullpath);
-                if (0 == write(comment_fd, comment, comment_size)) {
+                if (cli_writen(comment_fd, comment, comment_size) != comment_size) {
                     cli_dbgmsg("RAR: ERROR: Failed to write to output file\n");
                 }
                 close(comment_fd);
@@ -668,6 +668,8 @@ static cl_error_t cli_scanegg(cli_ctx *ctx)
     if (comments != NULL) {
         uint32_t i;
         for (i = 0; i < nComments; i++) {
+            size_t comment_len = strlen(comments[i]);
+
             /*
              * Drop the comment to a temp file, if requested
              */
@@ -691,7 +693,7 @@ static cl_error_t cli_scanegg(cli_ctx *ctx)
                     cli_dbgmsg("EGG: ERROR: Failed to open output file\n");
                 } else {
                     cli_dbgmsg("EGG: Writing the archive comment to temp file: %s\n", comment_fullpath);
-                    if (0 == write(comment_fd, comments[i], nComments)) {
+                    if (cli_writen(comment_fd, comments[i], comment_len) != comment_len) {
                         cli_dbgmsg("EGG: ERROR: Failed to write to output file\n");
                     }
                     close(comment_fd);
@@ -703,7 +705,7 @@ static cl_error_t cli_scanegg(cli_ctx *ctx)
             /*
              * Scan the comment.
              */
-            status = cli_magic_scan_buff(comments[i], strlen(comments[i]), ctx, NULL, LAYER_ATTRIBUTES_NONE);
+            status = cli_magic_scan_buff(comments[i], comment_len, ctx, NULL, LAYER_ATTRIBUTES_NONE);
             if (status != CL_SUCCESS) {
                 goto done;
             }
@@ -850,12 +852,11 @@ static cl_error_t cli_scanegg(cli_ctx *ctx)
                             cli_dbgmsg("EGG: ERROR: Failed to open output file\n");
                         } else {
                             cli_dbgmsg("EGG: Writing the extracted file contents to temp file: %s\n", extract_fullpath);
-                            if (0 == write(extracted_fd, extract_buffer, extract_buffer_len)) {
+                            if (cli_writen(extracted_fd, extract_buffer, extract_buffer_len) != extract_buffer_len) {
                                 cli_dbgmsg("EGG: ERROR: Failed to write to output file\n");
-                            } else {
-                                close(extracted_fd);
-                                extracted_fd = -1;
                             }
+                            close(extracted_fd);
+                            extracted_fd = -1;
                         }
                     }
 
@@ -2723,7 +2724,7 @@ static cl_error_t cli_scanscript(cli_ctx *ctx)
                 break;
             map_off += written;
 
-            if (write(ofd, state.out, state.out_pos) == -1) {
+            if (cli_writen(ofd, state.out, state.out_pos) != state.out_pos) {
                 cli_errmsg("cli_scanscript: can't write to file %s\n", tmpname);
                 ret = CL_EWRITE;
                 goto done;
@@ -2771,7 +2772,7 @@ static cl_error_t cli_scanscript(cli_ctx *ctx)
             at += len;
             if (!buff || !len || state.out_pos + len > state.out_len) {
                 /* flush if error/EOF, or too little buffer space left */
-                if ((ofd != -1) && (write(ofd, state.out, state.out_pos) == -1)) {
+                if ((ofd != -1) && (cli_writen(ofd, state.out, state.out_pos) != state.out_pos)) {
                     cli_errmsg("cli_scanscript: can't write to file %s\n", tmpname);
                     close(ofd);
                     ofd = -1;
@@ -2879,7 +2880,9 @@ static cl_error_t cli_scanhtml_utf16(cli_ctx *ctx)
         at += bytes;
         decoded = cli_utf16toascii(buff, bytes);
         if (decoded) {
-            if (write(fd, decoded, bytes / 2) == -1) {
+            size_t decoded_len = bytes / 2;
+
+            if (cli_writen(fd, decoded, decoded_len) != decoded_len) {
                 cli_errmsg("cli_scanhtml_utf16: Can't write to file %s\n", tempname);
                 status = CL_EWRITE;
                 goto done;
