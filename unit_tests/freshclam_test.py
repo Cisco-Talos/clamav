@@ -10,6 +10,7 @@ import os
 from pathlib import Path
 import platform
 import shutil
+import socket
 import unittest
 from functools import partial
 
@@ -19,6 +20,13 @@ import testcase
 
 os_platform = platform.platform()
 operating_system = os_platform.split('-')[0].lower()
+MOCK_MIRROR_IPV4_HOST = '127.0.0.1'
+MOCK_MIRROR_IPV6_HOST = '::1'
+MOCK_MIRROR_START_TIMEOUT = 10
+
+
+class IPv6HTTPServer(HTTPServer):
+    address_family = socket.AF_INET6
 
 
 class TC(testcase.TestCase):
@@ -36,8 +44,8 @@ class TC(testcase.TestCase):
         TC.freshclam_pid = Path(TC.path_tmp, 'freshclam-test.pid')
         TC.freshclam_config = Path(TC.path_tmp, 'freshclam-test.conf')
 
-        TC.mock_mirror_port = 8001 # Chosen instead of 8000 because CVD-Update tool serves on 8000 by default.
-                                   # TODO: Ideally we'd find an open port to use for these tests instead of crossing our fingers.
+        TC.mock_mirror_host = MOCK_MIRROR_IPV4_HOST
+        TC.mock_mirror_port = 8001 # Unused unless a test does not start the mock mirror.
         TC.mock_mirror = None
 
     @classmethod
@@ -50,8 +58,13 @@ class TC(testcase.TestCase):
     def tearDown(self):
         if TC.mock_mirror != None:
             TC.mock_mirror.terminate()
-            TC.mock_mirror.join()
+            TC.mock_mirror.join(5)
+            if TC.mock_mirror.is_alive():
+                TC.mock_mirror.kill()
+                TC.mock_mirror.join()
             TC.mock_mirror = None
+            TC.mock_mirror_host = MOCK_MIRROR_IPV4_HOST
+            TC.mock_mirror_port = 8001
 
         # Clear the database directory
         try:
@@ -70,6 +83,11 @@ class TC(testcase.TestCase):
         super(TC, self).tearDown()
         self.verify_valgrind_log()
 
+    def start_mock_mirror(self, handler):
+        TC.mock_mirror, TC.mock_mirror_host, TC.mock_mirror_port = (
+            start_mock_database_mirror(handler)
+        )
+
     def test_freshclam_00_version(self):
         self.step_name('freshclam version test')
 
@@ -77,10 +95,11 @@ class TC(testcase.TestCase):
             os.remove(str(TC.freshclam_config))
 
         TC.freshclam_config.write_text('''
-            DatabaseMirror http://localhost:{port}
+            DatabaseMirror http://{host}:{port}
         '''.format(
             freshclam_pid=TC.freshclam_pid,
             path_db=TC.path_db,
+            host=TC.mock_mirror_host,
             port=TC.mock_mirror_port,
         ))
 
@@ -111,7 +130,7 @@ class TC(testcase.TestCase):
         )
 
         TC.freshclam_config.write_text('''
-            DatabaseMirror http://localhost:{port}
+            DatabaseMirror http://{host}:{port}
             PidFile {freshclam_pid}
             LogVerbose yes
             LogFileMaxSize 0
@@ -125,6 +144,7 @@ class TC(testcase.TestCase):
         '''.format(
             freshclam_pid=TC.freshclam_pid,
             path_db=TC.path_db,
+            host=TC.mock_mirror_host,
             file_db=TC.path_www / "clamav.hdb",
             port=TC.mock_mirror_port,
             user=getpass.getuser(),
@@ -149,15 +169,13 @@ class TC(testcase.TestCase):
     def test_freshclam_02_http_403(self):
         self.step_name('Verify correct behavior when receiving 403 (forbidden)')
 
-        # Start our mock database mirror.
-        TC.mock_mirror = Process(target=mock_database_mirror, args=(WebServerHandler_02,))
-        TC.mock_mirror.start()
+        self.start_mock_mirror(WebServerHandler_02)
 
         if TC.freshclam_config.exists():
             os.remove(str(TC.freshclam_config))
 
         TC.freshclam_config.write_text('''
-            DatabaseMirror http://localhost:{port}
+            DatabaseMirror http://{host}:{port}
             DNSDatabaseInfo no
             PidFile {freshclam_pid}
             LogVerbose yes
@@ -168,6 +186,7 @@ class TC(testcase.TestCase):
         '''.format(
             freshclam_pid=TC.freshclam_pid,
             path_db=TC.path_db,
+            host=TC.mock_mirror_host,
             port=TC.mock_mirror_port,
             user=getpass.getuser(),
         ))
@@ -204,15 +223,13 @@ class TC(testcase.TestCase):
     def test_freshclam_03_http_403_daemonized(self):
         self.step_name('Verify correct behavior when receiving 403 (forbidden) and daemonized')
 
-        # Start our mock database mirror.
-        TC.mock_mirror = Process(target=mock_database_mirror, args=(WebServerHandler_02,))
-        TC.mock_mirror.start()
+        self.start_mock_mirror(WebServerHandler_02)
 
         if TC.freshclam_config.exists():
             os.remove(str(TC.freshclam_config))
 
         TC.freshclam_config.write_text('''
-            DatabaseMirror http://localhost:{port}
+            DatabaseMirror http://{host}:{port}
             DNSDatabaseInfo no
             PidFile {freshclam_pid}
             LogVerbose yes
@@ -223,6 +240,7 @@ class TC(testcase.TestCase):
         '''.format(
             freshclam_pid=TC.freshclam_pid,
             path_db=TC.path_db,
+            host=TC.mock_mirror_host,
             port=TC.mock_mirror_port,
             user=getpass.getuser(),
         ))
@@ -244,15 +262,13 @@ class TC(testcase.TestCase):
     def test_freshclam_04_http_429(self):
         self.step_name('Verify correct behavior when receiving 429 (too-many-requests)')
 
-        # Start our mock database mirror.
-        TC.mock_mirror = Process(target=mock_database_mirror, args=(WebServerHandler_04,TC.mock_mirror_port))
-        TC.mock_mirror.start()
+        self.start_mock_mirror(WebServerHandler_04)
 
         if TC.freshclam_config.exists():
             os.remove(str(TC.freshclam_config))
 
         TC.freshclam_config.write_text('''
-            DatabaseMirror http://localhost:{port}
+            DatabaseMirror http://{host}:{port}
             DNSDatabaseInfo no
             PidFile {freshclam_pid}
             LogVerbose yes
@@ -263,6 +279,7 @@ class TC(testcase.TestCase):
         '''.format(
             freshclam_pid=TC.freshclam_pid,
             path_db=TC.path_db,
+            host=TC.mock_mirror_host,
             port=TC.mock_mirror_port,
             user=getpass.getuser(),
         ))
@@ -304,14 +321,13 @@ class TC(testcase.TestCase):
         shutil.copy(str(TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles' / 'test-6.cdiff.sign'), str(TC.path_www))
 
         handler = partial(WebServerHandler_WWW, TC.path_www)
-        TC.mock_mirror = Process(target=mock_database_mirror, args=(handler, TC.mock_mirror_port))
-        TC.mock_mirror.start()
+        self.start_mock_mirror(handler)
 
         if TC.freshclam_config.exists():
             os.remove(str(TC.freshclam_config))
 
         TC.freshclam_config.write_text('''
-            DatabaseMirror http://localhost:{port}
+            DatabaseMirror http://{host}:{port}
             DNSDatabaseInfo no
             PidFile {freshclam_pid}
             LogVerbose yes
@@ -322,6 +338,7 @@ class TC(testcase.TestCase):
         '''.format(
             freshclam_pid=TC.freshclam_pid,
             path_db=TC.path_db,
+            host=TC.mock_mirror_host,
             port=TC.mock_mirror_port,
             user=getpass.getuser(),
         ))
@@ -370,8 +387,7 @@ class TC(testcase.TestCase):
         shutil.copy(str(TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles' / 'test-6.cdiff.sign'), str(TC.path_www))
 
         handler = partial(WebServerHandler_WWW, TC.path_www)
-        TC.mock_mirror = Process(target=mock_database_mirror, args=(handler, TC.mock_mirror_port))
-        TC.mock_mirror.start()
+        self.start_mock_mirror(handler)
 
         if TC.freshclam_config.exists():
             os.remove(str(TC.freshclam_config))
@@ -379,7 +395,7 @@ class TC(testcase.TestCase):
         path_db_unc = str(TC.path_db).replace('C:\\', '\\\\localhost\\c$\\').replace('D:\\', '\\\\localhost\\d$\\').replace('E:\\', '\\\\localhost\\e$\\')
 
         TC.freshclam_config.write_text('''
-            DatabaseMirror http://localhost:{port}
+            DatabaseMirror http://{host}:{port}
             DNSDatabaseInfo no
             PidFile {freshclam_pid}
             LogVerbose yes
@@ -390,6 +406,7 @@ class TC(testcase.TestCase):
         '''.format(
             freshclam_pid=TC.freshclam_pid,
             path_db=path_db_unc,
+            host=TC.mock_mirror_host,
             port=TC.mock_mirror_port,
             user=getpass.getuser(),
         ))
@@ -431,14 +448,13 @@ class TC(testcase.TestCase):
         #shutil.copy(str(TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles' / 'test-6.cdiff'), str(TC.path_www))  # <-- don't give them the last CDIFF
 
         handler = partial(WebServerHandler_WWW, TC.path_www)
-        TC.mock_mirror = Process(target=mock_database_mirror, args=(handler, TC.mock_mirror_port))
-        TC.mock_mirror.start()
+        self.start_mock_mirror(handler)
 
         if TC.freshclam_config.exists():
             os.remove(str(TC.freshclam_config))
 
         TC.freshclam_config.write_text('''
-            DatabaseMirror http://localhost:{port}
+            DatabaseMirror http://{host}:{port}
             DNSDatabaseInfo no
             PidFile {freshclam_pid}
             LogVerbose yes
@@ -449,6 +465,7 @@ class TC(testcase.TestCase):
         '''.format(
             freshclam_pid=TC.freshclam_pid,
             path_db=TC.path_db,
+            host=TC.mock_mirror_host,
             port=TC.mock_mirror_port,
             user=getpass.getuser(),
         ))
@@ -519,14 +536,13 @@ class TC(testcase.TestCase):
         # shutil.copy(str(TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles' / 'test-6.cdiff'), str(TC.path_www))  <--- don't give them the last CDIFF
 
         handler = partial(WebServerHandler_WWW, TC.path_www)
-        TC.mock_mirror = Process(target=mock_database_mirror, args=(handler, TC.mock_mirror_port))
-        TC.mock_mirror.start()
+        self.start_mock_mirror(handler)
 
         if TC.freshclam_config.exists():
             os.remove(str(TC.freshclam_config))
 
         TC.freshclam_config.write_text('''
-            DatabaseMirror http://localhost:{port}
+            DatabaseMirror http://{host}:{port}
             DNSDatabaseInfo no
             PidFile {freshclam_pid}
             LogVerbose yes
@@ -537,6 +553,7 @@ class TC(testcase.TestCase):
         '''.format(
             freshclam_pid=TC.freshclam_pid,
             path_db=TC.path_db,
+            host=TC.mock_mirror_host,
             port=TC.mock_mirror_port,
             user=getpass.getuser(),
         ))
@@ -611,14 +628,13 @@ class TC(testcase.TestCase):
         shutil.copy(str(TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles' / 'test-6.cdiff.sign'), str(TC.path_www))
 
         handler = partial(WebServerHandler_WWW, TC.path_www)
-        TC.mock_mirror = Process(target=mock_database_mirror, args=(handler, TC.mock_mirror_port))
-        TC.mock_mirror.start()
+        self.start_mock_mirror(handler)
 
         if TC.freshclam_config.exists():
             os.remove(str(TC.freshclam_config))
 
         TC.freshclam_config.write_text('''
-            DatabaseMirror http://localhost:{port}
+            DatabaseMirror http://{host}:{port}
             DNSDatabaseInfo no
             PidFile {freshclam_pid}
             LogVerbose yes
@@ -629,6 +645,7 @@ class TC(testcase.TestCase):
         '''.format(
             freshclam_pid=TC.freshclam_pid,
             path_db=TC.path_db,
+            host=TC.mock_mirror_host,
             port=TC.mock_mirror_port,
             user=getpass.getuser(),
         ))
@@ -721,14 +738,13 @@ class TC(testcase.TestCase):
         shutil.copy(str(TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles' / 'test-3.cdiff.sign'), str(TC.path_www))
 
         handler = partial(WebServerHandler_WWW, TC.path_www)
-        TC.mock_mirror = Process(target=mock_database_mirror, args=(handler, TC.mock_mirror_port))
-        TC.mock_mirror.start()
+        self.start_mock_mirror(handler)
 
         if TC.freshclam_config.exists():
             os.remove(str(TC.freshclam_config))
 
         TC.freshclam_config.write_text('''
-            DatabaseMirror http://localhost:{port}
+            DatabaseMirror http://{host}:{port}
             DNSDatabaseInfo no
             PidFile {freshclam_pid}
             LogVerbose yes
@@ -739,6 +755,7 @@ class TC(testcase.TestCase):
         '''.format(
             freshclam_pid=TC.freshclam_pid,
             path_db=TC.path_db,
+            host=TC.mock_mirror_host,
             port=TC.mock_mirror_port,
             user=getpass.getuser(),
         ))
@@ -795,19 +812,93 @@ class TC(testcase.TestCase):
         ]
 
 
+def start_mock_database_mirror(handler):
+    '''
+    Start the mock mirror and wait until it is ready to accept connections.
+    '''
+    parent_conn, child_conn = Pipe(duplex=False)
+    server_process = Process(target=mock_database_mirror, args=(handler, child_conn))
+    server_process.start()
+    child_conn.close()
 
-def mock_database_mirror(handler, port=8001):
+    try:
+        if not parent_conn.poll(MOCK_MIRROR_START_TIMEOUT):
+            raise RuntimeError("Timed out waiting for mock database mirror to start.")
+
+        try:
+            message = parent_conn.recv()
+        except EOFError as e:
+            raise RuntimeError("Mock database mirror exited before reporting readiness.") from e
+
+        if message[0] != 'ready':
+            raise RuntimeError("Mock database mirror failed to start: {}".format(message[1]))
+
+        return server_process, format_url_host(message[1]), message[2]
+    except Exception:
+        server_process.terminate()
+        server_process.join(5)
+        if server_process.is_alive():
+            server_process.kill()
+            server_process.join()
+        raise
+    finally:
+        parent_conn.close()
+
+
+def format_url_host(host):
+    '''
+    Format an address literal for use in a URL.
+    '''
+    if ':' in host and not host.startswith('['):
+        return '[{}]'.format(host)
+    return host
+
+
+def create_mock_database_mirror_server(handler, port):
+    '''
+    Bind to IPv4 loopback first, then IPv6 loopback if IPv4 is unavailable.
+    '''
+    last_error = None
+
+    for server_class, host in (
+        (HTTPServer, MOCK_MIRROR_IPV4_HOST),
+        (IPv6HTTPServer, MOCK_MIRROR_IPV6_HOST),
+    ):
+        try:
+            return server_class((host, port), handler)
+        except OSError as e:
+            last_error = e
+
+    raise last_error
+
+
+def mock_database_mirror(handler, ready_conn=None, port=0):
     '''
     Process entry point for our HTTP Server to mock a database mirror.
     '''
+    server = None
     try:
-        server = HTTPServer(('', port), handler)
-        print("Web server is running on port {}".format(port))
+        server = create_mock_database_mirror_server(handler, port)
+        bound_host = server.server_address[0]
+        bound_port = server.server_address[1]
+        if ready_conn is not None:
+            ready_conn.send(('ready', bound_host, bound_port))
+            ready_conn.close()
+            ready_conn = None
+
+        print("Web server is running on {}:{}".format(bound_host, bound_port))
         server.serve_forever()
 
     except KeyboardInterrupt:
         print("^C entered, stopping web server...")
-        server.socket.close()
+    except Exception as e:
+        if ready_conn is not None:
+            ready_conn.send(('error', str(e)))
+            ready_conn.close()
+        raise
+    finally:
+        if server is not None:
+            server.server_close()
 
 class WebServerHandler_02(BaseHTTPRequestHandler):
     '''
