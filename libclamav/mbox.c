@@ -453,6 +453,13 @@ cli_parse_mbox(const char *dir, cli_ctx *ctx)
                     continue;
                 }
                 messageSetCTX(body, ctx);
+                if (body->isTruncated) {
+                    retcode = CL_EMEM;
+                    messageDestroy(body);
+                    messageDestroy(m);
+                    m = NULL;
+                    break;
+                }
                 messageDestroy(m);
                 if (messageGetBody(body)) {
                     mbox_status rc = parseEmailBody(body, NULL, &mctx, 0);
@@ -974,6 +981,7 @@ parseEmailFile(fmap_t *map, size_t *at, const table_t *rfc821, const char *first
                     if (head->bufferLen) {
                         char *header     = getMallocedBufferFromList(head);
                         int needContinue = 0;
+                        int parseStatus;
                         CLI_VERIFY_POINTER_OR_GOTO_DONE(header);
 
                         totalHeaderCnt++;
@@ -981,7 +989,12 @@ parseEmailFile(fmap_t *map, size_t *at, const table_t *rfc821, const char *first
                             CLI_FREE_AND_SET_NULL(header);
                             break;
                         }
-                        needContinue = (parseEmailHeader(ret, header, rfc821, ctx, heuristicFound) < 0);
+                        parseStatus = parseEmailHeader(ret, header, rfc821, ctx, heuristicFound);
+                        if (parseStatus == PARSE_HEADER_ALLOC_FAIL) {
+                            CLI_FREE_AND_SET_NULL(header);
+                            goto done;
+                        }
+                        needContinue = (parseStatus < 0);
                         if (*heuristicFound) {
                             CLI_FREE_AND_SET_NULL(header);
                             break;
@@ -1089,6 +1102,7 @@ parseEmailFile(fmap_t *map, size_t *at, const table_t *rfc821, const char *first
                 {
                     char *header     = getMallocedBufferFromList(head); /*This is the issue */
                     int needContinue = 0;
+                    int parseStatus;
                     CLI_VERIFY_POINTER_OR_GOTO_DONE(header);
 
                     needContinue = (header[strlen(header) - 1] == ';');
@@ -1102,7 +1116,12 @@ parseEmailFile(fmap_t *map, size_t *at, const table_t *rfc821, const char *first
                             CLI_FREE_AND_SET_NULL(header);
                             break;
                         }
-                        needContinue = (parseEmailHeader(ret, header, rfc821, ctx, heuristicFound) < 0);
+                        parseStatus = parseEmailHeader(ret, header, rfc821, ctx, heuristicFound);
+                        if (parseStatus == PARSE_HEADER_ALLOC_FAIL) {
+                            CLI_FREE_AND_SET_NULL(header);
+                            goto done;
+                        }
+                        needContinue = (parseStatus < 0);
                         if (*heuristicFound) {
                             CLI_FREE_AND_SET_NULL(header);
                             break;
@@ -1221,6 +1240,8 @@ parseEmailHeaders(message *m, const table_t *rfc821, bool *heuristicFound)
         return NULL;
 
     ret = messageCreate();
+    if (ret == NULL)
+        return NULL;
 
     for (t = messageGetBody(m); t; t = t->t_next) {
         const char *line;
@@ -1256,6 +1277,7 @@ parseEmailHeaders(message *m, const table_t *rfc821, bool *heuristicFound)
             } else {
                 char *ptr;
                 bool lineAdded = true;
+                int parseStatus;
 
                 if (fullline == NULL) {
                     char cmd[RFC2821LENGTH + 1];
@@ -1290,12 +1312,18 @@ parseEmailHeaders(message *m, const table_t *rfc821, bool *heuristicFound)
                             continue;
                     }
                     fullline       = cli_safer_strdup(line);
+                    if (fullline == NULL) {
+                        ret->isTruncated = true;
+                        break;
+                    }
                     fulllinelength = strlen(line) + 1;
                 } else if (line) {
                     fulllinelength += strlen(line) + 1;
                     ptr = cli_max_realloc(fullline, fulllinelength);
-                    if (ptr == NULL)
-                        continue;
+                    if (ptr == NULL) {
+                        ret->isTruncated = true;
+                        break;
+                    }
                     fullline = ptr;
                     cli_strlcat(fullline, line, fulllinelength);
                 } else {
@@ -1327,7 +1355,12 @@ parseEmailHeaders(message *m, const table_t *rfc821, bool *heuristicFound)
                 if (haveTooManyEmailHeaders(totalHeaderCnt, m->ctx, heuristicFound)) {
                     break;
                 }
-                if (parseEmailHeader(ret, fullline, rfc821, m->ctx, heuristicFound) < 0) {
+                parseStatus = parseEmailHeader(ret, fullline, rfc821, m->ctx, heuristicFound);
+                if (parseStatus == PARSE_HEADER_ALLOC_FAIL) {
+                    ret->isTruncated = true;
+                    break;
+                }
+                if (parseStatus < 0) {
                     continue;
                 }
                 if (*heuristicFound) {
@@ -2645,6 +2678,11 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                         cli_dbgmsg("Decode rfc822\n");
 
                         messageSetCTX(m, mctx->ctx);
+                        if (m->isTruncated) {
+                            rc = FAIL;
+                            messageDestroy(m);
+                            break;
+                        }
 
                         if (mainMessage && (mainMessage != messageIn)) {
                             messageDestroy(mainMessage);
@@ -4862,7 +4900,14 @@ do_multipart(message *mainMessage, message **messages, int i, mbox_status *rc, m
              * Scan in memory, faster but is open to DoS attacks
              * when many nested levels are involved.
              */
-            body = parseEmailHeaders(aMessage, mctx->rfc821Table);
+            {
+                bool heuristicFound = false;
+
+                body = parseEmailHeaders(aMessage, mctx->rfc821Table, &heuristicFound);
+                if (heuristicFound) {
+                    *rc = VIRUS;
+                }
+            }
 
             /*
              * We've finished with the
@@ -4878,9 +4923,13 @@ do_multipart(message *mainMessage, message **messages, int i, mbox_status *rc, m
 
             if (body) {
                 messageSetCTX(body, mctx->ctx);
-                *rc = parseEmailBody(body, NULL, mctx, recursion_level + 1);
-                if ((*rc == OK) && messageContainsVirus(body))
-                    *rc = VIRUS;
+                if (body->isTruncated) {
+                    *rc = FAIL;
+                } else {
+                    *rc = parseEmailBody(body, NULL, mctx, recursion_level + 1);
+                    if ((*rc == OK) && messageContainsVirus(body))
+                        *rc = VIRUS;
+                }
                 messageDestroy(body);
             }
 

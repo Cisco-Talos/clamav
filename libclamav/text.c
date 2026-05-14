@@ -406,10 +406,8 @@ textToBlob(text *t, blob *b, int destroy)
 fileblob *
 textToFileblob(text *t, fileblob *fb, int destroy)
 {
-    if (t == NULL) {
-        cli_errmsg("textToFileBlob: text is NULL\n");
-        return fb;
-    }
+    if (t == NULL)
+        return NULL;
 
     if (fb == NULL) {
         cli_dbgmsg("textToFileBlob, destroy = %d\n", destroy);
