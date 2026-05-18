@@ -3975,14 +3975,17 @@ removeOldPartialFile(const char *fullname, time_t now)
     if (FSTAT(test_fd, &statb) == 0) {
         if ((now > statb.st_mtime) &&
             (now - statb.st_mtime > (time_t)(7 * 24 * 3600))) {
+            close(test_fd);
+            test_fd = -1;
+
             if (cli_unlink(fullname)) {
-                close(test_fd);
                 return -1;
             }
         }
     }
 
-    close(test_fd);
+    if (test_fd >= 0)
+        close(test_fd);
     return 0;
 }
 
