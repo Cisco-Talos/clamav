@@ -335,7 +335,16 @@ int cli_mbox(const char *dir, cli_ctx *ctx)
     return cli_parse_mbox(dir, ctx);
 }
 
-/*
+/**
+ * @brief Parse and scan an RFC822 or mbox email stream.
+ *
+ * @param dir Temporary directory used for extracted mail parts.
+ * @param ctx Scan context for the mapped email stream.
+ *
+ * @return CL_SUCCESS/CL_CLEAN when no detection is found, CL_VIRUS on
+ *         detection, or another CL_E* status when parsing or scanning must
+ *         stop early.
+ *
  * TODO: when signal handling is added, need to remove temp files when a
  *    signal is received
  * TODO: add option to scan in memory not via temp files, perhaps with a
@@ -353,37 +362,39 @@ int cli_mbox(const char *dir, cli_ctx *ctx)
 static int
 cli_parse_mbox(const char *dir, cli_ctx *ctx)
 {
-    int retcode;
-    message *body;
+    cl_error_t status = CL_SUCCESS;
+    message *body     = NULL;
+    message *m        = NULL;
     char buffer[RFC2821LENGTH + 1];
     mbox_ctx mctx;
     size_t at   = 0;
     fmap_t *map = ctx->fmap;
+#ifdef CL_THREAD_SAFE
+    bool tables_locked = false;
+#endif
 
     cli_dbgmsg("in mbox()\n");
 
     if (!fmap_gets(map, buffer, &at, sizeof(buffer) - 1)) {
         /* empty message */
-        return CL_CLEAN;
+        status = CL_CLEAN;
+        goto done;
     }
 
 #ifdef CL_THREAD_SAFE
     pthread_mutex_lock(&tables_mutex);
+    tables_locked = true;
 #endif
 
     if (initialiseTables(&rfc821, &subtype) < 0) {
-#ifdef CL_THREAD_SAFE
-        pthread_mutex_unlock(&tables_mutex);
-#endif
-        return CL_EMEM;
+        status = CL_EMEM;
+        goto done;
     }
 
 #ifdef CL_THREAD_SAFE
     pthread_mutex_unlock(&tables_mutex);
+    tables_locked = false;
 #endif
-
-    retcode = CL_SUCCESS;
-    body    = NULL;
 
     mctx.dir          = dir;
     mctx.rfc821Table  = rfc821;
@@ -423,10 +434,11 @@ cli_parse_mbox(const char *dir, cli_ctx *ctx)
          */
         bool lastLineWasEmpty;
         int messagenumber;
-        message *m = messageCreate(); /*Create an empty email */
 
+        m = messageCreate(); /*Create an empty email */
         if (m == NULL) {
-            return CL_EMEM;
+            status = CL_EMEM;
+            goto done;
         }
 
         lastLineWasEmpty = false;
@@ -447,33 +459,31 @@ cli_parse_mbox(const char *dir, cli_ctx *ctx)
                     messageReset(m);
                     messageSetCTX(m, ctx);
                     if (heuristicFound) {
-                        retcode = CL_VIRUS;
-                        break;
+                        status = CL_VIRUS;
+                        goto done;
                     }
                     continue;
                 }
                 messageSetCTX(body, ctx);
                 if (body->isTruncated) {
-                    retcode = CL_EMEM;
-                    messageDestroy(body);
-                    messageDestroy(m);
-                    m = NULL;
-                    break;
+                    status = CL_EMEM;
+                    goto done;
                 }
                 messageDestroy(m);
+                m = NULL;
                 if (messageGetBody(body)) {
                     mbox_status rc = parseEmailBody(body, NULL, &mctx, 0);
                     if (rc == FAIL) {
                         m = body;
+                        body = NULL;
                         messageReset(m);
                         messageSetCTX(m, ctx);
                         continue;
                     } else if (rc == VIRUS) {
                         cli_dbgmsg("Message number %d is infected\n",
                                    messagenumber - 1);
-                        retcode = CL_VIRUS;
-                        m       = NULL;
-                        break;
+                        status = CL_VIRUS;
+                        goto done;
                     }
                 }
                 /*
@@ -485,6 +495,7 @@ cli_parse_mbox(const char *dir, cli_ctx *ctx)
                  * called
                  */
                 m = body;
+                body = NULL;
                 messageReset(m);
                 messageSetCTX(m, ctx);
 
@@ -511,17 +522,17 @@ cli_parse_mbox(const char *dir, cli_ctx *ctx)
             }
         } while (fmap_gets(map, buffer, &at, sizeof(buffer) - 1));
 
-        if (retcode == CL_SUCCESS) {
+        if (status == CL_SUCCESS) {
             cli_dbgmsg("Extract attachments from email %d\n", messagenumber);
             bool heuristicFound = false;
             body                = parseEmailHeaders(m, rfc821, &heuristicFound);
             if (heuristicFound) {
-                retcode = CL_VIRUS;
+                status = CL_VIRUS;
+                goto done;
             }
         }
-        if (m) {
-            messageDestroy(m);
-        }
+        messageDestroy(m);
+        m = NULL;
     } else {
         /*
          * It's a single message, parse the headers then the body
@@ -550,7 +561,8 @@ cli_parse_mbox(const char *dir, cli_ctx *ctx)
         bool heuristicFound = false;
         body                = parseEmailFile(map, &at, rfc821, buffer, dir, ctx, &heuristicFound);
         if (heuristicFound) {
-            retcode = CL_VIRUS;
+            status = CL_VIRUS;
+            goto done;
         }
     }
 
@@ -558,7 +570,7 @@ cli_parse_mbox(const char *dir, cli_ctx *ctx)
         /*
          * Write out the last entry in the mailbox
          */
-        if ((retcode == CL_SUCCESS) && messageGetBody(body)) {
+        if ((status == CL_SUCCESS) && messageGetBody(body)) {
             messageSetCTX(body, ctx);
             switch (parseEmailBody(body, NULL, &mctx, 0)) {
                 case OK:
@@ -574,41 +586,47 @@ cli_parse_mbox(const char *dir, cli_ctx *ctx)
                      * decoding errors on what *is* a valid
                      * mbox
                      */
-                    retcode = CL_EFORMAT;
+                    status = CL_EFORMAT;
                     break;
                 case MAXREC:
-                    retcode = CL_EMAXREC;
+                    status = CL_EMAXREC;
                     cli_append_potentially_unwanted_if_heur_exceedsmax(ctx, "Heuristics.Limits.Exceeded.MaxRecursion"); // Doing this now because it's actually tracking email recursion,-
                                                                                                                         // not fmap recursion, but it still is aborting with stuff not scanned.
                                                                                                                         // Also, we didn't have access to the ctx when this happened earlier.
                     break;
                 case MAXFILES:
-                    retcode = CL_EMAXFILES;
+                    status = CL_EMAXFILES;
                     cli_append_potentially_unwanted_if_heur_exceedsmax(ctx, "Heuristics.Limits.Exceeded.MaxFiles"); // Doing this now because it's actually tracking email parts,-
                                                                                                                     // not actual files, but it still is aborting with stuff not scanned.
                                                                                                                     // Also, we didn't have access to the ctx when this happened earlier.
                     break;
                 case FORMAT_ERROR:
-                    retcode = CL_EFORMAT;
+                    status = CL_EFORMAT;
                     break;
                 case VIRUS:
-                    retcode = CL_VIRUS;
+                    status = CL_VIRUS;
                     break;
             }
         }
 
-        if (body->isTruncated && retcode == CL_SUCCESS) {
-            retcode = CL_EMEM;
+        if (body->isTruncated && status == CL_SUCCESS) {
+            status = CL_EMEM;
         }
-        /*
-         * Tidy up and quit
-         */
-        messageDestroy(body);
     }
 
-    cli_dbgmsg("cli_mbox returning %d\n", retcode);
+done:
+#ifdef CL_THREAD_SAFE
+    if (tables_locked) {
+        pthread_mutex_unlock(&tables_mutex);
+    }
+#endif
 
-    return retcode;
+    messageDestroy(body);
+    messageDestroy(m);
+
+    cli_dbgmsg("cli_mbox returning %d\n", status);
+
+    return status;
 }
 
 #define READ_STRUCT_BUFFER_LEN 1024
@@ -4013,7 +4031,7 @@ reassemblePartialMessage(mbox_ctx *mctx, message *m, const char *pdir, char *id,
 
         part = partialFilenamePartNumber(dent->d_name, md5_hex, total_parts);
         if (part == 0) {
-            if (keep_tmp && (removeOldPartialFile(fullname, now) < 0)) {
+            if (!keep_tmp && (removeOldPartialFile(fullname, now) < 0)) {
                 rc = -1;
                 break;
             }

@@ -187,19 +187,19 @@ static text *
 textAddWithStatus(text *t_head, const text *t, int *status)
 {
     text *ret;
+    int localStatus = 0;
+    int *copyStatus = status ? status : &localStatus;
     int count;
 
-    if (status)
-        *status = 0;
+    *copyStatus = 0;
 
     if (t_head == NULL) {
         if (t == NULL) {
             cli_errmsg("textAdd fails sanity check\n");
-            if (status)
-                *status = -1;
+            *copyStatus = -1;
             return NULL;
         }
-        return textCopyWithStatus(t, status);
+        return textCopyWithStatus(t, copyStatus);
     }
 
     if (t == NULL)
@@ -215,10 +215,10 @@ textAddWithStatus(text *t_head, const text *t, int *status)
 
     cli_dbgmsg("textAdd: count = %d\n", count);
 
-    t_head->t_next = textCopyWithStatus(t, status);
-    if (status && *status < 0) {
+    t_head->t_next = textCopyWithStatus(t, copyStatus);
+    if (*copyStatus < 0) {
         t_head->t_next = NULL;
-        return ret;
+        return status ? ret : NULL;
     }
 
     return ret;
