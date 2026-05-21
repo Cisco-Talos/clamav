@@ -29,6 +29,7 @@
 
 #include <fcntl.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 #include "fmap.h"
 #include "entconv.h"
@@ -4791,6 +4792,11 @@ cl_error_t cli_extract_xlm_macros_and_images(const char *dir, cli_ctx *ctx, char
 
                 } else {
                     /* already found the beginning of a drawing group, extract the remaining chunks */
+                    if (drawinggroup_len > SIZE_MAX - biff_header.length) {
+                        cli_dbgmsg("[cli_extract_xlm_macros_and_images] Drawing group length overflow\n");
+                        status = CL_EFORMAT;
+                        goto done;
+                    }
                     drawinggroup_len += biff_header.length;
                     CLI_MAX_REALLOC_OR_GOTO_DONE(drawinggroup, drawinggroup_len, status = CL_EMEM);
                     memcpy(drawinggroup + (drawinggroup_len - biff_header.length), data, biff_header.length);
@@ -4802,6 +4808,11 @@ cl_error_t cli_extract_xlm_macros_and_images(const char *dir, cli_ctx *ctx, char
                 if ((OPC_MSODRAWINGGROUP == previous_biff8_opcode) &&
                     (NULL != drawinggroup)) {
                     /* already found the beginning of an image, extract the remaining chunks */
+                    if (drawinggroup_len > SIZE_MAX - biff_header.length) {
+                        cli_dbgmsg("[cli_extract_xlm_macros_and_images] Drawing group length overflow\n");
+                        status = CL_EFORMAT;
+                        goto done;
+                    }
                     drawinggroup_len += biff_header.length;
                     CLI_MAX_REALLOC_OR_GOTO_DONE(drawinggroup, drawinggroup_len, status = CL_EMEM);
                     memcpy(drawinggroup + (drawinggroup_len - biff_header.length), data, biff_header.length);
