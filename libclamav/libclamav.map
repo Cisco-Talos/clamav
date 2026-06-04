@@ -271,7 +271,6 @@ CLAMAV_PRIVATE {
     cl_verify_signature_hash_x509;
     cl_verify_signature_hash_x509_keyfile;
     cl_load_cert;
-    cl_ASN1_GetTimeT;
     cl_load_crl;
     cl_sign_data_keyfile;
     cl_sign_data;

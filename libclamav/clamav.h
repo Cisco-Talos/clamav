@@ -2414,14 +2414,6 @@ extern int cl_validate_certificate_chain(char **authorities, char *crlpath, char
 extern X509 *cl_load_cert(const char *certpath);
 
 /**
- * @brief Parse an ASN1_TIME object.
- *
- * @param timeobj   The ASN1_TIME object.
- * @return          A pointer to a (struct tm). Adjusted for time zone and daylight savings time.
- */
-extern struct tm *cl_ASN1_GetTimeT(ASN1_TIME *timeobj);
-
-/**
  * @brief Load a CRL file into an X509_CRL object.
  *
  * @param file  The path to the CRL.
