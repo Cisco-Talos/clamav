@@ -245,6 +245,12 @@ textAddMessageWithStatus(text *aText, message *aMessage, int *status)
     else {
         text *anotherText = messageToText(aMessage);
 
+        if (anotherText == NULL) {
+            if (status)
+                *status = -1;
+            return aText;
+        }
+
         if (aText) {
             int moveStatus = 0;
             text *newHead  = textMoveWithStatus(aText, anotherText, &moveStatus);
