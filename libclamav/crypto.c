@@ -1749,8 +1749,6 @@ X509 *cl_load_cert(const char *certpath)
 struct tm *cl_ASN1_GetTimeT(ASN1_TIME *timeobj)
 {
     struct tm *t;
-    char *str;
-    const char *fmt = NULL;
     time_t localt;
 #ifdef _WIN32
     struct tm localtm, *ltm;
@@ -1758,43 +1756,14 @@ struct tm *cl_ASN1_GetTimeT(ASN1_TIME *timeobj)
     struct tm localtm;
 #endif
 
-    if (!(timeobj) || !(timeobj->data))
-        return NULL;
-
-    str = (char *)(timeobj->data);
-    if (strlen(str) < 12)
+    if (!(timeobj))
         return NULL;
 
     t = (struct tm *)calloc(1, sizeof(struct tm));
     if (!(t))
         return NULL;
 
-    if (timeobj->type == V_ASN1_UTCTIME) {
-        /* two digit year */
-        fmt = "%y%m%d%H%M%S";
-        if (str[3] == '0') {
-            str[2] = '0';
-            str[3] = '9';
-        } else {
-            str[3]--;
-        }
-    } else if (timeobj->type == V_ASN1_GENERALIZEDTIME) {
-        /* four digit year */
-        fmt = "%Y%m%d%H%M%S";
-        if (str[5] == '0') {
-            str[4] = '0';
-            str[5] = '9';
-        } else {
-            str[5]--;
-        }
-    }
-
-    if (!(fmt)) {
-        free(t);
-        return NULL;
-    }
-
-    if (!strptime(str, fmt, t)) {
+    if (ASN1_TIME_to_tm(timeobj, t) == 0) {
         free(t);
         return NULL;
     }
