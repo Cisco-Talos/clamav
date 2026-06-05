@@ -429,8 +429,6 @@ cl_error_t cl_cvdverify_ex(const char *file, const char *certs_directory, uint32
         ret = CL_EMEM;
         goto done;
     }
-    engine->cb_stats_submit = NULL; /* Don't submit stats if we're just verifying a CVD */
-
     if (!!cli_strbcasestr(file, ".cvd")) {
         dbtype = CVD_TYPE_CVD;
     } else if (!!cli_strbcasestr(file, ".cld")) {

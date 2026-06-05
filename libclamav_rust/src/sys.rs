@@ -100,19 +100,6 @@ pub const bytecode_mode_CL_BYTECODE_MODE_TEST: bytecode_mode = 3;
 #[doc = " both JIT and interpreter, compare results, all failures are fatal"]
 pub const bytecode_mode_CL_BYTECODE_MODE_OFF: bytecode_mode = 4;
 pub type bytecode_mode = ::std::os::raw::c_uint;
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct cli_section_hash {
-    pub md5: [::std::os::raw::c_uchar; 16usize],
-    pub len: usize,
-}
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct cli_stats_sections {
-    pub nsections: usize,
-    pub sections: *mut cli_section_hash,
-}
-pub type stats_section_t = cli_stats_sections;
 pub type cl_fmap_t = cl_fmap;
 #[doc = " @brief Read callback function type.\n\n A callback function pointer type for reading data from a cl_fmap_t that uses\n reads data from a handle interface.\n\n Read 'count' bytes starting at 'offset' into the buffer 'buf'\n\n Thread safety: It is guaranteed that only one callback is executing for a\n specific handle at any time, but there might be multiple callbacks executing\n for different handle at the same time.\n\n @param handle    The handle passed to cl_fmap_open_handle, its meaning is up\n                  to the callback's implementation\n @param buf       A buffer to read data into, must be at least offset + count\n                  bytes in size.\n @param count     The number of bytes to read.\n @param offset    The offset into buf to read the data to. If successful,\n                  the number of bytes actually read is returned. Upon reading\n                  end-of-file, zero is returned. Otherwise, a -1 is returned\n                  and the global variable errno is set to indicate the error."]
 pub type clcb_pread = ::std::option::Option<
@@ -238,52 +225,6 @@ pub type clcb_generic_data = ::std::option::Option<
         data_len: usize,
         cbdata: *mut ::std::os::raw::c_void,
     ) -> ::std::os::raw::c_int,
->;
-#[doc = " @brief Add sample metadata to the statistics for a sample that matched on a signature.\n\n @param virname   Name of the signature that matched.\n @param md5       Sample hash.\n @param size      Sample size.\n @param sections  PE section data, if applicable.\n @param cbdata    The statistics data. Probably a pointer to a malloc'd struct."]
-pub type clcb_stats_add_sample = ::std::option::Option<
-    unsafe extern "C" fn(
-        virname: *const ::std::os::raw::c_char,
-        md5: *const ::std::os::raw::c_uchar,
-        size: usize,
-        sections: *mut stats_section_t,
-        cbdata: *mut ::std::os::raw::c_void,
-    ),
->;
-#[doc = " @brief Remove a specific sample from the statistics report.\n\n @param virname   Name of the signature that matched.\n @param md5       Sample hash.\n @param size      Sample size.\n @param cbdata    The statistics data. Probably a pointer to a malloc'd struct."]
-pub type clcb_stats_remove_sample = ::std::option::Option<
-    unsafe extern "C" fn(
-        virname: *const ::std::os::raw::c_char,
-        md5: *const ::std::os::raw::c_uchar,
-        size: usize,
-        cbdata: *mut ::std::os::raw::c_void,
-    ),
->;
-#[doc = " @brief Decrement the hit count listed in the statistics report for a specific sample.\n\n @param virname   Name of the signature that matched.\n @param md5       Sample hash.\n @param size      Sample size.\n @param cbdata    The statistics data. Probably a pointer to a malloc'd struct."]
-pub type clcb_stats_decrement_count = ::std::option::Option<
-    unsafe extern "C" fn(
-        virname: *const ::std::os::raw::c_char,
-        md5: *const ::std::os::raw::c_uchar,
-        size: usize,
-        cbdata: *mut ::std::os::raw::c_void,
-    ),
->;
-#[doc = " @brief Function to submit a statistics report.\n\n @param engine    The initialized scanning engine.\n @param cbdata    The statistics data. Probably a pointer to a malloc'd struct."]
-pub type clcb_stats_submit = ::std::option::Option<
-    unsafe extern "C" fn(engine: *mut cl_engine, cbdata: *mut ::std::os::raw::c_void),
->;
-#[doc = " @brief Function to flush/free the statistics report data.\n\n @param engine    The initialized scanning engine.\n @param cbdata    The statistics data. Probably a pointer to a malloc'd struct."]
-pub type clcb_stats_flush = ::std::option::Option<
-    unsafe extern "C" fn(engine: *mut cl_engine, cbdata: *mut ::std::os::raw::c_void),
->;
-#[doc = " @brief Function to get the number of samples listed in the statistics report.\n\n @param cbdata    The statistics data. Probably a pointer to a malloc'd struct."]
-pub type clcb_stats_get_num =
-    ::std::option::Option<unsafe extern "C" fn(cbdata: *mut ::std::os::raw::c_void) -> usize>;
-#[doc = " @brief Function to get the size of memory used to store the statistics report.\n\n @param cbdata    The statistics data. Probably a pointer to a malloc'd struct."]
-pub type clcb_stats_get_size =
-    ::std::option::Option<unsafe extern "C" fn(cbdata: *mut ::std::os::raw::c_void) -> usize>;
-#[doc = " @brief Function to get the machine's unique host ID.\n\n @param cbdata    The statistics data. Probably a pointer to a malloc'd struct."]
-pub type clcb_stats_get_hostid = ::std::option::Option<
-    unsafe extern "C" fn(cbdata: *mut ::std::os::raw::c_void) -> *mut ::std::os::raw::c_char,
 >;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -430,7 +371,6 @@ pub struct cli_dconf {
     pub other: u32,
     pub phishing: u32,
     pub bytecode: u32,
-    pub stats: u32,
     pub pcre: u32,
 }
 pub type fmap_t = cl_fmap_t;
@@ -834,15 +774,6 @@ pub struct cl_engine {
     pub maxhtmlnotags: u64,
     pub maxscriptnormalize: u64,
     pub maxziptypercg: u64,
-    pub stats_data: *mut ::std::os::raw::c_void,
-    pub cb_stats_add_sample: clcb_stats_add_sample,
-    pub cb_stats_remove_sample: clcb_stats_remove_sample,
-    pub cb_stats_decrement_count: clcb_stats_decrement_count,
-    pub cb_stats_submit: clcb_stats_submit,
-    pub cb_stats_flush: clcb_stats_flush,
-    pub cb_stats_get_num: clcb_stats_get_num,
-    pub cb_stats_get_size: clcb_stats_get_size,
-    pub cb_stats_get_hostid: clcb_stats_get_hostid,
     pub maxpartitions: u32,
     pub maxiconspe: u32,
     pub maxrechwp3: u32,

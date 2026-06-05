@@ -18,7 +18,6 @@ target_sources( common
         actions.c
         clamdcom.c
         getopt.c
-        hostid.c
         idmef_logging.c
         misc.c
         optparser.c
@@ -30,7 +29,6 @@ target_sources( common
         clamdcom.h
         fdpassing.h
         getopt.h
-        hostid.h
         idmef_logging.h
         misc.h
         optparser.h

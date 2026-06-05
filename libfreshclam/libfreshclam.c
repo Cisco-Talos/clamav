@@ -494,8 +494,6 @@ fc_error_t fc_test_database_ex(const char *dbFilename, int bBytecodeEnabled, cha
         goto done;
     }
 
-    cl_engine_set_clcb_stats_submit(engine, NULL);
-
     dboptions = CL_DB_PHISHING | CL_DB_PHISHING_URLS | CL_DB_BYTECODE | CL_DB_PUA | CL_DB_ENHANCED;
     if (g_bFipsLimits) {
         dboptions |= CL_DB_FIPS_LIMITS;

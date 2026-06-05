@@ -9,6 +9,10 @@ ClamAV 1.6.0 includes the following improvements and changes:
 
 ### Major changes
 
+- Retired the legacy ClamAV stats submission code used to send telemetry to
+  the discontinued clamintel service. This removes the related libclamav stats
+  callback API.
+
 ### Other improvements
 
 ### Bug fixes

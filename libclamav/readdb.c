@@ -5618,23 +5618,9 @@ cl_error_t cl_engine_free(struct cl_engine *engine)
         return CL_SUCCESS;
     }
 
-    if (engine->cb_stats_submit)
-        engine->cb_stats_submit(engine, engine->stats_data);
-
 #ifdef CL_THREAD_SAFE
-    if (engine->stats_data) {
-        cli_intel_t *intel = (cli_intel_t *)(engine->stats_data);
-
-        pthread_mutex_destroy(&(intel->mutex));
-    }
-
     pthread_mutex_unlock(&cli_ref_mutex);
 #endif
-
-    if (engine->stats_data) {
-        free(engine->stats_data);
-        engine->stats_data = NULL;
-    }
 
     /*
      * Pre-calculate number of "major" tasks to complete for the progress callback
