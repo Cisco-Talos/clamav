@@ -12,6 +12,12 @@ If you are unsure if your bug is a security issue, please report it as a securit
 
 > `*`Bytecode signatures are cross-platform executable plugins. ClamAV will not load bytecode signatures unless they are signed by Cisco-Talos or the user has intentionally enabled unsigned bytecode signatures. Issues that require disabling this security mechanism and then loading unsigned bytecode signatures or loading unsigned bytecode signatures with the ClamBC signature testing tool are not considered to be vulnerabilities.
 
+## Are scan detection evasion issues considered to be security issues?
+
+Evasions are not security issues or vulnerabilties. ClamAV is security software used to detect malware, but that does not mean that bugs in file extraction or scanning detection, or that missing features are to be considered security issues.
+
+Please report evasion issues using [the ClamAV issue tracker](https://github.com/Cisco-Talos/clamav/issues) and of course if you can help fix the issue or at a new feature to enable detection, please help contribute to the project [by submitting a pull request](https://github.com/Cisco-Talos/clamav/pulls).
+
 ## Vulnerability reporting best practices.
 
 Do **not** discuss the issue in a public forum, the project mailing lists, in chat, or anywhere else.
