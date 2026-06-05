@@ -32,6 +32,7 @@ md5 = "0.7.0"
 openssl = "0.10.70"
 glob = "0.3.1"
 indexmap = "2.10.0"
+ruzstd = "0.8.3"
 
 [features]
 not_ready = []

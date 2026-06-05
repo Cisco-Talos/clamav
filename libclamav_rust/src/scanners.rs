@@ -22,7 +22,7 @@
 
 use std::{
     ffi::{c_char, CString},
-    io::Read,
+    io::{Cursor, Read},
     panic,
     path::Path,
     ptr::null_mut,
@@ -31,6 +31,10 @@ use std::{
 use delharc::LhaDecodeReader;
 use libc::c_void;
 use log::{debug, error, warn};
+use ruzstd::decoding::{
+    errors::{FrameDecoderError, ReadFrameHeaderError},
+    StreamingDecoder,
+};
 
 use crate::{
     alz::Alz,
@@ -351,4 +355,116 @@ pub unsafe extern "C" fn cli_scanalz(ctx: *mut cli_ctx) -> cl_error_t {
     }
 
     cl_error_t_CL_SUCCESS
+}
+
+/// Decompress and scan a Zstandard (zstd) compressed file.
+///
+/// Uses the pure-Rust `ruzstd` decoder, so no libzstd C dependency is required.
+/// Handles streams made up of multiple concatenated frames as well as
+/// skippable frames, mirroring the behavior of the gzip/bzip2/xz scanners.
+///
+/// # Safety
+///
+/// Must be a valid ctx pointer.
+#[no_mangle]
+pub unsafe extern "C" fn cli_scanzstd(ctx: *mut cli_ctx) -> cl_error_t {
+    let fmap = match ctx::current_fmap(ctx) {
+        Ok(fmap) => fmap,
+        Err(e) => {
+            warn!("Error getting FMap from ctx: {e}");
+            return cl_error_t_CL_ERROR;
+        }
+    };
+
+    let file_bytes = match fmap.need_off(0, fmap.len()) {
+        Ok(bytes) => bytes,
+        Err(err) => {
+            error!(
+                "Failed to get file bytes for fmap of size {}: {err}",
+                fmap.len()
+            );
+            return cl_error_t_CL_ERROR;
+        }
+    };
+
+    debug!("in cli_scanzstd()");
+
+    // Decompress every zstd frame into a single buffer.
+    //
+    // `output` is owned outside the closure so that even if the decoder panics
+    // on malformed input we still scan whatever was decompressed so far, rather
+    // than discarding it (an evasion gap). The decode loop is wrapped in
+    // catch_unwind so that a panic cannot unwind across the C FFI boundary.
+    let mut output: Vec<u8> = Vec::new();
+
+    let decompress = panic::catch_unwind(panic::AssertUnwindSafe(|| {
+        let mut cursor = Cursor::new(file_bytes);
+        let total_len = file_bytes.len() as u64;
+        let mut chunk = [0u8; 65536];
+
+        'frames: while cursor.position() < total_len {
+            // Stop before starting a new frame if we've already hit scan limits.
+            if unsafe { check_scan_limits("zstd", ctx, output.len() as u64, 0, 0) }
+                != cl_error_t_CL_SUCCESS
+            {
+                debug!("cli_scanzstd: exceeded scan limits. Bailing out.");
+                break;
+            }
+
+            // ruzstd's StreamingDecoder decodes a single frame, so we recreate it
+            // for each concatenated frame in the stream.
+            let mut decoder = match StreamingDecoder::new(&mut cursor) {
+                Ok(decoder) => decoder,
+                Err(FrameDecoderError::ReadFrameHeaderError(ReadFrameHeaderError::SkipFrame {
+                    length,
+                    ..
+                })) => {
+                    // Skippable frame: its 8-byte header was already consumed; skip the body.
+                    let next = cursor
+                        .position()
+                        .saturating_add(length as u64)
+                        .min(total_len);
+                    cursor.set_position(next);
+                    continue;
+                }
+                Err(err) => {
+                    // No more valid frames (e.g. trailing data). Scan what we have.
+                    debug!("cli_scanzstd: stopping frame parsing: {err}");
+                    break;
+                }
+            };
+
+            loop {
+                match decoder.read(&mut chunk) {
+                    Ok(0) => break, // current frame fully decoded
+                    Ok(n) => {
+                        output.extend_from_slice(&chunk[..n]);
+
+                        if unsafe { check_scan_limits("zstd", ctx, output.len() as u64, 0, 0) }
+                            != cl_error_t_CL_SUCCESS
+                        {
+                            debug!(
+                                "cli_scanzstd: decompressed size exceeds limits - \
+                                 only scanning {} bytes",
+                                output.len()
+                            );
+                            break 'frames;
+                        }
+                    }
+                    Err(err) => {
+                        // Scan whatever we decompressed so far.
+                        debug!("cli_scanzstd: decompress error: {err}");
+                        break 'frames;
+                    }
+                }
+            }
+        }
+    }));
+
+    if decompress.is_err() {
+        // The decoder panicked; scan whatever was decompressed before the panic.
+        debug!("cli_scanzstd: panic while decompressing zstd data");
+    }
+
+    magic_scan(ctx, &output, None)
 }
