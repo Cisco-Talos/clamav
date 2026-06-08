@@ -5698,26 +5698,19 @@ finish:
     return ret;
 }
 
-/* Print out either the MD5, SHA1, or SHA2-256 associated with the imphash or
- * the individual sections. Also, this function computes the hashes of each
- * section (sorted based on the RVAs of the sections) if hashes is non-NULL.
+/* Generate and, when debug logging is enabled, print the MD5, SHA1, or
+ * SHA2-256 associated with the imphash or the individual sections. Section
+ * hashes are computed after sorting sections by raw file offset.
  *
- * If the section hashes are to be computed and returned, this function
- * allocates memory for the section hashes, and it's up to the caller to free
- * it.  hashes->sections will be initialized to NULL at the beginning of the
- * function, and if after the call its value is non-NULL, the memory should be
- * freed.  Furthermore, if hashes->sections is non-NULL, the hashes can assume
- * to be valid regardless of the return code.
- *
- * Also, a few other notes:
- *  - If a section has a virtual size of zero, its corresponding hash value
- *    will not be computed and the hash contents will be all zeroes.
- *  - If a section extends beyond the end of the file, the section data and
- *    length will be truncated, and the hash generated accordingly
- *  - If a section exists completely outside of the file, it won't be included
- *    in the list of sections, and nsections will be adjusted accordingly.
+ * A few other notes:
+ *  - Sections with zero raw size, sections larger than CLI_MAX_ALLOCATION, or
+ *    sections whose raw data cannot be mapped do not produce a hash.
+ *  - If a section's raw data extends beyond the end of the file, cli_peheader()
+ *    truncates the raw size and the hash is generated from that truncated span.
+ *  - If a section exists completely outside of the file, cli_peheader() sets
+ *    its raw size to zero, so no section hash is printed for it.
  */
-cl_error_t cli_genhash_pe(cli_ctx *ctx, unsigned int class, cli_hash_type_t type, stats_section_t *hashes)
+cl_error_t cli_genhash_pe(cli_ctx *ctx, unsigned int class, cli_hash_type_t type)
 {
     unsigned int i;
     struct cli_exe_info _peinfo;
@@ -5727,15 +5720,6 @@ cl_error_t cli_genhash_pe(cli_ctx *ctx, unsigned int class, cli_hash_type_t type
     uint8_t *hashset[CLI_HASH_AVAIL_TYPES] = {NULL};
     bool genhash[CLI_HASH_AVAIL_TYPES]     = {false};
     int hlen                               = 0;
-
-    if (hashes) {
-        hashes->sections = NULL;
-
-        if (class != CL_GENHASH_PE_CLASS_SECTION || type != 1) {
-            cli_dbgmsg("`hashes` can only be populated with MD5 PE section data\n");
-            return CL_EARG;
-        }
-    }
 
     if (class >= CL_GENHASH_PE_CLASS_LAST)
         return CL_EARG;
@@ -5768,17 +5752,6 @@ cl_error_t cli_genhash_pe(cli_ctx *ctx, unsigned int class, cli_hash_type_t type
         return CL_EMEM;
     }
 
-    if (hashes) {
-        hashes->nsections = peinfo->nsections;
-        hashes->sections  = cli_max_calloc(peinfo->nsections, sizeof(struct cli_section_hash));
-
-        if (!(hashes->sections)) {
-            cli_exe_info_destroy(peinfo);
-            free(hash);
-            return CL_EMEM;
-        }
-    }
-
     if (class == CL_GENHASH_PE_CLASS_SECTION) {
         char *dstr;
 
@@ -5791,10 +5764,6 @@ cl_error_t cli_genhash_pe(cli_ctx *ctx, unsigned int class, cli_hash_type_t type
                     if (dstr != NULL) {
                         free(dstr);
                     }
-                }
-                if (hashes) {
-                    memcpy(hashes->sections[i].md5, hash, sizeof(hashes->sections[i].md5));
-                    hashes->sections[i].len = peinfo->sections[i].rsz;
                 }
             } else if (peinfo->sections[i].rsz) {
                 cli_dbgmsg("Section{%u}: failed to generate hash for section\n", i);

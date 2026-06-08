@@ -218,7 +218,6 @@ set(LIBCLAMAV_SOURCES
     table.c             table.h
     text.c              text.h
     uniq.c              uniq.h
-    www.c               www.h
     # Utils Disasm
     disasm-common.h     disasm.c    disasm.h    disasmpriv.h
     # Matcher
@@ -260,10 +259,6 @@ set(LIBCLAMAV_SOURCES
     # heuristics (hardcoded exploit/malware detection)
     partition_intersection.c partition_intersection.h
     special.c           special.h
-    # clamav statistics
-    hostid_internal.c   hostid_internal.h
-    stats_json.c        stats_json.h
-    stats.c             stats.h
     # clamav bytecode support
     bcfeatures.h
     builtin_bytecodes.h

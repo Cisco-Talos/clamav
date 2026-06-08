@@ -653,24 +653,6 @@ cl_error_t cli_check_fp(cli_ctx *ctx, const char *vname)
                         ctx->engine->cb_hash(fmap_fd(ctx->fmap), map->len, hash_string, vname ? vname : "noname", ctx->cb_ctx);
                     }
 
-                    if (ctx->engine->cb_stats_add_sample) {
-                        stats_section_t sections;
-                        memset(&sections, 0x00, sizeof(stats_section_t));
-
-                        if (!(ctx->engine->engine_options & ENGINE_OPTIONS_DISABLE_PE_STATS) &&
-                            !(ctx->engine->dconf->stats & (DCONF_STATS_DISABLED | DCONF_STATS_PE_SECTION_DISABLED))) {
-
-                            cli_genhash_pe(ctx, CL_GENHASH_PE_CLASS_SECTION, 1, &sections);
-                        }
-
-                        // TODO We probably only want to call cb_stats_add_sample when
-                        // sections.section != NULL... leaving as is for now
-                        ctx->engine->cb_stats_add_sample(vname ? vname : "noname", hash, map->len, &sections, ctx->engine->stats_data);
-
-                        if (sections.sections) {
-                            free(sections.sections);
-                        }
-                    }
                 }
 
                 if (cli_hm_scan(hash, map->len, &virname, ctx->engine->hm_fp, hash_type) == CL_VIRUS) {

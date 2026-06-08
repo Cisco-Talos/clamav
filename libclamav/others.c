@@ -75,7 +75,6 @@
 #include "bytecode_api_impl.h"
 #include "cache.h"
 #include "readdb.h"
-#include "stats.h"
 #include "json_api.h"
 #include "mpool.h"
 
@@ -473,7 +472,6 @@ struct cl_engine *cl_engine_new(void)
     cl_error_t status = CL_ERROR;
 
     struct cl_engine *new = NULL;
-    cli_intel_t *intel    = NULL;
     char *cvdcertsdir     = NULL;
 
     new = (struct cl_engine *)calloc(1, sizeof(struct cl_engine));
@@ -544,33 +542,6 @@ struct cl_engine *cl_engine_new(void)
         cli_errmsg("cl_engine_new: Can't initialize root certificates\n");
         goto done;
     }
-
-    /* Set up default stats/intel gathering callbacks */
-    intel = calloc(1, sizeof(cli_intel_t));
-    if ((intel)) {
-#ifdef CL_THREAD_SAFE
-        if (pthread_mutex_init(&(intel->mutex), NULL)) {
-            cli_errmsg("cli_engine_new: Cannot initialize stats gathering mutex\n");
-            goto done;
-        }
-#endif
-        intel->engine     = new;
-        intel->maxsamples = STATS_MAX_SAMPLES;
-        intel->maxmem     = STATS_MAX_MEM;
-        intel->timeout    = 10;
-        new->stats_data   = intel;
-    } else {
-        new->stats_data = NULL;
-    }
-
-    new->cb_stats_add_sample      = NULL;
-    new->cb_stats_submit          = NULL;
-    new->cb_stats_flush           = clamav_stats_flush;
-    new->cb_stats_remove_sample   = clamav_stats_remove_sample;
-    new->cb_stats_decrement_count = clamav_stats_decrement_count;
-    new->cb_stats_get_num         = clamav_stats_get_num;
-    new->cb_stats_get_size        = clamav_stats_get_size;
-    new->cb_stats_get_hostid      = clamav_stats_get_hostid;
 
     /* Setup raw disk image max settings */
     new->maxpartitions = CLI_DEFAULT_MAXPARTITIONS;
@@ -650,9 +621,6 @@ done:
             }
             free(new);
             new = NULL;
-        }
-        if (NULL != intel) {
-            free(intel);
         }
     }
 
@@ -811,20 +779,6 @@ cl_error_t cl_engine_set_num(struct cl_engine *engine, enum cl_engine_field fiel
                 engine->cache_size = (uint32_t)num;
             }
             break;
-        case CL_ENGINE_DISABLE_PE_STATS:
-            if (num) {
-                engine->engine_options |= ENGINE_OPTIONS_DISABLE_PE_STATS;
-            } else {
-                engine->engine_options &= ~(ENGINE_OPTIONS_DISABLE_PE_STATS);
-            }
-            break;
-        case CL_ENGINE_STATS_TIMEOUT:
-            if ((engine->stats_data)) {
-                cli_intel_t *intel = (cli_intel_t *)(engine->stats_data);
-
-                intel->timeout = (uint32_t)num;
-            }
-            break;
         case CL_ENGINE_MAX_PARTITIONS:
             engine->maxpartitions = (uint32_t)num;
             break;
@@ -938,8 +892,6 @@ long long cl_engine_get_num(const struct cl_engine *engine, enum cl_engine_field
             return engine->engine_options & ENGINE_OPTIONS_DISABLE_CACHE;
         case CL_ENGINE_CACHE_SIZE:
             return engine->cache_size;
-        case CL_ENGINE_STATS_TIMEOUT:
-            return ((cli_intel_t *)(engine->stats_data))->timeout;
         case CL_ENGINE_MAX_PARTITIONS:
             return engine->maxpartitions;
         case CL_ENGINE_MAX_ICONSPE:
@@ -1081,15 +1033,6 @@ struct cl_settings *cl_engine_settings_copy(const struct cl_engine *engine)
     settings->engine_options                 = engine->engine_options;
     settings->cache_size                     = engine->cache_size;
 
-    settings->cb_stats_add_sample      = engine->cb_stats_add_sample;
-    settings->cb_stats_remove_sample   = engine->cb_stats_remove_sample;
-    settings->cb_stats_decrement_count = engine->cb_stats_decrement_count;
-    settings->cb_stats_submit          = engine->cb_stats_submit;
-    settings->cb_stats_flush           = engine->cb_stats_flush;
-    settings->cb_stats_get_num         = engine->cb_stats_get_num;
-    settings->cb_stats_get_size        = engine->cb_stats_get_size;
-    settings->cb_stats_get_hostid      = engine->cb_stats_get_hostid;
-
     settings->maxpartitions = engine->maxpartitions;
 
     settings->maxiconspe = engine->maxiconspe;
@@ -1161,15 +1104,6 @@ cl_error_t cl_engine_settings_apply(struct cl_engine *engine, const struct cl_se
     engine->cb_hash                        = settings->cb_hash;
     engine->cb_meta                        = settings->cb_meta;
     engine->cb_file_props                  = settings->cb_file_props;
-
-    engine->cb_stats_add_sample      = settings->cb_stats_add_sample;
-    engine->cb_stats_remove_sample   = settings->cb_stats_remove_sample;
-    engine->cb_stats_decrement_count = settings->cb_stats_decrement_count;
-    engine->cb_stats_submit          = settings->cb_stats_submit;
-    engine->cb_stats_flush           = settings->cb_stats_flush;
-    engine->cb_stats_get_num         = settings->cb_stats_get_num;
-    engine->cb_stats_get_size        = settings->cb_stats_get_size;
-    engine->cb_stats_get_hostid      = settings->cb_stats_get_hostid;
 
     engine->maxpartitions = settings->maxpartitions;
 

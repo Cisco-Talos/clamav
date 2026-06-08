@@ -237,7 +237,7 @@ struct cl_scan_options {
 #define ENGINE_OPTIONS_NONE             0x0
 #define ENGINE_OPTIONS_DISABLE_CACHE    0x1
 #define ENGINE_OPTIONS_FORCE_TO_DISK    0x2
-#define ENGINE_OPTIONS_DISABLE_PE_STATS 0x4
+/* 0x4 was ENGINE_OPTIONS_DISABLE_PE_STATS; keep later bits stable. */
 #define ENGINE_OPTIONS_DISABLE_PE_CERTS 0x8
 #define ENGINE_OPTIONS_PE_DUMPCERTS     0x10
 #define ENGINE_OPTIONS_TMPDIR_RECURSION 0x20
@@ -331,8 +331,6 @@ enum cl_engine_field {
     CL_ENGINE_FORCETODISK,         /** uint32_t */
     CL_ENGINE_CACHE_SIZE,          /** uint32_t */
     CL_ENGINE_DISABLE_CACHE,       /** uint32_t */
-    CL_ENGINE_DISABLE_PE_STATS,    /** uint32_t */
-    CL_ENGINE_STATS_TIMEOUT,       /** uint32_t */
     CL_ENGINE_MAX_PARTITIONS,      /** uint32_t */
     CL_ENGINE_MAX_ICONSPE,         /** uint32_t */
     CL_ENGINE_MAX_RECHWP3,         /** uint32_t */
@@ -360,16 +358,6 @@ enum bytecode_mode {
     CL_BYTECODE_MODE_TEST,        /** both JIT and interpreter, compare results, all failures are fatal */
     CL_BYTECODE_MODE_OFF          /** for query only, not settable */
 };
-
-struct cli_section_hash {
-    unsigned char md5[16];
-    size_t len;
-};
-
-typedef struct cli_stats_sections {
-    size_t nsections;
-    struct cli_section_hash *sections;
-} stats_section_t;
 
 /**
  * @brief Set a numerical engine option.
@@ -1402,181 +1390,6 @@ typedef int (*clcb_generic_data)(const unsigned char *const data, const size_t d
  * @param callback  The callback function pointer.
  */
 extern void cl_engine_set_clcb_vba(struct cl_engine *engine, clcb_generic_data callback);
-
-/* ----------------------------------------------------------------------------
- * Statistics/telemetry gathering callbacks.
- *
- * The statistics callback functions may be used to implement a telemetry
- * gathering feature.
- *
- * The structure definition for `cbdata` is entirely up to the caller, as are
- * the implementations of each of the callback functions defined below.
- */
-
-/**
- * @brief Set a pointer the caller-defined cbdata structure.
- *
- * The data must persist at least until `clcb_stats_submit()` is called, or
- * `clcb_stats_flush()` is called (optional).
- *
- * Caution: changing options for an engine that is in-use is not thread-safe!
- *
- * @param engine The scanning engine.
- * @param cbdata The statistics data. Probably a pointer to a malloc'd struct.
- */
-extern void cl_engine_set_stats_set_cbdata(struct cl_engine *engine, void *cbdata);
-
-/**
- * @brief Add sample metadata to the statistics for a sample that matched on a signature.
- *
- * @param virname   Name of the signature that matched.
- * @param md5       Sample hash.
- * @param size      Sample size.
- * @param sections  PE section data, if applicable.
- * @param cbdata    The statistics data. Probably a pointer to a malloc'd struct.
- */
-typedef void (*clcb_stats_add_sample)(
-    const char *virname,
-    const unsigned char *md5,
-    size_t size,
-    stats_section_t *sections,
-    void *cbdata);
-/**
- * @brief Set a custom callback function to add sample metadata to a statistics report.
- *
- * Caution: changing options for an engine that is in-use is not thread-safe!
- *
- * @param engine    The initialized scanning engine.
- * @param callback  The callback function pointer.
- */
-extern void cl_engine_set_clcb_stats_add_sample(struct cl_engine *engine, clcb_stats_add_sample callback);
-
-/**
- * @brief Remove a specific sample from the statistics report.
- *
- * @param virname   Name of the signature that matched.
- * @param md5       Sample hash.
- * @param size      Sample size.
- * @param cbdata    The statistics data. Probably a pointer to a malloc'd struct.
- */
-typedef void (*clcb_stats_remove_sample)(const char *virname, const unsigned char *md5, size_t size, void *cbdata);
-/**
- * @brief Set a custom callback function to remove sample metadata from a statistics report.
- *
- * Caution: changing options for an engine that is in-use is not thread-safe!
- *
- * @param engine    The initialized scanning engine.
- * @param callback  The callback function pointer.
- */
-extern void cl_engine_set_clcb_stats_remove_sample(struct cl_engine *engine, clcb_stats_remove_sample callback);
-
-/**
- * @brief Decrement the hit count listed in the statistics report for a specific sample.
- *
- * @param virname   Name of the signature that matched.
- * @param md5       Sample hash.
- * @param size      Sample size.
- * @param cbdata    The statistics data. Probably a pointer to a malloc'd struct.
- */
-typedef void (*clcb_stats_decrement_count)(const char *virname, const unsigned char *md5, size_t size, void *cbdata);
-/**
- * @brief Set a custom callback function to decrement the hit count listed in the statistics report for a specific sample.
- *
- * This function may remove the sample from the report if the hit count is decremented to 0.
- *
- * @param engine    The initialized scanning engine.
- * @param callback  The callback function pointer.
- */
-extern void cl_engine_set_clcb_stats_decrement_count(struct cl_engine *engine, clcb_stats_decrement_count callback);
-
-/**
- * @brief Function to submit a statistics report.
- *
- * @param engine    The initialized scanning engine.
- * @param cbdata    The statistics data. Probably a pointer to a malloc'd struct.
- */
-typedef void (*clcb_stats_submit)(struct cl_engine *engine, void *cbdata);
-/**
- * @brief Set a custom callback function to submit the statistics report.
- *
- * Caution: changing options for an engine that is in-use is not thread-safe!
- *
- * @param engine    The initialized scanning engine.
- * @param callback  The callback function pointer.
- */
-extern void cl_engine_set_clcb_stats_submit(struct cl_engine *engine, clcb_stats_submit callback);
-
-/**
- * @brief Function to flush/free the statistics report data.
- *
- * @param engine    The initialized scanning engine.
- * @param cbdata    The statistics data. Probably a pointer to a malloc'd struct.
- */
-typedef void (*clcb_stats_flush)(struct cl_engine *engine, void *cbdata);
-/**
- * @brief Set a custom callback function to flush/free the statistics report data.
- *
- * Caution: changing options for an engine that is in-use is not thread-safe!
- *
- * @param engine    The initialized scanning engine.
- * @param callback  The callback function pointer.
- */
-extern void cl_engine_set_clcb_stats_flush(struct cl_engine *engine, clcb_stats_flush callback);
-
-/**
- * @brief Function to get the number of samples listed in the statistics report.
- *
- * @param cbdata    The statistics data. Probably a pointer to a malloc'd struct.
- */
-typedef size_t (*clcb_stats_get_num)(void *cbdata);
-/**
- * @brief Set a custom callback function to get the number of samples listed in the statistics report.
- *
- * Caution: changing options for an engine that is in-use is not thread-safe!
- *
- * @param engine    The initialized scanning engine.
- * @param callback  The callback function pointer.
- */
-extern void cl_engine_set_clcb_stats_get_num(struct cl_engine *engine, clcb_stats_get_num callback);
-
-/**
- * @brief Function to get the size of memory used to store the statistics report.
- *
- * @param cbdata    The statistics data. Probably a pointer to a malloc'd struct.
- */
-typedef size_t (*clcb_stats_get_size)(void *cbdata);
-/**
- * @brief Set a custom callback function to get the size of memory used to store the statistics report.
- *
- * Caution: changing options for an engine that is in-use is not thread-safe!
- *
- * @param engine    The initialized scanning engine.
- * @param callback  The callback function pointer.
- */
-extern void cl_engine_set_clcb_stats_get_size(struct cl_engine *engine, clcb_stats_get_size callback);
-
-/**
- * @brief Function to get the machine's unique host ID.
- *
- * @param cbdata    The statistics data. Probably a pointer to a malloc'd struct.
- */
-typedef char *(*clcb_stats_get_hostid)(void *cbdata);
-/**
- * @brief Set a custom callback function to get the machine's unique host ID.
- *
- * Caution: changing options for an engine that is in-use is not thread-safe!
- *
- * @param engine    The initialized scanning engine.
- * @param callback  The callback function pointer.
- */
-extern void cl_engine_set_clcb_stats_get_hostid(struct cl_engine *engine, clcb_stats_get_hostid callback);
-
-/**
- * @brief Function enables the built-in statistics reporting feature.
- *
- * @param engine    The initialized scanning engine.
- */
-extern void cl_engine_stats_enable(struct cl_engine *engine);
 
 /* ----------------------------------------------------------------------------
  * File scanning.

@@ -243,10 +243,10 @@ static int hashpe(const char *filename, unsigned int class, cli_hash_type_t type
     /* Send to PE-specific hasher */
     switch (class) {
         case 1:
-            ret = cli_genhash_pe(&ctx, CL_GENHASH_PE_CLASS_SECTION, type, NULL);
+            ret = cli_genhash_pe(&ctx, CL_GENHASH_PE_CLASS_SECTION, type);
             break;
         case 2:
-            ret = cli_genhash_pe(&ctx, CL_GENHASH_PE_CLASS_IMPTBL, type, NULL);
+            ret = cli_genhash_pe(&ctx, CL_GENHASH_PE_CLASS_IMPTBL, type);
             break;
         default:
             mprintf(LOGG_ERROR, "hashpe: unknown classification(%u) for pe hash!\n", class);
