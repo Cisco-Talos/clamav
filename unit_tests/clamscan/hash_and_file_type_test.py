@@ -269,3 +269,73 @@ class TC(testcase.TestCase):
             'logo.png FileType: faketype',
         ]
         self.verify_output(output.out, expected=expected_stdout, unexpected=unexpected_stdout)
+
+
+    def test_html_table_file_type_requires_tag_boundary(self):
+        self.step_name('Test that the HTML <table> file type signature requires a tag boundary.')
+
+        (TC.path_tmp / 'good.ldb').write_text(
+            "logo.png.good;Engine:150-255,Target:0;0;fuzzy_img#af2ad01ed42993c7#0\n"
+        )
+
+        table_styles_xml = TC.path_tmp / 'table_styles.xml'
+        table_styles_xml.write_bytes(
+            b'<?xml version="1.0" encoding="UTF-8"?>'
+            b'<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+            b'<dxfs count="0"/><tableStyles count="0" defaultTableStyle="TableStyleMedium2"/>'
+            b'</styleSheet>'
+        )
+
+        command = '{valgrind} {valgrind_args} {clamscan} -d {path_db} {testfile} --log-file-type'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan,
+            path_db=TC.path_tmp / 'good.ldb',
+            testfile=table_styles_xml,
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 0  # clean
+
+        self.verify_output(
+            output.out,
+            expected=[
+                'table_styles.xml: OK',
+                'table_styles.xml FileType: CL_TYPE_TEXT_ASCII',
+            ],
+            unexpected=[
+                'table_styles.xml FileType: CL_TYPE_HTML',
+            ]
+        )
+
+        html_table_files = {
+            'table_close.html': b'<table></table>',
+            'table_space.html': b'<table class="sample"></table>',
+            'table_tab.html': b'<table\tclass="sample"></table>',
+            'table_lf.html': b'<table\nclass="sample"></table>',
+            'table_vtab.html': b'<table\vclass="sample"></table>',
+            'table_ff.html': b'<table\fclass="sample"></table>',
+            'table_cr.html': b'<table\rclass="sample"></table>',
+            'table_slash.html': b'<table/>',
+            'table_uppercase.html': b'<TABLE></TABLE>',
+        }
+
+        for filename, contents in html_table_files.items():
+            testfile = TC.path_tmp / filename
+            testfile.write_bytes(contents)
+
+            command = '{valgrind} {valgrind_args} {clamscan} -d {path_db} {testfile} --log-file-type'.format(
+                valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan,
+                path_db=TC.path_tmp / 'good.ldb',
+                testfile=testfile,
+            )
+            output = self.execute_command(command)
+
+            assert output.ec == 0  # clean
+
+            self.verify_output(
+                output.out,
+                expected=[
+                    '{}: OK'.format(filename),
+                    '{} FileType: CL_TYPE_HTML'.format(filename),
+                ],
+                unexpected=[]
+            )
