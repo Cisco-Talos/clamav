@@ -8,6 +8,7 @@ import os
 from pathlib import Path
 import platform
 import socket
+import stat
 import subprocess
 import shutil
 import sys
@@ -792,3 +793,78 @@ class TC(testcase.TestCase):
         expected_results = ['{}: OK'.format(testpath.name) for testpath in testpaths]
         expected_results.append('Infected files: 0')
         self.verify_output(output.out, expected=expected_results)
+
+    @unittest.skipIf(os.name == 'nt' or not hasattr(os, 'mkfifo') or not hasattr(socket, 'AF_UNIX'),
+                     'requires FIFO and Unix domain socket support')
+    def test_clamd_13_ignore_special_files(self):
+        self.step_name('Test clamdscan --ignore-{socket,pipe,device}-errors')
+
+        self.start_clamd()
+        assert self.proc.poll() is None
+
+        fifo      = TC.path_tmp / 'clamdscan-fifo'
+        sockp     = TC.path_tmp / 'clamdscan.sock'
+        walk_dir  = TC.path_tmp / 'clamdscan-walk-dir'
+        walk_dir.mkdir(exist_ok=True)
+        walk_fifo = walk_dir / 'nested-fifo'
+        dev = '/dev/null' if os.path.exists('/dev/null') and stat.S_ISCHR(os.lstat('/dev/null').st_mode) else None
+
+        os.mkfifo(str(fifo))
+        os.mkfifo(str(walk_fifo))
+        sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+
+        def scan(*args):
+            return self.execute_command(
+                '{c} --ping 5 --wait -c {cfg} --no-summary {a}'.format(
+                    c=TC.clamdscan, cfg=TC.clamd_config,
+                    a=' '.join(str(x) for x in args)))
+
+        try:
+            sock.bind(str(sockp))
+
+            # --multiscan dispatches through parallel_callback instead of serial_callback;
+            # one type proves both callbacks reach the shared helper.
+            for ms in [[], ['--multiscan']]:
+                out = scan(*(ms + [fifo]))
+                assert out.ec == 2, ms
+                self.verify_output(out.err, expected=['Not supported file type'])
+
+                out = scan(*(ms + ['--ignore-pipe-errors', fifo]))
+                assert out.ec == 0, ms
+                self.verify_output(out.out, expected=['Skipping unsupported pipe'])
+                self.verify_output(out.err, unexpected=['Not supported file type'])
+
+            out = scan('--ignore-socket-errors', sockp)
+            assert out.ec == 0
+            self.verify_output(out.out, expected=['Skipping unsupported socket'])
+
+            # A flag must not suppress ec=2 for an unrelated file type.
+            out = scan('--ignore-socket-errors', fifo)
+            assert out.ec == 2
+
+            # Nested specials only reach the client-side warning_skipped_special handling when
+            # clamdscan walks the directory itself; in the default modes clamd walks server-side
+            # and silently skips them (clamd/scanner.c only ERRORs on the toplevel target).
+            # Force a client-side walk with --stream.
+            for ms in [['--stream'], ['--stream', '--multiscan']]:
+                out = scan(*(ms + [walk_dir]))
+                assert out.ec == 2, ms
+                out = scan(*(ms + ['--ignore-pipe-errors', walk_dir]))
+                assert out.ec == 0, ms
+                self.verify_output(out.out, expected=['Skipping unsupported pipe'])
+
+            if dev:
+                out = scan('--ignore-device-errors', dev)
+                assert out.ec == 0
+                self.verify_output(out.out, expected=['Skipping unsupported device'])
+
+            # An infection in another target must still surface as ec=1.
+            out = scan('--ignore-pipe-errors', fifo, TC.testpaths[0])
+            assert out.ec == 1
+        finally:
+            sock.close()
+            for p in [fifo, sockp, walk_fifo]:
+                try: p.unlink()
+                except Exception: pass
+            try: walk_dir.rmdir()
+            except Exception: pass

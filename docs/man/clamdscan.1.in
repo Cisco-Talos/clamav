@@ -75,6 +75,15 @@ Only available if connected to clamd via local(unix) socket.
 .TP
 \fB\-\-stream\fR
 Forces file streaming to clamd. This is generally not needed as clamdscan detects automatically if streaming is required. This option only exists for debugging and testing purposes, in all other cases \-\-fdpass is preferred.
+.TP
+\fB\-\-ignore\-socket\-errors=[yes/no(*)]\fR
+Do not return error code 2 when a scan target is a Unix domain socket. The file is still reported with an informational message, but does not count as an error. Applies to directly-named targets, and to files found during directory recursion when clamdscan walks the directory tree itself (with \-\-stream, \-\-fdpass, \-\-allmatch, or a remote clamd). Otherwise directories are walked by clamd, which already skips special files without raising an error. Other unsupported file types and file access errors are still treated as errors.
+.TP
+\fB\-\-ignore\-pipe\-errors=[yes/no(*)]\fR
+Same as \-\-ignore\-socket\-errors, but for named pipes (FIFOs).
+.TP
+\fB\-\-ignore\-device\-errors=[yes/no(*)]\fR
+Same as \-\-ignore\-socket\-errors, but for character and block device files.
 
 .SH "EXAMPLES"
 .LP
