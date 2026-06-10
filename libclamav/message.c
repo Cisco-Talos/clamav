@@ -1843,7 +1843,8 @@ decodeLine(message *m, encoding_type et, const char *line, unsigned char *buf, s
             }
 
             softbreak = false;
-            while (buflen && *line) {
+            /* reserve two bytes for the trailing '\n' and '\0' written below */
+            while (buflen > 2 && *line) {
                 if (*line == '=') {
                     unsigned char byte;
 
@@ -1962,13 +1963,17 @@ decodeLine(message *m, encoding_type et, const char *line, unsigned char *buf, s
             if (strncmp(line, "=yend ", 6) == 0)
                 break;
 
-            while (*line)
+            /* reserve one byte for the trailing '\0' written below */
+            while (buflen > 1 && *line) {
                 if (*line == '=') {
                     if (*++line == '\0')
                         break;
                     *buf++ = ((*line++ - 64) & 255);
-                } else
+                } else {
                     *buf++ = ((*line++ - 42) & 255);
+                }
+                buflen--;
+            }
             break;
     }
 
