@@ -1180,8 +1180,14 @@ static int scan_files(struct cl_engine *engine, const struct optstruct *opts, st
                 /* Found a directory, scan it. */
                 scandirs(file, engine, opts, options, 1, sb.st_dev);
             } else {
-                logg(LOGG_WARNING, "%s: Not supported file type\n", file);
-                ret = 2;
+                const char *unsupported_type = NULL;
+
+                if (should_ignore_unsupported_file_type(sb.st_mode, opts, &unsupported_type)) {
+                    logg(LOGG_INFO, "%s: Skipping unsupported %s\n", file, unsupported_type);
+                } else {
+                    logg(LOGG_WARNING, "%s: Not supported file type\n", file);
+                    ret = 2;
+                }
             }
         }
 

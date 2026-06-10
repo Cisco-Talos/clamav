@@ -512,3 +512,27 @@ cl_error_t check_if_cvd_outdated(const char *path, long long days)
 
     return CL_SUCCESS;
 }
+
+int should_ignore_unsupported_file_type(mode_t mode, const struct optstruct *opts, const char **type_name)
+{
+#ifndef _WIN32
+    if (S_ISSOCK(mode) && optget(opts, "ignore-socket-errors")->enabled) {
+        *type_name = "socket";
+        return 1;
+    }
+    if (S_ISFIFO(mode) && optget(opts, "ignore-pipe-errors")->enabled) {
+        *type_name = "pipe";
+        return 1;
+    }
+    if ((S_ISBLK(mode) || S_ISCHR(mode)) && optget(opts, "ignore-device-errors")->enabled) {
+        *type_name = "device";
+        return 1;
+    }
+#else
+    UNUSEDPARAM(mode);
+    UNUSEDPARAM(opts);
+    UNUSEDPARAM(type_name);
+#endif
+
+    return 0;
+}

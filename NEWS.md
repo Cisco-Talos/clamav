@@ -15,6 +15,12 @@ ClamAV 1.6.0 includes the following improvements and changes:
 
 ### Other improvements
 
+- Added `--ignore-socket-errors`, `--ignore-pipe-errors`, and
+  `--ignore-device-errors` options to clamscan. The flags suppress
+  exit-code 2 for Unix domain sockets, named pipes/FIFOs, and
+  character/block device files passed as scan targets or file-list
+  entries.
+
 ### Bug fixes
 
 ### Acknowledgments
