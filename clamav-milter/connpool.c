@@ -209,7 +209,7 @@ void cpool_init(struct optstruct *opts)
     const struct optstruct *opt;
     int failed = 0;
 
-    if (!(cp = calloc(sizeof(*cp), 1))) {
+    if (!(cp = calloc(1, sizeof(*cp)))) {
         logg(LOGG_ERROR, "Out of memory while initializing the connection pool");
         return;
     }

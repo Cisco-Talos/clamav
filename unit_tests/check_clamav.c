@@ -73,7 +73,7 @@ START_TEST(test_cl_build)
 {
     // struct cl_engine *engine;
     // ck_assert_msg(CL_ENULLARG == cl_build(NULL), "cl_build null pointer");
-    // engine = calloc(sizeof(struct cl_engine),1);
+    // engine = calloc(1, sizeof(struct cl_engine));
     // ck_assert_msg(engine, "cl_build calloc");
     // ck_assert_msg(CL_ENULLARG == cl_build(engine), "cl_build(engine) with null ->root");
 
