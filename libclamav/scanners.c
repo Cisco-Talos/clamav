@@ -1537,8 +1537,8 @@ done:
  * Find a file in a directory tree.
  * \param filename Name of the file to find
  * \param dir Directory path where to find the file
- * \param A pointer to the string to store the result into
- * \param Size of the string to store the result in
+ * \param result A pointer to the string to store the result into
+ * \param result_size Size of the string to store the result in
  */
 cl_error_t find_file(const char *filename, const char *dir, char *result, size_t result_size)
 {
