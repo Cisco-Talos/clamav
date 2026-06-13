@@ -5449,13 +5449,14 @@ cl_error_t cli_magic_scan_desc(int desc, const char *filepath, cli_ctx *ctx, con
  *
  * Magic-scan some portion of an existing fmap.
  *
- * @param map       File map.
- * @param offset    Offset into file map.
- * @param length    Length from offset.
- * @param ctx       Scanning context structure.
- * @param type      CL_TYPE of data to be scanned.
- * @param name      (optional) Original name of the file (to set fmap name metadata)
- * @return int      CL_SUCCESS, or an error code.
+ * @param map           File map.
+ * @param offset        Offset into file map.
+ * @param length        Length from offset.
+ * @param ctx           Scanning context structure.
+ * @param type          CL_TYPE of data to be scanned.
+ * @param name          (optional) Original name of the file (to set fmap name metadata)
+ * @param attributes    ...
+ * @return int          CL_SUCCESS, or an error code.
  */
 static cl_error_t magic_scan_nested_fmap_type(cl_fmap_t *map, size_t offset, size_t length, cli_ctx *ctx,
                                               cli_file_t type, const char *name, uint32_t attributes)
