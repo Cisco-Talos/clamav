@@ -508,7 +508,7 @@ int unspin(char *src, int ssize, struct cli_exe_section *sections, int sectcnt, 
     for (j = 0; j < sectcnt; j++) {
         if (bitmap & 1)
             free(sects[j]);
-        bitman = bitman >> 1 & 0x7fffffff;
+        bitmap = bitmap >> 1 & 0x7fffffff;
     }
     free(sects);
     return 1; /* :( */
