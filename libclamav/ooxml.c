@@ -176,13 +176,31 @@ static cl_error_t ooxml_extn_cb(int fd, const char *filepath, cli_ctx *ctx, cons
     return ret;
 }
 
+/**
+ * Copy an XML attribute value that must outlive the current text reader call.
+ */
+static cl_error_t ooxml_copy_attr_value(xmlChar **dst, const xmlChar *value)
+{
+    xmlChar *copy = xmlStrdup(value);
+
+    if (copy == NULL)
+        return CL_EMEM;
+
+    xmlFree(*dst);
+    *dst = copy;
+
+    return CL_SUCCESS;
+}
+
 static cl_error_t ooxml_content_cb(int fd, const char *filepath, cli_ctx *ctx, const char *name, uint32_t attributes)
 {
-    cl_error_t ret = CL_SUCCESS;
+    cl_error_t status = CL_SUCCESS;
+    cl_error_t ret    = CL_SUCCESS;
     int tmp, toval = 0, state;
     int core = 0, extn = 0, cust = 0, dsig = 0;
     int mcore = 0, mextn = 0, mcust = 0;
-    const xmlChar *localname, *value, *CT, *PN;
+    const xmlChar *localname, *value;
+    xmlChar *CT = NULL, *PN = NULL;
     xmlTextReaderPtr reader = NULL;
     uint32_t loff;
 
@@ -216,8 +234,8 @@ static cl_error_t ooxml_content_cb(int fd, const char *filepath, cli_ctx *ctx, c
     /* locate core-properties, extended-properties, and custom-properties (optional) */
     while ((state = xmlTextReaderRead(reader)) == 1) {
         if (cli_json_timeout_cycle_check(ctx, &toval) != CL_SUCCESS) {
-            ret = CL_ETIMEOUT;
-            goto ooxml_content_exit;
+            status = CL_ETIMEOUT;
+            goto done;
         }
 
         localname = xmlTextReaderConstLocalName(reader);
@@ -227,6 +245,8 @@ static cl_error_t ooxml_content_cb(int fd, const char *filepath, cli_ctx *ctx, c
 
         if (xmlTextReaderHasAttributes(reader) != 1) continue;
 
+        xmlFree(CT);
+        xmlFree(PN);
         CT = PN = NULL;
         while (xmlTextReaderMoveToNextAttribute(reader) == 1) {
             localname = xmlTextReaderConstLocalName(reader);
@@ -234,9 +254,17 @@ static cl_error_t ooxml_content_cb(int fd, const char *filepath, cli_ctx *ctx, c
             if (localname == NULL || value == NULL) continue;
 
             if (!xmlStrcmp(localname, (const xmlChar *)"ContentType")) {
-                CT = value;
+                ret = ooxml_copy_attr_value(&CT, value);
+                if (ret != CL_SUCCESS) {
+                    status = ret;
+                    goto done;
+                }
             } else if (!xmlStrcmp(localname, (const xmlChar *)"PartName")) {
-                PN = value;
+                ret = ooxml_copy_attr_value(&PN, value);
+                if (ret != CL_SUCCESS) {
+                    status = ret;
+                    goto done;
+                }
             }
 
             cli_dbgmsg("%s: %s\n", localname, value);
@@ -248,7 +276,7 @@ static cl_error_t ooxml_content_cb(int fd, const char *filepath, cli_ctx *ctx, c
             /* default: /docProps/core.xml*/
             tmp = unzip_search_single(ctx, (const char *)(PN + 1), xmlStrlen(PN) - 1, &loff);
             if (tmp == CL_ETIMEOUT) {
-                ret = tmp;
+                status = tmp;
             } else if (tmp != CL_VIRUS) {
                 cli_dbgmsg("cli_process_ooxml: failed to find core properties file \"%s\"!\n", PN);
                 mcore++;
@@ -257,7 +285,7 @@ static cl_error_t ooxml_content_cb(int fd, const char *filepath, cli_ctx *ctx, c
                 if (!core) {
                     tmp = unzip_single_internal(ctx, loff, ooxml_core_cb);
                     if (tmp == CL_ETIMEOUT || tmp == CL_EMEM) {
-                        ret = tmp;
+                        status = tmp;
                     }
                 }
                 core++;
@@ -266,7 +294,7 @@ static cl_error_t ooxml_content_cb(int fd, const char *filepath, cli_ctx *ctx, c
             /* default: /docProps/app.xml */
             tmp = unzip_search_single(ctx, (const char *)(PN + 1), xmlStrlen(PN) - 1, &loff);
             if (tmp == CL_ETIMEOUT) {
-                ret = tmp;
+                status = tmp;
             } else if (tmp != CL_VIRUS) {
                 cli_dbgmsg("cli_process_ooxml: failed to find extended properties file \"%s\"!\n", PN);
                 mextn++;
@@ -275,7 +303,7 @@ static cl_error_t ooxml_content_cb(int fd, const char *filepath, cli_ctx *ctx, c
                 if (!extn) {
                     tmp = unzip_single_internal(ctx, loff, ooxml_extn_cb);
                     if (tmp == CL_ETIMEOUT || tmp == CL_EMEM) {
-                        ret = tmp;
+                        status = tmp;
                     }
                 }
                 extn++;
@@ -284,7 +312,7 @@ static cl_error_t ooxml_content_cb(int fd, const char *filepath, cli_ctx *ctx, c
             /* default: /docProps/custom.xml */
             tmp = unzip_search_single(ctx, (const char *)(PN + 1), xmlStrlen(PN) - 1, &loff);
             if (tmp == CL_ETIMEOUT) {
-                ret = tmp;
+                status = tmp;
             } else if (tmp != CL_VIRUS) {
                 cli_dbgmsg("cli_process_ooxml: failed to find custom properties file \"%s\"!\n", PN);
                 mcust++;
@@ -297,11 +325,11 @@ static cl_error_t ooxml_content_cb(int fd, const char *filepath, cli_ctx *ctx, c
             dsig++;
         }
 
-        if (ret != CL_SUCCESS)
-            goto ooxml_content_exit;
+        if (status != CL_SUCCESS)
+            goto done;
     }
 
-ooxml_content_exit:
+done:
     if (core) {
         cli_jsonint(ctx->this_layer_metadata_json, "CorePropertiesFileCount", core);
         if (core > 1)
@@ -343,9 +371,11 @@ ooxml_content_exit:
     ctx->scansize     = sav_scansize;
     ctx->scannedfiles = sav_scannedfiles;
 
+    xmlFree(CT);
+    xmlFree(PN);
     xmlTextReaderClose(reader);
     xmlFreeTextReader(reader);
-    return ret;
+    return status;
 }
 
 static cl_error_t ooxml_hwp_cb(int fd, const char *filepath, cli_ctx *ctx, const char *name, uint32_t attributes)
