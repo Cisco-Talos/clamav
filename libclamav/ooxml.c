@@ -248,26 +248,42 @@ static cl_error_t ooxml_content_cb(int fd, const char *filepath, cli_ctx *ctx, c
         xmlFree(CT);
         xmlFree(PN);
         CT = PN = NULL;
-        while (xmlTextReaderMoveToNextAttribute(reader) == 1) {
+
+        state = xmlTextReaderMoveToFirstAttribute(reader);
+        while (state == 1) {
             localname = xmlTextReaderConstLocalName(reader);
             value     = xmlTextReaderConstValue(reader);
-            if (localname == NULL || value == NULL) continue;
 
-            if (!xmlStrcmp(localname, (const xmlChar *)"ContentType")) {
-                ret = ooxml_copy_attr_value(&CT, value);
-                if (ret != CL_SUCCESS) {
-                    status = ret;
-                    goto done;
+            if (localname != NULL && value != NULL) {
+                if (!xmlStrcmp(localname, (const xmlChar *)"ContentType")) {
+                    ret = ooxml_copy_attr_value(&CT, value);
+                    if (ret != CL_SUCCESS) {
+                        status = ret;
+                        goto done;
+                    }
+                } else if (!xmlStrcmp(localname, (const xmlChar *)"PartName")) {
+                    ret = ooxml_copy_attr_value(&PN, value);
+                    if (ret != CL_SUCCESS) {
+                        status = ret;
+                        goto done;
+                    }
                 }
-            } else if (!xmlStrcmp(localname, (const xmlChar *)"PartName")) {
-                ret = ooxml_copy_attr_value(&PN, value);
-                if (ret != CL_SUCCESS) {
-                    status = ret;
-                    goto done;
-                }
+
+                cli_dbgmsg("%s: %s\n", localname, value);
             }
 
-            cli_dbgmsg("%s: %s\n", localname, value);
+            state = xmlTextReaderMoveToNextAttribute(reader);
+        }
+
+        if (state == -1) {
+            status = CL_EPARSE;
+            goto done;
+        }
+
+        state = xmlTextReaderMoveToElement(reader);
+        if (state == -1) {
+            status = CL_EPARSE;
+            goto done;
         }
 
         if (!CT || !PN) continue;
