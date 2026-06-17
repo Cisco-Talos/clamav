@@ -56,7 +56,7 @@ struct cli_pcre_results {
 
 cl_error_t cli_pcre_init_internal(void);
 cl_error_t cli_pcre_addoptions(struct cli_pcre_data *pd, const char **opt, int errout);
-cl_error_t cli_pcre_compile(struct cli_pcre_data *pd, long long unsigned match_limit, long long unsigned match_limit_recursion, unsigned int options, int opt_override);
+cl_error_t cli_pcre_compile(struct cli_pcre_data *pd, long long unsigned match_limit, long long unsigned match_limit_recursion, unsigned int options, int opt_override, int try_jit);
 
 /**
  * @brief perform a pcre match on a string
