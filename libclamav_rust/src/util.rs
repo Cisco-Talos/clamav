@@ -95,12 +95,37 @@ pub unsafe fn check_scan_limits(
     let module_name = match std::ffi::CString::new(module_name) {
         Ok(name) => name,
         Err(_) => {
-            error!("Invalid module_name: {}", module_name);
+            error!("Invalid module_name: {:?}", module_name);
             return sys::cl_error_t_CL_EFORMAT;
         }
     };
 
     unsafe { sys::cli_checklimits(module_name.as_ptr(), ctx, need1, need2, need3) }
+}
+
+/// Append an exceeds-max heuristic alert or metadata entry.
+///
+/// # Safety
+///
+/// ctx must be a valid pointer to a clamav scan context structure
+///
+pub unsafe fn append_potentially_unwanted_if_heur_exceedsmax(
+    ctx: *mut sys::cli_ctx,
+    virname: &str,
+) -> sys::cl_error_t {
+    let virname = match std::ffi::CString::new(virname) {
+        Ok(name) => name,
+        Err(_) => {
+            error!("Invalid virname: {:?}", virname);
+            return sys::cl_error_t_CL_EFORMAT;
+        }
+    };
+
+    unsafe {
+        sys::cli_append_potentially_unwanted_if_heur_exceedsmax(ctx, virname.as_ptr().cast_mut());
+    }
+
+    sys::cl_error_t_CL_SUCCESS
 }
 
 /// Scan archive metadata.
@@ -121,7 +146,7 @@ pub unsafe fn scan_archive_metadata(
     let module_name = match std::ffi::CString::new(filename) {
         Ok(name) => name,
         Err(_) => {
-            error!("Invalid module_name: {}", filename);
+            debug!("Invalid archive metadata filename: {:?}", filename);
             return sys::cl_error_t_CL_EFORMAT;
         }
     };

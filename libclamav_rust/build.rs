@@ -49,6 +49,7 @@ const BINDGEN_FUNCTIONS: &[&str] = &[
     "cli_infomsg_simple",
     "cli_errmsg",
     "cli_append_virus",
+    "cli_append_potentially_unwanted_if_heur_exceedsmax",
     "lsig_increment_subsig_match",
     "cli_versig",
     "cli_versig2",
