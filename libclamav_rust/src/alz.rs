@@ -30,11 +30,12 @@
 )]
 */
 
+use std::convert::TryFrom;
 use std::io::{Cursor, Read};
 
 use byteorder::{LittleEndian, ReadBytesExt};
 use bzip2_rs::DecoderReader;
-use inflate::InflateStream;
+use flate2::read::DeflateDecoder;
 use log::debug;
 
 /// File header
@@ -60,6 +61,12 @@ pub enum Error {
 
     #[error("Failed to extract file")]
     Extract,
+
+    #[error("Failed to allocate extracted file")]
+    Alloc,
+
+    #[error("Extracted file exceeds scan limits")]
+    ScanLimitExceeded(u64),
 
     #[error("Failed to read field: {0}")]
     Read(&'static str),
@@ -273,16 +280,20 @@ impl AlzLocalFileHeader {
             }
         }
 
-        #[allow(clippy::cast_possible_truncation)]
-        let idx0: usize = cursor.position() as usize;
-        let idx1: usize = idx0 + self.head.file_name_length as usize;
+        let idx0: usize = usize::try_from(cursor.position())
+            .map_err(|_| Error::Parse("Invalid file name offset"))?;
+        let idx1: usize = idx0
+            .checked_add(usize::from(self.head.file_name_length))
+            .ok_or(Error::Parse("Invalid file name length"))?;
 
         if idx1 > cursor.get_ref().len() {
             return Err(Error::Parse("Invalid file name length"));
         }
 
         let filename = &cursor.get_ref().as_slice()[idx0..idx1];
-        cursor.set_position(idx1 as u64);
+        cursor.set_position(
+            u64::try_from(idx1).map_err(|_| Error::Parse("Invalid file name length"))?,
+        );
 
         self.file_name = String::from_utf8_lossy(filename).into_owned();
 
@@ -293,11 +304,19 @@ impl AlzLocalFileHeader {
         }
 
         self.start_of_compressed_data = cursor.position();
-        cursor.set_position(self.start_of_compressed_data + self.compressed_size);
+        let end_of_compressed_data = self
+            .start_of_compressed_data
+            .checked_add(self.compressed_size)
+            .ok_or(Error::Parse("Invalid compressed data length"))?;
 
-        if self.start_of_compressed_data + self.compressed_size > cursor.get_ref().len() as u64 {
+        if end_of_compressed_data
+            > u64::try_from(cursor.get_ref().len())
+                .map_err(|_| Error::Parse("Invalid compressed data length"))?
+        {
             return Err(Error::Parse("Invalid compressed data length"));
         }
+
+        cursor.set_position(end_of_compressed_data);
 
         Ok(())
     }
@@ -323,120 +342,196 @@ impl AlzLocalFileHeader {
         &mut self,
         cursor: &std::io::Cursor<&Vec<u8>>,
         files: &mut Vec<ExtractedFile>,
+        max_extracted_size: u64,
     ) -> Result<(), Error> {
-        #[allow(clippy::cast_possible_truncation)]
-        let start: usize = self.start_of_compressed_data as usize;
-        #[allow(clippy::cast_possible_truncation)]
-        let end: usize = start + self.compressed_size as usize;
-        if end >= cursor.get_ref().len() {
-            return Err(Error::Extract);
-        }
-        let data: &[u8] = &cursor.get_ref().as_slice()[start..end];
+        let start: usize =
+            usize::try_from(self.start_of_compressed_data).map_err(|_| Error::Extract)?;
+        let len: usize = usize::try_from(self.compressed_size).map_err(|_| Error::Extract)?;
+        let end: usize = start.checked_add(len).ok_or(Error::Extract)?;
+        let data: &[u8] = cursor
+            .get_ref()
+            .as_slice()
+            .get(start..end)
+            .ok_or(Error::Extract)?;
 
-        let mut inflater = InflateStream::new();
         let mut out: Vec<u8> = Vec::<u8>::new();
-        let mut n: usize = 0;
+        let mut decompressor = DeflateDecoder::new(data);
+        let mut buffer = [0u8; 8192];
 
-        while n < data.len() {
-            let res = inflater.update(&data[n..]);
-            if let Ok((num_bytes_read, result)) = res {
-                n += num_bytes_read;
-                out.extend(result.iter().copied());
-            } else {
-                return Err(Error::Extract);
+        loop {
+            let len = decompressor.read(&mut buffer).map_err(|_| {
+                debug!("Unable to decompress deflate data");
+                Error::Extract
+            })?;
+            if len == 0 {
+                break;
+            }
+
+            if let Some(needed) =
+                self.append_output(&mut out, &buffer[..len], max_extracted_size)?
+            {
+                self.push_file(out, files)?;
+                return Err(Error::ScanLimitExceeded(needed));
             }
         }
 
-        self.write_file(&out, files);
+        self.push_file(out, files)
+    }
+
+    fn append_output(
+        &self,
+        out: &mut Vec<u8>,
+        buffer: &[u8],
+        max_extracted_size: u64,
+    ) -> Result<Option<u64>, Error> {
+        let needed = out.len().checked_add(buffer.len()).ok_or(Error::Extract)?;
+        let needed_u64 = u64::try_from(needed).map_err(|_| Error::Extract)?;
+
+        if needed_u64 > max_extracted_size {
+            let current = u64::try_from(out.len()).map_err(|_| Error::Extract)?;
+            let remaining = max_extracted_size.saturating_sub(current);
+            let copy_len = usize::try_from(remaining)
+                .unwrap_or(usize::MAX)
+                .min(buffer.len());
+
+            out.try_reserve(copy_len).map_err(|_| Error::Alloc)?;
+            out.extend_from_slice(&buffer[..copy_len]);
+
+            return Ok(Some(needed_u64));
+        }
+
+        out.try_reserve(buffer.len()).map_err(|_| Error::Alloc)?;
+        out.extend_from_slice(buffer);
+
+        Ok(None)
+    }
+
+    fn push_file(&mut self, data: Vec<u8>, files: &mut Vec<ExtractedFile>) -> Result<(), Error> {
+        if data.is_empty() {
+            return Ok(());
+        }
+
+        let mut name = String::new();
+        name.try_reserve(self.file_name.len())
+            .map_err(|_| Error::Alloc)?;
+        name.push_str(&self.file_name);
+
+        let extracted_file: ExtractedFile = ExtractedFile {
+            name: Some(name),
+            data,
+        };
+
+        files.try_reserve(1).map_err(|_| Error::Alloc)?;
+        files.push(extracted_file);
 
         Ok(())
     }
 
-    fn write_file(&mut self, buffer: &[u8], files: &mut Vec<ExtractedFile>) {
-        let extracted_file: ExtractedFile = ExtractedFile {
-            name: Some(self.file_name.to_string()),
-            data: buffer.to_vec(),
-        };
+    fn write_file(&mut self, buffer: &[u8], files: &mut Vec<ExtractedFile>) -> Result<(), Error> {
+        let mut data: Vec<u8> = Vec::new();
+        data.try_reserve_exact(buffer.len())
+            .map_err(|_| Error::Alloc)?;
+        data.extend_from_slice(buffer);
 
-        if 0 != extracted_file.data.len() {
-            files.push(extracted_file);
-        }
+        self.push_file(data, files)
     }
 
     fn extract_file_nocomp(
         &mut self,
-        cursor: &mut std::io::Cursor<&Vec<u8>>,
+        cursor: &std::io::Cursor<&Vec<u8>>,
         files: &mut Vec<ExtractedFile>,
+        max_extracted_size: u64,
     ) -> Result<(), Error> {
-        #[allow(clippy::cast_possible_truncation)]
-        let idx0: usize = self.start_of_compressed_data as usize;
+        let idx0: usize =
+            usize::try_from(self.start_of_compressed_data).map_err(|_| Error::Extract)?;
 
-        let mut len = self.compressed_size;
         if self.compressed_size != self.uncompressed_size {
-            debug!("Uncompressed file has different lengths for compressed vs uncompressed, using the shorter");
-            if self.compressed_size > self.uncompressed_size {
-                len = self.uncompressed_size;
-            }
+            debug!("Uncompressed file has different lengths for compressed vs uncompressed, using the stored size");
         }
 
-        #[allow(clippy::cast_possible_truncation)]
-        let idx1: usize = idx0 + len as usize;
-        if idx1 > cursor.get_ref().len() {
-            debug!("Invalid data length");
-            return Err(Error::Extract);
+        let len: usize = usize::try_from(self.compressed_size).map_err(|_| Error::Extract)?;
+        let idx1: usize = idx0.checked_add(len).ok_or(Error::Extract)?;
+
+        let contents = cursor
+            .get_ref()
+            .as_slice()
+            .get(idx0..idx1)
+            .ok_or(Error::Extract)?;
+
+        let contents_len = u64::try_from(contents.len()).map_err(|_| Error::Extract)?;
+        if contents_len > max_extracted_size {
+            let copy_len = usize::try_from(max_extracted_size)
+                .unwrap_or(usize::MAX)
+                .min(contents.len());
+            self.write_file(&contents[..copy_len], files)?;
+            return Err(Error::ScanLimitExceeded(contents_len));
         }
 
-        let contents = &cursor.get_ref().as_slice()[idx0..idx1];
-        cursor.set_position(idx1 as u64);
-
-        self.write_file(contents, files);
-        Ok(())
+        self.write_file(contents, files)
     }
 
     fn extract_file_bzip2(
         &mut self,
         cursor: &std::io::Cursor<&Vec<u8>>,
         files: &mut Vec<ExtractedFile>,
+        max_extracted_size: u64,
     ) -> Result<(), Error> {
-        #[allow(clippy::cast_possible_truncation)]
-        let idx0: usize = self.start_of_compressed_data as usize;
-        #[allow(clippy::cast_possible_truncation)]
-        let idx1: usize = idx0 + self.compressed_size as usize;
+        let idx0: usize =
+            usize::try_from(self.start_of_compressed_data).map_err(|_| Error::Extract)?;
+        let len: usize = usize::try_from(self.compressed_size).map_err(|_| Error::Extract)?;
+        let idx1: usize = idx0.checked_add(len).ok_or(Error::Extract)?;
 
-        let contents = &cursor.get_ref().as_slice()[idx0..idx1];
+        let contents = cursor
+            .get_ref()
+            .as_slice()
+            .get(idx0..idx1)
+            .ok_or(Error::Extract)?;
 
-        /*
-         * Create vector of the needed capacity.
-         */
         let mut out: Vec<u8> = Vec::new();
-        for _i in 0..self.uncompressed_size {
-            out.push(0);
-        }
-
         let mut decompressor = DecoderReader::new(contents);
-        let ret = decompressor.read_exact(&mut out);
-        if ret.is_err() {
-            debug!("Unable to decompress bz2 data");
-            return Err(Error::Extract);
+        let mut buffer = [0u8; 8192];
+        loop {
+            let len = decompressor.read(&mut buffer).map_err(|_| {
+                debug!("Unable to decompress bz2 data");
+                Error::Extract
+            })?;
+            if len == 0 {
+                break;
+            }
+
+            if let Some(needed) =
+                self.append_output(&mut out, &buffer[..len], max_extracted_size)?
+            {
+                self.push_file(out, files)?;
+                return Err(Error::ScanLimitExceeded(needed));
+            }
         }
 
-        self.write_file(&out, files);
-        Ok(())
+        if let Ok(uncompressed_size) = usize::try_from(self.uncompressed_size) {
+            if out.len() != uncompressed_size {
+                debug!(
+                    "Bzip2 file has different lengths for declared vs decompressed data, using the decompressed size"
+                );
+            }
+        }
+
+        self.push_file(out, files)
     }
 
     fn extract_file(
         &mut self,
         cursor: &mut std::io::Cursor<&Vec<u8>>,
         files: &mut Vec<ExtractedFile>,
+        max_extracted_size: u64,
     ) -> Result<(), Error> {
         const ALZ_COMP_NOCOMP: u8 = 0;
         const ALZ_COMP_BZIP2: u8 = 1;
         const ALZ_COMP_DEFLATE: u8 = 2;
 
         match self.compression_method {
-            ALZ_COMP_NOCOMP => self.extract_file_nocomp(cursor, files),
-            ALZ_COMP_BZIP2 => self.extract_file_bzip2(cursor, files),
-            ALZ_COMP_DEFLATE => self.extract_file_deflate(cursor, files),
+            ALZ_COMP_NOCOMP => self.extract_file_nocomp(cursor, files, max_extracted_size),
+            ALZ_COMP_BZIP2 => self.extract_file_bzip2(cursor, files, max_extracted_size),
+            ALZ_COMP_DEFLATE => self.extract_file_deflate(cursor, files, max_extracted_size),
             _ => Err(Error::Extract),
         }
     }
@@ -448,9 +543,27 @@ pub struct ExtractedFile {
     pub data: Vec<u8>,
 }
 
+pub struct AlzFileMetadata<'a> {
+    pub file_name: &'a str,
+    pub compressed_size: u64,
+    pub uncompressed_size: u64,
+    pub is_encrypted: bool,
+    pub file_crc: u32,
+    pub filepos: usize,
+}
+
+pub struct AlzExtractionLimits {
+    pub max_file_size: u64,
+    pub max_total_size: u64,
+}
+
 #[derive(Default)]
 pub struct Alz {
     pub embedded_files: Vec<ExtractedFile>,
+    pub file_limit_exceeded_size: Option<u64>,
+    pub total_limit_exceeded_size: Option<u64>,
+    extracted_size: u64,
+    parse_error: bool,
 }
 
 impl<'aa> Alz {
@@ -462,29 +575,97 @@ impl<'aa> Alz {
             .map_or(false, |n| ALZ_FILE_HEADER == n)
     }
 
-    fn parse_local_fileheader(&mut self, cursor: &mut std::io::Cursor<&Vec<u8>>) -> bool {
+    fn parse_local_fileheader<F>(
+        &mut self,
+        cursor: &mut std::io::Cursor<&Vec<u8>>,
+        filepos: &mut usize,
+        should_extract: &mut F,
+    ) -> Result<(), Error>
+    where
+        F: FnMut(&AlzFileMetadata<'_>) -> Option<AlzExtractionLimits>,
+    {
         let mut local_fileheader = AlzLocalFileHeader::new();
 
-        if let Err(err) = local_fileheader.parse(cursor) {
-            debug!("{err}");
-            return false;
-        }
+        local_fileheader.parse(cursor)?;
 
-        if let Err(err) = local_fileheader.is_supported() {
-            debug!("{err}");
-            return false;
-        }
+        let metadata_filepos = *filepos;
+        *filepos = metadata_filepos.saturating_add(1);
 
         if !local_fileheader.is_directory() {
             /* The is_file flag doesn't appear to always be set, so we'll just assume it's a file if
              * it's not marked as a directory.*/
-            let res2 = local_fileheader.extract_file(cursor, &mut self.embedded_files);
-            if res2.is_err() {
-                return false;
+            let metadata = AlzFileMetadata {
+                file_name: &local_fileheader.file_name,
+                compressed_size: local_fileheader.compressed_size,
+                uncompressed_size: local_fileheader.uncompressed_size,
+                is_encrypted: local_fileheader.is_encrypted(),
+                file_crc: local_fileheader.file_crc,
+                filepos: metadata_filepos,
+            };
+
+            let limits = should_extract(&metadata);
+
+            if let Err(err) = local_fileheader.is_supported() {
+                debug!("{err}");
+                return Ok(());
+            }
+
+            let Some(limits) = limits else {
+                return Ok(());
+            };
+
+            let base_extracted_size = self.extracted_size;
+            let max_total_remaining = limits.max_total_size.saturating_sub(base_extracted_size);
+            let max_extracted_size = limits.max_file_size.min(max_total_remaining);
+            let files_start = self.embedded_files.len();
+
+            match local_fileheader.extract_file(
+                cursor,
+                &mut self.embedded_files,
+                max_extracted_size,
+            ) {
+                Ok(()) => {}
+                Err(Error::ScanLimitExceeded(needed)) => {
+                    debug!(
+                        "ALZ file {:?} exceeded extraction size limits. Scanning truncated content.",
+                        local_fileheader.file_name
+                    );
+                    if needed > limits.max_file_size
+                        && self
+                            .file_limit_exceeded_size
+                            .map_or(true, |current| current < needed)
+                    {
+                        self.file_limit_exceeded_size = Some(needed);
+                    }
+
+                    let total_needed = base_extracted_size.saturating_add(needed);
+                    if total_needed > limits.max_total_size
+                        && self
+                            .total_limit_exceeded_size
+                            .map_or(true, |current| current < total_needed)
+                    {
+                        self.total_limit_exceeded_size = Some(total_needed);
+                    }
+                }
+                Err(Error::Extract) => {
+                    debug!(
+                        "Failed to extract ALZ file {:?}. Continuing with next entry.",
+                        local_fileheader.file_name
+                    );
+                }
+                Err(err) => return Err(err),
+            }
+
+            for file in &self.embedded_files[files_start..] {
+                let Ok(file_size) = u64::try_from(file.data.len()) else {
+                    self.extracted_size = u64::MAX;
+                    break;
+                };
+                self.extracted_size = self.extracted_size.saturating_add(file_size);
             }
         }
 
-        true
+        Ok(())
     }
 
     #[allow(clippy::unused_self)]
@@ -503,16 +684,39 @@ impl<'aa> Alz {
     pub const fn new() -> Self {
         Self {
             embedded_files: Vec::new(),
+            file_limit_exceeded_size: None,
+            total_limit_exceeded_size: None,
+            extracted_size: 0,
+            parse_error: false,
         }
+    }
+
+    pub const fn has_parse_error(&self) -> bool {
+        self.parse_error
     }
 
     /// # Errors
     /// Will return `Error::Parse` if file headers are not correct or are inconsistent.
     pub fn from_bytes(bytes: &'aa [u8]) -> Result<Self, Error> {
+        Self::from_bytes_with_filter(bytes, |_| {
+            Some(AlzExtractionLimits {
+                max_file_size: u64::MAX,
+                max_total_size: u64::MAX,
+            })
+        })
+    }
+
+    /// # Errors
+    /// Will return `Error::Parse` if file headers are not correct or are inconsistent.
+    pub fn from_bytes_with_filter<F>(bytes: &'aa [u8], mut should_extract: F) -> Result<Self, Error>
+    where
+        F: FnMut(&AlzFileMetadata<'_>) -> Option<AlzExtractionLimits>,
+    {
         let binding = bytes.to_vec();
         let mut cursor = Cursor::new(&binding);
 
         let mut alz: Self = Self::new();
+        let mut filepos: usize = 1;
 
         if !alz.is_alz(&mut cursor) {
             return Err(Error::Parse("No ALZ file header"));
@@ -531,9 +735,21 @@ impl<'aa> Alz {
 
             match sig {
                 ALZ_LOCAL_FILE_HEADER => {
-                    if alz.parse_local_fileheader(&mut cursor) {
-                        continue;
+                    match alz.parse_local_fileheader(&mut cursor, &mut filepos, &mut should_extract)
+                    {
+                        Ok(()) => {}
+                        Err(Error::Alloc) => return Err(Error::Alloc),
+                        Err(err) => {
+                            if filepos == 1 {
+                                return Err(err);
+                            }
+
+                            debug!("Failed to parse ALZ local file header: {err}");
+                            alz.parse_error = true;
+                            break;
+                        }
                     }
+                    continue;
                 }
                 ALZ_CENTRAL_DIRECTORY_HEADER => {
                     if alz.parse_central_directoryheader(&mut cursor) {
@@ -546,11 +762,241 @@ impl<'aa> Alz {
                 }
                 _ => {
                     #[allow(clippy::uninlined_format_args)]
-                    return Err(Error::UnrecognizedSig(format!("{:x}", sig)));
+                    let err = Error::UnrecognizedSig(format!("{:x}", sig));
+                    if filepos == 1 {
+                        return Err(err);
+                    }
+
+                    debug!("Failed to parse ALZ archive: {err}");
+                    alz.parse_error = true;
+                    break;
                 }
             }
         }
 
         Ok(alz)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::Write;
+
+    fn append_local_file(
+        alz: &mut Vec<u8>,
+        name: &str,
+        compression_method: u8,
+        uncompressed_size: u8,
+        data: &[u8],
+    ) {
+        append_local_entry(
+            alz,
+            name,
+            AlzFileAttribute::File as u8,
+            0x10,
+            compression_method,
+            uncompressed_size,
+            data,
+        );
+    }
+
+    fn append_local_entry(
+        alz: &mut Vec<u8>,
+        name: &str,
+        file_attribute: u8,
+        file_descriptor: u8,
+        compression_method: u8,
+        uncompressed_size: u8,
+        data: &[u8],
+    ) {
+        let name = name.as_bytes();
+        let name_len = u16::try_from(name.len()).unwrap();
+        let compressed_size = u8::try_from(data.len()).unwrap();
+
+        alz.extend_from_slice(&ALZ_LOCAL_FILE_HEADER.to_le_bytes());
+        alz.extend_from_slice(&name_len.to_le_bytes());
+        alz.push(file_attribute);
+        alz.extend_from_slice(&0u32.to_le_bytes());
+        alz.push(file_descriptor);
+        alz.push(0);
+        alz.push(compression_method);
+        alz.push(0);
+        alz.extend_from_slice(&0u32.to_le_bytes());
+        alz.push(compressed_size);
+        alz.push(uncompressed_size);
+        alz.extend_from_slice(name);
+        if file_descriptor & 0x01 != 0 {
+            alz.extend_from_slice(&[0; ALZ_ENCR_HEADER_LEN as usize]);
+        }
+        alz.extend_from_slice(data);
+    }
+
+    fn extraction_limits() -> AlzExtractionLimits {
+        AlzExtractionLimits {
+            max_file_size: u64::MAX,
+            max_total_size: u64::MAX,
+        }
+    }
+
+    fn raw_deflate(data: &[u8]) -> Vec<u8> {
+        let mut encoder =
+            flate2::write::DeflateEncoder::new(Vec::new(), flate2::Compression::default());
+        encoder.write_all(data).unwrap();
+        encoder.finish().unwrap()
+    }
+
+    #[test]
+    fn extraction_error_does_not_stop_later_entries() {
+        const ALZ_COMP_NOCOMP: u8 = 0;
+        const ALZ_COMP_BZIP2: u8 = 1;
+
+        let mut bytes = Vec::new();
+        bytes.extend_from_slice(&ALZ_FILE_HEADER.to_le_bytes());
+        bytes.extend_from_slice(&0u32.to_le_bytes());
+        append_local_file(&mut bytes, "bad.bz2", ALZ_COMP_BZIP2, 1, &[0]);
+        append_local_file(&mut bytes, "good.txt", ALZ_COMP_NOCOMP, 4, b"good");
+        bytes.extend_from_slice(&ALZ_END_OF_CENTRAL_DIRECTORY_HEADER.to_le_bytes());
+
+        let alz = Alz::from_bytes_with_filter(&bytes, |_| Some(extraction_limits())).unwrap();
+
+        assert_eq!(alz.embedded_files.len(), 1);
+        assert_eq!(alz.embedded_files[0].name.as_deref(), Some("good.txt"));
+        assert_eq!(alz.embedded_files[0].data, b"good");
+    }
+
+    #[test]
+    fn later_parse_error_preserves_earlier_extracted_entries() {
+        const ALZ_COMP_NOCOMP: u8 = 0;
+
+        let mut bytes = Vec::new();
+        bytes.extend_from_slice(&ALZ_FILE_HEADER.to_le_bytes());
+        bytes.extend_from_slice(&0u32.to_le_bytes());
+        append_local_file(&mut bytes, "good.txt", ALZ_COMP_NOCOMP, 4, b"good");
+        bytes.extend_from_slice(&ALZ_LOCAL_FILE_HEADER.to_le_bytes());
+
+        let alz = Alz::from_bytes_with_filter(&bytes, |_| Some(extraction_limits())).unwrap();
+
+        assert!(alz.has_parse_error());
+        assert_eq!(alz.embedded_files.len(), 1);
+        assert_eq!(alz.embedded_files[0].name.as_deref(), Some("good.txt"));
+        assert_eq!(alz.embedded_files[0].data, b"good");
+    }
+
+    #[test]
+    fn deflate_limit_uses_decompressed_size_not_header() {
+        const ALZ_COMP_DEFLATE: u8 = 2;
+        let payload = vec![b'A'; 1024];
+        let compressed = raw_deflate(&payload);
+        assert!(compressed.len() <= u8::MAX.into());
+
+        let mut bytes = Vec::new();
+        bytes.extend_from_slice(&ALZ_FILE_HEADER.to_le_bytes());
+        bytes.extend_from_slice(&0u32.to_le_bytes());
+        append_local_file(&mut bytes, "big.txt", ALZ_COMP_DEFLATE, 1, &compressed);
+        bytes.extend_from_slice(&ALZ_END_OF_CENTRAL_DIRECTORY_HEADER.to_le_bytes());
+
+        let alz = Alz::from_bytes_with_filter(&bytes, |_| {
+            Some(AlzExtractionLimits {
+                max_file_size: 64,
+                max_total_size: u64::MAX,
+            })
+        })
+        .unwrap();
+
+        assert_eq!(alz.file_limit_exceeded_size, Some(payload.len() as u64));
+        assert_eq!(alz.embedded_files.len(), 1);
+        assert_eq!(alz.embedded_files[0].name.as_deref(), Some("big.txt"));
+        assert_eq!(alz.embedded_files[0].data.as_slice(), &payload[..64]);
+    }
+
+    #[test]
+    fn total_limit_does_not_set_per_file_limit() {
+        const ALZ_COMP_NOCOMP: u8 = 0;
+        let payload = vec![b'A'; 60];
+
+        let mut bytes = Vec::new();
+        bytes.extend_from_slice(&ALZ_FILE_HEADER.to_le_bytes());
+        bytes.extend_from_slice(&0u32.to_le_bytes());
+        append_local_file(
+            &mut bytes,
+            "a",
+            ALZ_COMP_NOCOMP,
+            payload.len() as u8,
+            &payload,
+        );
+        append_local_file(
+            &mut bytes,
+            "b",
+            ALZ_COMP_NOCOMP,
+            payload.len() as u8,
+            &payload,
+        );
+        bytes.extend_from_slice(&ALZ_END_OF_CENTRAL_DIRECTORY_HEADER.to_le_bytes());
+
+        let alz = Alz::from_bytes_with_filter(&bytes, |_| {
+            Some(AlzExtractionLimits {
+                max_file_size: 64,
+                max_total_size: 100,
+            })
+        })
+        .unwrap();
+
+        assert_eq!(alz.file_limit_exceeded_size, None);
+        assert_eq!(alz.total_limit_exceeded_size, Some(120));
+        assert_eq!(alz.embedded_files.len(), 2);
+        assert_eq!(alz.embedded_files[0].data.len(), 60);
+        assert_eq!(alz.embedded_files[1].data.len(), 40);
+    }
+
+    #[test]
+    fn metadata_file_positions_are_one_based_and_include_skipped_entries() {
+        const ALZ_COMP_NOCOMP: u8 = 0;
+
+        let mut bytes = Vec::new();
+        bytes.extend_from_slice(&ALZ_FILE_HEADER.to_le_bytes());
+        bytes.extend_from_slice(&0u32.to_le_bytes());
+        append_local_entry(
+            &mut bytes,
+            "dir/",
+            AlzFileAttribute::Directory as u8,
+            0x10,
+            ALZ_COMP_NOCOMP,
+            0,
+            b"",
+        );
+        append_local_entry(
+            &mut bytes,
+            "encrypted.bin",
+            AlzFileAttribute::File as u8,
+            0x11,
+            ALZ_COMP_NOCOMP,
+            0,
+            b"",
+        );
+        append_local_file(&mut bytes, "first.txt", ALZ_COMP_NOCOMP, 5, b"first");
+        append_local_file(&mut bytes, "second.txt", ALZ_COMP_NOCOMP, 6, b"second");
+        bytes.extend_from_slice(&ALZ_END_OF_CENTRAL_DIRECTORY_HEADER.to_le_bytes());
+
+        let mut metadata_positions = Vec::new();
+        let alz = Alz::from_bytes_with_filter(&bytes, |metadata| {
+            metadata_positions.push((
+                metadata.file_name.to_owned(),
+                metadata.filepos,
+                metadata.is_encrypted,
+            ));
+            None
+        })
+        .unwrap();
+
+        assert!(alz.embedded_files.is_empty());
+        assert_eq!(
+            metadata_positions,
+            vec![
+                ("encrypted.bin".to_owned(), 2, true),
+                ("first.txt".to_owned(), 3, false),
+                ("second.txt".to_owned(), 4, false),
+            ]
+        );
     }
 }

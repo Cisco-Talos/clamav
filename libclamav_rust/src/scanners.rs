@@ -21,6 +21,7 @@
  */
 
 use std::{
+    convert::TryFrom,
     ffi::{c_char, CString},
     io::Read,
     panic,
@@ -33,14 +34,17 @@ use libc::c_void;
 use log::{debug, error, warn};
 
 use crate::{
-    alz::Alz,
+    alz::{Alz, AlzExtractionLimits, Error as AlzError},
     ctx,
     onenote::OneNote,
     sys::{
-        cl_error_t, cl_error_t_CL_EFORMAT, cl_error_t_CL_ERROR, cl_error_t_CL_SUCCESS, cli_ctx,
+        cl_error_t, cl_error_t_CL_EFORMAT, cl_error_t_CL_EMAXSIZE, cl_error_t_CL_EMEM,
+        cl_error_t_CL_ERROR, cl_error_t_CL_SUCCESS, cl_error_t_CL_VIRUS, cli_ctx,
         cli_magic_scan_buff,
     },
-    util::{check_scan_limits, scan_archive_metadata},
+    util::{
+        append_potentially_unwanted_if_heur_exceedsmax, check_scan_limits, scan_archive_metadata,
+    },
 };
 
 /// Rust wrapper of libclamav's cli_magic_scan_buff() function.
@@ -307,6 +311,30 @@ pub unsafe extern "C" fn scan_lha_lzh(ctx: *mut cli_ctx) -> cl_error_t {
     cl_error_t_CL_SUCCESS
 }
 
+unsafe fn alz_extraction_limits(ctx: *mut cli_ctx) -> AlzExtractionLimits {
+    if ctx.is_null() || (*ctx).engine.is_null() {
+        return AlzExtractionLimits {
+            max_file_size: u64::MAX,
+            max_total_size: u64::MAX,
+        };
+    }
+
+    let engine = &*(*ctx).engine;
+
+    AlzExtractionLimits {
+        max_file_size: if engine.maxfilesize == 0 {
+            u64::MAX
+        } else {
+            engine.maxfilesize
+        },
+        max_total_size: if engine.maxscansize == 0 {
+            u64::MAX
+        } else {
+            engine.maxscansize.saturating_sub((*ctx).scansize)
+        },
+    }
+}
+
 /// Scan an Alz file for attachments
 ///
 /// # Safety
@@ -333,13 +361,88 @@ pub unsafe extern "C" fn cli_scanalz(ctx: *mut cli_ctx) -> cl_error_t {
         }
     };
 
-    let alz = match Alz::from_bytes(file_bytes) {
-        Ok(x) => x,
-        Err(err) => {
-            error!("Failed to parse Alz file: {}", err.to_string());
-            return cl_error_t_CL_ERROR;
+    let mut alz_metadata_ret = cl_error_t_CL_SUCCESS;
+    let alz_result = panic::catch_unwind(panic::AssertUnwindSafe(|| {
+        Alz::from_bytes_with_filter(file_bytes, |metadata| {
+            if check_scan_limits("ALZ", ctx, 0, 0, 0) != cl_error_t_CL_SUCCESS {
+                debug!("Exceeded scan limits. Bailing out.");
+                return None;
+            }
+
+            match (
+                usize::try_from(metadata.compressed_size),
+                usize::try_from(metadata.uncompressed_size),
+            ) {
+                (Ok(compressed_size), Ok(uncompressed_size)) => {
+                    let metadata_ret = scan_archive_metadata(
+                        ctx,
+                        metadata.file_name,
+                        compressed_size,
+                        uncompressed_size,
+                        metadata.is_encrypted,
+                        metadata.filepos,
+                        metadata.file_crc as i32,
+                    );
+                    if metadata_ret == cl_error_t_CL_VIRUS {
+                        alz_metadata_ret = metadata_ret;
+                        debug!(
+                            "ALZ file {:?} metadata did not pass scan checks. Skipping extraction.",
+                            metadata.file_name
+                        );
+                        return None;
+                    } else if metadata_ret != cl_error_t_CL_SUCCESS {
+                        debug!(
+                            "ALZ file {:?} metadata scan failed with {}. Continuing extraction.",
+                            metadata.file_name, metadata_ret
+                        );
+                    }
+                }
+                _ => debug!(
+                    "ALZ file {:?} metadata sizes are too large for this platform. Continuing extraction.",
+                    metadata.file_name
+                ),
+            }
+
+            Some(alz_extraction_limits(ctx))
+        })
+    }));
+
+    let alz = match alz_result {
+        Ok(Ok(x)) => x,
+        Ok(Err(AlzError::Alloc)) => {
+            debug!("Failed to allocate memory when parsing ALZ archive");
+            return cl_error_t_CL_EMEM;
+        }
+        Ok(Err(err)) => {
+            debug!("Failed to parse Alz file: {}", err.to_string());
+            return cl_error_t_CL_EFORMAT;
+        }
+        Err(_) => {
+            debug!("Panic occurred when trying to parse ALZ archive");
+            return cl_error_t_CL_EFORMAT;
         }
     };
+
+    if alz_metadata_ret != cl_error_t_CL_SUCCESS {
+        return alz_metadata_ret;
+    }
+
+    if let Some(needed) = alz.file_limit_exceeded_size {
+        let ret = check_scan_limits("ALZ", ctx, needed, 0, 0);
+        if ret != cl_error_t_CL_SUCCESS && ret != cl_error_t_CL_EMAXSIZE {
+            return ret;
+        }
+    }
+
+    if alz.total_limit_exceeded_size.is_some() {
+        let ret = append_potentially_unwanted_if_heur_exceedsmax(
+            ctx,
+            "Heuristics.Limits.Exceeded.MaxScanSize",
+        );
+        if ret != cl_error_t_CL_SUCCESS {
+            return ret;
+        }
+    }
 
     for i in 0..alz.embedded_files.len() {
         let ret = magic_scan(
@@ -350,6 +453,10 @@ pub unsafe extern "C" fn cli_scanalz(ctx: *mut cli_ctx) -> cl_error_t {
         if ret != cl_error_t_CL_SUCCESS {
             return ret;
         }
+    }
+
+    if alz.has_parse_error() {
+        return cl_error_t_CL_EFORMAT;
     }
 
     cl_error_t_CL_SUCCESS

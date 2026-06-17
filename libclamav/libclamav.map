@@ -292,6 +292,7 @@ CLAMAV_PRIVATE {
     cli_getdsig;
     cli_infomsg_simple;
     cli_set_debug_flag;
+    cli_append_potentially_unwanted_if_heur_exceedsmax;
     fmap_dump_to_file;
     init_allow_list;
     init_domain_list;
