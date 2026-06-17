@@ -3716,7 +3716,7 @@ int cli_scanpe(cli_ctx *ctx)
         }
 
         sections[0].rva = newedi;
-        for (t = 0; t <= (uint32_t)sectcnt - 1; t++)
+        for (t = 0; t < (uint32_t)sectcnt; t++)
             sections[t + 1].rva = (((support[t * 2] | (support[t * 2 + 1] << 8)) - 2) << 12) - EC32(peinfo->pe_opt.opt32.ImageBase);
 
         if (!peinfo->sections[i + 1].rsz || !(src = fmap_need_off_once(map, peinfo->sections[i + 1].raw, ssize))) {
