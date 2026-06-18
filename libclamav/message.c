@@ -1843,7 +1843,8 @@ decodeLine(message *m, encoding_type et, const char *line, unsigned char *buf, s
             }
 
             softbreak = false;
-            while (buflen && *line) {
+            /* keep at least one byte for the terminating '\0' written below */
+            while (buflen > 1 && *line) {
                 if (*line == '=') {
                     unsigned char byte;
 
@@ -1861,6 +1862,7 @@ decodeLine(message *m, encoding_type et, const char *line, unsigned char *buf, s
                          * adhering to RFC2045
                          */
                         *buf++ = byte;
+                        --buflen;
                         break;
                     }
 
@@ -1881,8 +1883,8 @@ decodeLine(message *m, encoding_type et, const char *line, unsigned char *buf, s
                 ++line;
                 --buflen;
             }
-            if (!softbreak) {
-                /* Put the new line back in */
+            if (!softbreak && buflen > 1) {
+                /* Put the new line back in, only if it still fits before '\0' */
                 *buf++ = '\n';
             }
             break;
@@ -1962,13 +1964,17 @@ decodeLine(message *m, encoding_type et, const char *line, unsigned char *buf, s
             if (strncmp(line, "=yend ", 6) == 0)
                 break;
 
-            while (*line)
+            /* reserve one byte for the trailing '\0' written below */
+            while (buflen > 1 && *line) {
                 if (*line == '=') {
                     if (*++line == '\0')
                         break;
                     *buf++ = ((*line++ - 64) & 255);
-                } else
+                } else {
                     *buf++ = ((*line++ - 42) & 255);
+                }
+                buflen--;
+            }
             break;
     }
 
