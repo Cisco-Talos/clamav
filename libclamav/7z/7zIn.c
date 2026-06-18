@@ -768,6 +768,8 @@ static SRes SzReadSubStreamsInfo(
         UInt32 numStreams;
         RINOK(SzReadNumber32(sd, &numStreams));
         folders[i].NumUnpackStreams = numStreams;
+        if (*numUnpackStreams > UINT32_MAX - numStreams)
+          return SZ_ERROR_FAIL;
         *numUnpackStreams += numStreams;
       }
       continue;
