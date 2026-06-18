@@ -1843,8 +1843,8 @@ decodeLine(message *m, encoding_type et, const char *line, unsigned char *buf, s
             }
 
             softbreak = false;
-            /* reserve two bytes for the trailing '\n' and '\0' written below */
-            while (buflen > 2 && *line) {
+            /* keep at least one byte for the terminating '\0' written below */
+            while (buflen > 1 && *line) {
                 if (*line == '=') {
                     unsigned char byte;
 
@@ -1862,6 +1862,7 @@ decodeLine(message *m, encoding_type et, const char *line, unsigned char *buf, s
                          * adhering to RFC2045
                          */
                         *buf++ = byte;
+                        --buflen;
                         break;
                     }
 
@@ -1882,8 +1883,8 @@ decodeLine(message *m, encoding_type et, const char *line, unsigned char *buf, s
                 ++line;
                 --buflen;
             }
-            if (!softbreak) {
-                /* Put the new line back in */
+            if (!softbreak && buflen > 1) {
+                /* Put the new line back in, only if it still fits before '\0' */
                 *buf++ = '\n';
             }
             break;
