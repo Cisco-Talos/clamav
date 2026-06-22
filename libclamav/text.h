@@ -54,7 +54,9 @@ typedef struct text {
 #include "message.h"
 
 void textDestroy(text *t_head);
+text *textAddMessageWithStatus(text *aText, message *aMessage, int *status);
 text *textAddMessage(text *aText, message *aMessage);
+text *textMoveWithStatus(text *t_head, text *t, int *status);
 text *textMove(text *t_head, text *t);
 blob *textToBlob(text *t, blob *b, int destroy);
 fileblob *textToFileblob(text *t, fileblob *fb, int destroy);
