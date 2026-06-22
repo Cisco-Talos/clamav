@@ -135,7 +135,13 @@ int cli_scandmg(cli_ctx *ctx)
         cli_dbgmsg("cli_scandmg: The embedded XML is way larger than necessary, and probably corrupt or tampered with.\n");
         return CL_EFORMAT;
     }
-    if ((hdr.xmlOffset > (uint64_t)maplen) || (hdr.xmlLength > (uint64_t)maplen) || (hdr.xmlOffset + hdr.xmlLength) > (uint64_t)maplen) {
+    /*
+     * Keep the XML range check in subtraction form. Once offset and length are
+     * each known to be no larger than the map, `offset <= maplen - length`
+     * proves that the full range is contained without ever forming a possibly
+     * overflowing offset + length sum.
+     */
+    if ((hdr.xmlOffset > (uint64_t)maplen) || (hdr.xmlLength > (uint64_t)maplen) || (hdr.xmlOffset > (uint64_t)maplen - hdr.xmlLength)) {
         cli_dbgmsg("cli_scandmg: XML out of range for this file\n");
         return CL_EFORMAT;
     }
@@ -455,6 +461,7 @@ static int dmg_decode_mish(cli_ctx *ctx, unsigned int *mishblocknum, xmlChar *mi
     size_t base64_len, buff_size, decoded_len;
     uint8_t *decoded;
     const uint8_t mish_magic[4] = {0x6d, 0x69, 0x73, 0x68};
+    uint64_t expected_len;
 
     UNUSEDPARAM(ctx);
 
@@ -463,7 +470,13 @@ static int dmg_decode_mish(cli_ctx *ctx, unsigned int *mishblocknum, xmlChar *mi
     dmg_parsemsg("dmg_decode_mish: len of encoded block %u is %lu\n", *mishblocknum, base64_len);
 
     /* speed vs memory, could walk the encoded data and skip whitespace in calculation */
-    buff_size = 3 * base64_len / 4 + 4;
+    buff_size = (base64_len / 4) * 3 + 4;
+    if (base64_len % 4) {
+        if (buff_size > SIZE_MAX - 3) {
+            return CL_EFORMAT;
+        }
+        buff_size += 3;
+    }
     dmg_parsemsg("dmg_decode_mish: buffer for mish block %u is %lu\n", *mishblocknum, (unsigned long)buff_size);
     decoded = cli_max_malloc(buff_size);
     if (!decoded)
@@ -502,13 +515,19 @@ static int dmg_decode_mish(cli_ctx *ctx, unsigned int *mishblocknum, xmlChar *mi
                mish_set->mish->startSector, mish_set->mish->sectorCount,
                mish_set->mish->dataOffset, mish_set->mish->blockDataCount);
 
-    /* decoded length should be mish block + blockDataCount * 40 */
-    if (decoded_len < (sizeof(struct dmg_mish_block) + mish_set->mish->blockDataCount * sizeof(struct dmg_block_data))) {
+    /*
+     * The decoded mish block must contain the fixed header followed by one
+     * stripe record per blockDataCount. Calculate this requirement in a wide
+     * integer domain, then compare decoded_len against that exact byte count.
+     */
+    expected_len = (uint64_t)sizeof(struct dmg_mish_block) +
+                   (uint64_t)mish_set->mish->blockDataCount * (uint64_t)sizeof(struct dmg_block_data);
+    if ((uint64_t)decoded_len < expected_len) {
         cli_dbgmsg("dmg_decode_mish: mish block %u too small\n", *mishblocknum);
         free(decoded);
         mish_set->mish = NULL;
         return CL_EFORMAT;
-    } else if (decoded_len > (sizeof(struct dmg_mish_block) + mish_set->mish->blockDataCount * sizeof(struct dmg_block_data))) {
+    } else if ((uint64_t)decoded_len > expected_len) {
         cli_dbgmsg("dmg_decode_mish: mish block %u bigger than needed, continuing\n", *mishblocknum);
     }
 
@@ -516,11 +535,28 @@ static int dmg_decode_mish(cli_ctx *ctx, unsigned int *mishblocknum, xmlChar *mi
     return CL_CLEAN;
 }
 
-/* Comparator for stripe sorting */
+/**
+ * @brief Compare DMG stripe entries by start sector for sorting.
+ *
+ * The sort only needs the sign of the comparison result, so compare the
+ * 64-bit sector numbers directly and return -1, 0, or 1. This preserves the
+ * full ordering across the entire uint64_t range: no intermediate subtraction
+ * is needed, so there is no unsigned wrap and no truncation to the comparator's
+ * int return type.
+ *
+ * @param stripe_a First DMG stripe entry.
+ * @param stripe_b Second DMG stripe entry.
+ * @return Negative if `stripe_a` starts first, positive if `stripe_b` starts
+ * first, or zero if both start at the same sector.
+ */
 static int cmp_mish_stripes(const void *stripe_a, const void *stripe_b)
 {
     const struct dmg_block_data *a = stripe_a, *b = stripe_b;
-    return a->startSector - b->startSector;
+    if (a->startSector < b->startSector)
+        return -1;
+    if (a->startSector > b->startSector)
+        return 1;
+    return 0;
 }
 
 /* Safely track sector sizes for output estimate */
@@ -969,8 +1005,13 @@ static int dmg_handle_mish(cli_ctx *ctx, unsigned int mishblocknum, char *dir,
                    " count " STDu64 " source " STDu64 " length " STDu64 "\n",
                    mishblocknum, i, blocklist[i].type, blocklist[i].startSector, blocklist[i].sectorCount,
                    blocklist[i].dataOffset, blocklist[i].dataLength);
+        /*
+         * Stripes must reference data before the embedded XML. Check
+         * dataLength against the remaining space before xmlOffset so the range
+         * proof does not depend on dataOffset + dataLength wrapping cleanly.
+         */
         if ((blocklist[i].dataOffset > xmlOffset) ||
-            (blocklist[i].dataOffset + blocklist[i].dataLength > xmlOffset)) {
+            (blocklist[i].dataLength > xmlOffset - blocklist[i].dataOffset)) {
             cli_dbgmsg("dmg_handle_mish: invalid stripe offset and/or length\n");
             return CL_EFORMAT;
         }
