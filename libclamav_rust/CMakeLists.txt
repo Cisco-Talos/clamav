@@ -15,6 +15,32 @@ if(NOT MSVC)
 endif()
 list(APPEND ENVIRONMENT "OPENSSL_LIB_DIR=${OPENSSL_LIB_DIR}")
 
+if(ENABLE_PDFIUM AND PDFIUM_LIBRARY)
+    get_filename_component(_PDFIUM_LIBRARY_DIR "${PDFIUM_LIBRARY}" DIRECTORY)
+
+    if(PDFIUM_LIBRARY MATCHES "\\.(dll|dylib|so)(\\.[0-9]+)*$")
+        list(APPEND ENVIRONMENT "PDFIUM_DYNAMIC_LIB_PATH=${_PDFIUM_LIBRARY_DIR}")
+    else()
+        list(APPEND ENVIRONMENT "PDFIUM_STATIC_LIB_PATH=${_PDFIUM_LIBRARY_DIR}")
+    endif()
+
+    foreach(_PDFIUM_EXTRA_LIBRARY IN LISTS PDFIUM_EXTRA_LIBRARIES)
+        if(_PDFIUM_EXTRA_LIBRARY MATCHES "^-framework[ ]+(.+)$")
+            string(APPEND RUSTFLAGS " -C link-arg=-framework -C link-arg=${CMAKE_MATCH_1}")
+        elseif(IS_ABSOLUTE "${_PDFIUM_EXTRA_LIBRARY}" OR EXISTS "${_PDFIUM_EXTRA_LIBRARY}" OR _PDFIUM_EXTRA_LIBRARY MATCHES "\\.(a|lib|dylib|so)(\\.[0-9]+)*$")
+            string(APPEND RUSTFLAGS " -C link-arg=${_PDFIUM_EXTRA_LIBRARY}")
+        elseif(_PDFIUM_EXTRA_LIBRARY MATCHES "^-")
+            string(APPEND RUSTFLAGS " -C link-arg=${_PDFIUM_EXTRA_LIBRARY}")
+        else()
+            string(APPEND RUSTFLAGS " -l ${_PDFIUM_EXTRA_LIBRARY}")
+        endif()
+    endforeach()
+endif()
+
+if(ENABLE_PDFIUM)
+    list(APPEND CARGO_ARGS "--features" "pdfium")
+endif()
+
 # libclamav rust static library
 add_rust_library(TARGET clamav_rust
     SOURCE_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"

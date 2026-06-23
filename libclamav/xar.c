@@ -307,7 +307,7 @@ static int xar_scan_subdocuments(xmlTextReaderPtr reader, cli_ctx *ctx)
             }
             subdoc_len = xmlStrlen(subdoc);
             cli_dbgmsg("cli_scanxar: in-memory scan of xml subdocument, len %i.\n", subdoc_len);
-            rc = cli_magic_scan_buff(subdoc, subdoc_len, ctx, NULL, LAYER_ATTRIBUTES_NONE);
+            rc = cli_magic_scan_buff(subdoc, subdoc_len, ctx, CL_TYPE_ANY, NULL, LAYER_ATTRIBUTES_NONE);
 
             /* make a file to leave if --leave-temps in effect */
             if (ctx->engine->keeptmp) {
@@ -512,7 +512,7 @@ int cli_scanxar(cli_ctx *ctx)
 
     /* scan the xml */
     cli_dbgmsg("cli_scanxar: scanning xar TOC xml in memory.\n");
-    rc = cli_magic_scan_buff(toc, hdr.toc_length_decompressed, ctx, NULL, LAYER_ATTRIBUTES_NONE);
+    rc = cli_magic_scan_buff(toc, hdr.toc_length_decompressed, ctx, CL_TYPE_ANY, NULL, LAYER_ATTRIBUTES_NONE);
     if (rc != CL_SUCCESS) {
         goto exit_toc;
     }

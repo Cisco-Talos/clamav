@@ -578,6 +578,9 @@ struct cl_engine *cl_engine_new(void)
     /* Engine max settings */
     new->maxiconspe = CLI_DEFAULT_MAXICONSPE;
     new->maxrechwp3 = CLI_DEFAULT_MAXRECHWP3;
+    new->pdf_render_canvas_width  = 2000;
+    new->pdf_render_canvas_height = 2000;
+    new->pdf_render_format        = 1;
 
     /* PCRE matching limitations */
     new->pcre_match_limit    = CLI_DEFAULT_PCRE_MATCH_LIMIT;
@@ -867,6 +870,18 @@ cl_error_t cl_engine_set_num(struct cl_engine *engine, enum cl_engine_field fiel
                 engine->engine_options &= ~(ENGINE_OPTIONS_FIPS_LIMITS);
             }
             break;
+        case CL_ENGINE_PDF_RENDER_DPI:
+            engine->pdf_render_dpi = (uint32_t)num;
+            break;
+        case CL_ENGINE_PDF_RENDER_CANVAS_WIDTH:
+            engine->pdf_render_canvas_width = (uint32_t)num;
+            break;
+        case CL_ENGINE_PDF_RENDER_CANVAS_HEIGHT:
+            engine->pdf_render_canvas_height = (uint32_t)num;
+            break;
+        case CL_ENGINE_PDF_RENDER_FORMAT:
+            engine->pdf_render_format = (uint32_t)num;
+            break;
         default:
             cli_errmsg("cl_engine_set_num: Incorrect field number\n");
             return CL_EARG;
@@ -954,6 +969,14 @@ long long cl_engine_get_num(const struct cl_engine *engine, enum cl_engine_field
             return engine->pcre_recmatch_limit;
         case CL_ENGINE_PCRE_MAX_FILESIZE:
             return engine->pcre_max_filesize;
+        case CL_ENGINE_PDF_RENDER_DPI:
+            return engine->pdf_render_dpi;
+        case CL_ENGINE_PDF_RENDER_CANVAS_WIDTH:
+            return engine->pdf_render_canvas_width;
+        case CL_ENGINE_PDF_RENDER_CANVAS_HEIGHT:
+            return engine->pdf_render_canvas_height;
+        case CL_ENGINE_PDF_RENDER_FORMAT:
+            return engine->pdf_render_format;
         default:
             cli_errmsg("cl_engine_get: Incorrect field number\n");
             if (err)
@@ -1098,6 +1121,10 @@ struct cl_settings *cl_engine_settings_copy(const struct cl_engine *engine)
     settings->pcre_match_limit    = engine->pcre_match_limit;
     settings->pcre_recmatch_limit = engine->pcre_recmatch_limit;
     settings->pcre_max_filesize   = engine->pcre_max_filesize;
+    settings->pdf_render_dpi           = engine->pdf_render_dpi;
+    settings->pdf_render_canvas_width  = engine->pdf_render_canvas_width;
+    settings->pdf_render_canvas_height = engine->pdf_render_canvas_height;
+    settings->pdf_render_format        = engine->pdf_render_format;
 
     return settings;
 }
@@ -1179,6 +1206,10 @@ cl_error_t cl_engine_settings_apply(struct cl_engine *engine, const struct cl_se
     engine->pcre_match_limit    = settings->pcre_match_limit;
     engine->pcre_recmatch_limit = settings->pcre_recmatch_limit;
     engine->pcre_max_filesize   = settings->pcre_max_filesize;
+    engine->pdf_render_dpi           = settings->pdf_render_dpi;
+    engine->pdf_render_canvas_width  = settings->pdf_render_canvas_width;
+    engine->pdf_render_canvas_height = settings->pdf_render_canvas_height;
+    engine->pdf_render_format        = settings->pdf_render_format;
 
     return CL_SUCCESS;
 }

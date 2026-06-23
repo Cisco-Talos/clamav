@@ -205,6 +205,7 @@ struct cl_scan_options {
 #define CL_SCAN_PARSE_ONENOTE                       0x400
 #define CL_SCAN_PARSE_IMAGE                         0x800  /** option to enable/disable parsing images (graphics) */
 #define CL_SCAN_PARSE_IMAGE_FUZZY_HASH              0x1000 /** option to enable/disable image fuzzy hash calculation. */
+#define CL_SCAN_PARSE_PDF_IMAGE_FUZZY_HASH          0x2000 /** option to enable/disable PDF rendering and image fuzzy hash calculation for PDFs. */
 
 /* heuristic alerting options */
 #define CL_SCAN_HEURISTIC_BROKEN                    0x2    /** alert on broken PE and broken ELF files */
@@ -345,6 +346,10 @@ enum cl_engine_field {
     CL_ENGINE_CVDCERTSDIR,         /** (char *) */
     CL_ENGINE_TMPDIR_RECURSION,    /** uint32_t */
     CL_ENGINE_FIPS_LIMITS,         /** uint32_t */
+    CL_ENGINE_PDF_RENDER_DPI,      /** uint32_t */
+    CL_ENGINE_PDF_RENDER_CANVAS_WIDTH, /** uint32_t */
+    CL_ENGINE_PDF_RENDER_CANVAS_HEIGHT, /** uint32_t */
+    CL_ENGINE_PDF_RENDER_FORMAT,   /** uint32_t */
 };
 
 enum bytecode_security {

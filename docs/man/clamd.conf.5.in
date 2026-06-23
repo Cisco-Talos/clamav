@@ -578,6 +578,38 @@ If you turn off this option, then some files may no longer be detected.
 .br
 Default: yes
 .TP
+\fBScanPDFImageFuzzyHash BOOL\fR
+This option enables PDF rendering plus image fuzzy hash detection for PDF files.
+.br
+If you turn off this option, PDFs will still be scanned, but the PDFium-based render and fuzzy hash step will be skipped.
+.br
+Default: yes
+.TP
+\fBPDFRenderDPI NUMBER\fR
+Render PDF pages for fuzzy hash calculation at the specified DPI.
+.br
+This option is mutually exclusive with PDFRenderCanvas.
+.br
+The value must be greater than 0.
+.br
+Default: disabled
+.TP
+\fBPDFRenderCanvas STRING\fR
+Render PDF pages for fuzzy hash calculation to fit within a canvas specified as WIDTHxHEIGHT pixels.
+.br
+This option is mutually exclusive with PDFRenderDPI.
+.br
+Example: 1920x1080
+.br
+Default: 2000x2000
+.TP
+\fBPDFRenderFormat STRING\fR
+Render PDF pages for fuzzy hash calculation as either PNG or JPEG.
+.br
+Supported values are 'png' and 'jpeg'.
+.br
+Default: png
+.TP
 \fBAlertBrokenExecutables BOOL\fR
 Alert on broken executable files (PE & ELF).
 .br

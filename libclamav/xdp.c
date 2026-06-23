@@ -158,7 +158,7 @@ cl_error_t cli_scanxdp(cli_ctx *ctx)
                         break;
                     }
 
-                    rc = cli_magic_scan_buff(decoded, decodedlen, ctx, NULL, LAYER_ATTRIBUTES_NONE);
+                    rc = cli_magic_scan_buff(decoded, decodedlen, ctx, CL_TYPE_ANY, NULL, LAYER_ATTRIBUTES_NONE);
                     free(decoded);
                     if (rc != CL_SUCCESS) {
                         xmlFree((void *)value);

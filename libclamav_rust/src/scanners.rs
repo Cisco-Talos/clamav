@@ -38,7 +38,7 @@ use crate::{
     onenote::OneNote,
     sys::{
         cl_error_t, cl_error_t_CL_EFORMAT, cl_error_t_CL_ERROR, cl_error_t_CL_SUCCESS, cli_ctx,
-        cli_magic_scan_buff,
+        cli_file_CL_TYPE_ANY, cli_magic_scan_buff,
     },
     util::{check_scan_limits, scan_archive_metadata},
 };
@@ -74,7 +74,7 @@ pub unsafe fn magic_scan(ctx: *mut cli_ctx, buf: &[u8], name: Option<String>) ->
         Err(_) => null_mut(),
     };
 
-    let ret = unsafe { cli_magic_scan_buff(ptr as *const c_void, len, ctx, name_ptr, 0) };
+    let ret = unsafe { cli_magic_scan_buff(ptr as *const c_void, len, ctx, cli_file_CL_TYPE_ANY, name_ptr, 0) };
     if ret != cl_error_t_CL_SUCCESS {
         debug!("cli_magic_scan_buff returned error: {}", ret);
     }

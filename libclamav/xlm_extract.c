@@ -4353,7 +4353,7 @@ cl_error_t process_blip_record(struct OfficeArtRecordHeader_Unpacked *rh, const 
                                            NULL, LAYER_ATTRIBUTES_NONE);
         } else {
             /* Scan the buffer */
-            ret = cli_magic_scan_buff(start_of_image, size_of_image, ctx, NULL, LAYER_ATTRIBUTES_NONE);
+            ret = cli_magic_scan_buff(start_of_image, size_of_image, ctx, CL_TYPE_ANY, NULL, LAYER_ATTRIBUTES_NONE);
         }
         if (CL_SUCCESS != ret) {
             status = ret;

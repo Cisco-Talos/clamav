@@ -25,6 +25,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
@@ -70,6 +71,51 @@ const char *get_version(void)
     }
     /* it is a release, or we have nothing better */
     return VERSION "" VERSION_SUFFIX;
+}
+
+int parse_pdf_render_canvas(const char *value, uint32_t *width, uint32_t *height)
+{
+    unsigned int parsed_width  = 0;
+    unsigned int parsed_height = 0;
+    char trailing              = '\0';
+
+    if ((NULL == value) || (NULL == width) || (NULL == height)) {
+        return 0;
+    }
+
+    if ((2 != sscanf(value, "%ux%u", &parsed_width, &parsed_height)) ||
+        (0 == parsed_width) ||
+        (0 == parsed_height)) {
+        return 0;
+    }
+
+    if (3 == sscanf(value, "%ux%u%c", &parsed_width, &parsed_height, &trailing)) {
+        return 0;
+    }
+
+    *width  = parsed_width;
+    *height = parsed_height;
+
+    return 1;
+}
+
+int parse_pdf_render_format(const char *value, uint32_t *format)
+{
+    if ((NULL == value) || (NULL == format)) {
+        return 0;
+    }
+
+    if (0 == strcmp(value, "png")) {
+        *format = 1;
+        return 1;
+    }
+
+    if ((0 == strcmp(value, "jpeg")) || (0 == strcmp(value, "jpg"))) {
+        *format = 2;
+        return 1;
+    }
+
+    return 0;
 }
 
 char *freshdbdir(void)

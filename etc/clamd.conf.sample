@@ -515,6 +515,31 @@ Example
 # Default: yes
 #ScanImageFuzzyHash no
 
+# This option enables PDF rendering plus image fuzzy hash detection for PDF
+# files.
+# If you turn off this option, PDFs will still be scanned, but the PDFium-based
+# render and fuzzy hash step will be skipped.
+# Default: yes
+#ScanPDFImageFuzzyHash no
+
+# Render PDF pages for fuzzy hash calculation at the specified DPI.
+# This option is mutually exclusive with PDFRenderCanvas.
+# The value must be greater than 0.
+# Default: disabled
+#PDFRenderDPI 144
+
+# Render PDF pages for fuzzy hash calculation to fit within a canvas specified
+# as WIDTHxHEIGHT pixels.
+# This option is mutually exclusive with PDFRenderDPI.
+# Example: 1920x1080
+# Default: 2000x2000
+#PDFRenderCanvas 1920x1080
+
+# Render PDF pages for fuzzy hash calculation as either PNG or JPEG.
+# Supported values are 'png' and 'jpeg'.
+# Default: png
+#PDFRenderFormat png
+
 
 ##
 ## Mail files

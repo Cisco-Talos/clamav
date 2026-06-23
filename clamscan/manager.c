@@ -48,6 +48,7 @@
 #include <signal.h>
 #include <errno.h>
 #include <math.h>
+#include <stdint.h>
 
 // libclamav
 #include "clamav.h"
@@ -1681,6 +1682,87 @@ int scanmanager(const struct optstruct *opts)
         }
     }
 
+    if (optget(opts, "pdf-render-dpi")->active && optget(opts, "pdf-render-canvas")->active) {
+#ifndef HAVE_PDFIUM
+        logg(LOGG_ERROR, "--pdf-render-dpi and --pdf-render-canvas require ClamAV to be built with PDFium support.\n");
+        ret = 2;
+        goto done;
+#else
+        logg(LOGG_ERROR, "Cannot use --pdf-render-dpi and --pdf-render-canvas together.\n");
+        ret = 2;
+        goto done;
+#endif
+    }
+
+    if ((opt = optget(opts, "pdf-render-dpi"))->active) {
+#ifndef HAVE_PDFIUM
+        logg(LOGG_ERROR, "--pdf-render-dpi requires ClamAV to be built with PDFium support.\n");
+        ret = 2;
+        goto done;
+#else
+        if (opt->numarg <= 0) {
+            logg(LOGG_ERROR, "--pdf-render-dpi must be greater than 0.\n");
+            ret = 2;
+            goto done;
+        }
+        if ((ret = cl_engine_set_num(engine, CL_ENGINE_PDF_RENDER_DPI, opt->numarg))) {
+            logg(LOGG_ERROR, "cli_engine_set_num(CL_ENGINE_PDF_RENDER_DPI) failed: %s\n", cl_strerror(ret));
+            ret = 2;
+            goto done;
+        }
+#endif
+    }
+
+    if ((opt = optget(opts, "pdf-render-canvas"))->active) {
+#ifndef HAVE_PDFIUM
+        logg(LOGG_ERROR, "--pdf-render-canvas requires ClamAV to be built with PDFium support.\n");
+        ret = 2;
+        goto done;
+#else
+        uint32_t canvas_width  = 0;
+        uint32_t canvas_height = 0;
+
+        if (!parse_pdf_render_canvas(opt->strarg, &canvas_width, &canvas_height)) {
+            logg(LOGG_ERROR, "--pdf-render-canvas must be in WIDTHxHEIGHT format, for example 1920x1080.\n");
+            ret = 2;
+            goto done;
+        }
+
+        if ((ret = cl_engine_set_num(engine, CL_ENGINE_PDF_RENDER_CANVAS_WIDTH, canvas_width))) {
+            logg(LOGG_ERROR, "cli_engine_set_num(CL_ENGINE_PDF_RENDER_CANVAS_WIDTH) failed: %s\n", cl_strerror(ret));
+            ret = 2;
+            goto done;
+        }
+        if ((ret = cl_engine_set_num(engine, CL_ENGINE_PDF_RENDER_CANVAS_HEIGHT, canvas_height))) {
+            logg(LOGG_ERROR, "cli_engine_set_num(CL_ENGINE_PDF_RENDER_CANVAS_HEIGHT) failed: %s\n", cl_strerror(ret));
+            ret = 2;
+            goto done;
+        }
+#endif
+    }
+
+    if ((opt = optget(opts, "pdf-render-format"))->active) {
+#ifndef HAVE_PDFIUM
+        logg(LOGG_ERROR, "--pdf-render-format requires ClamAV to be built with PDFium support.\n");
+        ret = 2;
+        goto done;
+#else
+        uint32_t render_format = 0;
+
+        if (!parse_pdf_render_format(opt->strarg, &render_format)) {
+            logg(LOGG_ERROR, "--pdf-render-format must be either png or jpeg.\n");
+            ret = 2;
+            goto done;
+        }
+
+        if ((ret = cl_engine_set_num(engine, CL_ENGINE_PDF_RENDER_FORMAT, render_format))) {
+            logg(LOGG_ERROR, "cli_engine_set_num(CL_ENGINE_PDF_RENDER_FORMAT) failed: %s\n", cl_strerror(ret));
+            ret = 2;
+            goto done;
+        }
+#endif
+    }
+
     /* set scan options */
     if (optget(opts, "allmatch")->enabled) {
         options.general |= CL_SCAN_GENERAL_ALLMATCHES;
@@ -1771,6 +1853,20 @@ int scanmanager(const struct optstruct *opts)
 
     if (optget(opts, "scan-image-fuzzy-hash")->enabled)
         options.parse |= CL_SCAN_PARSE_IMAGE_FUZZY_HASH;
+
+#ifndef HAVE_PDFIUM
+    if (optget(opts, "scan-pdf-image-fuzzy-hash")->active &&
+        optget(opts, "scan-pdf-image-fuzzy-hash")->enabled) {
+        logg(LOGG_ERROR, "--scan-pdf-image-fuzzy-hash requires ClamAV to be built with PDFium support.\n");
+        ret = 2;
+        goto done;
+    }
+#endif
+
+#ifdef HAVE_PDFIUM
+    if (optget(opts, "scan-pdf-image-fuzzy-hash")->enabled)
+        options.parse |= CL_SCAN_PARSE_PDF_IMAGE_FUZZY_HASH;
+#endif
 
     /* TODO: Remove deprecated option in a future feature release */
     if ((optget(opts, "algorithmic-detection")->enabled) && /* && used due to default-yes for both options */
