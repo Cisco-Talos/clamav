@@ -5,7 +5,7 @@ name = "clamav_rust"
 version = "0.0.1"
 
 [dependencies]
-pdfium-render = { version = "0.8.37", features = ["static"] }
+pdfium-render = { version = "0.8.37", features = ["static"], optional = true }
 flate2 = "1"
 hex = "0.4"
 libc = "0.2"
@@ -36,6 +36,7 @@ indexmap = "2.10.0"
 
 [features]
 not_ready = []
+pdfium = ["dep:pdfium-render"]
 
 [lib]
 crate-type = ["staticlib"]

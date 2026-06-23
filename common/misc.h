@@ -27,6 +27,7 @@
 #include <netinet/in.h>
 #endif
 #include <stdbool.h>
+#include <stdint.h>
 
 #include "clamav.h"
 #include "platform.h"
@@ -65,6 +66,8 @@ void print_version(const char *dbdir);
 int check_flevel(void);
 const char *filelist(const struct optstruct *opts, int *err);
 int filecopy(const char *src, const char *dest);
+int parse_pdf_render_canvas(const char *value, uint32_t *width, uint32_t *height);
+int parse_pdf_render_format(const char *value, uint32_t *format);
 
 #ifndef _WIN32
 /*Returns 0 on success (only the child process returns.*/

@@ -76,51 +76,6 @@
 dev_t procdev;
 #endif
 
-static int parse_pdf_render_canvas(const char *value, uint32_t *width, uint32_t *height)
-{
-    unsigned int parsed_width  = 0;
-    unsigned int parsed_height = 0;
-    char trailing              = '\0';
-
-    if ((NULL == value) || (NULL == width) || (NULL == height)) {
-        return 0;
-    }
-
-    if ((2 != sscanf(value, "%ux%u", &parsed_width, &parsed_height)) ||
-        (0 == parsed_width) ||
-        (0 == parsed_height)) {
-        return 0;
-    }
-
-    if (3 == sscanf(value, "%ux%u%c", &parsed_width, &parsed_height, &trailing)) {
-        return 0;
-    }
-
-    *width  = parsed_width;
-    *height = parsed_height;
-
-    return 1;
-}
-
-static int parse_pdf_render_format(const char *value, uint32_t *format)
-{
-    if ((NULL == value) || (NULL == format)) {
-        return 0;
-    }
-
-    if (0 == strcmp(value, "png")) {
-        *format = 1;
-        return 1;
-    }
-
-    if ((0 == strcmp(value, "jpeg")) || (0 == strcmp(value, "jpg"))) {
-        *format = 2;
-        return 1;
-    }
-
-    return 0;
-}
-
 #ifdef _WIN32
 /* FIXME: If possible, handle users correctly */
 static int checkaccess(const char *path, const char *username, int mode)

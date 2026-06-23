@@ -3,7 +3,7 @@
  *
  *  Copyright (C) 2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *
- *  Authors: Micah Snyder
+ *  Authors: Solal Jacob, John Humlick
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 as
@@ -20,8 +20,11 @@
  *  MA 02110-1301, USA.
  */
 
+#[cfg(feature = "pdfium")]
 use image::{DynamicImage, ImageFormat};
+#[cfg(feature = "pdfium")]
 use pdfium_render::prelude::*;
+#[cfg(feature = "pdfium")]
 use std::io::Cursor;
 
 #[repr(C)]
@@ -50,14 +53,19 @@ pub const PDF_IMAGE_FUZZY_HASH_IMAGE_FORMAT_JPEG: u32 = 2;
 
 #[derive(thiserror::Error, Debug)]
 pub enum PdfRenderError {
+    #[cfg(feature = "pdfium")]
     #[error("PDF Rendering error : {0}")]
     PDFRenderError(#[from] PdfiumError),
 
+    #[cfg(feature = "pdfium")]
     #[error("PDF Rendering error : {0}")]
     ImageEncodeError(#[from] image::ImageError),
 
     #[error("PDF Rendering error : empty document")]
     PDFRenderEmpty,
+
+    #[error("PDF Rendering error : PDFium support is disabled")]
+    PDFiumDisabled,
 }
 
 impl Default for PdfImageFuzzyHashConfig {
@@ -72,6 +80,7 @@ impl Default for PdfImageFuzzyHashConfig {
     }
 }
 
+#[cfg(feature = "pdfium")]
 pub fn render(
     data: &[u8],
     config: Option<&PdfImageFuzzyHashConfig>,
@@ -114,6 +123,7 @@ pub fn render(
     Ok(image)
 }
 
+#[cfg(feature = "pdfium")]
 pub fn render_to_image(
     data: &[u8],
     config: Option<&PdfImageFuzzyHashConfig>,
@@ -155,25 +165,36 @@ pub unsafe extern "C" fn _pdf_render_to_image(
         );
     }
 
-    let buffer = std::slice::from_raw_parts(file_bytes, file_size);
-    let render_result = render_to_image(buffer, config.as_ref());
+    #[cfg(not(feature = "pdfium"))]
+    {
+        let _ = file_size;
+        let _ = config;
 
-    match render_result {
-        Ok((image_data, image_type)) => {
-            let len = image_data.len();
-            let boxed = image_data.into_boxed_slice();
-            let ptr = Box::into_raw(boxed) as *mut u8;
+        crate::ffi_error!(err = err, PdfRenderError::PDFiumDisabled)
+    }
 
-            *rendered_image_out = RenderedPdfImage {
-                image_data: ptr,
-                image_len: len,
-                image_type,
-            };
-            true
-        }
-        Err(e) => {
-            *err = Box::into_raw(Box::new(e.into()));
-            false
+    #[cfg(feature = "pdfium")]
+    {
+        let buffer = std::slice::from_raw_parts(file_bytes, file_size);
+        let render_result = render_to_image(buffer, config.as_ref());
+
+        match render_result {
+            Ok((image_data, image_type)) => {
+                let len = image_data.len();
+                let boxed = image_data.into_boxed_slice();
+                let ptr = Box::into_raw(boxed) as *mut u8;
+
+                *rendered_image_out = RenderedPdfImage {
+                    image_data: ptr,
+                    image_len: len,
+                    image_type,
+                };
+                true
+            }
+            Err(e) => {
+                *err = Box::into_raw(Box::new(e.into()));
+                false
+            }
         }
     }
 }

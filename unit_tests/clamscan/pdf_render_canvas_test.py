@@ -122,7 +122,7 @@ class TC(testcase.TestCase):
             os.makedirs(tempdir)
 
         testfile = TC.path_source / 'unit_tests' / 'input' / 'other_scanfiles' / 'pdf' / 'pdf-stats-test.pdf'
-        command = '{valgrind} {valgrind_args} {clamscan} -d {path_db} --gen-json --leave-temps --tempdir={tempdir} {testfile} --scan-pdf-image-fuzzy-hash=yes --scan-image-fuzzy-hash=no --pdf-render-format=jpeg'.format(
+        command = '{valgrind} {valgrind_args} {clamscan} -d {path_db} --gen-json --leave-temps --force-to-disk --tempdir={tempdir} {testfile} --scan-pdf-image-fuzzy-hash=yes --scan-image-fuzzy-hash=no --pdf-render-format=jpeg'.format(
             valgrind=TC.valgrind,
             valgrind_args=TC.valgrind_args,
             clamscan=TC.clamscan,

@@ -37,6 +37,10 @@ if(ENABLE_PDFIUM AND PDFIUM_LIBRARY)
     endforeach()
 endif()
 
+if(ENABLE_PDFIUM)
+    list(APPEND CARGO_ARGS "--features" "pdfium")
+endif()
+
 # libclamav rust static library
 add_rust_library(TARGET clamav_rust
     SOURCE_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"

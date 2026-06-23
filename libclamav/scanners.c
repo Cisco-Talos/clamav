@@ -4349,16 +4349,28 @@ static cl_error_t dispatch_prescan_callback(clcb_pre_scan cb, cli_ctx *ctx, cons
     return status;
 }
 
+static bool should_scan_pdf_rendered_image_for_fuzzy_hash(cli_ctx *ctx)
+{
+    return SCAN_PARSE_PDF_IMAGE_FUZZY_HASH &&
+           (DCONF_OTHER & OTHER_CONF_IMAGE_FUZZY_HASH) &&
+           (DCONF_OTHER & OTHER_CONF_PDF_IMAGE_FUZZY_HASH);
+}
+
+static bool is_pdf_rendered_image_layer(cli_ctx *ctx)
+{
+    return (ctx->recursion_level > 0) &&
+           (ctx->recursion_stack[ctx->recursion_level].attributes & LAYER_ATTRIBUTES_NORMALIZED) &&
+           (ctx->recursion_stack[ctx->recursion_level - 1].type == CL_TYPE_PDF);
+}
+
 static bool should_calculate_image_fuzzy_hash(cli_ctx *ctx)
 {
     if (SCAN_PARSE_IMAGE_FUZZY_HASH && (DCONF_OTHER & OTHER_CONF_IMAGE_FUZZY_HASH)) {
         return true;
     }
 
-    if ((ctx->options->parse & CL_SCAN_PARSE_PDF_IMAGE_FUZZY_HASH) &&
-        (ctx->recursion_level > 0) &&
-        (ctx->recursion_stack[ctx->recursion_level].attributes & LAYER_ATTRIBUTES_NORMALIZED) &&
-        (ctx->recursion_stack[ctx->recursion_level - 1].type == CL_TYPE_PDF)) {
+    if (should_scan_pdf_rendered_image_for_fuzzy_hash(ctx) &&
+        is_pdf_rendered_image_layer(ctx)) {
         return true;
     }
 
@@ -4418,15 +4430,13 @@ done:
 #ifdef HAVE_PDFIUM
 static cl_error_t scan_rendered_pdf_image(cli_ctx *ctx)
 {
-    cl_error_t status                 = CL_EPARSE;
-    const uint8_t *offset             = NULL;
-    FFIError *pdf_render_error        = NULL;
-    RenderedPdfImage rendered_image   = {0};
-    PdfImageFuzzyHashConfig config    = {0};
-    char *source_basename             = NULL;
-    char *rendered_image_path         = NULL;
-    int rendered_image_fd             = -1;
-    char *rendered_image_name         = NULL;
+    cl_error_t status               = CL_EPARSE;
+    const uint8_t *offset           = NULL;
+    FFIError *pdf_render_error      = NULL;
+    RenderedPdfImage rendered_image = {0};
+    PdfImageFuzzyHashConfig config  = {0};
+    char *source_basename           = NULL;
+    char *rendered_image_name       = NULL;
 
     offset = fmap_need_off(ctx->fmap, 0, ctx->fmap->real_len);
     if (NULL == offset) {
@@ -4469,34 +4479,10 @@ static cl_error_t scan_rendered_pdf_image(cli_ctx *ctx)
         }
     }
 
-    if (ctx->engine->keeptmp) {
-        status = cli_gentempfd_with_prefix(ctx->this_layer_tmpdir, rendered_image_name, &rendered_image_path, &rendered_image_fd);
-        if (status != CL_SUCCESS) {
-            goto done;
-        }
-
-        if (cli_writen(rendered_image_fd, rendered_image.image_data, rendered_image.image_len) == (size_t)-1) {
-            cli_errmsg("Failed writing rendered PDF image tempfile\n");
-            status = CL_EWRITE;
-            goto done;
-        }
-
-        cli_dbgmsg("Rendered PDF image written to %s\n", rendered_image_path);
-
-        status = cli_magic_scan_desc_type(rendered_image_fd, rendered_image_path, ctx, rendered_image.image_type,
-                                          rendered_image_name, LAYER_ATTRIBUTES_NORMALIZED);
-    } else {
-        status = cli_magic_scan_buff(rendered_image.image_data, rendered_image.image_len, ctx,
-                                     rendered_image.image_type, rendered_image_name, LAYER_ATTRIBUTES_NORMALIZED);
-    }
+    status = cli_magic_scan_buff(rendered_image.image_data, rendered_image.image_len, ctx,
+                                 rendered_image.image_type, rendered_image_name, LAYER_ATTRIBUTES_NORMALIZED);
 
 done:
-    if (rendered_image_fd >= 0) {
-        close(rendered_image_fd);
-    }
-    if (NULL != rendered_image_path) {
-        free(rendered_image_path);
-    }
     if (NULL != rendered_image_name) {
         free(rendered_image_name);
     }
@@ -5203,7 +5189,7 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
                     }
                 }
 
-                if (SCAN_PARSE_IMAGE_FUZZY_HASH && (DCONF_OTHER & OTHER_CONF_IMAGE_FUZZY_HASH)) {
+                if (should_calculate_image_fuzzy_hash(ctx)) {
                     // It's okay if it fails to calculate the fuzzy hash.
                     (void)calculate_fuzzy_image_hash(ctx, type);
                 }
@@ -5366,7 +5352,7 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
             if (SCAN_PARSE_PDF && (DCONF_DOC & DOC_CONF_PDF)) {
                 ret = cli_scanpdf(ctx, 0);
 #ifdef HAVE_PDFIUM
-                if ((CL_SUCCESS == ret) && (ctx->options->parse & CL_SCAN_PARSE_PDF_IMAGE_FUZZY_HASH)) {
+                if ((CL_SUCCESS == ret) && should_scan_pdf_rendered_image_for_fuzzy_hash(ctx)) {
                     ret = scan_rendered_pdf_image(ctx);
                 }
 #endif
