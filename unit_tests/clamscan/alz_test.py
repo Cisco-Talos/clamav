@@ -326,6 +326,8 @@ class TC(testcase.TestCase):
         append_alz_file(alz, 'b', ALZ_COMP_NOCOMP, len(payload), payload)
         alz.extend(ALZ_END_OF_CENTRAL_DIRECTORY_HEADER.to_bytes(4, 'little'))
         assert len(alz) <= 200
+        max_scansize = len(alz) + 100
+        assert max_scansize < len(alz) + (len(payload) * 2)
 
         testfile.write_bytes(alz)
         path_db.write_text(
@@ -337,11 +339,12 @@ class TC(testcase.TestCase):
 
         command = (
             '{valgrind} {valgrind_args} {clamscan} --alert-exceeds-max=yes '
-            '--max-filesize=200 --max-scansize=100 -d {path_db} {testfile}'
+            '--max-filesize=200 --max-scansize={max_scansize} -d {path_db} {testfile}'
         ).format(
             valgrind=TC.valgrind,
             valgrind_args=TC.valgrind_args,
             clamscan=TC.clamscan,
+            max_scansize=max_scansize,
             path_db=path_db,
             testfile=testfile,
         )

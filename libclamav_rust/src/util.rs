@@ -27,6 +27,10 @@ use log::{debug, error, warn};
 
 use crate::{ffi_error, ffi_util::FFIError, sys, validate_str_param};
 
+extern "C" {
+    fn cli_checktimelimit(ctx: *mut sys::cli_ctx) -> sys::cl_error_t;
+}
+
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     #[error("Glob error: {0}")]
@@ -103,29 +107,42 @@ pub unsafe fn check_scan_limits(
     unsafe { sys::cli_checklimits(module_name.as_ptr(), ctx, need1, need2, need3) }
 }
 
-/// Append an exceeds-max heuristic alert or metadata entry.
+/// Check only the scan time limit in case we need to abort the scan.
 ///
 /// # Safety
 ///
 /// ctx must be a valid pointer to a clamav scan context structure
 ///
+pub unsafe fn check_scan_time_limit(ctx: *mut sys::cli_ctx) -> sys::cl_error_t {
+    unsafe { cli_checktimelimit(ctx) }
+}
+
+pub const HEURISTICS_LIMITS_EXCEEDED_MAX_SCAN_SIZE: &[u8] =
+    b"Heuristics.Limits.Exceeded.MaxScanSize\0";
+pub const HEURISTICS_LIMITS_EXCEEDED_MAX_FILES: &[u8] = b"Heuristics.Limits.Exceeded.MaxFiles\0";
+
+/// Append an exceeds-max heuristic alert or metadata entry.
+///
+/// The C evidence store retains the original `virname` pointer, so the alert
+/// name must have static lifetime rather than temporary Rust string storage.
+///
+/// # Safety
+///
+/// ctx must be a valid pointer to a clamav scan context structure.
+/// virname must point to a static NUL-terminated C string.
+///
 pub unsafe fn append_potentially_unwanted_if_heur_exceedsmax(
     ctx: *mut sys::cli_ctx,
-    virname: &str,
-) -> sys::cl_error_t {
-    let virname = match std::ffi::CString::new(virname) {
-        Ok(name) => name,
-        Err(_) => {
-            error!("Invalid virname: {:?}", virname);
-            return sys::cl_error_t_CL_EFORMAT;
-        }
-    };
+    virname: &'static [u8],
+) {
+    debug_assert_eq!(virname.last(), Some(&0));
 
     unsafe {
-        sys::cli_append_potentially_unwanted_if_heur_exceedsmax(ctx, virname.as_ptr().cast_mut());
+        sys::cli_append_potentially_unwanted_if_heur_exceedsmax(
+            ctx,
+            virname.as_ptr().cast_mut().cast(),
+        );
     }
-
-    sys::cl_error_t_CL_SUCCESS
 }
 
 /// Scan archive metadata.

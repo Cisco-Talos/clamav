@@ -33,16 +33,18 @@ use libc::c_void;
 use log::{debug, error, warn};
 
 use crate::{
-    alz::{Alz, AlzExtractionLimits, Error as AlzError},
+    alz::{Alz, AlzExtractionDecision, AlzExtractionLimits, Error as AlzError},
     ctx,
     onenote::OneNote,
     sys::{
-        cl_error_t, cl_error_t_CL_EFORMAT, cl_error_t_CL_EMAXSIZE, cl_error_t_CL_EMEM,
-        cl_error_t_CL_ERROR, cl_error_t_CL_SUCCESS, cl_error_t_CL_VIRUS, cli_ctx,
-        cli_magic_scan_buff,
+        cl_error_t, cl_error_t_CL_EFORMAT, cl_error_t_CL_EMAXFILES, cl_error_t_CL_EMAXSIZE,
+        cl_error_t_CL_EMEM, cl_error_t_CL_ERROR, cl_error_t_CL_SUCCESS, cl_error_t_CL_VIRUS,
+        cli_ctx, cli_magic_scan_buff,
     },
     util::{
-        append_potentially_unwanted_if_heur_exceedsmax, check_scan_limits, scan_archive_metadata,
+        append_potentially_unwanted_if_heur_exceedsmax, check_scan_limits, check_scan_time_limit,
+        scan_archive_metadata, HEURISTICS_LIMITS_EXCEEDED_MAX_FILES,
+        HEURISTICS_LIMITS_EXCEEDED_MAX_SCAN_SIZE,
     },
 };
 
@@ -313,10 +315,16 @@ unsafe fn alz_extraction_limits(ctx: *mut cli_ctx) -> AlzExtractionLimits {
         return AlzExtractionLimits {
             max_file_size: u64::MAX,
             max_total_size: u64::MAX,
+            max_files_remaining: usize::MAX,
         };
     }
 
     let engine = &*(*ctx).engine;
+    let max_files_remaining = if engine.maxfiles == 0 {
+        usize::MAX
+    } else {
+        usize::try_from(engine.maxfiles.saturating_sub((*ctx).scannedfiles)).unwrap_or(usize::MAX)
+    };
 
     AlzExtractionLimits {
         max_file_size: if engine.maxfilesize == 0 {
@@ -329,6 +337,71 @@ unsafe fn alz_extraction_limits(ctx: *mut cli_ctx) -> AlzExtractionLimits {
         } else {
             engine.maxscansize.saturating_sub((*ctx).scansize)
         },
+        max_files_remaining,
+    }
+}
+
+fn handle_alz_metadata_scan_result(
+    file_name: &str,
+    metadata_ret: cl_error_t,
+    alz_metadata_ret: &mut cl_error_t,
+) -> bool {
+    match metadata_ret {
+        ret if ret == cl_error_t_CL_SUCCESS => true,
+        ret if ret == cl_error_t_CL_EFORMAT => {
+            debug!(
+                "ALZ file {:?} metadata scan failed with {}. Continuing extraction.",
+                file_name, metadata_ret
+            );
+            true
+        }
+        ret if ret == cl_error_t_CL_VIRUS => {
+            *alz_metadata_ret = metadata_ret;
+            debug!(
+                "ALZ file {:?} metadata did not pass scan checks. Skipping extraction.",
+                file_name
+            );
+            false
+        }
+        _ => {
+            *alz_metadata_ret = metadata_ret;
+            debug!(
+                "ALZ file {:?} metadata scan failed with {}. Aborting extraction.",
+                file_name, metadata_ret
+            );
+            false
+        }
+    }
+}
+
+fn handle_alz_metadata_limit_result(
+    limit_ret: cl_error_t,
+    alz_metadata_ret: &mut cl_error_t,
+) -> bool {
+    match limit_ret {
+        ret if ret == cl_error_t_CL_SUCCESS => true,
+        ret if ret == cl_error_t_CL_EMAXFILES => false,
+        _ => {
+            *alz_metadata_ret = limit_ret;
+            false
+        }
+    }
+}
+
+fn alz_metadata_size(size: u64) -> Option<usize> {
+    usize::try_from(size).ok()
+}
+
+fn handle_alz_metadata_directory_limit_result(
+    limit_ret: cl_error_t,
+    alz_metadata_ret: &mut cl_error_t,
+) -> bool {
+    match limit_ret {
+        ret if ret == cl_error_t_CL_SUCCESS => true,
+        _ => {
+            *alz_metadata_ret = limit_ret;
+            false
+        }
     }
 }
 
@@ -361,16 +434,31 @@ pub unsafe extern "C" fn cli_scanalz(ctx: *mut cli_ctx) -> cl_error_t {
     let mut alz_metadata_ret = cl_error_t_CL_SUCCESS;
     let alz_result = panic::catch_unwind(panic::AssertUnwindSafe(|| {
         Alz::from_bytes_with_filter(file_bytes, |metadata| {
-            if check_scan_limits("ALZ", ctx, 0, 0, 0) != cl_error_t_CL_SUCCESS {
+            if alz_metadata_ret != cl_error_t_CL_SUCCESS {
+                return AlzExtractionDecision::Stop;
+            }
+
+            if metadata.is_directory {
+                let limit_ret = check_scan_time_limit(ctx);
+                if !handle_alz_metadata_directory_limit_result(limit_ret, &mut alz_metadata_ret) {
+                    debug!("Exceeded scan limits. Bailing out.");
+                    return AlzExtractionDecision::Stop;
+                }
+
+                return AlzExtractionDecision::Skip;
+            }
+
+            let limit_ret = check_scan_limits("ALZ", ctx, 0, 0, 0);
+            if !handle_alz_metadata_limit_result(limit_ret, &mut alz_metadata_ret) {
                 debug!("Exceeded scan limits. Bailing out.");
-                return None;
+                return AlzExtractionDecision::Stop;
             }
 
             match (
-                usize::try_from(metadata.compressed_size),
-                usize::try_from(metadata.uncompressed_size),
+                alz_metadata_size(metadata.compressed_size),
+                alz_metadata_size(metadata.uncompressed_size),
             ) {
-                (Ok(compressed_size), Ok(uncompressed_size)) => {
+                (Some(compressed_size), Some(uncompressed_size)) => {
                     let metadata_ret = scan_archive_metadata(
                         ctx,
                         metadata.file_name,
@@ -380,27 +468,23 @@ pub unsafe extern "C" fn cli_scanalz(ctx: *mut cli_ctx) -> cl_error_t {
                         metadata.filepos,
                         metadata.file_crc as i32,
                     );
-                    if metadata_ret == cl_error_t_CL_VIRUS {
-                        alz_metadata_ret = metadata_ret;
-                        debug!(
-                            "ALZ file {:?} metadata did not pass scan checks. Skipping extraction.",
-                            metadata.file_name
-                        );
-                        return None;
-                    } else if metadata_ret != cl_error_t_CL_SUCCESS {
-                        debug!(
-                            "ALZ file {:?} metadata scan failed with {}. Continuing extraction.",
-                            metadata.file_name, metadata_ret
-                        );
+                    if !handle_alz_metadata_scan_result(
+                        metadata.file_name,
+                        metadata_ret,
+                        &mut alz_metadata_ret,
+                    ) {
+                        return AlzExtractionDecision::Stop;
                     }
                 }
-                _ => debug!(
-                    "ALZ file {:?} metadata sizes are too large for this platform. Continuing extraction.",
-                    metadata.file_name
-                ),
+                _ => {
+                    debug!(
+                        "ALZ file {:?} metadata size does not fit platform size_t. Skipping metadata scan.",
+                        metadata.file_name
+                    );
+                }
             }
 
-            Some(alz_extraction_limits(ctx))
+            AlzExtractionDecision::Extract(alz_extraction_limits(ctx))
         })
     }));
 
@@ -432,13 +516,14 @@ pub unsafe extern "C" fn cli_scanalz(ctx: *mut cli_ctx) -> cl_error_t {
     }
 
     if alz.total_limit_exceeded_size.is_some() {
-        let ret = append_potentially_unwanted_if_heur_exceedsmax(
+        append_potentially_unwanted_if_heur_exceedsmax(
             ctx,
-            "Heuristics.Limits.Exceeded.MaxScanSize",
+            HEURISTICS_LIMITS_EXCEEDED_MAX_SCAN_SIZE,
         );
-        if ret != cl_error_t_CL_SUCCESS {
-            return ret;
-        }
+    }
+
+    if alz.file_count_limit_exceeded {
+        append_potentially_unwanted_if_heur_exceedsmax(ctx, HEURISTICS_LIMITS_EXCEEDED_MAX_FILES);
     }
 
     for i in 0..alz.embedded_files.len() {
@@ -457,4 +542,124 @@ pub unsafe extern "C" fn cli_scanalz(ctx: *mut cli_ctx) -> cl_error_t {
     }
 
     cl_error_t_CL_SUCCESS
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::sys::cl_error_t_CL_ETIMEOUT;
+
+    #[test]
+    fn alz_metadata_scan_success_continues() {
+        let mut alz_metadata_ret = cl_error_t_CL_SUCCESS;
+
+        assert!(handle_alz_metadata_scan_result(
+            "entry",
+            cl_error_t_CL_SUCCESS,
+            &mut alz_metadata_ret,
+        ));
+        assert_eq!(alz_metadata_ret, cl_error_t_CL_SUCCESS);
+    }
+
+    #[test]
+    fn alz_metadata_scan_format_error_continues() {
+        let mut alz_metadata_ret = cl_error_t_CL_SUCCESS;
+
+        assert!(handle_alz_metadata_scan_result(
+            "entry",
+            cl_error_t_CL_EFORMAT,
+            &mut alz_metadata_ret,
+        ));
+        assert_eq!(alz_metadata_ret, cl_error_t_CL_SUCCESS);
+    }
+
+    #[test]
+    fn alz_metadata_scan_virus_stops() {
+        let mut alz_metadata_ret = cl_error_t_CL_SUCCESS;
+
+        assert!(!handle_alz_metadata_scan_result(
+            "entry",
+            cl_error_t_CL_VIRUS,
+            &mut alz_metadata_ret,
+        ));
+        assert_eq!(alz_metadata_ret, cl_error_t_CL_VIRUS);
+    }
+
+    #[test]
+    fn alz_metadata_scan_hard_error_stops() {
+        let mut alz_metadata_ret = cl_error_t_CL_SUCCESS;
+
+        assert!(!handle_alz_metadata_scan_result(
+            "entry",
+            cl_error_t_CL_EMEM,
+            &mut alz_metadata_ret,
+        ));
+        assert_eq!(alz_metadata_ret, cl_error_t_CL_EMEM);
+    }
+
+    #[test]
+    fn alz_metadata_limit_success_continues() {
+        let mut alz_metadata_ret = cl_error_t_CL_SUCCESS;
+
+        assert!(handle_alz_metadata_limit_result(
+            cl_error_t_CL_SUCCESS,
+            &mut alz_metadata_ret,
+        ));
+        assert_eq!(alz_metadata_ret, cl_error_t_CL_SUCCESS);
+    }
+
+    #[test]
+    fn alz_metadata_limit_failure_stops_without_terminal_status() {
+        let mut alz_metadata_ret = cl_error_t_CL_SUCCESS;
+
+        assert!(!handle_alz_metadata_limit_result(
+            cl_error_t_CL_EMAXFILES,
+            &mut alz_metadata_ret,
+        ));
+        assert_eq!(alz_metadata_ret, cl_error_t_CL_SUCCESS);
+    }
+
+    #[test]
+    fn alz_metadata_limit_hard_failure_stops_with_terminal_status() {
+        let mut alz_metadata_ret = cl_error_t_CL_SUCCESS;
+
+        assert!(!handle_alz_metadata_limit_result(
+            cl_error_t_CL_ETIMEOUT,
+            &mut alz_metadata_ret,
+        ));
+        assert_eq!(alz_metadata_ret, cl_error_t_CL_ETIMEOUT);
+    }
+
+    #[test]
+    fn alz_metadata_directory_limit_success_continues() {
+        let mut alz_metadata_ret = cl_error_t_CL_SUCCESS;
+
+        assert!(handle_alz_metadata_directory_limit_result(
+            cl_error_t_CL_SUCCESS,
+            &mut alz_metadata_ret,
+        ));
+        assert_eq!(alz_metadata_ret, cl_error_t_CL_SUCCESS);
+    }
+
+    #[test]
+    fn alz_metadata_directory_limit_hard_failure_stops_with_terminal_status() {
+        let mut alz_metadata_ret = cl_error_t_CL_SUCCESS;
+
+        assert!(!handle_alz_metadata_directory_limit_result(
+            cl_error_t_CL_ETIMEOUT,
+            &mut alz_metadata_ret,
+        ));
+        assert_eq!(alz_metadata_ret, cl_error_t_CL_ETIMEOUT);
+    }
+
+    #[test]
+    fn alz_metadata_size_rejects_platform_overflow() {
+        assert_eq!(alz_metadata_size(42), Some(42usize));
+        assert_eq!(alz_metadata_size(usize::MAX as u64), Some(usize::MAX));
+
+        #[cfg(target_pointer_width = "32")]
+        assert_eq!(alz_metadata_size(u64::from(u32::MAX) + 1), None);
+
+        #[cfg(target_pointer_width = "64")]
+        assert_eq!(alz_metadata_size(u64::MAX), Some(usize::MAX));
+    }
 }

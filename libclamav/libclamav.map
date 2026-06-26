@@ -317,6 +317,7 @@ CLAMAV_PRIVATE {
     ffierror_fmt;
     cli_magic_scan_buff;
     cli_checklimits;
+    cli_checktimelimit;
     cli_matchmeta;
     cli_cvdunpack_and_verify;
     cli_cvdverify;
