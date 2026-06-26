@@ -5,6 +5,7 @@
 #include <stdio.h>
 
 #include <stdlib.h>
+#include <inttypes.h>
 #include <limits.h>
 #include <fcntl.h>
 #include <string.h>
@@ -776,6 +777,445 @@ START_TEST(test_cl_scanmap_callback_mem_allscan)
 END_TEST
 #endif
 
+static cl_error_t ignore_alert_callback(cl_scan_layer_t *layer, void *context)
+{
+    (void)layer;
+    (void)context;
+
+    return CL_CLEAN;
+}
+
+static int legacy_virus_found_fd;
+static unsigned legacy_virus_found_count;
+static const char *legacy_virus_found_name;
+static void *legacy_virus_found_context;
+
+static void record_legacy_virus_found_callback(int fd, const char *virname, void *context)
+{
+    legacy_virus_found_fd = fd;
+    legacy_virus_found_name = virname;
+    legacy_virus_found_context = context;
+    legacy_virus_found_count++;
+}
+
+struct file_props_capture {
+    char *json;
+    int status;
+    unsigned count;
+};
+
+static int capture_file_props_callback(const char *j_propstr, int rc, void *context)
+{
+    struct file_props_capture *capture = (struct file_props_capture *)context;
+
+    if (NULL == capture) {
+        return CL_ENULLARG;
+    }
+
+    capture->count++;
+    capture->status = rc;
+    free(capture->json);
+    capture->json = NULL;
+
+    if (NULL != j_propstr) {
+        capture->json = strdup(j_propstr);
+        if (NULL == capture->json) {
+            return CL_EMEM;
+        }
+    }
+
+    return CL_SUCCESS;
+}
+
+struct allmatch_pua_metadata_capture {
+    struct file_props_capture metadata;
+    unsigned alert_count;
+};
+
+static cl_error_t ignore_first_alert_callback(cl_scan_layer_t *layer, void *context)
+{
+    struct allmatch_pua_metadata_capture *capture = (struct allmatch_pua_metadata_capture *)context;
+
+    (void)layer;
+
+    if (NULL == capture) {
+        return CL_ENULLARG;
+    }
+
+    capture->alert_count++;
+
+    return (1 == capture->alert_count) ? CL_CLEAN : CL_VIRUS;
+}
+
+static int capture_allmatch_pua_file_props_callback(const char *j_propstr, int rc, void *context)
+{
+    struct allmatch_pua_metadata_capture *capture = (struct allmatch_pua_metadata_capture *)context;
+
+    if (NULL == capture) {
+        return CL_ENULLARG;
+    }
+
+    return capture_file_props_callback(j_propstr, rc, &capture->metadata);
+}
+
+static bool metadata_json_named_object_has_key(const char *json, const char *name, const char *key)
+{
+    const char *name_pos;
+    const char *object_end;
+    const char *key_pos;
+
+    if ((NULL == json) || (NULL == name) || (NULL == key)) {
+        return false;
+    }
+
+    name_pos = strstr(json, name);
+    if (NULL == name_pos) {
+        return false;
+    }
+
+    object_end = strchr(name_pos, '}');
+    if (NULL == object_end) {
+        return false;
+    }
+
+    key_pos = strstr(name_pos, key);
+
+    return (NULL != key_pos) && (key_pos < object_end);
+}
+
+static bool metadata_json_array_has_name(const char *json, const char *array_name, const char *name)
+{
+    char array_key[64];
+    const char *array_pos;
+    const char *array_end;
+    const char *name_pos;
+    int key_len;
+
+    if ((NULL == json) || (NULL == array_name) || (NULL == name)) {
+        return false;
+    }
+
+    key_len = snprintf(array_key, sizeof(array_key), "\"%s\"", array_name);
+    if ((key_len < 0) || (key_len >= (int)sizeof(array_key))) {
+        return false;
+    }
+
+    array_pos = strstr(json, array_key);
+    if (NULL == array_pos) {
+        return false;
+    }
+
+    array_end = strchr(array_pos, ']');
+    if (NULL == array_end) {
+        return false;
+    }
+
+    name_pos = strstr(array_pos, name);
+
+    return (NULL != name_pos) && (name_pos < array_end);
+}
+
+START_TEST(test_cl_scanfile_ex_signature_match)
+{
+    const char *alert = "stale";
+    char file[256];
+    unsigned long size;
+    uint64_t scanned = 0;
+    cl_verdict_t verdict = CL_VERDICT_TRUSTED;
+    cl_error_t ret;
+    struct cl_scan_options options;
+
+    memset(&options, 0, sizeof(struct cl_scan_options));
+    options.parse |= ~0;
+
+    int fd = get_test_file(_i, file, sizeof(file), &size);
+    close(fd);
+
+    ret = cl_scanfile_ex(file, &verdict, &alert, &scanned, g_engine, &options, NULL,
+                         NULL, NULL, NULL, NULL, NULL);
+
+    if (!FALSE_NEGATIVE) {
+        ck_assert_msg(ret == CL_SUCCESS, "cl_scanfile_ex returned %s", cl_strerror(ret));
+        ck_assert_msg(verdict == CL_VERDICT_STRONG_INDICATOR, "unexpected verdict: %d", verdict);
+        ck_assert_msg(alert && !strcmp(alert, "ClamAV-Test-File.UNOFFICIAL"), "alert: %s", alert);
+        ck_assert_msg(scanned > 0, "scanned: %" PRIu64, scanned);
+    }
+}
+END_TEST
+
+START_TEST(test_cl_scanfile_ex_ignored_strong_alert)
+{
+    const char *alert = "stale";
+    char file[256];
+    unsigned long size;
+    uint64_t scanned = 0;
+    cl_verdict_t verdict = CL_VERDICT_TRUSTED;
+    cl_error_t ret;
+    struct cl_scan_options options;
+    int fd;
+
+    memset(&options, 0, sizeof(struct cl_scan_options));
+    options.parse |= ~0;
+
+    fd = get_test_file(_i, file, sizeof(file), &size);
+    close(fd);
+
+    cl_engine_set_scan_callback(g_engine, ignore_alert_callback, CL_SCAN_CALLBACK_ALERT);
+    ret = cl_scanfile_ex(file, &verdict, &alert, &scanned, g_engine, &options, NULL,
+                         NULL, NULL, NULL, NULL, NULL);
+    cl_engine_set_scan_callback(g_engine, NULL, CL_SCAN_CALLBACK_ALERT);
+
+    if (!FALSE_NEGATIVE) {
+        ck_assert_msg(ret == CL_SUCCESS, "cl_scanfile_ex returned %s", cl_strerror(ret));
+        ck_assert_msg(verdict == CL_VERDICT_NOTHING_FOUND, "unexpected verdict: %d", verdict);
+        ck_assert_msg(alert == NULL, "alert: %s", alert ? alert : "(null)");
+        ck_assert_msg(scanned > 0, "scanned: %" PRIu64, scanned);
+    }
+}
+END_TEST
+
+START_TEST(test_cl_scanmap_ex_allmatch_ignored_pua_metadata)
+{
+    const char map_data[] = "alpha beta";
+    const char *ignored_pua = "PUA.Test.IgnoreFirst.UNOFFICIAL";
+    const char *kept_pua = "PUA.Test.KeepSecond.UNOFFICIAL";
+    const char *alert = "stale";
+    char dbfile[PATH_MAX];
+    struct cl_engine *pua_engine = NULL;
+    cl_fmap_t *map = NULL;
+    FILE *db = NULL;
+    char *dbdir = NULL;
+    unsigned int sigs = 0;
+    uint64_t scanned = 0;
+    cl_verdict_t verdict = CL_VERDICT_TRUSTED;
+    cl_error_t ret;
+    struct cl_scan_options options;
+    struct allmatch_pua_metadata_capture capture;
+    int path_len;
+
+    memset(&options, 0, sizeof(options));
+    memset(&capture, 0, sizeof(capture));
+    options.general |= CL_SCAN_GENERAL_ALLMATCHES | CL_SCAN_GENERAL_COLLECT_METADATA;
+
+    dbdir = cli_gentemp(NULL);
+    ck_assert_msg(NULL != dbdir, "cli_gentemp failed");
+    ck_assert_msg(0 == mkdir(dbdir, 0700), "mkdir(%s) failed", dbdir);
+
+    path_len = snprintf(dbfile, sizeof(dbfile), "%s" PATHSEP "pua.ndb", dbdir);
+    ck_assert_msg((path_len > 0) && (path_len < (int)sizeof(dbfile)),
+                  "temporary database path is too long");
+    db = fopen(dbfile, "wb");
+    ck_assert_msg(NULL != db, "failed to create %s", dbfile);
+    ck_assert_msg(0 <= fputs("PUA.Test.IgnoreFirst:0:*:616c706861\n", db),
+                  "failed to write first PUA signature");
+    ck_assert_msg(0 <= fputs("PUA.Test.KeepSecond:0:*:62657461\n", db),
+                  "failed to write second PUA signature");
+    ck_assert_msg(0 == fclose(db), "failed to close %s", dbfile);
+    db = NULL;
+
+    pua_engine = cl_engine_new();
+    ck_assert_msg(NULL != pua_engine, "cl_engine_new failed");
+    ret = cl_load(dbfile, pua_engine, &sigs, CL_DB_STDOPT | CL_DB_PUA);
+    ck_assert_msg(CL_SUCCESS == ret, "cl_load(%s) returned %s", dbfile, cl_strerror(ret));
+    ck_assert_msg(2 == sigs, "unexpected signature count: %u", sigs);
+    ret = cl_engine_compile(pua_engine);
+    ck_assert_msg(CL_SUCCESS == ret, "cl_engine_compile returned %s", cl_strerror(ret));
+
+    map = cl_fmap_open_memory((const void *)map_data, sizeof(map_data) - 1);
+    ck_assert_msg(NULL != map, "cl_fmap_open_memory failed");
+
+    cl_engine_set_scan_callback(pua_engine, ignore_first_alert_callback, CL_SCAN_CALLBACK_ALERT);
+    cl_engine_set_clcb_file_props(pua_engine, capture_allmatch_pua_file_props_callback);
+    ret = cl_scanmap_ex(map, "two-pua-alerts", &verdict, &alert, &scanned, pua_engine, &options, &capture,
+                        NULL, NULL, NULL, NULL, NULL);
+    cl_engine_set_clcb_file_props(pua_engine, NULL);
+    cl_engine_set_scan_callback(pua_engine, NULL, CL_SCAN_CALLBACK_ALERT);
+
+    ck_assert_msg(CL_SUCCESS == ret, "cl_scanmap_ex returned %s", cl_strerror(ret));
+    ck_assert_msg(CL_VERDICT_POTENTIALLY_UNWANTED == verdict, "unexpected verdict: %d", verdict);
+    ck_assert_msg(NULL != alert && 0 == strcmp(alert, kept_pua), "alert: %s", alert ? alert : "(null)");
+    ck_assert_msg(scanned > 0, "scanned: %" PRIu64, scanned);
+    ck_assert_msg(capture.alert_count >= 2, "alert callback count: %u", capture.alert_count);
+    ck_assert_msg(1 == capture.metadata.count, "metadata callback count: %u", capture.metadata.count);
+    ck_assert_msg(CL_SUCCESS == capture.metadata.status, "metadata callback status: %s",
+                  cl_strerror(capture.metadata.status));
+    ck_assert_msg(NULL != capture.metadata.json, "metadata callback did not provide JSON");
+
+    ck_assert_msg(metadata_json_array_has_name(capture.metadata.json, "Alerts", kept_pua),
+                  "metadata Alerts array did not keep the accepted PUA: %s", capture.metadata.json);
+    ck_assert_msg(!metadata_json_array_has_name(capture.metadata.json, "Alerts", ignored_pua),
+                  "metadata Alerts array kept the ignored PUA: %s", capture.metadata.json);
+    ck_assert_msg(!metadata_json_named_object_has_key(capture.metadata.json, kept_pua, "\"Ignored\""),
+                  "metadata marked the accepted PUA ignored: %s", capture.metadata.json);
+    ck_assert_msg(metadata_json_named_object_has_key(capture.metadata.json, ignored_pua, "\"Ignored\""),
+                  "metadata did not mark the ignored PUA ignored: %s", capture.metadata.json);
+
+    cl_fmap_close(map);
+    cl_engine_free(pua_engine);
+    free(capture.metadata.json);
+    cli_unlink(dbfile);
+    cli_rmdirs(dbdir);
+    free(dbdir);
+}
+END_TEST
+
+START_TEST(test_cl_scanmap_ex_alert_exceeds_max_filesize)
+{
+    char map_data[6] = {'a', 'b', 'c', 'd', 'e', 'f'};
+    cl_fmap_t *map;
+    struct cl_scan_options options;
+    cl_verdict_t verdict = CL_VERDICT_TRUSTED;
+    const char *alert    = "stale";
+    uint64_t scanned     = 42;
+    char *hash           = (char *)1;
+    char *file_type      = (char *)1;
+    cl_error_t ret;
+    struct file_props_capture metadata_capture;
+
+    memset(&options, 0, sizeof(struct cl_scan_options));
+    memset(&metadata_capture, 0, sizeof(metadata_capture));
+    options.heuristic |= CL_SCAN_HEURISTIC_EXCEEDS_MAX;
+
+    ck_assert_msg(cl_engine_set_num(g_engine, CL_ENGINE_MAX_FILESIZE, sizeof(map_data) - 1) == CL_SUCCESS,
+                  "cl_engine_set_num(CL_ENGINE_MAX_FILESIZE)");
+
+    map = cl_fmap_open_memory(map_data, sizeof(map_data));
+    ck_assert_msg(!!map, "cl_fmap_open_memory failed");
+
+    ret = cl_scanmap_ex(map, "big-file", &verdict, &alert, &scanned, g_engine, &options, NULL,
+                        NULL, NULL, NULL, NULL, NULL);
+
+    ck_assert_msg(ret == CL_SUCCESS, "cl_scanmap_ex returned %s", cl_strerror(ret));
+    ck_assert_msg(verdict == CL_VERDICT_POTENTIALLY_UNWANTED, "unexpected verdict: %d", verdict);
+    ck_assert_msg(alert && !strcmp(alert, "Heuristics.Limits.Exceeded.MaxFileSize"), "alert: %s", alert);
+    ck_assert_msg(scanned == 0, "scanned: %" PRIu64, scanned);
+
+    options.general |= CL_SCAN_GENERAL_HEURISTIC_PRECEDENCE;
+    verdict = CL_VERDICT_TRUSTED;
+    alert   = "stale";
+    scanned = 42;
+
+    ret = cl_scanmap_ex(map, "big-file", &verdict, &alert, &scanned, g_engine, &options, NULL,
+                        NULL, NULL, NULL, NULL, NULL);
+
+    ck_assert_msg(ret == CL_SUCCESS, "cl_scanmap_ex with heuristic precedence returned %s", cl_strerror(ret));
+    ck_assert_msg(verdict == CL_VERDICT_STRONG_INDICATOR, "unexpected verdict with heuristic precedence: %d", verdict);
+    ck_assert_msg(alert && !strcmp(alert, "Heuristics.Limits.Exceeded.MaxFileSize"), "alert with heuristic precedence: %s", alert);
+    ck_assert_msg(scanned == 0, "scanned with heuristic precedence: %" PRIu64, scanned);
+
+    options.general &= ~CL_SCAN_GENERAL_HEURISTIC_PRECEDENCE;
+    verdict = CL_VERDICT_TRUSTED;
+    scanned = 42;
+
+    ret = cl_scanmap_ex(map, "big-file", &verdict, NULL, &scanned, g_engine, &options, NULL,
+                        NULL, NULL, NULL, NULL, NULL);
+
+    ck_assert_msg(ret == CL_SUCCESS, "cl_scanmap_ex with NULL alert returned %s", cl_strerror(ret));
+    ck_assert_msg(verdict == CL_VERDICT_POTENTIALLY_UNWANTED, "unexpected verdict with NULL alert: %d", verdict);
+    ck_assert_msg(scanned == 0, "scanned with NULL alert: %" PRIu64, scanned);
+
+    cl_engine_set_scan_callback(g_engine, ignore_alert_callback, CL_SCAN_CALLBACK_ALERT);
+    verdict = CL_VERDICT_TRUSTED;
+    alert   = "stale";
+    scanned = 42;
+
+    ret = cl_scanmap_ex(map, "big-file", &verdict, &alert, &scanned, g_engine, &options, NULL,
+                        NULL, NULL, NULL, NULL, NULL);
+    cl_engine_set_scan_callback(g_engine, NULL, CL_SCAN_CALLBACK_ALERT);
+
+    ck_assert_msg(ret == CL_SUCCESS, "cl_scanmap_ex with ignored alert returned %s", cl_strerror(ret));
+    ck_assert_msg(verdict == CL_VERDICT_NOTHING_FOUND, "unexpected verdict with ignored alert: %d", verdict);
+    ck_assert_msg(alert == NULL, "alert with ignored alert: %s", alert);
+    ck_assert_msg(scanned == 0, "scanned with ignored alert: %" PRIu64, scanned);
+
+    options.general |= CL_SCAN_GENERAL_COLLECT_METADATA;
+    cl_engine_set_scan_callback(g_engine, ignore_alert_callback, CL_SCAN_CALLBACK_ALERT);
+    cl_engine_set_clcb_file_props(g_engine, capture_file_props_callback);
+    verdict = CL_VERDICT_TRUSTED;
+    alert   = "stale";
+    scanned = 42;
+
+    ret = cl_scanmap_ex(map, "big-file", &verdict, &alert, &scanned, g_engine, &options, &metadata_capture,
+                        NULL, NULL, NULL, NULL, NULL);
+    cl_engine_set_clcb_file_props(g_engine, NULL);
+    cl_engine_set_scan_callback(g_engine, NULL, CL_SCAN_CALLBACK_ALERT);
+    options.general &= ~CL_SCAN_GENERAL_COLLECT_METADATA;
+
+    ck_assert_msg(ret == CL_SUCCESS, "cl_scanmap_ex with ignored metadata alert returned %s", cl_strerror(ret));
+    ck_assert_msg(verdict == CL_VERDICT_NOTHING_FOUND, "unexpected verdict with ignored metadata alert: %d", verdict);
+    ck_assert_msg(alert == NULL, "alert with ignored metadata alert: %s", alert ? alert : "(null)");
+    ck_assert_msg(scanned == 0, "scanned with ignored metadata alert: %" PRIu64, scanned);
+    ck_assert_msg(metadata_capture.count == 1, "metadata callback count: %u", metadata_capture.count);
+    ck_assert_msg(metadata_capture.status == CL_SUCCESS, "metadata callback status: %s", cl_strerror(metadata_capture.status));
+    ck_assert_msg(metadata_capture.json != NULL, "metadata callback did not provide JSON");
+    ck_assert_msg(strstr(metadata_capture.json, "\"Alerts\"") == NULL, "metadata JSON still has Alerts: %s", metadata_capture.json);
+    ck_assert_msg(strstr(metadata_capture.json, "Heuristics.Limits.Exceeded.MaxFileSize") != NULL,
+                  "metadata JSON is missing ignored indicator: %s", metadata_capture.json);
+    ck_assert_msg(strstr(metadata_capture.json, "\"Ignored\"") != NULL,
+                  "metadata JSON did not mark ignored indicator: %s", metadata_capture.json);
+    free(metadata_capture.json);
+    metadata_capture.json = NULL;
+
+    options.general |= CL_SCAN_GENERAL_ALLMATCHES;
+    cl_engine_set_scan_callback(g_engine, ignore_alert_callback, CL_SCAN_CALLBACK_ALERT);
+    verdict = CL_VERDICT_TRUSTED;
+    alert   = "stale";
+    scanned = 42;
+
+    ret = cl_scanmap_ex(map, "big-file", &verdict, &alert, &scanned, g_engine, &options, NULL,
+                        NULL, NULL, NULL, NULL, NULL);
+    cl_engine_set_scan_callback(g_engine, NULL, CL_SCAN_CALLBACK_ALERT);
+
+    ck_assert_msg(ret == CL_SUCCESS, "cl_scanmap_ex with ignored allmatch alert returned %s", cl_strerror(ret));
+    ck_assert_msg(verdict == CL_VERDICT_NOTHING_FOUND, "unexpected verdict with ignored allmatch alert: %d", verdict);
+    ck_assert_msg(alert == NULL, "alert with ignored allmatch alert: %s", alert);
+    ck_assert_msg(scanned == 0, "scanned with ignored allmatch alert: %" PRIu64, scanned);
+
+    legacy_virus_found_fd      = 1234;
+    legacy_virus_found_count   = 0;
+    legacy_virus_found_name    = NULL;
+    legacy_virus_found_context = NULL;
+    verdict                    = CL_VERDICT_TRUSTED;
+    alert                      = "stale";
+    scanned                    = 42;
+
+    cl_engine_set_clcb_virus_found(g_engine, record_legacy_virus_found_callback);
+    ret = cl_scanmap_ex(map, "big-file", &verdict, &alert, &scanned, g_engine, &options, &legacy_virus_found_fd,
+                        NULL, NULL, NULL, NULL, NULL);
+    cl_engine_set_clcb_virus_found(g_engine, NULL);
+
+    ck_assert_msg(ret == CL_SUCCESS, "cl_scanmap_ex with legacy callback returned %s", cl_strerror(ret));
+    ck_assert_msg(verdict == CL_VERDICT_POTENTIALLY_UNWANTED, "unexpected verdict with legacy callback: %d", verdict);
+    ck_assert_msg(alert && !strcmp(alert, "Heuristics.Limits.Exceeded.MaxFileSize"), "alert with legacy callback: %s", alert);
+    ck_assert_msg(scanned == 0, "scanned with legacy callback: %" PRIu64, scanned);
+    ck_assert_msg(legacy_virus_found_count == 1, "legacy virus callback count: %u", legacy_virus_found_count);
+    ck_assert_msg(legacy_virus_found_fd == -1, "legacy virus callback fd: %d", legacy_virus_found_fd);
+    ck_assert_msg(legacy_virus_found_name && !strcmp(legacy_virus_found_name, "Heuristics.Limits.Exceeded.MaxFileSize"),
+                  "legacy virus callback name: %s", legacy_virus_found_name);
+    ck_assert_msg(legacy_virus_found_context == &legacy_virus_found_fd,
+                  "legacy virus callback context: %p", legacy_virus_found_context);
+
+    options.general &= ~CL_SCAN_GENERAL_ALLMATCHES;
+    verdict   = CL_VERDICT_TRUSTED;
+    alert     = "stale";
+    scanned   = 42;
+    hash      = (char *)1;
+    file_type = (char *)1;
+
+    ret = cl_scanmap_ex(map, "big-file", &verdict, &alert, &scanned, NULL, &options, NULL,
+                        NULL, &hash, NULL, NULL, &file_type);
+
+    ck_assert_msg(ret == CL_ENULLARG, "cl_scanmap_ex with NULL engine returned %s", cl_strerror(ret));
+    ck_assert_msg(verdict == CL_VERDICT_NOTHING_FOUND, "unexpected verdict with NULL engine: %d", verdict);
+    ck_assert_msg(alert == NULL, "alert with NULL engine: %s", alert);
+    ck_assert_msg(scanned == 0, "scanned with NULL engine: %" PRIu64, scanned);
+    ck_assert_msg(hash == NULL, "hash with NULL engine: %p", (void *)hash);
+    ck_assert_msg(file_type == NULL, "file type with NULL engine: %p", (void *)file_type);
+
+    cl_fmap_close(map);
+}
+END_TEST
+
 START_TEST(test_fmap_duplicate)
 {
     cl_fmap_t *map;
@@ -1339,6 +1779,8 @@ static Suite *test_cl_suite(void)
     tcase_add_loop_test(tc_cl_scan, test_cl_scandesc_callback_allscan, 0, expect);
     tcase_add_loop_test(tc_cl_scan, test_cl_scanfile_callback, 0, expect);
     tcase_add_loop_test(tc_cl_scan, test_cl_scanfile_callback_allscan, 0, expect);
+    tcase_add_loop_test(tc_cl_scan, test_cl_scanfile_ex_signature_match, 0, expect);
+    tcase_add_loop_test(tc_cl_scan, test_cl_scanfile_ex_ignored_strong_alert, 0, expect);
 #ifndef _WIN32
     tcase_add_loop_test(tc_cl_scan, test_cl_scanmap_callback_handle, 0, expect);
     tcase_add_loop_test(tc_cl_scan, test_cl_scanmap_callback_handle_allscan, 0, expect);
@@ -1347,6 +1789,8 @@ static Suite *test_cl_suite(void)
     tcase_add_loop_test(tc_cl_scan, test_cl_scanmap_callback_mem, 0, expect);
     tcase_add_loop_test(tc_cl_scan, test_cl_scanmap_callback_mem_allscan, 0, expect);
 #endif
+    tcase_add_test(tc_cl_scan, test_cl_scanmap_ex_alert_exceeds_max_filesize);
+    tcase_add_test(tc_cl_scan, test_cl_scanmap_ex_allmatch_ignored_pua_metadata);
     tcase_add_loop_test(tc_cl_scan, test_fmap_duplicate, 0, expect);
     tcase_add_loop_test(tc_cl_scan, test_fmap_duplicate_out_of_bounds, 0, expect);
     tcase_add_loop_test(tc_cl_scan, test_fmap_assorted_api, 0, expect);

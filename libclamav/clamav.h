@@ -1458,8 +1458,8 @@ extern cl_error_t cl_scandesc_callback(
  * @param filename           (Optional) Filepath of the open file descriptor or file map.
  * @param[out] verdict_out   A pointer to a cl_verdict_t that will be set to the scan verdict.
  *                           You should check the verdict even if the function returns an error.
- * @param[out] last_alert_out Will be set to a statically allocated (i.e. needs not be freed) signature name if the scan
- *                           matches against a signature.
+ * @param[out] last_alert_out (Optional) Will be set to a statically allocated (i.e. does not need to be freed)
+ *                           signature name if the scan matches against a signature.
  * @param[out] scanned_out   The (exact) number of bytes scanned.
  * @param engine             The scanning engine.
  * @param scanoptions        Scanning options.
@@ -1481,9 +1481,10 @@ extern cl_error_t cl_scandesc_callback(
  *                           of the top layer as determined by ClamAV.
  *                           Will take the form of the standard ClamAV file type format. E.g. "CL_TYPE_PE".
  *                           See also: https://docs.clamav.net/appendix/FileTypes.html#file-types
- * @return cl_error_t        CL_SUCCESS if no error occured.
+ * @return cl_error_t        CL_SUCCESS if no error occurred.
  *                           Otherwise a CL_E* error code.
- *                           Does NOT return CL_VIRUS for a signature match. Check the `verdict_out` parameter instead.
+ *                           Detection-only matches are reported through `verdict_out`; this function does not return
+ *                           CL_VIRUS for a signature match.
  */
 extern cl_error_t cl_scandesc_ex(
     int desc,
@@ -1558,8 +1559,8 @@ extern cl_error_t cl_scanfile_callback(
  * @param filename           Filepath of the file to be scanned.
  * @param[out] verdict_out   A pointer to a cl_verdict_t that will be set to the scan verdict.
  *                           You should check the verdict even if the function returns an error.
- * @param[out] last_alert_out Will be set to a statically allocated (i.e. needs not be freed) signature name if the scan
- *                           matches against a signature.
+ * @param[out] last_alert_out (Optional) Will be set to a statically allocated (i.e. does not need to be freed)
+ *                           signature name if the scan matches against a signature.
  * @param[out] scanned_out   The (exact) number of bytes scanned.
  * @param engine             The scanning engine.
  * @param scanoptions        Scanning options.
@@ -1581,9 +1582,10 @@ extern cl_error_t cl_scanfile_callback(
  *                           of the top layer as determined by ClamAV.
  *                           Will take the form of the standard ClamAV file type format. E.g. "CL_TYPE_PE".
  *                           See also: https://docs.clamav.net/appendix/FileTypes.html#file-types
- * @return cl_error_t        CL_SUCCESS if no error occured.
+ * @return cl_error_t        CL_SUCCESS if no error occurred.
  *                           Otherwise a CL_E* error code.
- *                           Does NOT return CL_VIRUS for a signature match. Check the `verdict_out` parameter instead.
+ *                           Detection-only matches are reported through `verdict_out`; this function does not return
+ *                           CL_VIRUS for a signature match.
  */
 extern cl_error_t cl_scanfile_ex(
     const char *filename,
@@ -1656,8 +1658,8 @@ extern cl_error_t cl_scanmap_callback(
  *                           May be NULL if a name is not available.
  * @param[out] verdict_out   A pointer to a cl_verdict_t that will be set to the scan verdict.
  *                           You should check the verdict even if the function returns an error.
- * @param[out] last_alert_out Will be set to a statically allocated (i.e. needs not be freed) signature name if the scan
- *                           matches against a signature.
+ * @param[out] last_alert_out (Optional) Will be set to a statically allocated (i.e. does not need to be freed)
+ *                           signature name if the scan matches against a signature.
  * @param[out] scanned_out   The (exact) number of bytes scanned.
  * @param engine             The scanning engine.
  * @param scanoptions        Scanning options.
@@ -1679,9 +1681,10 @@ extern cl_error_t cl_scanmap_callback(
  *                           of the top layer as determined by ClamAV.
  *                           Will take the form of the standard ClamAV file type format. E.g. "CL_TYPE_PE".
  *                           See also: https://docs.clamav.net/appendix/FileTypes.html#file-types
- * @return cl_error_t        CL_SUCCESS if no error occured.
+ * @return cl_error_t        CL_SUCCESS if no error occurred.
  *                           Otherwise a CL_E* error code.
- *                           Does NOT return CL_VIRUS for a signature match. Check the `verdict_out` parameter instead.
+ *                           Detection-only matches are reported through `verdict_out`; this function does not return
+ *                           CL_VIRUS for a signature match.
  */
 extern cl_error_t cl_scanmap_ex(
     cl_fmap_t *map,

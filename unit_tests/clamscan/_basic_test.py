@@ -94,3 +94,31 @@ class TC(testcase.TestCase):
         expected_results.append('Infected files: 0')
         unexpected_results = ['{}: ClamAV-Test-File.UNOFFICIAL FOUND'.format(testpath.name) for testpath in TC.testpaths]
         self.verify_output(output.out, expected=expected_results, unexpected=unexpected_results)
+
+    def test_alert_exceeds_max_filesize(self):
+        self.step_name('Test that --alert-exceeds-max reports MaxFileSize as an alert')
+
+        big_file = TC.path_tmp / 'big_file'
+        big_file.write_bytes(b'\x00' * 501)
+
+        command = '{valgrind} {valgrind_args} {clamscan} -d {path_db} --max-filesize=500 --alert-exceeds-max {testfile}'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args,
+            clamscan=TC.clamscan,
+            path_db=TC.path_db / 'clamav.hdb',
+            testfile=big_file,
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 1  # alert found
+
+        expected_results = [
+            'big_file: Heuristics.Limits.Exceeded.MaxFileSize FOUND',
+            'Scanned files: 1',
+            'Infected files: 1',
+        ]
+        unexpected_results = [
+            'Virus(es) detected ERROR',
+            'Total errors:',
+            'OK',
+        ]
+        self.verify_output(output.out, expected=expected_results, unexpected=unexpected_results)
