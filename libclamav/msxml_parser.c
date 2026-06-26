@@ -55,6 +55,19 @@
         }                                                                    \
     } while (0)
 
+#define check_state_goto(state, label)                                       \
+    do {                                                                     \
+        if (state == -1) {                                                   \
+            cli_warnmsg("check_state[msxml]: CL_EPARSE @ ln%d\n", __LINE__); \
+            status = CL_EPARSE;                                              \
+            goto label;                                                      \
+        } else if (state == 0) {                                             \
+            cli_dbgmsg("check_state[msxml]: CL_BREAK @ ln%d\n", __LINE__);   \
+            status = CL_BREAK;                                               \
+            goto label;                                                      \
+        }                                                                    \
+    } while (0)
+
 #define track_json(mxctx) (mxctx->ictx->flags & MSXML_FLAG_JSON)
 
 struct msxml_ictx {
@@ -157,13 +170,58 @@ static int msxml_parse_value(json_object *wrkptr, const char *arrname, const xml
 }
 
 #define MAX_ATTRIBS 20
+
+/**
+ * @brief Free owned attribute strings for scan callbacks.
+ */
+static void msxml_free_attribs(struct attrib_entry *attribs, int num_attribs)
+{
+    int i;
+
+    if (!attribs)
+        return;
+
+    for (i = 0; i < num_attribs; i++) {
+        xmlFree((xmlChar *)attribs[i].key);
+        xmlFree((xmlChar *)attribs[i].value);
+        attribs[i].key   = NULL;
+        attribs[i].value = NULL;
+    }
+}
+
+/**
+ * @brief Copy the current XML reader attribute for later scan-callback use.
+ */
+static cl_error_t msxml_read_attrib(xmlTextReaderPtr reader, struct attrib_entry *attrib)
+{
+    xmlChar *key;
+    xmlChar *value;
+
+    if (!reader || !attrib)
+        return CL_ENULLARG;
+
+    key   = xmlTextReaderLocalName(reader);
+    value = xmlTextReaderValue(reader);
+    if (!key || !value) {
+        xmlFree(key);
+        xmlFree(value);
+        return CL_EMEM;
+    }
+
+    attrib->key   = (const char *)key;
+    attrib->value = (const char *)value;
+
+    return CL_SUCCESS;
+}
+
 static cl_error_t msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr reader, int rlvl, void *jptr)
 {
     const xmlChar *element_name = NULL;
     const xmlChar *node_name = NULL, *node_value = NULL;
     const struct key_entry *keyinfo;
-    struct attrib_entry attribs[MAX_ATTRIBS];
-    cl_error_t ret;
+    struct attrib_entry attribs[MAX_ATTRIBS] = {{0}};
+    cl_error_t status = CL_SUCCESS;
+    cl_error_t ret = CL_SUCCESS;
     int state, node_type, endtag = 0, num_attribs = 0;
     cli_ctx *ctx = mxctx->ictx->ctx;
 
@@ -296,67 +354,87 @@ static cl_error_t msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr 
                 }
             }
 
-            /* populate attributes for scanning callback - BROKEN, probably from the fact the reader is pointed to the attribute from previously parsing attributes */
+            /*
+             * Populate attributes for the scanning callback. The callback runs
+             * after the reader advances through child nodes, so keep owned
+             * copies instead of xmlTextReaderConst* pointers tied to reader
+             * state.
+             */
             if ((keyinfo->type & MSXML_SCAN_CB) && mxctx->scan_cb) {
-                state = xmlTextReaderHasAttributes(reader);
-                if (state == 0) {
-                    state = xmlTextReaderMoveToFirstAttribute(reader);
-                    if (state == 1) {
-                        /* read first attribute (current head) */
-                        attribs[num_attribs].key   = (const char *)xmlTextReaderConstLocalName(reader);
-                        attribs[num_attribs].value = (const char *)xmlTextReaderConstValue(reader);
-                        num_attribs++;
-                    } else if (state == -1) {
-                        return CL_EPARSE;
-                    }
+                state = xmlTextReaderMoveToElement(reader);
+                if (state == -1) {
+                    status = CL_EPARSE;
+                    goto done;
                 }
 
-                /* start reading attributes or read remainder of attributes */
+                state = xmlTextReaderHasAttributes(reader);
                 if (state == 1) {
                     cli_msxmlmsg("msxml_parse_element: adding attributes to scanning context\n");
 
-                    while ((num_attribs < MAX_ATTRIBS) && (xmlTextReaderMoveToNextAttribute(reader) == 1)) {
-                        attribs[num_attribs].key   = (const char *)xmlTextReaderConstLocalName(reader);
-                        attribs[num_attribs].value = (const char *)xmlTextReaderConstValue(reader);
+                    state = xmlTextReaderMoveToFirstAttribute(reader);
+                    while ((state == 1) && (num_attribs < MAX_ATTRIBS)) {
+                        ret = msxml_read_attrib(reader, &attribs[num_attribs]);
+                        if (ret != CL_SUCCESS) {
+                            status = ret;
+                            goto done;
+                        }
                         num_attribs++;
+
+                        state = xmlTextReaderMoveToNextAttribute(reader);
+                    }
+
+                    if (state == -1) {
+                        status = CL_EPARSE;
+                        goto done;
                     }
                 } else if (state == -1) {
-                    return CL_EPARSE;
+                    status = CL_EPARSE;
+                    goto done;
                 }
             }
 
             /* check self-containment */
             state = xmlTextReaderMoveToElement(reader);
-            if (state == -1)
-                return CL_EPARSE;
+            if (state == -1) {
+                status = CL_EPARSE;
+                goto done;
+            }
 
             state = xmlTextReaderIsEmptyElement(reader);
             if (state == 1) {
                 cli_msxmlmsg("msxml_parse_element: SELF-CLOSING\n");
 
                 state = xmlTextReaderNext(reader);
-                check_state(state);
-                return CL_SUCCESS;
-            } else if (state == -1)
-                return CL_EPARSE;
+                check_state_goto(state, done);
+                status = CL_SUCCESS;
+                goto done;
+            } else if (state == -1) {
+                status = CL_EPARSE;
+                goto done;
+            }
 
             /* advance to first content node */
             state = xmlTextReaderRead(reader);
-            check_state(state);
+            check_state_goto(state, done);
 
             while (!endtag) {
-                if (track_json(mxctx) && (cli_json_timeout_cycle_check(ctx, &(mxctx->ictx->toval)) != CL_SUCCESS))
-                    return CL_ETIMEOUT;
+                if (track_json(mxctx) && (cli_json_timeout_cycle_check(ctx, &(mxctx->ictx->toval)) != CL_SUCCESS)) {
+                    status = CL_ETIMEOUT;
+                    goto done;
+                }
 
                 node_type = xmlTextReaderNodeType(reader);
-                if (node_type == -1)
-                    return CL_EPARSE;
+                if (node_type == -1) {
+                    status = CL_EPARSE;
+                    goto done;
+                }
 
                 switch (node_type) {
                     case XML_READER_TYPE_ELEMENT:
                         ret = msxml_parse_element(mxctx, reader, rlvl + 1, thisjobj ? thisjobj : parent);
                         if (ret != CL_SUCCESS) {
-                            return ret;
+                            status = ret;
+                            goto done;
                         }
                         break;
 
@@ -368,8 +446,10 @@ static cl_error_t msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr 
                         if (thisjobj && (keyinfo->type & MSXML_JSON_VALUE)) {
 
                             ret = msxml_parse_value(thisjobj, "Value", node_value);
-                            if (ret != CL_SUCCESS)
-                                return ret;
+                            if (ret != CL_SUCCESS) {
+                                status = ret;
+                                goto done;
+                            }
 
                             cli_msxmlmsg("msxml_parse_element: added json value [%s: %s]\n", keyinfo->name, (const char *)node_value);
                         }
@@ -385,7 +465,8 @@ static cl_error_t msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr 
 
                             if ((ret = cli_gentempfd(ctx->this_layer_tmpdir, &tempfile, &of)) != CL_SUCCESS) {
                                 cli_warnmsg("msxml_parse_element: failed to create temporary file %s\n", tempfile);
-                                return ret;
+                                status = ret;
+                                goto done;
                             }
 
                             if (cli_writen(of, (char *)node_value, vlen) != vlen) {
@@ -393,7 +474,8 @@ static cl_error_t msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr 
                                 if (!(ctx->engine->keeptmp))
                                     cli_unlink(tempfile);
                                 free(tempfile);
-                                return CL_EWRITE;
+                                status = CL_EWRITE;
+                                goto done;
                             }
 
                             cli_dbgmsg("msxml_parse_element: extracted binary data to %s\n", tempfile);
@@ -405,7 +487,8 @@ static cl_error_t msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr 
                             }
                             free(tempfile);
                             if (ret != CL_SUCCESS) {
-                                return ret;
+                                status = ret;
+                                goto done;
                             }
                         }
 
@@ -422,14 +505,15 @@ static cl_error_t msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr 
                             if (!decoded) {
                                 cli_warnmsg("msxml_parse_element: failed to decode base64-encoded binary data\n");
                                 state = xmlTextReaderRead(reader);
-                                check_state(state);
+                                check_state_goto(state, done);
                                 break;
                             }
 
                             if ((ret = cli_gentempfd(ctx->this_layer_tmpdir, &tempfile, &of)) != CL_SUCCESS) {
                                 cli_warnmsg("msxml_parse_element: failed to create temporary file %s\n", tempfile);
                                 free(decoded);
-                                return ret;
+                                status = ret;
+                                goto done;
                             }
 
                             if (cli_writen(of, decoded, decodedlen) != decodedlen) {
@@ -438,7 +522,8 @@ static cl_error_t msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr 
                                 if (!(ctx->engine->keeptmp))
                                     cli_unlink(tempfile);
                                 free(tempfile);
-                                return CL_EWRITE;
+                                status = CL_EWRITE;
+                                goto done;
                             }
                             free(decoded);
 
@@ -450,13 +535,14 @@ static cl_error_t msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr 
                                 cli_unlink(tempfile);
                             free(tempfile);
                             if (ret != CL_SUCCESS) {
-                                return ret;
+                                status = ret;
+                                goto done;
                             }
                         }
 
                         /* advance to next node */
                         state = xmlTextReaderRead(reader);
-                        check_state(state);
+                        check_state_goto(state, done);
                         break;
 
                     case XML_READER_TYPE_COMMENT:
@@ -468,19 +554,20 @@ static cl_error_t msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr 
                         if ((keyinfo->type & MSXML_COMMENT_CB) && mxctx->comment_cb) {
                             ret = mxctx->comment_cb((const char *)node_value, ctx, thisjobj, mxctx->comment_data);
                             if (ret != CL_SUCCESS) {
-                                return ret;
+                                status = ret;
+                                goto done;
                             }
                         }
 
                         /* advance to next node */
                         state = xmlTextReaderRead(reader);
-                        check_state(state);
+                        check_state_goto(state, done);
                         break;
 
                     case XML_READER_TYPE_SIGNIFICANT_WHITESPACE:
                         /* advance to next node */
                         state = xmlTextReaderRead(reader);
-                        check_state(state);
+                        check_state_goto(state, done);
                         break;
 
                     case XML_READER_TYPE_END_ELEMENT:
@@ -488,17 +575,19 @@ static cl_error_t msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr 
                         node_name = xmlTextReaderConstLocalName(reader);
                         if (!node_name) {
                             cli_dbgmsg("msxml_parse_element: element end tag node nameless\n");
-                            return CL_EPARSE; /* no name, nameless */
+                            status = CL_EPARSE;
+                            goto done; /* no name, nameless */
                         }
 
                         if (xmlStrcmp(element_name, node_name)) {
                             cli_dbgmsg("msxml_parse_element: element tag does not match end tag %s != %s\n", element_name, node_name);
-                            return CL_EFORMAT;
+                            status = CL_EFORMAT;
+                            goto done;
                         }
 
                         /* advance to next element tag */
                         state = xmlTextReaderRead(reader);
-                        check_state(state);
+                        check_state_goto(state, done);
 
                         endtag = 1;
                         break;
@@ -510,7 +599,7 @@ static cl_error_t msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr 
                         cli_dbgmsg("msxml_parse_element: unhandled xml secondary node %s [%d]: %s\n", node_name, node_type, node_value);
 
                         state = xmlTextReaderRead(reader);
-                        check_state(state);
+                        check_state_goto(state, done);
                 }
             }
 
@@ -528,7 +617,9 @@ static cl_error_t msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr 
             cli_dbgmsg("msxml_parse_element: unhandled xml primary node %s [%d]: %s\n", node_name, node_type, node_value);
     }
 
-    return CL_SUCCESS;
+done:
+    msxml_free_attribs(attribs, num_attribs);
+    return status;
 }
 
 /* reader initialization and closing handled by caller */
