@@ -37,6 +37,7 @@
 #include <errno.h>
 #include <conv.h>
 #include <zlib.h>
+#include <openssl/evp.h>
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
@@ -2350,15 +2351,43 @@ static cl_error_t generate_key_aes(const char *const password, encryption_key_t 
                                    encryption_verifier_t *verifier)
 {
     uint8_t *buffer                                                    = NULL;
+    uint8_t *heapBuffer                                                = NULL;
+    uint8_t stackBuffer[128]                                           = {0};
     size_t bufLen                                                      = 0;
+    size_t passwordLen                                                 = 0;
     cl_error_t ret                                                     = CL_ERROR;
     uint32_t i                                                         = 0;
+    size_t j                                                           = 0;
     uint8_t sha1[sizeof(uint32_t) + SHA1_HASH_SIZE + sizeof(uint32_t)] = {0};
     uint8_t *sha1Dst                                                   = &(sha1[sizeof(uint32_t)]);
     uint8_t buf1[64];
     uint8_t buf2[64];
     uint8_t doubleSha[SHA1_HASH_SIZE * 2];
-    uint32_t tmp = 0;
+    uint32_t tmp         = 0;
+    EVP_MD_CTX *sha1_ctx = NULL;
+
+#if OPENSSL_VERSION_MAJOR >= 3
+    OSSL_LIB_CTX *ossl_ctx = NULL;
+    EVP_MD *sha1_md        = NULL;
+#else
+    const EVP_MD *sha1_md = NULL;
+#endif
+
+#define SHA1_HASH_WITH_CTX(data, data_len, out)                                      \
+    do {                                                                             \
+        if (!EVP_DigestInit_ex(sha1_ctx, sha1_md, NULL) ||                           \
+            !EVP_DigestUpdate(sha1_ctx, (data), (data_len)) ||                       \
+            !EVP_DigestFinal_ex(sha1_ctx, (out), NULL)) {                            \
+            cli_errmsg("ole2: SHA1 hash computation failed in generate_key_aes.\n"); \
+            goto done;                                                               \
+        }                                                                            \
+    } while (0)
+
+    if (NULL == password || NULL == key || NULL == verifier) {
+        cli_errmsg("ole2: Invalid arguments to generate_key_aes\n");
+        ret = CL_ENULLARG;
+        goto done;
+    }
 
     if (!key_length_valid_aes_bits(key->key_length_bits)) {
         cli_errmsg("ole2: Invalid key length '0x%x'\n", key->key_length_bits / 8);
@@ -2367,14 +2396,55 @@ static cl_error_t generate_key_aes(const char *const password, encryption_key_t 
 
     memset(key->key, 0, key->key_length_bits / 8);
 
-    bufLen = verifier->salt_size + (strlen(password) * 2);
+    passwordLen = strlen(password);
+    if (passwordLen > ((SIZE_MAX - verifier->salt_size) / 2)) {
+        cli_errmsg("ole2: Password length overflow\n");
+        ret = CL_EARG;
+        goto done;
+    }
+    bufLen = verifier->salt_size + (passwordLen * 2);
 
-    buffer = calloc(bufLen, 1);
-    if (NULL == buffer) {
-        cli_errmsg("ole2: calloc failed\n");
+    if (bufLen <= sizeof(stackBuffer)) {
+        buffer = stackBuffer;
+    } else {
+        heapBuffer = calloc(bufLen, 1);
+        if (NULL == heapBuffer) {
+            cli_errmsg("ole2: calloc failed\n");
+            ret = CL_EMEM;
+            goto done;
+        }
+        buffer = heapBuffer;
+    }
+
+#if OPENSSL_VERSION_MAJOR >= 3
+    ossl_ctx = OSSL_LIB_CTX_new();
+    if (NULL == ossl_ctx) {
+        cli_errmsg("ole2: Failed to create OpenSSL library context\n");
         ret = CL_EMEM;
         goto done;
     }
+    sha1_md = EVP_MD_fetch(ossl_ctx, "SHA1", "-fips");
+#else
+    sha1_md = EVP_get_digestbyname("sha1");
+#endif
+    if (NULL == sha1_md) {
+        cli_errmsg("ole2: Failed to initialize SHA1 digest\n");
+        ret = CL_EARG;
+        goto done;
+    }
+
+    sha1_ctx = EVP_MD_CTX_new();
+    if (NULL == sha1_ctx) {
+        cli_errmsg("ole2: Failed to allocate SHA1 context\n");
+        ret = CL_EMEM;
+        goto done;
+    }
+
+#ifdef EVP_MD_CTX_FLAG_NON_FIPS_ALLOW
+    if (OPENSSL_VERSION_NUMBER < 0x30000000L) {
+        EVP_MD_CTX_set_flags(sha1_ctx, EVP_MD_CTX_FLAG_NON_FIPS_ALLOW);
+    }
+#endif
 
     tmp = verifier->salt_size;
     if (verifier->salt_size > sizeof(verifier->salt)) {
@@ -2384,22 +2454,22 @@ static cl_error_t generate_key_aes(const char *const password, encryption_key_t 
     memcpy(buffer, verifier->salt, tmp);
 
     /*Convert to UTF16-LE*/
-    for (i = 0; i < (uint32_t)strlen(password); i++) {
-        buffer[verifier->salt_size + (i * 2)] = password[i];
+    for (j = 0; j < passwordLen; j++) {
+        buffer[verifier->salt_size + (j * 2)] = (uint8_t)password[j];
     }
 
-    (void)cl_sha1(buffer, bufLen, sha1Dst, NULL);
+    SHA1_HASH_WITH_CTX(buffer, bufLen, sha1Dst);
 
     for (i = 0; i < GENERATE_KEY_AES_ITERATIONS; i++) {
         uint32_t eye = ole2_endian_convert_32(i);
 
         memcpy(sha1, &eye, sizeof(eye));
-        (void)cl_sha1(sha1, SHA1_HASH_SIZE + sizeof(uint32_t), sha1Dst, NULL);
+        SHA1_HASH_WITH_CTX(sha1, SHA1_HASH_SIZE + sizeof(uint32_t), sha1Dst);
     }
 
     memset(&(sha1Dst[SHA1_HASH_SIZE]), 0, sizeof(uint32_t));
 
-    (void)cl_sha1(sha1Dst, SHA1_HASH_SIZE + sizeof(uint32_t), sha1Dst, NULL);
+    SHA1_HASH_WITH_CTX(sha1Dst, SHA1_HASH_SIZE + sizeof(uint32_t), sha1Dst);
 
     memset(buf1, 0x36, sizeof(buf1));
     for (i = 0; i < SHA1_HASH_SIZE; i++) {
@@ -2407,14 +2477,14 @@ static cl_error_t generate_key_aes(const char *const password, encryption_key_t 
     }
 
     // now sha1 buf1
-    (void)cl_sha1(buf1, sizeof(buf1), doubleSha, NULL);
+    SHA1_HASH_WITH_CTX(buf1, sizeof(buf1), doubleSha);
 
     memset(buf2, 0x5c, sizeof(buf2));
     for (i = 0; i < SHA1_HASH_SIZE; i++) {
         buf2[i] = buf2[i] ^ sha1Dst[i];
     }
 
-    (void)cl_sha1(buf2, sizeof(buf2), &(doubleSha[SHA1_HASH_SIZE]), NULL);
+    SHA1_HASH_WITH_CTX(buf2, sizeof(buf2), &(doubleSha[SHA1_HASH_SIZE]));
 
     tmp = key->key_length_bits / 8;
     if (tmp > sizeof(key->key)) {
@@ -2424,8 +2494,22 @@ static cl_error_t generate_key_aes(const char *const password, encryption_key_t 
 
     memcpy(key->key, doubleSha, tmp);
     ret = CL_SUCCESS;
+
 done:
-    CLI_FREE_AND_SET_NULL(buffer);
+#undef SHA1_HASH_WITH_CTX
+
+    CLI_FREE_AND_SET_NULL(heapBuffer);
+    if (NULL != sha1_ctx) {
+        EVP_MD_CTX_free(sha1_ctx);
+    }
+#if OPENSSL_VERSION_MAJOR >= 3
+    if (NULL != sha1_md) {
+        EVP_MD_free(sha1_md);
+    }
+    if (NULL != ossl_ctx) {
+        OSSL_LIB_CTX_free(ossl_ctx);
+    }
+#endif
 
     return ret;
 }
@@ -2556,8 +2640,9 @@ static bool initialize_encryption_key(
     encryption_key_t *encryptionKey,
     encryption_status_t *pEncryptionStatus)
 {
-    bool bRet  = false;
-    size_t idx = 0;
+    bool bRet               = false;
+    size_t idx              = 0;
+    size_t csp_name_max_u16 = 0;
     encryption_key_t key;
     bool bAES = false;
 
@@ -2697,21 +2782,20 @@ static bool initialize_encryption_key(
         goto done;
     }
 
-    while (true) {
-        // Check if we've gone past the end of the buffer without finding the end of the CSPName string.
-        if ((idx + 1) * sizeof(uint16_t) > remainingBytes) {
-            cli_dbgmsg("ole2: CSPName is missing null terminator before end of buffer.\n");
-            goto done;
-        }
-        // Check if we've found the end of the CSPName string.
+    csp_name_max_u16 = remainingBytes / sizeof(*encryptionInfo_CSPName);
+
+    for (idx = 0; idx < csp_name_max_u16; idx++) {
         if (encryptionInfo_CSPName[idx] == 0) {
             break;
         }
-        // Found another character in the CSPName string, keep going.
-        idx++;
     }
 
-    CSPName_length = (idx + 1) * sizeof(uint16_t);
+    if (idx == csp_name_max_u16) {
+        cli_dbgmsg("ole2: CSPName is missing null terminator before end of buffer.\n");
+        goto done;
+    }
+
+    CSPName_length = (idx + 1) * sizeof(*encryptionInfo_CSPName);
 
     encryptionVerifierPtr = (uint8_t *)encryptionInfo_CSPName + CSPName_length;
     remainingBytes -= CSPName_length;
@@ -2720,6 +2804,7 @@ static bool initialize_encryption_key(
         cli_dbgmsg("ole2: No encryption_verifier_t\n");
         goto done;
     }
+
     copy_encryption_verifier(&encryptionVerifier, encryptionVerifierPtr);
 
     key.key_length_bits = encryptionInfo.encryptionInfo.keySize;
@@ -2741,6 +2826,7 @@ static bool initialize_encryption_key(
     memcpy(encryptionKey, &key, sizeof(encryption_key_t));
     bRet                               = true;
     pEncryptionStatus->encryption_type = VELVET_SWEATSHOP_ENCRYPTION;
+
 done:
 
     if (pEncryptionStatus->encryption_type) {

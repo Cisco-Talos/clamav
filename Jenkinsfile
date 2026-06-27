@@ -46,7 +46,7 @@ properties(
                        defaultValue: 'fuzz-regression-1.5',
                        description: 'test-pipelines branch for fuzz regression tests'),
                 string(name: 'FUZZ_CORPUS_BRANCH',
-                       defaultValue: 'master',
+                       defaultValue: '1.5',
                        description: 'private-fuzz-corpus branch'),
                 string(name: 'SHARED_LIB_BRANCH',
                        defaultValue: 'master',
