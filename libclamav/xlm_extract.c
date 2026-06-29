@@ -4886,8 +4886,16 @@ cl_error_t cli_extract_xlm_macros_and_images(const char *dir, cli_ctx *ctx, char
                     }
 
                     if (!(flags & 0x1)) {
-                        // String is compressed
-                        len = fprintf(out_file, " - \"%.*s\"", (int)(biff_header.length - 3), &data[6]);
+                        // String is compressed (one byte per character). The character data
+                        // begins at offset 3, after the 2-byte character count and the flags
+                        // byte, the same offset the UTF-16 branch below reads from. Clamp the
+                        // printed length to the bytes actually present in the record so a
+                        // malformed character count cannot read past the record buffer.
+                        if (string_length > biff_header.length - 3) {
+                            string_length = biff_header.length - 3;
+                        }
+
+                        len = fprintf(out_file, " - \"%.*s\"", (int)string_length, &data[3]);
                         if (len < 0) {
                             cli_dbgmsg("[cli_extract_xlm_macros_and_images] Error formatting STRING record message with ANSI content\n");
 
