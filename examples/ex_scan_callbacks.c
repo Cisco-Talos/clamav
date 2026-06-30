@@ -1474,7 +1474,13 @@ int main(int argc, char **argv)
     }
     printf("Return Code:  %s (%d)\n", cl_error_t_to_string(ret), ret);
 
-    status = ret == CL_VIRUS ? 1 : 0;
+    if (CL_SUCCESS == ret) {
+        status = 0;
+    } else if (CL_VIRUS == ret) {
+        status = 1;
+    } else {
+        status = 2;
+    }
 
 done:
 

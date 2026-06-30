@@ -685,18 +685,6 @@ const char *cli_get_last_virus(const cli_ctx *ctx);
 const char *cli_get_last_virus_str(const cli_ctx *ctx);
 
 /**
- * @brief Dispatch the alert / virus found callbacks.
- *
- * AKA for clamscan it will print FOUND message.
- *
- * @param ctx                     The scan context.
- * @param virname                 The name of the virus.
- * @param is_potentially_unwanted true if the alert is for a potentially unwanted application (PUA).
- * @return cl_error_t
- */
-cl_error_t cli_virus_found_cb(cli_ctx *ctx, const char *virname, bool is_potentially_unwanted);
-
-/**
  * @brief Push a new fmap onto our scan recursion stack.
  *
  * May fail if we exceed max recursion depth.

@@ -193,8 +193,8 @@ class TC(testcase.TestCase):
     def test_cl_scan_callbacks_clam_zip_basic_one_match(self):
         self.step_name('Same as basic test with clam.zip that just keeps scanning--but disables allmatch mode.')
 
-        # Notably, the return code at the end should be CL_VIRUS (1) instead of CL_SUCCESS (0).
-        # This is because the reason the scan ended "early" is because of the alert in the clam.exe file.
+        # The extended API reports the alert through the verdict and keeps the
+        # scan status at CL_SUCCESS.
 
         path_db = TC.path_source / 'unit_tests' / 'input' / 'clamav.hdb'
 
@@ -282,7 +282,7 @@ class TC(testcase.TestCase):
                 'Hash:         21495c3a579d537dc63b0df710f63e60a0bfbc74d1c2739a313dbd42dd31e1fa',
                 'File Type:    CL_TYPE_ZIP',
                 'Verdict:      CL_VERDICT_STRONG_INDICATOR',
-                'Return Code:  CL_VIRUS (1)',
+                'Return Code:  CL_SUCCESS (0)',
             ]
 
         command = '{valgrind} {valgrind_args} {example} -d {database} -f {target} --script {script} --one-match'.format(
@@ -293,8 +293,8 @@ class TC(testcase.TestCase):
         )
         output = self.execute_command(command)
 
-        # Check for CL_VIRUS return code
-        assert output.ec == 1
+        # Check for CL_SUCCESS return code
+        assert output.ec == 0
 
         # Custom logic to verify the output making sure that all expected results are found in the output in order.
         #

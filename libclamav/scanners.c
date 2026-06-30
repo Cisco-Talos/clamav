@@ -4501,13 +4501,25 @@ done:
     return halt_scan;
 }
 
+static void scan_update_verdict_from_evidence(cli_ctx *ctx);
+static bool scan_verdict_is_alert(cl_verdict_t verdict);
+static cl_error_t scan_normalize_status_for_verdict(cl_error_t status, cl_verdict_t verdict);
+static void scan_report_potentially_unwanted_alerts(cli_ctx *ctx);
+/* These helpers live in others.c. Keep the prototypes local because IndicatorType comes from
+ * the generated Rust FFI header, and others.h intentionally avoids that dependency. */
+extern cl_error_t cli_virus_found_cb(cli_ctx *ctx, const char *virname, IndicatorType indicator_type);
+extern cl_error_t cli_virus_found_cb_with_fd(
+    cli_ctx *ctx,
+    const char *virname,
+    IndicatorType indicator_type,
+    int legacy_virus_found_fd);
+
 cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
 {
     cl_error_t status = CL_SUCCESS;
     cl_error_t ret;
 
-    cl_error_t cache_check_result      = CL_VIRUS;
-    cl_verdict_t verdict_at_this_level = CL_VERDICT_NOTHING_FOUND;
+    cl_error_t cache_check_result = CL_VIRUS;
 
     bool cache_enabled              = true;
     cli_file_t dettype              = CL_TYPE_ANY;
@@ -5295,7 +5307,11 @@ done:
     if (ctx->engine->cb_post_scan) {
         cl_error_t callback_ret;
         cl_error_t append_ret;
+        cl_error_t result_at_this_level;
         const char *virusname = NULL;
+
+        scan_update_verdict_from_evidence(ctx);
+        result_at_this_level = scan_verdict_is_alert(ctx->recursion_stack[ctx->recursion_level].verdict) ? CL_VIRUS : CL_CLEAN;
 
         // Get the last signature that matched (if any).
         if (0 < evidence_num_alerts(ctx->this_layer_evidence)) {
@@ -5303,7 +5319,7 @@ done:
         }
 
         perf_start(ctx, PERFT_POSTCB);
-        callback_ret = ctx->engine->cb_post_scan(fmap_fd(ctx->fmap), verdict_at_this_level, virusname, ctx->cb_ctx);
+        callback_ret = ctx->engine->cb_post_scan(fmap_fd(ctx->fmap), result_at_this_level, virusname, ctx->cb_ctx);
         perf_stop(ctx, PERFT_POSTCB);
 
         switch (callback_ret) {
@@ -5352,11 +5368,7 @@ done:
          * Update the verdict for this layer based on the scan results.
          * If the verdict is CL_VERDICT_TRUSTED, then we don't change it.
          */
-        if (0 < evidence_num_indicators_type(ctx->this_layer_evidence, IndicatorType_Strong)) {
-            ctx->recursion_stack[ctx->recursion_level].verdict = CL_VERDICT_STRONG_INDICATOR;
-        } else if (0 < evidence_num_indicators_type(ctx->this_layer_evidence, IndicatorType_PotentiallyUnwanted)) {
-            ctx->recursion_stack[ctx->recursion_level].verdict = CL_VERDICT_POTENTIALLY_UNWANTED;
-        }
+        scan_update_verdict_from_evidence(ctx);
     }
 
     /*
@@ -5610,6 +5622,123 @@ cl_error_t cli_magic_scan_buff(const void *buffer, size_t length, cli_ctx *ctx, 
     return ret;
 }
 
+static void scan_init_outputs(
+    cl_verdict_t *verdict_out,
+    const char **last_alert_out,
+    uint64_t *scanned_out,
+    char **hash_out,
+    char **file_type_out)
+{
+    if (NULL != verdict_out) {
+        *verdict_out = CL_VERDICT_NOTHING_FOUND;
+    }
+    if (NULL != last_alert_out) {
+        *last_alert_out = NULL;
+    }
+    if (NULL != scanned_out) {
+        *scanned_out = 0;
+    }
+    if (NULL != hash_out) {
+        *hash_out = NULL;
+    }
+    if (NULL != file_type_out) {
+        *file_type_out = NULL;
+    }
+}
+
+static void scan_update_verdict_from_evidence(cli_ctx *ctx)
+{
+    if (NULL == ctx) {
+        return;
+    }
+
+    if (CL_VERDICT_TRUSTED == ctx->recursion_stack[ctx->recursion_level].verdict) {
+        return;
+    }
+
+    if (0 < evidence_num_indicators_type(ctx->this_layer_evidence, IndicatorType_Strong)) {
+        ctx->recursion_stack[ctx->recursion_level].verdict = CL_VERDICT_STRONG_INDICATOR;
+    } else if (0 < evidence_num_indicators_type(ctx->this_layer_evidence, IndicatorType_PotentiallyUnwanted)) {
+        ctx->recursion_stack[ctx->recursion_level].verdict = CL_VERDICT_POTENTIALLY_UNWANTED;
+    } else {
+        ctx->recursion_stack[ctx->recursion_level].verdict = CL_VERDICT_NOTHING_FOUND;
+    }
+}
+
+static bool scan_verdict_is_alert(cl_verdict_t verdict)
+{
+    return (CL_VERDICT_STRONG_INDICATOR == verdict) || (CL_VERDICT_POTENTIALLY_UNWANTED == verdict);
+}
+
+static cl_error_t scan_normalize_status_for_verdict(cl_error_t status, cl_verdict_t verdict)
+{
+    if ((CL_VIRUS == status) && scan_verdict_is_alert(verdict)) {
+        return CL_SUCCESS;
+    }
+
+    return status;
+}
+
+static void scan_report_potentially_unwanted_alerts(cli_ctx *ctx)
+{
+    size_t num_potentially_unwanted_indicators;
+
+    if ((NULL == ctx) || (NULL == ctx->this_layer_evidence)) {
+        return;
+    }
+
+    /*
+     * Potentially unwanted indicators are reported after the scan so strong
+     * indicators can take precedence. Do this before metadata serialization
+     * because alert callbacks can suppress alerts and update evidence/metadata.
+     */
+    num_potentially_unwanted_indicators = evidence_num_indicators_type(
+        ctx->this_layer_evidence,
+        IndicatorType_PotentiallyUnwanted);
+    if (0 == num_potentially_unwanted_indicators) {
+        return;
+    }
+
+    if (ctx->options->general & CL_SCAN_GENERAL_ALLMATCHES) {
+        size_t i = 0;
+
+        while (i < evidence_num_indicators_type(ctx->this_layer_evidence, IndicatorType_PotentiallyUnwanted)) {
+            const char *pua_alert = evidence_get_indicator(
+                ctx->this_layer_evidence,
+                IndicatorType_PotentiallyUnwanted,
+                i,
+                NULL, // Don't need to get the depth here.
+                NULL  // Don't need to get the object ID here.
+            );
+
+            if (NULL != pua_alert) {
+                cl_error_t callback_ret = cli_virus_found_cb_with_fd(ctx, pua_alert, IndicatorType_PotentiallyUnwanted, -1);
+
+                if (CL_SUCCESS == callback_ret) {
+                    // The callback removed this indicator from evidence. Keep the same index.
+                    continue;
+                }
+                if ((CL_VERIFIED == callback_ret) || (CL_BREAK == callback_ret)) {
+                    break;
+                }
+            }
+
+            i++;
+        }
+    } else if (0 == evidence_num_indicators_type(ctx->this_layer_evidence, IndicatorType_Strong)) {
+        cl_error_t callback_ret = CL_SUCCESS;
+
+        while ((CL_SUCCESS == callback_ret) &&
+               (0 < evidence_num_indicators_type(ctx->this_layer_evidence, IndicatorType_PotentiallyUnwanted))) {
+            callback_ret = cli_virus_found_cb(
+                ctx,
+                cli_get_last_virus(ctx),
+                IndicatorType_PotentiallyUnwanted);
+            // If the callback returned CL_SUCCESS, it also removed the indicator from evidence.
+        }
+    }
+}
+
 /**
  * @brief   The main function to initiate a scan of an fmap.
  *
@@ -5617,7 +5746,8 @@ cl_error_t cli_magic_scan_buff(const void *buffer, size_t length, cli_ctx *ctx, 
  * @param filepath            (optional, recommended) filepath of the open file descriptor or file map.
  * @param[out] verdict_out    A pointer to a cl_verdict_t that will be set to the scan verdict.
  *                            You should check the verdict even if the function returns an error.
- * @param[out] last_alert_out Will be set to a statically allocated (i.e. needs not be freed) signature name if the scan matches against a signature.
+ * @param[out] last_alert_out Storage for a statically allocated (i.e. does not need to be freed) signature name if the
+ *                            scan matches against a signature. Public wrappers accept NULL and pass discard storage.
  * @param[out] scanned_out    (Optional) The number of bytes scanned.
  * @param engine              The scanning engine.
  * @param scanoptions         Scanning options.
@@ -5638,9 +5768,10 @@ cl_error_t cli_magic_scan_buff(const void *buffer, size_t length, cli_ctx *ctx, 
  *                            of the top layer as determined by ClamAV.
  *                            Will take the form of the standard ClamAV file type format. E.g. "CL_TYPE_PE".
  *                            The caller is responsible for freeing this string.
- * @return cl_error_t         CL_SUCCESS if no error occured.
+ * @return cl_error_t         CL_SUCCESS if no error occurred.
  *                            Otherwise a CL_E* error code.
- *                            Does NOT return CL_VIRUS for a signature match. Check the `verdict_out` parameter instead.
+ *                            Detection-only matches are reported through `verdict_out`; this function does not return
+ *                            CL_VIRUS for a signature match.
  */
 static cl_error_t scan_common(
     cl_fmap_t *map,
@@ -5663,6 +5794,7 @@ static cl_error_t scan_common(
     cli_ctx ctx = {0};
 
     bool logg_initialized = false;
+    bool top_level_maxfilesize_exceeded = false;
 
     char *target_basename = NULL;
     char *new_temp_prefix = NULL;
@@ -5671,8 +5803,6 @@ static cl_error_t scan_common(
 
     time_t current_time;
     struct tm tm_struct;
-
-    size_t num_potentially_unwanted_indicators = 0;
 
     // The default type is SHA2-256.
     cli_hash_type_t requested_hash_type = CLI_HASH_SHA2_256;
@@ -5683,10 +5813,6 @@ static cl_error_t scan_common(
         return CL_ENULLARG;
     }
 
-    /* Initialize output variables */
-    *verdict_out    = CL_VERDICT_NOTHING_FOUND;
-    *last_alert_out = NULL;
-
     // If the caller provided a file type hint, we make a best effort to use it.
     if (file_type_hint) {
         file_type = cli_ftcode_human_friendly(file_type_hint);
@@ -5694,10 +5820,6 @@ static cl_error_t scan_common(
             cli_dbgmsg("scan_common: Unsupported file type hint: %s. Will treat it as unknown (CL_TYPE_ANY)\n", file_type_hint);
             file_type = CL_TYPE_ANY;
         }
-    }
-
-    if (NULL != hash_out) {
-        *hash_out = NULL;
     }
 
     if (NULL != hash_alg) {
@@ -5716,14 +5838,15 @@ static cl_error_t scan_common(
         }
     }
 
-    // If hash_hint is provided, we need to check if the hash_alg is valid.
+    // If hash_hint is provided, validate it for the selected hash algorithm.
     if (NULL != hash_hint) {
         uint8_t hash[CLI_HASHLEN_MAX] = {0};
         size_t hash_string_len        = strlen(hash_hint);
+        const char *hash_name         = cli_hash_name(requested_hash_type);
 
         if (hash_string_len != cli_hash_len(requested_hash_type) * 2) {
             cli_errmsg("scan_common: hash_hint provided, but its length (%zu) does not match the expected length for %s (%zu).\n",
-                       hash_string_len, hash_alg, cli_hash_len(requested_hash_type) * 2);
+                       hash_string_len, hash_name, cli_hash_len(requested_hash_type) * 2);
             status = CL_EARG;
             goto done;
         }
@@ -5737,12 +5860,12 @@ static cl_error_t scan_common(
         }
         // Set the fmap hash for the given algorithm.
         if (CL_SUCCESS != fmap_set_hash(map, hash, requested_hash_type)) {
-            cli_errmsg("scan_common: Failed to set fmap hash for %s.\n", hash_alg);
+            cli_errmsg("scan_common: Failed to set fmap hash for %s.\n", hash_name);
             status = CL_EARG;
             goto done;
         }
 
-        cli_dbgmsg("scan_common: recorded %s hash hint: %s\n", cli_hash_name(requested_hash_type), hash_hint);
+        cli_dbgmsg("scan_common: recorded %s hash hint: %s\n", hash_name, hash_hint);
     }
 
     ctx.engine  = engine;
@@ -5917,7 +6040,17 @@ static cl_error_t scan_common(
     /*
      * DO THE SCAN!
      */
-    status = cli_magic_scan(&ctx, file_type);
+    if ((ctx.engine->maxfilesize > 0) && ((uint64_t)ctx.fmap->len > ctx.engine->maxfilesize)) {
+        cli_dbgmsg("scan_common: File too large (%zu bytes), ignoring\n", ctx.fmap->len);
+        cli_append_potentially_unwanted_if_heur_exceedsmax(&ctx, "Heuristics.Limits.Exceeded.MaxFileSize");
+        emax_reached(&ctx);
+        top_level_maxfilesize_exceeded = true;
+        status = CL_SUCCESS;
+    } else {
+        status = cli_magic_scan(&ctx, file_type);
+    }
+
+    scan_report_potentially_unwanted_alerts(&ctx);
 
     if (ctx.options->general & CL_SCAN_GENERAL_COLLECT_METADATA && (ctx.metadata_json != NULL)) {
         json_object *jobj;
@@ -5949,9 +6082,16 @@ static cl_error_t scan_common(
 
         cli_dbgmsg("%s\n", jstring);
 
-        if (status != CL_VIRUS) {
+        /*
+         * A top-level MaxFileSize hit intentionally skips scanning the file
+         * content. Do not run metadata preclass scans as a substitute scan
+         * surface, but still serialize metadata and run file props below.
+         */
+        if ((status != CL_VIRUS) && !top_level_maxfilesize_exceeded) {
             /*
-             * Run bytecode preclass hook.
+             * Delayed PUA alert callbacks have already run. The metadata
+             * preclass hook is not a PUA alert source, so this block does not
+             * need a second scan_report_potentially_unwanted_alerts() pass.
              */
             struct cli_matcher *iroot = ctx.engine->root[13];
 
@@ -6011,71 +6151,15 @@ static cl_error_t scan_common(
         }
     }
 
+    scan_update_verdict_from_evidence(&ctx);
+
     // If any alerts occurred, set the output pointer to the "latest" alert signature name.
     if (0 < evidence_num_alerts(ctx.this_layer_evidence)) {
         *last_alert_out = cli_get_last_virus_str(&ctx);
     }
 
     *verdict_out = ctx.recursion_stack[ctx.recursion_level].verdict;
-
-    /*
-     * Report PUA alerts here.
-     */
-    num_potentially_unwanted_indicators = evidence_num_indicators_type(
-        ctx.this_layer_evidence,
-        IndicatorType_PotentiallyUnwanted);
-    if (0 != num_potentially_unwanted_indicators) {
-        // We have "potentially unwanted" indicators that would not have been reported yet.
-        // We may wish to report them now, ... depending ....
-
-        if (ctx.options->general & CL_SCAN_GENERAL_ALLMATCHES) {
-            // We're in allmatch mode, so report all "potentially unwanted" matches now.
-
-            size_t i;
-
-            for (i = 0; i < num_potentially_unwanted_indicators; i++) {
-                const char *pua_alert = evidence_get_indicator(
-                    ctx.this_layer_evidence,
-                    IndicatorType_PotentiallyUnwanted,
-                    i,
-                    NULL, // Don't need to get the depth here.
-                    NULL  // Don't need to get the object ID here.
-                );
-
-                if (NULL != pua_alert) {
-                    // We don't know exactly which layer the alert happened at.
-                    // There's a decent chance it wasn't at this layer, and in that case we wouldn't
-                    // even have access to that file anymore (it's gone!). So we'll pass back -1 for the
-                    // file descriptor rather than using `cli_virus_found_cb() which would pass back
-                    // The top level file descriptor.
-                    if (ctx.engine->cb_virus_found) {
-                        ctx.engine->cb_virus_found(
-                            -1,
-                            pua_alert,
-                            ctx.cb_ctx);
-                    }
-                }
-            }
-
-        } else {
-            // Not allmatch mode. Only want to report one thing...
-            if (0 == evidence_num_indicators_type(ctx.this_layer_evidence, IndicatorType_Strong)) {
-                // And it looks like we haven't reported anything else, so report the last "potentially unwanted" one.
-                // cli_get_last_virus() will do that, grabbing the last alerting indicator of any type.
-                cl_error_t callback_ret = CL_SUCCESS;
-
-                while ((CL_SUCCESS == callback_ret) &&
-                       (0 < evidence_num_indicators_type(ctx.this_layer_evidence, IndicatorType_PotentiallyUnwanted))) {
-                    callback_ret = cli_virus_found_cb(
-                        &ctx,
-                        cli_get_last_virus(&ctx),
-                        IndicatorType_PotentiallyUnwanted);
-                    // If the callback returned CL_SUCCESS then it will have also removed the indicator from evidence
-                    // And we must loop around and report the next one.
-                }
-            }
-        }
-    }
+    status       = scan_normalize_status_for_verdict(status, *verdict_out);
 
     /*
      * If the caller requested a hash, we need to get it from the fmap.
@@ -6186,7 +6270,7 @@ cl_error_t cl_scandesc(
     struct cl_scan_options *scanoptions)
 {
     cl_error_t status;
-    uint64_t scanned_out;
+    uint64_t scanned_out      = 0;
     cl_verdict_t verdict_out = CL_VERDICT_NOTHING_FOUND;
 
     status = cl_scandesc_ex(
@@ -6214,7 +6298,7 @@ cl_error_t cl_scandesc(
         }
     }
 
-    if (verdict_out == CL_VERDICT_STRONG_INDICATOR || verdict_out == CL_VERDICT_POTENTIALLY_UNWANTED) {
+    if (scan_verdict_is_alert(verdict_out)) {
         // Reporting "CL_VIRUS" is more important than reporting an error,
         // because... unfortunately we can only do one with this API.
         status = CL_VIRUS;
@@ -6233,7 +6317,7 @@ cl_error_t cl_scandesc_callback(
     void *context)
 {
     cl_error_t status;
-    uint64_t scanned_bytes;
+    uint64_t scanned_bytes   = 0;
     cl_verdict_t verdict_out = CL_VERDICT_NOTHING_FOUND;
 
     status = cl_scandesc_ex(
@@ -6261,7 +6345,7 @@ cl_error_t cl_scandesc_callback(
         }
     }
 
-    if (verdict_out == CL_VERDICT_STRONG_INDICATOR || verdict_out == CL_VERDICT_POTENTIALLY_UNWANTED) {
+    if (scan_verdict_is_alert(verdict_out)) {
         // Reporting "CL_VIRUS" is more important than reporting an error,
         // because... unfortunately we can only do one with this API.
         status = CL_VIRUS;
@@ -6289,6 +6373,16 @@ cl_error_t cl_scandesc_ex(
     cl_fmap_t *map    = NULL;
     STATBUF sb;
     char *filename_base = NULL;
+    const char *last_alert        = NULL;
+    const char **effective_last_alert_out;
+
+    scan_init_outputs(verdict_out, last_alert_out, scanned_out, hash_out, file_type_out);
+
+    if (NULL == scanoptions || NULL == verdict_out || NULL == engine) {
+        return CL_ENULLARG;
+    }
+
+    effective_last_alert_out = (NULL != last_alert_out) ? last_alert_out : &last_alert;
 
     if (FSTAT(desc, &sb) == -1) {
         cli_errmsg("cl_scandesc_callback: Can't fstat descriptor %d\n", desc);
@@ -6300,22 +6394,6 @@ cl_error_t cl_scandesc_ex(
         status = CL_SUCCESS;
         goto done;
     }
-    if ((engine->maxfilesize > 0) && ((uint64_t)sb.st_size > engine->maxfilesize)) {
-        cli_dbgmsg("cl_scandesc_callback: File too large (" STDu64 " bytes), ignoring\n", (uint64_t)sb.st_size);
-        if (scanoptions->heuristic & CL_SCAN_HEURISTIC_EXCEEDS_MAX) {
-            if (engine->cb_virus_found) {
-                engine->cb_virus_found(desc, "Heuristics.Limits.Exceeded.MaxFileSize", context);
-                if (last_alert_out) {
-                    *last_alert_out = "Heuristics.Limits.Exceeded.MaxFileSize";
-                }
-            }
-            status = CL_VIRUS;
-        } else {
-            status = CL_SUCCESS;
-        }
-        goto done;
-    }
-
     if (NULL != filename) {
         (void)cli_basename(filename, strlen(filename), &filename_base, true /* posix_support_backslash_pathsep */);
     }
@@ -6330,7 +6408,7 @@ cl_error_t cl_scandesc_ex(
         map,
         filename,
         verdict_out,
-        last_alert_out,
+        effective_last_alert_out,
         scanned_out,
         engine,
         scanoptions,
@@ -6362,7 +6440,7 @@ cl_error_t cl_scanmap_callback(
     void *context)
 {
     cl_error_t status;
-    uint64_t scanned_bytes;
+    uint64_t scanned_bytes   = 0;
     cl_verdict_t verdict_out = CL_VERDICT_NOTHING_FOUND;
 
     status = cl_scanmap_ex(
@@ -6390,7 +6468,7 @@ cl_error_t cl_scanmap_callback(
         }
     }
 
-    if (verdict_out == CL_VERDICT_STRONG_INDICATOR || verdict_out == CL_VERDICT_POTENTIALLY_UNWANTED) {
+    if (scan_verdict_is_alert(verdict_out)) {
         // Reporting "CL_VIRUS" is more important than reporting an error,
         // because... unfortunately we can only do one with this API.
         status = CL_VIRUS;
@@ -6414,18 +6492,19 @@ cl_error_t cl_scanmap_ex(
     const char *file_type_hint,
     char **file_type_out)
 {
-    if ((engine->maxfilesize > 0) && (map->len > engine->maxfilesize)) {
-        cli_dbgmsg("cl_scandesc_callback: File too large (%zu bytes), ignoring\n", map->len);
-        if (scanoptions->heuristic & CL_SCAN_HEURISTIC_EXCEEDS_MAX) {
-            if (engine->cb_virus_found) {
-                engine->cb_virus_found(fmap_fd(map), "Heuristics.Limits.Exceeded.MaxFileSize", context);
-                if (last_alert_out) {
-                    *last_alert_out = "Heuristics.Limits.Exceeded.MaxFileSize";
-                }
-            }
-            return CL_VIRUS;
-        }
-        return CL_SUCCESS;
+    const char *last_alert = NULL;
+    const char **effective_last_alert_out;
+
+    scan_init_outputs(verdict_out, last_alert_out, scanned_out, hash_out, file_type_out);
+
+    if (NULL == scanoptions || NULL == verdict_out || NULL == engine) {
+        return CL_ENULLARG;
+    }
+
+    effective_last_alert_out = (NULL != last_alert_out) ? last_alert_out : &last_alert;
+
+    if (NULL == map) {
+        return CL_ENULLARG;
     }
 
     if (NULL != filename && map->name == NULL) {
@@ -6437,7 +6516,7 @@ cl_error_t cl_scanmap_ex(
         map,
         filename,
         verdict_out,
-        last_alert_out,
+        effective_last_alert_out,
         scanned_out,
         engine,
         scanoptions,
@@ -6478,7 +6557,7 @@ cl_error_t cl_scanfile(
     struct cl_scan_options *scanoptions)
 {
     cl_error_t status;
-    uint64_t scanned_bytes;
+    uint64_t scanned_bytes   = 0;
     cl_verdict_t verdict_out = CL_VERDICT_NOTHING_FOUND;
 
     status = cl_scanfile_ex(
@@ -6504,7 +6583,7 @@ cl_error_t cl_scanfile(
         }
     }
 
-    if (verdict_out == CL_VERDICT_STRONG_INDICATOR || verdict_out == CL_VERDICT_POTENTIALLY_UNWANTED) {
+    if (scan_verdict_is_alert(verdict_out)) {
         // Reporting "CL_VIRUS" is more important than reporting an error,
         // because... unfortunately we can only do one with this API.
         status = CL_VIRUS;
@@ -6522,7 +6601,7 @@ cl_error_t cl_scanfile_callback(
     void *context)
 {
     cl_error_t status;
-    uint64_t scanned_out;
+    uint64_t scanned_out     = 0;
     cl_verdict_t verdict_out = CL_VERDICT_NOTHING_FOUND;
 
     status = cl_scanfile_ex(
@@ -6548,7 +6627,7 @@ cl_error_t cl_scanfile_callback(
         }
     }
 
-    if (verdict_out == CL_VERDICT_STRONG_INDICATOR || verdict_out == CL_VERDICT_POTENTIALLY_UNWANTED) {
+    if (scan_verdict_is_alert(verdict_out)) {
         // Reporting "CL_VIRUS" is more important than reporting an error,
         // because... unfortunately we can only do one with this API.
         status = CL_VIRUS;
@@ -6571,15 +6650,33 @@ cl_error_t cl_scanfile_ex(
     const char *file_type_hint,
     char **file_type_out)
 {
-    int fd;
-    cl_error_t ret;
-    const char *fname = cli_to_utf8_maybe_alloc(filename);
+    int fd            = -1;
+    cl_error_t ret    = CL_SUCCESS;
+    const char *fname = NULL;
 
-    if (!fname)
+    scan_init_outputs(verdict_out, last_alert_out, scanned_out, hash_out, file_type_out);
+
+    if (NULL == scanoptions || NULL == verdict_out || NULL == engine) {
+        return CL_ENULLARG;
+    }
+
+    if (NULL == filename) {
         return CL_EARG;
+    }
+
+    fname = cli_to_utf8_maybe_alloc(filename);
+    if (!fname) {
+        return CL_EARG;
+    }
 
     if ((fd = safe_open(fname, O_RDONLY | O_BINARY)) == -1) {
-        if (errno == EACCES) {
+        int open_errno = errno;
+
+        if (fname != filename) {
+            free((char *)fname);
+        }
+
+        if (open_errno == EACCES) {
             return CL_EACCES;
         } else {
             return CL_EOPEN;
@@ -6604,7 +6701,9 @@ cl_error_t cl_scanfile_ex(
         file_type_hint,
         file_type_out);
 
-    close(fd);
+    if (fd >= 0) {
+        close(fd);
+    }
 
     return ret;
 }

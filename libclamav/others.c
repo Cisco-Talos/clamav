@@ -1363,9 +1363,53 @@ cl_error_t cli_unlink(const char *pathname)
     return CL_SUCCESS;
 }
 
-cl_error_t cli_virus_found_cb(cli_ctx *ctx, const char *virname, bool is_potentially_unwanted)
+cl_error_t cli_virus_found_cb_with_fd(
+    cli_ctx *ctx,
+    const char *virname,
+    IndicatorType indicator_type,
+    int legacy_virus_found_fd);
+static const char *indicator_type_metadata_name(IndicatorType type);
+static cl_error_t metadata_mark_alert_ignored(cli_ctx *ctx, const char *virname, IndicatorType indicator_type);
+
+/**
+ * @brief Dispatch the alert / virus found callbacks.
+ *
+ * For clamscan this prints the FOUND message.
+ *
+ * @param ctx            The scan context.
+ * @param virname        The name of the alert.
+ * @param indicator_type The evidence indicator type for the alert.
+ * @return cl_error_t    CL_SUCCESS if the callback ignored the alert, CL_VIRUS
+ *                       if the alert remains, CL_BREAK or CL_VERIFIED if
+ *                       requested by the callback, or a CL_E* error code.
+ */
+cl_error_t cli_virus_found_cb(cli_ctx *ctx, const char *virname, IndicatorType indicator_type)
+{
+    int legacy_virus_found_fd = -1;
+
+    if (ctx && ctx->fmap) {
+        legacy_virus_found_fd = fmap_fd(ctx->fmap);
+    }
+
+    return cli_virus_found_cb_with_fd(ctx, virname, indicator_type, legacy_virus_found_fd);
+}
+
+/**
+ * @brief Dispatch the alert / virus found callbacks with an explicit file descriptor
+ *        for the deprecated legacy virus-found callback.
+ *
+ * @param ctx                   The scan context.
+ * @param virname               The name of the alert.
+ * @param indicator_type        The evidence indicator type for the alert.
+ * @param legacy_virus_found_fd File descriptor for the deprecated clcb_virus_found callback.
+ * @return cl_error_t           CL_SUCCESS if the callback ignored the alert, CL_VIRUS
+ *                              if the alert remains, CL_BREAK or CL_VERIFIED if
+ *                              requested by the callback, or a CL_E* error code.
+ */
+cl_error_t cli_virus_found_cb_with_fd(cli_ctx *ctx, const char *virname, IndicatorType indicator_type, int legacy_virus_found_fd)
 {
     cl_error_t status = CL_VIRUS;
+    FFIError *remove_indicator_error = NULL;
 
     if (!ctx || !virname) {
         return CL_ENULLARG;
@@ -1374,7 +1418,7 @@ cl_error_t cli_virus_found_cb(cli_ctx *ctx, const char *virname, bool is_potenti
     /* Run deprecated legacy virus callback */
     if (ctx->engine->cb_virus_found) {
         ctx->engine->cb_virus_found(
-            fmap_fd(ctx->fmap),
+            legacy_virus_found_fd,
             virname,
             ctx->cb_ctx);
     }
@@ -1386,84 +1430,183 @@ cl_error_t cli_virus_found_cb(cli_ctx *ctx, const char *virname, bool is_potenti
         // An alert callback returning CL_CLEAN means to ignore this alert and keep scanning.
         // We need to remove the last alerting indicator from the evidence.
         bool remove_successful;
-        FFIError *remove_indicator_error = NULL;
 
         remove_successful = evidence_remove_indicator(
             ctx->this_layer_evidence,
             virname,
-            is_potentially_unwanted ? IndicatorType_PotentiallyUnwanted : IndicatorType_Strong,
+            indicator_type,
             &remove_indicator_error);
         if (!remove_successful) {
-            cli_errmsg("cli_virus_found_cb: Failed to remove indicator from scan evidence: %s\n", ffierror_fmt(remove_indicator_error));
+            const char *error_msg = (NULL != remove_indicator_error)
+                                        ? ffierror_fmt(remove_indicator_error)
+                                        : "unknown error";
+            cli_errmsg("cli_virus_found_cb: Failed to remove indicator from scan evidence: %s\n", error_msg);
             status = CL_ERROR;
             goto done;
         }
 
         if (SCAN_COLLECT_METADATA && ctx->this_layer_metadata_json) {
-            // Remove the last alert from the "Alerts" array.
-            json_object *alerts = NULL;
-            if (json_object_object_get_ex(ctx->this_layer_metadata_json, "Alerts", &alerts)) {
-                int json_ret = 0;
-
-                // Get the index of the last alert.
-                size_t num_alerts = json_object_array_length(alerts);
-                if (0 == num_alerts) {
-                    cli_errmsg("cli_virus_found_cb: Attempting to ignore an alert, but alert not found in metadata Alerts array.\n");
-                    status = CL_ERROR;
-                    goto done;
-                }
-
-                // Remove the alert from the Alerts array.
-                json_ret = json_object_array_del_idx(alerts, num_alerts - 1, 1);
-                if (0 != json_ret) {
-                    cli_errmsg("cli_virus_found_cb: Failed to remove alert from metadata JSON.\n");
-                    status = CL_ERROR;
-                    goto done;
-                }
-
-                // If there aren't any other alerts, we should also delete the "Alerts" array.
-                if (num_alerts == 1) {
-                    json_object_object_del(ctx->this_layer_metadata_json, "Alerts");
-                }
-            }
-
-            // Add "Ignored" key to the last alert from the "Indicators" array.
-            json_object *indicators = NULL;
-            if (json_object_object_get_ex(ctx->this_layer_metadata_json, "Indicators", &indicators)) {
-                int json_ret = 0;
-
-                // Get the index of the last indicator.
-                size_t num_indicators = json_object_array_length(indicators);
-                if (0 == num_indicators) {
-                    cli_errmsg("cli_virus_found_cb: Attempting to ignore an alert, but alert not found in metadata Alerts array.\n");
-                    status = CL_ERROR;
-                    goto done;
-                }
-
-                // Get the last indicator.
-                json_object *indicator_obj = json_object_array_get_idx(indicators, num_indicators - 1);
-                if (NULL == indicator_obj) {
-                    cli_errmsg("cli_virus_found_cb: Failed to get last indicator from Indicators array.\n");
-                    status = CL_ERROR;
-                    goto done;
-                }
-
-                // Add an "Ignored" string to the indicator object.
-                json_object *ignored = json_object_new_string("Signature ignored by alert application callback");
-                if (!ignored) {
-                    cli_errmsg("cli_virus_found_cb: no memory for json ignored indicator object\n");
-                    status = CL_EMEM;
-                    goto done;
-                }
-                json_ret = json_object_object_add(indicator_obj, "Ignored", ignored);
-                if (0 != json_ret) {
-                    cli_errmsg("cli_virus_found_cb: Failed to add Ignored boolean to indicator object\n");
-                    status = CL_ERROR;
-                    goto done;
-                }
+            status = metadata_mark_alert_ignored(ctx, virname, indicator_type);
+            if (CL_SUCCESS != status) {
+                goto done;
             }
         }
     }
+
+done:
+    if (NULL != remove_indicator_error) {
+        ffierror_free(remove_indicator_error);
+    }
+
+    return status;
+}
+
+static const char *indicator_type_metadata_name(IndicatorType type)
+{
+    switch (type) {
+        case IndicatorType_Strong:
+            return "Strong";
+        case IndicatorType_PotentiallyUnwanted:
+            return "PotentiallyUnwanted";
+        case IndicatorType_Weak:
+            return "Weak";
+    }
+
+    return NULL;
+}
+
+static bool metadata_indicator_matches(json_object *indicator_obj, const char *virname, const char *indicator_type_name)
+{
+    json_object *name_obj = NULL;
+    json_object *type_obj = NULL;
+
+    if ((NULL == indicator_obj) ||
+        !json_object_object_get_ex(indicator_obj, "Name", &name_obj) ||
+        !json_object_object_get_ex(indicator_obj, "Type", &type_obj)) {
+        return false;
+    }
+
+    if (!json_object_is_type(name_obj, json_type_string) ||
+        !json_object_is_type(type_obj, json_type_string)) {
+        return false;
+    }
+
+    return (0 == strcmp(json_object_get_string(name_obj), virname)) &&
+           (0 == strcmp(json_object_get_string(type_obj), indicator_type_name));
+}
+
+static bool metadata_find_matching_indicator(
+    json_object *indicators,
+    const char *virname,
+    const char *indicator_type_name,
+    size_t *index_out,
+    json_object **indicator_out)
+{
+    size_t i;
+
+    if ((NULL == indicators) || !json_object_is_type(indicators, json_type_array)) {
+        return false;
+    }
+
+    for (i = json_object_array_length(indicators); i > 0; i--) {
+        size_t index               = i - 1;
+        json_object *indicator_obj = json_object_array_get_idx(indicators, index);
+
+        if (!metadata_indicator_matches(indicator_obj, virname, indicator_type_name)) {
+            continue;
+        }
+
+        if (NULL != index_out) {
+            *index_out = index;
+        }
+        if (NULL != indicator_out) {
+            *indicator_out = indicator_obj;
+        }
+
+        return true;
+    }
+
+    return false;
+}
+
+static cl_error_t metadata_mark_indicator_ignored(json_object *indicator_obj)
+{
+    json_object *ignored = json_object_new_string("Signature ignored by alert application callback");
+    if (NULL == ignored) {
+        cli_errmsg("cli_virus_found_cb: no memory for json ignored indicator object\n");
+        return CL_EMEM;
+    }
+
+    if (0 != json_object_object_add(indicator_obj, "Ignored", ignored)) {
+        cli_errmsg("cli_virus_found_cb: Failed to add Ignored string to indicator object\n");
+        json_object_put(ignored);
+        return CL_ERROR;
+    }
+
+    return CL_SUCCESS;
+}
+
+static cl_error_t metadata_mark_alert_ignored(cli_ctx *ctx, const char *virname, IndicatorType indicator_type)
+{
+    cl_error_t status = CL_ERROR;
+    const char *indicator_type_name;
+    json_object *alerts = NULL;
+    json_object *indicators = NULL;
+    json_object *indicator_obj = NULL;
+    size_t alert_index = 0;
+    bool found_indicator;
+    bool found_alert;
+
+    indicator_type_name = indicator_type_metadata_name(indicator_type);
+    if (NULL == indicator_type_name) {
+        cli_errmsg("cli_virus_found_cb: invalid indicator type: %d\n", (int)indicator_type);
+        status = CL_EARG;
+        goto done;
+    }
+
+    /*
+     * Evidence removes the latest matching indicator for this name/type. Match
+     * metadata the same way instead of assuming the ignored alert is last.
+     */
+    if (!json_object_object_get_ex(ctx->this_layer_metadata_json, "Indicators", &indicators)) {
+        cli_errmsg("cli_virus_found_cb: missing metadata Indicators array for ignored alert '%s'\n", virname);
+        status = CL_ERROR;
+        goto done;
+    }
+    found_indicator = metadata_find_matching_indicator(indicators, virname, indicator_type_name, NULL, &indicator_obj);
+    if (!found_indicator) {
+        cli_errmsg("cli_virus_found_cb: failed to find matching metadata indicator for ignored alert '%s'\n", virname);
+        status = CL_ERROR;
+        goto done;
+    }
+
+    if (!json_object_object_get_ex(ctx->this_layer_metadata_json, "Alerts", &alerts)) {
+        cli_errmsg("cli_virus_found_cb: missing metadata Alerts array for ignored alert '%s'\n", virname);
+        status = CL_ERROR;
+        goto done;
+    }
+    found_alert = metadata_find_matching_indicator(alerts, virname, indicator_type_name, &alert_index, NULL);
+    if (!found_alert) {
+        cli_errmsg("cli_virus_found_cb: failed to find matching metadata alert for ignored alert '%s'\n", virname);
+        status = CL_ERROR;
+        goto done;
+    }
+
+    status = metadata_mark_indicator_ignored(indicator_obj);
+    if (CL_SUCCESS != status) {
+        goto done;
+    }
+
+    if (0 != json_object_array_del_idx(alerts, alert_index, 1)) {
+        cli_errmsg("cli_virus_found_cb: Failed to remove ignored alert from metadata JSON.\n");
+        status = CL_ERROR;
+        goto done;
+    }
+    if (0 == json_object_array_length(alerts)) {
+        json_object_object_del(ctx->this_layer_metadata_json, "Alerts");
+    }
+
+    status = CL_SUCCESS;
 
 done:
     return status;
@@ -1484,8 +1627,16 @@ static cl_error_t append_virus(cli_ctx *ctx, const char *virname, IndicatorType 
     cl_error_t status             = CL_ERROR;
     cl_error_t callback_ret       = CL_VIRUS;
     FFIError *add_indicator_error = NULL;
+    const char *indicator_type_name;
     bool add_successful;
     char *location = NULL;
+
+    indicator_type_name = indicator_type_metadata_name(type);
+    if (NULL == indicator_type_name) {
+        cli_errmsg("append_virus: invalid indicator type: %d\n", (int)type);
+        status = CL_EARG;
+        goto done;
+    }
 
     if (NULL == ctx->recursion_stack[ctx->recursion_level].evidence) {
         // evidence storage for this layer not initialized, initialize a new evidence store.
@@ -1505,7 +1656,10 @@ static cl_error_t append_virus(cli_ctx *ctx, const char *virname, IndicatorType 
         ctx->recursion_stack[ctx->recursion_level].object_id,
         &add_indicator_error);
     if (!add_successful) {
-        cli_errmsg("Failed to add indicator to scan evidence: %s\n", ffierror_fmt(add_indicator_error));
+        const char *error_msg = (NULL != add_indicator_error)
+                                    ? ffierror_fmt(add_indicator_error)
+                                    : "unknown error";
+        cli_errmsg("Failed to add indicator to scan evidence: %s\n", error_msg);
         status = CL_ERROR;
         goto done;
     }
@@ -1513,36 +1667,51 @@ static cl_error_t append_virus(cli_ctx *ctx, const char *virname, IndicatorType 
     if (SCAN_COLLECT_METADATA && ctx->this_layer_metadata_json) {
         // Add the indicator to the metadata.
         json_object *indicators = NULL;
+        json_object *indicator_obj = NULL;
+
         if (!json_object_object_get_ex(ctx->this_layer_metadata_json, "Indicators", &indicators)) {
             indicators = json_object_new_array();
             if (NULL == indicators) {
                 cli_errmsg("append_virus: no memory for json Indicators array\n");
-            } else {
-                json_object_object_add(ctx->this_layer_metadata_json, "Indicators", indicators);
+                status = CL_EMEM;
+                goto done;
+            }
+            if (0 != json_object_object_add(ctx->this_layer_metadata_json, "Indicators", indicators)) {
+                cli_errmsg("append_virus: failed to add json Indicators array\n");
+                json_object_put(indicators);
+                status = CL_ERROR;
+                goto done;
             }
         }
 
         // Create json object containing name, type, depth, and object_id
-        json_object *indicator_obj = json_object_new_object();
+        indicator_obj = json_object_new_object();
         if (NULL == indicator_obj) {
             cli_errmsg("append_virus: no memory for json indicator object\n");
-        } else {
-            (void)json_object_object_add(indicator_obj, "Name", json_object_new_string(virname));
-            switch (type) {
-                case IndicatorType_Strong: {
-                    (void)json_object_object_add(indicator_obj, "Type", json_object_new_string("Strong"));
-                } break;
-                case IndicatorType_PotentiallyUnwanted: {
-                    (void)json_object_object_add(indicator_obj, "Type", json_object_new_string("PotentiallyUnwanted"));
-                } break;
-                case IndicatorType_Weak: {
-                    (void)json_object_object_add(indicator_obj, "Type", json_object_new_string("Weak"));
-                } break;
-            }
-            (void)json_object_object_add(indicator_obj, "Depth", json_object_new_int(0)); // 0 for this layer
-            (void)cli_jsonuint64(indicator_obj, "ObjectID", (uint64_t)ctx->recursion_stack[ctx->recursion_level].object_id);
-            (void)json_object_array_add(indicators, indicator_obj);
+            status = CL_EMEM;
+            goto done;
         }
+
+        if ((CL_SUCCESS != (status = cli_jsonstr(indicator_obj, "Name", virname))) ||
+            (CL_SUCCESS != (status = cli_jsonstr(indicator_obj, "Type", indicator_type_name))) ||
+            (CL_SUCCESS != (status = cli_jsonint(indicator_obj, "Depth", 0))) ||
+            (CL_SUCCESS != (status = cli_jsonuint64(indicator_obj, "ObjectID", (uint64_t)ctx->recursion_stack[ctx->recursion_level].object_id)))) {
+            cli_errmsg("append_virus: failed to add json indicator metadata\n");
+            json_object_put(indicator_obj);
+            goto done;
+        }
+
+        if (0 != json_object_array_add(indicators, indicator_obj)) {
+            cli_errmsg("append_virus: failed to add indicator to json Indicators array\n");
+            json_object_put(indicator_obj);
+            status = CL_ERROR;
+            goto done;
+        }
+
+        /*
+         * indicator_obj is now owned by the Indicators array. If it is also alerting,
+         * the Alerts array gets an additional reference below.
+         */
 
         // If this is a strong or potentially unwanted indicator, we add it to the "Alerts" array.
         if (type != IndicatorType_Weak) {
@@ -1554,14 +1723,24 @@ static cl_error_t append_virus(cli_ctx *ctx, const char *virname, IndicatorType 
                     status = CL_EMEM;
                     goto done;
                 }
-                (void)json_object_object_add(ctx->this_layer_metadata_json, "Alerts", arrobj);
+                if (0 != json_object_object_add(ctx->this_layer_metadata_json, "Alerts", arrobj)) {
+                    cli_errmsg("append_virus: failed to add json Alerts array\n");
+                    json_object_put(arrobj);
+                    status = CL_ERROR;
+                    goto done;
+                }
             }
 
             // Increment the indicator_obj reference count, so that it can be added to the "Alerts" array.
             (void)json_object_get(indicator_obj);
 
             // Add the same indicator object to the "Alerts" array.
-            (void)json_object_array_add(arrobj, indicator_obj);
+            if (0 != json_object_array_add(arrobj, indicator_obj)) {
+                cli_errmsg("append_virus: failed to add indicator to json Alerts array\n");
+                json_object_put(indicator_obj);
+                status = CL_ERROR;
+                goto done;
+            }
         }
     }
 
@@ -1647,6 +1826,9 @@ static cl_error_t append_virus(cli_ctx *ctx, const char *virname, IndicatorType 
 done:
     if (NULL != location) {
         free(location);
+    }
+    if (NULL != add_indicator_error) {
+        ffierror_free(add_indicator_error);
     }
 
     return status;
