@@ -76,7 +76,7 @@ As of ClamAV 0.104, CMake is required to build ClamAV.
 The Windows Visual Studio and Autotools build systems have been removed.
 
 You will need:
-- CMake (3.14+ for Unix/Linux; 3.16+ for Windows)
+- CMake 3.17 or newer
 - A C compiler toolchain such as `gcc`, `clang`, or Microsoft Visual Studio.
 - The Rust compiler toolchain.
 
