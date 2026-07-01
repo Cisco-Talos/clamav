@@ -1,0 +1,22 @@
+[package]
+authors = [
+    "Jonas Zaddach <jzaddach@cisco.com>",
+    "Scott Hutton <schutton@cisco.com>",
+]
+categories = ["external-ffi-bindings"]
+description = "ClamAV low level bindings for Rust"
+edition = "2021"
+homepage = "https://github.com/Cisco-Talos/clamav-sys/"
+license = "GPL-2.0"
+name = "clamav-sys"
+repository = "https://github.com/Cisco-Talos/clamav-sys/"
+version = "1.0.0"
+
+[build-dependencies]
+bindgen = "0.64.0"
+
+[target.'cfg(unix)'.build-dependencies]
+pkg-config = "0.3"
+
+[target.'cfg(windows)'.build-dependencies]
+vcpkg = "0.2.10"
