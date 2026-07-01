@@ -19,7 +19,7 @@ string(TIMESTAMP TODAY "%Y%m%d")
 set(VERSION_SUFFIX "")
 
 project( ClamAV
-         VERSION "1.5.2"
+         VERSION "1.5.3"
          DESCRIPTION "ClamAV open source email, web, and end-point anti-virus toolkit." )
 
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
