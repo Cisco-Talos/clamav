@@ -70,6 +70,27 @@
 
 static const char *scancmd[] = {"CONTSCAN", "MULTISCAN", "INSTREAM", "FILDES", "ALLMATCHSCAN"};
 
+struct onas_reply_state {
+    char last_filename[PATH_MAX + 1];
+};
+
+static int onas_count_virus_hit(struct onas_reply_state *reply_state, int scantype, const char *filename)
+{
+    if (scantype != ALLMATCH) {
+        return 1;
+    }
+
+    if ((NULL == filename) || (0 != strcmp(filename, reply_state->last_filename))) {
+        if (NULL != filename) {
+            strncpy(reply_state->last_filename, filename, PATH_MAX);
+            reply_state->last_filename[PATH_MAX] = '\0';
+        }
+        return 1;
+    }
+
+    return 0;
+}
+
 /* Issues an INSTREAM command to clamd and streams the given file
  * Returns >0 on success, 0 soft fail, -1 hard fail */
 static int onas_send_stream(CURL *curl, const char *filename, int fd, int64_t timeout, uint64_t maxstream)
@@ -237,9 +258,12 @@ int onas_dsresult(CURL *curl, int scantype, uint64_t maxstream, const char *file
     int infected = 0, len = 0, beenthere = 0;
     char *bol, *eol;
     struct onas_rcvln rcv;
+    struct onas_reply_state reply_state;
     STATBUF sb;
     int sockd                                                        = -1;
     int (*recv_func)(struct onas_rcvln *, char **, char **, int64_t) = NULL;
+
+    memset(&reply_state, 0, sizeof(reply_state));
 
     sockd = onas_get_sockd();
 
@@ -351,19 +375,10 @@ int onas_dsresult(CURL *curl, int scantype, uint64_t maxstream, const char *file
                 goto done;
 
             } else if (!memcmp(eol - 7, " FOUND", 6)) {
-                static char last_filename[PATH_MAX + 1] = {'\0'};
-                *(eol - 7)                              = 0;
-                *printok                                = 0;
+                *(eol - 7) = 0;
+                *printok   = 0;
 
-                if (scantype != ALLMATCH) {
-                    infected++;
-                } else {
-                    if (filename != NULL && strcmp(filename, last_filename)) {
-                        infected++;
-                        strncpy(last_filename, filename, PATH_MAX);
-                        last_filename[PATH_MAX] = '\0';
-                    }
-                }
+                infected += onas_count_virus_hit(&reply_state, scantype, filename);
 
                 if (filename) {
                     if (scantype >= STREAM) {

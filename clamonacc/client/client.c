@@ -47,6 +47,7 @@
 #include <errno.h>
 #include <dirent.h>
 #include <fcntl.h>
+#include <pthread.h>
 
 #ifdef HAVE_SYS_UIO_H
 #include <sys/uio.h>
@@ -70,6 +71,33 @@
 #include "socket.h"
 
 #include "../clamonacc.h"
+
+static pthread_mutex_t onas_disconnect_lock = PTHREAD_MUTEX_INITIALIZER;
+static bool onas_client_disconnected        = false;
+
+static void onas_client_note_connection_failure(CURLcode curlcode)
+{
+    pthread_mutex_lock(&onas_disconnect_lock);
+
+    if (!onas_client_disconnected) {
+        logg(LOGG_ERROR, "ClamClient: Connection to clamd failed, %s.\n", curl_easy_strerror(curlcode));
+        onas_client_disconnected = true;
+    }
+
+    pthread_mutex_unlock(&onas_disconnect_lock);
+}
+
+static void onas_client_note_connection_success(void)
+{
+    pthread_mutex_lock(&onas_disconnect_lock);
+
+    if (onas_client_disconnected) {
+        logg(LOGG_INFO, "ClamClient: Connection to clamd re-established.\n");
+        onas_client_disconnected = false;
+    }
+
+    pthread_mutex_unlock(&onas_disconnect_lock);
+}
 
 void onas_print_server_version(struct onas_context **ctx)
 {
@@ -535,7 +563,6 @@ int onas_client_scan(const char *tcpaddr, int64_t portnum, int32_t scantype, uin
     CURLcode curlcode = CURLE_OK;
     int errors        = 0;
     int ret;
-    static bool disconnected = false;
 
     *infected = 0;
 
@@ -552,17 +579,11 @@ int onas_client_scan(const char *tcpaddr, int64_t portnum, int32_t scantype, uin
 
     curlcode = curl_easy_perform(curl);
     if (CURLE_OK != curlcode) {
-        if (!disconnected) {
-            logg(LOGG_ERROR, "ClamClient: Connection to clamd failed, %s.\n", curl_easy_strerror(curlcode));
-            disconnected = true;
-        }
+        onas_client_note_connection_failure(curlcode);
         curl_easy_cleanup(curl);
         return CL_ECREAT;
     }
-    if (disconnected) {
-        logg(LOGG_INFO, "ClamClient: Connection to clamd re-established.\n");
-        disconnected = false;
-    }
+    onas_client_note_connection_success();
 
     if ((ret = onas_dsresult(curl, scantype, maxstream, fname, fd, timeout, &ret, err, ret_code)) >= 0) {
         *infected = ret;

@@ -58,6 +58,12 @@
 void (*action)(const char *) = NULL;
 unsigned int notmoved = 0, notremoved = 0;
 
+#ifdef _WIN32
+#define ACTION_COUNTER_INC(counter) InterlockedIncrement((volatile LONG *)&(counter))
+#else
+#define ACTION_COUNTER_INC(counter) __sync_add_and_fetch(&(counter), 1)
+#endif
+
 static char *actarget;
 static int targlen;
 
@@ -632,7 +638,7 @@ static void action_move(const char *filename)
     if (fd < 0 || (((copied = 1)) && filecopy(filename, nuname))) {
 #endif
         logg(LOGG_ERROR, "Can't move file %s to %s\n", filename, nuname);
-        notmoved++;
+        ACTION_COUNTER_INC(notmoved);
         if (nuname) traverse_unlink(nuname);
     } else {
         if (copied && (0 != traverse_unlink(filename)))
@@ -655,7 +661,7 @@ static void action_copy(const char *filename)
 
     if (fd < 0 || filecopy(filename, nuname)) {
         logg(LOGG_ERROR, "Can't copy file '%s'\n", filename);
-        notmoved++;
+        ACTION_COUNTER_INC(notmoved);
         if (nuname) traverse_unlink(nuname);
     } else
         logg(LOGG_INFO, "%s: copied to '%s'\n", filename, nuname);
@@ -674,7 +680,7 @@ static void action_remove(const char *filename)
 
     if (0 != traverse_unlink(filename)) {
         logg(LOGG_ERROR, "Can't remove file '%s'\n", filename);
-        notremoved++;
+        ACTION_COUNTER_INC(notremoved);
     } else {
         logg(LOGG_INFO, "%s: Removed.\n", filename);
     }

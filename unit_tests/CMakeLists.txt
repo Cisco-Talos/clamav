@@ -93,6 +93,30 @@ if(ENABLE_APP)
     endif()
     target_include_directories(check_clamd PRIVATE ${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/libclamav ${CMAKE_BINARY_DIR})
     target_compile_definitions(check_clamd PUBLIC OBJDIR="${OBJDIR}" SRCDIR="${SRCDIR}")
+
+    if(C_LINUX AND ENABLE_CLAMONACC)
+        add_executable(check_clamonacc_client)
+        target_sources(check_clamonacc_client
+            PRIVATE
+                check_clamonacc_client.c
+                ${CMAKE_SOURCE_DIR}/clamonacc/client/client.c
+                ${CMAKE_SOURCE_DIR}/clamonacc/client/communication.c
+                ${CMAKE_SOURCE_DIR}/clamonacc/client/protocol.c
+                ${CMAKE_SOURCE_DIR}/clamonacc/client/socket.c)
+        target_link_libraries(check_clamonacc_client
+            PRIVATE
+                ClamAV::libclamav
+                ClamAV::common
+                libcheck::check
+                CURL::libcurl)
+        target_include_directories(check_clamonacc_client
+            PRIVATE
+                ${PROJECT_SOURCE_DIR}
+                ${PROJECT_SOURCE_DIR}/clamonacc
+                ${PROJECT_SOURCE_DIR}/libclamav
+                ${CMAKE_BINARY_DIR})
+        target_compile_definitions(check_clamonacc_client PUBLIC OBJDIR="${OBJDIR}" SRCDIR="${SRCDIR}")
+    endif()
 endif()
 
 #
@@ -400,6 +424,11 @@ if(ENABLE_EXAMPLES)
             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
         set_property(TEST examples_valgrind PROPERTY ENVIRONMENT ${ENVIRONMENT} VALGRIND=${Valgrind_EXECUTABLE})
     endif()
+endif()
+
+if(C_LINUX AND ENABLE_APP AND ENABLE_CLAMONACC)
+    add_test(NAME clamonacc_client COMMAND $<TARGET_FILE:check_clamonacc_client>)
+    set_property(TEST clamonacc_client PROPERTY ENVIRONMENT ${ENVIRONMENT})
 endif()
 
 if(WIN32)
