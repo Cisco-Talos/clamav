@@ -137,6 +137,8 @@ static void scanner_thread(void *arg)
 
     if (conn->filename)
         free(conn->filename);
+    if (conn->display_filename)
+        free(conn->display_filename);
     logg(LOGG_DEBUG_NV, "Finished scanthread\n");
     enum thrmgr_exit exit_code;
     if (virus != 0) {

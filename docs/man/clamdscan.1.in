@@ -43,7 +43,7 @@ Ping clamd up to [A] times at optional interval [I] until it responds.
 Wait up to 30 seconds for clamd to start. Optionally use alongside ping to set attempts [A] and interval [I] to check clamd.
 .TP
 \fB\-m, \-\-multiscan\fR
-In the multiscan mode clamd will attempt to scan the directory contents in parallel using available threads. This option is especially useful on multiprocessor and multi-core systems. If you pass more than one file or directory in the command line, they are put in a queue and sent to clamd individually. This means, that single files are always scanned by a single thread. Similarly, clamdscan will wait for clamd to finish a directory scan (performed in multiscan mode) before sending request to scan another directory. This option can be combined with \-\-fdpass (see below).
+Use multiscan mode. For local directory scans where the daemon opens paths directly, clamd attempts to scan directory contents in parallel using available threads. Single files are not affected. When this option is combined with \-\-stream, with \-\-fdpass on a local socket, or with a quarantine action, clamdscan walks the requested paths itself and submits individual file scans while still allowing clamd to process multiple files in parallel.
 .TP
 \fB\-z, \-\-allmatch\fR
 After a match, continue scanning within the file for additional matches.
@@ -63,18 +63,51 @@ Do not display summary at the end of scanning.
 \fB\-\-reload\fR
 Request clamd to reload virus database.
 .TP
-\fB\-\-allmatch\fR
-Continue scanning within file after finding a match.
-.TP
 \fB\-i, \-\-infected\fR
 Only print infected files
 .TP
 \fB\-\-fdpass\fR
-Open the file and pass the opened file descriptor to clamd. This is useful if clamd is running as a different user or if clamd sees a different file system tree. This is faster than streaming the file to clamd.
-Only available if connected to clamd via local(unix) socket.
+Open the file and pass the opened file descriptor to clamd. This is useful if clamd is running as a different user or if clamd sees a different filesystem tree. This is faster than streaming the file to clamd.
+Only available if connected to clamd via Unix/local socket.
 .TP
 \fB\-\-stream\fR
-Forces file streaming to clamd. This is generally not needed as clamdscan detects automatically if streaming is required. This option only exists for debugging and testing purposes, in all other cases \-\-fdpass is preferred.
+Force clamdscan to send file contents to clamd instead of asking clamd to open file paths. This is generally not needed because clamdscan detects automatically if sending file contents is required. This option mostly exists for debugging and testing. In other local-socket cases, \-\-fdpass is usually preferred.
+
+.SH "OPTION INTERACTIONS"
+.LP
+clamdscan behavior depends first on the socket type, and then on command-line options.
+.TP
+\fBUnix/local socket\fR
+By default, clamdscan asks the local daemon to open the paths you provide. The daemon must be able to see those paths and have permission to read them.
+.RS
+.IP \(bu 2
+With \-\-fdpass, clamdscan opens each file itself and passes the open file to the daemon. This is useful when the daemon runs as a different user or sees a different filesystem view. This option only works with a Unix/local socket and fd-passing support.
+.IP \(bu 2
+With \-\-stream, clamdscan sends file contents to the daemon instead of asking the daemon to open paths.
+.IP \(bu 2
+With \-\-multiscan, directory scans can use multiple daemon worker threads. If \-\-stream, \-\-fdpass, or a quarantine action is also used, clamdscan walks the requested paths itself and submits individual file scans while still allowing the daemon to process multiple files in parallel.
+.IP \(bu 2
+\-\-allmatch is only effective when clamdscan is asking the daemon to open paths directly and is not using \-\-multiscan, \-\-stream, or \-\-fdpass.
+.RE
+.TP
+\fBTCP socket\fR
+When the daemon is remote, clamdscan sends file contents instead of local paths because client paths may not exist on the daemon host. When the daemon is local and clamdscan can determine that it is local, clamdscan may ask the daemon to open local paths directly.
+.RS
+.IP \(bu 2
+\-\-stream forces clamdscan to send file contents, even when the daemon is local.
+.IP \(bu 2
+\-\-fdpass is not available over TCP. Use either \-\-stream or \-\-fdpass for a scan, based on the socket type and how the daemon can access the files.
+.IP \(bu 2
+With \-\-multiscan, local directory scans may use multiple daemon worker threads. Remote scans, \-\-stream scans, and scans with quarantine actions are handled as individual file scans, while still allowing the daemon to process multiple files in parallel.
+.IP \(bu 2
+\-\-allmatch is only effective when clamdscan is asking a local daemon to open paths directly and is not using \-\-multiscan or \-\-stream.
+.RE
+.TP
+\fBOption guidance\fR
+\-\-allmatch is not useful with \-\-multiscan; use it only for scans where clamdscan is asking a local daemon to open paths directly. For quarantine, choose one action for a scan: \-\-move, \-\-copy, or \-\-remove.
+.TP
+\fBQuarantine actions with multiscan\fR
+Quarantine actions such as \-\-move, \-\-copy, and \-\-remove are performed by clamdscan, not by clamd. For directory scans with quarantine actions enabled, clamdscan resolves the action path for each file before requesting the scan. When \-\-multiscan is also enabled, clamdscan submits individual file scans so it can preserve the scan result to action-path association while still allowing clamd to process multiple files in parallel.
 
 .SH "EXAMPLES"
 .LP

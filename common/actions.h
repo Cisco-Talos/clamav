@@ -28,14 +28,80 @@
 #ifndef ACTIONS_H
 #define ACTIONS_H
 
+#include <stdbool.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+
+#include "clamav.h"
 #include "optparser.h"
+
+/**
+ * @brief Opened source object used for quarantine I/O.
+ *
+ * The source owns scan_fd and any platform-specific handle state. Callers scan
+ * scan_fd, then pass the same source to the selected action before closing it.
+ */
+typedef struct action_source {
+    char *display_path;
+    char *action_path;
+    int scan_fd;
+    STATBUF statbuf;
+    bool has_stat;
+#ifdef _WIN32
+    void *handle;
+    bool handle_can_delete;
+#endif
+} action_source_t;
 
 /**
  * @brief Callback function to perform the action requested when actsetup() was invoked.
  *
- * @param filename
+ * @param source  Open source object that was submitted for scanning.
  */
-extern void (*action)(const char *);
+extern void (*action)(const action_source_t *);
+
+/**
+ * @brief Initialize an action source to an empty closed state.
+ *
+ * @param source Source object to initialize.
+ */
+void action_source_init(action_source_t *source);
+
+/**
+ * @brief Open a path for scan and later quarantine action.
+ *
+ * @param display_path Original path to use for scan output.
+ * @param source       Source object to populate.
+ * @return cl_error_t  CL_SUCCESS if the source is open.
+ */
+cl_error_t action_source_open(const char *display_path, action_source_t *source);
+
+/**
+ * @brief Open a resolved path for scan and later quarantine action.
+ *
+ * @param display_path Original path to use for scan output.
+ * @param open_path    Path to open for scan and quarantine action.
+ * @param source       Source object to populate.
+ * @return cl_error_t  CL_SUCCESS if the source is open.
+ */
+cl_error_t action_source_open_path(const char *display_path, const char *open_path, action_source_t *source);
+
+/**
+ * @brief Duplicate an existing descriptor for later quarantine action.
+ *
+ * @param display_path Original path to use for scan output.
+ * @param fd           Existing descriptor for the scan target.
+ * @param source       Source object to populate.
+ * @return cl_error_t  CL_SUCCESS if the source is open.
+ */
+cl_error_t action_source_from_fd(const char *display_path, int fd, action_source_t *source);
+
+/**
+ * @brief Close and reset an action source.
+ *
+ * @param source Source object to close.
+ */
+void action_source_close(action_source_t *source);
 
 /**
  * @brief Select the appropriate callback function based on the configuration options.
@@ -47,5 +113,9 @@ extern void (*action)(const char *);
 int actsetup(const struct optstruct *opts);
 
 extern unsigned int notremoved, notmoved;
+
+#ifndef _WIN32
+int action_setup_quarantine_lock_at(int directory_fd, const char *directory_path, char **lockname_out);
+#endif
 
 #endif

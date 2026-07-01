@@ -22,7 +22,9 @@
 #ifndef __SCANMEM_H
 #define __SCANMEM_H
 
+#include <stdbool.h>
 #include <clamav-types.h>
+#include <clamav.h>
 
 #ifndef TH32CS_SNAPMODULE32
 #define TH32CS_SNAPMODULE32 0x00000010
@@ -35,7 +37,7 @@ int scanmem(struct mem_info *info);
 /* cache helpers */
 typedef struct _filelist_t {
     char filename[MAX_PATH];
-    int res;
+    cl_error_t res;
     struct _filelist_t *next;
 } filelist_t;
 
@@ -50,7 +52,7 @@ typedef struct _cb_data_t {
 typedef struct _scanmem_data_t {
     filelist_t *files;
     int printclean, kill, unload, exclude;
-    int res;
+    cl_error_t res;
     uint32_t processes, modules;
 
 } scanmem_data;

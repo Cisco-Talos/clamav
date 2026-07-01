@@ -88,6 +88,7 @@ enum commands {
 typedef struct client_conn_tag {
     enum commands cmdtype;
     char *filename;
+    char *display_filename;
     int scanfd;
     int sd;
     struct cl_scan_options *options;

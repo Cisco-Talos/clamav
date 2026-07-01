@@ -10,7 +10,11 @@
 #include <string.h>
 #include <check.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <dirent.h>
+#if HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 #ifdef HAVE_SYS_MMAN_H
 #include <sys/mman.h>
 #endif
@@ -27,6 +31,7 @@
 #include "dsig.h"
 #include "fpu.h"
 #include "entconv.h"
+#include "actions.h"
 
 #include "checks.h"
 
@@ -532,6 +537,157 @@ START_TEST(test_cl_strerror)
 {
 }
 END_TEST
+
+#ifndef _WIN32
+START_TEST(test_action_setup_quarantine_lock_uses_validated_directory_handle)
+{
+    char *parent_dir          = NULL;
+    char *validated_path      = NULL;
+    char *validated_saved     = NULL;
+    char *replacement_lock    = NULL;
+    char *lockname            = NULL;
+    int validated_fd          = -1;
+    struct stat lock_stat     = {0};
+
+    parent_dir = cli_gentemp(NULL);
+    ck_assert_msg(NULL != parent_dir, "cli_gentemp failed");
+    ck_assert_msg(0 == mkdir(parent_dir, 0700), "mkdir(%s) failed", parent_dir);
+
+    validated_path = cli_newfilepath(parent_dir, "quarantine");
+    validated_saved = cli_newfilepath(parent_dir, "quarantine-original");
+    ck_assert_msg((NULL != validated_path) && (NULL != validated_saved), "Failed to allocate quarantine paths");
+
+    ck_assert_msg(0 == mkdir(validated_path, 0700), "mkdir(%s) failed", validated_path);
+
+    validated_fd = open(validated_path, O_RDONLY | O_NOFOLLOW);
+    ck_assert_msg(-1 != validated_fd, "open(%s) failed: %s", validated_path, strerror(errno));
+
+    ck_assert_msg(0 == rename(validated_path, validated_saved), "rename(%s, %s) failed: %s",
+                  validated_path, validated_saved, strerror(errno));
+    ck_assert_msg(0 == mkdir(validated_path, 0700), "mkdir(%s) replacement failed: %s",
+                  validated_path, strerror(errno));
+
+    ck_assert_msg(0 == action_setup_quarantine_lock_at(validated_fd, validated_path, &lockname),
+                  "action_setup_quarantine_lock_at failed");
+    ck_assert_msg(NULL != lockname, "action_setup_quarantine_lock_at did not return a lock name");
+
+    ck_assert_msg(0 == fstatat(validated_fd, lockname, &lock_stat, AT_SYMLINK_NOFOLLOW),
+                  "fstatat(validated_fd, %s) failed: %s", lockname, strerror(errno));
+    ck_assert_msg(S_ISREG(lock_stat.st_mode), "Expected quarantine lock to be a regular file");
+
+    replacement_lock = cli_newfilepath(validated_path, lockname);
+    ck_assert_msg(NULL != replacement_lock, "Failed to allocate replacement lock path");
+    ck_assert_msg(0 != access(replacement_lock, F_OK),
+                  "Lock file was created in the replacement quarantine path");
+
+    ck_assert_msg(0 == unlinkat(validated_fd, lockname, 0), "unlinkat(validated_fd, %s) failed: %s",
+                  lockname, strerror(errno));
+    free(lockname);
+    lockname = NULL;
+
+    close(validated_fd);
+    validated_fd = -1;
+
+    cli_rmdirs(parent_dir);
+    free(replacement_lock);
+    free(validated_saved);
+    free(validated_path);
+    free(parent_dir);
+}
+END_TEST
+
+START_TEST(test_action_source_open_relative_path_stores_absolute_action_path)
+{
+    char *parent_dir = NULL;
+    char *file_path  = NULL;
+    int fd           = -1;
+    action_source_t source;
+
+    action_source_init(&source);
+
+    parent_dir = cli_gentemp(".");
+    ck_assert_msg(NULL != parent_dir, "cli_gentemp failed");
+    ck_assert_msg(0 == mkdir(parent_dir, 0700), "mkdir(%s) failed: %s", parent_dir, strerror(errno));
+
+    file_path = cli_newfilepath(parent_dir, "payload");
+    ck_assert_msg(NULL != file_path, "Failed to allocate payload path");
+
+    fd = open(file_path, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY, 0600);
+    ck_assert_msg(-1 != fd, "open(%s) failed: %s", file_path, strerror(errno));
+    ck_assert_msg(4 == write(fd, "test", 4), "write(%s) failed: %s", file_path, strerror(errno));
+    close(fd);
+    fd = -1;
+
+    ck_assert_msg(CL_SUCCESS == action_source_open(file_path, &source),
+                  "action_source_open(%s) failed", file_path);
+    ck_assert_msg(NULL != source.action_path, "action_source_open did not populate action_path");
+    ck_assert_msg('/' == source.action_path[0],
+                  "Expected absolute action_path for relative source path, got '%s'", source.action_path);
+
+    action_source_close(&source);
+
+    ck_assert_msg(0 == unlink(file_path), "unlink(%s) failed: %s", file_path, strerror(errno));
+    free(file_path);
+    file_path = NULL;
+    ck_assert_msg(0 == rmdir(parent_dir), "rmdir(%s) failed: %s", parent_dir, strerror(errno));
+    free(parent_dir);
+    parent_dir = NULL;
+}
+END_TEST
+
+START_TEST(test_action_source_open_path_rejects_replaced_symlink)
+{
+    char *parent_dir       = NULL;
+    char *file_path        = NULL;
+    char *replacement_path = NULL;
+    char *resolved_path    = NULL;
+    int fd                 = -1;
+    action_source_t source;
+
+    action_source_init(&source);
+
+    parent_dir = cli_gentemp(NULL);
+    ck_assert_msg(NULL != parent_dir, "cli_gentemp failed");
+    ck_assert_msg(0 == mkdir(parent_dir, 0700), "mkdir(%s) failed: %s", parent_dir, strerror(errno));
+
+    file_path = cli_newfilepath(parent_dir, "payload");
+    replacement_path = cli_newfilepath(parent_dir, "replacement");
+    ck_assert_msg((NULL != file_path) && (NULL != replacement_path), "Failed to allocate test paths");
+
+    fd = open(file_path, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY, 0600);
+    ck_assert_msg(-1 != fd, "open(%s) failed: %s", file_path, strerror(errno));
+    ck_assert_msg(7 == write(fd, "payload", 7), "write(%s) failed: %s", file_path, strerror(errno));
+    close(fd);
+    fd = -1;
+
+    ck_assert_msg(CL_SUCCESS == cli_realpath(file_path, &resolved_path),
+                  "cli_realpath(%s) failed", file_path);
+
+    fd = open(replacement_path, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY, 0600);
+    ck_assert_msg(-1 != fd, "open(%s) failed: %s", replacement_path, strerror(errno));
+    ck_assert_msg(11 == write(fd, "replacement", 11), "write(%s) failed: %s", replacement_path, strerror(errno));
+    close(fd);
+    fd = -1;
+
+    ck_assert_msg(0 == unlink(file_path), "unlink(%s) failed: %s", file_path, strerror(errno));
+    ck_assert_msg(0 == symlink(replacement_path, file_path), "symlink(%s, %s) failed: %s",
+                  replacement_path, file_path, strerror(errno));
+
+    ck_assert_msg(CL_SUCCESS != action_source_open_path(file_path, resolved_path, &source),
+                  "action_source_open_path accepted a resolved path that had been replaced by a symlink");
+
+    action_source_close(&source);
+
+    ck_assert_msg(0 == unlink(file_path), "unlink(%s) symlink failed: %s", file_path, strerror(errno));
+    ck_assert_msg(0 == unlink(replacement_path), "unlink(%s) failed: %s", replacement_path, strerror(errno));
+    free(resolved_path);
+    free(replacement_path);
+    free(file_path);
+    ck_assert_msg(0 == rmdir(parent_dir), "rmdir(%s) failed: %s", parent_dir, strerror(errno));
+    free(parent_dir);
+}
+END_TEST
+#endif
 
 static char **testfiles     = NULL;
 static unsigned testfiles_n = 0;
@@ -1324,6 +1480,11 @@ static Suite *test_cl_suite(void)
     tcase_add_test(tc_cl, test_cl_statchkdir);
     tcase_add_test(tc_cl, test_cl_settempdir);
     tcase_add_test(tc_cl, test_cl_strerror);
+#ifndef _WIN32
+    tcase_add_test(tc_cl, test_action_setup_quarantine_lock_uses_validated_directory_handle);
+    tcase_add_test(tc_cl, test_action_source_open_relative_path_stores_absolute_action_path);
+    tcase_add_test(tc_cl, test_action_source_open_path_rejects_replaced_symlink);
+#endif
 
     suite_add_tcase(s, tc_cl_scan);
     tcase_add_checked_fixture(tc_cl_scan, engine_setup, engine_teardown);

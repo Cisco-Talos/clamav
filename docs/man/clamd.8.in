@@ -20,13 +20,13 @@ Clamd recognizes the following commands:
 Check the server's state. It should reply with "PONG".
 .TP
 \fBVERSION\fR
-Print program and database versions.
+Print program and database versions. This command may be disabled with \fBEnableVersionCommand\fR in clamd.conf. If disabled, clamd replies with \fBCOMMAND UNAVAILABLE\fR.
 .TP
 \fBRELOAD\fR
-Reload the virus databases.
+Reload the virus databases. This command may be disabled with \fBEnableReloadCommand\fR in clamd.conf. If disabled, clamd replies with \fBCOMMAND UNAVAILABLE\fR.
 .TP
 \fBSHUTDOWN\fR
-Perform a clean exit.
+Perform a clean exit. This command may be disabled with \fBEnableShutdownCommand\fR in clamd.conf. If disabled, clamd replies with \fBCOMMAND UNAVAILABLE\fR.
 .TP
 \fBSCAN file/directory\fR
 Scan a file or a directory (recursively) with archive support enabled (if not disabled in clamd.conf). A full path is required.
@@ -35,10 +35,12 @@ Scan a file or a directory (recursively) with archive support enabled (if not di
 Scan file or directory (recursively) with archive support enabled and don't stop the scanning when a virus is found.
 .TP
 \fBMULTISCAN file/directory\fR
-Scan file in a standard way or scan directory (recursively) using multiple threads (to make the scanning faster on SMP machines).
+Scan a directory recursively using multiple threads (to make the scanning faster on SMP machines). If the target is not a directory, clamd falls back to non-multiscan scanning behavior.
 .TP
 \fBALLMATCHSCAN file/directory\fR
-ALLMATCHSCAN works just like SCAN except that it sets a mode where scanning continues after finding a match within a file.
+It is mandatory to prefix this command with \fBn\fR or \fBz\fR.
+
+ALLMATCHSCAN works just like SCAN except that it sets a mode where scanning continues after finding a match within a file. This command may be disabled with \fBAllowAllMatchScan\fR in clamd.conf. If disabled, clamd replies with an ALLMATCHSCAN error.
 .TP
 \fBINSTREAM\fR
 It is mandatory to prefix this command with \fBn\fR or \fBz\fR.
@@ -56,13 +58,12 @@ Alternatively the file descriptor may be sent in the same packet, including the 
 \fBSTATS\fR
 It is mandatory to newline terminate this command, or prefix with \fBn\fR or \fBz\fR, it is recommended to only use the \fBz\fR prefix.
 
-Replies with statistics about the scan queue, contents of scan queue, and memory
-usage. The exact reply format is subject to change in future releases.
+Replies with statistics about the scan queue, contents of scan queue, and memory usage. The exact reply format is subject to change in future releases. This command may be disabled with \fBEnableStatsCommand\fR in clamd.conf. If disabled, clamd replies with \fBCOMMAND UNAVAILABLE\fR.
 .TP
 \fBIDSESSION, END\fR
 It is mandatory to prefix this command with \fBn\fR or \fBz\fR, and all commands inside IDSESSION must be prefixed.
 
-Start/end a clamd session. Within a session multiple SCAN, INSTREAM, FILDES, VERSION, STATS commands can be sent on the same socket without opening new connections. Replies from clamd will be in the form '<id>: <response>' where <id> is the request number (in ascii, starting from 1) and <response> is the usual clamd reply.
+Start/end a clamd session. Within a session multiple SCAN, INSTREAM, FILDES, VERSION, VERSIONCOMMANDS, PING, and STATS commands can be sent on the same socket without opening new connections. CONTSCAN, MULTISCAN, ALLMATCHSCAN, RELOAD, and SHUTDOWN are not accepted inside an IDSESSION. Replies from clamd will be in the form '<id>: <response>' where <id> is the request number (in ascii, starting from 1) and <response> is the usual clamd reply.
 The reply lines have same delimiter as the corresponding command had.
 Clamd will process the commands asynchronously, and reply as soon as it has finished processing.
 
@@ -75,19 +76,16 @@ If clamd detects that a client has deadlocked,  it will close the connection. No
 It is mandatory to prefix this command with either \fBn\fR or \fBz\fR.
 It is recommended to use \fBnVERSIONCOMMANDS\fR.
 
-Print program and database versions, followed by "| COMMANDS:" and a
-space-delimited list of supported commands.
-Clamd <0.95 will recognize this as the VERSION command, and reply only with
-their version, without the commands list.
+Print program and database versions, followed by "| COMMANDS:" and a space-delimited list of supported commands.
+Clamd <0.95 will recognize this as the VERSION command, and reply only with their version, without the commands list.
 
-This command can be used as an easy way to check for IDSESSION support for
-example.
+This command can be used as an easy way to check for IDSESSION support for example.
 .LP
 .TP
-\fBDEPRECATED COMMANDS\fR
+\fBREMOVED COMMANDS\fR
 .TP
 \fBSTREAM\fR
-Scan stream \- on this command clamd will return "PORT number" you should connect to and send data to scan. (\fBDEPRECATED\fR, use INSTREAM instead)
+The legacy STREAM command is no longer supported. Use INSTREAM instead.
 .LP
 .TP
 \fBNOT SUPPORTED COMMANDS\fR

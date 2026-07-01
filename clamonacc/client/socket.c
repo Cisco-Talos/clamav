@@ -41,10 +41,11 @@ struct onas_sock_t onas_sock = {.written = 0};
 /**
  * One time socket setup for unix file descriptor passing
  *
- * @param ctx a point to the onas context struct
+ * @param ctx a pointer to the onas context struct
+ * @param allow_fdpass true if fd passing is enabled or required by this scan mode
  * @return CL_SUCCESS if writing to socket struct was successful, CL_EWRITE if the socket has already been written to
  */
-cl_error_t onas_set_sock_only_once(struct onas_context *ctx)
+cl_error_t onas_set_sock_only_once(struct onas_context *ctx, bool allow_fdpass)
 {
 
     const struct optstruct *opt;
@@ -54,7 +55,7 @@ cl_error_t onas_set_sock_only_once(struct onas_context *ctx)
         if (((opt =
                   optget(ctx->clamdopts, "LocalSocket"))
                  ->enabled) &&
-            optget(ctx->opts, "fdpass")->enabled) {
+            allow_fdpass) {
             memset((void *)&onas_sock, 0, sizeof(onas_sock));
             onas_sock.sock.sun_family = AF_UNIX;
             strncpy(onas_sock.sock.sun_path, opt->strarg, sizeof(onas_sock.sock.sun_path));

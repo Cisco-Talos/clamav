@@ -278,19 +278,28 @@ int command(client_conn_t *conn, int *virus)
             break;
         }
         case COMMAND_MULTISCANFILE:
+        {
+            char *scan_filename    = conn->filename;
+            char *display_filename = (NULL != conn->display_filename) ? conn->display_filename : conn->filename;
+
             thrmgr_setactivetask(NULL, "MULTISCANFILE");
             scandata.group    = NULL;
             scandata.type     = TYPE_SCAN;
             scandata.thr_pool = NULL;
             /* TODO: check ret value */
-            ret            = scan_callback(NULL, conn->filename, conn->filename, visit_file, &data); /* callback freed it */
-            conn->filename = NULL;
-            *virus         = scandata.infected;
+            ret = scan_callback(NULL, display_filename, scan_filename, visit_file, &data); /* callback freed display_filename */
+            if (scan_filename != display_filename) {
+                free(scan_filename);
+            }
+            conn->filename         = NULL;
+            conn->display_filename = NULL;
+            *virus                 = scandata.infected;
             if (ret == CL_BREAK) {
                 thrmgr_group_terminate(conn->group);
                 return 1;
             }
             return scandata.errors > 0 ? scandata.errors : 0;
+        }
         case COMMAND_FILDES:
             thrmgr_setactivetask(NULL, "FILDES");
 #ifdef HAVE_FD_PASSING
