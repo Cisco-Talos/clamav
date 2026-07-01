@@ -2416,6 +2416,9 @@ void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
                 case '<':
                 case '(':
                     breakout = 1;
+                    break;
+                default:
+                    break;
             }
 
             if (breakout)
@@ -2943,6 +2946,9 @@ static void compute_hash_r6(const char *password, size_t pwlen, const unsigned c
                 cl_sha512(data, in_data_len * 64, sha2_512, NULL);
                 memcpy(block, sha2_512, 64);
                 break;
+            default:
+                cli_errmsg("Invalid block size computing hash\n");
+                return;
         }
     }
 
