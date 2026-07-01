@@ -72,7 +72,7 @@ static const char *scancmd[] = {"CONTSCAN", "MULTISCAN", "INSTREAM", "FILDES", "
 
 /* Issues an INSTREAM command to clamd and streams the given file
  * Returns >0 on success, 0 soft fail, -1 hard fail */
-static int onas_send_stream(CURL *curl, const char *filename, int fd, int64_t timeout, uint64_t maxstream)
+static int onas_send_stream(CURL *curl, const char *filename, int fd, int64_t timeout, uint64_t maxstream, bool action_stream, cl_error_t *ret_code)
 {
     uint32_t buf[BUFSIZ / sizeof(uint32_t)];
     uint64_t len;
@@ -108,8 +108,21 @@ static int onas_send_stream(CURL *curl, const char *filename, int fd, int64_t ti
     }
 
     if ((uint64_t)statbuf.st_size > maxstream) {
-        ret = 0;
+        if (action_stream) {
+            logg(LOGG_ERROR, "%s: File size exceeds StreamMaxLength; refusing to send a truncated quarantine stream. ERROR\n",
+                 filename ? filename : "FD");
+            if (ret_code) {
+                *ret_code = CL_EMAXSIZE;
+            }
+            ret = -1;
+        } else {
+            ret = 0;
+        }
         goto strm_out;
+    }
+
+    if (0 != fd) {
+        (void)lseek(fd, 0, SEEK_SET);
     }
 
     if (onas_sendln(curl, zINSTREAM, sizeof(zINSTREAM), timeout)) {
@@ -117,32 +130,63 @@ static int onas_send_stream(CURL *curl, const char *filename, int fd, int64_t ti
         goto strm_out;
     }
 
-    len    = statbuf.st_size;
-    buf[0] = htonl(len);
-    if (onas_sendln(curl, (const char *)buf, sizeof(uint32_t), timeout)) {
+    len = statbuf.st_size;
+    while (bytesRead < len) {
+        uint64_t remaining = len - bytesRead;
+        size_t read_len    = (remaining < sizeof(buf)) ? (size_t)remaining : sizeof(buf);
+        ssize_t bytes      = read(fd, buf, read_len);
+        uint32_t chunk_len;
+
+        if (bytes < 0) {
+            logg(LOGG_ERROR, "Failed to read from %s.\n", filename ? filename : "FD");
+            ret = -1;
+            goto strm_out;
+        } else if (0 == bytes) {
+            break;
+        }
+        bytesRead += bytes;
+
+        chunk_len = htonl((uint32_t)bytes);
+        if (onas_sendln(curl, (const char *)&chunk_len, sizeof(chunk_len), timeout) ||
+            onas_sendln(curl, (const char *)buf, (size_t)bytes, timeout)) {
+            ret = -1;
+            goto strm_out;
+        }
+    }
+
+    if (bytesRead < len) {
+        logg(LOGG_ERROR, "%s: File changed while streaming; refusing to send a partial INSTREAM chunk. ERROR\n",
+             filename ? filename : "FD");
+        if (ret_code) {
+            *ret_code = CL_EREAD;
+        }
         ret = -1;
         goto strm_out;
     }
 
-    while (bytesRead < len) {
-        ssize_t ret = read(fd, buf, sizeof(buf));
-        if (ret < 0) {
+    if (action_stream && S_ISREG(statbuf.st_mode) && (bytesRead == len)) {
+        ssize_t bytes = read(fd, buf, 1);
+
+        if (bytes < 0) {
             logg(LOGG_ERROR, "Failed to read from %s.\n", filename ? filename : "FD");
             ret = -1;
             goto strm_out;
-        } else if (0 == ret) {
-            break;
-        }
-        bytesRead += ret;
-
-        if (onas_sendln(curl, (const char *)buf, ret, timeout)) {
+        } else if (bytes > 0) {
+            logg(LOGG_ERROR, "%s: File size exceeds StreamMaxLength; refusing to send a truncated quarantine stream. ERROR\n",
+                 filename ? filename : "FD");
+            if (ret_code) {
+                *ret_code = CL_EMAXSIZE;
+            }
             ret = -1;
             goto strm_out;
         }
     }
 
     *buf = 0;
-    onas_sendln(curl, (const char *)buf, 4, timeout);
+    if (onas_sendln(curl, (const char *)buf, 4, timeout)) {
+        ret = -1;
+        goto strm_out;
+    }
 
 strm_out:
     if (close_flag) {
@@ -232,7 +276,8 @@ fd_out:
  * This is used only in non IDSESSION mode
  * Returns the number of infected files or -1 on error
  * NOTE: filename may be NULL for STREAM scantype. */
-int onas_dsresult(CURL *curl, int scantype, uint64_t maxstream, const char *filename, int fd, int64_t timeout, int *printok, int *errors, cl_error_t *ret_code)
+int onas_dsresult(CURL *curl, int scantype, uint64_t maxstream, const char *filename, const action_source_t *action_source,
+                  int fd, int64_t timeout, int *printok, int *errors, cl_error_t *ret_code)
 {
     int infected = 0, len = 0, beenthere = 0;
     char *bol, *eol;
@@ -240,11 +285,17 @@ int onas_dsresult(CURL *curl, int scantype, uint64_t maxstream, const char *file
     STATBUF sb;
     int sockd                                                        = -1;
     int (*recv_func)(struct onas_rcvln *, char **, char **, int64_t) = NULL;
+    const char *display_filename = (NULL != action_source) ? action_source->display_path : filename;
+    int scan_fd                  = (NULL != action_source) ? action_source->scan_fd : fd;
 
-    sockd = onas_get_sockd();
+#ifdef HAVE_FD_PASSING
+    if (FILDES == scantype) {
+        sockd = onas_get_sockd();
+    }
+#endif
 
     onas_recvlninit(&rcv, curl, sockd);
-    if (rcv.sockd > 0) {
+    if ((FILDES == scantype) && (rcv.sockd > 0)) {
         recv_func = &onas_fd_recvln;
     } else {
         recv_func = &onas_recvln;
@@ -285,25 +336,30 @@ int onas_dsresult(CURL *curl, int scantype, uint64_t maxstream, const char *file
 
         case STREAM:
             /* NULL filename safe in send_stream() */
-            len = onas_send_stream(curl, filename, fd, timeout, maxstream);
+            len = onas_send_stream(curl, display_filename, scan_fd, timeout, maxstream, NULL != action_source, ret_code);
             break;
 #ifdef HAVE_FD_PASSING
         case FILDES:
             /* NULL filename safe in send_fdpass() */
-            len = onas_fdpass(filename, fd, sockd);
+            len = onas_fdpass(display_filename, scan_fd, sockd);
             break;
 #endif
     }
 
     if (len <= 0) {
         *printok = 0;
-        if (errors && len < 0) {
-            /* Ignore error if len == 0 to reduce verbosity from file open()
-               "errors" where the file has been deleted before we have a chance
-               to scan it. */
+        if (errors && ((len < 0) || (NULL != action_source))) {
+            /*
+             * Keep len == 0 as a soft skip for mutable path scans where a file
+             * disappeared before opening. Treat opened action-source failures
+             * as errors because the later action depends on that same object.
+             */
             (*errors)++;
         }
-        infected = len;
+        if (ret_code && (CL_SUCCESS == *ret_code) && ((len < 0) || (NULL != action_source))) {
+            *ret_code = CL_EWRITE;
+        }
+        infected = ((NULL != action_source) && (0 == len)) ? -1 : len;
         goto done;
     }
 
@@ -318,7 +374,7 @@ int onas_dsresult(CURL *curl, int scantype, uint64_t maxstream, const char *file
             goto done;
         }
         beenthere = 1;
-        if (!filename) {
+        if (!display_filename) {
             logg(LOGG_INFO, "%s\n", bol);
         }
         if (len > 7) {
@@ -365,17 +421,21 @@ int onas_dsresult(CURL *curl, int scantype, uint64_t maxstream, const char *file
                     }
                 }
 
-                if (filename) {
+                if (display_filename) {
                     if (scantype >= STREAM) {
-                        logg(LOGG_INFO, "%s%s FOUND\n", filename, colon);
+                        logg(LOGG_INFO, "%s%s FOUND\n", display_filename, colon);
                         if (action) {
-                            action(filename);
+                            if (NULL != action_source) {
+                                action(action_source);
+                            }
                         }
                     } else {
                         logg(LOGG_INFO, "%s FOUND\n", bol);
                         *colon = '\0';
                         if (action) {
-                            action(bol);
+                            if (NULL != action_source) {
+                                action(action_source);
+                            }
                         }
                     }
                 }
@@ -391,8 +451,8 @@ int onas_dsresult(CURL *curl, int scantype, uint64_t maxstream, const char *file
                 }
                 *printok = 0;
 
-                if (filename) {
-                    (scantype >= STREAM) ? logg(LOGG_DEBUG, "%s%s\n", filename, colon) : logg(LOGG_DEBUG, "%s\n", bol);
+                if (display_filename) {
+                    (scantype >= STREAM) ? logg(LOGG_DEBUG, "%s%s\n", display_filename, colon) : logg(LOGG_DEBUG, "%s\n", bol);
                 }
 
                 if (ret_code) {
@@ -406,8 +466,8 @@ int onas_dsresult(CURL *curl, int scantype, uint64_t maxstream, const char *file
                 }
                 *printok = 0;
 
-                if (filename) {
-                    (scantype >= STREAM) ? logg(LOGG_INFO, "%s%s\n", filename, colon) : logg(LOGG_INFO, "%s\n", bol);
+                if (display_filename) {
+                    (scantype >= STREAM) ? logg(LOGG_INFO, "%s%s\n", display_filename, colon) : logg(LOGG_INFO, "%s\n", bol);
                 }
 
                 if (ret_code) {
@@ -419,8 +479,8 @@ int onas_dsresult(CURL *curl, int scantype, uint64_t maxstream, const char *file
                 }
                 *printok = 0;
 
-                if (filename) {
-                    (scantype >= STREAM) ? logg(LOGG_INFO, "%s%s\n", filename, colon) : logg(LOGG_INFO, "%s\n", bol);
+                if (display_filename) {
+                    (scantype >= STREAM) ? logg(LOGG_INFO, "%s%s\n", display_filename, colon) : logg(LOGG_INFO, "%s\n", bol);
                 }
 
                 if (ret_code) {
@@ -430,7 +490,7 @@ int onas_dsresult(CURL *curl, int scantype, uint64_t maxstream, const char *file
         }
     }
     if (!beenthere) {
-        if (!filename) {
+        if (!display_filename) {
             logg(LOGG_INFO, "STDIN: noreply from clamd\n.");
             if (ret_code) {
                 *ret_code = CL_EACCES;
@@ -438,9 +498,9 @@ int onas_dsresult(CURL *curl, int scantype, uint64_t maxstream, const char *file
             infected = -1;
             goto done;
         }
-        if (CLAMSTAT(filename, &sb) == -1) {
+        if (CLAMSTAT(display_filename, &sb) == -1) {
             logg(LOGG_INFO, "%s: stat() failed with %s, clamd may not be responding\n",
-                 filename, strerror(errno));
+                 display_filename, strerror(errno));
             if (ret_code) {
                 *ret_code = CL_EACCES;
             }
@@ -448,7 +508,7 @@ int onas_dsresult(CURL *curl, int scantype, uint64_t maxstream, const char *file
             goto done;
         }
         if (!S_ISDIR(sb.st_mode)) {
-            logg(LOGG_INFO, "%s: no reply from clamd\n", filename);
+            logg(LOGG_INFO, "%s: no reply from clamd\n", display_filename);
             if (ret_code) {
                 *ret_code = CL_EACCES;
             }

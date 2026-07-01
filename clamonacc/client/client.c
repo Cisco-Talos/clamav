@@ -403,6 +403,8 @@ cl_error_t onas_setup_client(struct onas_context **ctx)
     const struct optstruct *opts;
     cl_error_t err;
     int remote;
+    bool action_requested;
+    bool fdpass_requested;
 
     errno = 0;
 
@@ -427,9 +429,17 @@ cl_error_t onas_setup_client(struct onas_context **ctx)
     }
 
     remote = (*ctx)->isremote | optget(opts, "stream")->enabled;
+    action_requested = (NULL != action) ||
+                       optget(opts, "move")->enabled ||
+                       optget(opts, "copy")->enabled ||
+                       optget(opts, "remove")->enabled;
+    fdpass_requested = action_requested || optget(opts, "fdpass")->enabled;
+    if (action_requested && optget(opts, "allmatch")->enabled) {
+        logg(LOGG_WARNING, "--allmatch is ignored when quarantine actions are enabled.\n");
+    }
 #ifdef HAVE_FD_PASSING
-    if (!remote && optget((*ctx)->clamdopts, "LocalSocket")->enabled && (optget(opts, "fdpass")->enabled)) {
-        if (onas_set_sock_only_once(*ctx) == CL_EWRITE) {
+    if (!remote && optget((*ctx)->clamdopts, "LocalSocket")->enabled && fdpass_requested) {
+        if (onas_set_sock_only_once(*ctx, fdpass_requested) == CL_EWRITE) {
             return CL_EWRITE;
         }
         logg(LOGG_DEBUG, "ClamClient: client setup to scan via fd passing\n");
@@ -437,7 +447,7 @@ cl_error_t onas_setup_client(struct onas_context **ctx)
         (*ctx)->session  = optget(opts, "multiscan")->enabled;
     } else
 #endif
-        if (remote) {
+        if (action_requested || remote) {
         logg(LOGG_DEBUG, "ClamClient: client setup to scan via streaming\n");
         (*ctx)->scantype = STREAM;
         (*ctx)->session  = optget(opts, "multiscan")->enabled;
@@ -534,20 +544,55 @@ int onas_client_scan(const char *tcpaddr, int64_t portnum, int32_t scantype, uin
     CURL *curl        = NULL;
     CURLcode curlcode = CURLE_OK;
     int errors        = 0;
-    int ret;
+    int scan_result   = 0;
+    int printok       = 1;
+    cl_error_t status = CL_CLEAN;
+    action_source_t action_source;
+    char *resolved_action_path = NULL;
+    bool have_action_source = false;
+    bool regular_file        = S_ISREG(sb.st_mode);
     static bool disconnected = false;
 
-    *infected = 0;
+    action_source_init(&action_source);
 
-    if ((sb.st_mode & S_IFMT) != S_IFREG) {
+    *infected = 0;
+    if (err) {
+        *err = 0;
+    }
+    if (ret_code) {
+        *ret_code = CL_SUCCESS;
+    }
+
+    if (!regular_file) {
         scantype = STREAM;
+    }
+
+    if (action && (NULL != fname) && regular_file) {
+        if (fd >= 0) {
+            status = action_source_from_fd(fname, fd, &action_source);
+        } else {
+            status = cli_realpath(fname, &resolved_action_path);
+            if (CL_SUCCESS == status) {
+                status = action_source_open_path(fname, resolved_action_path, &action_source);
+            }
+        }
+        if (CL_SUCCESS != status) {
+            logg(LOGG_WARNING, "Can't open file %s for safe quarantine action: %s\n", fname, cl_strerror(status));
+            goto done;
+        }
+        have_action_source = true;
+        if (scantype < STREAM) {
+            scantype = STREAM;
+        }
     }
 
     curlcode = onas_curl_init(&curl, tcpaddr, portnum, timeout);
     if (CURLE_OK != curlcode) {
         logg(LOGG_ERROR, "ClamClient: could not init curl for scanning, %s\n", curl_easy_strerror(curlcode));
         /* curl cleanup done in onas_curl_init on error */
-        return CL_ECREAT;
+        curl = NULL;
+        status = CL_ECREAT;
+        goto done;
     }
 
     curlcode = curl_easy_perform(curl);
@@ -557,20 +602,43 @@ int onas_client_scan(const char *tcpaddr, int64_t portnum, int32_t scantype, uin
             disconnected = true;
         }
         curl_easy_cleanup(curl);
-        return CL_ECREAT;
+        curl = NULL;
+        status = CL_ECREAT;
+        goto done;
     }
     if (disconnected) {
         logg(LOGG_INFO, "ClamClient: Connection to clamd re-established.\n");
         disconnected = false;
     }
 
-    if ((ret = onas_dsresult(curl, scantype, maxstream, fname, fd, timeout, &ret, err, ret_code)) >= 0) {
-        *infected = ret;
+    if ((scan_result = onas_dsresult(curl, scantype, maxstream, fname, have_action_source ? &action_source : NULL, fd, timeout,
+                                     &printok, err, ret_code)) >= 0) {
+        *infected = scan_result;
     } else {
-        logg(LOGG_DEBUG, "ClamClient: connection could not be established ... return code %d\n", *ret_code);
+        logg(LOGG_DEBUG, "ClamClient: connection could not be established ... return code %d\n", ret_code ? *ret_code : scan_result);
         errors = 1;
     }
 
-    curl_easy_cleanup(curl);
-    return *infected ? CL_VIRUS : (errors ? CL_ECREAT : CL_CLEAN);
+    status = *infected ? CL_VIRUS : (errors ? CL_ECREAT : CL_CLEAN);
+
+done:
+    if ((CL_CLEAN != status) && (CL_VIRUS != status)) {
+        if (err && (0 == *err)) {
+            (*err)++;
+        }
+        if (ret_code && (CL_SUCCESS == *ret_code)) {
+            *ret_code = status;
+        }
+    }
+
+    if (NULL != curl) {
+        curl_easy_cleanup(curl);
+    }
+    if (have_action_source) {
+        action_source_close(&action_source);
+    }
+    if (NULL != resolved_action_path) {
+        free(resolved_action_path);
+    }
+    return status;
 }

@@ -20,6 +20,7 @@
 
 #include <sys/socket.h>
 #include <sys/un.h>
+#include <stdbool.h>
 
 #include "optparser.h"
 #include "../clamonacc.h"
@@ -30,5 +31,5 @@ struct onas_sock_t {
     struct sockaddr_un sock;
 };
 
-cl_error_t onas_set_sock_only_once(struct onas_context *ctx);
+cl_error_t onas_set_sock_only_once(struct onas_context *ctx, bool allow_fdpass);
 int onas_get_sockd(void);

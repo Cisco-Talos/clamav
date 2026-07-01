@@ -304,6 +304,7 @@ CLAMAV_PRIVATE {
     cli_checklimits;
     cli_checktimelimit;
     cli_matchmeta;
+    cli_newfilepath;
 
     __cli_strcasestr;
     __cli_strndup;

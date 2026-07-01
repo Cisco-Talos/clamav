@@ -38,22 +38,25 @@ typedef int (*proc_callback)(PROCESSENTRY32 ProcStruct, MODULEENTRY32 me32, void
 int sock;
 struct optstruct *clamdopts;
 
-static inline int lookup_cache(filelist_t **list, const char *filename)
+static inline bool lookup_cache(filelist_t **list, const char *filename, cl_error_t *result)
 {
     filelist_t *current = *list;
     while (current) {
         /* Cache hit */
         if (!_stricmp(filename, current->filename)) {
-            return current->res;
+            if (NULL != result) {
+                *result = current->res;
+            }
+            return true;
         }
         current = current->next;
     }
 
-    return -1;
+    return false;
 }
 
 static inline void insert_cache(filelist_t **list, const char *filename,
-                                int res)
+                                cl_error_t res)
 {
     filelist_t *current = *list, *prev = NULL;
 
@@ -87,6 +90,47 @@ static inline void free_cache(filelist_t **list)
         current = prev->next;
         free(prev);
     } while (current);
+}
+
+/**
+ * @brief Resolve a memory module path using the same sharing policy as action
+ *        source opens.
+ *
+ * @param path           Path to resolve.
+ * @param resolved_path  Resolved path on success. Caller must free it.
+ * @return cl_error_t    CL_SUCCESS if the path was resolved.
+ */
+static cl_error_t scanmem_resolve_action_path(const char *path, char **resolved_path)
+{
+    HANDLE handle     = INVALID_HANDLE_VALUE;
+    cl_error_t status = CL_EARG;
+
+    if ((NULL == path) || (NULL == resolved_path)) {
+        return CL_EARG;
+    }
+
+    *resolved_path = NULL;
+
+    handle = CreateFileA(
+        path,
+        FILE_GENERIC_READ | FILE_READ_ATTRIBUTES | READ_CONTROL | SYNCHRONIZE,
+        FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+        NULL,
+        OPEN_EXISTING,
+        FILE_ATTRIBUTE_NORMAL,
+        NULL);
+    if (INVALID_HANDLE_VALUE == handle) {
+        status = CL_EOPEN;
+        goto done;
+    }
+
+    status = cli_get_filepath_from_handle(handle, resolved_path);
+
+done:
+    if (INVALID_HANDLE_VALUE != handle) {
+        CloseHandle(handle);
+    }
+    return status;
 }
 
 static inline char *wc2mb(const wchar_t *wc, DWORD flags)
@@ -529,22 +573,87 @@ int dump_pe(const char *filename, PROCESSENTRY32 ProcStruct,
     return ret;
 }
 
-int scanfile(const char *filename, scanmem_data *scan_data, struct mem_info *info)
+/*
+ * filename is the display name for scan output. scan_open_path is the path to
+ * submit or open for scanning. action_target is the original on-disk module to
+ * quarantine when scanning a temporary dump of a packed module finds the
+ * infection. action_open_path is an optional resolved path to open for
+ * quarantine action; when action_open_path_required is true, action setup fails
+ * closed instead of opening action_target by its unresolved name.
+ */
+cl_error_t scanfile(
+    const char *filename,
+    const char *scan_open_path,
+    const char *action_target,
+    const char *action_open_path,
+    bool action_open_path_required,
+    scanmem_data *scan_data,
+    struct mem_info *info,
+    action_source_t *infected_action_source)
 {
-    int fd;
+    int fd = -1;
     int scantype;
-    int ret             = CL_CLEAN;
+    cl_error_t status = CL_CLEAN;
+    int infected = 0;
+    const char *scan_path = (NULL != scan_open_path) ? scan_open_path : filename;
+    const char *action_display_filename = (NULL != action_target) ? action_target : filename;
+    bool action_target_is_scan_target =
+        ((NULL == action_target) || (0 == strcmp(action_target, filename))) &&
+        ((NULL == action_open_path) || (0 == strcmp(action_open_path, scan_path)));
+    action_source_t action_source;
+    bool have_action_source = false;
+    bool action_source_open_failed = false;
+    bool scan_uses_action_source = false;
+    cl_error_t action_source_status = CL_SUCCESS;
     const char *virname = NULL;
+    int scan_errors_before = 0;
+    int scan_result        = 0;
+
+    action_source_init(&action_source);
 
     logg(LOGG_DEBUG, "Scanning %s\n", filename);
 
-    if ((fd = safe_open(filename, O_RDONLY | O_BINARY)) == -1) {
-        logg(LOGG_WARNING, "Can't open file %s, %s\n", filename, strerror(errno));
-        return -1;
+    if (action) {
+        if (NULL != action_open_path) {
+            action_source_status = action_source_open_path(
+                action_display_filename,
+                action_open_path,
+                &action_source);
+        } else if (action_open_path_required) {
+            action_source_status = CL_EOPEN;
+        } else {
+            action_source_status = action_source_open(action_display_filename, &action_source);
+        }
+        if (CL_SUCCESS != action_source_status) {
+            logg(LOGG_WARNING, "Can't open file %s for safe quarantine action: %s\n", action_display_filename, cl_strerror(action_source_status));
+            action_source_open_failed = true;
+        } else {
+            have_action_source = true;
+        }
+    }
+
+    if (have_action_source && action_target_is_scan_target) {
+        fd                      = action_source.scan_fd;
+        scan_uses_action_source = true;
+    } else if ((fd = safe_open(scan_path, O_RDONLY | O_BINARY)) == -1) {
+        logg(LOGG_WARNING, "Can't open file %s, %s\n", scan_path, strerror(errno));
+        if (have_action_source) {
+            action_source_close(&action_source);
+        }
+        return CL_EOPEN;
     }
 
     if (info->d) { // clamdscan
-        if (optget(info->opts, "stream")->enabled)
+        if (scan_uses_action_source) {
+#ifdef HAVE_FD_PASSING
+            if (optget(clamdopts, "LocalSocket")->enabled) {
+                scantype = FILDES;
+            } else
+#endif
+            {
+                scantype = STREAM;
+            }
+        } else if (optget(info->opts, "stream")->enabled)
             scantype = STREAM;
         else if (optget(info->opts, "multiscan")->enabled)
             scantype = MULTI;
@@ -555,24 +664,66 @@ int scanfile(const char *filename, scanmem_data *scan_data, struct mem_info *inf
 
         if ((sock = dconnect(clamdopts)) < 0) {
             info->errors++;
-            return -1;
+            if (!scan_uses_action_source) {
+                close(fd);
+            }
+            if (have_action_source) {
+                action_source_close(&action_source);
+            }
+            return CL_EOPEN;
         }
-        if (dsresult(sock, scantype, filename, NULL, &info->errors, clamdopts) > 0) {
+        scan_errors_before = info->errors;
+        scan_result        = dsresult(sock, scantype, scan_path, scan_uses_action_source ? &action_source : NULL, false, NULL, &info->errors, clamdopts);
+        if (scan_result > 0) {
             info->ifiles++;
-            ret = CL_VIRUS;
+            status = CL_VIRUS;
+            infected = 1;
+        } else if ((scan_result < 0) || (info->errors > scan_errors_before)) {
+            status = CL_EOPEN;
         }
     } else { // clamscan
-        ret = cl_scandesc(fd, filename, &virname, &info->blocks, info->engine, info->options);
-        if (ret == CL_VIRUS) {
+        status = cl_scandesc(fd, filename, &virname, &info->blocks, info->engine, info->options);
+        if (status == CL_VIRUS) {
             logg(LOGG_INFO, "%s: %s FOUND\n", filename, virname);
             info->ifiles++;
+            infected = 1;
         } else if (scan_data->printclean) {
             logg(LOGG_INFO, "%s: OK    \n", filename);
         }
     }
 
-    close(fd);
-    return ret;
+    if (!scan_uses_action_source) {
+        close(fd);
+    }
+    fd = -1;
+
+    if (infected && action) {
+        if (have_action_source) {
+            if (NULL != infected_action_source) {
+                *infected_action_source = action_source;
+                action_source_init(&action_source);
+                have_action_source = false;
+            } else {
+                action(&action_source);
+            }
+        } else if (action_source_open_failed) {
+            if (optget(info->opts, "remove")->enabled) {
+                notremoved++;
+            } else {
+                notmoved++;
+            }
+            logg(LOGG_ERROR, "Can't apply quarantine action for scan target '%s': safe source '%s' is unavailable: %s\n",
+                 filename,
+                 action_display_filename,
+                 cl_strerror(action_source_status));
+        }
+    }
+
+    if (have_action_source) {
+        action_source_close(&action_source);
+    }
+
+    return status;
 }
 
 int scanmem_cb(PROCESSENTRY32 ProcStruct, MODULEENTRY32 me32, void *data, struct mem_info *info)
@@ -582,10 +733,20 @@ int scanmem_cb(PROCESSENTRY32 ProcStruct, MODULEENTRY32 me32, void *data, struct
     int isprocess               = 0;
     char modulename[MAX_PATH]   = "";
     char expandmodule[MAX_PATH] = "";
+    char *resolved_modulename           = NULL;
+    const char *module_scan_path        = modulename;
+    const char *module_action_open_path = NULL;
+    action_source_t deferred_action_source;
+    cl_error_t cached_result        = CL_CLEAN;
+    cl_error_t resolve_status       = CL_CLEAN;
+    bool cache_hit                  = false;
+    bool module_filter_enabled      = false;
+    bool module_excluded            = false;
 
     if (!scan_data)
         return 0;
     scan_data->res = CL_CLEAN;
+    action_source_init(&deferred_action_source);
 
     modulename[0] = 0;
     /* Special case, btw why I get \SystemRoot\ in process szExePath?
@@ -607,11 +768,14 @@ int scanmem_cb(PROCESSENTRY32 ProcStruct, MODULEENTRY32 me32, void *data, struct
         modulename[MAX_PATH - 1] = 0;
     }
 
-    scan_data->res = lookup_cache(&scan_data->files, modulename);
+    cache_hit = lookup_cache(&scan_data->files, modulename, &cached_result);
+    if (cache_hit) {
+        scan_data->res = cached_result;
+    }
     isprocess      = !_stricmp(ProcStruct.szExeFile, modulename) ||
                 !_stricmp(ProcStruct.szExeFile, me32.szModule);
 
-    if (scan_data->res == -1) {
+    if (!cache_hit) {
         if (isprocess)
             scan_data->processes++;
         else
@@ -621,20 +785,65 @@ int scanmem_cb(PROCESSENTRY32 ProcStruct, MODULEENTRY32 me32, void *data, struct
 
         /* check for module exclusion */
         scan_data->res = CL_CLEAN;
-        if (!(scan_data->exclude && chkpath(modulename, clamdopts)))
-            scan_data->res = scanfile(modulename, scan_data, info);
+        module_filter_enabled = info->d || scan_data->exclude;
+        module_excluded       = module_filter_enabled && chkpath(modulename, clamdopts);
 
-        if ((scan_data->res != CL_VIRUS) && is_packed(modulename)) {
+        if (action && !module_excluded) {
+            resolve_status = scanmem_resolve_action_path(modulename, &resolved_modulename);
+            if ((CL_SUCCESS == resolve_status) && (NULL != resolved_modulename)) {
+                module_scan_path        = resolved_modulename;
+                module_action_open_path = resolved_modulename;
+                if (module_filter_enabled) {
+                    module_excluded = chkpath(resolved_modulename, clamdopts);
+                }
+            } else {
+                logg(LOGG_WARNING, "Can't resolve module path %s for safe quarantine action: %s\n",
+                     modulename,
+                     cl_strerror(resolve_status));
+            }
+        }
+
+        if (!module_excluded)
+            scan_data->res = scanfile(
+                modulename,
+                module_scan_path,
+                modulename,
+                module_action_open_path,
+                NULL != action,
+                scan_data,
+                info,
+                &deferred_action_source);
+
+        if (!module_excluded && (CL_CLEAN == scan_data->res) && is_packed(module_scan_path)) {
             char *dumped = cli_gentemp(NULL);
             int fd       = -1;
             if ((fd = dump_pe(dumped, ProcStruct, me32)) > 0) {
                 close(fd);
-                scan_data->res = scanfile(dumped, scan_data, info);
+                scan_data->res = scanfile(
+                    dumped,
+                    dumped,
+                    modulename,
+                    module_action_open_path,
+                    NULL != action,
+                    scan_data,
+                    info,
+                    &deferred_action_source);
                 DeleteFileA(dumped);
             }
             free(dumped);
         }
-        insert_cache(&scan_data->files, modulename, scan_data->res);
+        /*
+         * Keep caching clean results. Do not cache infected module results
+         * while a quarantine action is enabled: move/remove may need to retry
+         * after kill/unload or after an action failure, and action() does not
+         * report whether a copy/move/remove succeeded. This can duplicate
+         * --copy output for a module mapped into multiple processes, but it
+         * avoids suppressing later move/remove opportunities.
+         */
+        if ((CL_CLEAN == scan_data->res) ||
+            ((CL_VIRUS == scan_data->res) && (NULL == action))) {
+            insert_cache(&scan_data->files, modulename, scan_data->res);
+        }
     }
 
     if (scan_data->res == CL_VIRUS) {
@@ -645,12 +854,22 @@ int scanmem_cb(PROCESSENTRY32 ProcStruct, MODULEENTRY32 me32, void *data, struct
             logg(LOGG_INFO, "Unloading module %s from %s\n", me32.szModule, modulename);
             if ((rc = unload_module(ProcStruct.th32ProcessID, me32.hModule)) == -1)
                 /* CreateProcessThread() is not implemented */
-                return 0;
+                goto done;
         }
 
-        if (action)
-            action(modulename);
-        return rc;
+        if (action && !cache_hit) {
+            if (-1 != deferred_action_source.scan_fd) {
+                action(&deferred_action_source);
+            }
+        }
+    }
+
+done:
+    if (-1 != deferred_action_source.scan_fd) {
+        action_source_close(&deferred_action_source);
+    }
+    if (NULL != resolved_modulename) {
+        free(resolved_modulename);
     }
     return rc;
 }

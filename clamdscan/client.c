@@ -310,21 +310,10 @@ static char *makeabs(const char *basepath)
 static int client_scan(const char *file, int scantype, int *infected, int *err, int maxlevel, int session, int flags)
 {
     int ret;
-    char *real_path = NULL;
     char *fullpath  = NULL;
 
-    /* Convert relative path to fullpath */
+    /* Convert relative path to fullpath without resolving symlinks. */
     fullpath = makeabs(file);
-
-    /* Convert fullpath to the real path (evaluating symlinks and . and ..).
-       Doing this early on will ensure that the scan results will appear consistent
-       across regular scans, --fdpass scans, and --stream scans. */
-    if (CL_SUCCESS != cli_realpath(fullpath, &real_path)) {
-        logg(LOGG_DEBUG, "client_scan: Failed to determine real filename of %s.\n", fullpath);
-    } else {
-        free(fullpath);
-        fullpath = real_path;
-    }
 
     if (!fullpath)
         return 0;
@@ -392,6 +381,7 @@ int reload_clamd_database(const struct optstruct *opts)
 int client(const struct optstruct *opts, int *infected, int *err)
 {
     int remote, scantype, session = 0, errors = 0, scandash = 0, maxrec, flags = 0;
+    int action_requested, client_side_multiscan = 0;
     const char *fname;
 
     if (optget(opts, "wait")->enabled) {
@@ -407,14 +397,31 @@ int client(const struct optstruct *opts, int *infected, int *err)
     }
 
     scandash = (opts->filename && opts->filename[0] && !strcmp(opts->filename[0], "-") && !optget(opts, "file-list")->enabled && !opts->filename[1]);
-    remote   = isremote(opts) | optget(opts, "stream")->enabled;
+    remote = isremote(opts) | optget(opts, "stream")->enabled;
+    action_requested = (NULL != action) ||
+                       optget(opts, "move")->enabled ||
+                       optget(opts, "copy")->enabled ||
+                       optget(opts, "remove")->enabled;
+
+    if (action_requested && optget(opts, "allmatch")->enabled) {
+        logg(LOGG_WARNING, "--allmatch is ignored when quarantine actions are enabled.\n");
+    }
+
+    /*
+     * Quarantine actions must scan a client-opened file object so the action
+     * can run against the same object after the verdict. When multiscan is
+     * requested, use IDSESSION for client-side parallelism instead of sending
+     * whole directories to clamd.
+     */
+    client_side_multiscan = action_requested && optget(opts, "multiscan")->enabled;
 #ifdef HAVE_FD_PASSING
-    if (!remote && optget(clamdopts, "LocalSocket")->enabled && (optget(opts, "fdpass")->enabled || scandash)) {
+    if (!remote && optget(clamdopts, "LocalSocket")->enabled &&
+        (action_requested || optget(opts, "fdpass")->enabled || scandash || client_side_multiscan)) {
         scantype = FILDES;
         session  = optget(opts, "multiscan")->enabled;
     } else
 #endif
-        if (remote || scandash) {
+    if (action_requested || remote || scandash || client_side_multiscan) {
         scantype = STREAM;
         session  = optget(opts, "multiscan")->enabled;
     } else if (optget(opts, "multiscan")->enabled)
@@ -443,7 +450,8 @@ int client(const struct optstruct *opts, int *infected, int *err)
             return 2;
         }
         if ((sb.st_mode & S_IFMT) != S_IFREG) scantype = STREAM;
-        if ((sockd = dconnect(clamdopts)) >= 0 && (ret = dsresult(sockd, scantype, NULL, &ret, NULL, clamdopts)) >= 0)
+        if ((sockd = dconnect(clamdopts)) >= 0 &&
+            (ret = dsresult(sockd, scantype, NULL, NULL, false, &ret, NULL, clamdopts)) >= 0)
             *infected = ret;
         else
             errors = 1;

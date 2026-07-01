@@ -25,6 +25,7 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -172,25 +173,20 @@ done:
 #ifdef HAVE_FD_PASSING
 /* Issues a FILDES command and pass a FD to clamd
  * Returns >0 on success, 0 soft fail, -1 hard fail */
-int send_fdpass(int sockd, const char *filename)
+int send_fdpass_fd(int sockd, int fd)
 {
     struct iovec iov[1];
     struct msghdr msg;
     struct cmsghdr *cmsg;
     unsigned char fdbuf[CMSG_SPACE(sizeof(int))];
     char dummy[] = "";
-    int fd;
     const char zFILDES[] = "zFILDES";
 
-    if (filename) {
-        if ((fd = open(filename, O_RDONLY)) < 0) {
-            logg(LOGG_INFO, "%s: Failed to open file\n", filename);
-            return 0;
-        }
-    } else
-        fd = 0;
+    if (fd < 0) {
+        return 0;
+    }
+
     if (sendln(sockd, zFILDES, sizeof(zFILDES))) {
-        close(fd);
         return -1;
     }
 
@@ -208,22 +204,118 @@ int send_fdpass(int sockd, const char *filename)
     *(int *)CMSG_DATA(cmsg) = fd;
     if (sendmsg(sockd, &msg, 0) == -1) {
         logg(LOGG_ERROR, "FD send failed: %s\n", strerror(errno));
-        close(fd);
         return -1;
     }
-    close(fd);
     return 1;
+}
+
+/* Issues a FILDES command and pass a FD to clamd
+ * Returns >0 on success, 0 soft fail, -1 hard fail */
+int send_fdpass(int sockd, const char *filename)
+{
+    int fd;
+    int ret;
+    int close_fd = 0;
+
+    if (filename) {
+        if ((fd = open(filename, O_RDONLY)) < 0) {
+            logg(LOGG_INFO, "%s: Failed to open file\n", filename);
+            return 0;
+        }
+        close_fd = 1;
+    } else
+        fd = 0;
+    ret = send_fdpass_fd(sockd, fd);
+    if (close_fd) {
+        close(fd);
+    }
+    return ret;
 }
 #endif
 
 /* Issues an INSTREAM command to clamd and streams the given file
  * Returns >0 on success, 0 soft fail, -1 hard fail */
-int send_stream(int sockd, const char *filename, struct optstruct *clamdopts)
+static int send_stream_fd_common(int sockd, int fd, const char *display_filename, struct optstruct *clamdopts, bool reject_over_limit)
 {
     uint32_t buf[BUFSIZ / sizeof(uint32_t)];
-    int fd, len;
+    int len;
     unsigned long int todo = optget(clamdopts, "StreamMaxLength")->numarg;
     const char zINSTREAM[] = "zINSTREAM";
+    STATBUF sb;
+
+    if (fd < 0) {
+        return 0;
+    }
+
+    if (reject_over_limit &&
+        (0 == FSTAT(fd, &sb)) &&
+        S_ISREG(sb.st_mode) &&
+        (sb.st_size > 0) &&
+        ((uint64_t)sb.st_size > (uint64_t)todo)) {
+        logg(LOGG_ERROR, "%s: File size exceeds StreamMaxLength; refusing to send a truncated quarantine stream. ERROR\n",
+             display_filename ? display_filename : "STDIN");
+        return 0;
+    }
+
+    if (sendln(sockd, zINSTREAM, sizeof(zINSTREAM))) {
+        return -1;
+    }
+
+    if (0 != fd) {
+        (void)lseek(fd, 0, SEEK_SET);
+    }
+
+    while ((len = read(fd, &buf[1], sizeof(buf) - sizeof(uint32_t))) > 0) {
+        if (reject_over_limit && ((unsigned int)len > todo)) {
+            logg(LOGG_ERROR, "%s: File size exceeds StreamMaxLength; refusing to send a truncated quarantine stream. ERROR\n",
+                 display_filename ? display_filename : "STDIN");
+            return -1;
+        }
+        if ((unsigned int)len > todo) len = todo;
+        buf[0] = htonl(len);
+        if (sendln(sockd, (const char *)buf, len + sizeof(uint32_t))) {
+            return -1;
+        }
+        todo -= len;
+        if (!todo) {
+            if (reject_over_limit) {
+                len = read(fd, &buf[1], 1);
+                if (len > 0) {
+                    logg(LOGG_ERROR, "%s: File size exceeds StreamMaxLength; refusing to send a truncated quarantine stream. ERROR\n",
+                         display_filename ? display_filename : "STDIN");
+                    return -1;
+                }
+            } else {
+                len = 0;
+            }
+            break;
+        }
+    }
+    if (len) {
+        logg(LOGG_ERROR, "Failed to read from %s.\n", display_filename ? display_filename : "STDIN");
+        return reject_over_limit ? -1 : 0;
+    }
+    *buf = 0;
+    sendln(sockd, (const char *)buf, 4);
+    return 1;
+}
+
+int send_stream_fd(int sockd, int fd, const char *display_filename, struct optstruct *clamdopts)
+{
+    return send_stream_fd_common(sockd, fd, display_filename, clamdopts, false);
+}
+
+int send_stream_fd_action(int sockd, int fd, const char *display_filename, struct optstruct *clamdopts)
+{
+    return send_stream_fd_common(sockd, fd, display_filename, clamdopts, true);
+}
+
+/* Issues an INSTREAM command to clamd and streams the given file
+ * Returns >0 on success, 0 soft fail, -1 hard fail */
+int send_stream(int sockd, const char *filename, struct optstruct *clamdopts)
+{
+    int fd;
+    int ret;
 
     if (filename) {
         if ((fd = safe_open(filename, O_RDONLY | O_BINARY)) < 0) {
@@ -235,32 +327,11 @@ int send_stream(int sockd, const char *filename, struct optstruct *clamdopts)
         fd = 0;
     }
 
-    if (sendln(sockd, zINSTREAM, sizeof(zINSTREAM))) {
+    ret = send_stream_fd(sockd, fd, filename, clamdopts);
+    if (0 != fd) {
         close(fd);
-        return -1;
     }
-
-    while ((len = read(fd, &buf[1], sizeof(buf) - sizeof(uint32_t))) > 0) {
-        if ((unsigned int)len > todo) len = todo;
-        buf[0] = htonl(len);
-        if (sendln(sockd, (const char *)buf, len + sizeof(uint32_t))) {
-            close(fd);
-            return -1;
-        }
-        todo -= len;
-        if (!todo) {
-            len = 0;
-            break;
-        }
-    }
-    close(fd);
-    if (len) {
-        logg(LOGG_ERROR, "Failed to read from %s.\n", filename ? filename : "STDIN");
-        return 0;
-    }
-    *buf = 0;
-    sendln(sockd, (const char *)buf, 4);
-    return 1;
+    return ret;
 }
 
 /* Connects to clamd
@@ -334,18 +405,13 @@ int dconnect(struct optstruct *clamdopts)
  * This is used only in non IDSESSION mode
  * Returns the number of infected files or -1 on error
  * NOTE: filename may be NULL for STREAM scantype. */
-int dsresult(int sockd, int scantype, const char *filename, int *printok, int *errors, struct optstruct *clamdopts)
+int dsresult(int sockd, int scantype, const char *filename, const action_source_t *action_source, bool apply_action, int *printok, int *errors, struct optstruct *clamdopts)
 {
     int infected = 0, len = 0, beenthere = 0;
     char *bol, *eol;
     struct RCVLN rcv;
     STATBUF sb;
-
-    if (filename) {
-        if (1 == chkpath(filename, clamdopts)) {
-            goto done;
-        }
-    }
+    const char *display_filename = (NULL != action_source) ? action_source->display_path : filename;
 
     recvlninit(&rcv, sockd);
 
@@ -375,12 +441,12 @@ int dsresult(int sockd, int scantype, const char *filename, int *printok, int *e
 
         case STREAM:
             /* NULL filename safe in send_stream() */
-            len = send_stream(sockd, filename, clamdopts);
+            len = (NULL != action_source) ? send_stream_fd_action(sockd, action_source->scan_fd, display_filename, clamdopts) : send_stream(sockd, filename, clamdopts);
             break;
 #ifdef HAVE_FD_PASSING
         case FILDES:
             /* NULL filename safe in send_fdpass() */
-            len = send_fdpass(sockd, filename);
+            len = (NULL != action_source) ? send_fdpass_fd(sockd, action_source->scan_fd) : send_fdpass(sockd, filename);
             break;
 #endif
     }
@@ -434,15 +500,14 @@ int dsresult(int sockd, int scantype, const char *filename, int *printok, int *e
                         last_filename[PATH_MAX] = '\0';
                     }
                 }
-                if (filename) {
+                if (display_filename) {
                     if (scantype >= STREAM) {
-                        logg(LOGG_INFO, "%s%s FOUND\n", filename, colon);
-                        if (action) action(filename);
+                        logg(LOGG_INFO, "%s%s FOUND\n", display_filename, colon);
+                        if (apply_action && action && (NULL != action_source)) action(action_source);
                     } else {
                         logg(LOGG_INFO, "%s FOUND\n", bol);
                         *colon = '\0';
-                        if (action)
-                            action(bol);
+                        if (apply_action && action && (NULL != action_source)) action(action_source);
                     }
                 }
             } else if (!memcmp(eol - 7, " ERROR", 6)) {
@@ -450,9 +515,9 @@ int dsresult(int sockd, int scantype, const char *filename, int *printok, int *e
                     (*errors)++;
                 if (printok)
                     *printok = 0;
-                if (filename) {
+                if (display_filename) {
                     if (scantype >= STREAM)
-                        logg(LOGG_INFO, "%s%s\n", filename, colon);
+                        logg(LOGG_INFO, "%s%s\n", display_filename, colon);
                     else
                         logg(LOGG_INFO, "%s\n", bol);
                 }

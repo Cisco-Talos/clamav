@@ -140,21 +140,11 @@ cl_error_t scan_callback(STATBUF *sb, char *filename, const char *msg, enum cli_
 {
     struct scan_cb_data *scandata = data->data;
     const char *virname           = NULL;
-    int ret;
+    cl_error_t ret = CL_SUCCESS;
     int type = scandata->type;
     struct cb_context context;
-    char *real_filename = NULL;
-
-    if (NULL != filename) {
-        if (CL_SUCCESS != cli_realpath((const char *)filename, &real_filename)) {
-            conn_reply_errno(scandata->conn, msg, "File path check failure:");
-            logg(LOGG_WARNING, "File path check failure for: %s\n", filename);
-            logg(LOGG_DEBUG, "Quarantine of the file may fail if file path contains symlinks.\n");
-        } else {
-            free(filename);
-            filename = real_filename;
-        }
-    }
+    char *scan_filename = NULL;
+    const char *scan_path;
 
     /* detect disconnected socket,
      * this should NOT detect half-shutdown sockets (SHUT_WR) */
@@ -225,12 +215,35 @@ cl_error_t scan_callback(STATBUF *sb, char *filename, const char *msg, enum cli_
         return CL_SUCCESS;
     }
 
+    scan_path = (NULL != msg) ? msg : filename;
+    /*
+     * Resolve the path used for the actual scan open. Keep filename as the
+     * client-visible name, but do not let a symlinked parent component change
+     * the object opened after cli_ftw() has performed its checks.
+     */
+    if (NULL != scan_path) {
+        ret = cli_realpath(scan_path, &scan_filename);
+        if (CL_SUCCESS != ret) {
+            conn_reply_errno(scandata->conn, filename, "File path check failure:");
+            logg(LOGG_WARNING, "File path check failure for: %s\n", filename);
+            scandata->errors++;
+            free(filename);
+            return (CL_EMEM == ret) ? ret : CL_SUCCESS;
+        }
+        scan_path = scan_filename;
+    }
+
     if (type == TYPE_MULTISCAN) {
         client_conn_t *client_conn = (client_conn_t *)calloc(1, sizeof(struct client_conn_tag));
         if (client_conn) {
             client_conn->scanfd   = -1;
             client_conn->sd       = scandata->odesc;
-            client_conn->filename = filename;
+            client_conn->filename = (NULL != scan_filename) ? scan_filename : filename;
+            if (NULL != scan_filename) {
+                client_conn->display_filename = filename;
+                scan_filename                 = NULL;
+            }
+            filename             = NULL;
             client_conn->cmdtype  = COMMAND_MULTISCANFILE;
             client_conn->term     = scandata->conn->term;
             client_conn->options  = scandata->options;
@@ -238,7 +251,8 @@ cl_error_t scan_callback(STATBUF *sb, char *filename, const char *msg, enum cli_
             client_conn->group    = scandata->group;
             if (cl_engine_addref(scandata->engine)) {
                 logg(LOGG_ERROR, "cl_engine_addref() failed\n");
-                free(filename);
+                free(client_conn->filename);
+                free(client_conn->display_filename);
                 free(client_conn);
                 return CL_EMEM;
             } else {
@@ -249,7 +263,8 @@ cl_error_t scan_callback(STATBUF *sb, char *filename, const char *msg, enum cli_
                 if (!thrmgr_group_dispatch(scandata->thr_pool, scandata->group, client_conn, 1)) {
                     logg(LOGG_ERROR, "thread dispatch failed\n");
                     cl_engine_free(scandata->engine);
-                    free(filename);
+                    free(client_conn->filename);
+                    free(client_conn->display_filename);
                     free(client_conn);
                     return CL_EMEM;
                 }
@@ -257,6 +272,7 @@ cl_error_t scan_callback(STATBUF *sb, char *filename, const char *msg, enum cli_
         } else {
             logg(LOGG_ERROR, "Can't allocate memory for client_conn\n");
             scandata->errors++;
+            free(scan_filename);
             free(filename);
             return CL_EMEM;
         }
@@ -267,10 +283,11 @@ cl_error_t scan_callback(STATBUF *sb, char *filename, const char *msg, enum cli_
     context.filename = filename;
     context.virsize  = 0;
     context.scandata = scandata;
-    ret              = cl_scanfile_callback(filename, &virname, &scandata->scanned, scandata->engine, scandata->options, &context);
+    ret              = cl_scanfile_callback(scan_path, &virname, &scandata->scanned, scandata->engine, scandata->options, &context);
     thrmgr_setactivetask(NULL, NULL);
 
     if (thrmgr_group_need_terminate(scandata->conn->group)) {
+        free(scan_filename);
         free(filename);
         logg(LOGG_DEBUG, "Client disconnected while scanjob was active\n");
         return ret == CL_ETIMEOUT ? ret : CL_BREAK;
@@ -283,11 +300,13 @@ cl_error_t scan_callback(STATBUF *sb, char *filename, const char *msg, enum cli_
 
     if (ret == CL_EACCES) {
         if (conn_reply(scandata->conn, filename, "Access denied.", "ERROR") == -1) {
+            free(scan_filename);
             free(filename);
             return CL_ETIMEOUT;
         }
         logg(LOGG_DEBUG, "Access denied: %s\n", filename);
         scandata->errors++;
+        free(scan_filename);
         free(filename);
         return CL_SUCCESS;
     }
@@ -298,11 +317,12 @@ cl_error_t scan_callback(STATBUF *sb, char *filename, const char *msg, enum cli_
             if (optget(scandata->opts, "PreludeEnable")->enabled) {
                 prelude_logging(filename, virname, context.virhash, context.virsize);
             }
-            virusaction(filename, virname, scandata->opts);
+            virusaction(scan_path, virname, scandata->opts);
         } else {
             scandata->infected++;
-            virusaction(filename, virname, scandata->opts);
+            virusaction(scan_path, virname, scandata->opts);
             if (conn_reply_virus(scandata->conn, filename, virname) == -1) {
+                free(scan_filename);
                 free(filename);
                 return CL_ETIMEOUT;
             }
@@ -318,6 +338,7 @@ cl_error_t scan_callback(STATBUF *sb, char *filename, const char *msg, enum cli_
     } else if (ret != CL_CLEAN) {
         scandata->errors++;
         if (conn_reply(scandata->conn, filename, cl_strerror(ret), "ERROR") == -1) {
+            free(scan_filename);
             free(filename);
             return CL_ETIMEOUT;
         }
@@ -326,6 +347,7 @@ cl_error_t scan_callback(STATBUF *sb, char *filename, const char *msg, enum cli_
         logg(LOGG_INFO, "%s: OK\n", filename);
     }
 
+    free(scan_filename);
     free(filename);
 
     if (ret == CL_EMEM) /* stop scanning */

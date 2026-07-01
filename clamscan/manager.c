@@ -294,15 +294,21 @@ static void clamscan_virus_found_cb(int fd, const char *virname, void *context)
 static void scanfile(const char *filename, struct cl_engine *engine, const struct optstruct *opts, struct cl_scan_options *options)
 {
     cl_error_t ret = CL_SUCCESS;
-    int fd, included;
+    int fd       = -1;
+    int included = 0;
     unsigned i;
     const struct optstruct *opt;
     const char *virname = NULL;
     STATBUF sb;
-    struct metachain chain;
-    struct clamscan_cb_data data;
+    struct metachain chain       = {0};
+    struct clamscan_cb_data data = {0};
+    action_source_t action_source;
+    bool have_action_source      = false;
+    bool have_stat               = false;
+    const char *scan_path        = filename;
+    char *real_filter_path       = NULL;
 
-    char *real_filename = NULL;
+    action_source_init(&action_source);
 
     if (NULL == filename || NULL == engine || NULL == opts || NULL == options) {
         logg(LOGG_INFO, "scanfile: Invalid args.\n");
@@ -310,17 +316,13 @@ static void scanfile(const char *filename, struct cl_engine *engine, const struc
         goto done;
     }
 
-    ret = cli_realpath((const char *)filename, &real_filename);
-    if (CL_SUCCESS != ret) {
-        logg(LOGG_DEBUG, "Failed to determine real filename of %s.\n", filename);
-        logg(LOGG_DEBUG, "Quarantine of the file may fail if file path contains symlinks.\n");
-    } else {
-        filename = real_filename;
+    if (CL_SUCCESS == cli_realpath(filename, &real_filter_path)) {
+        scan_path = real_filter_path;
     }
 
     if ((opt = optget(opts, "exclude"))->enabled) {
         while (opt) {
-            if (match_regex(filename, opt->strarg) == 1) {
+            if (match_regex(scan_path, opt->strarg) == 1) {
                 if (!printinfected)
                     logg(LOGG_INFO, "%s: Excluded\n", filename);
 
@@ -335,7 +337,7 @@ static void scanfile(const char *filename, struct cl_engine *engine, const struc
         included = 0;
 
         while (opt) {
-            if (match_regex(filename, opt->strarg) == 1) {
+            if (match_regex(scan_path, opt->strarg) == 1) {
                 included = 1;
                 break;
             }
@@ -351,8 +353,44 @@ static void scanfile(const char *filename, struct cl_engine *engine, const struc
         }
     }
 
-    /* argh, don't scan /proc files */
-    if (CLAMSTAT(filename, &sb) != -1) {
+    if (!action && !have_stat && (CLAMSTAT(scan_path, &sb) != -1)) {
+        have_stat = true;
+    }
+
+#ifdef C_LINUX
+    if (action && procdev && (CLAMSTAT(scan_path, &sb) != -1) && (sb.st_dev == procdev)) {
+        if (!printinfected)
+            logg(LOGG_INFO, "%s: Excluded (/proc)\n", filename);
+
+        goto done;
+    }
+#endif
+
+    if (action) {
+        /*
+         * Quarantine actions run on the same opened file object that is
+         * submitted to the scanner. Open it before file state checks so those
+         * checks describe the same object, including symlink targets on Windows
+         * where stat() can report the link entry as an empty file.
+         */
+        ret = action_source_open_path(filename, scan_path, &action_source);
+        if (CL_SUCCESS != ret) {
+            logg(LOGG_WARNING, "Can't open file %s for safe quarantine action: %s\n", filename, cl_strerror(ret));
+            info.errors++;
+            goto done;
+        }
+        fd                 = action_source.scan_fd;
+        have_action_source = true;
+
+        if (action_source.has_stat) {
+            sb.st_dev  = action_source.statbuf.st_dev;
+            sb.st_size = action_source.statbuf.st_size;
+            have_stat = true;
+        }
+    }
+
+    if (have_stat) {
+        /* argh, don't scan /proc files */
 #ifdef C_LINUX
         if (procdev && sb.st_dev == procdev) {
             if (!printinfected)
@@ -361,6 +399,7 @@ static void scanfile(const char *filename, struct cl_engine *engine, const struc
             goto done;
         }
 #endif
+
         if (!sb.st_size) {
             if (!printinfected)
                 logg(LOGG_INFO, "%s: Empty file\n", filename);
@@ -372,8 +411,8 @@ static void scanfile(const char *filename, struct cl_engine *engine, const struc
     }
 
 #ifndef _WIN32
-    if (geteuid()) {
-        if (checkaccess(filename, NULL, R_OK) != 1) {
+    if (geteuid() && !have_action_source) {
+        if (checkaccess(scan_path, NULL, R_OK) != 1) {
             if (!printinfected)
                 logg(LOGG_INFO, "%s: Access denied\n", filename);
 
@@ -390,6 +429,7 @@ static void scanfile(const char *filename, struct cl_engine *engine, const struc
             chain.chains[0] = strdup(filename);
             if (!chain.chains[0]) {
                 free(chain.chains);
+                chain.chains = NULL;
                 logg(LOGG_INFO, "Unable to allocate memory in scanfile()\n");
                 info.errors++;
                 goto done;
@@ -400,7 +440,7 @@ static void scanfile(const char *filename, struct cl_engine *engine, const struc
 
     logg(LOGG_DEBUG, "Scanning %s\n", filename);
 
-    if ((fd = safe_open(filename, O_RDONLY | O_BINARY)) == -1) {
+    if (!action && (fd = safe_open(scan_path, O_RDONLY | O_BINARY)) == -1) {
         logg(LOGG_WARNING, "Can't open file %s: %s\n", filename, strerror(errno));
         info.errors++;
         goto done;
@@ -436,19 +476,32 @@ static void scanfile(const char *filename, struct cl_engine *engine, const struc
         info.errors++;
     }
 
-    for (i = 0; i < chain.nchains; i++)
-        free(chain.chains[i]);
-
-    free(chain.chains);
-    close(fd);
-
-    if (ret == CL_VIRUS && action)
-        action(filename);
-
 done:
-    if (NULL != real_filename) {
-        free(real_filename);
+    /*
+     * Run the action callback if the file was infected.
+     */
+    if (ret == CL_VIRUS && action && have_action_source) {
+        action(&action_source);
     }
+
+    if (have_action_source) {
+        action_source_close(&action_source);
+        fd = -1;
+    } else if (fd != -1) {
+        close(fd);
+        fd = -1;
+    }
+
+    if (NULL != real_filter_path) {
+        free(real_filter_path);
+    }
+    if (NULL != chain.chains) {
+        for (i = 0; i < chain.nchains; i++) {
+            free(chain.chains[i]);
+        }
+        free(chain.chains);
+    }
+
     return;
 }
 
@@ -458,6 +511,12 @@ static void scandirs(const char *dirname, struct cl_engine *engine, const struct
     struct dirent *dent;
     STATBUF sb;
     char *fname;
+#ifdef _WIN32
+    char **entries               = NULL;
+    size_t entries_count         = 0;
+    size_t entries_capacity      = 0;
+    size_t entry_index;
+#endif
     int included;
     const struct optstruct *opt;
     unsigned int dirlnk, filelnk;
@@ -503,6 +562,94 @@ static void scandirs(const char *dirname, struct cl_engine *engine, const struct
     if ((dd = opendir(dirname)) != NULL) {
         info.dirs++;
         depth++;
+#ifdef _WIN32
+        while ((dent = readdir(dd))) {
+            char **new_entries;
+            char *entry_name;
+
+            if (!dent->d_ino) {
+                continue;
+            }
+            if (!strcmp(dent->d_name, ".") || !strcmp(dent->d_name, "..")) {
+                continue;
+            }
+
+            entry_name = strdup(dent->d_name);
+            if (NULL == entry_name) {
+                logg(LOGG_ERROR, "scandirs: Memory allocation failed for entry name\n");
+                break;
+            }
+
+            if (entries_count == entries_capacity) {
+                size_t new_capacity = (0 == entries_capacity) ? 32 : (entries_capacity * 2);
+                new_entries         = realloc(entries, new_capacity * sizeof(*entries));
+                if (NULL == new_entries) {
+                    logg(LOGG_ERROR, "scandirs: Memory allocation failed for entries list\n");
+                    free(entry_name);
+                    break;
+                }
+                entries          = new_entries;
+                entries_capacity = new_capacity;
+            }
+
+            entries[entries_count++] = entry_name;
+        }
+        closedir(dd);
+        dd = NULL;
+
+        for (entry_index = 0; entry_index < entries_count; entry_index++) {
+            dent = NULL;
+            fname = malloc(strlen(dirname) + strlen(entries[entry_index]) + 2);
+            if (fname == NULL) {
+                logg(LOGG_ERROR, "scandirs: Memory allocation failed for fname\n");
+                continue;
+            }
+
+            if (!strcmp(dirname, PATHSEP))
+                sprintf(fname, PATHSEP "%s", entries[entry_index]);
+            else
+                sprintf(fname, "%s" PATHSEP "%s", dirname, entries[entry_index]);
+
+            if (LSTAT(fname, &sb) != -1) {
+                if (!optget(opts, "cross-fs")->enabled) {
+                    if (sb.st_dev != dev) {
+                        if (!printinfected)
+                            logg(LOGG_INFO, "%s: Excluded\n", fname);
+
+                        free(fname);
+                        continue;
+                    }
+                }
+                if (S_ISLNK(sb.st_mode)) {
+                    if (dirlnk != 2 && filelnk != 2) {
+                        if (!printinfected)
+                            logg(LOGG_INFO, "%s: Symbolic link\n", fname);
+                    } else if (CLAMSTAT(fname, &sb) != -1) {
+                        if (S_ISREG(sb.st_mode) && filelnk == 2) {
+                            scanfile(fname, engine, opts, options);
+                        } else if (S_ISDIR(sb.st_mode) && dirlnk == 2) {
+                            if (recursion)
+                                scandirs(fname, engine, opts, options, depth, dev);
+                        } else {
+                            if (!printinfected)
+                                logg(LOGG_INFO, "%s: Symbolic link\n", fname);
+                        }
+                    }
+                } else if (S_ISREG(sb.st_mode)) {
+                    scanfile(fname, engine, opts, options);
+                } else if (S_ISDIR(sb.st_mode) && recursion) {
+                    scandirs(fname, engine, opts, options, depth, dev);
+                }
+            }
+
+            free(fname);
+        }
+
+        for (entry_index = 0; entry_index < entries_count; entry_index++) {
+            free(entries[entry_index]);
+        }
+        free(entries);
+#else
         while ((dent = readdir(dd))) {
             if (dent->d_ino) {
                 if (strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..")) {
@@ -556,6 +703,7 @@ static void scandirs(const char *dirname, struct cl_engine *engine, const struct
             }
         }
         closedir(dd);
+#endif
     } else {
         if (!printinfected)
             logg(LOGG_INFO, "%s: Can't open directory.\n", dirname);
