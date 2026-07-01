@@ -484,7 +484,7 @@ START_TEST(test_pcre_scanbuff)
         free(hexsig);
     }
 
-    ret = cli_pcre_build(root, CLI_DEFAULT_PCRE_MATCH_LIMIT, CLI_DEFAULT_PCRE_RECMATCH_LIMIT, NULL);
+    ret = cli_pcre_build(root, CLI_DEFAULT_PCRE_MATCH_LIMIT, CLI_DEFAULT_PCRE_RECMATCH_LIMIT, 1, NULL);
     ck_assert_msg(ret == CL_SUCCESS, "[pcre] cli_pcre_build() failed");
 
     // recomputate offsets
@@ -536,7 +536,7 @@ START_TEST(test_pcre_scanbuff_allscan)
         free(hexsig);
     }
 
-    ret = cli_pcre_build(root, CLI_DEFAULT_PCRE_MATCH_LIMIT, CLI_DEFAULT_PCRE_RECMATCH_LIMIT, NULL);
+    ret = cli_pcre_build(root, CLI_DEFAULT_PCRE_MATCH_LIMIT, CLI_DEFAULT_PCRE_RECMATCH_LIMIT, 1, NULL);
     ck_assert_msg(ret == CL_SUCCESS, "[pcre] cli_pcre_build() failed");
 
     // recomputate offsets

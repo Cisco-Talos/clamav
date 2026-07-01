@@ -6007,7 +6007,7 @@ cl_error_t cl_engine_compile(struct cl_engine *engine)
                 return ret;
             TASK_COMPLETE();
 
-            if ((ret = cli_pcre_build(root, engine->pcre_match_limit, engine->pcre_recmatch_limit, engine->dconf)))
+            if ((ret = cli_pcre_build(root, engine->pcre_match_limit, engine->pcre_recmatch_limit, engine->pcre_jit, engine->dconf)))
                 return ret;
             TASK_COMPLETE();
 

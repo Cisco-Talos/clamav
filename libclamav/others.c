@@ -554,6 +554,7 @@ struct cl_engine *cl_engine_new(void)
     new->pcre_match_limit    = CLI_DEFAULT_PCRE_MATCH_LIMIT;
     new->pcre_recmatch_limit = CLI_DEFAULT_PCRE_RECMATCH_LIMIT;
     new->pcre_max_filesize   = CLI_DEFAULT_PCRE_MAX_FILESIZE;
+    new->pcre_jit            = CLI_DEFAULT_PCRE_JIT;
 
 #ifdef HAVE_YARA
 
@@ -800,6 +801,9 @@ cl_error_t cl_engine_set_num(struct cl_engine *engine, enum cl_engine_field fiel
         case CL_ENGINE_PCRE_MAX_FILESIZE:
             engine->pcre_max_filesize = (uint64_t)num;
             break;
+        case CL_ENGINE_PCRE_JIT:
+            engine->pcre_jit = (uint32_t)num;
+            break;
         case CL_ENGINE_DISABLE_PE_CERTS:
             if (num) {
                 engine->engine_options |= ENGINE_OPTIONS_DISABLE_PE_CERTS;
@@ -906,6 +910,8 @@ long long cl_engine_get_num(const struct cl_engine *engine, enum cl_engine_field
             return engine->pcre_recmatch_limit;
         case CL_ENGINE_PCRE_MAX_FILESIZE:
             return engine->pcre_max_filesize;
+        case CL_ENGINE_PCRE_JIT:
+            return engine->pcre_jit;
         default:
             cli_errmsg("cl_engine_get: Incorrect field number\n");
             if (err)
@@ -1041,6 +1047,7 @@ struct cl_settings *cl_engine_settings_copy(const struct cl_engine *engine)
     settings->pcre_match_limit    = engine->pcre_match_limit;
     settings->pcre_recmatch_limit = engine->pcre_recmatch_limit;
     settings->pcre_max_filesize   = engine->pcre_max_filesize;
+    settings->pcre_jit            = engine->pcre_jit;
 
     return settings;
 }
@@ -1113,6 +1120,7 @@ cl_error_t cl_engine_settings_apply(struct cl_engine *engine, const struct cl_se
     engine->pcre_match_limit    = settings->pcre_match_limit;
     engine->pcre_recmatch_limit = settings->pcre_recmatch_limit;
     engine->pcre_max_filesize   = settings->pcre_max_filesize;
+    engine->pcre_jit            = settings->pcre_jit;
 
     return CL_SUCCESS;
 }

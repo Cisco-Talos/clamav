@@ -1510,6 +1510,14 @@ int scanmanager(const struct optstruct *opts)
         }
     }
 
+    if ((opt = optget(opts, "pcre-jit"))->active) {
+        if ((ret = cl_engine_set_num(engine, CL_ENGINE_PCRE_JIT, opt->enabled))) {
+            logg(LOGG_ERROR, "cli_engine_set_num(CL_ENGINE_PCRE_JIT) failed: %s\n", cl_strerror(ret));
+            ret = 2;
+            goto done;
+        }
+    }
+
     if ((opt = optget(opts, "pcre-recmatch-limit"))->active) {
         if ((ret = cl_engine_set_num(engine, CL_ENGINE_PCRE_RECMATCH_LIMIT, opt->numarg))) {
             logg(LOGG_ERROR, "cli_engine_set_num(CL_ENGINE_PCRE_RECMATCH_LIMIT) failed: %s\n", cl_strerror(ret));
