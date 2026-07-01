@@ -398,6 +398,57 @@ START_TEST(test_ac_scanbuff_allscan_ex)
 }
 END_TEST
 
+START_TEST(test_ac_repeated_prefix_special_metadata)
+{
+    struct cli_ac_data mdata;
+    struct cli_matcher *root;
+    struct cli_ac_patt *pattern;
+    const char *data = "AAAABCDEFG";
+    int ret;
+
+    root = ctx.engine->root[0];
+    ck_assert_msg(root != NULL, "root == NULL");
+    root->ac_only = 1;
+
+#ifdef USE_MPOOL
+    root->mempool = mpool_create();
+#endif
+    ret = cli_ac_init(root, 4, 4, 1);
+    ck_assert_msg(ret == CL_SUCCESS, "cli_ac_init() failed");
+
+    ret = cli_ac_addsig(root, "Repeated_prefix_special", "41414141(4243)44454647",
+                        ACPATT_OPTION_NOOPTS, 0, 0, 0, 0, 0, 0, 0, "*", NULL, 0);
+    ck_assert_msg(ret == CL_SUCCESS, "cli_ac_addsig() failed");
+    ck_assert_msg(root->ac_patterns == 1, "expected one AC pattern");
+
+    pattern = root->ac_pattable[0];
+    ck_assert_msg(pattern != NULL, "pattern == NULL");
+    ck_assert_msg(pattern->prefix == pattern->pattern - 5, "unexpected repeated-prefix shift");
+    ck_assert_msg(pattern->prefix_length[0] == 5, "unexpected prefix token length: %u", pattern->prefix_length[0]);
+    ck_assert_msg(pattern->prefix_length[1] == 6, "unexpected minimum prefix byte length: %u", pattern->prefix_length[1]);
+    ck_assert_msg(pattern->prefix_length[2] == 6, "unexpected maximum prefix byte length: %u", pattern->prefix_length[2]);
+    ck_assert_msg(pattern->special_pattern == 1, "unexpected prefix special count: %u", pattern->special_pattern);
+    ck_assert_msg(pattern->length[0] == 4, "unexpected shifted token length: %u", pattern->length[0]);
+    ck_assert_msg(pattern->length[1] == 4, "unexpected shifted minimum byte length: %u", pattern->length[1]);
+    ck_assert_msg(pattern->length[2] == 4, "unexpected shifted maximum byte length: %u", pattern->length[2]);
+
+    ret = cli_ac_buildtrie(root);
+    ck_assert_msg(ret == CL_SUCCESS, "cli_ac_buildtrie() failed");
+
+    ret = cli_ac_initdata(&mdata, root->ac_partsigs, 0, 0, CLI_DEFAULT_AC_TRACKLEN);
+    ck_assert_msg(ret == CL_SUCCESS, "cli_ac_initdata() failed");
+
+    ctx.options->general &= ~CL_SCAN_GENERAL_ALLMATCHES;
+    virname = NULL;
+    ret     = cli_ac_scanbuff((const unsigned char *)data, strlen(data), &virname, NULL, NULL, root, &mdata, 0, 0, NULL, AC_SCAN_VIR, NULL);
+    ck_assert_msg(ret == CL_VIRUS, "cli_ac_scanbuff() failed for repeated-prefix special");
+    ck_assert_msg(!strncmp(virname, "Repeated_prefix_special", strlen("Repeated_prefix_special")),
+                  "incorrect signature matched: %s", virname);
+
+    cli_ac_freedata(&mdata);
+}
+END_TEST
+
 START_TEST(test_bm_scanbuff)
 {
     struct cli_matcher *root;
@@ -589,6 +640,7 @@ Suite *test_matchers_suite(void)
     tcase_add_test(tc_matchers, test_pcre_scanbuff);
     tcase_add_test(tc_matchers, test_ac_scanbuff_allscan);
     tcase_add_test(tc_matchers, test_ac_scanbuff_allscan_ex);
+    tcase_add_test(tc_matchers, test_ac_repeated_prefix_special_metadata);
     tcase_add_test(tc_matchers, test_bm_scanbuff_allscan);
     tcase_add_test(tc_matchers, test_pcre_scanbuff_allscan);
     return s;
