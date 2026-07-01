@@ -4501,6 +4501,226 @@ done:
     return halt_scan;
 }
 
+/**
+ * @brief Log a long string without truncating it through cli_dbgmsg().
+ *
+ * @param string The string to log.
+ */
+static void debug_log_long_string(const char *string)
+{
+    const size_t chunk_size = 4096;
+    size_t len;
+    size_t offset;
+
+    if (NULL == string) {
+        goto done;
+    }
+
+    len = strlen(string);
+    if (0 == len) {
+        cli_dbgmsg("\n");
+        goto done;
+    }
+
+    for (offset = 0; offset < len;) {
+        const char *chunk   = string + offset;
+        size_t remaining    = len - offset;
+        size_t chunk_len    = (remaining < chunk_size) ? remaining : chunk_size;
+        const char *newline = memchr(chunk, '\n', chunk_len);
+
+        if (NULL != newline) {
+            chunk_len = (size_t)(newline - chunk) + 1;
+            cli_dbgmsg("%.*s", (int)chunk_len, chunk);
+        } else {
+            cli_dbgmsg("%.*s\n", (int)chunk_len, chunk);
+        }
+
+        offset += chunk_len;
+    }
+
+done:
+    return;
+}
+
+/**
+ * @brief Get the verdict for the current layer based on evidence.
+ *
+ * @param ctx The scan context.
+ *
+ * @return The current layer verdict.
+ */
+static cl_verdict_t get_layer_verdict_from_evidence(cli_ctx *ctx)
+{
+    cl_verdict_t verdict = CL_VERDICT_NOTHING_FOUND;
+
+    if (ctx == NULL) {
+        goto done;
+    }
+
+    if (CL_VERDICT_TRUSTED == ctx->recursion_stack[ctx->recursion_level].verdict) {
+        verdict = CL_VERDICT_TRUSTED;
+        goto done;
+    }
+
+    if (0 < evidence_num_indicators_type(ctx->this_layer_evidence, IndicatorType_Strong)) {
+        verdict = CL_VERDICT_STRONG_INDICATOR;
+    } else if (0 < evidence_num_indicators_type(ctx->this_layer_evidence, IndicatorType_PotentiallyUnwanted)) {
+        verdict = CL_VERDICT_POTENTIALLY_UNWANTED;
+    }
+
+done:
+    return verdict;
+}
+
+/**
+ * @brief Update the verdict for the current layer based on evidence.
+ *
+ * @param ctx The scan context.
+ */
+static void update_layer_verdict_from_evidence(cli_ctx *ctx)
+{
+    if (ctx == NULL) {
+        goto done;
+    }
+
+    /*
+     * Trusted layers discard local evidence. Other layers derive their verdict
+     * from the evidence collected while scanning.
+     */
+    if (CL_VERDICT_TRUSTED == ctx->recursion_stack[ctx->recursion_level].verdict) {
+        if (NULL != ctx->recursion_stack[ctx->recursion_level].evidence) {
+            evidence_free(ctx->recursion_stack[ctx->recursion_level].evidence);
+            ctx->recursion_stack[ctx->recursion_level].evidence = NULL;
+            ctx->this_layer_evidence                            = NULL;
+        }
+    } else {
+        ctx->recursion_stack[ctx->recursion_level].verdict = get_layer_verdict_from_evidence(ctx);
+    }
+
+done:
+    return;
+}
+
+/**
+ * @brief Add the root file type metadata alias used by legacy metadata scans.
+ *
+ * @param ctx The scan context.
+ *
+ * @pre Caller has confirmed that root metadata collection is active for a
+ *      valid root scan context.
+ *
+ * @return CL_SUCCESS on success, or an error code on failure.
+ */
+static cl_error_t set_root_file_type_metadata(cli_ctx *ctx)
+{
+    cl_error_t status = CL_SUCCESS;
+    cl_error_t ret;
+    json_object *jobj;
+    json_object *root_file_type;
+
+    if (json_object_object_get_ex(ctx->metadata_json, "RootFileType", &root_file_type)) {
+        goto done;
+    }
+
+    if (json_object_object_get_ex(ctx->metadata_json, "FileType", &jobj)) {
+        enum json_type type;
+        const char *jstr;
+
+        type = json_object_get_type(jobj);
+        if (type == json_type_string) {
+            jstr = json_object_get_string(jobj);
+            ret  = cli_jsonstr(ctx->metadata_json, "RootFileType", jstr);
+            if (ret != CL_SUCCESS) {
+                status = ret;
+                goto done;
+            }
+        }
+    }
+
+done:
+    return status;
+}
+
+/**
+ * @brief Run root-layer metadata preclass bytecode hooks.
+ *
+ * @param ctx The scan context.
+ *
+ * @pre Caller has confirmed that root metadata collection is active for a
+ *      valid root scan context.
+ *
+ * @return CL_SUCCESS on success, or an error code on failure.
+ */
+static cl_error_t run_root_metadata_preclass_hook(cli_ctx *ctx)
+{
+    cl_error_t status         = CL_SUCCESS;
+    struct cli_bc_ctx *bc_ctx = NULL;
+
+    bc_ctx = cli_bytecode_context_alloc();
+    if (NULL == bc_ctx) {
+        cli_errmsg("cli_magic_scan: can't allocate memory for bc_ctx\n");
+        status = CL_EMEM;
+        goto done;
+    }
+
+    cli_bytecode_context_setctx(bc_ctx, ctx);
+    status = cli_bytecode_runhook(ctx, ctx->engine, bc_ctx, BC_PRECLASS, ctx->fmap);
+    if (CL_BREAK == status) {
+        status = CL_SUCCESS;
+    }
+
+done:
+    if (NULL != bc_ctx) {
+        cli_bytecode_context_destroy(bc_ctx);
+    }
+
+    return status;
+}
+
+/**
+ * @brief Scan the serialized root metadata JSON for legacy preclass support.
+ *
+ * @param ctx The scan context.
+ *
+ * @pre Caller has confirmed that root metadata collection is active for a
+ *      valid root scan context.
+ *
+ * @return CL_SUCCESS on success, or an error code on failure.
+ */
+static cl_error_t scan_root_metadata_json_preclass(cli_ctx *ctx)
+{
+    cl_error_t status = CL_SUCCESS;
+    const char *jstring;
+    struct cli_matcher *iroot;
+    uint32_t saved_general;
+
+    iroot = ctx->engine->root[13];
+    if ((NULL == iroot) ||
+        !(iroot->ac_lsigs || iroot->ac_patterns || iroot->pcre_metas)) {
+        goto done;
+    }
+
+#ifdef JSON_C_TO_STRING_NOSLASHESCAPE
+    jstring = json_object_to_json_string_ext(ctx->metadata_json, JSON_C_TO_STRING_PRETTY | JSON_C_TO_STRING_NOSLASHESCAPE);
+#else
+    jstring = json_object_to_json_string_ext(ctx->metadata_json, JSON_C_TO_STRING_PRETTY);
+#endif
+    if (NULL == jstring) {
+        cli_errmsg("cli_magic_scan: no memory for json serialization.\n");
+        status = CL_EMEM;
+        goto done;
+    }
+
+    cli_dbgmsg("cli_magic_scan: running deprecated preclass bytecodes for target type 13\n");
+    saved_general = ctx->options->general;
+    ctx->options->general &= ~CL_SCAN_GENERAL_COLLECT_METADATA;
+    status                = cli_magic_scan_buff(jstring, strlen(jstring), ctx, NULL, LAYER_ATTRIBUTES_NONE);
+    ctx->options->general = saved_general;
+
+done:
+    return status;
+}
+
 cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
 {
     cl_error_t status = CL_SUCCESS;
@@ -5275,27 +5495,72 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
 
 done:
 
-    /*
-     * Run the post_scan callback.
-     */
-    ret = cli_dispatch_scan_callback(ctx, CL_SCAN_CALLBACK_POST_SCAN);
-    if (CL_SUCCESS != ret) {
-        cli_dbgmsg("cli_magic_scan: POST_SCAN callback returned %d\n", ret);
-        status = ret;
-    }
-
     // Filter the result from the parsers so we don't propagate non-fatal errors.
     // And to convert CL_VERIFIED -> CL_SUCCESS
     (void)result_should_goto_done(ctx, status, &status);
 
     /*
+     * Root metadata preclass scans may add evidence, so run them before
+     * finalizing the verdict for the root layer.
+     */
+    if ((NULL != ctx) &&
+        (NULL != ctx->options) &&
+        (NULL != ctx->engine) &&
+        (ctx->recursion_level == 0) &&
+        (ctx->options->general & CL_SCAN_GENERAL_COLLECT_METADATA) &&
+        (NULL != ctx->metadata_json)) {
+        ret = set_root_file_type_metadata(ctx);
+        if ((ret != CL_SUCCESS) && (status == CL_SUCCESS)) {
+            status = ret;
+        }
+
+        if ((ret == CL_SUCCESS) && (status != CL_VIRUS)) {
+            ret = run_root_metadata_preclass_hook(ctx);
+            if ((ret != CL_SUCCESS) || (status == CL_SUCCESS)) {
+                status = ret;
+            }
+        }
+
+        if ((ret == CL_SUCCESS) && (status != CL_VIRUS)) {
+            ret = scan_root_metadata_json_preclass(ctx);
+            if ((ret != CL_SUCCESS) || (status == CL_SUCCESS)) {
+                status = ret;
+            }
+        }
+    }
+
+    /*
+     * Update the verdict for this layer based on the collected evidence.
+     */
+    update_layer_verdict_from_evidence(ctx);
+
+    if ((CL_VERDICT_TRUSTED == ctx->recursion_stack[ctx->recursion_level].verdict) &&
+        (CL_VIRUS == status)) {
+        status = CL_SUCCESS;
+    }
+
+    /*
+     * Run the post_scan callback after we've finalized the verdict for this layer, so the callback can make informed
+     * decisions based on the verdict and evidence.
+     */
+    ret = cli_dispatch_scan_callback(ctx, CL_SCAN_CALLBACK_POST_SCAN);
+    if (CL_VERIFIED == ret) {
+        // Filter out CL_VERIFIED, because we don't want to propagate it up.
+        status = CL_SUCCESS;
+    } else if (CL_SUCCESS != ret) {
+        cli_dbgmsg("cli_magic_scan: POST_SCAN callback returned %d\n", ret);
+        status = ret;
+    }
+
+    /*
      * Run the deprecated post-scan callback (if one exists) and provide the verdict for this layer.
      */
-    cli_dbgmsg("cli_magic_scan: returning %d %s\n", status, __AT__);
     if (ctx->engine->cb_post_scan) {
         cl_error_t callback_ret;
         cl_error_t append_ret;
         const char *virusname = NULL;
+
+        verdict_at_this_level = get_layer_verdict_from_evidence(ctx);
 
         // Get the last signature that matched (if any).
         if (0 < evidence_num_alerts(ctx->this_layer_evidence)) {
@@ -5333,41 +5598,29 @@ done:
     }
 
     /*
-     * Check the verdict for this layer.
-     * If the verdict is CL_VERDICT_TRUSTED, remove any evidence for this layer and clear CL_VIRUS status (if set)
-     * Otherwise, we'll update the verdict based on the evidence.
+     * Post-scan callbacks may add evidence or trust the layer. Reconcile the
+     * stored verdict and status again before returning or caching this layer.
      */
-    if (CL_VERDICT_TRUSTED == ctx->recursion_stack[ctx->recursion_level].verdict) {
-        /* Remove any alerts for this layer. */
-        if (NULL != ctx->recursion_stack[ctx->recursion_level].evidence) {
-            evidence_free(ctx->recursion_stack[ctx->recursion_level].evidence);
-            ctx->recursion_stack[ctx->recursion_level].evidence = NULL;
-            ctx->this_layer_evidence                            = NULL;
-        }
-        if (CL_VIRUS == status) {
-            status = CL_SUCCESS; // If we have a CL_VERDICT_TRUSTED, we should not return CL_VIRUS.
-        }
-    } else {
-        /*
-         * Update the verdict for this layer based on the scan results.
-         * If the verdict is CL_VERDICT_TRUSTED, then we don't change it.
-         */
-        if (0 < evidence_num_indicators_type(ctx->this_layer_evidence, IndicatorType_Strong)) {
-            ctx->recursion_stack[ctx->recursion_level].verdict = CL_VERDICT_STRONG_INDICATOR;
-        } else if (0 < evidence_num_indicators_type(ctx->this_layer_evidence, IndicatorType_PotentiallyUnwanted)) {
-            ctx->recursion_stack[ctx->recursion_level].verdict = CL_VERDICT_POTENTIALLY_UNWANTED;
-        }
+    (void)result_should_goto_done(ctx, status, &status);
+    update_layer_verdict_from_evidence(ctx);
+
+    if ((CL_VERDICT_TRUSTED == ctx->recursion_stack[ctx->recursion_level].verdict) &&
+        (CL_VIRUS == status)) {
+        status = CL_SUCCESS;
     }
 
+    cli_dbgmsg("cli_magic_scan: returning %d %s\n", status, __AT__);
+
     /*
-     * If the verdict for this layer is "clean", we can cache it.
+     * If the scan succeeded and the verdict for this layer is "clean", we can cache it.
      *
      * Note: clean_cache_add() will check the fmap->dont_cache_flag,
      * so this may not actually cache if we exceeded limits earlier.
      * It will also check if caching is disabled.
      */
-    if ((CL_VERDICT_TRUSTED == ctx->recursion_stack[ctx->recursion_level].verdict) ||
-        (CL_VERDICT_NOTHING_FOUND == ctx->recursion_stack[ctx->recursion_level].verdict)) {
+    if ((CL_SUCCESS == status) &&
+        ((CL_VERDICT_TRUSTED == ctx->recursion_stack[ctx->recursion_level].verdict) ||
+         (CL_VERDICT_NOTHING_FOUND == ctx->recursion_stack[ctx->recursion_level].verdict))) {
         // Also verify we have no weak indicators before adding to the clean cache.
         // Weak indicators may be used in the future to match a strong indicator.
         if (evidence_num_indicators_type(ctx->this_layer_evidence, IndicatorType_Weak) == 0) {
@@ -5920,20 +6173,7 @@ static cl_error_t scan_common(
     status = cli_magic_scan(&ctx, file_type);
 
     if (ctx.options->general & CL_SCAN_GENERAL_COLLECT_METADATA && (ctx.metadata_json != NULL)) {
-        json_object *jobj;
         const char *jstring;
-
-        /* set value of unique root object tag */
-        if (json_object_object_get_ex(ctx.metadata_json, "FileType", &jobj)) {
-            enum json_type type;
-            const char *jstr;
-
-            type = json_object_get_type(jobj);
-            if (type == json_type_string) {
-                jstr = json_object_get_string(jobj);
-                cli_jsonstr(ctx.metadata_json, "RootFileType", jstr);
-            }
-        }
 
         /* serialize json properties to string */
 #ifdef JSON_C_TO_STRING_NOSLASHESCAPE
@@ -5947,31 +6187,7 @@ static cl_error_t scan_common(
             goto done;
         }
 
-        cli_dbgmsg("%s\n", jstring);
-
-        if (status != CL_VIRUS) {
-            /*
-             * Run bytecode preclass hook.
-             */
-            struct cli_matcher *iroot = ctx.engine->root[13];
-
-            struct cli_bc_ctx *bc_ctx = cli_bytecode_context_alloc();
-            if (!bc_ctx) {
-                cli_errmsg("scan_common: can't allocate memory for bc_ctx\n");
-                status = CL_EMEM;
-            } else {
-                cli_bytecode_context_setctx(bc_ctx, &ctx);
-                status = cli_bytecode_runhook(&ctx, ctx.engine, bc_ctx, BC_PRECLASS, map);
-                cli_bytecode_context_destroy(bc_ctx);
-            }
-
-            /* backwards compatibility: scan the json string unless a virus was detected */
-            if (status != CL_VIRUS && (iroot->ac_lsigs || iroot->ac_patterns || iroot->pcre_metas)) {
-                cli_dbgmsg("scan_common: running deprecated preclass bytecodes for target type 13\n");
-                ctx.options->general &= ~CL_SCAN_GENERAL_COLLECT_METADATA;
-                status = cli_magic_scan_buff(jstring, strlen(jstring), &ctx, NULL, LAYER_ATTRIBUTES_NONE);
-            }
-        }
+        debug_log_long_string(jstring);
 
         /*
          * Invoke file props callback.
