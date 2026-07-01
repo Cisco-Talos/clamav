@@ -444,6 +444,12 @@ int client(const struct optstruct *opts, int *infected, int *err)
     if (optget(clamdopts, "FollowFileSymlinks")->enabled)
         flags |= CLI_FTW_FOLLOW_FILE_SYMLINK;
     flags |= CLI_FTW_TRIM_SLASHES;
+    /* cli_ftw only passes stat info for files it skips as "special" when asked;
+     * without it the ignore-*-errors checks can't classify them. */
+    if (optget(opts, "ignore-socket-errors")->enabled ||
+        optget(opts, "ignore-pipe-errors")->enabled ||
+        optget(opts, "ignore-device-errors")->enabled)
+        flags |= CLI_FTW_NEED_STAT;
 
     *infected = 0;
 

@@ -21,8 +21,8 @@
 
 #ifndef __MISC_H
 #define __MISC_H
-#ifndef _WIN32
 #include <sys/types.h>
+#ifndef _WIN32
 #include <netdb.h>
 #include <netinet/in.h>
 #endif
@@ -108,5 +108,19 @@ unsigned int countlines(const char *filename);
 
 /* Checks if a virus database file or directory is older than 'days'. */
 cl_error_t check_if_cvd_outdated(const char *path, long long days);
+
+/**
+ * @brief Check if an unsupported special file should not count as a scan error.
+ *
+ * Evaluates the ignore-socket-errors, ignore-pipe-errors, and
+ * ignore-device-errors options against the file type in `mode`.
+ * Always returns 0 on Windows.
+ *
+ * @param mode              The st_mode of the file.
+ * @param opts              Parsed command line options.
+ * @param[out] type_name    Set to a human-readable file type name when returning 1.
+ * @return 1 if errors for this file type should be ignored, 0 otherwise.
+ */
+int should_ignore_unsupported_file_type(mode_t mode, const struct optstruct *opts, const char **type_name);
 
 #endif

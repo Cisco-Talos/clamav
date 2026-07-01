@@ -49,6 +49,7 @@
 void help(void);
 
 extern int printinfected;
+extern const struct optstruct *cmdline_opts;
 struct optstruct *clamdopts = NULL;
 
 static void print_server_version(const struct optstruct *opt)
@@ -78,6 +79,7 @@ int main(int argc, char **argv)
         mprintf(LOGG_ERROR, "Can't parse command line options\n");
         exit(2);
     }
+    cmdline_opts = opts;
 
     if (optget(opts, "help")->enabled) {
         optfree(opts);
@@ -257,6 +259,9 @@ void help(void)
     mprintf(LOGG_INFO, "    --reload                           Request clamd to reload virus database\n");
     mprintf(LOGG_INFO, "    --fdpass                           Pass filedescriptor to clamd (useful if clamd is running as a different user)\n");
     mprintf(LOGG_INFO, "    --stream                           Force streaming files to clamd (for debugging and unit testing)\n");
+    mprintf(LOGG_INFO, "    --ignore-socket-errors[=yes/no(*)] Do not return error code 2 for sockets.\n");
+    mprintf(LOGG_INFO, "    --ignore-pipe-errors[=yes/no(*)]   Do not return error code 2 for pipes.\n");
+    mprintf(LOGG_INFO, "    --ignore-device-errors[=yes/no(*)] Do not return error code 2 for device files.\n");
     mprintf(LOGG_INFO, "\n");
 
     exit(0);

@@ -287,6 +287,9 @@ void help(void)
     mprintf(LOGG_INFO, "    --cross-fs[=yes(*)/no]               Scan files and directories on other filesystems.\n");
     mprintf(LOGG_INFO, "    --follow-dir-symlinks[=0/1(*)/2]     Follow directory symlinks (0 = never, 1 = direct, 2 = always).\n");
     mprintf(LOGG_INFO, "    --follow-file-symlinks[=0/1(*)/2]    Follow file symlinks (0 = never, 1 = direct, 2 = always).\n");
+    mprintf(LOGG_INFO, "    --ignore-socket-errors[=yes/no(*)]   Do not return error code 2 for sockets.\n");
+    mprintf(LOGG_INFO, "    --ignore-pipe-errors[=yes/no(*)]     Do not return error code 2 for pipes.\n");
+    mprintf(LOGG_INFO, "    --ignore-device-errors[=yes/no(*)]   Do not return error code 2 for device files.\n");
     mprintf(LOGG_INFO, "    --file-list=FILE      -f FILE        Scan files from FILE.\n");
     mprintf(LOGG_INFO, "    --remove[=yes/no(*)]                 Remove infected files. Be careful!\n");
     mprintf(LOGG_INFO, "    --move=DIRECTORY                     Move infected files into DIRECTORY.\n");
