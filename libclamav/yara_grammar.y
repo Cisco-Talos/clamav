@@ -113,6 +113,15 @@ limitations under the License.
 
 #define MSG(op)  "wrong type \"string\" for \"" op "\" operator"
 
+#define UNSUPPORTED_STRING_MODIFIER(modifier) \
+    do { \
+      yr_compiler_set_error_extra_info( \
+          compiler, "unsupported string modifier \"" modifier "\""); \
+      compiler->last_result = ERROR_INVALID_MODIFIER; \
+      yyerror(yyscanner, compiler, NULL); \
+      YYERROR; \
+    } while (0)
+
 %}
 
 
@@ -144,6 +153,9 @@ limitations under the License.
 %token <sized_string> _REGEXP_
 %token _ASCII_
 %token _WIDE_
+%token _XOR_
+%token _BASE64_
+%token _BASE64_WIDE_
 %token _NOCASE_
 %token _FULLWORD_
 %token _AT_
@@ -191,6 +203,8 @@ limitations under the License.
 
 %type <integer> string_modifier
 %type <integer> string_modifiers
+%type <integer> hex_modifier
+%type <integer> hex_modifiers
 
 %type <integer> integer_set
 
@@ -533,11 +547,11 @@ string_declaration
 
         ERROR_IF($$ == NULL);
       }
-    | _STRING_IDENTIFIER_ '=' _HEX_STRING_
+    | _STRING_IDENTIFIER_ '=' _HEX_STRING_ hex_modifiers
       {
         $$ = yr_parser_reduce_string_declaration(
             yyscanner,
-            STRING_GFLAGS_HEXADECIMAL,
+            $4 | STRING_GFLAGS_HEXADECIMAL,
             $1,
             $3);
 
@@ -551,7 +565,16 @@ string_declaration
 
 string_modifiers
     : /* empty */                         { $$ = 0; }
-    | string_modifiers string_modifier    { $$ = $1 | $2; }
+    | string_modifiers string_modifier
+      {
+        if ($1 & $2)
+        {
+          compiler->last_result = ERROR_DUPLICATED_MODIFIER;
+          ERROR_IF(compiler->last_result != ERROR_SUCCESS);
+        }
+
+        $$ = $1 | $2;
+      }
     ;
 
 
@@ -560,6 +583,60 @@ string_modifier
     | _ASCII_       { $$ = STRING_GFLAGS_ASCII; }
     | _NOCASE_      { $$ = STRING_GFLAGS_NO_CASE; }
     | _FULLWORD_    { $$ = STRING_GFLAGS_FULL_WORD; }
+    | _PRIVATE_     { $$ = STRING_GFLAGS_PRIVATE; }
+    | _XOR_         { $$ = 0; UNSUPPORTED_STRING_MODIFIER("xor"); }
+    | _XOR_ '(' _NUMBER_ ')'
+      {
+        $$ = 0;
+        UNSUPPORTED_STRING_MODIFIER("xor");
+      }
+    | _XOR_ '(' _NUMBER_ '-' _NUMBER_ ')'
+      {
+        $$ = 0;
+        UNSUPPORTED_STRING_MODIFIER("xor");
+      }
+    | _BASE64_
+      {
+        $$ = 0;
+        UNSUPPORTED_STRING_MODIFIER("base64");
+      }
+    | _BASE64_ '(' _TEXT_STRING_ ')'
+      {
+        yr_free($3);
+        $$ = 0;
+        UNSUPPORTED_STRING_MODIFIER("base64");
+      }
+    | _BASE64_WIDE_
+      {
+        $$ = 0;
+        UNSUPPORTED_STRING_MODIFIER("base64wide");
+      }
+    | _BASE64_WIDE_ '(' _TEXT_STRING_ ')'
+      {
+        yr_free($3);
+        $$ = 0;
+        UNSUPPORTED_STRING_MODIFIER("base64wide");
+      }
+    ;
+
+
+hex_modifiers
+    : /* empty */                         { $$ = 0; }
+    | hex_modifiers hex_modifier
+      {
+        if ($1 & $2)
+        {
+          compiler->last_result = ERROR_DUPLICATED_MODIFIER;
+          ERROR_IF(compiler->last_result != ERROR_SUCCESS);
+        }
+
+        $$ = $1 | $2;
+      }
+    ;
+
+
+hex_modifier
+    : _PRIVATE_     { $$ = STRING_GFLAGS_PRIVATE; }
     ;
 
 

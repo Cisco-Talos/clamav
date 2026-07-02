@@ -97,7 +97,7 @@ typedef struct _YR_MATCH
     int64_t read_##type(fmap_t * fmap, size_t offset) \
     { \
       const void *data;                                         \
-      if (offset + sizeof(type) >= fmap->len)                   \
+      if (offset > fmap->len || sizeof(type) > fmap->len - offset) \
           return UNDEFINED;                                     \
       data = fmap_need_off_once(fmap, offset, sizeof(type));    \
       if (!data)                                                \
@@ -393,13 +393,21 @@ int yr_execute_code(
       case OP_DIV:
         pop(r2);
         pop(r1);
-        push(operation(/, r1, r2));
+        if (IS_UNDEFINED(r1) || IS_UNDEFINED(r2) ||
+            r2 == 0 || (r1 == INT64_MIN && r2 == -1))
+          push(UNDEFINED);
+        else
+          push(r1 / r2);
         break;
 
       case OP_MOD:
         pop(r2);
         pop(r1);
-        push(operation(%, r1, r2));
+        if (IS_UNDEFINED(r1) || IS_UNDEFINED(r2) ||
+            r2 == 0 || (r1 == INT64_MIN && r2 == -1))
+          push(UNDEFINED);
+        else
+          push(r1 % r2);
         break;
 
       case OP_NEG:
@@ -410,13 +418,23 @@ int yr_execute_code(
       case OP_SHR:
         pop(r2);
         pop(r1);
-        push(operation(>>, r1, r2));
+        if (IS_UNDEFINED(r1) || IS_UNDEFINED(r2) || r2 < 0)
+          push(UNDEFINED);
+        else if (r2 < 64)
+          push(r1 >> r2);
+        else
+          push(0);
         break;
 
       case OP_SHL:
         pop(r2);
         pop(r1);
-        push(operation(<<, r1, r2));
+        if (IS_UNDEFINED(r1) || IS_UNDEFINED(r2) || r2 < 0)
+          push(UNDEFINED);
+        else if (r2 < 64)
+          push(r1 << r2);
+        else
+          push(0);
         break;
 
       case OP_XOR:
@@ -773,10 +791,12 @@ int yr_execute_code(
 
         pop(r2);
 
-        if (r2 != UNDEFINED)
-          push(found >= r2 ? 1 : 0);
-        else
+        if (r2 == UNDEFINED)
           push(found >= count ? 1 : 0);
+        else if (r2 == 0)
+          push(found == 0 ? 1 : 0);
+        else
+          push(found >= r2 ? 1 : 0);
 
         break;
 
@@ -853,8 +873,11 @@ int yr_execute_code(
       case OP_CONTAINS:
         pop(r2);
         pop(r1);
-        push(strstr(UINT64_TO_PTR(char*, r1),
-                    UINT64_TO_PTR(char*, r2)) != NULL);
+        if (IS_UNDEFINED(r1) || IS_UNDEFINED(r2))
+          push(UNDEFINED);
+        else
+          push(strstr(UINT64_TO_PTR(char*, r1),
+                      UINT64_TO_PTR(char*, r2)) != NULL);
         break;
 
 
@@ -873,6 +896,12 @@ int yr_execute_code(
       case OP_MATCHES:
         pop(r2);
         pop(r1);
+
+        if (IS_UNDEFINED(r1) || IS_UNDEFINED(r2))
+        {
+          push(UNDEFINED);
+          break;
+        }
 
         count = strlen(UINT64_TO_PTR(char*, r1));
 

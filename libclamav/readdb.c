@@ -3567,6 +3567,25 @@ static char *parse_yara_hex_string(YR_STRING *string, int *ret)
     str = strchr(str, '{') + 1;
 
     for (i = 0; i < slen - 1; i++) {
+        if (str[i] == '/' && i + 1 < slen - 1) {
+            if (str[i + 1] == '*') {
+                i += 2;
+                while (i + 1 < slen - 1 && !(str[i] == '*' && str[i + 1] == '/'))
+                    i++;
+                if (i + 1 >= slen - 1) {
+                    if (ret) *ret = CL_EMALFDB;
+                    return NULL;
+                }
+                i++;
+                continue;
+            } else if (str[i + 1] == '/') {
+                i += 2;
+                while (i < slen - 1 && str[i] != '\n' && str[i] != '\r')
+                    i++;
+                continue;
+            }
+        }
+
         switch (str[i]) {
             case ' ':
             case '\t':
@@ -3588,6 +3607,26 @@ static char *parse_yara_hex_string(YR_STRING *string, int *ret)
     }
 
     for (i = 0, j = 0; i < slen - 1 && j < reslen; i++) {
+        if (str[i] == '/' && i + 1 < slen - 1) {
+            if (str[i + 1] == '*') {
+                i += 2;
+                while (i + 1 < slen - 1 && !(str[i] == '*' && str[i + 1] == '/'))
+                    i++;
+                if (i + 1 >= slen - 1) {
+                    free(res);
+                    if (ret) *ret = CL_EMALFDB;
+                    return NULL;
+                }
+                i++;
+                continue;
+            } else if (str[i + 1] == '/') {
+                i += 2;
+                while (i < slen - 1 && str[i] != '\n' && str[i] != '\r')
+                    i++;
+                continue;
+            }
+        }
+
         switch (str[i]) {
             case ' ':
             case '\t':
