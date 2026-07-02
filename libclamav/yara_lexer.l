@@ -40,8 +40,11 @@ limitations under the License.
 
 %{
 
+#include <errno.h>
+#include <limits.h>
 #include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
 #ifdef REAL_YARA
 #include <stdint.h>
 #endif
@@ -108,6 +111,7 @@ limitations under the License.
 digit         [0-9]
 letter        [a-zA-Z]
 hexdigit      [a-fA-F0-9]
+octdigit      [0-7]
 
 %%
 
@@ -126,6 +130,9 @@ hexdigit      [a-fA-F0-9]
 "strings"               { return _STRINGS_;     }
 "ascii"                 { return _ASCII_;       }
 "wide"                  { return _WIDE_;        }
+"xor"                   { return _XOR_;         }
+"base64"                { return _BASE64_;      }
+"base64wide"            { return _BASE64_WIDE_; }
 "fullword"              { return _FULLWORD_;    }
 "nocase"                { return _NOCASE_;      }
 "condition"             { return _CONDITION_;   }
@@ -372,15 +379,42 @@ $({letter}|{digit}|_)*  {
 
 {digit}+(MB|KB){0,1}  {
 
-  yylval->integer = (size_t) atol(yytext);
+  char *endptr;
+
+  errno = 0;
+  yylval->integer = strtoll(yytext, &endptr, 10);
+
+  if (yylval->integer == LLONG_MAX && errno == ERANGE)
+  {
+    yr_compiler_set_error_extra_info(compiler, yytext);
+    compiler->last_result = ERROR_INTEGER_OVERFLOW;
+    yyerror(yyscanner, compiler, NULL);
+    yyterminate();
+  }
 
   if (strstr(yytext, "KB") != NULL)
   {
-     yylval->integer *= 1024;
+    if (yylval->integer > LLONG_MAX / 1024)
+    {
+      yr_compiler_set_error_extra_info(compiler, yytext);
+      compiler->last_result = ERROR_INTEGER_OVERFLOW;
+      yyerror(yyscanner, compiler, NULL);
+      yyterminate();
+    }
+
+    yylval->integer *= 1024;
   }
   else if (strstr(yytext, "MB") != NULL)
   {
-     yylval->integer *= 1048576;
+    if (yylval->integer > LLONG_MAX / 1048576)
+    {
+      yr_compiler_set_error_extra_info(compiler, yytext);
+      compiler->last_result = ERROR_INTEGER_OVERFLOW;
+      yyerror(yyscanner, compiler, NULL);
+      yyterminate();
+    }
+
+    yylval->integer *= 1048576;
   }
   return _NUMBER_;
 }
@@ -388,7 +422,38 @@ $({letter}|{digit}|_)*  {
 
 0x{hexdigit}+  {
 
-  yylval->integer = xtoi(yytext + 2);
+  char *endptr;
+
+  errno = 0;
+  yylval->integer = strtoll(yytext, &endptr, 16);
+
+  if (yylval->integer == LLONG_MAX && errno == ERANGE)
+  {
+    yr_compiler_set_error_extra_info(compiler, yytext);
+    compiler->last_result = ERROR_INTEGER_OVERFLOW;
+    yyerror(yyscanner, compiler, NULL);
+    yyterminate();
+  }
+
+  return _NUMBER_;
+}
+
+
+0o{octdigit}+  {
+
+  char *endptr;
+
+  errno = 0;
+  yylval->integer = strtoll(yytext + 2, &endptr, 8);
+
+  if (yylval->integer == LLONG_MAX && errno == ERANGE)
+  {
+    yr_compiler_set_error_extra_info(compiler, yytext);
+    compiler->last_result = ERROR_INTEGER_OVERFLOW;
+    yyerror(yyscanner, compiler, NULL);
+    yyterminate();
+  }
+
   return _NUMBER_;
 }
 
@@ -429,6 +494,14 @@ $({letter}|{digit}|_)*  {
 
   LEX_CHECK_SPACE_OK("\n", yyextra->lex_buf_len, LEX_BUF_SIZE);
   *yyextra->lex_buf_ptr++ = '\n';
+  yyextra->lex_buf_len++;
+}
+
+
+<str>\\r   {
+
+  LEX_CHECK_SPACE_OK("\r", yyextra->lex_buf_len, LEX_BUF_SIZE);
+  *yyextra->lex_buf_ptr++ = '\r';
   yyextra->lex_buf_len++;
 }
 
@@ -517,6 +590,10 @@ $({letter}|{digit}|_)*  {
 <regexp>\\. {
 
   LEX_CHECK_SPACE_OK("\\.", yyextra->lex_buf_len, LEX_BUF_SIZE);
+
+  if (yytext[1] == 0)
+    yyerror(yyscanner, compiler, "malformed regular expression");
+
   *yyextra->lex_buf_ptr++ = yytext[0];
   *yyextra->lex_buf_ptr++ = yytext[1];
   yyextra->lex_buf_len += 2;
@@ -549,7 +626,7 @@ $({letter}|{digit}|_)*  {
 }
 
 
-\{({hexdigit}|[ \-|\?\[\]\(\)\n\t])+\}  {
+\{(({hexdigit}|[ \-|\~\?\[\]\(\)\n\r\t]|\/\*(\/|\**[^*/])*\*+\/)+|\/\/.*\n)+\}  {
 
   int len = strlen(yytext);
   SIZED_STRING* s = (SIZED_STRING*) yr_malloc(len + sizeof(SIZED_STRING));

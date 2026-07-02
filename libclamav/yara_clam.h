@@ -75,6 +75,7 @@ limitations under the License.
 #define STRING_GFLAGS_CHAIN_PART        0x2000
 #define STRING_GFLAGS_CHAIN_TAIL        0x4000
 #define STRING_GFLAGS_REGEXP_DOT_ALL    0x8000
+#define STRING_GFLAGS_PRIVATE           0x100000
 
 #define STRING_IS_HEX(x) \
     (((x)->g_flags) & STRING_GFLAGS_HEXADECIMAL)
@@ -117,6 +118,9 @@ limitations under the License.
 
 #define STRING_IS_CHAIN_TAIL(x) \
     (((x)->g_flags) & STRING_GFLAGS_CHAIN_TAIL)
+
+#define STRING_IS_PRIVATE(x) \
+    (((x)->g_flags) & STRING_GFLAGS_PRIVATE)
 
 #define STRING_IS_NULL(x) \
     ((x) == NULL || ((x)->g_flags) & STRING_GFLAGS_NULL)
@@ -293,6 +297,11 @@ typedef struct _SIZED_STRING
 #define ERROR_INVALID_FORMAT                    38
 #define ERROR_TOO_MANY_ARGUMENTS                39
 #define ERROR_WRONG_NUMBER_OF_ARGUMENTS         40
+#define ERROR_INTEGER_OVERFLOW                  52
+#define ERROR_INVALID_MODIFIER                  59
+#define ERROR_DUPLICATED_MODIFIER               60
+
+#define ERROR_INSUFFICIENT_MEMORY ERROR_INSUFICIENT_MEMORY
 
 #define FAIL_ON_ERROR(x) { \
     int result = (x); \

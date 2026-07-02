@@ -759,6 +759,7 @@ char* yr_compiler_get_error_message(
             break;
         case ERROR_INVALID_HEX_STRING:
         case ERROR_INVALID_REGULAR_EXPRESSION:
+        case ERROR_INVALID_MODIFIER:
         case ERROR_SYNTAX_ERROR:
         case ERROR_WRONG_TYPE:
         case ERROR_WRONG_NUMBER_OF_ARGUMENTS:
@@ -766,6 +767,16 @@ char* yr_compiler_get_error_message(
                 buffer,
                 buffer_size,
                 "%s",
+                compiler->last_error_extra_info);
+            break;
+        case ERROR_DUPLICATED_MODIFIER:
+            snprintf(buffer, buffer_size, "duplicated string modifier");
+            break;
+        case ERROR_INTEGER_OVERFLOW:
+            snprintf(
+                buffer,
+                buffer_size,
+                "integer overflow \"%s\"",
                 compiler->last_error_extra_info);
             break;
         case ERROR_INTERNAL_FATAL_ERROR:
