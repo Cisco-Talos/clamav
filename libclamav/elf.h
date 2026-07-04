@@ -147,6 +147,4 @@ cl_error_t cli_scanelf(cli_ctx *ctx);
 
 cl_error_t cli_elfheader(cli_ctx *ctx, struct cli_exe_info *elfinfo);
 
-cl_error_t cli_unpackelf(cli_ctx *ctx);
-
 #endif

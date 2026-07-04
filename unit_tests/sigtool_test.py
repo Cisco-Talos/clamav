@@ -314,3 +314,45 @@ class TC(testcase.TestCase):
         # Check that the new CUD file was created, and that the '.cud.script' file was created.
         assert (TC.path_tmp / 'test.cud').exists()
         assert (TC.path_tmp / 'test-7.script').exists()
+
+    def test_sigtool_06_pe_hash_helpers_use_rust_parser(self):
+        self.step_name('sigtool PE hash helpers use Rust parser')
+
+        testfile = (
+            TC.path_build
+            / 'unit_tests'
+            / 'input'
+            / 'clamav_hdb_scanfiles'
+            / 'clam.exe'
+        )
+        command = '{valgrind} {valgrind_args} {sigtool} --mdb {input}'.format(
+            valgrind=TC.valgrind,
+            valgrind_args=TC.valgrind_args,
+            sigtool=TC.sigtool,
+            input=testfile,
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 0
+        self.verify_output(
+            output.err,
+            expected=[
+                'Section\\{0\\}: 512:23db1dd3f77fae25610b6a32701313ae',
+            ],
+        )
+
+        command = '{valgrind} {valgrind_args} {sigtool} --imp {input}'.format(
+            valgrind=TC.valgrind,
+            valgrind_args=TC.valgrind_args,
+            sigtool=TC.sigtool,
+            input=testfile,
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 0
+        self.verify_output(
+            output.err,
+            expected=[
+                'Imphash: 98c88d882f01a3f6ac1e5f7dfd761624:39',
+            ],
+        )

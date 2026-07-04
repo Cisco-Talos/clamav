@@ -21,8 +21,9 @@
  */
 
 use std::{
-    ffi::{c_char, CString},
+    ffi::{CString, c_char},
     io::{Cursor, Read},
+    os::raw::{c_int, c_uint},
     panic,
     path::Path,
     ptr::null_mut,
@@ -32,13 +33,14 @@ use delharc::LhaDecodeReader;
 use libc::c_void;
 use log::{debug, error, warn};
 use ruzstd::decoding::{
-    errors::{FrameDecoderError, ReadFrameHeaderError},
     StreamingDecoder,
+    errors::{FrameDecoderError, ReadFrameHeaderError},
 };
 
 use crate::{
     alz::{Alz, AlzExtractionDecision, AlzExtractionLimits, Error as AlzError},
     ctx,
+    fmap::FMap,
     onenote::OneNote,
     sys::{
         cl_error_t, cl_error_t_CL_EFORMAT, cl_error_t_CL_EMAXFILES, cl_error_t_CL_EMAXSIZE,
@@ -46,9 +48,9 @@ use crate::{
         cli_ctx, cli_magic_scan_buff,
     },
     util::{
+        HEURISTICS_LIMITS_EXCEEDED_MAX_FILES, HEURISTICS_LIMITS_EXCEEDED_MAX_SCAN_SIZE,
         append_potentially_unwanted_if_heur_exceedsmax, check_scan_limits, check_scan_time_limit,
-        scan_archive_metadata, HEURISTICS_LIMITS_EXCEEDED_MAX_FILES,
-        HEURISTICS_LIMITS_EXCEEDED_MAX_SCAN_SIZE,
+        scan_archive_metadata,
     },
 };
 
@@ -96,12 +98,446 @@ pub unsafe fn magic_scan(ctx: *mut cli_ctx, buf: &[u8], name: Option<String>) ->
     ret
 }
 
+/// Scan a PE/MSEXE file with the Rust executable parser.
+///
+/// # Safety
+///
+/// Must be a valid ctx pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn scan_pe_rust(ctx: *mut cli_ctx) -> cl_error_t {
+    unsafe { crate::scanner::filetype_handlers::executable::scan_pe(ctx) }
+}
+
+/// Validate a PE header at a parent fmap offset with the Rust executable parser.
+///
+/// # Safety
+///
+/// `ctx` must be a valid scanner context.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn check_pe_header_at_rust(ctx: *mut cli_ctx, offset: usize) -> cl_error_t {
+    unsafe { crate::scanner::filetype_handlers::executable::check_pe_header_at(ctx, offset) }
+}
+
+/// Populate ClamAV matcher target-info for a PE file with the Rust parser.
+///
+/// # Safety
+///
+/// `ctx` must be a valid scanner context and `exe_info` must point to a
+/// `struct cli_exe_info` initialized by C.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn populate_pe_target_info_rust(
+    ctx: *mut cli_ctx,
+    exe_info: *mut c_void,
+) -> cl_error_t {
+    unsafe { crate::scanner::filetype_handlers::executable::populate_pe_target_info(ctx, exe_info) }
+}
+
+/// Generate PE section or import-table hashes with the Rust executable parser.
+///
+/// # Safety
+///
+/// `ctx` must be a valid scanner context.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn genhash_pe_rust(
+    ctx: *mut cli_ctx,
+    class: u32,
+    hash_type: u32,
+) -> cl_error_t {
+    unsafe { crate::scanner::filetype_handlers::executable::genhash_pe(ctx, class, hash_type) }
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, Debug)]
+struct CliRawAddrSection {
+    rva: u32,
+    vsz: u32,
+    raw: u32,
+    rsz: u32,
+    chr: u32,
+    urva: u32,
+    uvsz: u32,
+    uraw: u32,
+    ursz: u32,
+}
+
+/// Map a PE RVA to a raw file offset for legacy ClamAV consumers.
+///
+/// The symbol name intentionally matches the historical C helper so existing
+/// bytecode and icon code can continue calling `cli_rawaddr()` while the
+/// executable parsing arithmetic lives in Rust.
+///
+/// # Safety
+///
+/// `sections` must point to `nos` valid `struct cli_exe_section` records when
+/// `nos` is nonzero. `err`, when non-null, must point to writable storage.
+#[unsafe(export_name = "cli_rawaddr")]
+pub unsafe extern "C" fn cli_rawaddr_rust(
+    rva: u32,
+    sections: *const c_void,
+    nos: u16,
+    err: *mut c_uint,
+    fsize: usize,
+    hdr_size: u32,
+) -> u32 {
+    fn set_error(err: *mut c_uint, value: bool) {
+        if !err.is_null() {
+            unsafe {
+                *err = c_uint::from(value);
+            }
+        }
+    }
+
+    if rva < hdr_size {
+        if usize::try_from(rva).is_ok_and(|offset| offset < fsize) {
+            set_error(err, false);
+            return rva;
+        }
+        set_error(err, true);
+        return 0;
+    }
+
+    let section_count = usize::from(nos);
+    if section_count == 0 || sections.is_null() {
+        set_error(err, true);
+        return 0;
+    }
+
+    let sections = sections.cast::<CliRawAddrSection>();
+    for index in (0..section_count).rev() {
+        let section = unsafe { *sections.add(index) };
+        if section.rsz == 0 || section.rva > rva {
+            continue;
+        }
+        let delta = rva - section.rva;
+        if section.rsz <= delta {
+            continue;
+        }
+        let Some(offset) = delta.checked_add(section.raw) else {
+            set_error(err, true);
+            return 0;
+        };
+        set_error(err, false);
+        return offset;
+    }
+
+    set_error(err, true);
+    0
+}
+
+type PeResourceCallback = unsafe extern "C" fn(*mut c_void, u32, u32, u32, u32) -> c_int;
+
+const PE_RESOURCE_ENTRY_SIZE: usize = 8;
+const PE_RESOURCE_DIRECTORY_SIZE: usize = 16;
+const PE_RESOURCE_SUBDIRECTORY: u32 = 0x8000_0000;
+const PE_RESOURCE_OFFSET_MASK: u32 = 0x7fff_ffff;
+const PE_RESOURCE_ANY_NAME: u32 = 0xffff_ffff;
+
+/// Walk a PE resource directory for legacy icon fuzzy-hash consumers.
+///
+/// C keeps the stable `findres()` shim because it already owns
+/// `struct cli_exe_info`. The actual resource directory parsing is here so PE
+/// resource offset arithmetic follows the Rust executable parser migration.
+///
+/// # Safety
+///
+/// `map` must point to a valid ClamAV `fmap_t`. `sections` must point to
+/// `nsections` valid `struct cli_exe_section` records when `nsections` is
+/// nonzero. `cb`, when present, must be a valid callback for `opaque`.
+#[allow(clippy::too_many_arguments)]
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn findres_rust(
+    by_type: u32,
+    by_name: u32,
+    map: *mut crate::sys::cl_fmap_t,
+    sections: *const c_void,
+    nsections: u16,
+    pe_offset: u32,
+    hdr_size: u32,
+    ndatadirs: u32,
+    res_rva: u32,
+    cb: PeResourceCallback,
+    opaque: *mut c_void,
+) {
+    if ndatadirs < 3 {
+        return;
+    }
+    if pe_offset != 0 {
+        debug!("findres: resource lookup requested for embedded PE at offset {pe_offset}");
+    }
+
+    let Ok(fmap) = FMap::try_from(map) else {
+        return;
+    };
+    let Some(root_raw) = resource_rva_to_raw(&fmap, sections, nsections, hdr_size, res_rva) else {
+        return;
+    };
+    let Some((named_types, id_types)) = resource_directory_counts(&fmap, root_raw) else {
+        return;
+    };
+
+    let (type_entry_base, type_count) = if by_type & PE_RESOURCE_SUBDIRECTORY == 0 {
+        let Some(offset) = resource_entry_table_offset(root_raw, named_types) else {
+            return;
+        };
+        (offset, id_types)
+    } else {
+        let Some(offset) = root_raw.checked_add(PE_RESOURCE_DIRECTORY_SIZE) else {
+            return;
+        };
+        (offset, named_types)
+    };
+
+    for index in 0..usize::from(type_count) {
+        let Some(type_entry_offset) = resource_indexed_entry_offset(type_entry_base, index) else {
+            return;
+        };
+        let Some((type_id, type_offset)) = resource_directory_entry(&fmap, type_entry_offset)
+        else {
+            return;
+        };
+        if type_id != by_type || type_offset & PE_RESOURCE_SUBDIRECTORY == 0 {
+            continue;
+        }
+
+        let type_offset = type_offset & PE_RESOURCE_OFFSET_MASK;
+        let Some(type_rva) = res_rva.checked_add(type_offset) else {
+            return;
+        };
+        let Some(type_raw) = resource_rva_to_raw(&fmap, sections, nsections, hdr_size, type_rva)
+        else {
+            return;
+        };
+        walk_resource_names(
+            &fmap, sections, nsections, hdr_size, res_rva, type_raw, by_name, type_id, cb, opaque,
+        );
+        return;
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn walk_resource_names(
+    fmap: &FMap,
+    sections: *const c_void,
+    nsections: u16,
+    hdr_size: u32,
+    res_rva: u32,
+    type_raw: usize,
+    by_name: u32,
+    type_id: u32,
+    callback: PeResourceCallback,
+    opaque: *mut c_void,
+) {
+    let Some((named_entries, id_entries)) = resource_directory_counts(fmap, type_raw) else {
+        return;
+    };
+    let (name_entry_base, name_count) = if by_name == PE_RESOURCE_ANY_NAME {
+        let Some(offset) = type_raw.checked_add(PE_RESOURCE_DIRECTORY_SIZE) else {
+            return;
+        };
+        let Some(count) = named_entries.checked_add(id_entries) else {
+            return;
+        };
+        (offset, count)
+    } else if by_name & PE_RESOURCE_SUBDIRECTORY == 0 {
+        let Some(offset) = resource_entry_table_offset(type_raw, named_entries) else {
+            return;
+        };
+        (offset, id_entries)
+    } else {
+        let Some(offset) = type_raw.checked_add(PE_RESOURCE_DIRECTORY_SIZE) else {
+            return;
+        };
+        (offset, named_entries)
+    };
+
+    for index in 0..usize::from(name_count) {
+        let Some(name_entry_offset) = resource_indexed_entry_offset(name_entry_base, index) else {
+            return;
+        };
+        let Some((name_id, name_offset)) = resource_directory_entry(fmap, name_entry_offset) else {
+            return;
+        };
+        if by_name != PE_RESOURCE_ANY_NAME && name_id != by_name {
+            continue;
+        }
+        if name_offset & PE_RESOURCE_SUBDIRECTORY == 0 {
+            continue;
+        }
+
+        let name_offset = name_offset & PE_RESOURCE_OFFSET_MASK;
+        let Some(name_rva) = res_rva.checked_add(name_offset) else {
+            return;
+        };
+        let Some(name_raw) = resource_rva_to_raw(fmap, sections, nsections, hdr_size, name_rva)
+        else {
+            return;
+        };
+        walk_resource_languages(fmap, name_raw, res_rva, type_id, name_id, callback, opaque);
+    }
+}
+
+fn walk_resource_languages(
+    fmap: &FMap,
+    name_raw: usize,
+    res_rva: u32,
+    type_id: u32,
+    name_id: u32,
+    callback: PeResourceCallback,
+    opaque: *mut c_void,
+) {
+    let Some((named_entries, id_entries)) = resource_directory_counts(fmap, name_raw) else {
+        return;
+    };
+    let Some(lang_count) = named_entries.checked_add(id_entries) else {
+        return;
+    };
+    let Some(lang_entry_base) = name_raw.checked_add(PE_RESOURCE_DIRECTORY_SIZE) else {
+        return;
+    };
+
+    for index in 0..usize::from(lang_count) {
+        let Some(lang_entry_offset) = resource_indexed_entry_offset(lang_entry_base, index) else {
+            return;
+        };
+        let Some((lang_id, lang_offset)) = resource_directory_entry(fmap, lang_entry_offset) else {
+            return;
+        };
+        if lang_offset & PE_RESOURCE_SUBDIRECTORY != 0 {
+            continue;
+        }
+        let Some(data_entry_rva) = res_rva.checked_add(lang_offset) else {
+            return;
+        };
+        let should_stop = unsafe { callback(opaque, type_id, name_id, lang_id, data_entry_rva) };
+        if should_stop != 0 {
+            return;
+        }
+    }
+}
+
+fn resource_rva_to_raw(
+    fmap: &FMap,
+    sections: *const c_void,
+    nsections: u16,
+    hdr_size: u32,
+    rva: u32,
+) -> Option<usize> {
+    let mut err = 0;
+    let raw = unsafe { cli_rawaddr_rust(rva, sections, nsections, &mut err, fmap.len(), hdr_size) };
+    if err != 0 {
+        return None;
+    }
+    usize::try_from(raw).ok()
+}
+
+fn resource_entry_table_offset(directory_raw: usize, named_entries: u16) -> Option<usize> {
+    directory_raw
+        .checked_add(PE_RESOURCE_DIRECTORY_SIZE)?
+        .checked_add(usize::from(named_entries).checked_mul(PE_RESOURCE_ENTRY_SIZE)?)
+}
+
+fn resource_indexed_entry_offset(base: usize, index: usize) -> Option<usize> {
+    base.checked_add(index.checked_mul(PE_RESOURCE_ENTRY_SIZE)?)
+}
+
+fn resource_directory_counts(fmap: &FMap, raw_offset: usize) -> Option<(u16, u16)> {
+    let directory = fmap.need_off(raw_offset, PE_RESOURCE_DIRECTORY_SIZE).ok()?;
+    Some((read_u16_le(directory, 12)?, read_u16_le(directory, 14)?))
+}
+
+fn resource_directory_entry(fmap: &FMap, raw_offset: usize) -> Option<(u32, u32)> {
+    let entry = fmap.need_off(raw_offset, PE_RESOURCE_ENTRY_SIZE).ok()?;
+    Some((read_u32_le(entry, 0)?, read_u32_le(entry, 4)?))
+}
+
+fn read_u16_le(bytes: &[u8], offset: usize) -> Option<u16> {
+    let raw = bytes.get(offset..offset.checked_add(2)?)?;
+    Some(u16::from_le_bytes(raw.try_into().ok()?))
+}
+
+fn read_u32_le(bytes: &[u8], offset: usize) -> Option<u32> {
+    let raw = bytes.get(offset..offset.checked_add(4)?)?;
+    Some(u32::from_le_bytes(raw.try_into().ok()?))
+}
+
+/// Scan an ELF file with the Rust executable parser.
+///
+/// # Safety
+///
+/// Must be a valid ctx pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn scan_elf_rust(ctx: *mut cli_ctx) -> cl_error_t {
+    unsafe { crate::scanner::filetype_handlers::executable::scan_elf(ctx) }
+}
+
+/// Scan a thin Mach-O file with the Rust executable parser.
+///
+/// # Safety
+///
+/// Must be a valid ctx pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn scan_macho_rust(ctx: *mut cli_ctx) -> cl_error_t {
+    unsafe {
+        crate::scanner::filetype_handlers::executable::scan_macho(
+            ctx,
+            crate::sys::cli_file_CL_TYPE_MACHO,
+        )
+    }
+}
+
+/// Scan a universal/fat Mach-O file with the Rust executable parser.
+///
+/// # Safety
+///
+/// Must be a valid ctx pointer.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn scan_macho_unibin_rust(ctx: *mut cli_ctx) -> cl_error_t {
+    unsafe {
+        crate::scanner::filetype_handlers::executable::scan_macho(
+            ctx,
+            crate::sys::cli_file_CL_TYPE_MACHO_UNIBIN,
+        )
+    }
+}
+
+/// Populate ClamAV matcher target-info for an ELF file with the Rust parser.
+///
+/// # Safety
+///
+/// `ctx` must be a valid scanner context and `exe_info` must point to a
+/// `struct cli_exe_info` initialized by C.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn populate_elf_target_info_rust(
+    ctx: *mut cli_ctx,
+    exe_info: *mut c_void,
+) -> cl_error_t {
+    unsafe {
+        crate::scanner::filetype_handlers::executable::populate_elf_target_info(ctx, exe_info)
+    }
+}
+
+/// Populate ClamAV matcher target-info for a Mach-O file with the Rust parser.
+///
+/// # Safety
+///
+/// `ctx` must be a valid scanner context and `exe_info` must point to a
+/// `struct cli_exe_info` initialized by C.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn populate_macho_target_info_rust(
+    ctx: *mut cli_ctx,
+    exe_info: *mut c_void,
+) -> cl_error_t {
+    unsafe {
+        crate::scanner::filetype_handlers::executable::populate_macho_target_info(ctx, exe_info)
+    }
+}
+
 /// Scan a OneNote file for attachments
 ///
 /// # Safety
 ///
 /// Must be a valid ctx pointer.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn scan_onenote(ctx: *mut cli_ctx) -> cl_error_t {
     let fmap = match ctx::current_fmap(ctx) {
         Ok(fmap) => fmap,
@@ -125,7 +561,7 @@ pub unsafe extern "C" fn scan_onenote(ctx: *mut cli_ctx) -> cl_error_t {
     let one = match OneNote::from_bytes(file_bytes, Path::new(fmap.name())) {
         Ok(x) => x,
         Err(err) => {
-            error!("Failed to parse OneNote file: {}", err.to_string());
+            error!("Failed to parse OneNote file: {err}");
             return cl_error_t_CL_ERROR;
         }
     };
@@ -156,7 +592,7 @@ pub unsafe extern "C" fn scan_onenote(ctx: *mut cli_ctx) -> cl_error_t {
 /// # Safety
 ///
 /// Must be a valid ctx pointer.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn scan_lha_lzh(ctx: *mut cli_ctx) -> cl_error_t {
     let fmap = match ctx::current_fmap(ctx) {
         Ok(fmap) => fmap,
@@ -254,18 +690,22 @@ pub unsafe extern "C" fn scan_lha_lzh(ctx: *mut cli_ctx) -> cl_error_t {
                         Ok(bytes_read) => {
                             if bytes_read > 0 {
                                 debug!(
-                                        "Read {bytes_read} bytes from file {filename} in the LHA archive."
-                                    );
+                                    "Read {bytes_read} bytes from file {filename} in the LHA archive."
+                                );
 
                                 // Verify the CRC check *after* reading the file.
                                 match decoder.crc_check() {
                                     Ok(crc) => {
                                         // CRC is valid.  Very likely this is an LHA or LZH archive.
-                                        debug!("CRC check passed.  Very likely this is an LHA or LZH archive.  CRC: {crc}");
+                                        debug!(
+                                            "CRC check passed.  Very likely this is an LHA or LZH archive.  CRC: {crc}"
+                                        );
                                     }
                                     Err(err) => {
                                         // Error checking CRC.
-                                        debug!("An error occurred when checking the CRC of this LHA or LZH archive: {err}");
+                                        debug!(
+                                            "An error occurred when checking the CRC of this LHA or LZH archive: {err}"
+                                        );
 
                                         // Allow the scan to continue even with a CRC error, for now.
                                         // break;
@@ -305,7 +745,9 @@ pub unsafe extern "C" fn scan_lha_lzh(ctx: *mut cli_ctx) -> cl_error_t {
                 // Error getting the next file.
                 // Use debug-level because may not actually be an LHA/LZH archive.
                 // LHA/LZH does not have particularly identifiable magic bytes.
-                debug!("An error occurred when checking for the next file in this LHA or LZH archive: {err}");
+                debug!(
+                    "An error occurred when checking for the next file in this LHA or LZH archive: {err}"
+                );
                 break;
             }
         }
@@ -414,7 +856,7 @@ fn handle_alz_metadata_directory_limit_result(
 /// # Safety
 ///
 /// Must be a valid ctx pointer.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn cli_scanalz(ctx: *mut cli_ctx) -> cl_error_t {
     let fmap = match ctx::current_fmap(ctx) {
         Ok(fmap) => fmap,
@@ -499,7 +941,7 @@ pub unsafe extern "C" fn cli_scanalz(ctx: *mut cli_ctx) -> cl_error_t {
             return cl_error_t_CL_EMEM;
         }
         Ok(Err(err)) => {
-            debug!("Failed to parse Alz file: {}", err.to_string());
+            debug!("Failed to parse Alz file: {err}");
             return cl_error_t_CL_EFORMAT;
         }
         Err(_) => {
@@ -557,7 +999,7 @@ pub unsafe extern "C" fn cli_scanalz(ctx: *mut cli_ctx) -> cl_error_t {
 /// # Safety
 ///
 /// Must be a valid ctx pointer.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn cli_scanzstd(ctx: *mut cli_ctx) -> cl_error_t {
     let fmap = match ctx::current_fmap(ctx) {
         Ok(fmap) => fmap,
@@ -664,6 +1106,8 @@ pub unsafe extern "C" fn cli_scanzstd(ctx: *mut cli_ctx) -> cl_error_t {
 mod tests {
     use super::*;
     use crate::sys::cl_error_t_CL_ETIMEOUT;
+    use std::ffi::c_void;
+    use std::os::raw::c_uint;
 
     #[test]
     fn alz_metadata_scan_success_continues() {
@@ -778,5 +1222,105 @@ mod tests {
 
         #[cfg(target_pointer_width = "64")]
         assert_eq!(alz_metadata_size(u64::MAX), Some(usize::MAX));
+    }
+
+    fn map_raw_addr(
+        rva: u32,
+        sections: &[CliRawAddrSection],
+        fsize: usize,
+        hdr_size: u32,
+    ) -> (u32, c_uint) {
+        let mut err = 99;
+        let offset = unsafe {
+            cli_rawaddr_rust(
+                rva,
+                sections.as_ptr().cast::<c_void>(),
+                u16::try_from(sections.len()).unwrap(),
+                &mut err,
+                fsize,
+                hdr_size,
+            )
+        };
+        (offset, err)
+    }
+
+    #[test]
+    fn rawaddr_maps_header_rvas_before_section_table() {
+        let (offset, err) = map_raw_addr(0x30, &[], 0x200, 0x100);
+
+        assert_eq!(offset, 0x30);
+        assert_eq!(err, 0);
+    }
+
+    #[test]
+    fn rawaddr_rejects_header_rvas_beyond_file_size() {
+        let (offset, err) = map_raw_addr(0x80, &[], 0x80, 0x100);
+
+        assert_eq!(offset, 0);
+        assert_eq!(err, 1);
+    }
+
+    #[test]
+    fn rawaddr_maps_matching_section_in_reverse_order() {
+        let sections = [
+            CliRawAddrSection {
+                rva: 0x1000,
+                raw: 0x200,
+                rsz: 0x300,
+                ..empty_section()
+            },
+            CliRawAddrSection {
+                rva: 0x1000,
+                raw: 0x800,
+                rsz: 0x300,
+                ..empty_section()
+            },
+        ];
+        let (offset, err) = map_raw_addr(0x1010, &sections, 0x1000, 0x100);
+
+        assert_eq!(offset, 0x810);
+        assert_eq!(err, 0);
+    }
+
+    #[test]
+    fn rawaddr_rejects_virtual_section_tail_without_raw_data() {
+        let sections = [CliRawAddrSection {
+            rva: 0x1000,
+            raw: 0x200,
+            rsz: 0x100,
+            ..empty_section()
+        }];
+        let (offset, err) = map_raw_addr(0x1200, &sections, 0x1000, 0x100);
+
+        assert_eq!(offset, 0);
+        assert_eq!(err, 1);
+    }
+
+    #[test]
+    fn rawaddr_rejects_file_offset_overflow() {
+        let sections = [CliRawAddrSection {
+            rva: 0x1000,
+            raw: u32::MAX,
+            rsz: 0x10,
+            ..empty_section()
+        }];
+        let (offset, err) = map_raw_addr(0x1001, &sections, 0x1000, 0x100);
+
+        assert_eq!(offset, 0);
+        assert_eq!(err, 1);
+    }
+
+    fn empty_section() -> CliRawAddrSection {
+        CliRawAddrSection {
+            rva: 0,
+            vsz: 0,
+            raw: 0,
+            rsz: 0,
+            chr: 0,
+            urva: 0,
+            uvsz: 0,
+            uraw: 0,
+            ursz: 0,
+        }
     }
 }

@@ -58,7 +58,7 @@ pub enum Error {
 ///         .ok_or(MyError::DivByZero)
 /// }
 ///
-/// #[no_mangle]
+/// #[unsafe(no_mangle)]
 /// pub unsafe extern "C" fn checked_div_i64(
 ///    numerator: i64,
 ///    denominator: i64,
@@ -145,7 +145,7 @@ macro_rules! rrf_call {
 ///
 /// Or for returning errors more explicitly without a function call:
 /// ```
-/// #[no_mangle]
+/// #[unsafe(no_mangle)]
 /// pub unsafe extern "C" fn checked_div_i64(
 ///    numerator: i64,
 ///    denominator: i64,
@@ -263,13 +263,13 @@ impl<T: 'static + std::error::Error> From<T> for FFIError {
 /// # Safety
 ///
 /// `err` must not be NULL
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn ffierror_fmt(err: *mut FFIError) -> *const c_char {
     assert!(!err.is_null());
     let mut err: ManuallyDrop<Box<FFIError>> = ManuallyDrop::new(Box::from_raw(err));
     match err.get_cstring() {
         Ok(s) => s.as_ptr(),
-        Err(_) => CStr::from_bytes_with_nul_unchecked(b"<error string contains NUL>\0").as_ptr(),
+        Err(_) => c"<error string contains NUL>".as_ptr(),
     }
 }
 
@@ -278,28 +278,10 @@ pub unsafe extern "C" fn ffierror_fmt(err: *mut FFIError) -> *const c_char {
 /// # Safety
 ///
 /// `err` must not be NULL
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn ffierror_free(err: *mut FFIError) {
     assert!(!err.is_null());
     let _: Box<FFIError> = Box::from_raw(err);
-}
-
-#[cfg(test)]
-mod tests {
-    use super::FFIError;
-
-    #[test]
-    fn basic() {
-        // Capture a typical error
-        if let Err(e) = std::str::from_utf8(b"\x80") {
-            let _: FFIError = e.into();
-        }
-    }
-
-    #[test]
-    fn size() {
-        eprintln!("FFIError size = {}", std::mem::size_of::<FFIError>())
-    }
 }
 
 /// Verify that the given parameter is not NULL, and valid UTF-8,
@@ -344,7 +326,7 @@ macro_rules! validate_str_param {
             warn!("{} is NULL", stringify!($ptr));
 
             *$err = Box::into_raw(Box::new(
-                crate::ffi_util::Error::NullParameter(stringify!($ptr).to_string()).into(),
+                $crate::ffi_util::Error::NullParameter(stringify!($ptr).to_string()).into(),
             ));
             return false;
         } else {
@@ -433,11 +415,33 @@ macro_rules! validate_str_param_null {
 ///
 /// The CString pointer must be valid
 /// The CString pointer must not be used after calling this function
-#[export_name = "ffi_cstring_free"]
+#[unsafe(export_name = "ffi_cstring_free")]
 pub unsafe extern "C" fn ffi_cstring_free(cstring: *mut c_char) {
     if cstring.is_null() {
-        warn!("Attempted to free a NULL CString pointer. Please report this at:: https://github.com/Cisco-Talos/clamav/issues");
+        warn!(
+            "Attempted to free a NULL CString pointer. Please report this at:: https://github.com/Cisco-Talos/clamav/issues"
+        );
     } else {
         let _ = unsafe { CString::from_raw(cstring) };
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::FFIError;
+
+    #[test]
+    fn basic() {
+        // Capture a typical error
+        let mut invalid_utf8 = [0_u8];
+        invalid_utf8[0] = 0x80;
+        if let Err(e) = std::str::from_utf8(&invalid_utf8) {
+            let _: FFIError = e.into();
+        }
+    }
+
+    #[test]
+    fn size() {
+        eprintln!("FFIError size = {}", std::mem::size_of::<FFIError>())
     }
 }

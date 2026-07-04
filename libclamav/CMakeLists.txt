@@ -331,19 +331,6 @@ set(LIBCLAMAV_SOURCES
     pe_icons.c          pe_icons.h
     pe_structs.h
     pe.c                pe.h
-    rebuildpe.c         rebuildpe.h
-    # executable unpackers
-    aspack.c            aspack.h
-    fsg.c               fsg.h
-    mew.c               mew.h
-    packlibs.c          packlibs.h
-    petite.c            petite.h
-    spin.c              spin.h
-    unsp.c              unsp.h
-    upack.c             upack.h
-    upx.c               upx.h
-    wwunpack.c          wwunpack.h
-    yc.c                yc.h
     # mail & phishing
     iana_cctld.h
     iana_tld.h

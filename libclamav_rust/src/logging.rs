@@ -25,7 +25,7 @@ use std::{
     os::raw::c_char,
 };
 
-use log::{set_max_level, Level, LevelFilter, Metadata, Record};
+use log::{Level, LevelFilter, Metadata, Record, set_max_level};
 
 use crate::sys;
 
@@ -62,11 +62,28 @@ impl log::Log for ClamLogger {
     fn flush(&self) {}
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn clrs_log_init() -> bool {
     log::set_boxed_logger(Box::new(ClamLogger))
         .map(|()| set_max_level(LevelFilter::Debug))
         .is_ok()
+}
+
+/// API exported for C code to log to standard error using Rust.
+/// This would be an alternative to fputs, and reliably prints
+/// non-ASCII UTF8 characters on Windows, where fputs does not.
+///
+/// # Safety
+///
+/// This function dereferences the c_buff raw pointer. Pointer must be valid.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn clrs_eprint(c_buf: *const c_char) {
+    if c_buf.is_null() {
+        return;
+    }
+
+    let msg = unsafe { CStr::from_ptr(c_buf) }.to_string_lossy();
+    eprint!("{}", msg);
 }
 
 #[cfg(test)]
@@ -83,21 +100,4 @@ mod tests {
         warn!("my old");
         error!("friend.");
     }
-}
-
-/// API exported for C code to log to standard error using Rust.
-/// This would be an alternative to fputs, and reliably prints
-/// non-ASCII UTF8 characters on Windows, where fputs does not.
-///
-/// # Safety
-///
-/// This function dereferences the c_buff raw pointer. Pointer must be valid.
-#[no_mangle]
-pub unsafe extern "C" fn clrs_eprint(c_buf: *const c_char) {
-    if c_buf.is_null() {
-        return;
-    }
-
-    let msg = unsafe { CStr::from_ptr(c_buf) }.to_string_lossy();
-    eprint!("{}", msg);
 }
