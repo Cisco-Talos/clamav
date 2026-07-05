@@ -248,6 +248,126 @@ static int sort_heads_by_partno_fn(const void *a, const void *b)
     return 0;
 }
 
+static bool ac_static_window_byte(uint16_t value, uint8_t *byte)
+{
+    switch (value & CLI_MATCH_METADATA) {
+        case CLI_MATCH_CHAR:
+        case CLI_MATCH_NOCASE:
+            if (byte) {
+                *byte = (uint8_t)(value & 0xff);
+            }
+            return true;
+        default:
+            return false;
+    }
+}
+
+static bool ac_select_repeated_prefix_exact_window(const uint16_t *pattern, uint16_t length, uint8_t ac_maxdepth, uint16_t *ppos)
+{
+    const size_t depth = ac_maxdepth;
+    uint8_t repeated;
+    size_t repeated_run_len = 1;
+    size_t best_start       = 0;
+    unsigned int best_repeated_count;
+    unsigned int best_distinct_count = 0;
+    bool found                        = false;
+    size_t start;
+
+    if (!pattern || !ppos || 0 == depth || length <= depth) {
+        return false;
+    }
+
+    if (!ac_static_window_byte(pattern[0], &repeated)) {
+        return false;
+    }
+
+    while (repeated_run_len < length) {
+        uint8_t byte;
+
+        if (!ac_static_window_byte(pattern[repeated_run_len], &byte) || byte != repeated) {
+            break;
+        }
+        repeated_run_len++;
+    }
+    if (repeated_run_len < depth) {
+        return false;
+    }
+
+    best_repeated_count = (unsigned int)depth + 1;
+
+    for (start = 1; start <= (size_t)length - depth; start++) {
+        bool distinct[256]             = {false};
+        unsigned int repeated_count    = 0;
+        unsigned int distinct_count    = 0;
+        bool valid                     = true;
+        size_t i;
+
+        for (i = start; i < start + depth; i++) {
+            uint8_t byte;
+
+            if (!ac_static_window_byte(pattern[i], &byte)) {
+                valid = false;
+                break;
+            }
+            if (byte == repeated) {
+                repeated_count++;
+            }
+            if (!distinct[byte]) {
+                distinct[byte] = true;
+                distinct_count++;
+            }
+        }
+
+        if (!valid || repeated_count >= depth) {
+            continue;
+        }
+
+        if (!found ||
+            repeated_count < best_repeated_count ||
+            (repeated_count == best_repeated_count && distinct_count > best_distinct_count) ||
+            (repeated_count == best_repeated_count && distinct_count == best_distinct_count && start > best_start)) {
+            found                = true;
+            best_start           = start;
+            best_repeated_count  = repeated_count;
+            best_distinct_count  = distinct_count;
+        }
+    }
+
+    if (!found) {
+        return false;
+    }
+
+    *ppos = (uint16_t)best_start;
+    return true;
+}
+
+static void ac_shift_pattern_prefix(struct cli_ac_patt *pattern, uint16_t ppos)
+{
+    uint16_t i;
+    uint16_t j;
+
+    pattern->prefix           = pattern->pattern;
+    pattern->prefix_length[0] = ppos;
+    for (i = 0, j = 0; i < pattern->prefix_length[0]; i++) {
+        if ((pattern->prefix[i] & CLI_MATCH_WILDCARD) == CLI_MATCH_SPECIAL)
+            pattern->special_pattern++;
+
+        if ((pattern->prefix[i] & CLI_MATCH_METADATA) == CLI_MATCH_SPECIAL) {
+            pattern->prefix_length[1] += pattern->special_table[j]->len[0];
+            pattern->prefix_length[2] += pattern->special_table[j]->len[1];
+            j++;
+        } else {
+            pattern->prefix_length[1]++;
+            pattern->prefix_length[2]++;
+        }
+    }
+
+    pattern->pattern = &pattern->prefix[ppos];
+    pattern->length[0] -= pattern->prefix_length[0];
+    pattern->length[1] -= pattern->prefix_length[1];
+    pattern->length[2] -= pattern->prefix_length[2];
+}
+
 static inline void link_node_lists(struct cli_ac_list **listtable, unsigned int nentries)
 {
     struct cli_ac_list *prev = listtable[0];
@@ -3071,13 +3191,16 @@ cl_error_t cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
     }
 
     /*
-     * Check beginning bytes of the pattern up to the max-depth of the AC trie to see if:
-     *  a. it contains a wildcard, or
-     *  b. the bytes are all zeroes.
+     * Check beginning bytes of the pattern up to the max-depth of the AC trie
+     * to see if they make a poor trie head:
+     *  a. the window contains a wildcard,
+     *  b. the window is all zeroes, or
+     *  c. the pattern starts with a repeated exact byte.
      *
-     * If it does, we can try to shift the start of the pattern the right, have those beginning
-     * bytes be a "prefix" which gets backwards-matched after the AC match.
-     * This happens in the call to ac_backward_match_branch() in ac_forward_match_branch()
+     * If so, try to shift the start of the pattern to the right and store the
+     * original bytes as a prefix that gets backwards-matched after the AC match.
+     * This happens in the call to ac_backward_match_branch() in
+     * ac_forward_match_branch().
      */
     for (i = 0; i < root->ac_maxdepth && i < new->length[0]; i++) {
         if (new->pattern[i] & CLI_MATCH_WILDCARD) {
@@ -3159,30 +3282,9 @@ cl_error_t cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
             return CL_EMALFDB;
         }
 
-        // Store those initial bytes as the pattern "prefix" (the stuff before what goes in the AC Trie)
-        new->prefix = new->pattern;
-        // The "prefix" length is the number of bytes before the starting position of the pattern that goes in the AC Trie.
-        new->prefix_length[0] = ppos;
-        for (i = 0, j = 0; i < new->prefix_length[0]; i++) {
-            if ((new->prefix[i] & CLI_MATCH_WILDCARD) == CLI_MATCH_SPECIAL)
-                new->special_pattern++;
-
-            if ((new->prefix[i] & CLI_MATCH_METADATA) == CLI_MATCH_SPECIAL) {
-                new->prefix_length[1] += new->special_table[j]->len[0];
-                new->prefix_length[2] += new->special_table[j]->len[1];
-                j++;
-            } else {
-                new->prefix_length[1]++;
-                new->prefix_length[2]++;
-            }
-        }
-
-        // Update the pattern to start at the shifted position with the static bytes.
-        new->pattern = &new->prefix[ppos];
-        // And update the pattern length to remove the prefix bytes.
-        new->length[0] -= new->prefix_length[0];
-        new->length[1] -= new->prefix_length[1];
-        new->length[2] -= new->prefix_length[2];
+        ac_shift_pattern_prefix(new, ppos);
+    } else if (ac_select_repeated_prefix_exact_window(new->pattern, new->length[0], root->ac_maxdepth, &ppos)) {
+        ac_shift_pattern_prefix(new, ppos);
     }
 
     if (new->length[2] + new->prefix_length[2] > root->maxpatlen) {
