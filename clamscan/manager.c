@@ -312,10 +312,10 @@ static void scanfile(const char *filename, struct cl_engine *engine, const struc
     char **file_type_out         = NULL;
     char *file_type              = NULL;
     action_source_t action_source;
-    bool have_action_source      = false;
-    bool have_stat               = false;
-    const char *scan_path        = filename;
-    char *real_filter_path       = NULL;
+    bool have_action_source = false;
+    bool have_stat          = false;
+    const char *scan_path   = filename;
+    char *real_filter_path  = NULL;
 
     action_source_init(&action_source);
 
@@ -394,7 +394,7 @@ static void scanfile(const char *filename, struct cl_engine *engine, const struc
         if (action_source.has_stat) {
             sb.st_dev  = action_source.statbuf.st_dev;
             sb.st_size = action_source.statbuf.st_size;
-            have_stat = true;
+            have_stat  = true;
         }
     }
 
@@ -584,9 +584,9 @@ static void scandirs(const char *dirname, struct cl_engine *engine, const struct
     STATBUF sb;
     char *fname;
 #ifdef _WIN32
-    char **entries               = NULL;
-    size_t entries_count         = 0;
-    size_t entries_capacity      = 0;
+    char **entries          = NULL;
+    size_t entries_count    = 0;
+    size_t entries_capacity = 0;
     size_t entry_index;
 #endif
     int included;
@@ -670,7 +670,7 @@ static void scandirs(const char *dirname, struct cl_engine *engine, const struct
         dd = NULL;
 
         for (entry_index = 0; entry_index < entries_count; entry_index++) {
-            dent = NULL;
+            dent  = NULL;
             fname = malloc(strlen(dirname) + strlen(entries[entry_index]) + 2);
             if (fname == NULL) {
                 logg(LOGG_ERROR, "scandirs: Memory allocation failed for fname\n");
