@@ -593,20 +593,20 @@ cl_error_t scanfile(
 {
     int fd = -1;
     int scantype;
-    cl_error_t status = CL_CLEAN;
-    int infected = 0;
-    const char *scan_path = (NULL != scan_open_path) ? scan_open_path : filename;
+    cl_error_t status                   = CL_CLEAN;
+    int infected                        = 0;
+    const char *scan_path               = (NULL != scan_open_path) ? scan_open_path : filename;
     const char *action_display_filename = (NULL != action_target) ? action_target : filename;
     bool action_target_is_scan_target =
         ((NULL == action_target) || (0 == strcmp(action_target, filename))) &&
         ((NULL == action_open_path) || (0 == strcmp(action_open_path, scan_path)));
     action_source_t action_source;
-    bool have_action_source = false;
-    bool action_source_open_failed = false;
-    bool scan_uses_action_source = false;
+    bool have_action_source         = false;
+    bool action_source_open_failed  = false;
+    bool scan_uses_action_source    = false;
     cl_error_t action_source_status = CL_SUCCESS;
-    int scan_errors_before = 0;
-    int scan_result        = 0;
+    int scan_errors_before          = 0;
+    int scan_result                 = 0;
 
     cl_verdict_t verdict   = CL_VERDICT_NOTHING_FOUND;
     const char *alert_name = NULL;
@@ -678,7 +678,7 @@ cl_error_t scanfile(
         scan_result        = dsresult(sock, scantype, scan_path, scan_uses_action_source ? &action_source : NULL, false, NULL, &info->errors, clamdopts);
         if (scan_result > 0) {
             info->ifiles++;
-            status = CL_VIRUS;
+            status   = CL_VIRUS;
             infected = 1;
         } else if ((scan_result < 0) || (info->errors > scan_errors_before)) {
             status = CL_EOPEN;
@@ -713,7 +713,7 @@ cl_error_t scanfile(
             case CL_VERDICT_POTENTIALLY_UNWANTED: {
                 logg(LOGG_INFO, "%s: %s FOUND\n", filename, alert_name);
                 info->ifiles++;
-                status = CL_VIRUS;
+                status   = CL_VIRUS;
                 infected = 1;
             } break;
         }
@@ -755,20 +755,20 @@ cl_error_t scanfile(
 
 int scanmem_cb(PROCESSENTRY32 ProcStruct, MODULEENTRY32 me32, void *data, struct mem_info *info)
 {
-    scanmem_data *scan_data     = data;
-    int rc                      = 0;
-    int isprocess               = 0;
-    char modulename[MAX_PATH]   = "";
-    char expandmodule[MAX_PATH] = "";
+    scanmem_data *scan_data             = data;
+    int rc                              = 0;
+    int isprocess                       = 0;
+    char modulename[MAX_PATH]           = "";
+    char expandmodule[MAX_PATH]         = "";
     char *resolved_modulename           = NULL;
     const char *module_scan_path        = modulename;
     const char *module_action_open_path = NULL;
     action_source_t deferred_action_source;
-    cl_error_t cached_result        = CL_CLEAN;
-    cl_error_t resolve_status       = CL_CLEAN;
-    bool cache_hit                  = false;
-    bool module_filter_enabled      = false;
-    bool module_excluded            = false;
+    cl_error_t cached_result   = CL_CLEAN;
+    cl_error_t resolve_status  = CL_CLEAN;
+    bool cache_hit             = false;
+    bool module_filter_enabled = false;
+    bool module_excluded       = false;
 
     if (!scan_data)
         return 0;
@@ -799,7 +799,7 @@ int scanmem_cb(PROCESSENTRY32 ProcStruct, MODULEENTRY32 me32, void *data, struct
     if (cache_hit) {
         scan_data->res = cached_result;
     }
-    isprocess      = !_stricmp(ProcStruct.szExeFile, modulename) ||
+    isprocess = !_stricmp(ProcStruct.szExeFile, modulename) ||
                 !_stricmp(ProcStruct.szExeFile, me32.szModule);
 
     if (!cache_hit) {
@@ -811,7 +811,7 @@ int scanmem_cb(PROCESSENTRY32 ProcStruct, MODULEENTRY32 me32, void *data, struct
         info->files++;
 
         /* check for module exclusion */
-        scan_data->res = CL_CLEAN;
+        scan_data->res        = CL_CLEAN;
         module_filter_enabled = info->d || scan_data->exclude;
         module_excluded       = module_filter_enabled && chkpath(modulename, clamdopts);
 

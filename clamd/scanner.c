@@ -140,8 +140,8 @@ cl_error_t scan_callback(STATBUF *sb, char *filename, const char *msg, enum cli_
 {
     struct scan_cb_data *scandata = data->data;
     const char *virname           = NULL;
-    cl_error_t ret = CL_SUCCESS;
-    int type = scandata->type;
+    cl_error_t ret                = CL_SUCCESS;
+    int type                      = scandata->type;
     struct cb_context context;
     char *scan_filename = NULL;
     const char *scan_path;
@@ -244,11 +244,11 @@ cl_error_t scan_callback(STATBUF *sb, char *filename, const char *msg, enum cli_
                 scan_filename                 = NULL;
             }
             filename             = NULL;
-            client_conn->cmdtype  = COMMAND_MULTISCANFILE;
-            client_conn->term     = scandata->conn->term;
-            client_conn->options  = scandata->options;
-            client_conn->opts     = scandata->opts;
-            client_conn->group    = scandata->group;
+            client_conn->cmdtype = COMMAND_MULTISCANFILE;
+            client_conn->term    = scandata->conn->term;
+            client_conn->options = scandata->options;
+            client_conn->opts    = scandata->opts;
+            client_conn->group   = scandata->group;
             if (cl_engine_addref(scandata->engine)) {
                 logg(LOGG_ERROR, "cl_engine_addref() failed\n");
                 free(client_conn->filename);

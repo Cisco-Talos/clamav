@@ -310,7 +310,7 @@ int serial_client_scan(char *file, int scantype, int *infected, int *err, int ma
     cdata.flags    = flags;
     cdata.maxlevel = maxlevel ? maxlevel : INT_MAX;
     client_walk_policy_init(&cdata.walk_policy, file);
-    data.data      = &cdata;
+    data.data = &cdata;
 
     ftw = cli_ftw(file, flags, maxlevel ? maxlevel : INT_MAX, serial_callback, &data, ftw_chkpath);
     *infected += cdata.infected;
@@ -378,7 +378,7 @@ static int dspresult(struct client_parallel_data *c)
             logg(LOGG_ERROR, "Bogus session id from clamd\n");
             return 1;
         }
-        filename = (*id)->file;
+        filename      = (*id)->file;
         action_source = (*id)->action_source;
         if (len > 7) {
             char *colon = strrchr(bol, ':');
@@ -620,7 +620,7 @@ int parallel_client_scan(char *file, int scantype, int *infected, int *err, int 
     cdata.action_sources     = 0;
     cdata.max_action_sources = get_max_action_sources();
     client_walk_policy_init(&cdata.walk_policy, file);
-    data.data                = &cdata;
+    data.data = &cdata;
 
     ftw = cli_ftw(file, flags, maxlevel ? maxlevel : INT_MAX, parallel_callback, &data, ftw_chkpath);
 

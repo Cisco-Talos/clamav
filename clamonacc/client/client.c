@@ -428,7 +428,7 @@ cl_error_t onas_setup_client(struct onas_context **ctx)
         return CL_EARG;
     }
 
-    remote = (*ctx)->isremote | optget(opts, "stream")->enabled;
+    remote           = (*ctx)->isremote | optget(opts, "stream")->enabled;
     action_requested = (NULL != action) ||
                        optget(opts, "move")->enabled ||
                        optget(opts, "copy")->enabled ||
@@ -549,9 +549,9 @@ int onas_client_scan(const char *tcpaddr, int64_t portnum, int32_t scantype, uin
     cl_error_t status = CL_CLEAN;
     action_source_t action_source;
     char *resolved_action_path = NULL;
-    bool have_action_source = false;
-    bool regular_file        = S_ISREG(sb.st_mode);
-    static bool disconnected = false;
+    bool have_action_source    = false;
+    bool regular_file          = S_ISREG(sb.st_mode);
+    static bool disconnected   = false;
 
     action_source_init(&action_source);
 
@@ -590,7 +590,7 @@ int onas_client_scan(const char *tcpaddr, int64_t portnum, int32_t scantype, uin
     if (CURLE_OK != curlcode) {
         logg(LOGG_ERROR, "ClamClient: could not init curl for scanning, %s\n", curl_easy_strerror(curlcode));
         /* curl cleanup done in onas_curl_init on error */
-        curl = NULL;
+        curl   = NULL;
         status = CL_ECREAT;
         goto done;
     }
@@ -602,7 +602,7 @@ int onas_client_scan(const char *tcpaddr, int64_t portnum, int32_t scantype, uin
             disconnected = true;
         }
         curl_easy_cleanup(curl);
-        curl = NULL;
+        curl   = NULL;
         status = CL_ECREAT;
         goto done;
     }

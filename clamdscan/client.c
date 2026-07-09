@@ -314,7 +314,7 @@ static char *makeabs(const char *basepath)
 static int client_scan(const char *file, int scantype, int *infected, int *err, int maxlevel, int session, int flags)
 {
     int ret;
-    char *fullpath  = NULL;
+    char *fullpath = NULL;
 
     /* Convert relative path to fullpath without resolving symlinks. */
     fullpath = makeabs(file);
@@ -409,8 +409,8 @@ int client(const struct optstruct *opts, int *infected, int *err)
         }
     }
 
-    scandash = (opts->filename && opts->filename[0] && !strcmp(opts->filename[0], "-") && !optget(opts, "file-list")->enabled && !opts->filename[1]);
-    remote = isremote(opts) | optget(opts, "stream")->enabled;
+    scandash         = (opts->filename && opts->filename[0] && !strcmp(opts->filename[0], "-") && !optget(opts, "file-list")->enabled && !opts->filename[1]);
+    remote           = isremote(opts) | optget(opts, "stream")->enabled;
     action_requested = (NULL != action) ||
                        optget(opts, "move")->enabled ||
                        optget(opts, "copy")->enabled ||
@@ -434,7 +434,7 @@ int client(const struct optstruct *opts, int *infected, int *err)
         session  = optget(opts, "multiscan")->enabled;
     } else
 #endif
-    if (action_requested || remote || scandash || client_side_multiscan) {
+        if (action_requested || remote || scandash || client_side_multiscan) {
         scantype = STREAM;
         session  = optget(opts, "multiscan")->enabled;
     } else if (optget(opts, "multiscan")->enabled)

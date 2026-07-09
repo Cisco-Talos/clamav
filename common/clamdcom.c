@@ -179,7 +179,7 @@ int send_fdpass_fd(int sockd, int fd)
     struct msghdr msg;
     struct cmsghdr *cmsg;
     unsigned char fdbuf[CMSG_SPACE(sizeof(int))];
-    char dummy[] = "";
+    char dummy[]         = "";
     const char zFILDES[] = "zFILDES";
 
     if (fd < 0) {

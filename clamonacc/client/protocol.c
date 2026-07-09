@@ -285,8 +285,8 @@ int onas_dsresult(CURL *curl, int scantype, uint64_t maxstream, const char *file
     STATBUF sb;
     int sockd                                                        = -1;
     int (*recv_func)(struct onas_rcvln *, char **, char **, int64_t) = NULL;
-    const char *display_filename = (NULL != action_source) ? action_source->display_path : filename;
-    int scan_fd                  = (NULL != action_source) ? action_source->scan_fd : fd;
+    const char *display_filename                                     = (NULL != action_source) ? action_source->display_path : filename;
+    int scan_fd                                                      = (NULL != action_source) ? action_source->scan_fd : fd;
 
 #ifdef HAVE_FD_PASSING
     if (FILDES == scantype) {

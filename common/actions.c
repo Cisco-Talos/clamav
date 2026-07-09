@@ -87,12 +87,12 @@ unsigned int notmoved = 0, notremoved = 0;
 static char *actarget;
 static int targlen;
 #ifndef _WIN32
-static int actarget_fd = -1;
+static int actarget_fd         = -1;
 static char *actarget_lockname = NULL;
 static int action_unlinkat_nointr(int dirfd, const char *path, int flags);
 static int traverse_to(const char *directory, bool want_directory_handle, int *out_handle);
 #else
-static HANDLE actarget_handle = NULL;
+static HANDLE actarget_handle    = NULL;
 static char *actarget_normalized = NULL;
 static int traverse_to(const char *directory, bool want_directory_handle, HANDLE *out_handle);
 static size_t win32_path_root_length(const char *path, size_t path_len);
@@ -540,7 +540,7 @@ static char *action_gen_quarantine_lockname(unsigned int attempt)
 int action_setup_quarantine_lock_at(int directory_fd, const char *directory_path, char **lockname_out)
 {
     char *lockname = NULL;
-    int fd        = -1;
+    int fd         = -1;
     unsigned int i;
 
     if (directory_fd < 0 || NULL == lockname_out) {
@@ -1095,7 +1095,7 @@ static int win32_open_existing_directory_at(HANDLE current_handle, const char *d
         goto done;
     }
 
-    *out_handle = directory_handle;
+    *out_handle      = directory_handle;
     directory_handle = NULL;
     status           = 0;
 
@@ -1261,8 +1261,8 @@ done:
 
 static int win32_copy_alternate_streams(HANDLE src_handle, HANDLE dest_handle)
 {
-    LPVOID backup_context       = NULL;
-    const DWORD stream_id_size  = (DWORD)offsetof(WIN32_STREAM_ID, cStreamName);
+    LPVOID backup_context      = NULL;
+    const DWORD stream_id_size = (DWORD)offsetof(WIN32_STREAM_ID, cStreamName);
     WIN32_STREAM_ID stream_id;
     LARGE_INTEGER zero;
     int status = -1;
@@ -1278,10 +1278,10 @@ static int win32_copy_alternate_streams(HANDLE src_handle, HANDLE dest_handle)
     }
 
     while (TRUE) {
-        WCHAR *stream_name_w        = NULL;
-        char *stream_name_utf8      = NULL;
-        HANDLE dest_stream_handle   = INVALID_HANDLE_VALUE;
-        DWORD bytes_read            = 0;
+        WCHAR *stream_name_w      = NULL;
+        char *stream_name_utf8    = NULL;
+        HANDLE dest_stream_handle = INVALID_HANDLE_VALUE;
+        DWORD bytes_read          = 0;
 
         if (FALSE == BackupRead(src_handle, (BYTE *)&stream_id, stream_id_size, &bytes_read, FALSE, FALSE, &backup_context)) {
             goto done;
@@ -1360,10 +1360,10 @@ done:
 
 static int filecopy_to_fd(const action_source_t *source, const char *dest_path, int dest_fd)
 {
-    const char *src                  = NULL;
-    HANDLE src_handle                = INVALID_HANDLE_VALUE;
-    HANDLE dest_handle               = INVALID_HANDLE_VALUE;
-    int status                       = -1;
+    const char *src    = NULL;
+    HANDLE src_handle  = INVALID_HANDLE_VALUE;
+    HANDLE dest_handle = INVALID_HANDLE_VALUE;
+    int status         = -1;
 
     if ((NULL == source) || (NULL == dest_path) || (dest_fd < 0)) {
         return -1;
@@ -1492,7 +1492,7 @@ static int win32_open_delete_handle_for_source(
         goto done;
     }
 
-    *out_handle  = delete_handle;
+    *out_handle   = delete_handle;
     delete_handle = INVALID_HANDLE_VALUE;
     status        = 0;
 
@@ -1794,10 +1794,10 @@ static size_t win32_path_root_length(const char *path, size_t path_len)
 
 static char *win32_trim_trailing_path_separators_dup(const char *path)
 {
-    char *trimmed     = NULL;
-    size_t path_len   = 0;
-    size_t root_len   = 0;
-    size_t trim_len   = 0;
+    char *trimmed   = NULL;
+    size_t path_len = 0;
+    size_t root_len = 0;
+    size_t trim_len = 0;
 
     if (NULL == path) {
         return NULL;
@@ -1985,11 +1985,11 @@ static int action_validate_actarget_path(void)
 
 static int win32_open_existing_path(const char *path, bool is_directory, ACCESS_MASK desired_access, HANDLE *out_handle)
 {
-    WCHAR *path_w         = NULL;
+    WCHAR *path_w          = NULL;
     WCHAR *extended_path_w = NULL;
-    HANDLE handle         = INVALID_HANDLE_VALUE;
-    DWORD flags           = FILE_FLAG_OPEN_REPARSE_POINT;
-    int status            = -1;
+    HANDLE handle          = INVALID_HANDLE_VALUE;
+    DWORD flags            = FILE_FLAG_OPEN_REPARSE_POINT;
+    int status             = -1;
 
     if ((NULL == path) || (NULL == out_handle)) {
         return -1;
@@ -2645,7 +2645,7 @@ cl_error_t action_source_from_fd(const char *display_path, int fd, action_source
     source->scan_fd = dup_fd;
     dup_fd          = -1;
 #else
-    source_osfhandle = _get_osfhandle(fd);
+    source_osfhandle          = _get_osfhandle(fd);
     if (-1 == source_osfhandle) {
         status = CL_EOPEN;
         goto done;
@@ -2781,7 +2781,7 @@ static int action_unlink_dest_at(const char *dest_path)
 
 static int action_link_source_to_dest(const action_source_t *source, char **newname, STATBUF *source_stat_out)
 {
-    char *tmps = NULL;
+    char *tmps      = NULL;
     char *dest_path = NULL;
     char *filename;
     const char *dest_basename;
@@ -2837,9 +2837,9 @@ static int action_link_source_to_dest(const action_source_t *source, char **newn
             if (NULL != source_stat_out) {
                 *source_stat_out = source->statbuf;
             }
-            *newname = dest_path;
+            *newname  = dest_path;
             dest_path = NULL;
-            status = 0;
+            status    = 0;
             goto done;
         }
 
@@ -3329,15 +3329,15 @@ static int traverse_unlink(
     int status = -1;
     cl_error_t ret;
 #ifndef _WIN32
-    int target_directory_fd = -1;
-    int private_directory_fd = -1;
+    int target_directory_fd                                      = -1;
+    int private_directory_fd                                     = -1;
     char private_directory_name[ACTION_PRIVATE_UNLINK_NAME_SIZE] = {0};
     STATBUF current_stat;
     STATBUF captured_stat;
     int rc;
     bool supports_noreplace_restore = false;
 #else
-    HANDLE delete_handle = INVALID_HANDLE_VALUE;
+    HANDLE delete_handle     = INVALID_HANDLE_VALUE;
     bool close_delete_handle = true;
 #endif
     char *target_basename = NULL;
@@ -3519,9 +3519,9 @@ static void action_move(const action_source_t *source)
     STATBUF source_stat;
 #endif
 
-    filename          = action_source_display_path(source);
-    action_filename   = action_source_action_path(source);
-    show_action_path  = action_source_show_action_path(source);
+    filename         = action_source_display_path(source);
+    action_filename  = action_source_action_path(source);
+    show_action_path = action_source_show_action_path(source);
 
     if ((NULL == source) || (NULL == action_filename)) {
         logg(LOGG_ERROR, "Can't move file '%s'\n", filename);
@@ -3655,9 +3655,9 @@ static void action_copy(const action_source_t *source)
     const char *action_filename;
     bool show_action_path;
 
-    filename          = action_source_display_path(source);
-    action_filename   = action_source_action_path(source);
-    show_action_path  = action_source_show_action_path(source);
+    filename         = action_source_display_path(source);
+    action_filename  = action_source_action_path(source);
+    show_action_path = action_source_show_action_path(source);
 
     if ((NULL == source) || (NULL == action_filename)) {
         logg(LOGG_ERROR, "Can't copy file '%s'\n", filename);
@@ -3729,9 +3729,9 @@ static void action_remove(const action_source_t *source)
     const char *action_filename;
     bool show_action_path;
 
-    filename          = action_source_display_path(source);
-    action_filename   = action_source_action_path(source);
-    show_action_path  = action_source_show_action_path(source);
+    filename         = action_source_display_path(source);
+    action_filename  = action_source_action_path(source);
+    show_action_path = action_source_show_action_path(source);
 
     if ((NULL == source) || (NULL == action_filename)) {
         logg(LOGG_ERROR, "Can't remove file '%s'\n", filename);
@@ -3798,7 +3798,7 @@ int actsetup(const struct optstruct *opts)
         const char *requested_actarget = optget(opts, move ? "move" : "copy")->strarg;
 #ifndef _WIN32
         cl_error_t ret;
-        int actarget_parent_fd = -1;
+        int actarget_parent_fd  = -1;
         char *actarget_basename = NULL;
         char *resolved_actarget = NULL;
 
@@ -3817,7 +3817,7 @@ int actsetup(const struct optstruct *opts)
             logg(LOGG_INFO, "action_setup: Failed to normalize quarantine directory path %s\n", requested_actarget);
             return 1;
         }
-        actarget = actarget_normalized;
+        actarget                      = actarget_normalized;
 #endif
         if (!isdir()) return 1;
         targlen = strlen(actarget);
@@ -3877,7 +3877,7 @@ int actsetup(const struct optstruct *opts)
             return 1;
         }
 #endif
-        action  = move ? action_move : action_copy;
+        action = move ? action_move : action_copy;
     } else if (optget(opts, "remove")->enabled)
         action = action_remove;
     return 0;

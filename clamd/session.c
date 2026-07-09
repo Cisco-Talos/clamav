@@ -278,8 +278,7 @@ int command(client_conn_t *conn, int *virus)
             }
             break;
         }
-        case COMMAND_MULTISCANFILE:
-        {
+        case COMMAND_MULTISCANFILE: {
             char *scan_filename    = conn->filename;
             char *display_filename = (NULL != conn->display_filename) ? conn->display_filename : conn->filename;
 
