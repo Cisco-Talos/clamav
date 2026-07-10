@@ -3593,6 +3593,16 @@ static char *parse_yara_hex_string(YR_STRING *string, int *ret)
             case '\n':
             case '}': /* end of hex string */
                 break;
+            case '~':
+                if ((i + 2 >= slen - 1) ||
+                    !isxdigit((unsigned char)str[i + 1]) ||
+                    !isxdigit((unsigned char)str[i + 2])) {
+                    if (ret) *ret = CL_EMALFDB;
+                    return NULL;
+                }
+                reslen += 5;
+                i += 2;
+                break;
             default:
                 reslen++;
                 break;
@@ -3645,6 +3655,21 @@ static char *parse_yara_hex_string(YR_STRING *string, int *ret)
                 break;
             case ']':
                 res[j++] = '}';
+                break;
+            case '~':
+                if ((i + 2 >= slen - 1) ||
+                    !isxdigit((unsigned char)str[i + 1]) ||
+                    !isxdigit((unsigned char)str[i + 2])) {
+                    free(res);
+                    if (ret) *ret = CL_EMALFDB;
+                    return NULL;
+                }
+                res[j++] = '!';
+                res[j++] = '(';
+                res[j++] = str[i + 1];
+                res[j++] = str[i + 2];
+                res[j++] = ')';
+                i += 2;
                 break;
             default:
                 res[j++] = str[i];

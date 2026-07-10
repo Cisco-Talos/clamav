@@ -2639,7 +2639,7 @@ inline static int ac_special_altstr(const char *hexpr, uint8_t sigopts, struct c
 
     num = ac_analyze_expr(hexprcpy, &fixed, &slen);
 
-    if (!sigopts && fixed) {
+    if (!(sigopts & ~(ACPATT_OPTION_ONCE | ACPATT_OPTION_ASCII)) && fixed) {
         special->num    = 0;
         special->len[0] = special->len[1] = slen / 2;
         /* single-bytes are len 2 in hex */

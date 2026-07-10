@@ -52,6 +52,39 @@ class TC(testcase.TestCase):
 '''
         )
 
+        (TC.path_tmp / 'yara-hex-not-byte-match.yara').write_text(
+            r'''rule yara_hex_not_byte_match
+{
+    strings:
+        $a = { 41 41 ~43 42 }
+    condition:
+        $a
+}
+'''
+        )
+
+        (TC.path_tmp / 'yara-for-zero-of-no-match.yara').write_text(
+            r'''rule yara_for_zero_of_no_match
+{
+    strings:
+        $a = "AA"
+    condition:
+        for 0 of ($*) : (true)
+}
+'''
+        )
+
+        (TC.path_tmp / 'yara-for-zero-of-match.yara').write_text(
+            r'''rule yara_for_zero_of_match
+{
+    strings:
+        $a = "AA"
+    condition:
+        for 0 of ($*) : (false)
+}
+'''
+        )
+
     @classmethod
     def tearDownClass(cls):
         super(TC, cls).tearDownClass()
@@ -118,3 +151,53 @@ class TC(testcase.TestCase):
         assert output.ec == 0
 
         self.verify_output(output.out, expected=['yara-parser.sample: OK'], unexpected=['FOUND'])
+
+    def test_yara_hex_not_byte(self):
+        self.step_name('Test YARA hex not-byte syntax')
+
+        command = '{valgrind} {valgrind_args} {clamscan} -d {path_db} {testfile}'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args,
+            clamscan=TC.clamscan,
+            path_db=TC.path_tmp / 'yara-hex-not-byte-match.yara',
+            testfile=TC.sample,
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 1  # virus found
+
+        expected_results = [
+            'yara-parser.sample: YARA.yara_hex_not_byte_match.UNOFFICIAL FOUND',
+            'Infected files: 1',
+        ]
+        self.verify_output(output.out, expected=expected_results)
+
+    def test_yara_for_zero_of(self):
+        self.step_name('Test YARA for 0 of quantifier semantics')
+
+        command = '{valgrind} {valgrind_args} {clamscan} -d {path_db} {testfile}'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args,
+            clamscan=TC.clamscan,
+            path_db=TC.path_tmp / 'yara-for-zero-of-no-match.yara',
+            testfile=TC.sample,
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 0
+
+        self.verify_output(output.out, expected=['yara-parser.sample: OK'], unexpected=['FOUND'])
+
+        command = '{valgrind} {valgrind_args} {clamscan} -d {path_db} {testfile}'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args,
+            clamscan=TC.clamscan,
+            path_db=TC.path_tmp / 'yara-for-zero-of-match.yara',
+            testfile=TC.sample,
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 1  # virus found
+
+        expected_results = [
+            'yara-parser.sample: YARA.yara_for_zero_of_match.UNOFFICIAL FOUND',
+            'Infected files: 1',
+        ]
+        self.verify_output(output.out, expected=expected_results)

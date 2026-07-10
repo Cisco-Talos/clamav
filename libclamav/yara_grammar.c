@@ -2567,7 +2567,7 @@ yyreduce:
             yr_parser_emit_with_arg(
                 yyscanner, OP_PUSH_M, mem_offset + 1, NULL);
 
-            yr_parser_emit(yyscanner, OP_LE, NULL);
+            yr_parser_emit(yyscanner, OP_OF_COUNT, NULL);
 
             compiler->loop_identifier[compiler->loop_depth] = NULL;
             yr_free((yyvsp[-8].c_string));
@@ -2654,7 +2654,7 @@ yyreduce:
             yr_parser_emit_with_arg(
                 yyscanner, OP_PUSH_M, mem_offset + 1, NULL);
 
-            yr_parser_emit(yyscanner, OP_LE, NULL);
+            yr_parser_emit(yyscanner, OP_OF_COUNT, NULL);
             (yyval.expression_type) = EXPRESSION_TYPE_BOOLEAN;
 
         }
