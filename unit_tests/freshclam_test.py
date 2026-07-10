@@ -15,6 +15,7 @@ import unittest
 from functools import partial
 
 from http.server import HTTPServer, BaseHTTPRequestHandler
+from socketserver import TCPServer
 
 import testcase
 
@@ -25,7 +26,17 @@ MOCK_MIRROR_IPV6_HOST = '::1'
 MOCK_MIRROR_START_TIMEOUT = 10
 
 
-class IPv6HTTPServer(HTTPServer):
+class MockMirrorHTTPServer(HTTPServer):
+    '''
+    HTTPServer variant that avoids reverse DNS during local test server startup.
+    '''
+    def server_bind(self):
+        TCPServer.server_bind(self)
+        self.server_name = self.server_address[0]
+        self.server_port = self.server_address[1]
+
+
+class IPv6HTTPServer(MockMirrorHTTPServer):
     address_family = socket.AF_INET6
 
 
@@ -861,7 +872,7 @@ def create_mock_database_mirror_server(handler, port):
     last_error = None
 
     for server_class, host in (
-        (HTTPServer, MOCK_MIRROR_IPV4_HOST),
+        (MockMirrorHTTPServer, MOCK_MIRROR_IPV4_HOST),
         (IPv6HTTPServer, MOCK_MIRROR_IPV6_HOST),
     ):
         try:
