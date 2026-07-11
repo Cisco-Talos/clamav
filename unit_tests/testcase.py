@@ -131,7 +131,8 @@ class TestCase(unittest.TestCase):
 
         cls.path_source =      Path(os.getenv("SOURCE"))
         cls.path_build =       Path(os.getenv("BUILD"))
-        cls.path_tmp =         Path(tempfile.mkdtemp(prefix=(cls.__name__ + "-"), dir=os.getenv("TMP")))
+        cls.path_tmp =         Path(tempfile.mkdtemp(prefix=(cls.__name__ + "-"), dir=os.getenv("TMP"))).resolve()
+
         cls.check_clamav =     Path(os.getenv("CHECK_CLAMAV"))     if os.getenv("CHECK_CLAMAV") != None else None
         cls.check_clamd =      Path(os.getenv("CHECK_CLAMD"))      if os.getenv("CHECK_CLAMD") != None else None
         cls.check_fpu_endian = Path(os.getenv("CHECK_FPU_ENDIAN")) if os.getenv("CHECK_FPU_ENDIAN") != None else None
