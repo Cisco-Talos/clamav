@@ -463,6 +463,21 @@ int cli_scanxar(cli_ctx *ctx)
     /* cli_dbgmsg("hdr.toc_length_decompressed %lu\n", hdr.toc_length_decompressed); */
     /* cli_dbgmsg("hdr.chksum_alg %i\n", hdr.chksum_alg); */
 
+    rc = cli_checklimits("cli_scanxar", ctx, hdr.toc_length_decompressed, 0, 0);
+    if (rc != CL_SUCCESS) {
+        return rc;
+    }
+
+    /* The TOC buffer needs one additional byte for a terminating NUL. Reject
+     * declarations that cannot be represented safely or accommodated by the
+     * allocator, even when configured scan-size limits are disabled. */
+    if (hdr.toc_length_decompressed > SIZE_MAX - 1 ||
+        hdr.toc_length_decompressed >= CLI_MAX_ALLOCATION) {
+        cli_dbgmsg("cli_scanxar: Invalid decompressed TOC length: %" PRIu64 ".\n",
+                   hdr.toc_length_decompressed);
+        return CL_EFORMAT;
+    }
+
     /* Uncompress TOC */
     strm.next_in = (unsigned char *)fmap_need_off_once(ctx->fmap, hdr.size, hdr.toc_length_compressed);
     if (strm.next_in == NULL) {
