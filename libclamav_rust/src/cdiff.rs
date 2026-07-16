@@ -1172,28 +1172,51 @@ fn process_line(ctx: &mut Context, line: &[u8]) -> Result<(), InputError> {
     // Call the appropriate command function
     match cmd {
         b"OPEN" => cmd_open(ctx, remainder),
-        b"ADD" => cmd_add(ctx, remainder_with_nl.unwrap()),
+        b"ADD" => cmd_add(
+            ctx,
+            nonempty_command_args("ADD", "signature", remainder_with_nl)?,
+        ),
         b"DEL" => {
-            let del_op = DelOp::new(remainder.unwrap())?;
+            let del_op = DelOp::new(command_args("DEL", "parameters", remainder)?)?;
             cmd_del(ctx, del_op)
         }
         b"XCHG" => {
-            let xchg_op = XchgOp::new(remainder.unwrap())?;
+            let xchg_op = XchgOp::new(command_args("XCHG", "parameters", remainder)?)?;
             cmd_xchg(ctx, xchg_op)
         }
         b"MOVE" => {
-            let move_op = MoveOp::new(remainder.unwrap())?;
+            let move_op = MoveOp::new(command_args("MOVE", "parameters", remainder)?)?;
             cmd_move(ctx, move_op)
         }
         b"CLOSE" => cmd_close(ctx),
         b"UNLINK" => {
-            let unlink_op = UnlinkOp::new(remainder.unwrap())?;
+            let unlink_op = UnlinkOp::new(command_args("UNLINK", "parameters", remainder)?)?;
             cmd_unlink(ctx, unlink_op)
         }
         _ => Err(InputError::UnknownCommand(
             String::from_utf8_lossy(cmd).to_string(),
         )),
     }
+}
+
+fn command_args<'a>(
+    command: &'static str,
+    parameter: &'static str,
+    args: Option<&'a [u8]>,
+) -> Result<&'a [u8], InputError> {
+    args.ok_or(InputError::MissingParameter(command, parameter))
+}
+
+fn nonempty_command_args<'a>(
+    command: &'static str,
+    parameter: &'static str,
+    args: Option<&'a [u8]>,
+) -> Result<&'a [u8], InputError> {
+    let args = command_args(command, parameter, args)?;
+    if args.is_empty() {
+        return Err(InputError::MissingParameter(command, parameter));
+    }
+    Ok(args)
 }
 
 /// Main loop for iterating over cdiff command lines and handling them
@@ -1390,6 +1413,33 @@ mod tests {
             MoveOp::new(b"a b 1"),
             Err(InputError::MissingParameter("MOVE", "start_line"))
         ));
+    }
+
+    #[test]
+    fn process_line_rejects_missing_add_signature() {
+        let mut ctx = Context::default();
+
+        assert!(matches!(
+            process_line(&mut ctx, b"ADD\n"),
+            Err(InputError::MissingParameter("ADD", "signature"))
+        ));
+    }
+
+    #[test]
+    fn process_line_rejects_missing_command_args() {
+        for (command, input) in [
+            ("DEL", b"DEL\n".as_slice()),
+            ("XCHG", b"XCHG\n".as_slice()),
+            ("MOVE", b"MOVE\n".as_slice()),
+            ("UNLINK", b"UNLINK\n".as_slice()),
+        ] {
+            let mut ctx = Context::default();
+
+            assert!(matches!(
+                process_line(&mut ctx, input),
+                Err(InputError::MissingParameter(cmd, "parameters")) if cmd == command
+            ));
+        }
     }
 
     /// Helper function to set up a test folder and initialize a pseudo-db file with specified data.

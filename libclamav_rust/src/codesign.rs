@@ -19,7 +19,7 @@
  */
 
 use std::{
-    ffi::{c_void, CStr},
+    ffi::{c_void, CStr, CString},
     fs::File,
     io::{prelude::*, BufReader},
     mem::ManuallyDrop,
@@ -33,7 +33,7 @@ use openssl::{
     stack::{self, Stack},
     x509::{
         store::{X509Store, X509StoreBuilder},
-        X509,
+        X509Ref, X509,
     },
 };
 
@@ -43,9 +43,12 @@ use clam_sigutil::{
     SigType, Signature,
 };
 
-use log::{debug, error, warn};
+use log::{debug, warn};
 
 use crate::{ffi_error, ffi_util::FFIError, sys::cl_retflevel, validate_str_param};
+
+const CLAMSIGN_HEADER_PREFIX: &str = "#clamsign-";
+const CLAMSIGN_VERSION: &str = "1.0";
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
@@ -80,6 +83,38 @@ pub enum Error {
         "Incorrect public key, does not match any serial number in the signature's signers chain"
     )]
     IncorrectPublicKey,
+}
+
+fn validate_clamsign_header(line: &str) -> Result<(), Error> {
+    let version = line.strip_prefix(CLAMSIGN_HEADER_PREFIX).ok_or_else(|| {
+        Error::CannotVerify(format!(
+            "Unsupported signature file format, expected first line to start with '{}{}'",
+            CLAMSIGN_HEADER_PREFIX, CLAMSIGN_VERSION
+        ))
+    })?;
+
+    if version != CLAMSIGN_VERSION {
+        return Err(Error::CannotVerify(format!(
+            "Unsupported signature file version, expected '{}'",
+            CLAMSIGN_VERSION
+        )));
+    }
+
+    Ok(())
+}
+
+fn certificate_common_name(cert: &X509Ref) -> Result<String, String> {
+    let common_name = cert
+        .subject_name()
+        .entries()
+        .find(|name_entry| name_entry.object().nid() == openssl::nid::Nid::COMMONNAME)
+        .ok_or_else(|| "certificate subject is missing a common name".to_string())?;
+
+    common_name
+        .data()
+        .as_utf8()
+        .map(|name| name.to_string())
+        .map_err(|e| format!("certificate common name is not valid UTF-8: {}", e))
 }
 
 /// C interface for verify_signed_file() which verifies a file's external digital signature.
@@ -306,7 +341,15 @@ pub unsafe extern "C" fn codesign_verify_file(
         Ok(signer) => {
             debug!("CVD verified successfully");
             // convert the signer_name to a CString and store it in the output parameter
-            let signer_cstr = std::ffi::CString::new(signer).unwrap();
+            let signer_cstr = match CString::new(signer) {
+                Ok(signer_cstr) => signer_cstr,
+                Err(e) => {
+                    return ffi_error!(
+                        err = err,
+                        Error::CannotVerify(format!("Invalid signer name: {}", e))
+                    );
+                }
+            };
             *signer_name = signer_cstr.into_raw();
             true
         }
@@ -407,19 +450,7 @@ pub fn verify_signed_file(
         // First line should be "#clamsign-MAJOR.MINOR"
         if index == 0 {
             let line = line?;
-            if !line.starts_with("#clamsign") {
-                return Err(Error::CannotVerify(
-                    "Unsupported signature file format, expected first line start with '#clamsign-1.0'".to_string(),
-                ));
-            }
-
-            // Check clamsign version
-            let version = line.split('-').nth(1).unwrap();
-            if version != "1.0" {
-                return Err(Error::CannotVerify(
-                    "Unsupported signature file version, expected '1.0'".to_string(),
-                ));
-            }
+            validate_clamsign_header(&line)?;
 
             continue;
         }
@@ -441,7 +472,12 @@ pub fn verify_signed_file(
 
         match parse_from_cvd_with_meta(SigType::DigitalSignature, &data.into()) {
             Ok((sig, meta)) => {
-                let sig = sig.downcast::<DigitalSig>().unwrap();
+                let sig = sig.downcast::<DigitalSig>().map_err(|_| {
+                    Error::CannotVerify(format!(
+                        "{:?}:{}: Signature did not parse as a digital signature",
+                        signature_file_path, index
+                    ))
+                })?;
 
                 sig.validate(&meta).map_err(|e| {
                     Error::CannotVerify(format!(
@@ -452,7 +488,12 @@ pub fn verify_signed_file(
 
                 // verify the flevel bounds of this signature compared with the current flevel
                 let current_flevel = unsafe { cl_retflevel() };
-                let sig_flevel_range = meta.f_level.unwrap();
+                let sig_flevel_range = meta.f_level.ok_or_else(|| {
+                    Error::CannotVerify(format!(
+                        "{:?}:{}: Digital signature is missing feature-level metadata",
+                        signature_file_path, index
+                    ))
+                })?;
                 if !sig_flevel_range.contains(&current_flevel) {
                     debug!(
                         "{:?}:{}: Signature feature level range {:?} does not include current feature level {}",
@@ -574,25 +615,27 @@ impl Verifier {
             let file = file?;
             let path = file.path();
             if path.is_file() {
-                let ext = path.extension();
-                if ext.is_some() && (ext.unwrap() == "pem" || ext.unwrap() == "crt") {
-                    let read_result = std::fs::read(&path);
-                    if let Err(e) = read_result {
-                        debug!("Error reading certificate file '{:?}': {}", path, e);
-                        continue;
-                    }
-                    let certs_in_file = X509::stack_from_pem(&read_result.unwrap())?;
+                let is_certificate = match path.extension() {
+                    Some(ext) => ext == "pem" || ext == "crt",
+                    None => false,
+                };
+                if is_certificate {
+                    let cert_bytes = match std::fs::read(&path) {
+                        Ok(cert_bytes) => cert_bytes,
+                        Err(e) => {
+                            debug!("Error reading certificate file '{:?}': {}", path, e);
+                            continue;
+                        }
+                    };
+                    let certs_in_file = X509::stack_from_pem(&cert_bytes)?;
 
                     for cert in certs_in_file {
-                        // get cert common name
-                        let common_name = cert
-                            .subject_name()
-                            .entries()
-                            .find(|name_entry| {
-                                name_entry.object().nid() == openssl::nid::Nid::COMMONNAME
-                            })
-                            .map(|name_entry| name_entry.data().as_utf8().unwrap().to_string())
-                            .unwrap();
+                        let common_name = certificate_common_name(&cert).map_err(|e| {
+                            Error::CertificateStore(format!(
+                                "Invalid certificate {:?}: {}",
+                                path, e
+                            ))
+                        })?;
 
                         if root_common_names.contains(&common_name) {
                             return Err(Error::CertificateStore(format!(
@@ -628,15 +671,11 @@ impl Verifier {
             let signers: Vec<String> = signer
                 .iter()
                 .map(|cert| {
-                    cert.subject_name()
-                        .entries()
-                        .find(|name_entry| {
-                            name_entry.object().nid() == openssl::nid::Nid::COMMONNAME
-                        })
-                        .map(|name_entry| name_entry.data().as_utf8().unwrap().to_string())
-                        .unwrap()
+                    certificate_common_name(cert).map_err(|e| {
+                        Error::InvalidDigitalSignature(format!("Invalid signer certificate: {}", e))
+                    })
                 })
-                .collect();
+                .collect::<Result<_, _>>()?;
 
             match result {
                 Ok(()) => {
@@ -654,5 +693,31 @@ impl Verifier {
         } else {
             Err(Error::NotSigned)
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn clamsign_header_accepts_supported_version() {
+        validate_clamsign_header("#clamsign-1.0").expect("valid clamsign header");
+    }
+
+    #[test]
+    fn clamsign_header_rejects_missing_separator() {
+        assert!(matches!(
+            validate_clamsign_header("#clamsign"),
+            Err(Error::CannotVerify(_))
+        ));
+    }
+
+    #[test]
+    fn clamsign_header_rejects_unsupported_version() {
+        assert!(matches!(
+            validate_clamsign_header("#clamsign-2.0"),
+            Err(Error::CannotVerify(_))
+        ));
     }
 }
