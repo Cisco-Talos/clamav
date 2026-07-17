@@ -4,6 +4,8 @@
 Run clamscan XAR tests.
 """
 
+import hashlib
+import re
 import struct
 import sys
 import zlib
@@ -29,9 +31,21 @@ class TC(testcase.TestCase):
         super(TC, self).tearDown()
         self.verify_valgrind_log()
 
-    def make_xar(self, name, toc_length_decompressed):
-        compressed_toc = zlib.compress(b'<xar></xar>')
-        compressed_toc += bytes(44 - len(compressed_toc))
+    def make_xar(
+        self,
+        name,
+        toc_length_decompressed,
+        toc=b'<xar></xar>',
+        truncate_stream=False,
+        pad_compressed_to=None,
+    ):
+        compressed_toc = zlib.compress(toc)
+        if truncate_stream:
+            compressed_toc = compressed_toc[:-4]
+        if pad_compressed_to is not None:
+            assert len(compressed_toc) <= pad_compressed_to
+            compressed_toc += bytes(pad_compressed_to - len(compressed_toc))
+
         testfile = TC.path_tmp / name
         testfile.write_bytes(
             struct.pack(
@@ -44,10 +58,12 @@ class TC(testcase.TestCase):
                 0,
             ) + compressed_toc
         )
-        assert testfile.stat().st_size == 72
         return testfile
 
-    def scan_xar(self, testfile, limits):
+    def scan_xar(self, testfile, limits, path_db=None):
+        if path_db is None:
+            path_db = TC.path_source / 'unit_tests' / 'input' / 'clamav.hdb'
+
         command = (
             '{valgrind} {valgrind_args} {clamscan} {limits} '
             '-d {path_db} {testfile}'
@@ -56,55 +72,82 @@ class TC(testcase.TestCase):
             valgrind_args=TC.valgrind_args,
             clamscan=TC.clamscan,
             limits=limits,
-            path_db=TC.path_source / 'unit_tests' / 'input' / 'clamav.hdb',
+            path_db=path_db,
             testfile=testfile,
         )
         return self.execute_command(command)
 
-    def test_toc_allocation_obeys_scan_limits(self):
-        self.step_name('Test XAR TOC allocation obeys scan limits')
+    def test_declared_large_actual_small_toc_is_scanned(self):
+        self.step_name('Test XAR limits use the actual TOC size')
 
+        for name, declared_length in (
+            ('allocation-limit-toc.xar', 1024 * 1024 * 1024),
+            ('overflow-toc.xar', (1 << 64) - 1),
+        ):
+            with self.subTest(declared_length=declared_length):
+                testfile = self.make_xar(
+                    name,
+                    declared_length,
+                    pad_compressed_to=44,
+                )
+                assert testfile.stat().st_size == 72
+                output = self.scan_xar(
+                    testfile,
+                    '--alert-exceeds-max=yes --max-filesize=1M --max-scansize=1M',
+                )
+
+                assert output.ec == 0
+                self.verify_output(
+                    output.out,
+                    expected=[re.escape('{}: OK'.format(testfile))],
+                    unexpected=[
+                        'Heuristics.Limits.Exceeded',
+                        "Can't allocate memory ERROR",
+                    ],
+                )
+
+    def test_declared_small_actual_large_toc_obeys_scan_limits(self):
+        self.step_name('Test XAR limits stop actual TOC output')
+
+        actual_toc = b'<xar>' + (b' ' * (2 * 1024 * 1024)) + b'</xar>'
         testfile = self.make_xar(
-            'oversized-toc.xar',
-            1024 * 1024 * 1024,
+            'actual-oversized-toc.xar',
+            1,
+            toc=actual_toc,
         )
         output = self.scan_xar(
             testfile,
             '--alert-exceeds-max=yes --max-filesize=1M --max-scansize=1M',
         )
 
-        assert output.ec == 1  # limits heuristic
-
-        expected_results = [
-            'Heuristics.Limits.Exceeded.MaxScanSize FOUND',
-        ]
-        unexpected_results = [
-            "Can't allocate memory ERROR",
-        ]
+        assert output.ec == 1
         self.verify_output(
             output.out,
-            expected=expected_results,
-            unexpected=unexpected_results,
+            expected=['Heuristics.Limits.Exceeded.MaxScanSize FOUND'],
+            unexpected=["Can't allocate memory ERROR"],
         )
 
-    def test_toc_allocation_has_internal_limit(self):
-        self.step_name('Test XAR TOC allocation has an internal limit')
+    def test_incomplete_toc_stream_is_not_scanned(self):
+        self.step_name('Test XAR requires a complete TOC stream')
 
-        for name, toc_length_decompressed in (
-            ('allocation-limit-toc.xar', 1024 * 1024 * 1024),
-            ('overflow-toc.xar', (1 << 64) - 1),
-        ):
-            with self.subTest(toc_length_decompressed=toc_length_decompressed):
-                testfile = self.make_xar(name, toc_length_decompressed)
-                output = self.scan_xar(
-                    testfile,
-                    '--max-filesize=0 --max-scansize=0',
-                )
+        toc = b'<xar></xar>'
+        path_db = TC.path_tmp / 'xar-toc.hdb'
+        path_db.write_text(
+            '{}:{}:XAR_TOC_TEST\n'.format(
+                hashlib.md5(toc).hexdigest(),
+                len(toc),
+            )
+        )
+        testfile = self.make_xar(
+            'incomplete-toc.xar',
+            len(toc),
+            toc=toc,
+            truncate_stream=True,
+        )
+        output = self.scan_xar(testfile, '', path_db=path_db)
 
-                # A malformed archive is skipped without turning the scan into
-                # an allocation error, even when policy limits are disabled.
-                assert output.ec == 0
-                self.verify_output(
-                    output.out,
-                    unexpected=["Can't allocate memory ERROR"],
-                )
+        assert output.ec == 0
+        self.verify_output(
+            output.out,
+            unexpected=['XAR_TOC_TEST.UNOFFICIAL FOUND'],
+        )
