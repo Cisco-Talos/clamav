@@ -34,6 +34,8 @@
 #include "inflate64.h"
 #include "lzma_iface.h"
 
+#define XAR_TOC_INFLATE_CHUNK_SIZE (64 * 1024)
+
 /*
    xar_cleanup_temp_file - cleanup after cli_gentempfd
    parameters:
@@ -408,6 +410,124 @@ static int xar_hash_check(int hash, const void *result, const void *expected)
     return memcmp(result, expected, len);
 }
 
+static cl_error_t xar_inflate_toc(cli_ctx *ctx, const unsigned char *compressed_toc, size_t compressed_length,
+                                  char **toc_out, size_t *toc_length_out)
+{
+    cl_error_t ret = CL_SUCCESS;
+    z_stream strm;
+    char *toc                = NULL;
+    size_t capacity          = XAR_TOC_INFLATE_CHUNK_SIZE;
+    size_t toc_length        = 0;
+    bool inflate_initialized = false;
+
+    memset(&strm, 0, sizeof(strm));
+
+    if (compressed_length > UINT_MAX) {
+        cli_dbgmsg("cli_scanxar: Compressed TOC is too large for zlib.\n");
+        return CL_EFORMAT;
+    }
+
+    toc = cli_max_malloc(capacity);
+    if (toc == NULL) {
+        cli_dbgmsg("cli_scanxar: Failed to allocate the initial TOC buffer.\n");
+        return CL_EMEM;
+    }
+
+    strm.next_in  = (unsigned char *)compressed_toc;
+    strm.avail_in = (uInt)compressed_length;
+
+    if (inflateInit(&strm) != Z_OK) {
+        cli_dbgmsg("cli_scanxar: inflateInit failed.\n");
+        ret = CL_EFORMAT;
+        goto done;
+    }
+    inflate_initialized = true;
+
+    while (true) {
+        uInt avail_in_before;
+        uInt output_available;
+        size_t produced;
+        int zret;
+
+        output_available = (uInt)(capacity - toc_length - 1);
+        strm.next_out    = (unsigned char *)toc + toc_length;
+        strm.avail_out   = output_available;
+        avail_in_before  = strm.avail_in;
+
+        zret     = inflate(&strm, Z_NO_FLUSH);
+        produced = output_available - strm.avail_out;
+
+        if (toc_length > SIZE_MAX - produced) {
+            cli_dbgmsg("cli_scanxar: Decompressed TOC length overflow.\n");
+            ret = CL_EFORMAT;
+            goto done;
+        }
+        toc_length += produced;
+
+        ret = cli_checklimits("cli_scanxar", ctx, toc_length, 0, 0);
+        if (ret != CL_SUCCESS) {
+            goto done;
+        }
+
+        if (zret == Z_STREAM_END) {
+            break;
+        }
+        if (zret != Z_OK) {
+            cli_dbgmsg("cli_scanxar: inflate failed with status %d.\n", zret);
+            ret = CL_EFORMAT;
+            goto done;
+        }
+        if (produced == 0 && strm.avail_in == avail_in_before) {
+            cli_dbgmsg("cli_scanxar: inflate made no progress before reaching the end of the TOC stream.\n");
+            ret = CL_EFORMAT;
+            goto done;
+        }
+
+        if (strm.avail_out == 0) {
+            char *new_toc;
+            size_t new_capacity;
+
+            if (capacity == CLI_MAX_ALLOCATION) {
+                cli_dbgmsg("cli_scanxar: Decompressed TOC exceeds the internal allocation limit.\n");
+                ret = CL_EFORMAT;
+                goto done;
+            }
+
+            new_capacity = capacity + XAR_TOC_INFLATE_CHUNK_SIZE;
+            if (new_capacity < capacity || new_capacity > CLI_MAX_ALLOCATION) {
+                new_capacity = CLI_MAX_ALLOCATION;
+            }
+
+            new_toc = cli_max_realloc(toc, new_capacity);
+            if (new_toc == NULL) {
+                cli_dbgmsg("cli_scanxar: Failed to grow the TOC buffer.\n");
+                ret = CL_EMEM;
+                goto done;
+            }
+            toc      = new_toc;
+            capacity = new_capacity;
+        }
+    }
+
+    if (inflateEnd(&strm) != Z_OK) {
+        cli_dbgmsg("cli_scanxar: inflateEnd failed.\n");
+        ret = CL_EFORMAT;
+        goto done;
+    }
+    inflate_initialized = false;
+
+    toc[toc_length] = '\0';
+    *toc_out        = toc;
+    *toc_length_out = toc_length;
+    toc             = NULL;
+
+done:
+    if (inflate_initialized)
+        inflateEnd(&strm);
+    free(toc);
+    return ret;
+}
+
 /*
   cli_scanxar - scan an xar archive.
   Parameters:
@@ -427,15 +547,14 @@ int cli_scanxar(cli_ctx *ctx)
     size_t length, offset, size, at;
     int encoding;
     z_stream strm;
-    char *toc, *tmpname = NULL;
+    char *toc = NULL, *tmpname = NULL;
+    size_t toc_length       = 0;
     xmlTextReaderPtr reader = NULL;
     int a_hash, e_hash;
     unsigned char *a_cksum = NULL, *e_cksum = NULL;
     void *a_hash_ctx = NULL, *e_hash_ctx = NULL;
     char e_hash_result[SHA1_HASH_SIZE];
     char a_hash_result[SHA1_HASH_SIZE];
-
-    memset(&strm, 0x00, sizeof(z_stream));
 
     /* retrieve xar header */
     if (fmap_readn(ctx->fmap, &hdr, 0, sizeof(hdr)) != sizeof(hdr)) {
@@ -463,61 +582,35 @@ int cli_scanxar(cli_ctx *ctx)
     /* cli_dbgmsg("hdr.toc_length_decompressed %lu\n", hdr.toc_length_decompressed); */
     /* cli_dbgmsg("hdr.chksum_alg %i\n", hdr.chksum_alg); */
 
-    rc = cli_checklimits("cli_scanxar", ctx, hdr.toc_length_decompressed, 0, 0);
+    /* Check time and file-count limits before inflating. Size limits are
+     * enforced against the actual decompressed TOC length below. */
+    rc = cli_checklimits("cli_scanxar", ctx, 0, 0, 0);
     if (rc != CL_SUCCESS) {
         return rc;
     }
 
-    /* The TOC buffer needs one additional byte for a terminating NUL. Reject
-     * declarations that cannot be represented safely or accommodated by the
-     * allocator, even when configured scan-size limits are disabled. */
-    if (hdr.toc_length_decompressed > SIZE_MAX - 1 ||
-        hdr.toc_length_decompressed >= CLI_MAX_ALLOCATION) {
-        cli_dbgmsg("cli_scanxar: Invalid decompressed TOC length: %" PRIu64 ".\n",
-                   hdr.toc_length_decompressed);
+    if (hdr.toc_length_compressed > SIZE_MAX) {
+        cli_dbgmsg("cli_scanxar: Compressed TOC length cannot be represented safely.\n");
         return CL_EFORMAT;
     }
 
     /* Uncompress TOC */
-    strm.next_in = (unsigned char *)fmap_need_off_once(ctx->fmap, hdr.size, hdr.toc_length_compressed);
-    if (strm.next_in == NULL) {
-        cli_dbgmsg("cli_scanxar: fmap_need_off_once fails on TOC.\n");
-        return CL_EREAD;
+    {
+        const unsigned char *compressed_toc = fmap_need_off_once(ctx->fmap, hdr.size, (size_t)hdr.toc_length_compressed);
+
+        if (compressed_toc == NULL) {
+            cli_dbgmsg("cli_scanxar: fmap_need_off_once fails on TOC.\n");
+            return CL_EREAD;
+        }
+        rc = xar_inflate_toc(ctx, compressed_toc, (size_t)hdr.toc_length_compressed, &toc, &toc_length);
     }
-    strm.avail_in = hdr.toc_length_compressed;
-    toc           = cli_max_malloc(hdr.toc_length_decompressed + 1);
-    if (toc == NULL) {
-        cli_dbgmsg("cli_scanxar: cli_max_malloc fails on TOC decompress buffer.\n");
-        return CL_EMEM;
-    }
-    toc[hdr.toc_length_decompressed] = '\0';
-    strm.avail_out                   = hdr.toc_length_decompressed;
-    strm.next_out                    = (unsigned char *)toc;
-    rc                               = inflateInit(&strm);
-    if (rc != Z_OK) {
-        cli_dbgmsg("cli_scanxar:inflateInit error %i \n", rc);
-        rc = CL_EFORMAT;
-        goto exit_toc;
-    }
-    rc = inflate(&strm, Z_SYNC_FLUSH);
-    if (rc != Z_OK && rc != Z_STREAM_END) {
-        inflateEnd(&strm);
-        cli_dbgmsg("cli_scanxar:inflate error %i \n", rc);
-        rc = CL_EFORMAT;
-        goto exit_toc;
-    }
-    rc = inflateEnd(&strm);
-    if (rc != Z_OK) {
-        cli_dbgmsg("cli_scanxar:inflateEnd error %i \n", rc);
-        rc = CL_EFORMAT;
-        goto exit_toc;
+    if (rc != CL_SUCCESS) {
+        return rc;
     }
 
-    if (hdr.toc_length_decompressed != strm.total_out) {
-        cli_dbgmsg("TOC decompress length %" PRIu64 " does not match amount decompressed %lu\n",
-                   hdr.toc_length_decompressed, strm.total_out);
-        toc[strm.total_out]         = '\0';
-        hdr.toc_length_decompressed = strm.total_out;
+    if (hdr.toc_length_decompressed != toc_length) {
+        cli_dbgmsg("TOC declared decompress length %" PRIu64 " does not match amount decompressed %zu\n",
+                   hdr.toc_length_decompressed, toc_length);
     }
 
     /* cli_dbgmsg("cli_scanxar: TOC xml:\n%s\n", toc); */
@@ -527,7 +620,7 @@ int cli_scanxar(cli_ctx *ctx)
 
     /* scan the xml */
     cli_dbgmsg("cli_scanxar: scanning xar TOC xml in memory.\n");
-    rc = cli_magic_scan_buff(toc, hdr.toc_length_decompressed, ctx, NULL, LAYER_ATTRIBUTES_NONE);
+    rc = cli_magic_scan_buff(toc, toc_length, ctx, NULL, LAYER_ATTRIBUTES_NONE);
     if (rc != CL_SUCCESS) {
         goto exit_toc;
     }
@@ -538,7 +631,7 @@ int cli_scanxar(cli_ctx *ctx)
             cli_dbgmsg("cli_scanxar: Can't create temporary file for TOC.\n");
             goto exit_toc;
         }
-        if (cli_writen(fd, toc, hdr.toc_length_decompressed) == (size_t)-1) {
+        if (cli_writen(fd, toc, toc_length) == (size_t)-1) {
             cli_dbgmsg("cli_scanxar: cli_writen error writing TOC.\n");
             rc = CL_EWRITE;
             xar_cleanup_temp_file(ctx, fd, tmpname);
@@ -550,7 +643,7 @@ int cli_scanxar(cli_ctx *ctx)
             goto exit_toc;
     }
 
-    reader = xmlReaderForMemory(toc, hdr.toc_length_decompressed, "noname.xml", NULL, CLAMAV_MIN_XMLREADER_FLAGS);
+    reader = xmlReaderForMemory(toc, toc_length, "noname.xml", NULL, CLAMAV_MIN_XMLREADER_FLAGS);
     if (reader == NULL) {
         cli_dbgmsg("cli_scanxar: xmlReaderForMemory error for TOC\n");
         goto exit_toc;
