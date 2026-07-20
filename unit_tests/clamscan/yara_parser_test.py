@@ -63,6 +63,29 @@ class TC(testcase.TestCase):
 '''
         )
 
+        (TC.path_tmp / 'yara-hex-not-nibble-match.yara').write_text(
+            r'''rule yara_hex_not_nibble_match
+{
+    strings:
+        $a = { 41 41 ~?3 42 ~5? 43 }
+    condition:
+        $a
+}
+'''
+        )
+
+        (TC.path_tmp / 'yara-hex-not-nibble-no-match.yara').write_text(
+            r'''rule yara_hex_not_nibble_no_match
+{
+    strings:
+        $low = { 41 41 ~?2 42 }
+        $high = { 41 41 ~4? 42 }
+    condition:
+        any of them
+}
+'''
+        )
+
         (TC.path_tmp / 'yara-for-zero-of-no-match.yara').write_text(
             r'''rule yara_for_zero_of_no_match
 {
@@ -170,6 +193,37 @@ class TC(testcase.TestCase):
             'Infected files: 1',
         ]
         self.verify_output(output.out, expected=expected_results)
+
+    def test_yara_hex_not_nibble(self):
+        self.step_name('Test YARA hex not-byte syntax with nibble wildcards')
+
+        command = '{valgrind} {valgrind_args} {clamscan} -d {path_db} {testfile}'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args,
+            clamscan=TC.clamscan,
+            path_db=TC.path_tmp / 'yara-hex-not-nibble-match.yara',
+            testfile=TC.sample,
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 1  # virus found
+
+        expected_results = [
+            'yara-parser.sample: YARA.yara_hex_not_nibble_match.UNOFFICIAL FOUND',
+            'Infected files: 1',
+        ]
+        self.verify_output(output.out, expected=expected_results)
+
+        command = '{valgrind} {valgrind_args} {clamscan} -d {path_db} {testfile}'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args,
+            clamscan=TC.clamscan,
+            path_db=TC.path_tmp / 'yara-hex-not-nibble-no-match.yara',
+            testfile=TC.sample,
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 0
+
+        self.verify_output(output.out, expected=['yara-parser.sample: OK'], unexpected=['FOUND'])
 
     def test_yara_for_zero_of(self):
         self.step_name('Test YARA for 0 of quantifier semantics')
