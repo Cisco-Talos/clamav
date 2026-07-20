@@ -3532,6 +3532,8 @@ static int cli_loadopenioc(FILE *fs, const char *dbname, struct cl_engine *engin
 
 #ifdef HAVE_YARA
 #define YARA_DEBUG 1
+/* 15 two-character alternatives, 14 separators, and 2 parentheses. */
+#define YARA_NEGATED_NIBBLE_EXPANSION_LENGTH 46
 #if (YARA_DEBUG == 2)
 #define cli_yaramsg(...) cli_errmsg(__VA_ARGS__)
 #elif (YARA_DEBUG == 1)
@@ -3544,6 +3546,7 @@ static char *parse_yara_hex_string(YR_STRING *string, int *ret);
 
 static char *parse_yara_hex_string(YR_STRING *string, int *ret)
 {
+    static const char hex_digits[] = "0123456789ABCDEF";
     char *res, *str, *ovr;
     size_t slen, reslen = 0, i, j;
 
@@ -3595,12 +3598,15 @@ static char *parse_yara_hex_string(YR_STRING *string, int *ret)
                 break;
             case '~':
                 if ((i + 2 >= slen - 1) ||
-                    !isxdigit((unsigned char)str[i + 1]) ||
-                    !isxdigit((unsigned char)str[i + 2])) {
+                    (!isxdigit((unsigned char)str[i + 1]) && str[i + 1] != '?') ||
+                    (!isxdigit((unsigned char)str[i + 2]) && str[i + 2] != '?') ||
+                    (str[i + 1] == '?' && str[i + 2] == '?')) {
                     if (ret) *ret = CL_EMALFDB;
                     return NULL;
                 }
-                reslen += 5;
+                /* A negated nibble wildcard is expanded to the 15 nibble values
+                 * that don't match it. Each alternative is two characters. */
+                reslen += (str[i + 1] == '?' || str[i + 2] == '?') ? YARA_NEGATED_NIBBLE_EXPANSION_LENGTH : 5;
                 i += 2;
                 break;
             default:
@@ -3658,17 +3664,39 @@ static char *parse_yara_hex_string(YR_STRING *string, int *ret)
                 break;
             case '~':
                 if ((i + 2 >= slen - 1) ||
-                    !isxdigit((unsigned char)str[i + 1]) ||
-                    !isxdigit((unsigned char)str[i + 2])) {
+                    (!isxdigit((unsigned char)str[i + 1]) && str[i + 1] != '?') ||
+                    (!isxdigit((unsigned char)str[i + 2]) && str[i + 2] != '?') ||
+                    (str[i + 1] == '?' && str[i + 2] == '?')) {
                     free(res);
                     if (ret) *ret = CL_EMALFDB;
                     return NULL;
                 }
-                res[j++] = '!';
-                res[j++] = '(';
-                res[j++] = str[i + 1];
-                res[j++] = str[i + 2];
-                res[j++] = ')';
+                if (str[i + 1] == '?' || str[i + 2] == '?') {
+                    char excluded = (char)toupper((unsigned char)(str[i + 1] == '?' ? str[i + 2] : str[i + 1]));
+                    int nibble;
+
+                    res[j++] = '(';
+                    for (nibble = 0; nibble < 16; nibble++) {
+                        if (hex_digits[nibble] == excluded)
+                            continue;
+                        if (j > 0 && res[j - 1] != '(')
+                            res[j++] = '|';
+                        if (str[i + 1] == '?') {
+                            res[j++] = '?';
+                            res[j++] = hex_digits[nibble];
+                        } else {
+                            res[j++] = hex_digits[nibble];
+                            res[j++] = '?';
+                        }
+                    }
+                    res[j++] = ')';
+                } else {
+                    res[j++] = '!';
+                    res[j++] = '(';
+                    res[j++] = str[i + 1];
+                    res[j++] = str[i + 2];
+                    res[j++] = ')';
+                }
                 i += 2;
                 break;
             default:
