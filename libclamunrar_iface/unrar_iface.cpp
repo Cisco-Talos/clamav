@@ -158,6 +158,10 @@ static cl_unrar_error_t unrar_retcode(int retcode)
             unrar_dbgmsg("unrar_retcode: Error attempting to unpack the reference record without its source file.\n");
             break;
         }
+        case ERAR_LARGE_DICT: {
+            unrar_dbgmsg("unrar_retcode: Dictionary exceeds the configured size limit.\n");
+            break;
+        }
         default: {
             unrar_dbgmsg("unrar_retcode: Unexpected error code: %d\n", retcode);
         }
@@ -479,6 +483,11 @@ int CALLBACK CallbackProc(UINT msg, LPARAM UserData, LPARAM P1, LPARAM P2)
 
             status = 1;
             unrar_dbgmsg("CallbackProc: Password required, attempting empty password.\n");
+            break;
+        }
+        case UCM_LARGEDICT: {
+            status = -1;
+            unrar_dbgmsg("CallbackProc: Rejecting a dictionary larger than 1 GiB.\n");
             break;
         }
         default: {
