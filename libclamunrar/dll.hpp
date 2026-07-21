@@ -28,6 +28,8 @@
 #define RAR_SKIP              0
 #define RAR_TEST              1
 #define RAR_EXTRACT           2
+// Private ClamAV operation. Test only the current file, without service data.
+#define RAR_TEST_CURRENT      3
 
 #define RAR_VOL_ASK           0
 #define RAR_VOL_NOTIFY        1
