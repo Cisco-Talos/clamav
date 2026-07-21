@@ -103,6 +103,94 @@ START_TEST(test_cl_debug)
 }
 END_TEST
 
+#if HAVE_UNRAR
+static const char *unrar_test_archives[] = {
+    OBJDIR PATHSEP "input" PATHSEP "clamav_hdb_scanfiles" PATHSEP "clam-v2.rar",
+    OBJDIR PATHSEP "input" PATHSEP "clamav_hdb_scanfiles" PATHSEP "clam-v3.rar",
+};
+
+START_TEST(test_unrar_extract_file_to_buffer)
+{
+    const char *expected_path = OBJDIR PATHSEP "input" PATHSEP "clamav_hdb_scanfiles" PATHSEP "clam.exe";
+    const char *archive_path  = unrar_test_archives[_i];
+    unrar_metadata_t metadata;
+    cl_unrar_error_t unrar_ret;
+    STATBUF expected_stat;
+    uint32_t comment_size = 0;
+    size_t capacity;
+    size_t written;
+    uint8_t *buffer;
+    uint8_t *expected;
+    char *comment   = NULL;
+    void *hArchive = NULL;
+    int expected_fd;
+    ssize_t nread;
+
+    ck_assert_msg(CL_SUCCESS == cl_init(CL_INIT_DEFAULT), "cl_init failed");
+    ck_assert_msg(have_rar, "UnRAR support was not initialized");
+
+    unrar_ret = cli_unrar_open(archive_path, &hArchive, &comment, &comment_size, 0);
+    ck_assert_msg(UNRAR_OK == unrar_ret, "Failed to open %s", archive_path);
+    free(comment);
+    comment = NULL;
+
+    unrar_ret = cli_unrar_peek_file_header(hArchive, &metadata);
+    ck_assert_msg(UNRAR_OK == unrar_ret, "Failed to read a header from %s", archive_path);
+    ck_assert_msg(metadata.unpack_size > 1 && metadata.unpack_size <= SIZE_MAX,
+                  "Unexpected member size: %" PRIu64, metadata.unpack_size);
+
+    capacity = (size_t)metadata.unpack_size;
+    buffer   = malloc(capacity);
+    ck_assert_msg(NULL != buffer, "Failed to allocate the extraction buffer");
+
+    written   = 0;
+    unrar_ret = cli_unrar_extract_file_to_buffer(hArchive, buffer, capacity, &written);
+    ck_assert_msg(UNRAR_OK == unrar_ret, "Failed to extract %s to memory", archive_path);
+    ck_assert_msg(written == capacity, "Extracted %zu bytes, expected %zu", written, capacity);
+
+    expected_fd = open(expected_path, O_RDONLY | O_BINARY);
+    ck_assert_msg(expected_fd >= 0, "Failed to open %s", expected_path);
+    ck_assert_msg(0 == FSTAT(expected_fd, &expected_stat), "Failed to stat %s", expected_path);
+    ck_assert_msg((uint64_t)expected_stat.st_size == metadata.unpack_size,
+                  "Reference size does not match the archive metadata");
+
+    expected = malloc(capacity);
+    ck_assert_msg(NULL != expected, "Failed to allocate the reference buffer");
+    nread = read(expected_fd, expected, capacity);
+    ck_assert_msg(nread == (ssize_t)capacity, "Failed to read %s", expected_path);
+    ck_assert_msg(0 == memcmp(buffer, expected, capacity), "Extracted data does not match %s", expected_path);
+    close(expected_fd);
+    free(expected);
+    free(buffer);
+
+    unrar_ret = cli_unrar_peek_file_header(hArchive, &metadata);
+    ck_assert_msg(UNRAR_BREAK == unrar_ret, "Buffered extraction did not advance past the current member");
+    cli_unrar_close(hArchive);
+    hArchive = NULL;
+
+    unrar_ret = cli_unrar_open(archive_path, &hArchive, &comment, &comment_size, 0);
+    ck_assert_msg(UNRAR_OK == unrar_ret, "Failed to reopen %s", archive_path);
+    free(comment);
+    comment = NULL;
+
+    unrar_ret = cli_unrar_peek_file_header(hArchive, &metadata);
+    ck_assert_msg(UNRAR_OK == unrar_ret, "Failed to reread a header from %s", archive_path);
+
+    capacity = (size_t)metadata.unpack_size - 1;
+    buffer   = malloc(capacity);
+    ck_assert_msg(NULL != buffer, "Failed to allocate the undersized buffer");
+
+    written   = SIZE_MAX;
+    unrar_ret = cli_unrar_extract_file_to_buffer(hArchive, buffer, capacity, &written);
+    ck_assert_msg(UNRAR_OK != unrar_ret, "Extraction unexpectedly accepted an undersized buffer");
+    ck_assert_msg(written <= capacity, "Extraction reported bytes beyond the buffer capacity");
+
+    free(buffer);
+    cli_unrar_close(hArchive);
+}
+END_TEST
+#endif
+
 #ifndef _WIN32
 /* extern const char *cl_retdbdir(void); */
 START_TEST(test_cl_retdbdir)
@@ -1465,6 +1553,9 @@ static Suite *test_cl_suite(void)
     tcase_add_test(tc_cl, test_cl_free);
     tcase_add_test(tc_cl, test_cl_build);
     tcase_add_test(tc_cl, test_cl_debug);
+#if HAVE_UNRAR
+    tcase_add_loop_test(tc_cl, test_unrar_extract_file_to_buffer, 0, 2);
+#endif
 #ifndef _WIN32
     tcase_add_test(tc_cl, test_cl_retdbdir);
 #endif
