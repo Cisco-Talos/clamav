@@ -401,7 +401,7 @@ cl_unrar_error_t unrar_extract_file(void* hArchive, const char* destPath, char* 
         RARSetCallback(hArchive, CallbackProc, 0);
     }
 
-    process_file_ret = RARProcessFile(hArchive, RAR_EXTRACT, NULL, (char*)destPath);
+    process_file_ret = RARProcessFile(hArchive, RAR_EXTRACT_CURRENT, NULL, (char*)destPath);
     RARSetCallback(hArchive, CallbackProc, 0);
     if (ERAR_BAD_DATA == process_file_ret) {
         unrar_dbgmsg("unrar_extract_file: Warning: Bad data/Invalid CRC. Attempting to scan anyways...\n");

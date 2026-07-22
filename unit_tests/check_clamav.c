@@ -109,6 +109,46 @@ static const char *unrar_test_archives[] = {
     OBJDIR PATHSEP "input" PATHSEP "clamav_hdb_scanfiles" PATHSEP "clam-v3.rar",
 };
 
+START_TEST(test_unrar_extract_file)
+{
+    const char *archive_path = unrar_test_archives[_i];
+    unrar_metadata_t metadata;
+    cl_unrar_error_t unrar_ret;
+    STATBUF extracted_stat;
+    uint32_t comment_size = 0;
+    char *comment          = NULL;
+    char *output_path      = NULL;
+    void *hArchive         = NULL;
+
+    ck_assert_msg(CL_SUCCESS == cl_init(CL_INIT_DEFAULT), "cl_init failed");
+    ck_assert_msg(have_rar, "UnRAR support was not initialized");
+
+    unrar_ret = cli_unrar_open(archive_path, &hArchive, &comment, &comment_size, 0);
+    ck_assert_msg(UNRAR_OK == unrar_ret, "Failed to open %s", archive_path);
+    free(comment);
+    comment = NULL;
+
+    unrar_ret = cli_unrar_peek_file_header(hArchive, &metadata);
+    ck_assert_msg(UNRAR_OK == unrar_ret, "Failed to read a header from %s", archive_path);
+
+    output_path = cli_gentemp(tmpdir);
+    ck_assert_msg(NULL != output_path, "Failed to allocate the extraction path");
+
+    unrar_ret = cli_unrar_extract_file(hArchive, output_path, NULL);
+    ck_assert_msg(UNRAR_OK == unrar_ret, "Failed to extract %s", archive_path);
+    ck_assert_msg(0 == CLAMSTAT(output_path, &extracted_stat), "Failed to stat %s", output_path);
+    ck_assert_msg((uint64_t)extracted_stat.st_size == metadata.unpack_size,
+                  "Extracted size does not match the archive metadata");
+
+    unrar_ret = cli_unrar_peek_file_header(hArchive, &metadata);
+    ck_assert_msg(UNRAR_BREAK == unrar_ret, "Extraction did not advance past the current member");
+
+    cli_unrar_close(hArchive);
+    cli_unlink(output_path);
+    free(output_path);
+}
+END_TEST
+
 START_TEST(test_unrar_extract_file_to_buffer)
 {
     const char *expected_path = OBJDIR PATHSEP "input" PATHSEP "clamav_hdb_scanfiles" PATHSEP "clam.exe";
@@ -1554,6 +1594,7 @@ static Suite *test_cl_suite(void)
     tcase_add_test(tc_cl, test_cl_build);
     tcase_add_test(tc_cl, test_cl_debug);
 #if HAVE_UNRAR
+    tcase_add_loop_test(tc_cl, test_unrar_extract_file, 0, 2);
     tcase_add_loop_test(tc_cl, test_unrar_extract_file_to_buffer, 0, 2);
 #endif
 #ifndef _WIN32
