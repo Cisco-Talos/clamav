@@ -120,30 +120,27 @@ START_TEST(test_unrar_extract_file)
     char *output_path      = NULL;
     void *hArchive         = NULL;
 
-    ck_assert_msg(CL_SUCCESS == cl_init(CL_INIT_DEFAULT), "cl_init failed");
-    ck_assert_msg(have_rar, "UnRAR support was not initialized");
-
-    unrar_ret = cli_unrar_open(archive_path, &hArchive, &comment, &comment_size, 0);
+    unrar_ret = unrar_open(archive_path, &hArchive, &comment, &comment_size, 0);
     ck_assert_msg(UNRAR_OK == unrar_ret, "Failed to open %s", archive_path);
     free(comment);
     comment = NULL;
 
-    unrar_ret = cli_unrar_peek_file_header(hArchive, &metadata);
+    unrar_ret = unrar_peek_file_header(hArchive, &metadata);
     ck_assert_msg(UNRAR_OK == unrar_ret, "Failed to read a header from %s", archive_path);
 
     output_path = cli_gentemp(tmpdir);
     ck_assert_msg(NULL != output_path, "Failed to allocate the extraction path");
 
-    unrar_ret = cli_unrar_extract_file(hArchive, output_path, NULL);
+    unrar_ret = unrar_extract_file(hArchive, output_path, NULL);
     ck_assert_msg(UNRAR_OK == unrar_ret, "Failed to extract %s", archive_path);
     ck_assert_msg(0 == CLAMSTAT(output_path, &extracted_stat), "Failed to stat %s", output_path);
     ck_assert_msg((uint64_t)extracted_stat.st_size == metadata.unpack_size,
                   "Extracted size does not match the archive metadata");
 
-    unrar_ret = cli_unrar_peek_file_header(hArchive, &metadata);
+    unrar_ret = unrar_peek_file_header(hArchive, &metadata);
     ck_assert_msg(UNRAR_BREAK == unrar_ret, "Extraction did not advance past the current member");
 
-    cli_unrar_close(hArchive);
+    unrar_close(hArchive);
     cli_unlink(output_path);
     free(output_path);
 }
@@ -166,15 +163,12 @@ START_TEST(test_unrar_extract_file_to_buffer)
     int expected_fd;
     ssize_t nread;
 
-    ck_assert_msg(CL_SUCCESS == cl_init(CL_INIT_DEFAULT), "cl_init failed");
-    ck_assert_msg(have_rar, "UnRAR support was not initialized");
-
-    unrar_ret = cli_unrar_open(archive_path, &hArchive, &comment, &comment_size, 0);
+    unrar_ret = unrar_open(archive_path, &hArchive, &comment, &comment_size, 0);
     ck_assert_msg(UNRAR_OK == unrar_ret, "Failed to open %s", archive_path);
     free(comment);
     comment = NULL;
 
-    unrar_ret = cli_unrar_peek_file_header(hArchive, &metadata);
+    unrar_ret = unrar_peek_file_header(hArchive, &metadata);
     ck_assert_msg(UNRAR_OK == unrar_ret, "Failed to read a header from %s", archive_path);
     ck_assert_msg(metadata.unpack_size > 1 && metadata.unpack_size <= SIZE_MAX,
                   "Unexpected member size: %" PRIu64, metadata.unpack_size);
@@ -184,7 +178,7 @@ START_TEST(test_unrar_extract_file_to_buffer)
     ck_assert_msg(NULL != buffer, "Failed to allocate the extraction buffer");
 
     written   = 0;
-    unrar_ret = cli_unrar_extract_file_to_buffer(hArchive, buffer, capacity, &written);
+    unrar_ret = unrar_extract_file_to_buffer(hArchive, buffer, capacity, &written);
     ck_assert_msg(UNRAR_OK == unrar_ret, "Failed to extract %s to memory", archive_path);
     ck_assert_msg(written == capacity, "Extracted %zu bytes, expected %zu", written, capacity);
 
@@ -203,17 +197,17 @@ START_TEST(test_unrar_extract_file_to_buffer)
     free(expected);
     free(buffer);
 
-    unrar_ret = cli_unrar_peek_file_header(hArchive, &metadata);
+    unrar_ret = unrar_peek_file_header(hArchive, &metadata);
     ck_assert_msg(UNRAR_BREAK == unrar_ret, "Buffered extraction did not advance past the current member");
-    cli_unrar_close(hArchive);
+    unrar_close(hArchive);
     hArchive = NULL;
 
-    unrar_ret = cli_unrar_open(archive_path, &hArchive, &comment, &comment_size, 0);
+    unrar_ret = unrar_open(archive_path, &hArchive, &comment, &comment_size, 0);
     ck_assert_msg(UNRAR_OK == unrar_ret, "Failed to reopen %s", archive_path);
     free(comment);
     comment = NULL;
 
-    unrar_ret = cli_unrar_peek_file_header(hArchive, &metadata);
+    unrar_ret = unrar_peek_file_header(hArchive, &metadata);
     ck_assert_msg(UNRAR_OK == unrar_ret, "Failed to reread a header from %s", archive_path);
 
     capacity = (size_t)metadata.unpack_size - 1;
@@ -221,12 +215,12 @@ START_TEST(test_unrar_extract_file_to_buffer)
     ck_assert_msg(NULL != buffer, "Failed to allocate the undersized buffer");
 
     written   = SIZE_MAX;
-    unrar_ret = cli_unrar_extract_file_to_buffer(hArchive, buffer, capacity, &written);
+    unrar_ret = unrar_extract_file_to_buffer(hArchive, buffer, capacity, &written);
     ck_assert_msg(UNRAR_OK != unrar_ret, "Extraction unexpectedly accepted an undersized buffer");
     ck_assert_msg(written <= capacity, "Extraction reported bytes beyond the buffer capacity");
 
     free(buffer);
-    cli_unrar_close(hArchive);
+    unrar_close(hArchive);
 }
 END_TEST
 #endif
