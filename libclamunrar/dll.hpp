@@ -30,6 +30,8 @@
 #define RAR_EXTRACT           2
 // Private ClamAV operation. Test only the current file, without service data.
 #define RAR_TEST_CURRENT      3
+// Private ClamAV operation. Extract only the current file, without service data.
+#define RAR_EXTRACT_CURRENT   4
 
 #define RAR_VOL_ASK           0
 #define RAR_VOL_NOTIFY        1

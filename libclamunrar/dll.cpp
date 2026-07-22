@@ -401,8 +401,9 @@ int PASCAL ProcessFile(HANDLE hArcData,int Operation,char *DestPath,char *DestNa
       if (DestNameW!=NULL)
         Data->Cmd.DllDestName=DestNameW;
 
-      Data->Cmd.Command=Operation==RAR_EXTRACT ? L"X":L"T";
-      Data->Cmd.Test=Operation!=RAR_EXTRACT;
+      bool Extract=Operation==RAR_EXTRACT || Operation==RAR_EXTRACT_CURRENT;
+      Data->Cmd.Command=Extract ? L"X":L"T";
+      Data->Cmd.Test=!Extract;
       bool Repeat=false;
       Data->Extract.ExtractCurrentFile(Data->Arc,Data->HeaderSize,Repeat);
 
@@ -417,7 +418,8 @@ int PASCAL ProcessFile(HANDLE hArcData,int Operation,char *DestPath,char *DestNa
       // if archive is still open to avoid calling file operations on
       // the invalid file handle. Some of our file operations like Seek()
       // process such invalid handle correctly, some not.
-      bool ProcessServiceRecords=Operation!=RAR_TEST_CURRENT;
+      bool ProcessServiceRecords=Operation!=RAR_TEST_CURRENT &&
+                                 Operation!=RAR_EXTRACT_CURRENT;
       while (Data->Arc.IsOpened() && Data->Arc.ReadHeader()!=0 &&
              Data->Arc.GetHeaderType()==HEAD_SERVICE)
       {
