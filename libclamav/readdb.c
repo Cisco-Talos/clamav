@@ -703,6 +703,29 @@ done:
  * @param options   Database options.  See CL_DB_* macros in clamav.h.
  * @return cl_error_t
  */
+static bool cli_valid_hex_negations(const char *hexsig)
+{
+    size_t i;
+    size_t len = strlen(hexsig);
+
+    for (i = 0; i < len; i++) {
+        if (hexsig[i] != '~')
+            continue;
+
+        if (i + 2 >= len ||
+            (!isxdigit((unsigned char)hexsig[i + 1]) && hexsig[i + 1] != '?') ||
+            (!isxdigit((unsigned char)hexsig[i + 2]) && hexsig[i + 2] != '?') ||
+            (hexsig[i + 1] == '?' && hexsig[i + 2] == '?')) {
+            cli_errmsg("cli_add_content_match_pattern: Invalid hex negation near: %s\n", &hexsig[i]);
+            return false;
+        }
+
+        i += 2;
+    }
+
+    return true;
+}
+
 cl_error_t cli_add_content_match_pattern(struct cli_matcher *root, const char *virname, const char *hexsig,
                                          uint8_t sigopts, uint16_t rtype, uint16_t type,
                                          const char *offset, const uint32_t *lsigid, unsigned int options)
@@ -717,6 +740,9 @@ cl_error_t cli_add_content_match_pattern(struct cli_matcher *root, const char *v
     char *start = NULL;
 
     hexlen = strlen(hexsig);
+
+    if (!cli_valid_hex_negations(hexsig))
+        return CL_EMALFDB;
 
     if ((wild = strchr(hexsig, '{'))) {
         /*
@@ -928,7 +954,7 @@ cl_error_t cli_add_content_match_pattern(struct cli_matcher *root, const char *v
             free(pt);
         }
 
-    } else if (root->ac_only || type || lsigid || sigopts || strpbrk(hexsig, "?([") || (root->bm_offmode && (!strcmp(offset, "*") || strchr(offset, ','))) || strstr(offset, "VI") || strchr(offset, '$')) {
+    } else if (root->ac_only || type || lsigid || sigopts || strpbrk(hexsig, "?([~") || (root->bm_offmode && (!strcmp(offset, "*") || strchr(offset, ','))) || strstr(offset, "VI") || strchr(offset, '$')) {
         /*
          * format seems like it must be handled with the Aho-Corasick (AC) pattern matcher.
          */
@@ -3532,8 +3558,6 @@ static int cli_loadopenioc(FILE *fs, const char *dbname, struct cl_engine *engin
 
 #ifdef HAVE_YARA
 #define YARA_DEBUG 1
-/* 15 two-character alternatives, 14 separators, and 2 parentheses. */
-#define YARA_NEGATED_NIBBLE_EXPANSION_LENGTH 46
 #if (YARA_DEBUG == 2)
 #define cli_yaramsg(...) cli_errmsg(__VA_ARGS__)
 #elif (YARA_DEBUG == 1)
@@ -3546,7 +3570,6 @@ static char *parse_yara_hex_string(YR_STRING *string, int *ret);
 
 static char *parse_yara_hex_string(YR_STRING *string, int *ret)
 {
-    static const char hex_digits[] = "0123456789ABCDEF";
     char *res, *str, *ovr;
     size_t slen, reslen = 0, i, j;
 
@@ -3601,12 +3624,12 @@ static char *parse_yara_hex_string(YR_STRING *string, int *ret)
                     (!isxdigit((unsigned char)str[i + 1]) && str[i + 1] != '?') ||
                     (!isxdigit((unsigned char)str[i + 2]) && str[i + 2] != '?') ||
                     (str[i + 1] == '?' && str[i + 2] == '?')) {
+                    cli_errmsg("parse_yara_hex_string: Invalid YARA hex negation near: %.*s\n",
+                               (int)MIN((size_t)3, slen - 1 - i), &str[i]);
                     if (ret) *ret = CL_EMALFDB;
                     return NULL;
                 }
-                /* A negated nibble wildcard is expanded to the 15 nibble values
-                 * that don't match it. Each alternative is two characters. */
-                reslen += (str[i + 1] == '?' || str[i + 2] == '?') ? YARA_NEGATED_NIBBLE_EXPANSION_LENGTH : 5;
+                reslen += 3;
                 i += 2;
                 break;
             default:
@@ -3667,36 +3690,19 @@ static char *parse_yara_hex_string(YR_STRING *string, int *ret)
                     (!isxdigit((unsigned char)str[i + 1]) && str[i + 1] != '?') ||
                     (!isxdigit((unsigned char)str[i + 2]) && str[i + 2] != '?') ||
                     (str[i + 1] == '?' && str[i + 2] == '?')) {
+                    cli_errmsg("parse_yara_hex_string: Invalid YARA hex negation near: %.*s\n",
+                               (int)MIN((size_t)3, slen - 1 - i), &str[i]);
                     free(res);
                     if (ret) *ret = CL_EMALFDB;
                     return NULL;
                 }
-                if (str[i + 1] == '?' || str[i + 2] == '?') {
-                    char excluded = (char)toupper((unsigned char)(str[i + 1] == '?' ? str[i + 2] : str[i + 1]));
-                    int nibble;
-
-                    res[j++] = '(';
-                    for (nibble = 0; nibble < 16; nibble++) {
-                        if (hex_digits[nibble] == excluded)
-                            continue;
-                        if (j > 0 && res[j - 1] != '(')
-                            res[j++] = '|';
-                        if (str[i + 1] == '?') {
-                            res[j++] = '?';
-                            res[j++] = hex_digits[nibble];
-                        } else {
-                            res[j++] = hex_digits[nibble];
-                            res[j++] = '?';
-                        }
-                    }
-                    res[j++] = ')';
-                } else {
-                    res[j++] = '!';
-                    res[j++] = '(';
-                    res[j++] = str[i + 1];
-                    res[j++] = str[i + 2];
-                    res[j++] = ')';
-                }
+                /*
+                 * Preserve the native matcher token instead of expanding it
+                 * into positive alternatives.
+                 */
+                res[j++] = str[i];
+                res[j++] = str[i + 1];
+                res[j++] = str[i + 2];
                 i += 2;
                 break;
             default:

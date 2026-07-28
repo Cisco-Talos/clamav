@@ -863,27 +863,30 @@ char *cli_mpool_virname(mpool_t *mp, const char *virname, unsigned int official)
     return newname;
 }
 
-uint16_t *cli_mpool_hex2ui(mpool_t *mp, const char *hex)
+uint16_t *cli_mpool_hex2ui_len(mpool_t *mp, const char *hex, size_t *decoded_len)
 {
     uint16_t *str;
     size_t len;
 
-    len = strlen(hex);
+    if (decoded_len)
+        *decoded_len = 0;
 
-    if (len % 2 != 0) {
-        cli_errmsg("cli_mpool_hex2ui(): Malformed hexstring: %s (length: %lu)\n", hex, (unsigned long)len);
-        return NULL;
-    }
+    len = strlen(hex);
 
     str = mpool_calloc(mp, (len / 2) + 1, sizeof(uint16_t));
     if (!str)
         return NULL;
 
-    if (cli_realhex2ui(hex, str, len))
+    if (cli_realhex2ui(hex, str, len, decoded_len))
         return str;
 
     mpool_free(mp, str);
     return NULL;
+}
+
+uint16_t *cli_mpool_hex2ui(mpool_t *mp, const char *hex)
+{
+    return cli_mpool_hex2ui_len(mp, hex, NULL);
 }
 
 #ifdef DEBUGMPOOL
