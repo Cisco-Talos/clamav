@@ -62,6 +62,15 @@ pipeline {
         label "default"
     }
 
+    options {
+        // Throttles this pipeline based on the global system category
+        throttleJobProperty(
+            categories: ['clamav'],
+            throttleEnabled: true,
+            throttleOption: 'category'
+        )
+    }
+    
     stages {
 
         stage('Generate Tarball') {
