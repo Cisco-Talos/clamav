@@ -46,6 +46,11 @@
 #define EC32(v, conv) (conv ? cbswap32(v) : v)
 #define EC64(v, conv) (conv ? cbswap64(v) : v)
 
+#define MACHO_SECTION_TYPE_MASK 0x000000ff
+#define MACHO_S_ZEROFILL              0x1
+#define MACHO_S_GB_ZEROFILL           0xc
+#define MACHO_S_THREAD_LOCAL_ZEROFILL 0x12
+
 struct macho_hdr {
     uint32_t magic;
     uint32_t cpu_type;
@@ -193,6 +198,52 @@ static uint32_t cli_rawaddr(uint32_t vaddr, struct cli_exe_section *sects, uint1
 
     *err = 0;
     return vaddr - sects[i].rva + sects[i].raw;
+}
+
+/**
+ * Calculate the raw section size implied by a Mach-O alignment exponent.
+ *
+ * Mach-O section alignment is encoded as log2(bytes). Reject malformed
+ * exponents and rounded sizes that cannot fit in cli_exe_section.rsz.
+ * Zero-fill sections do not occupy file bytes, so they have no raw size.
+ */
+static bool cli_macho_section_raw_size(uint64_t virtual_size,
+                                       uint32_t align_exponent,
+                                       uint32_t section_flags,
+                                       uint32_t *raw_size)
+{
+    uint64_t alignment;
+    uint64_t remainder;
+    uint64_t padding;
+    uint64_t rounded_size;
+    uint32_t section_type = section_flags & MACHO_SECTION_TYPE_MASK;
+
+    if (align_exponent > 31) {
+        return false;
+    }
+
+    if (section_type == MACHO_S_ZEROFILL ||
+        section_type == MACHO_S_GB_ZEROFILL ||
+        section_type == MACHO_S_THREAD_LOCAL_ZEROFILL) {
+        *raw_size = 0;
+        return true;
+    }
+
+    if (virtual_size > UINT32_MAX) {
+        return false;
+    }
+
+    alignment = (uint64_t)1 << align_exponent;
+    remainder    = virtual_size % alignment;
+    padding      = (alignment - remainder) % alignment;
+    rounded_size = virtual_size + padding;
+
+    if (rounded_size > UINT32_MAX) {
+        return false;
+    }
+
+    *raw_size = (uint32_t)rounded_size;
+    return true;
 }
 
 cl_error_t cli_scanmacho(cli_ctx *ctx, struct cli_exe_info *fileinfo)
@@ -383,17 +434,26 @@ cl_error_t cli_scanmacho(cli_ctx *ctx, struct cli_exe_info *fileinfo)
 
             for (j = 0; j < nsects; j++) {
                 if (m64) {
+                    uint64_t section_size;
+
                     if (fmap_readn(map, &section64, at, sizeof(section64)) != sizeof(section64)) {
                         cli_dbgmsg("cli_scanmacho: Can't read section\n");
                         free(sections);
                         RETURN_BROKEN;
                     }
                     at += sizeof(section64);
+                    section_size = EC64(section64.size, conv);
                     sections[sect].rva = EC64(section64.addr, conv);
-                    sections[sect].vsz = EC64(section64.size, conv);
                     sections[sect].raw = EC32(section64.offset, conv);
-                    section64.align    = 1 << EC32(section64.align, conv);
-                    sections[sect].rsz = sections[sect].vsz + (section64.align - (sections[sect].vsz % section64.align)) % section64.align; /* most likely we can assume it's the same as .vsz */
+                    if (!cli_macho_section_raw_size(section_size,
+                                                    EC32(section64.align, conv),
+                                                    EC32(section64.flags, conv),
+                                                    &sections[sect].rsz)) {
+                        cli_dbgmsg("cli_scanmacho: Section alignment or size is malformed\n");
+                        free(sections);
+                        RETURN_BROKEN;
+                    }
+                    sections[sect].vsz = (uint32_t)section_size;
                     strncpy(name, section64.sectname, sizeof(name));
                     name[sizeof(name) - 1] = '\0';
                 } else {
@@ -406,13 +466,14 @@ cl_error_t cli_scanmacho(cli_ctx *ctx, struct cli_exe_info *fileinfo)
                     sections[sect].rva = EC32(section.addr, conv);
                     sections[sect].vsz = EC32(section.size, conv);
                     sections[sect].raw = EC32(section.offset, conv);
-                    if (EC32(section.align, conv) >= 32) {
-                        cli_dbgmsg("cli_scanmacho: Section aligned is malformed\n");
+                    if (!cli_macho_section_raw_size(sections[sect].vsz,
+                                                    EC32(section.align, conv),
+                                                    EC32(section.flags, conv),
+                                                    &sections[sect].rsz)) {
+                        cli_dbgmsg("cli_scanmacho: Section alignment or size is malformed\n");
                         free(sections);
                         RETURN_BROKEN;
                     }
-                    section.align      = 1 << EC32(section.align, conv);
-                    sections[sect].rsz = sections[sect].vsz + (section.align - (sections[sect].vsz % section.align)) % section.align;
                     strncpy(name, section.sectname, sizeof(name));
                     name[sizeof(name) - 1] = '\0';
                 }
