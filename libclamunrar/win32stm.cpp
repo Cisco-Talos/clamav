@@ -46,7 +46,8 @@ void ExtractStreams20(Archive &Arc,const wchar *FileName)
   else
     wcsncpyz(StreamName,FileName,ASIZE(StreamName));
   if (wcslen(StreamName)+strlen(Arc.StreamHead.StreamName)>=ASIZE(StreamName) ||
-      Arc.StreamHead.StreamName[0]!=':')
+      Arc.StreamHead.StreamName[0]!=':' ||
+      strpbrk(Arc.StreamHead.StreamName,"\\/")!=NULL)
   {
     uiMsg(UIERROR_STREAMBROKEN,Arc.FileName,FileName);
     ErrHandler.SetErrorCode(RARX_CRC);
@@ -117,7 +118,7 @@ void ExtractStreams(Archive &Arc,const wchar *FileName,bool TestMode)
 
   wchar StreamName[NM];
   GetStreamNameNTFS(Arc,StreamName,ASIZE(StreamName));
-  if (*StreamName!=':')
+  if (*StreamName!=':' || wcspbrk(StreamName,L"\\/")!=NULL)
   {
     uiMsg(UIERROR_STREAMBROKEN,Arc.FileName,FileName);
     ErrHandler.SetErrorCode(RARX_CRC);
