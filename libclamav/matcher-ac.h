@@ -104,6 +104,8 @@ struct cli_ac_patt {
     uint32_t boundary;
     uint8_t depth;
     uint8_t sigopts;
+    /* Allows an isolated literal to anchor a pattern whose other units are negated predicates. */
+    uint8_t has_negation;
 };
 
 struct cli_ac_list {

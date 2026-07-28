@@ -524,6 +524,21 @@ int filter_add_acpatt(struct filter *m, const struct cli_ac_patt *pat)
                 spec->end   = 0xf0 | spec->start;
                 spec->step  = 0x10;
                 break;
+            case CLI_MATCH_NOT_BYTE:
+                spec->start = spec->end = (uint8_t)p;
+                spec->step              = 1;
+                spec->negative          = 1;
+                break;
+            case CLI_MATCH_NOT_NIBBLE_HIGH:
+            case CLI_MATCH_NOT_NIBBLE_LOW:
+                /*
+                 * The filter may over-approximate, but must not reject a
+                 * candidate accepted by the full matcher.
+                 */
+                spec->start = 0x00;
+                spec->end   = 0xff;
+                spec->step  = 1;
+                break;
             default:
                 cli_errmsg("filtering: unknown wildcard character: %d\n", p);
                 return -1;

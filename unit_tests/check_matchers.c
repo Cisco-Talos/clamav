@@ -241,6 +241,52 @@ START_TEST(test_ac_scanbuff)
 }
 END_TEST
 
+START_TEST(test_ac_native_hex_negation_representation)
+{
+    struct cli_ac_patt *pattern;
+    struct cli_matcher *root;
+    const uint16_t *tokens;
+    int ret;
+
+    root = ctx.engine->root[0];
+    ck_assert_msg(root != NULL, "root == NULL");
+    root->ac_only = 1;
+
+#ifdef USE_MPOOL
+    root->mempool = mpool_create();
+#endif
+    ret = cli_ac_init(root, CLI_DEFAULT_AC_MINDEPTH, CLI_DEFAULT_AC_MAXDEPTH, 1);
+    ck_assert_msg(ret == CL_SUCCESS, "cli_ac_init() failed");
+
+    ret = cli_add_content_match_pattern(
+        root,
+        "Native_Hex_Negation",
+        "4141~00~?0~0?4242",
+        0,
+        0,
+        0,
+        "*",
+        NULL,
+        0);
+    ck_assert_msg(ret == CL_SUCCESS, "cli_add_content_match_pattern failed");
+    ck_assert_uint_eq(root->ac_patterns, 1);
+
+    pattern = root->ac_pattable[0];
+    tokens  = pattern->prefix ? pattern->prefix : pattern->pattern;
+
+    /*
+     * Each negation must remain one matcher unit and must not allocate the
+     * special-alternate representation used by !(...).
+     */
+    ck_assert_uint_eq(pattern->prefix_length[0] + pattern->length[0], 7);
+    ck_assert_uint_eq(pattern->special, 0);
+    ck_assert_ptr_null(pattern->special_table);
+    ck_assert_uint_eq(tokens[2] & CLI_MATCH_METADATA, CLI_MATCH_NOT_BYTE);
+    ck_assert_uint_eq(tokens[3] & CLI_MATCH_METADATA, CLI_MATCH_NOT_NIBBLE_LOW);
+    ck_assert_uint_eq(tokens[4] & CLI_MATCH_METADATA, CLI_MATCH_NOT_NIBBLE_HIGH);
+}
+END_TEST
+
 START_TEST(test_ac_scanbuff_allscan)
 {
     struct cli_ac_data mdata;
@@ -580,6 +626,7 @@ Suite *test_matchers_suite(void)
 {
     Suite *s = suite_create("matchers");
     TCase *tc_matchers;
+    TCase *tc_hex_negation;
     tc_matchers = tcase_create("matchers");
     suite_add_tcase(s, tc_matchers);
     tcase_add_checked_fixture(tc_matchers, setup, teardown);
@@ -591,5 +638,10 @@ Suite *test_matchers_suite(void)
     tcase_add_test(tc_matchers, test_ac_scanbuff_allscan_ex);
     tcase_add_test(tc_matchers, test_bm_scanbuff_allscan);
     tcase_add_test(tc_matchers, test_pcre_scanbuff_allscan);
+
+    tc_hex_negation = tcase_create("hex negation");
+    suite_add_tcase(s, tc_hex_negation);
+    tcase_add_checked_fixture(tc_hex_negation, setup, teardown);
+    tcase_add_test(tc_hex_negation, test_ac_native_hex_negation_representation);
     return s;
 }
