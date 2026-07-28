@@ -2743,6 +2743,8 @@ static char *pdf_readstring(const char *q0, int len, const char *key, unsigned *
             start = ++q;
             len -= 1;
         }
+        if (len <= 0)
+            return NULL;
         q = memchr(q + 1, '>', len - 1);
         if (!q)
             return NULL;
