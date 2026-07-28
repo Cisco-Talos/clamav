@@ -85,6 +85,15 @@ struct zip_record {
     char *original_filename;
 };
 
+/**
+ * @brief Move a zip record and its owned resources to another record.
+ */
+static void zip_record_move(struct zip_record *dst, struct zip_record *src)
+{
+    *dst = *src;
+    src->original_filename = NULL;
+}
+
 static int wrap_inflateinit2(void *a, int b)
 {
     return inflateInit2(a, b);
@@ -1561,11 +1570,15 @@ cl_error_t index_local_file_headers(
                 (temp_catalogue_offset < local_file_headers_count &&
                  temp_catalogue[temp_catalogue_offset].local_header_offset < (*catalogue)[catalogue_offset].local_header_offset)) {
                 // add entry from temp_catalogue into the list
-                combined_catalogue[i] = temp_catalogue[temp_catalogue_offset];
+                zip_record_move(
+                    &combined_catalogue[i],
+                    &temp_catalogue[temp_catalogue_offset]);
                 temp_catalogue_offset++;
             } else {
                 // add entry from the catalogue into the list
-                combined_catalogue[i] = (*catalogue)[catalogue_offset];
+                zip_record_move(
+                    &combined_catalogue[i],
+                    &((*catalogue)[catalogue_offset]));
                 catalogue_offset++;
             }
 
