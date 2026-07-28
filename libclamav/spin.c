@@ -62,6 +62,64 @@
 #include "packlibs.h"
 #include "spin.h"
 
+/**
+ * @brief Add a section size to the rebuilt PESpin image size.
+ *
+ * @return 0 if the size was added, 1 if the rebuilt image would exceed
+ * CLI_MAX_ALLOCATION.
+ */
+static int spin_add_blob_size(uint64_t *blobsz, uint32_t size)
+{
+    if (*blobsz > (uint64_t)CLI_MAX_ALLOCATION ||
+        (uint64_t)size > (uint64_t)CLI_MAX_ALLOCATION - *blobsz) {
+        cli_dbgmsg("spin: rebuilt section data exceeds allocation limit\n");
+        return 1;
+    }
+
+    *blobsz += size;
+    return 0;
+}
+
+/**
+ * @brief Replace an already-counted section size in the rebuilt PESpin image.
+ *
+ * @return 0 if the size was replaced, 1 if the previous size was not counted
+ * or the rebuilt image would exceed CLI_MAX_ALLOCATION.
+ */
+static int spin_replace_blob_size(uint64_t *blobsz, uint32_t old_size, uint32_t new_size)
+{
+    uint64_t adjusted_blobsz;
+
+    if (*blobsz < old_size) {
+        cli_dbgmsg("spin: rebuilt section data accounting underflow\n");
+        return 1;
+    }
+
+    adjusted_blobsz = *blobsz - old_size;
+    if (adjusted_blobsz > (uint64_t)CLI_MAX_ALLOCATION ||
+        (uint64_t)new_size > (uint64_t)CLI_MAX_ALLOCATION - adjusted_blobsz) {
+        cli_dbgmsg("spin: rebuilt section data exceeds allocation limit\n");
+        return 1;
+    }
+
+    *blobsz = adjusted_blobsz + new_size;
+    return 0;
+}
+
+/**
+ * @brief Free PESpin section buffers that are marked as grown in the bitmap.
+ */
+static void spin_free_grown_sections(char **sects, int sectcnt, uint32_t bitmap)
+{
+    int j;
+
+    for (j = 0; j < sectcnt; j++) {
+        if (bitmap & 1)
+            free(sects[j]);
+        bitmap >>= 1;
+    }
+}
+
 static char exec86(uint8_t aelle, uint8_t cielle, char *curremu, int *retval)
 {
     int len = 0;
@@ -143,7 +201,7 @@ static uint32_t summit(char *src, int size)
     int i;
 
     while (size) {
-        eax ^= *src++ << 8 & 0xff00;
+        eax ^= ((uint32_t)(uint8_t)*src++ << 8) & 0xff00;
         eax = eax >> 3 & 0x1fffffff;
         for (i = 0; i < 4; i++) {
             uint32_t swap;
@@ -164,7 +222,8 @@ int unspin(char *src, int ssize, struct cli_exe_section *sections, int sectcnt, 
 {
     char *curr, *emu, *ep, *spinned;
     char **sects;
-    int blobsz = 0, j;
+    uint64_t blobsz = 0;
+    int j;
     uint32_t key32, bitmap, bitman;
     uint32_t len;
     uint8_t key8;
@@ -402,12 +461,16 @@ int unspin(char *src, int ssize, struct cli_exe_section *sections, int sectcnt, 
     len = 0;
     for (j = 0; j < sectcnt; j++) {
         if (bitmap & 1) {
+            if (spin_add_blob_size(&blobsz, sections[j].vsz)) {
+                len = 1;
+                break;
+            }
+
             if ((sects[j] = (char *)cli_max_malloc(sections[j].vsz)) == NULL) {
                 cli_dbgmsg("spin: malloc(%u) failed\n", sections[j].vsz);
                 len = 1;
                 break;
             }
-            blobsz += sections[j].vsz;
             memset(sects[j], 0, sections[j].vsz);
             cli_dbgmsg("spin: Growing sect%d: was %x will be %x\n", j, sections[j].rsz, sections[j].vsz);
             if (cli_unfsg(src + sections[j].raw, sects[j], sections[j].rsz, sections[j].vsz, NULL, NULL) == -1) {
@@ -415,7 +478,11 @@ int unspin(char *src, int ssize, struct cli_exe_section *sections, int sectcnt, 
                 cli_dbgmsg("spin: Unpack failure\n");
             }
         } else {
-            blobsz += sections[j].rsz;
+            if (spin_add_blob_size(&blobsz, sections[j].rsz)) {
+                len = 1;
+                break;
+            }
+
             sects[j] = src + sections[j].raw;
             cli_dbgmsg("spin: Not growing sect%d\n", j);
         }
@@ -425,12 +492,7 @@ int unspin(char *src, int ssize, struct cli_exe_section *sections, int sectcnt, 
     cli_dbgmsg("spin: decompression complete\n");
 
     if (len) {
-        int t;
-        for (t = 0; t < j; t++) {
-            if (bitman & 1)
-                free(sects[t]);
-            bitman = bitman >> 1 & 0x7fffffff;
-        }
+        spin_free_grown_sections(sects, j, bitman);
         free(sects);
         return 1;
     }
@@ -444,7 +506,7 @@ int unspin(char *src, int ssize, struct cli_exe_section *sections, int sectcnt, 
                 break;
         }
 
-        if (j != sectcnt && ((bitman & (1 << j)) == 0)) { /* FIXME: not really sure either the res sect is lamed or just compressed, but this'll save some major headaches */
+        if (j != sectcnt && j < 32 && ((bitman & ((uint32_t)1 << j)) == 0)) { /* FIXME: not really sure either the res sect is lamed or just compressed, but this'll save some major headaches */
             cli_dbgmsg("spin: Resources (sect%d) appear to be compressed\n\tuncompressed offset %x, len %x\n\tcompressed offset %x, len %x\n", j, sections[j].rva, key32 - sections[j].rva, key32, sections[j].vsz - (key32 - sections[j].rva));
 
             if ((curr = (char *)cli_max_malloc(sections[j].vsz)) != NULL) {
@@ -454,26 +516,34 @@ int unspin(char *src, int ssize, struct cli_exe_section *sections, int sectcnt, 
 
                     free(curr);
                     cli_dbgmsg("spin: Failed to grow resources, continuing anyway\n");
-                    blobsz += sections[j].rsz;
                 } else {
-                    sects[j] = curr;
-                    bitman |= 1 << j;
-                    cli_dbgmsg("spin: Resources grown\n");
-                    blobsz += sections[j].vsz;
+                    if (spin_replace_blob_size(&blobsz, sections[j].rsz, sections[j].vsz)) {
+                        free(curr);
+                        len = 1;
+                    } else {
+                        sects[j] = curr;
+                        bitman |= (uint32_t)1 << j;
+                        cli_dbgmsg("spin: Resources grown\n");
+                    }
                 }
             } else {
                 /* malloc failed but i'm too deep into this crap to quit without leaking more :( */
                 cli_dbgmsg("spin: memory allocation failed, continuing anyway\n");
-                blobsz += sections[j].rsz;
             }
         } else {
             cli_dbgmsg("spin: No res?!\n");
         }
     }
 
+    if (len) {
+        spin_free_grown_sections(sects, sectcnt, bitman);
+        free(sects);
+        return 1;
+    }
+
     bitmap = bitman; /* save as a free() bitmap */
 
-    if ((ep = (char *)cli_max_malloc(blobsz)) != NULL) {
+    if ((ep = (char *)cli_max_malloc((size_t)blobsz)) != NULL) {
         struct cli_exe_section *rebhlp;
         if ((rebhlp = (struct cli_exe_section *)cli_max_malloc(sizeof(struct cli_exe_section) * (sectcnt))) != NULL) {
             char *to   = ep;
@@ -505,11 +575,7 @@ int unspin(char *src, int ssize, struct cli_exe_section *sections, int sectcnt, 
     }
 
     cli_dbgmsg("spin: free bitmap is %x\n", bitman);
-    for (j = 0; j < sectcnt; j++) {
-        if (bitmap & 1)
-            free(sects[j]);
-        bitmap = bitmap >> 1 & 0x7fffffff;
-    }
+    spin_free_grown_sections(sects, sectcnt, bitmap);
     free(sects);
     return 1; /* :( */
 }
