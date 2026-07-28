@@ -1269,8 +1269,9 @@ done:
  * @param start_offset      The start file offset
  * @param end_offset        The end file offset
  * @param file_count        The number of files extracted from the zip file thus far
- * @param[out] temp_catalogue    A catalogue of zip_records. Found files between the two offset bounds will be appended to this list.
- * @param[out] num_records  The number of records in the catalogue.
+ * @param[out] temp_catalogue     A catalogue of zip_records. Found files between the two offset bounds will be appended to this list.
+ * @param[in, out] num_records       The number of records in the catalogue.
+ * @param[in, out] num_record_blocks The number of allocated ZIP_RECORDS_CHECK_BLOCKSIZE blocks in the catalogue.
  * @return cl_error_t  CL_SUCCESS if no overlapping files
  * @return cl_error_t  CL_VIRUS if overlapping files and heuristic alerts are enabled
  * @return cl_error_t  CL_EFORMAT if overlapping files and heuristic alerts are disabled
@@ -1285,20 +1286,20 @@ cl_error_t index_local_file_headers_within_bounds(
     uint32_t end_offset,
     uint32_t file_count,
     struct zip_record **temp_catalogue,
-    size_t *num_records)
+    size_t *num_records,
+    size_t *num_record_blocks)
 {
     cl_error_t status = CL_ERROR;
     cl_error_t ret;
 
-    size_t num_record_blocks = 0;
-    size_t index             = 0;
+    size_t index = 0;
 
     uint32_t search_offset           = 0;
     uint32_t total_file_count        = file_count;
     struct zip_record *zip_catalogue = NULL;
     bool exceeded_max_files          = false;
 
-    if (NULL == temp_catalogue || NULL == num_records) {
+    if (NULL == temp_catalogue || NULL == num_records || NULL == num_record_blocks) {
         cli_errmsg("index_local_file_headers_within_bounds: Invalid NULL arguments\n");
         goto done;
     }
@@ -1315,11 +1316,15 @@ cl_error_t index_local_file_headers_within_bounds(
             sizeof(struct zip_record) * ZIP_RECORDS_CHECK_BLOCKSIZE,
             status = CL_EMEM);
 
-        *num_records = 0;
+        *num_records       = 0;
+        *num_record_blocks = 1;
+    } else if (0 == *num_record_blocks) {
+        cli_errmsg("index_local_file_headers_within_bounds: Invalid zero catalogue capacity\n");
+        status = CL_EARG;
+        goto done;
     }
 
-    num_record_blocks = (*num_records / ZIP_RECORDS_CHECK_BLOCKSIZE) + 1;
-    index             = *num_records;
+    index = *num_records;
 
     if (start_offset > fsize || end_offset > fsize || start_offset > end_offset) {
         cli_errmsg("index_local_file_headers_within_bounds: Invalid offset arguments: start_offset=%u, end_offset=%u, fsize=%u\n",
@@ -1340,6 +1345,24 @@ cl_error_t index_local_file_headers_within_bounds(
         if (cli_readint32(local_file_header) == ZIP_MAGIC_LOCAL_FILE_HEADER) {
             uint32_t local_file_header_offset = search_offset;
             size_t file_record_size           = 0;
+            size_t record_capacity            = *num_record_blocks * ZIP_RECORDS_CHECK_BLOCKSIZE;
+
+            if (record_capacity <= index) {
+                size_t new_record_blocks = (index / ZIP_RECORDS_CHECK_BLOCKSIZE) + 1;
+
+                // Filled the available zip record blocks. Allocate more space before writing the next record.
+                cli_dbgmsg("cli_unzip: Filled zip record blocks. Allocating more space for zip records...\n");
+
+                CLI_MAX_REALLOC_OR_GOTO_DONE(
+                    zip_catalogue,
+                    sizeof(struct zip_record) * ZIP_RECORDS_CHECK_BLOCKSIZE * new_record_blocks,
+                    status = CL_EMEM);
+
+                /* zero out the memory for the new records */
+                memset(&(zip_catalogue[record_capacity]), 0,
+                       sizeof(struct zip_record) * (ZIP_RECORDS_CHECK_BLOCKSIZE * new_record_blocks - record_capacity));
+                *num_record_blocks = new_record_blocks;
+            }
 
             ret = parse_local_file_header(
                 ctx,
@@ -1383,21 +1406,6 @@ cl_error_t index_local_file_headers_within_bounds(
                                            // We still need to scan the files we found while reviewing the file records up to this limit.
                 break;
             }
-
-            if (num_record_blocks * ZIP_RECORDS_CHECK_BLOCKSIZE == index + 1) {
-                // Filled up the current block of zip records, need to allocate more space to fit additional records.
-                cli_dbgmsg("cli_unzip: Filled a zip record block. Allocating an additional block for more zip records...\n");
-
-                CLI_MAX_REALLOC_OR_GOTO_DONE(
-                    zip_catalogue,
-                    sizeof(struct zip_record) * ZIP_RECORDS_CHECK_BLOCKSIZE * (num_record_blocks + 1),
-                    status = CL_EMEM);
-
-                num_record_blocks++;
-                /* zero out the memory for the new records */
-                memset(&(zip_catalogue[index]), 0,
-                       sizeof(struct zip_record) * (ZIP_RECORDS_CHECK_BLOCKSIZE * num_record_blocks - index));
-            }
         }
     }
 
@@ -1418,6 +1426,7 @@ done:
             free(zip_catalogue);
             zip_catalogue   = NULL;
             *temp_catalogue = NULL; // zip_catalogue and *temp_catalogue have the same value. Set temp_catalogue to NULL to ensure no use after free
+            *num_record_blocks = 0;
         }
 
         if (exceeded_max_files) {
@@ -1470,6 +1479,7 @@ cl_error_t index_local_file_headers(
     struct zip_record *next_record        = NULL;
     struct zip_record *prev_record        = NULL;
     size_t local_file_headers_count       = 0;
+    size_t local_file_headers_blocks      = 0;
     uint32_t num_overlapping_files        = 0;
 
     if (NULL == catalogue || NULL == num_records || NULL == *catalogue) {
@@ -1497,7 +1507,8 @@ cl_error_t index_local_file_headers(
         end_offset,
         total_files_found,
         &temp_catalogue,
-        &local_file_headers_count);
+        &local_file_headers_count,
+        &local_file_headers_blocks);
     if (CL_SUCCESS != ret) {
         goto done;
     }
@@ -1532,7 +1543,8 @@ cl_error_t index_local_file_headers(
             end_offset,
             total_files_found,
             &temp_catalogue,
-            &local_file_headers_count);
+            &local_file_headers_count,
+            &local_file_headers_blocks);
         if (CL_SUCCESS != ret) {
             status = ret;
             goto done;
