@@ -69,6 +69,7 @@
 #include "vba.h"
 
 #define MAX_DEL_LOOKAHEAD 5000
+#define MAX_BUILD_ATTEMPTS 10
 
 // global variable for the absolute path of the --cvdcertsdir option
 char *g_cvdcertsdir = NULL;
@@ -4175,6 +4176,7 @@ static void help(void)
 int main(int argc, char **argv)
 {
     int ret;
+    unsigned int build_attempt;
     struct optstruct *opts;
     STATBUF sb;
 
@@ -4276,12 +4278,15 @@ int main(int argc, char **argv)
     else if (optget(opts, "utf16-decode")->enabled)
         ret = utf16decode(opts);
     else if (optget(opts, "build")->enabled) {
-        ret = build(opts);
-        if (ret == CL_ELAST_ERROR) {
-            // build() returns CL_ELAST_ERROR the hash starts with 00. This will fail to verify with ClamAV 1.1 -> 1.4.
-            // Retry the build again to get new hashes.
-            mprintf(LOGG_WARNING, "Retrying the build for a chance at a better hash.\n");
+        for (build_attempt = 0; build_attempt < MAX_BUILD_ATTEMPTS; build_attempt++) {
             ret = build(opts);
+            if (ret != CL_ELAST_ERROR || build_attempt + 1 == MAX_BUILD_ATTEMPTS)
+                break;
+
+            // build() returns CL_ELAST_ERROR when the hash starts with 00. This will fail to verify with ClamAV 1.1 -> 1.4.
+            // Wait for the build timestamp to change before retrying to get a different hash.
+            mprintf(LOGG_WARNING, "Retrying the build in one second for a chance at a better hash.\n");
+            sleep(1);
         }
     } else if (optget(opts, "sign")->enabled)
         ret = sign(opts);
