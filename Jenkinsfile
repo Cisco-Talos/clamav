@@ -49,7 +49,7 @@ properties(
                        defaultValue: '1.4',
                        description: 'private-fuzz-corpus branch'),
                 string(name: 'SHARED_LIB_BRANCH',
-                       defaultValue: 'master',
+                       defaultValue: 'main',
                        description: 'tests-jenkins-shared-libraries branch')
             ]
         )
