@@ -46,10 +46,10 @@ properties(
                        defaultValue: 'fuzz-regression-1.6',
                        description: 'test-pipelines branch for fuzz regression tests'),
                 string(name: 'FUZZ_CORPUS_BRANCH',
-                       defaultValue: 'master',
+                       defaultValue: 'main',
                        description: 'private-fuzz-corpus branch'),
                 string(name: 'SHARED_LIB_BRANCH',
-                       defaultValue: 'master',
+                       defaultValue: 'main',
                        description: 'tests-jenkins-shared-libraries branch')
             ]
         )
