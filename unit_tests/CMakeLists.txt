@@ -163,30 +163,30 @@ if(WIN32)
 
     set(NEW_PATH "$<TARGET_FILE_DIR:check_clamav>;$ENV{PATH}")
 
-    file(TO_NATIVE_PATH $<TARGET_FILE:OpenSSL::SSL>                             LIBSSL)
-    file(TO_NATIVE_PATH $<TARGET_FILE:OpenSSL::Crypto>                          LIBCRYPTO)
-    file(TO_NATIVE_PATH $<TARGET_FILE:ZLIB::ZLIB>                               LIBZ)
-    file(TO_NATIVE_PATH $<TARGET_FILE:BZip2::BZip2>                             LIBBZ2)
-    file(TO_NATIVE_PATH $<TARGET_FILE:PCRE2::pcre2>                             LIBPCRE2)
-    file(TO_NATIVE_PATH $<TARGET_FILE:LibXml2::LibXml2>                         LIBXML2)
+    file(TO_NATIVE_PATH $<TARGET_LINKER_FILE:OpenSSL::SSL>                             LIBSSL)
+    file(TO_NATIVE_PATH $<TARGET_LINKER_FILE:OpenSSL::Crypto>                          LIBCRYPTO)
+    file(TO_NATIVE_PATH $<TARGET_LINKER_FILE:ZLIB::ZLIB>                               LIBZ)
+    file(TO_NATIVE_PATH $<TARGET_LINKER_FILE:BZip2::BZip2>                             LIBBZ2)
+    file(TO_NATIVE_PATH $<TARGET_LINKER_FILE:PCRE2::pcre2>                             LIBPCRE2)
+    file(TO_NATIVE_PATH $<TARGET_LINKER_FILE:LibXml2::LibXml2>                         LIBXML2)
     if(NOT ENABLE_LIBCLAMAV_ONLY)
         # libcurl not used by libclamav and so is not defined in libclamav-only mode.
-        file(TO_NATIVE_PATH $<TARGET_FILE:CURL::libcurl>                            LIBCURL)
+        file(TO_NATIVE_PATH $<TARGET_LINKER_FILE:CURL::libcurl>                            LIBCURL)
     endif()
-    file(TO_NATIVE_PATH $<TARGET_FILE:JSONC::jsonc>                             LIBJSONC)
-    file(TO_NATIVE_PATH $<TARGET_FILE:PThreadW32::pthreadw32>                   LIBPTHREADW32)
-    file(TO_NATIVE_PATH $<TARGET_FILE:ClamAV::win32_compat>                     LIBWIN32COMPAT)
+    file(TO_NATIVE_PATH $<TARGET_LINKER_FILE:JSONC::jsonc>                             LIBJSONC)
+    file(TO_NATIVE_PATH $<TARGET_LINKER_FILE:PThreadW32::pthreadw32>                   LIBPTHREADW32)
+    file(TO_NATIVE_PATH $<TARGET_LINKER_FILE:ClamAV::win32_compat>                     LIBWIN32COMPAT)
 
     if(ENABLE_STATIC_LIB)
-        file(TO_NATIVE_PATH $<TARGET_FILE:clamav_static>                        LIBCLAMAV)
+        file(TO_NATIVE_PATH $<TARGET_LINKER_FILE:clamav_static>                        LIBCLAMAV)
         if (ENABLE_UNRAR)
-            file(TO_NATIVE_PATH $<TARGET_FILE:clamunrar_iface_static>           LIBCLAMUNRARIFACE)
-            file(TO_NATIVE_PATH $<TARGET_FILE:clamunrar_static>                 LIBCLAMUNRAR)
+            file(TO_NATIVE_PATH $<TARGET_LINKER_FILE:clamunrar_iface_static>           LIBCLAMUNRARIFACE)
+            file(TO_NATIVE_PATH $<TARGET_LINKER_FILE:clamunrar_static>                 LIBCLAMUNRAR)
         endif()
     else()
-        file(TO_NATIVE_PATH $<TARGET_FILE:clamav>                               LIBCLAMAV)
+        file(TO_NATIVE_PATH $<TARGET_LINKER_FILE:clamav>                               LIBCLAMAV)
     endif()
-    file(TO_NATIVE_PATH $<TARGET_FILE:${LIBMSPACK}>                             LIBCLAMMSPACK)
+    file(TO_NATIVE_PATH $<TARGET_LINKER_FILE:${LIBMSPACK}>                             LIBCLAMMSPACK)
     file(TO_NATIVE_PATH $<TARGET_FILE:check_clamav>                             CHECK_CLAMAV)
     file(TO_NATIVE_PATH $<TARGET_FILE:check_xlm_scanmap>                        CHECK_XLM_SCANMAP)
     if(ENABLE_APP)
@@ -471,13 +471,27 @@ if(WIN32)
                     UNRESOLVED_DEPENDENCIES_VAR _u_deps
                     DIRECTORIES
                         $<TARGET_FILE_DIR:OpenSSL::SSL>
+                        $<TARGET_LINKER_FILE_DIR:OpenSSL::SSL>/../bin
                         $<TARGET_FILE_DIR:OpenSSL::Crypto>
+                        $<TARGET_LINKER_FILE_DIR:OpenSSL::Crypto>/../bin
                         $<TARGET_FILE_DIR:ZLIB::ZLIB>
+                        $<TARGET_LINKER_FILE_DIR:ZLIB::ZLIB>/../bin
                         $<TARGET_FILE_DIR:BZip2::BZip2>
+                        $<TARGET_LINKER_FILE_DIR:BZip2::BZip2>/../bin
                         $<TARGET_FILE_DIR:PCRE2::pcre2>
+                        $<TARGET_LINKER_FILE_DIR:PCRE2::pcre2>/../bin
                         $<TARGET_FILE_DIR:LibXml2::LibXml2>
+                        $<TARGET_LINKER_FILE_DIR:LibXml2::LibXml2>/../bin
                         $<TARGET_FILE_DIR:CURL::libcurl>
+                        $<TARGET_LINKER_FILE_DIR:CURL::libcurl>/../bin
                         $<TARGET_FILE_DIR:JSONC::jsonc>
+                        $<TARGET_LINKER_FILE_DIR:JSONC::jsonc>/../bin
+                        $<TARGET_FILE_DIR:PThreadW32::pthreadw32>
+                        $<TARGET_LINKER_FILE_DIR:PThreadW32::pthreadw32>/../bin
+                        $<TARGET_FILE_DIR:Curses::curses>
+                        $<TARGET_LINKER_FILE_DIR:Curses::curses>/../bin
+                        $<TARGET_FILE_DIR:libcheck::check>
+                        $<TARGET_LINKER_FILE_DIR:libcheck::check>/../bin
                     POST_EXCLUDE_REGEXES
                         "[cC]:[\\/][wW][iI][nN][dD][oO][wW][sS]"
                     CONFLICTING_DEPENDENCIES_PREFIX CTEST_CONFLICTING_DEPENDENCIES
@@ -537,12 +551,23 @@ if(WIN32)
                     UNRESOLVED_DEPENDENCIES_VAR _u_deps
                     DIRECTORIES
                         $<TARGET_FILE_DIR:OpenSSL::SSL>
+                        $<TARGET_LINKER_FILE_DIR:OpenSSL::SSL>/../bin
                         $<TARGET_FILE_DIR:OpenSSL::Crypto>
+                        $<TARGET_LINKER_FILE_DIR:OpenSSL::Crypto>/../bin
                         $<TARGET_FILE_DIR:ZLIB::ZLIB>
+                        $<TARGET_LINKER_FILE_DIR:ZLIB::ZLIB>/../bin
                         $<TARGET_FILE_DIR:BZip2::BZip2>
+                        $<TARGET_LINKER_FILE_DIR:BZip2::BZip2>/../bin
                         $<TARGET_FILE_DIR:PCRE2::pcre2>
+                        $<TARGET_LINKER_FILE_DIR:PCRE2::pcre2>/../bin
                         $<TARGET_FILE_DIR:LibXml2::LibXml2>
+                        $<TARGET_LINKER_FILE_DIR:LibXml2::LibXml2>/../bin
                         $<TARGET_FILE_DIR:JSONC::jsonc>
+                        $<TARGET_LINKER_FILE_DIR:JSONC::jsonc>/../bin
+                        $<TARGET_FILE_DIR:PThreadW32::pthreadw32>
+                        $<TARGET_LINKER_FILE_DIR:PThreadW32::pthreadw32>/../bin
+                        $<TARGET_FILE_DIR:libcheck::check>
+                        $<TARGET_LINKER_FILE_DIR:libcheck::check>/../bin
                     POST_EXCLUDE_REGEXES
                         "[cC]:[\\/][wW][iI][nN][dD][oO][wW][sS]"
                     CONFLICTING_DEPENDENCIES_PREFIX CTEST_CONFLICTING_DEPENDENCIES
