@@ -115,7 +115,8 @@ target_link_libraries(check_clamav
     PRIVATE
         ClamAV::libclamav
         ClamAV::common
-        libcheck::check)
+        libcheck::check
+        OpenSSL::Crypto)
 if (ENABLE_UNRAR)
     if(ENABLE_SHARED_LIB)
         target_link_libraries(check_clamav
