@@ -62,6 +62,7 @@
 
 // common
 #include "fdpassing.h"
+#include "output.h"
 
 // clamd
 #include "clamd/thrmgr.h"
@@ -992,14 +993,18 @@ struct stats_slow_client_test_state {
 };
 
 struct stats_print_thread_state {
+    pthread_mutex_t mutex;
+    pthread_cond_t cond;
     int socket_fd;
     int result;
+    int done;
 };
 
 struct stats_pool_create_state {
     pthread_mutex_t mutex;
     pthread_cond_t cond;
     threadpool_t *threadpool;
+    int started;
     int done;
 };
 
@@ -1035,12 +1040,22 @@ static void *stats_print_thread(void *data)
 
     state->result = thrmgr_printstats(state->socket_fd, '\n');
     close_socket(state->socket_fd);
+
+    pthread_mutex_lock(&state->mutex);
+    state->done = 1;
+    pthread_cond_broadcast(&state->cond);
+    pthread_mutex_unlock(&state->mutex);
     return NULL;
 }
 
 static void *stats_pool_create_thread(void *data)
 {
     struct stats_pool_create_state *state = data;
+
+    pthread_mutex_lock(&state->mutex);
+    state->started = 1;
+    pthread_cond_broadcast(&state->cond);
+    pthread_mutex_unlock(&state->mutex);
 
     state->threadpool = thrmgr_new(1, 60, 1, stats_noop_handler);
 
@@ -1061,17 +1076,27 @@ START_TEST(test_stats_write_does_not_hold_pool_lock)
     pthread_t pool_thread;
     struct timeval now;
     struct timespec deadline;
+    char first_byte;
     char *filename;
-    char drain_buffer[8192];
+    char *stats;
+    char *stats_tail;
+    size_t filename_size = (1024 * 1024) + 123;
+    size_t stats_len;
+    size_t stats_tail_len;
+    short int saved_send_timeout;
     int send_buffer_size = 4096;
+    int socket_flags;
     int sockets[2];
+    int print_completed_before_drain;
     int pool_created_before_drain;
+    int stats_contains_filename;
+    int stats_has_end_marker;
     int recv_result;
 
-    filename = malloc(1024 * 1024);
+    filename = malloc(filename_size + 1);
     ck_assert_ptr_nonnull(filename);
-    memset(filename, 'A', (1024 * 1024) - 1);
-    filename[(1024 * 1024) - 1] = '\0';
+    memset(filename, 'A', filename_size);
+    filename[filename_size] = '\0';
 
     memset(&scan_state, 0, sizeof(scan_state));
     scan_state.filename = filename;
@@ -1091,22 +1116,51 @@ START_TEST(test_stats_write_does_not_hold_pool_lock)
     ck_assert_int_eq(setsockopt(sockets[1], SOL_SOCKET, SO_SNDBUF,
                                (const char *)&send_buffer_size, sizeof(send_buffer_size)),
                      0);
+    ck_assert_int_eq(setsockopt(sockets[0], SOL_SOCKET, SO_RCVBUF,
+                               (const char *)&send_buffer_size, sizeof(send_buffer_size)),
+                     0);
+
+    /* Match clamd's accepted client sockets and force mdprintf() to retry
+     * after a partial, nonblocking send. */
+    socket_flags = fcntl(sockets[1], F_GETFL, 0);
+    ck_assert_int_ne(socket_flags, -1);
+    ck_assert_int_ne(fcntl(sockets[1], F_SETFL, socket_flags | O_NONBLOCK), -1);
 
     memset(&print_state, 0, sizeof(print_state));
     print_state.socket_fd = sockets[1];
+    ck_assert_int_eq(pthread_mutex_init(&print_state.mutex, NULL), 0);
+    ck_assert_int_eq(pthread_cond_init(&print_state.cond, NULL), 0);
+
+    /* Keep the writer waiting longer than the pool-creation deadline so a
+     * send timeout cannot make the lock test pass. */
+    saved_send_timeout   = mprintf_send_timeout;
+    mprintf_send_timeout = 900;
     ck_assert_int_eq(pthread_create(&print_thread, NULL, stats_print_thread, &print_state), 0);
 
-    recv_result = recv(sockets[0], drain_buffer, 1, 0);
+    recv_result = recv(sockets[0], &first_byte, 1, 0);
     ck_assert_int_eq(recv_result, 1);
+
+    pthread_mutex_lock(&print_state.mutex);
+    print_completed_before_drain = print_state.done;
+    pthread_mutex_unlock(&print_state.mutex);
 
     memset(&pool_state, 0, sizeof(pool_state));
     ck_assert_int_eq(pthread_mutex_init(&pool_state.mutex, NULL), 0);
     ck_assert_int_eq(pthread_cond_init(&pool_state.cond, NULL), 0);
     ck_assert_int_eq(pthread_create(&pool_thread, NULL, stats_pool_create_thread, &pool_state), 0);
 
+    pthread_mutex_lock(&pool_state.mutex);
+    while (!pool_state.started)
+        pthread_cond_wait(&pool_state.cond, &pool_state.mutex);
+    pthread_mutex_unlock(&pool_state.mutex);
+
     gettimeofday(&now, NULL);
-    deadline.tv_sec  = now.tv_sec + 2;
-    deadline.tv_nsec = now.tv_usec * 1000;
+    deadline.tv_sec  = now.tv_sec;
+    deadline.tv_nsec = now.tv_usec * 1000 + 500000000;
+    if (deadline.tv_nsec >= 1000000000) {
+        deadline.tv_sec++;
+        deadline.tv_nsec -= 1000000000;
+    }
 
     pthread_mutex_lock(&pool_state.mutex);
     while (!pool_state.done) {
@@ -1116,14 +1170,29 @@ START_TEST(test_stats_write_does_not_hold_pool_lock)
     pool_created_before_drain = pool_state.done;
     pthread_mutex_unlock(&pool_state.mutex);
 
-    while ((recv_result = recv(sockets[0], drain_buffer, sizeof(drain_buffer), 0)) > 0) {
-    }
+    stats_tail = recvfull(sockets[0], &stats_tail_len);
     close_socket(sockets[0]);
 
     ck_assert_int_eq(pthread_join(print_thread, NULL), 0);
     ck_assert_int_eq(pthread_join(pool_thread, NULL), 0);
+    mprintf_send_timeout = saved_send_timeout;
     ck_assert_int_eq(print_state.result, 0);
     ck_assert_ptr_nonnull(pool_state.threadpool);
+
+    stats_len = stats_tail_len + 1;
+    stats     = malloc(stats_len + 1);
+    ck_assert_ptr_nonnull(stats);
+    stats[0] = first_byte;
+    memcpy(stats + 1, stats_tail, stats_tail_len);
+    stats[stats_len] = '\0';
+    free(stats_tail);
+
+    stats_contains_filename = strstr(stats, filename) != NULL;
+    stats_has_end_marker    = stats_len >= 4 && memcmp(stats + stats_len - 4, "END\n", 4) == 0;
+    free(stats);
+
+    pthread_cond_destroy(&print_state.cond);
+    pthread_mutex_destroy(&print_state.mutex);
 
     thrmgr_destroy(pool_state.threadpool);
     pthread_cond_destroy(&pool_state.cond);
@@ -1141,8 +1210,14 @@ START_TEST(test_stats_write_does_not_hold_pool_lock)
     pthread_mutex_destroy(&scan_state.mutex);
     free(filename);
 
+    ck_assert_msg(!print_completed_before_drain,
+                  "STATS did not block on the intentionally non-reading client");
     ck_assert_msg(pool_created_before_drain,
                   "STATS held the global pool lock while writing to a slow client");
+    ck_assert_msg(stats_contains_filename,
+                  "STATS response did not include the complete active task filename");
+    ck_assert_msg(stats_has_end_marker,
+                  "STATS response was truncated or contained data after its END marker");
 }
 END_TEST
 
