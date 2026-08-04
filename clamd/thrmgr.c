@@ -126,6 +126,15 @@ struct stats_buffer {
     size_t capacity;
 };
 
+struct queue_stats {
+    long min_wait;
+    long max_wait;
+    long total_wait;
+    unsigned valid;
+    unsigned invalid;
+    unsigned item_count;
+};
+
 /**
  * @brief Free a buffered STATS response.
  *
@@ -263,59 +272,162 @@ static void remove_frompools(threadpool_t *t)
 }
 
 /**
- * @brief Append queue timing statistics to a buffered STATS response.
+ * @brief Copy timing statistics from a work queue.
  *
- * The caller must ensure that the queue remains valid while it is read.
+ * The caller must hold the owning thread pool's mutex.
  *
- * @param buffer Response buffer to extend.
  * @param queue Queue to summarize.
  * @param tv_now Time used to calculate queue wait durations.
- * @return CL_SUCCESS on success, or an error status.
+ * @param stats Queue statistics to populate.
  */
-static cl_error_t stats_buffer_append_queue(struct stats_buffer *buffer, work_queue_t *queue, struct timeval *tv_now)
+static void stats_snapshot_queue(const work_queue_t *queue, const struct timeval *tv_now, struct queue_stats *stats)
 {
-    cl_error_t status;
-    long umin = LONG_MAX, umax = 0, usum = 0;
-    unsigned invalids = 0, cnt = 0;
-    work_item_t *q;
+    const work_item_t *q;
 
-    if (!queue->head)
-        return CL_SUCCESS;
+    memset(stats, 0, sizeof(*stats));
+    stats->min_wait   = LONG_MAX;
+    stats->item_count = (unsigned)queue->item_count;
+
     for (q = queue->head; q; q = q->next) {
         long delta;
         delta = tv_now->tv_usec - q->time_queued.tv_usec;
         delta += (tv_now->tv_sec - q->time_queued.tv_sec) * 1000000;
         if (delta < 0) {
-            invalids++;
+            stats->invalid++;
             continue;
         }
-        if (delta > umax)
-            umax = delta;
-        if (delta < umin)
-            umin = delta;
-        usum += delta;
-        ++cnt;
+        if (delta > stats->max_wait)
+            stats->max_wait = delta;
+        if (delta < stats->min_wait)
+            stats->min_wait = delta;
+        stats->total_wait += delta;
+        stats->valid++;
     }
+}
+
+/**
+ * @brief Append a work queue snapshot to a buffered STATS response.
+ *
+ * @param buffer Response buffer to extend.
+ * @param stats Queue statistics to append.
+ * @return CL_SUCCESS on success, or an error status.
+ */
+static cl_error_t stats_buffer_append_queue(struct stats_buffer *buffer, const struct queue_stats *stats)
+{
+    cl_error_t status;
+
+    if (!stats->item_count)
+        return CL_SUCCESS;
 
     status = stats_buffer_append(buffer, " min_wait: %.6f max_wait: %.6f avg_wait: %.6f",
-                                 umin / 1e6, umax / 1e6, usum / (1e6 * cnt));
+                                 stats->valid ? stats->min_wait / 1e6 : 0.0,
+                                 stats->valid ? stats->max_wait / 1e6 : 0.0,
+                                 stats->valid ? stats->total_wait / (1e6 * stats->valid) : 0.0);
     if (CL_SUCCESS != status)
         return status;
 
-    if (invalids) {
-        status = stats_buffer_append(buffer, " (INVALID timestamps: %u)", invalids);
+    if (stats->invalid) {
+        status = stats_buffer_append(buffer, " (INVALID timestamps: %u)", stats->invalid);
         if (CL_SUCCESS != status)
             return status;
     }
 
-    if (cnt + invalids != (unsigned)queue->item_count) {
-        status = stats_buffer_append(buffer, " (ERROR: %u != %u)", cnt + invalids,
-                                     (unsigned)queue->item_count);
+    if (stats->valid + stats->invalid != stats->item_count) {
+        status = stats_buffer_append(buffer, " (ERROR: %u != %u)", stats->valid + stats->invalid,
+                                     stats->item_count);
         if (CL_SUCCESS != status)
             return status;
     }
 
     return CL_SUCCESS;
+}
+
+/**
+ * @brief Append a synchronized thread pool snapshot.
+ *
+ * The caller must hold pools_lock, which pins the pool while its mutex is
+ * acquired. No code may acquire pools_lock while holding a pool mutex.
+ *
+ * @param buffer Response buffer to extend.
+ * @param pool Thread pool to summarize.
+ * @param primary Whether this is the primary pool.
+ * @param tv_now Time captured for the subsequent task snapshot.
+ * @return CL_SUCCESS on success, or an error status.
+ */
+static cl_error_t stats_buffer_append_pool(struct stats_buffer *buffer, threadpool_t *pool, int primary, struct timeval *tv_now)
+{
+    struct queue_stats bulk_stats;
+    struct queue_stats single_stats;
+    cl_error_t status = CL_SUCCESS;
+    pool_state_t pool_state;
+    unsigned thr_alive;
+    unsigned thr_idle;
+    unsigned thr_max;
+    unsigned idle_timeout;
+    unsigned queue_items;
+    const char *state;
+
+    if (pthread_mutex_lock(&pool->pool_mutex) != 0) {
+        logg(LOGG_ERROR, "Unable to lock thread pool mutex for statistics\n");
+        return CL_ELOCK;
+    }
+
+    pool_state   = pool->state;
+    thr_alive    = (unsigned)pool->thr_alive;
+    thr_idle     = (unsigned)pool->thr_idle;
+    thr_max      = (unsigned)pool->thr_max;
+    idle_timeout = (unsigned)pool->idle_timeout;
+    queue_items  = (unsigned)pool->single_queue->item_count + (unsigned)pool->bulk_queue->item_count;
+    gettimeofday(tv_now, NULL);
+    stats_snapshot_queue(pool->bulk_queue, tv_now, &bulk_stats);
+    stats_snapshot_queue(pool->single_queue, tv_now, &single_stats);
+
+    if (pthread_mutex_unlock(&pool->pool_mutex) != 0) {
+        logg(LOGG_ERROR, "Unable to unlock thread pool mutex for statistics\n");
+        return CL_ELOCK;
+    }
+
+    switch (pool_state) {
+        case POOL_INVALID:
+            state = "INVALID";
+            break;
+        case POOL_VALID:
+            state = "VALID";
+            break;
+        case POOL_EXIT:
+            state = "EXIT";
+            break;
+        default:
+            state = "??";
+            break;
+    }
+
+    status = stats_buffer_append(buffer, "STATE: %s %s\n", state, primary ? "PRIMARY" : "");
+    if (CL_SUCCESS != status)
+        goto done;
+
+    status = stats_buffer_append(buffer, "THREADS: live %u  idle %u max %u idle-timeout %u\n",
+                                 thr_alive, thr_idle, thr_max, idle_timeout);
+    if (CL_SUCCESS != status)
+        goto done;
+
+    /* TODO: show both queues */
+    status = stats_buffer_append(buffer, "QUEUE: %u items", queue_items);
+    if (CL_SUCCESS != status)
+        goto done;
+
+    status = stats_buffer_append_queue(buffer, &bulk_stats);
+    if (CL_SUCCESS != status)
+        goto done;
+
+    status = stats_buffer_append_queue(buffer, &single_stats);
+    if (CL_SUCCESS != status)
+        goto done;
+
+    status = stats_buffer_append(buffer, "\n");
+
+done:
+    return status;
 }
 
 /**
@@ -353,10 +465,8 @@ static cl_error_t stats_response_create(struct stats_buffer *response)
 
     for (l = pools; l; l = l->nxt) {
         threadpool_t *pool = l->pool;
-        const char *state;
         struct timeval tv_now;
         struct task_desc *task;
-        cnt = 0;
 
         if (!pool) {
             status = stats_buffer_append(response, "NULL\n\n");
@@ -365,43 +475,7 @@ static cl_error_t stats_response_create(struct stats_buffer *response)
             continue;
         }
 
-        switch (pool->state) {
-            case POOL_INVALID:
-                state = "INVALID";
-                break;
-            case POOL_VALID:
-                state = "VALID";
-                break;
-            case POOL_EXIT:
-                state = "EXIT";
-                break;
-            default:
-                state = "??";
-                break;
-        }
-
-        status = stats_buffer_append(response, "STATE: %s %s\n", state, l->nxt ? "" : "PRIMARY");
-        if (CL_SUCCESS != status)
-            goto unlock;
-        status = stats_buffer_append(response, "THREADS: live %u  idle %u max %u idle-timeout %u\n",
-                                     pool->thr_alive, pool->thr_idle, pool->thr_max, pool->idle_timeout);
-        if (CL_SUCCESS != status)
-            goto unlock;
-
-        /* TODO: show both queues */
-        status = stats_buffer_append(response, "QUEUE: %u items",
-                                     pool->single_queue->item_count + pool->bulk_queue->item_count);
-        if (CL_SUCCESS != status)
-            goto unlock;
-
-        gettimeofday(&tv_now, NULL);
-        status = stats_buffer_append_queue(response, pool->bulk_queue, &tv_now);
-        if (CL_SUCCESS != status)
-            goto unlock;
-        status = stats_buffer_append_queue(response, pool->single_queue, &tv_now);
-        if (CL_SUCCESS != status)
-            goto unlock;
-        status = stats_buffer_append(response, "\n");
+        status = stats_buffer_append_pool(response, pool, !l->nxt, &tv_now);
         if (CL_SUCCESS != status)
             goto unlock;
 
@@ -560,11 +634,12 @@ void thrmgr_destroy(threadpool_t *threadpool)
             return;
         }
     }
-    remove_frompools(threadpool);
     if (pthread_mutex_unlock(&threadpool->pool_mutex) != 0) {
         logg(LOGG_ERROR, "Mutex unlock failed\n");
         exit(-1);
     }
+
+    remove_frompools(threadpool);
 
     pthread_mutex_destroy(&(threadpool->pool_mutex));
     pthread_cond_destroy(&(threadpool->idle_cond));
@@ -813,7 +888,8 @@ void thrmgr_setactiveengine(const struct cl_engine *engine)
         logg(LOGG_ERROR, "Unable to unlock task statistics mutex\n");
 }
 
-/* thread pool mutex must be held on entry */
+/* Must be called without pool_mutex to preserve the pools_lock -> pool_mutex
+ * lock order used when collecting statistics. */
 static void stats_init(threadpool_t *pool)
 {
     struct task_desc *desc = calloc(1, sizeof(*desc));
@@ -844,13 +920,22 @@ static void stats_init(threadpool_t *pool)
     pthread_mutex_unlock(&pools_lock);
 }
 
-/* thread pool mutex must be held on entry */
-static void stats_destroy(threadpool_t *pool)
+/**
+ * @brief Unlink the calling worker's task descriptor.
+ *
+ * The caller must hold pools_lock. The returned descriptor is no longer
+ * visible to STATS and may be freed after releasing pools_lock.
+ *
+ * @param pool Thread pool owning the calling worker.
+ * @return The unlinked descriptor, or NULL if statistics were not initialized.
+ */
+static struct task_desc *stats_unlink_locked(threadpool_t *pool)
 {
     struct task_desc *desc = pthread_getspecific(stats_tls_key);
+
     if (!desc)
-        return;
-    pthread_mutex_lock(&pools_lock);
+        return NULL;
+
     if (desc->prv)
         desc->prv->nxt = desc->nxt;
     if (desc->nxt)
@@ -858,8 +943,8 @@ static void stats_destroy(threadpool_t *pool)
     if (pool->tasks == desc)
         pool->tasks = desc->nxt;
     pthread_setspecific(stats_tls_key, NULL);
-    pthread_mutex_unlock(&pools_lock);
-    task_desc_free(desc);
+
+    return desc;
 }
 
 static inline int thrmgr_contended(threadpool_t *pool, int bulk)
@@ -921,19 +1006,20 @@ static void *thrmgr_pop(threadpool_t *pool)
 static void *thrmgr_worker(void *arg)
 {
     threadpool_t *threadpool = (threadpool_t *)arg;
+    struct task_desc *desc;
     void *job_data;
-    int retval, must_exit = FALSE, stats_inited = FALSE;
+    int retval, must_exit;
     struct timespec timeout;
+
+    stats_init(threadpool);
 
     /* loop looking for work */
     for (;;) {
+        must_exit = FALSE;
+
         if (pthread_mutex_lock(&(threadpool->pool_mutex)) != 0) {
             logg(LOGG_ERROR, "Fatal: mutex lock failed\n");
             exit(-2);
-        }
-        if (!stats_inited) {
-            stats_init(threadpool);
-            stats_inited = TRUE;
         }
         thrmgr_setactiveengine(NULL);
         thrmgr_setactivetask(NULL, IDLE_TASK);
@@ -962,26 +1048,54 @@ static void *thrmgr_worker(void *arg)
         if (job_data) {
             threadpool->handler(job_data);
         } else if (must_exit) {
-            break;
+            /* A dispatcher can add work after the timed wait releases the
+             * pool mutex but before this worker retires. Make the final
+             * decision while holding both locks in the same order used by
+             * STATS so dispatch either observes this worker alive or starts
+             * a replacement after it has retired. */
+            if (pthread_mutex_lock(&pools_lock) != 0) {
+                logg(LOGG_ERROR, "Fatal: pools mutex lock failed\n");
+                exit(-2);
+            }
+            if (pthread_mutex_lock(&(threadpool->pool_mutex)) != 0) {
+                logg(LOGG_ERROR, "Fatal: mutex lock failed\n");
+                exit(-2);
+            }
+
+            if (threadpool->state == POOL_VALID &&
+                (threadpool->single_queue->item_count != 0 ||
+                 threadpool->bulk_queue->item_count != 0)) {
+                if (pthread_mutex_unlock(&(threadpool->pool_mutex)) != 0) {
+                    logg(LOGG_ERROR, "Fatal: mutex unlock failed\n");
+                    exit(-2);
+                }
+                if (pthread_mutex_unlock(&pools_lock) != 0) {
+                    logg(LOGG_ERROR, "Fatal: pools mutex unlock failed\n");
+                    exit(-2);
+                }
+                continue;
+            }
+
+            desc = stats_unlink_locked(threadpool);
+            threadpool->thr_alive--;
+            if (threadpool->thr_alive == 0) {
+                /* signal that all threads are finished */
+                pthread_cond_broadcast(&threadpool->pool_cond);
+            }
+
+            if (pthread_mutex_unlock(&(threadpool->pool_mutex)) != 0) {
+                logg(LOGG_ERROR, "Fatal: mutex unlock failed\n");
+                exit(-2);
+            }
+            if (pthread_mutex_unlock(&pools_lock) != 0) {
+                logg(LOGG_ERROR, "Fatal: pools mutex unlock failed\n");
+                exit(-2);
+            }
+
+            task_desc_free(desc);
+            return NULL;
         }
     }
-    if (pthread_mutex_lock(&(threadpool->pool_mutex)) != 0) {
-        /* Fatal error */
-        logg(LOGG_ERROR, "Fatal: mutex lock failed\n");
-        exit(-2);
-    }
-    threadpool->thr_alive--;
-    if (threadpool->thr_alive == 0) {
-        /* signal that all threads are finished */
-        pthread_cond_broadcast(&threadpool->pool_cond);
-    }
-    stats_destroy(threadpool);
-    if (pthread_mutex_unlock(&(threadpool->pool_mutex)) != 0) {
-        /* Fatal error */
-        logg(LOGG_ERROR, "Fatal: mutex unlock failed\n");
-        exit(-2);
-    }
-    return NULL;
 }
 
 static int thrmgr_dispatch_internal(threadpool_t *threadpool, void *user_data, int bulk)

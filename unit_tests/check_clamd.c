@@ -997,6 +997,7 @@ struct stats_print_thread_state {
     pthread_cond_t cond;
     int socket_fd;
     int result;
+    int started;
     int done;
 };
 
@@ -1037,6 +1038,11 @@ static void stats_noop_handler(void *data)
 static void *stats_print_thread(void *data)
 {
     struct stats_print_thread_state *state = data;
+
+    pthread_mutex_lock(&state->mutex);
+    state->started = 1;
+    pthread_cond_broadcast(&state->cond);
+    pthread_mutex_unlock(&state->mutex);
 
     state->result = thrmgr_printstats(state->socket_fd, '\n');
     close_socket(state->socket_fd);
@@ -1221,6 +1227,203 @@ START_TEST(test_stats_write_does_not_hold_pool_lock)
 }
 END_TEST
 
+struct stats_worker_retirement_test_state {
+    pthread_mutex_t mutex;
+    pthread_cond_t cond;
+    unsigned handled;
+};
+
+static void stats_worker_retirement_test_handler(void *data)
+{
+    struct stats_worker_retirement_test_state *state = data;
+
+    pthread_mutex_lock(&state->mutex);
+    state->handled++;
+    pthread_cond_broadcast(&state->cond);
+    pthread_mutex_unlock(&state->mutex);
+}
+
+static void stats_test_sleep_millisecond(void)
+{
+#ifdef _WIN32
+    Sleep(1);
+#else
+    struct timespec delay = { .tv_sec = 0, .tv_nsec = 1000000L };
+    nanosleep(&delay, NULL);
+#endif
+}
+
+START_TEST(test_stats_does_not_strand_work_during_worker_retirement)
+{
+    struct stats_worker_retirement_test_state state;
+    struct stats_print_thread_state print_state;
+    struct task_desc *desc;
+    threadpool_t *threadpool;
+    pthread_t print_thread;
+    char *stats;
+    size_t stats_len;
+    unsigned i;
+    int sockets[2];
+    int worker_is_retiring = 0;
+    int second_job_handled = 0;
+
+    memset(&state, 0, sizeof(state));
+    ck_assert_int_eq(pthread_mutex_init(&state.mutex, NULL), 0);
+    ck_assert_int_eq(pthread_cond_init(&state.cond, NULL), 0);
+
+    threadpool = thrmgr_new(1, 1, 2, stats_worker_retirement_test_handler);
+    ck_assert_ptr_nonnull(threadpool);
+    ck_assert_int_ne(thrmgr_dispatch(threadpool, &state), 0);
+
+    pthread_mutex_lock(&state.mutex);
+    while (state.handled < 1)
+        pthread_cond_wait(&state.cond, &state.mutex);
+    pthread_mutex_unlock(&state.mutex);
+
+    /* Wait until the worker has returned to its timed idle wait, then hold
+     * its task descriptor so STATS retains pools_lock while snapshotting it. */
+    pthread_mutex_lock(&threadpool->pool_mutex);
+    while (threadpool->thr_idle < 1)
+        pthread_cond_wait(&threadpool->idle_cond, &threadpool->pool_mutex);
+    desc = threadpool->tasks;
+    ck_assert_ptr_nonnull(desc);
+    ck_assert_int_eq(pthread_mutex_lock(&desc->mutex), 0);
+    pthread_mutex_unlock(&threadpool->pool_mutex);
+
+    create_tcp_socket_pair(sockets);
+    memset(&print_state, 0, sizeof(print_state));
+    print_state.socket_fd = sockets[1];
+    ck_assert_int_eq(pthread_mutex_init(&print_state.mutex, NULL), 0);
+    ck_assert_int_eq(pthread_cond_init(&print_state.cond, NULL), 0);
+    ck_assert_int_eq(pthread_create(&print_thread, NULL, stats_print_thread, &print_state), 0);
+
+    pthread_mutex_lock(&print_state.mutex);
+    while (!print_state.started)
+        pthread_cond_wait(&print_state.cond, &print_state.mutex);
+    pthread_mutex_unlock(&print_state.mutex);
+
+    /* Once idle is zero but the sole worker is still alive, its timeout has
+     * fired and it is waiting for the global STATS lock before retiring. */
+    for (i = 0; i < 5000; i++) {
+        pthread_mutex_lock(&threadpool->pool_mutex);
+        worker_is_retiring = threadpool->thr_alive == 1 && threadpool->thr_idle == 0;
+        pthread_mutex_unlock(&threadpool->pool_mutex);
+        if (worker_is_retiring)
+            break;
+        stats_test_sleep_millisecond();
+    }
+    ck_assert_msg(worker_is_retiring,
+                  "Worker did not reach the retirement checkpoint while STATS held the pool list lock");
+
+    /* The dispatcher sees the retiring worker as alive and therefore does
+     * not create a replacement. The worker must recheck the queue before it
+     * commits to exit. */
+    ck_assert_int_ne(thrmgr_dispatch(threadpool, &state), 0);
+    ck_assert_int_eq(pthread_mutex_unlock(&desc->mutex), 0);
+
+    for (i = 0; i < 5000; i++) {
+        pthread_mutex_lock(&state.mutex);
+        second_job_handled = state.handled == 2;
+        pthread_mutex_unlock(&state.mutex);
+        if (second_job_handled)
+            break;
+        stats_test_sleep_millisecond();
+    }
+
+    stats = recvfull(sockets[0], &stats_len);
+    close_socket(sockets[0]);
+    ck_assert_int_eq(pthread_join(print_thread, NULL), 0);
+
+    ck_assert_msg(second_job_handled,
+                  "Work dispatched during worker retirement remained queued without a worker");
+    ck_assert_int_eq(print_state.result, 0);
+    ck_assert_ptr_nonnull(stats);
+    ck_assert_msg(stats_len >= 4 && memcmp(stats + stats_len - 4, "END\n", 4) == 0,
+                  "STATS response was truncated during worker retirement:\n%s", stats);
+    free(stats);
+
+    thrmgr_destroy(threadpool);
+    pthread_cond_destroy(&print_state.cond);
+    pthread_mutex_destroy(&print_state.mutex);
+    pthread_cond_destroy(&state.cond);
+    pthread_mutex_destroy(&state.mutex);
+}
+END_TEST
+
+struct stats_queue_churn_test_state {
+    pthread_mutex_t mutex;
+    pthread_cond_t cond;
+    unsigned handled;
+};
+
+static void stats_queue_churn_test_handler(void *data)
+{
+    struct stats_queue_churn_test_state *state = data;
+
+    /* Keep the queue active long enough for repeated snapshots to overlap
+     * with work-item removal. */
+#ifdef _WIN32
+    Sleep(1);
+#else
+    struct timespec delay = { .tv_sec = 0, .tv_nsec = 1000000L };
+    nanosleep(&delay, NULL);
+#endif
+
+    pthread_mutex_lock(&state->mutex);
+    state->handled++;
+    pthread_cond_broadcast(&state->cond);
+    pthread_mutex_unlock(&state->mutex);
+}
+
+START_TEST(test_stats_while_queue_is_changing)
+{
+    enum {
+        STATS_QUEUE_CHURN_JOBS      = 256,
+        STATS_QUEUE_CHURN_SNAPSHOTS = 64
+    };
+    struct stats_queue_churn_test_state state;
+    threadpool_t *threadpool;
+    unsigned i;
+
+    memset(&state, 0, sizeof(state));
+    ck_assert_int_eq(pthread_mutex_init(&state.mutex, NULL), 0);
+    ck_assert_int_eq(pthread_cond_init(&state.cond, NULL), 0);
+
+    threadpool = thrmgr_new(1, 60, STATS_QUEUE_CHURN_JOBS * 2,
+                            stats_queue_churn_test_handler);
+    ck_assert_ptr_nonnull(threadpool);
+
+    for (i = 0; i < STATS_QUEUE_CHURN_JOBS; i++)
+        ck_assert_int_ne(thrmgr_dispatch(threadpool, &state), 0);
+
+    for (i = 0; i < STATS_QUEUE_CHURN_SNAPSHOTS; i++) {
+        char *stats;
+        size_t stats_len;
+        int sockets[2];
+
+        create_tcp_socket_pair(sockets);
+        ck_assert_int_eq(thrmgr_printstats(sockets[1], '\n'), 0);
+        close_socket(sockets[1]);
+        stats = recvfull(sockets[0], &stats_len);
+        close_socket(sockets[0]);
+
+        ck_assert_ptr_nonnull(stats);
+        ck_assert_msg(stats_len >= 4 && memcmp(stats + stats_len - 4, "END\n", 4) == 0,
+                      "STATS response was truncated while the work queue changed:\n%s", stats);
+        free(stats);
+    }
+
+    pthread_mutex_lock(&state.mutex);
+    while (state.handled < STATS_QUEUE_CHURN_JOBS)
+        pthread_cond_wait(&state.cond, &state.mutex);
+    pthread_mutex_unlock(&state.mutex);
+
+    thrmgr_destroy(threadpool);
+    pthread_cond_destroy(&state.cond);
+    pthread_mutex_destroy(&state.mutex);
+}
+END_TEST
+
 static Suite *test_clamd_suite(void)
 {
     Suite *s = suite_create("clamd");
@@ -1258,6 +1461,8 @@ static Suite *test_clamd_suite(void)
     suite_add_tcase(s, tc_thrmgr);
     tcase_add_test(tc_thrmgr, test_stats_owns_task_filename);
     tcase_add_test(tc_thrmgr, test_stats_write_does_not_hold_pool_lock);
+    tcase_add_test(tc_thrmgr, test_stats_does_not_strand_work_during_worker_retirement);
+    tcase_add_test(tc_thrmgr, test_stats_while_queue_is_changing);
 
     return s;
 }
