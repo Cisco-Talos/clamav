@@ -562,8 +562,8 @@ int mpool_getstats(const struct cl_engine *eng, size_t *used, size_t *total)
     const struct MPMAP *mpm;
     const mpool_t *mp;
 
-    /* checking refcount is not necessary, but safer */
-    if (!eng || !eng->refcount)
+    /* The caller must retain a reference while statistics are collected. */
+    if (!eng)
         return -1;
     mp = eng->mempool;
     if (!mp)
