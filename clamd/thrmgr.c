@@ -28,6 +28,8 @@
 #include <pthread.h>
 #include <time.h>
 #include <errno.h>
+#include <stdarg.h>
+#include <stdint.h>
 #include <string.h>
 
 // libclamav
@@ -118,6 +120,104 @@ static struct threadpool_list {
 } *pools                          = NULL;
 static pthread_mutex_t pools_lock = PTHREAD_MUTEX_INITIALIZER;
 
+struct stats_buffer {
+    char *data;
+    size_t length;
+    size_t capacity;
+};
+
+/**
+ * @brief Free a buffered STATS response.
+ *
+ * @param buffer Response buffer to free.
+ */
+static void stats_buffer_cleanup(struct stats_buffer *buffer)
+{
+    if (!buffer)
+        return;
+
+    free(buffer->data);
+    memset(buffer, 0, sizeof(*buffer));
+}
+
+/**
+ * @brief Append formatted text to a buffered STATS response.
+ *
+ * @param buffer Response buffer to extend.
+ * @param format printf-style format string.
+ * @return CL_SUCCESS on success, or an error status.
+ */
+static cl_error_t stats_buffer_append(struct stats_buffer *buffer, const char *format, ...)
+{
+    cl_error_t status = CL_SUCCESS;
+    size_t required;
+    va_list args;
+    int needed;
+    int written;
+
+    va_start(args, format);
+    needed = vsnprintf(NULL, 0, format, args);
+    va_end(args);
+    if (needed < 0)
+        return CL_EFORMAT;
+
+    if ((size_t)needed >= SIZE_MAX - buffer->length)
+        return CL_EMEM;
+    required = buffer->length + (size_t)needed + 1;
+
+    if (required > buffer->capacity) {
+        size_t capacity = buffer->capacity ? buffer->capacity : 1024;
+        char *data;
+
+        while (capacity < required) {
+            if (capacity > SIZE_MAX / 2) {
+                capacity = required;
+                break;
+            }
+            capacity *= 2;
+        }
+
+        data = realloc(buffer->data, capacity);
+        if (!data)
+            return CL_EMEM;
+
+        buffer->data     = data;
+        buffer->capacity = capacity;
+    }
+
+    va_start(args, format);
+    written = vsnprintf(buffer->data + buffer->length,
+                        buffer->capacity - buffer->length, format, args);
+    va_end(args);
+    if (written != needed) {
+        status = CL_EFORMAT;
+        goto done;
+    }
+
+    buffer->length += (size_t)written;
+
+done:
+    return status;
+}
+
+/**
+ * @brief Free a task descriptor and its owned resources.
+ *
+ * The caller must ensure that the descriptor is no longer visible to STATS
+ * and that its worker thread has stopped using it.
+ *
+ * @param desc Task descriptor to free.
+ */
+static void task_desc_free(struct task_desc *desc)
+{
+    if (!desc)
+        return;
+
+    free(desc->filename);
+    pthread_mutex_destroy(&desc->mutex);
+    free(desc);
+}
+
 static void add_topools(threadpool_t *t)
 {
     struct threadpool_list *new = malloc(sizeof(*new));
@@ -156,20 +256,31 @@ static void remove_frompools(threadpool_t *t)
     while (desc) {
         struct task_desc *q = desc;
         desc                = desc->nxt;
-        free(q);
+        task_desc_free(q);
     }
     t->tasks = NULL;
     pthread_mutex_unlock(&pools_lock);
 }
 
-static void print_queue(int f, work_queue_t *queue, struct timeval *tv_now)
+/**
+ * @brief Append queue timing statistics to a buffered STATS response.
+ *
+ * The caller must ensure that the queue remains valid while it is read.
+ *
+ * @param buffer Response buffer to extend.
+ * @param queue Queue to summarize.
+ * @param tv_now Time used to calculate queue wait durations.
+ * @return CL_SUCCESS on success, or an error status.
+ */
+static cl_error_t stats_buffer_append_queue(struct stats_buffer *buffer, work_queue_t *queue, struct timeval *tv_now)
 {
+    cl_error_t status;
     long umin = LONG_MAX, umax = 0, usum = 0;
     unsigned invalids = 0, cnt = 0;
     work_item_t *q;
 
     if (!queue->head)
-        return;
+        return CL_SUCCESS;
     for (q = queue->head; q; q = q->next) {
         long delta;
         delta = tv_now->tv_usec - q->time_queued.tv_usec;
@@ -185,28 +296,62 @@ static void print_queue(int f, work_queue_t *queue, struct timeval *tv_now)
         usum += delta;
         ++cnt;
     }
-    mdprintf(f, " min_wait: %.6f max_wait: %.6f avg_wait: %.6f",
-             umin / 1e6, umax / 1e6, usum / (1e6 * cnt));
-    if (invalids)
-        mdprintf(f, " (INVALID timestamps: %u)", invalids);
-    if (cnt + invalids != (unsigned)queue->item_count)
-        mdprintf(f, " (ERROR: %u != %u)", cnt + invalids,
-                 (unsigned)queue->item_count);
+
+    status = stats_buffer_append(buffer, " min_wait: %.6f max_wait: %.6f avg_wait: %.6f",
+                                 umin / 1e6, umax / 1e6, usum / (1e6 * cnt));
+    if (CL_SUCCESS != status)
+        return status;
+
+    if (invalids) {
+        status = stats_buffer_append(buffer, " (INVALID timestamps: %u)", invalids);
+        if (CL_SUCCESS != status)
+            return status;
+    }
+
+    if (cnt + invalids != (unsigned)queue->item_count) {
+        status = stats_buffer_append(buffer, " (ERROR: %u != %u)", cnt + invalids,
+                                     (unsigned)queue->item_count);
+        if (CL_SUCCESS != status)
+            return status;
+    }
+
+    return CL_SUCCESS;
 }
 
-int thrmgr_printstats(int f, char term)
+/**
+ * @brief Create an immutable snapshot of the STATS response.
+ *
+ * Pool and task state is formatted into an owned memory buffer while the
+ * corresponding descriptors are protected. The global pool lock is released
+ * before any response bytes are written to the client, so a slow or
+ * non-reading client cannot block scan-worker bookkeeping.
+ *
+ * @param response Response snapshot to populate.
+ * @return CL_SUCCESS on success, or an error status.
+ */
+static cl_error_t stats_response_create(struct stats_buffer *response)
 {
     struct threadpool_list *l;
+    cl_error_t status = CL_SUCCESS;
     unsigned cnt, pool_cnt = 0;
-    size_t pool_used = 0, pool_total = 0, seen_cnt = 0, error_flag = 0;
+    size_t pool_used = 0, pool_total = 0, seen_cnt = 0;
     float mem_heap = 0, mem_mmap = 0, mem_used = 0, mem_free = 0, mem_releasable = 0;
-    const struct cl_engine **seen = NULL;
-    int has_libc_memstats         = 0;
+    struct cl_engine **seen = NULL;
+    int has_libc_memstats   = 0;
 
-    pthread_mutex_lock(&pools_lock);
+    memset(response, 0, sizeof(*response));
+
+    if (pthread_mutex_lock(&pools_lock) != 0) {
+        logg(LOGG_ERROR, "Unable to lock thread pool statistics mutex\n");
+        return CL_ELOCK;
+    }
+
     for (cnt = 0, l = pools; l; l = l->nxt) cnt++;
-    mdprintf(f, "POOLS: %u\n\n", cnt);
-    for (l = pools; l && !error_flag; l = l->nxt) {
+    status = stats_buffer_append(response, "POOLS: %u\n\n", cnt);
+    if (CL_SUCCESS != status)
+        goto unlock;
+
+    for (l = pools; l; l = l->nxt) {
         threadpool_t *pool = l->pool;
         const char *state;
         struct timeval tv_now;
@@ -214,12 +359,12 @@ int thrmgr_printstats(int f, char term)
         cnt = 0;
 
         if (!pool) {
-            mdprintf(f, "NULL\n\n");
+            status = stats_buffer_append(response, "NULL\n\n");
+            if (CL_SUCCESS != status)
+                goto unlock;
             continue;
         }
-        /* now we can access desc->, knowing that they won't get freed
-         * because the other tasks can't quit while pool_mutex is taken
-         */
+
         switch (pool->state) {
             case POOL_INVALID:
                 state = "INVALID";
@@ -234,26 +379,50 @@ int thrmgr_printstats(int f, char term)
                 state = "??";
                 break;
         }
-        mdprintf(f, "STATE: %s %s\n", state, l->nxt ? "" : "PRIMARY");
-        mdprintf(f, "THREADS: live %u  idle %u max %u idle-timeout %u\n", pool->thr_alive, pool->thr_idle, pool->thr_max,
-                 pool->idle_timeout);
+
+        status = stats_buffer_append(response, "STATE: %s %s\n", state, l->nxt ? "" : "PRIMARY");
+        if (CL_SUCCESS != status)
+            goto unlock;
+        status = stats_buffer_append(response, "THREADS: live %u  idle %u max %u idle-timeout %u\n",
+                                     pool->thr_alive, pool->thr_idle, pool->thr_max, pool->idle_timeout);
+        if (CL_SUCCESS != status)
+            goto unlock;
+
         /* TODO: show both queues */
-        mdprintf(f, "QUEUE: %u items", pool->single_queue->item_count + pool->bulk_queue->item_count);
+        status = stats_buffer_append(response, "QUEUE: %u items",
+                                     pool->single_queue->item_count + pool->bulk_queue->item_count);
+        if (CL_SUCCESS != status)
+            goto unlock;
+
         gettimeofday(&tv_now, NULL);
-        print_queue(f, pool->bulk_queue, &tv_now);
-        print_queue(f, pool->single_queue, &tv_now);
-        mdprintf(f, "\n");
+        status = stats_buffer_append_queue(response, pool->bulk_queue, &tv_now);
+        if (CL_SUCCESS != status)
+            goto unlock;
+        status = stats_buffer_append_queue(response, pool->single_queue, &tv_now);
+        if (CL_SUCCESS != status)
+            goto unlock;
+        status = stats_buffer_append(response, "\n");
+        if (CL_SUCCESS != status)
+            goto unlock;
+
         for (task = pool->tasks; task; task = task->nxt) {
             double delta;
-            size_t used, total;
+
+            if (pthread_mutex_lock(&task->mutex) != 0) {
+                logg(LOGG_ERROR, "Unable to lock task statistics mutex\n");
+                status = CL_ELOCK;
+                goto unlock;
+            }
 
             delta = tv_now.tv_usec - task->tv.tv_usec;
             delta += (tv_now.tv_sec - task->tv.tv_sec) * 1000000.0;
-            mdprintf(f, "\t%s %f %s\n",
-                     task->command ? task->command : "N/A",
-                     delta / 1e6,
-                     task->filename ? task->filename : "");
-            if (task->engine) {
+
+            status = stats_buffer_append(response, "\t%s %f %s\n",
+                                         task->command ? task->command : "N/A",
+                                         delta / 1e6,
+                                         task->filename ? task->filename : "");
+
+            if (CL_SUCCESS == status && task->engine) {
                 /* we usually have at most 2 engines so a linear
                  * search is good enough */
                 size_t i;
@@ -264,28 +433,59 @@ int thrmgr_printstats(int f, char term)
                 /* we need to count the memusage from the same
                  * engine only once */
                 if (i == seen_cnt) {
-                    const struct cl_engine **s;
+                    struct cl_engine **s;
                     /* new engine */
-                    ++seen_cnt;
-                    s = realloc((void *)seen, seen_cnt * sizeof(*seen));
+                    s = realloc(seen, (seen_cnt + 1) * sizeof(*seen));
                     if (!s) {
-                        error_flag = 1;
-                        break;
-                    }
-                    seen               = s;
-                    seen[seen_cnt - 1] = task->engine;
-
-                    if (MPOOL_GETSTATS(task->engine, &used, &total) != -1) {
-                        pool_used += used;
-                        pool_total += total;
-                        pool_cnt++;
+                        status = CL_EMEM;
+                    } else {
+                        seen   = s;
+                        status = cl_engine_addref((struct cl_engine *)task->engine);
+                        if (CL_SUCCESS == status)
+                            seen[seen_cnt++] = (struct cl_engine *)task->engine;
                     }
                 }
             }
+
+            if (pthread_mutex_unlock(&task->mutex) != 0) {
+                logg(LOGG_ERROR, "Unable to unlock task statistics mutex\n");
+                status = CL_ELOCK;
+            }
+
+            if (CL_SUCCESS != status)
+                goto unlock;
         }
-        mdprintf(f, "\n");
+
+        status = stats_buffer_append(response, "\n");
+        if (CL_SUCCESS != status)
+            goto unlock;
     }
-    free((void *)seen);
+
+unlock:
+    if (pthread_mutex_unlock(&pools_lock) != 0) {
+        logg(LOGG_ERROR, "Unable to unlock thread pool statistics mutex\n");
+        status = CL_ELOCK;
+    }
+
+    if (CL_SUCCESS == status) {
+        for (cnt = 0; cnt < seen_cnt; cnt++) {
+            size_t used, total;
+
+            if (MPOOL_GETSTATS(seen[cnt], &used, &total) != -1) {
+                pool_used += used;
+                pool_total += total;
+                pool_cnt++;
+            }
+        }
+    }
+
+    for (cnt = 0; cnt < seen_cnt; cnt++)
+        cl_engine_free(seen[cnt]);
+    free(seen);
+
+    if (CL_SUCCESS != status)
+        goto done;
+
 #ifdef HAVE_MALLINFO
     {
         struct mallinfo inf = mallinfo();
@@ -297,19 +497,35 @@ int thrmgr_printstats(int f, char term)
         has_libc_memstats   = 1;
     }
 #endif
-    if (error_flag) {
-        mdprintf(f, "ERROR: error encountered while formatting statistics\n");
+
+    if (has_libc_memstats)
+        status = stats_buffer_append(response,
+                                     "MEMSTATS: heap %.3fM mmap %.3fM used %.3fM free %.3fM releasable %.3fM pools %u pools_used %.3fM pools_total %.3fM\n",
+                                     mem_heap, mem_mmap, mem_used, mem_free, mem_releasable, pool_cnt,
+                                     pool_used / (1024 * 1024.0), pool_total / (1024 * 1024.0));
+    else
+        status = stats_buffer_append(response,
+                                     "MEMSTATS: heap N/A mmap N/A used N/A free N/A releasable N/A pools %u pools_used %.3fM pools_total %.3fM\n",
+                                     pool_cnt, pool_used / (1024 * 1024.0), pool_total / (1024 * 1024.0));
+
+done:
+    if (CL_SUCCESS != status)
+        stats_buffer_cleanup(response);
+
+    return status;
+}
+
+int thrmgr_printstats(int f, char term)
+{
+    struct stats_buffer response;
+
+    if (CL_SUCCESS == stats_response_create(&response)) {
+        mdprintf(f, "%sEND%c", response.data, term);
+        stats_buffer_cleanup(&response);
     } else {
-        if (has_libc_memstats)
-            mdprintf(f, "MEMSTATS: heap %.3fM mmap %.3fM used %.3fM free %.3fM releasable %.3fM pools %u pools_used %.3fM pools_total %.3fM\n",
-                     mem_heap, mem_mmap, mem_used, mem_free, mem_releasable, pool_cnt,
-                     pool_used / (1024 * 1024.0), pool_total / (1024 * 1024.0));
-        else
-            mdprintf(f, "MEMSTATS: heap N/A mmap N/A used N/A free N/A releasable N/A pools %u pools_used %.3fM pools_total %.3fM\n",
-                     pool_cnt, pool_used / (1024 * 1024.0), pool_total / (1024 * 1024.0));
+        mdprintf(f, "ERROR: error encountered while formatting statistics\nEND%c", term);
     }
-    mdprintf(f, "END%c", term);
-    pthread_mutex_unlock(&pools_lock);
+
     return 0;
 }
 
@@ -540,21 +756,42 @@ static void stats_tls_key_alloc(void)
 
 static const char *IDLE_TASK = "IDLE";
 
-/* no mutex is needed, we are using  thread local variable */
 void thrmgr_setactivetask(const char *filename, const char *cmd)
 {
     struct task_desc *desc;
+    char *filename_copy = NULL;
+    char *old_filename;
+
     pthread_once(&stats_tls_key_once, stats_tls_key_alloc);
     desc = pthread_getspecific(stats_tls_key);
     if (!desc)
         return;
-    desc->filename = filename;
-    if (cmd) {
-        if (cmd == IDLE_TASK && desc->command == cmd)
-            return;
-        desc->command = cmd;
-        gettimeofday(&desc->tv, NULL);
+
+    if (filename) {
+        filename_copy = strdup(filename);
+        if (!filename_copy)
+            logg(LOGG_ERROR, "Unable to copy active task filename\n");
     }
+
+    if (pthread_mutex_lock(&desc->mutex) != 0) {
+        logg(LOGG_ERROR, "Unable to lock task statistics mutex\n");
+        free(filename_copy);
+        return;
+    }
+
+    old_filename   = desc->filename;
+    desc->filename = filename_copy;
+    if (cmd) {
+        if (!(cmd == IDLE_TASK && desc->command == cmd)) {
+            desc->command = cmd;
+            gettimeofday(&desc->tv, NULL);
+        }
+    }
+
+    if (pthread_mutex_unlock(&desc->mutex) != 0)
+        logg(LOGG_ERROR, "Unable to unlock task statistics mutex\n");
+
+    free(old_filename);
 }
 
 void thrmgr_setactiveengine(const struct cl_engine *engine)
@@ -564,7 +801,16 @@ void thrmgr_setactiveengine(const struct cl_engine *engine)
     desc = pthread_getspecific(stats_tls_key);
     if (!desc)
         return;
+
+    if (pthread_mutex_lock(&desc->mutex) != 0) {
+        logg(LOGG_ERROR, "Unable to lock task statistics mutex\n");
+        return;
+    }
+
     desc->engine = engine;
+
+    if (pthread_mutex_unlock(&desc->mutex) != 0)
+        logg(LOGG_ERROR, "Unable to unlock task statistics mutex\n");
 }
 
 /* thread pool mutex must be held on entry */
@@ -573,8 +819,21 @@ static void stats_init(threadpool_t *pool)
     struct task_desc *desc = calloc(1, sizeof(*desc));
     if (!desc)
         return;
+
+    if (pthread_mutex_init(&desc->mutex, NULL) != 0) {
+        logg(LOGG_ERROR, "Unable to initialize task statistics mutex\n");
+        free(desc);
+        return;
+    }
+
     pthread_once(&stats_tls_key_once, stats_tls_key_alloc);
-    pthread_setspecific(stats_tls_key, desc);
+    if (pthread_setspecific(stats_tls_key, desc) != 0) {
+        logg(LOGG_ERROR, "Unable to initialize task statistics state\n");
+        task_desc_free(desc);
+        return;
+    }
+
+    pthread_mutex_lock(&pools_lock);
     if (!pool->tasks)
         pool->tasks = desc;
     else {
@@ -582,6 +841,7 @@ static void stats_init(threadpool_t *pool)
         pool->tasks->prv = desc;
         pool->tasks      = desc;
     }
+    pthread_mutex_unlock(&pools_lock);
 }
 
 /* thread pool mutex must be held on entry */
@@ -597,9 +857,9 @@ static void stats_destroy(threadpool_t *pool)
         desc->nxt->prv = desc->prv;
     if (pool->tasks == desc)
         pool->tasks = desc->nxt;
-    free(desc);
     pthread_setspecific(stats_tls_key, NULL);
     pthread_mutex_unlock(&pools_lock);
+    task_desc_free(desc);
 }
 
 static inline int thrmgr_contended(threadpool_t *pool, int bulk)

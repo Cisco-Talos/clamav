@@ -70,7 +70,10 @@ if(ENABLE_APP)
     # check_clamd is used by the clamd tests
     add_executable(check_clamd)
     target_sources(check_clamd
-        PRIVATE   check_clamd.c checks.h)
+        PRIVATE
+            check_clamd.c
+            checks.h
+            ../clamd/thrmgr.c)
     target_link_libraries(check_clamd
         PRIVATE
             ClamAV::libclamav
