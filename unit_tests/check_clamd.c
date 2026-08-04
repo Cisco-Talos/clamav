@@ -620,7 +620,7 @@ START_TEST(test_fildes_many)
     const char end[]       = "zEND";
     const char ping[]      = "zPING";
 
-    int dummyfd, i, killed = 0;
+    int dummyfd, i;
     conn_setup();
     dummyfd = open(SCANFILE, O_RDONLY);
     ck_assert_msg(dummyfd != -1, "failed to open %s: %s\n", SCANFILE, strerror(errno));
@@ -628,14 +628,11 @@ START_TEST(test_fildes_many)
     ck_assert_msg(send(sockd, idsession, sizeof(idsession), 0) == sizeof(idsession), "send IDSESSION failed\n");
     for (i = 0; i < 1024; i++) {
         if (sendmsg_fd(sockd, fildes, sizeof(fildes), dummyfd, 1) == -1) {
-            killed = 1;
             break;
         }
     }
     close(dummyfd);
-    if (send(sockd, end, sizeof(end), 0) == -1) {
-        killed = 1;
-    }
+    (void)send(sockd, end, sizeof(end), 0);
     conn_teardown();
 
     conn_setup();
