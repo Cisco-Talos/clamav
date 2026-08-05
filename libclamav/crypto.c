@@ -178,8 +178,8 @@ void cl_cleanup_crypto(void)
  *
  * Fetch each FIPS-bypass digest once into a single shared non-FIPS library
  * context and reuse it (a fetched EVP_MD is reference counted and safe to share
- * across threads). cli_get_md() returns a reference the caller owns and must
- * release with EVP_MD_free().
+ * across threads). On success, cli_get_md() returns a reference through its
+ * output parameter that the caller owns and must release with EVP_MD_free().
  *
  * Only the bypass digests are cached. The FIPS-compliant path is fetched from
  * the default library context on every call, so it keeps honoring the current
@@ -201,32 +201,47 @@ static struct {
 } md_cache[8];
 static size_t md_cache_len = 0;
 
-static EVP_MD *cli_get_md(const char *alg, bool fips_bypass)
+static cl_error_t cli_get_md(const char *alg, bool fips_bypass, EVP_MD **md_out)
 {
-    const char *ossl_alg = to_openssl_alg(alg);
-    EVP_MD *result       = NULL;
-    bool cached          = false; /* true if md_cache owns `result` */
+    const char *ossl_alg      = to_openssl_alg(alg);
+    const char *error_message = NULL;
+    EVP_MD *result            = NULL;
+    cl_error_t status         = CL_ERROR;
+    bool result_is_cached     = false;
     size_t i;
 
+    if (NULL == md_out) {
+        return CL_ENULLARG;
+    }
+    *md_out = NULL;
+
     if (NULL == ossl_alg) {
-        return NULL;
+        return CL_EARG;
     }
 
     if (!fips_bypass) {
         /* FIPS-compliant path: fetch from the default library context every
          * time so the current default property query -- including any runtime
          * FIPS change -- is honored. */
-        return EVP_MD_fetch(NULL, ossl_alg, NULL);
+        result = EVP_MD_fetch(NULL, ossl_alg, NULL);
+        if (NULL == result) {
+            return CL_EARG;
+        }
+        *md_out = result;
+        return CL_SUCCESS;
     }
 
 #ifdef CL_THREAD_SAFE
-    pthread_mutex_lock(&md_cache_mutex);
+    if (0 != pthread_mutex_lock(&md_cache_mutex)) {
+        cli_errmsg("cli_get_md: Failed to lock OpenSSL digest cache\n");
+        return CL_ELOCK;
+    }
 #endif
 
     for (i = 0; i < md_cache_len; i++) {
         if (0 == strcmp(md_cache[i].alg, ossl_alg)) {
-            result = md_cache[i].md;
-            cached = true;
+            result           = md_cache[i].md;
+            result_is_cached = true;
             goto done;
         }
     }
@@ -235,31 +250,41 @@ static EVP_MD *cli_get_md(const char *alg, bool fips_bypass)
     if (NULL == nonfips_libctx) {
         nonfips_libctx = OSSL_LIB_CTX_new();
         if (NULL == nonfips_libctx) {
-            cli_errmsg("cli_get_md: Failed to create OpenSSL library context\n");
+            error_message = "cli_get_md: Failed to create OpenSSL library context\n";
+            status        = CL_EMEM;
             goto done;
         }
     }
     result = EVP_MD_fetch(nonfips_libctx, ossl_alg, "-fips");
+    if (NULL == result) {
+        status = CL_EARG;
+        goto done;
+    }
     if (NULL != result && md_cache_len < sizeof(md_cache) / sizeof(md_cache[0])) {
         md_cache[md_cache_len].alg = ossl_alg;
         md_cache[md_cache_len].md  = result; /* cache holds this reference */
         md_cache_len++;
-        cached = true;
+        result_is_cached = true;
     }
 
 done:
-    /* A cached digest belongs to md_cache, so give the caller its own reference
-     * to EVP_MD_free(). If that reference can't be acquired, fail instead of
-     * handing back one the caller would free out from under the cache.
-     * A digest that was fetched but not cached is already the caller's to free. */
-    if (cached && NULL != result && 1 != EVP_MD_up_ref(result)) {
-        cli_errmsg("cli_get_md: Failed to acquire a reference to the %s digest\n", ossl_alg);
-        result = NULL;
+    if (result_is_cached && 1 != EVP_MD_up_ref(result)) {
+        error_message = "cli_get_md: Failed to retain OpenSSL digest handle\n";
+        result        = NULL;
+        status        = CL_EMEM;
+    } else if (NULL != result) {
+        status = CL_SUCCESS;
     }
 #ifdef CL_THREAD_SAFE
     pthread_mutex_unlock(&md_cache_mutex);
 #endif
-    return result;
+    if (NULL != error_message) {
+        cli_errmsg("%s", error_message);
+    }
+    if (CL_SUCCESS == status) {
+        *md_out = result;
+    }
+    return status;
 }
 #endif /* OPENSSL_VERSION_MAJOR >= 3 */
 
@@ -318,15 +343,21 @@ extern cl_error_t cl_hash_data_ex(
     }
 
 #if OPENSSL_VERSION_MAJOR >= 3
-    md = cli_get_md(alg, (flags & CL_HASH_FLAG_FIPS_BYPASS) != 0);
+    status = cli_get_md(alg, (flags & CL_HASH_FLAG_FIPS_BYPASS) != 0, &md);
+    if (CL_SUCCESS != status) {
+        if (CL_EARG == status) {
+            cli_errmsg("cl_hash_data_ex: Unsupported hash algorithm: %s\n", alg);
+        }
+        goto done;
+    }
 #else
     md = EVP_get_digestbyname(to_openssl_alg(alg));
-#endif
     if (NULL == md) {
         cli_errmsg("cl_hash_data_ex: Unsupported hash algorithm: %s\n", alg);
         status = CL_EARG;
         goto done;
     }
+#endif
 
     required_hash_len = (size_t)EVP_MD_size(md);
 
@@ -452,15 +483,21 @@ extern cl_error_t cl_hash_init_ex(
     }
 
 #if OPENSSL_VERSION_MAJOR >= 3
-    md = cli_get_md(alg, (flags & CL_HASH_FLAG_FIPS_BYPASS) != 0);
+    status = cli_get_md(alg, (flags & CL_HASH_FLAG_FIPS_BYPASS) != 0, &md);
+    if (CL_SUCCESS != status) {
+        if (CL_EARG == status) {
+            cli_errmsg("cl_hash_init_ex: Unsupported hash algorithm: %s\n", alg);
+        }
+        goto done;
+    }
 #else
     md = EVP_get_digestbyname(to_openssl_alg(alg));
-#endif
     if (NULL == md) {
-        cli_errmsg("cl_hash_data_ex: Unsupported hash algorithm: %s\n", alg);
+        cli_errmsg("cl_hash_init_ex: Unsupported hash algorithm: %s\n", alg);
         status = CL_EARG;
         goto done;
     }
+#endif
 
     ctx = EVP_MD_CTX_new();
     if (NULL == ctx) {
@@ -707,15 +744,21 @@ extern cl_error_t cl_hash_file_fd_ex(
     }
 
 #if OPENSSL_VERSION_MAJOR >= 3
-    md = cli_get_md(alg, (flags & CL_HASH_FLAG_FIPS_BYPASS) != 0);
+    status = cli_get_md(alg, (flags & CL_HASH_FLAG_FIPS_BYPASS) != 0, &md);
+    if (CL_SUCCESS != status) {
+        if (CL_EARG == status) {
+            cli_errmsg("cl_hash_file_fd_ex: Unsupported hash algorithm: %s\n", alg);
+        }
+        goto done;
+    }
 #else
     md = EVP_get_digestbyname(to_openssl_alg(alg));
-#endif
     if (NULL == md) {
-        cli_errmsg("cl_hash_data_ex: Unsupported hash algorithm: %s\n", alg);
+        cli_errmsg("cl_hash_file_fd_ex: Unsupported hash algorithm: %s\n", alg);
         status = CL_EARG;
         goto done;
     }
+#endif
 
     required_hash_len = (size_t)EVP_MD_size(md);
 
@@ -856,12 +899,14 @@ unsigned char *cl_hash_data(const char *alg, const void *buf, size_t len, unsign
 #endif
 
 #if OPENSSL_VERSION_MAJOR >= 3
-    md = cli_get_md(alg, true);
+    if (CL_SUCCESS != cli_get_md(alg, true, &md)) {
+        return NULL;
+    }
 #else
     md = EVP_get_digestbyname(to_openssl_alg(alg));
-#endif
     if (!(md))
         return NULL;
+#endif
 
     mdsz = EVP_MD_size(md);
 
@@ -982,12 +1027,14 @@ unsigned char *cl_hash_file_fd(int fd, const char *alg, unsigned int *olen)
     unsigned char *res;
 
 #if OPENSSL_VERSION_MAJOR >= 3
-    md = cli_get_md(alg, true);
+    if (CL_SUCCESS != cli_get_md(alg, true, &md)) {
+        return NULL;
+    }
 #else
     md = EVP_get_digestbyname(to_openssl_alg(alg));
-#endif
     if (!(md))
         return NULL;
+#endif
 
     ctx = EVP_MD_CTX_new();
     if (!(ctx)) {
@@ -1810,12 +1857,14 @@ void *cl_hash_init(const char *alg)
 #endif
 
 #if OPENSSL_VERSION_MAJOR >= 3
-    md = cli_get_md(alg, true);
+    if (CL_SUCCESS != cli_get_md(alg, true, &md)) {
+        return NULL;
+    }
 #else
     md = EVP_get_digestbyname(to_openssl_alg(alg));
-#endif
     if (!(md))
         return NULL;
+#endif
 
     ctx = EVP_MD_CTX_new();
     if (!(ctx)) {
