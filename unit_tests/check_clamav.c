@@ -20,7 +20,6 @@
 #endif
 
 #include <libxml/parser.h>
-
 #include <openssl/evp.h>
 
 #include "platform.h"
@@ -1699,144 +1698,114 @@ START_TEST(test_sha2_256)
 }
 END_TEST
 
-/* Number of times to repeat a *failing* digest fetch.
- *
- * Before the shared EVP_MD cache, each hash allocated its own OSSL_LIB_CTX
- * before fetching the digest and then returned early without freeing it when
- * the fetch failed -- so every failed hash leaked a library context. On a
- * strict-FIPS host, where MD5 cannot be fetched at all, that was one leak per
- * scanned object. Repeating the failing call this many times makes such a
- * per-call leak unmistakable to the Valgrind and sanitizer jobs that run this
- * binary, while still being quick when nothing leaks. */
-#define HASH_FETCH_FAIL_ITERS 2000
-
-/* Whether OpenSSL itself can supply this digest, asked directly rather than
- * through libclamav. This is the independent signal that keeps the checks below
- * from silently excusing a NULL hash context: if OpenSSL can produce the digest
- * but libclamav cannot, that is a real regression in the cache, whereas if
- * OpenSSL cannot either (a FIPS policy withholding MD5/SHA1) then libclamav
- * failing is expected host behavior. */
-static bool openssl_has_digest(const char *ossl_alg)
-{
-#if OPENSSL_VERSION_MAJOR >= 3
-    EVP_MD *md = EVP_MD_fetch(NULL, ossl_alg, NULL);
-
-    if (NULL == md) {
-        return false;
-    }
-
-    EVP_MD_free(md);
-    return true;
-#else
-    return NULL != EVP_get_digestbyname(ossl_alg);
-#endif
-}
-
-/* Hash "abc" with the incremental (FIPS-bypass) API and compare against a
- * known digest. Used as the always-must-work control. */
-static bool hash_abc_matches(const char *alg, const uint8_t *expect, size_t expect_len)
-{
-    uint8_t out[SHA256_HASH_SIZE];
-    void *ctx = cl_hash_init(alg);
-
-    if (NULL == ctx) {
-        return false;
-    }
-
-    if (0 != cl_update_hash(ctx, "abc", 3)) {
-        cl_hash_destroy(ctx);
-        return false;
-    }
-
-    /* cl_finish_hash() frees the context either way. */
-    if (0 != cl_finish_hash(ctx, out)) {
-        return false;
-    }
-
-    return 0 == memcmp(out, expect, expect_len);
-}
-
 START_TEST(test_hash_md5_sha1)
 {
     /* The incremental cl_hash_* API is routed through the shared EVP_MD cache
-     * by this change; verify it still returns correct MD5/SHA1 digests. A NULL
-     * context is only acceptable where a FIPS policy withholds the algorithm --
-     * on any host that can hash it at all, a NULL is a failure, not a skip. */
-    static const uint8_t md5_abc[MD5_HASH_SIZE] = {
+     * by this change; verify it still returns correct MD5/SHA1 digests for the
+     * "abc" vectors. These algorithms must remain available through the
+     * private non-FIPS context even when the default context enables FIPS. */
+    static const uint8_t abc[]                    = {'a', 'b', 'c'};
+    static const uint8_t md5_abc[MD5_HASH_SIZE]   = {
         0x90, 0x01, 0x50, 0x98, 0x3c, 0xd2, 0x4f, 0xb0,
         0xd6, 0x96, 0x3f, 0x7d, 0x28, 0xe1, 0x7f, 0x72};
     static const uint8_t sha1_abc[SHA1_HASH_SIZE] = {
         0xa9, 0x99, 0x3e, 0x36, 0x47, 0x06, 0x81, 0x6a, 0xba, 0x3e,
         0x25, 0x71, 0x78, 0x50, 0xc2, 0x6c, 0x9c, 0xd0, 0xd8, 0x9d};
-    static const struct {
-        const char *alg;
-        const uint8_t *expect;
-        size_t expect_len;
-    } vectors[] = {
-        {"md5", md5_abc, MD5_HASH_SIZE},
-        {"sha1", sha1_abc, SHA1_HASH_SIZE}};
     uint8_t out[SHA256_HASH_SIZE];
-    size_t i;
-    unsigned j;
+    void *ctx;
 
-    for (i = 0; i < sizeof(vectors) / sizeof(vectors[0]); i++) {
-        void *ctx = cl_hash_init(vectors[i].alg);
+    ctx = cl_hash_init("md5");
+    ck_assert_msg(NULL != ctx, "cl_hash_init(md5) failed");
+    ck_assert_msg(0 == cl_update_hash(ctx, abc, sizeof(abc)), "cl_update_hash(md5) failed");
+    ck_assert_msg(0 == cl_finish_hash(ctx, out), "cl_finish_hash(md5) failed");
+    ck_assert_msg(!memcmp(out, md5_abc, MD5_HASH_SIZE), "md5(\"abc\") mismatch");
 
-        if (NULL == ctx) {
-            /* Tolerated only where OpenSSL itself withholds the digest (a FIPS
-             * policy). On an ordinary host this is a failure, not a skip. */
-            ck_assert_msg(!openssl_has_digest(vectors[i].alg),
-                          "cl_hash_init(\"%s\") returned NULL even though OpenSSL can fetch %s",
-                          vectors[i].alg, vectors[i].alg);
+    ctx = cl_hash_init("sha1");
+    ck_assert_msg(NULL != ctx, "cl_hash_init(sha1) failed");
+    ck_assert_msg(0 == cl_update_hash(ctx, abc, sizeof(abc)), "cl_update_hash(sha1) failed");
+    ck_assert_msg(0 == cl_finish_hash(ctx, out), "cl_finish_hash(sha1) failed");
+    ck_assert_msg(!memcmp(out, sha1_abc, SHA1_HASH_SIZE), "sha1(\"abc\") mismatch");
 
-            /* Strict FIPS: this is the fetch-failure path that used to leak an
-             * OSSL_LIB_CTX per hash. Repeated failures must stay clean and
-             * consistent -- under Valgrind/LeakSanitizer this asserts that no
-             * per-call allocation survives. */
-            for (j = 0; j < HASH_FETCH_FAIL_ITERS; j++) {
-                ck_assert_msg(NULL == cl_hash_init(vectors[i].alg),
-                              "cl_hash_init(\"%s\") failed once but then succeeded",
-                              vectors[i].alg);
-            }
-            continue;
-        }
-
-        ck_assert_msg(0 == cl_update_hash(ctx, "abc", 3),
-                      "cl_update_hash() failed for %s", vectors[i].alg);
-        ck_assert_msg(0 == cl_finish_hash(ctx, out),
-                      "cl_finish_hash() failed for %s", vectors[i].alg);
-        ck_assert_msg(0 == memcmp(out, vectors[i].expect, vectors[i].expect_len),
-                      "%s(\"abc\") mismatch", vectors[i].alg);
-    }
+    ctx = cl_hash_init("sha2-256");
+    ck_assert_msg(NULL != ctx, "cl_hash_init(sha2-256) failed");
+    ck_assert_msg(0 == cl_update_hash(ctx, abc, sizeof(abc)), "cl_update_hash(sha2-256) failed");
+    ck_assert_msg(0 == cl_finish_hash(ctx, out), "cl_finish_hash(sha2-256) failed");
+    ck_assert_msg(!memcmp(out, res256[0], SHA256_HASH_SIZE), "sha2-256(\"abc\") mismatch");
 }
 END_TEST
 
-START_TEST(test_hash_fetch_failure_is_bounded)
+#if defined(C_LINUX) && OPENSSL_VERSION_MAJOR >= 3
+START_TEST(test_hash_md5_fetch_failure)
 {
-    /* Exercise the digest-fetch failure path on *every* host, not just
-     * strict-FIPS ones: an algorithm libclamav maps to no OpenSSL digest fails
-     * at the same early return that a FIPS-restricted MD5 does -- the return
-     * that used to leak an OSSL_LIB_CTX per call. Repeating it many times means
-     * ordinary (non-FIPS) CI covers the leak as well, since the Valgrind and
-     * sanitizer jobs would report one leaked context per iteration.
-     *
-     * A successful sha2-256 hash on either side is the control: it shows the
-     * shared context and cache still work, and that the repeated failures
-     * neither poison nor exhaust them. */
+    static const uint8_t abc[] = {'a', 'b', 'c'};
+    void *ctx;
+    uint8_t out[SHA256_HASH_SIZE];
     unsigned i;
 
-    ck_assert_msg(hash_abc_matches("sha2-256", res256[0], SHA256_HASH_SIZE),
-                  "sha2-256 control failed before the fetch-failure loop");
-
-    for (i = 0; i < HASH_FETCH_FAIL_ITERS; i++) {
-        ck_assert_msg(NULL == cl_hash_init("not-a-real-hash-algorithm"),
-                      "cl_hash_init() unexpectedly succeeded for an unsupported algorithm");
+    if (NULL == getenv("CLAMAV_TEST_MD5_FETCH_FAILURE")) {
+        return;
     }
 
-    ck_assert_msg(hash_abc_matches("sha2-256", res256[0], SHA256_HASH_SIZE),
-                  "sha2-256 control failed after the fetch-failure loop");
+    /* Repeatedly exercise the failure path so a per-attempt context leak is
+     * visible under Valgrind or LeakSanitizer. */
+    for (i = 0; i < 10000; i++) {
+        ck_assert_msg(NULL == cl_hash_init("md5"),
+                      "cl_hash_init(md5) unexpectedly succeeded when EVP_MD_fetch was forced to fail");
+    }
+
+    ctx = cl_hash_init("sha2-256");
+    ck_assert_msg(NULL != ctx, "cl_hash_init(sha2-256) failed while only MD5 fetches were disabled");
+    ck_assert_msg(0 == cl_update_hash(ctx, abc, sizeof(abc)), "cl_update_hash(sha2-256) failed");
+    ck_assert_msg(0 == cl_finish_hash(ctx, out), "cl_finish_hash(sha2-256) failed");
+    ck_assert_msg(!memcmp(out, res256[0], SHA256_HASH_SIZE), "sha2-256(\"abc\") mismatch");
 }
 END_TEST
+
+static bool hash_error_callback_called = false;
+static bool hash_error_callback_failed = false;
+
+static void hash_error_reentrant_callback(enum cl_msg severity, const char *fullmsg, const char *msg, void *context)
+{
+    void *ctx;
+
+    UNUSEDPARAM(fullmsg);
+    UNUSEDPARAM(msg);
+    UNUSEDPARAM(context);
+
+    if (CL_MSG_ERROR != severity || hash_error_callback_called) {
+        return;
+    }
+    hash_error_callback_called = true;
+
+    /* Permit the callback's nested bypass request to create the context. If
+     * the outer diagnostic is emitted while md_cache_mutex is held, this call
+     * deadlocks trying to acquire the same mutex. */
+    unsetenv("CLAMAV_TEST_OSSL_LIBCTX_FAILURE");
+    ctx = cl_hash_init("sha2-256");
+    if (NULL == ctx) {
+        hash_error_callback_failed = true;
+        return;
+    }
+    cl_hash_destroy(ctx);
+}
+
+START_TEST(test_hash_libctx_failure)
+{
+    if (NULL == getenv("CLAMAV_TEST_OSSL_LIBCTX_FAILURE")) {
+        return;
+    }
+
+    hash_error_callback_called = false;
+    hash_error_callback_failed = false;
+    cl_set_clcb_msg(hash_error_reentrant_callback);
+
+    ck_assert_msg(NULL == cl_hash_init("md5"),
+                  "cl_hash_init(md5) returned a context after OSSL_LIB_CTX_new failed");
+    ck_assert_msg(hash_error_callback_called, "digest-cache failure did not invoke the message callback");
+    ck_assert_msg(!hash_error_callback_failed, "hashing from the message callback failed");
+}
+END_TEST
+#endif
 
 #ifdef CL_THREAD_SAFE
 #define HASH_TS_THREADS 8
@@ -2231,6 +2200,10 @@ static Suite *test_cli_suite(void)
     TCase *tc_cli_others   = tcase_create("byteorder_macros");
     TCase *tc_cli_dsig     = tcase_create("digital signatures");
     TCase *tc_cli_assorted = tcase_create("assorted functions");
+#if defined(C_LINUX) && OPENSSL_VERSION_MAJOR >= 3
+    TCase *tc_cli_hash_fetch_failure  = tcase_create("hash fetch failure");
+    TCase *tc_cli_hash_libctx_failure = tcase_create("hash library context failure");
+#endif
 
     suite_add_tcase(s, tc_cli_others);
     tcase_add_checked_fixture(tc_cli_others, data_setup, data_teardown);
@@ -2242,9 +2215,15 @@ static Suite *test_cli_suite(void)
     tcase_add_loop_test(tc_cli_dsig, test_cli_dsig, 0, dsig_tests_cnt);
     tcase_add_test(tc_cli_dsig, test_sha2_256);
     tcase_add_test(tc_cli_dsig, test_hash_md5_sha1);
-    tcase_add_test(tc_cli_dsig, test_hash_fetch_failure_is_bounded);
 #ifdef CL_THREAD_SAFE
     tcase_add_test(tc_cli_dsig, test_hash_cache_threadsafe);
+#endif
+
+#if defined(C_LINUX) && OPENSSL_VERSION_MAJOR >= 3
+    suite_add_tcase(s, tc_cli_hash_fetch_failure);
+    tcase_add_test(tc_cli_hash_fetch_failure, test_hash_md5_fetch_failure);
+    suite_add_tcase(s, tc_cli_hash_libctx_failure);
+    tcase_add_test(tc_cli_hash_libctx_failure, test_hash_libctx_failure);
 #endif
 
     suite_add_tcase(s, tc_cli_assorted);
