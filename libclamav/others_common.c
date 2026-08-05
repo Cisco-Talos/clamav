@@ -1495,7 +1495,7 @@ cl_error_t cli_get_filepath_from_filedesc(int desc, char **filepath)
         goto done;
     }
 
-#elif defined(__FreeBSD__)
+#elif defined(__FreeBSD__) && defined(F_KINFO)
 
     struct kinfo_file file_info;
 

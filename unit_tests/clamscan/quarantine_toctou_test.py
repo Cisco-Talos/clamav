@@ -376,6 +376,62 @@ class TC(testcase.TestCase):
             'stdout': completed.stdout,
         }
 
+    def _exercise_source_hardlink_quarantine(self, action_mode: str):
+        assert action_mode in ('move', 'remove')
+
+        parent_dir = TC.path_tmp / ('src-hardlink-{}'.format(action_mode))
+        parent_dir.mkdir()
+
+        db_dir = TC.path_tmp / ('db-src-hardlink-{}'.format(action_mode))
+        db_dir.mkdir()
+
+        payload = b'CLAM-2959 quarantine source hard-link payload\n'
+        other_link_path = parent_dir / 'other-link.bin'
+        other_link_path.write_bytes(payload)
+
+        submitted_path = parent_dir / 'submitted-link.bin'
+        try:
+            os.link(other_link_path, submitted_path)
+        except OSError as err:
+            self.skipTest('Hard-link creation is not permitted in this test environment: {}'.format(err))
+
+        self._write_hdb_signature(db_dir / 'trigger.hdb', payload, 'CLAM-2959-SOURCE-HARDLINK')
+
+        quarantine_dir = None
+        command = []
+        if str(TC.valgrind):
+            command.append(str(TC.valgrind))
+            if TC.valgrind_args:
+                command.extend(TC.valgrind_args.split())
+        command.extend([str(TC.clamscan), '--debug', '-d', str(db_dir)])
+        if action_mode == 'remove':
+            command.append('--remove=yes')
+        else:
+            quarantine_dir = TC.path_tmp / 'quarantine-src-hardlink-move'
+            quarantine_dir.mkdir()
+            command.append('--move={}'.format(quarantine_dir))
+        command.append(str(submitted_path))
+
+        self.log.info('Starting clamscan command: %s', ' '.join(command))
+        completed = subprocess.run(
+            command,
+            cwd=str(TC.path_tmp),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            universal_newlines=True,
+            check=False,
+        )
+        self.log.info('clamscan stdout:\n%s', completed.stdout)
+
+        return {
+            'payload': payload,
+            'submitted_path': submitted_path,
+            'other_link_path': other_link_path,
+            'quarantine_dir': quarantine_dir,
+            'returncode': completed.returncode,
+            'stdout': completed.stdout,
+        }
+
     def _exercise_source_link_replacement_quarantine(self, action_mode: str, attempt: int):
         assert action_mode in ('copy', 'move', 'remove')
 
@@ -426,6 +482,7 @@ class TC(testcase.TestCase):
         command.append(str(link_path))
 
         milestone_lines = [
+            'action_source_populate_posix: Resolved action path for fd',
             'cli_get_filepath_from_filedesc: File path for fd',
             'cli_get_filepath_from_handle: File path for handle',
         ]
@@ -690,6 +747,32 @@ class TC(testcase.TestCase):
         self.assertNotIn('{}:'.format(payload_path), result['stdout'], 'Expected clamscan to avoid reporting the resolved target path.')
         self.assertFalse(payload_path.exists(), 'Expected quarantine removal to unlink the resolved target path.')
         self.assertTrue(link_path.is_symlink(), 'Expected the original symlink entry to remain in place after the quarantine remove.')
+
+    @unittest.skipIf(operating_system == 'windows', 'This test covers POSIX descriptor path resolution.')
+    def test_quarantine_move_unlinks_submitted_hardlink(self):
+        self.step_name('Test quarantine move unlinks the submitted hard-link name')
+        result = self._exercise_source_hardlink_quarantine('move')
+
+        submitted_path = result['submitted_path']
+        other_link_path = result['other_link_path']
+        quarantined_path = result['quarantine_dir'] / submitted_path.name
+
+        self.assertEqual(1, result['returncode'], 'Expected a virus-found exit code from clamscan.')
+        self.assertFalse(submitted_path.exists(), 'Expected quarantine move to unlink the submitted hard-link name.')
+        self.assertTrue(other_link_path.exists(), 'Expected quarantine move to preserve the other hard-link name.')
+        self.assertEqual(result['payload'], other_link_path.read_bytes(), 'Expected the remaining hard link to retain the source bytes.')
+        self.assertTrue(quarantined_path.exists(), 'Expected quarantine move to create the destination file.')
+        self.assertEqual(result['payload'], quarantined_path.read_bytes(), 'Expected the quarantined file to contain the source bytes.')
+
+    @unittest.skipIf(operating_system == 'windows', 'This test covers POSIX descriptor path resolution.')
+    def test_quarantine_remove_unlinks_submitted_hardlink(self):
+        self.step_name('Test quarantine remove unlinks the submitted hard-link name')
+        result = self._exercise_source_hardlink_quarantine('remove')
+
+        self.assertEqual(1, result['returncode'], 'Expected a virus-found exit code from clamscan.')
+        self.assertFalse(result['submitted_path'].exists(), 'Expected quarantine remove to unlink the submitted hard-link name.')
+        self.assertTrue(result['other_link_path'].exists(), 'Expected quarantine remove to preserve the other hard-link name.')
+        self.assertEqual(result['payload'], result['other_link_path'].read_bytes(), 'Expected the remaining hard link to retain the source bytes.')
 
     @unittest.skipIf(not hasattr(os, 'symlink'), 'This platform does not support symlink creation in the test environment.')
     def test_quarantine_copy_does_not_act_on_replaced_source_link(self):
