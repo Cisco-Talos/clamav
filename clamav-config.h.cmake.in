@@ -101,6 +101,9 @@
 /* use "Cache-Control: no-cache" in freshclam */
 #cmakedefine FRESHCLAM_NO_CACHE 1
 
+/* Have funlinkat */
+#cmakedefine HAVE_FUNLINKAT 1
+
 /* attrib aligned */
 #cmakedefine HAVE_ATTRIB_ALIGNED 1
 
