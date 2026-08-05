@@ -41,6 +41,9 @@
 #endif
 #include <time.h>
 #include <fcntl.h>
+#ifdef __FreeBSD__
+#include <sys/user.h>
+#endif
 #ifdef HAVE_PWD_H
 #include <pwd.h>
 #endif
@@ -1486,6 +1489,31 @@ cl_error_t cli_get_filepath_from_filedesc(int desc, char **filepath)
     fname[linksz] = '\0';
 
     evaluated_filepath = CLI_STRNDUP(fname, CLI_STRNLEN(fname, PATH_MAX));
+    if (NULL == evaluated_filepath) {
+        cli_errmsg("cli_get_filepath_from_filedesc: Failed to allocate memory to store filename\n");
+        status = CL_EMEM;
+        goto done;
+    }
+
+#elif defined(__FreeBSD__)
+
+    struct kinfo_file file_info;
+
+    if (NULL == filepath) {
+        cli_errmsg("cli_get_filepath_from_filedesc: Invalid args.\n");
+        goto done;
+    }
+
+    memset(&file_info, 0, sizeof(file_info));
+    file_info.kf_structsize = sizeof(file_info);
+
+    if ((fcntl(desc, F_KINFO, &file_info) < 0) || ('\0' == file_info.kf_path[0])) {
+        cli_dbgmsg("cli_get_filepath_from_filedesc: Failed to resolve filename for descriptor %d\n", desc);
+        status = CL_EOPEN;
+        goto done;
+    }
+
+    evaluated_filepath = CLI_STRNDUP(file_info.kf_path, CLI_STRNLEN(file_info.kf_path, sizeof(file_info.kf_path)));
     if (NULL == evaluated_filepath) {
         cli_errmsg("cli_get_filepath_from_filedesc: Failed to allocate memory to store filename\n");
         status = CL_EMEM;
