@@ -115,8 +115,7 @@ target_link_libraries(check_clamav
     PRIVATE
         ClamAV::libclamav
         ClamAV::common
-        libcheck::check
-        OpenSSL::Crypto)
+        libcheck::check)
 if (ENABLE_UNRAR)
     if(ENABLE_SHARED_LIB)
         target_link_libraries(check_clamav
@@ -139,6 +138,19 @@ target_include_directories(check_clamav PRIVATE ${PROJECT_SOURCE_DIR} ${PROJECT_
 target_compile_definitions(check_clamav PUBLIC OBJDIR="${OBJDIR}" SRCDIR="${SRCDIR}")
 ADD_CUSTOM_COMMAND(TARGET check_clamav POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/input/clamav.hdb ${CMAKE_CURRENT_BINARY_DIR}/input/.)
+
+# The OpenSSL 3 digest-cache failure paths need a deterministic provider
+# failure that normal host and FIPS configurations do not reliably provide.
+# Use a Linux test-only interposer when libcrypto is dynamically linked. Avoid
+# LD_PRELOAD in sanitizer builds, where it can precede the sanitizer runtime.
+if(C_LINUX AND
+   OPENSSL_VERSION VERSION_GREATER_EQUAL "3.0.0" AND
+   NOT OPENSSL_CRYPTO_LIBRARY MATCHES "\\.a$" AND
+   NOT CMAKE_C_FLAGS MATCHES "-fsanitize")
+    add_library(force_hash_provider_failure SHARED force_hash_provider_failure.c)
+    target_include_directories(force_hash_provider_failure PRIVATE ${OPENSSL_INCLUDE_DIR})
+    target_link_libraries(force_hash_provider_failure PRIVATE ${CMAKE_DL_LIBS})
+endif()
 
 #
 # Paths to pass to our tests via environment variables
@@ -345,6 +357,51 @@ if(Valgrind_FOUND)
     add_test(NAME libclamav_valgrind COMMAND ${PythonTest_COMMAND};libclamav_test.py
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
     set_property(TEST libclamav_valgrind PROPERTY ENVIRONMENT ${ENVIRONMENT} VALGRIND=${Valgrind_EXECUTABLE})
+endif()
+
+if(TARGET force_hash_provider_failure)
+    add_test(NAME libclamav_hash_fetch_failure
+        COMMAND $<TARGET_FILE:check_clamav>
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+    set_property(TEST libclamav_hash_fetch_failure PROPERTY
+        ENVIRONMENT
+            ${ENVIRONMENT}
+            CK_RUN_SUITE=cli
+            "CK_RUN_CASE=hash fetch failure"
+            CLAMAV_TEST_MD5_FETCH_FAILURE=1
+            "LD_PRELOAD=$<TARGET_FILE:force_hash_provider_failure>:$ENV{LD_PRELOAD}")
+    set_property(TEST libclamav_hash_fetch_failure PROPERTY TIMEOUT 300)
+
+    add_test(NAME libclamav_hash_libctx_failure
+        COMMAND $<TARGET_FILE:check_clamav>
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+    set_property(TEST libclamav_hash_libctx_failure PROPERTY
+        ENVIRONMENT
+            ${ENVIRONMENT}
+            CK_RUN_SUITE=cli
+            "CK_RUN_CASE=hash library context failure"
+            CLAMAV_TEST_OSSL_LIBCTX_FAILURE=1
+            "LD_PRELOAD=$<TARGET_FILE:force_hash_provider_failure>:$ENV{LD_PRELOAD}")
+    set_property(TEST libclamav_hash_libctx_failure PROPERTY TIMEOUT 300)
+
+    if(Valgrind_FOUND)
+        add_test(NAME libclamav_hash_fetch_failure_valgrind
+            COMMAND ${Valgrind_EXECUTABLE}
+                --leak-check=full
+                --show-leak-kinds=all
+                --errors-for-leak-kinds=definite,indirect,possible
+                --error-exitcode=1
+                $<TARGET_FILE:check_clamav>
+            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+        set_property(TEST libclamav_hash_fetch_failure_valgrind PROPERTY
+            ENVIRONMENT
+                ${ENVIRONMENT}
+                CK_RUN_SUITE=cli
+                "CK_RUN_CASE=hash fetch failure"
+                CLAMAV_TEST_MD5_FETCH_FAILURE=1
+                "LD_PRELOAD=$<TARGET_FILE:force_hash_provider_failure>:$ENV{LD_PRELOAD}")
+        set_property(TEST libclamav_hash_fetch_failure_valgrind PROPERTY TIMEOUT 300)
+    endif()
 endif()
 
 add_rust_test(NAME libclamav_rust
