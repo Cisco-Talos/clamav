@@ -2421,7 +2421,11 @@ static cl_error_t action_source_fallback_action_path_dup(const char *path, char 
     return action_source_absolute_path_dup(path, action_path);
 }
 
-static cl_error_t action_source_populate_posix(action_source_t *source, int fd, const char *open_path)
+static cl_error_t action_source_populate_posix(
+    action_source_t *source,
+    int fd,
+    const char *open_path,
+    bool open_path_is_resolved)
 {
     cl_error_t status = CL_EOPEN;
 
@@ -2433,6 +2437,20 @@ static cl_error_t action_source_populate_posix(action_source_t *source, int fd, 
     if (!S_ISREG(source->statbuf.st_mode)) {
         errno  = EINVAL;
         status = CL_EOPEN;
+        goto done;
+    }
+
+    if (open_path_is_resolved) {
+        /*
+         * Descriptor path lookup can return another name for the same file
+         * when it has multiple hard links. Preserve the path that was
+         * explicitly resolved and securely opened for path-based actions.
+         */
+        status = action_source_absolute_path_dup(open_path, &source->action_path);
+        if (CL_SUCCESS == status) {
+            cli_dbgmsg("action_source_populate_posix: Resolved action path for fd [%d] is: %s\n",
+                       fd, source->action_path);
+        }
         goto done;
     }
 
@@ -2569,7 +2587,7 @@ static cl_error_t action_source_open_path_impl(const char *display_path, const c
         goto done;
     }
 
-    status = action_source_populate_posix(source, fd, open_path);
+    status = action_source_populate_posix(source, fd, open_path, require_resolved_path);
     if (CL_SUCCESS != status) {
         goto done;
     }
@@ -2650,7 +2668,7 @@ cl_error_t action_source_from_fd(const char *display_path, int fd, action_source
         goto done;
     }
 
-    status = action_source_populate_posix(source, dup_fd, display_path);
+    status = action_source_populate_posix(source, dup_fd, display_path, false);
     if (CL_SUCCESS != status) {
         goto done;
     }
