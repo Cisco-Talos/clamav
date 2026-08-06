@@ -634,12 +634,12 @@ class TC(testcase.TestCase):
 
         redirected_payload = redirect_dir / payload_path.name
         quarantined_payload = quarantine_dir / payload_path.name
-        copied_to_line = "{}: copied to '{}'".format(payload_path, quarantine_dir / payload_path.name)
+        copy_succeeded = ": copied to '" in stdout
         self.assertFalse(
             redirected_payload.exists(),
             'Quarantine copy was redirected through the replaced directory entry.',
         )
-        if copied_to_line in stdout:
+        if copy_succeeded:
             self.assertTrue(
                 quarantined_payload.exists(),
                 'Expected a reported successful quarantine copy to create the destination file.',
@@ -671,12 +671,12 @@ class TC(testcase.TestCase):
 
         redirected_payload = redirect_dir / payload_path.name
         quarantined_payload = quarantine_dir / payload_path.name
-        moved_to_line = "{}: moved to '{}'".format(payload_path, quarantine_dir / payload_path.name)
+        move_succeeded = ": moved to '" in stdout
         self.assertFalse(
             redirected_payload.exists(),
             'Quarantine move was redirected through the replaced directory entry.',
         )
-        if moved_to_line in stdout:
+        if move_succeeded:
             self.assertFalse(
                 payload_path.exists(),
                 'Expected clamscan --move to remove the source file after quarantining it.',
