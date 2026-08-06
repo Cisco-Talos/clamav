@@ -3,6 +3,86 @@
 Note: This file refers to the official packages. Things described here may
 differ slightly from third-party binary packages.
 
+## 1.4.6
+
+ClamAV 1.4.6 is a patch release with the following fixes:
+
+- [CVE-2026-20345](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2026-20345):
+  Fixed an indexing error while converting GPT partition names that could
+  read or write beyond a stack-allocated partition entry.
+
+  This issue affects ClamAV 0.98.2 through 1.5.3.
+  The fix is included in 1.4.6 and 1.5.4.
+
+  Thank you to Atuin - Automated Vulnerability Discovery Engine, Tianchu Chen
+  of Tencent Xuanwu Lab for identifying this issue.
+
+- [CVE-2026-20339](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2026-20339):
+  Fixed an integer overflow in the PESpin unpacker that could allocate an
+  undersized buffer and then write beyond it while rebuilding a PE file.
+
+  This issue affects ClamAV 0.90 through 1.5.3.
+  The fix is included in 1.4.6 and 1.5.4.
+
+  Thank you to Feng Xue and, independently, Yazdan Soltani for identifying
+  this issue.
+
+- [CVE-2026-20346](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2026-20346):
+  Fixed an integer underflow in the PDF parser that could cause a crash while
+  reading a malformed hex string.
+
+  This issue affects ClamAV 1.4.5 and earlier, and ClamAV 1.5.0 through
+  1.5.3.
+  The fix is included in 1.4.6 and 1.5.4.
+
+  Thank you to Tristan (@TristanInSec) for identifying this issue.
+
+- [CVE-2026-20347](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2026-20347):
+  Fixed undefined behavior and integer overflow in the Mach-O parser that
+  could cause a crash while scanning a malformed Mach-O file.
+
+  This issue affects ClamAV 1.4.5 and earlier, and ClamAV 1.5.0 through
+  1.5.3.
+  The fix is included in 1.4.6 and 1.5.4.
+
+  Thank you to Tristan (@TristanInSec) for identifying this issue.
+
+- [CVE-2026-20348](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2026-20348):
+  Fixed XAR parser size handling that could request an excessive allocation
+  or exceed scan limits while decompressing a malformed table of contents.
+
+  This issue affects ClamAV 0.98.1 through 1.5.3.
+  The fix is included in 1.4.6 and 1.5.4.
+
+  Thank you to leduckhuong for identifying this issue.
+
+- [CVE-2025-8088](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2025-8088):
+  Adopted the upstream UnRAR project fix in ClamAV's bundled UnRAR library.
+  The fix rejects path separators in NTFS alternate data stream names to
+  prevent extraction outside ClamAV's temporary scan directory on Windows.
+
+  This issue affects ClamAV 0.101.0 through 1.5.3.
+  The fix is included in 1.4.6 and 1.5.4.
+
+  Thank you to Yazdan Soltani for identifying that this issue affects ClamAV.
+
+- Fixed thread-safety issues in the `clamd` STATS command that could disclose
+  process memory or crash the daemon while scans and STATS requests run
+  concurrently. Also fixed partial socket-write handling used for large STATS
+  responses.
+
+  This issue affects ClamAV 0.95 through 1.5.3.
+  The fix is included in 1.4.6 and 1.5.4.
+
+- FreeBSD: Restored support for safe quarantine move and remove actions while
+  preserving protection against source-path replacement races.
+
+  This issue affects ClamAV 1.4.5 and 1.5.3.
+  The fix is included in 1.4.6 and 1.5.4.
+
+- Upgraded the Rust `crossbeam-epoch` dependency to resolve the
+  RUSTSEC-2026-0204 advisory.
+
 ## 1.4.5
 
 ClamAV 1.4.5 is a patch release with the following fixes:
