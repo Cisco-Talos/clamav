@@ -10,7 +10,7 @@ properties(
         parameters(
             [
                 string(name: 'VERSION',
-                       defaultValue: '1.4.5',
+                       defaultValue: '1.4.6',
                        description: 'ClamAV version string'),
                 string(name: 'FRAMEWORK_BRANCH',
                        defaultValue: '1.4',
