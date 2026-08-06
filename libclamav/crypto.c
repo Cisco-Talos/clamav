@@ -818,8 +818,12 @@ unsigned char *cl_hash_data(const char *alg, const void *buf, size_t len, unsign
 #else
     md = EVP_get_digestbyname(to_openssl_alg(alg));
 #endif
-    if (!(md))
+    if (!(md)) {
+#if OPENSSL_VERSION_MAJOR >= 3
+        OSSL_LIB_CTX_free(ossl_ctx);
+#endif
         return NULL;
+    }
 
     mdsz = EVP_MD_size(md);
 
@@ -959,8 +963,12 @@ unsigned char *cl_hash_file_fd(int fd, const char *alg, unsigned int *olen)
 #else
     md = EVP_get_digestbyname(to_openssl_alg(alg));
 #endif
-    if (!(md))
+    if (!(md)) {
+#if OPENSSL_VERSION_MAJOR >= 3
+        OSSL_LIB_CTX_free(ossl_ctx);
+#endif
         return NULL;
+    }
 
     ctx = EVP_MD_CTX_new();
     if (!(ctx)) {
@@ -1863,8 +1871,12 @@ void *cl_hash_init(const char *alg)
 #else
     md = EVP_get_digestbyname(to_openssl_alg(alg));
 #endif
-    if (!(md))
+    if (!(md)) {
+#if OPENSSL_VERSION_MAJOR >= 3
+        OSSL_LIB_CTX_free(ossl_ctx);
+#endif
         return NULL;
+    }
 
     ctx = EVP_MD_CTX_new();
     if (!(ctx)) {
