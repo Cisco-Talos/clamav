@@ -62,6 +62,14 @@
 
 // common
 #include "fdpassing.h"
+#include "output.h"
+
+// clamd
+#include "clamd/thrmgr.h"
+
+/* Globals used by the thread manager's job-group shutdown checks. */
+pthread_mutex_t exit_mutex = PTHREAD_MUTEX_INITIALIZER;
+int progexit               = 0;
 
 static int conn_tcp(int port)
 {
@@ -130,6 +138,45 @@ static void conn_teardown(void)
 #else
         closesocket(sockd);
 #endif
+}
+
+static void close_socket(int socket_fd)
+{
+#ifndef _WIN32
+    close(socket_fd);
+#else
+    closesocket(socket_fd);
+#endif
+}
+
+static void create_tcp_socket_pair(int sockets[2])
+{
+    struct sockaddr_in address;
+    socklen_t address_len = sizeof(address);
+    int listener;
+
+    listener = socket(AF_INET, SOCK_STREAM, 0);
+    ck_assert_msg(listener != -1, "Unable to create listener socket: %s\n", strerror(errno));
+
+    memset(&address, 0, sizeof(address));
+    address.sin_family      = AF_INET;
+    address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+    address.sin_port        = 0;
+
+    ck_assert_msg(bind(listener, (struct sockaddr *)&address, sizeof(address)) != -1,
+                  "Unable to bind listener socket: %s\n", strerror(errno));
+    ck_assert_msg(getsockname(listener, (struct sockaddr *)&address, &address_len) != -1,
+                  "Unable to get listener socket address: %s\n", strerror(errno));
+    ck_assert_msg(listen(listener, 1) != -1, "Unable to listen on socket: %s\n", strerror(errno));
+
+    sockets[0] = socket(AF_INET, SOCK_STREAM, 0);
+    ck_assert_msg(sockets[0] != -1, "Unable to create client socket: %s\n", strerror(errno));
+    ck_assert_msg(connect(sockets[0], (struct sockaddr *)&address, address_len) != -1,
+                  "Unable to connect client socket: %s\n", strerror(errno));
+
+    sockets[1] = accept(listener, NULL, NULL);
+    ck_assert_msg(sockets[1] != -1, "Unable to accept socket connection: %s\n", strerror(errno));
+    close_socket(listener);
 }
 
 #ifndef REPO_VERSION
@@ -573,7 +620,7 @@ START_TEST(test_fildes_many)
     const char end[]       = "zEND";
     const char ping[]      = "zPING";
 
-    int dummyfd, i, killed = 0;
+    int dummyfd, i;
     conn_setup();
     dummyfd = open(SCANFILE, O_RDONLY);
     ck_assert_msg(dummyfd != -1, "failed to open %s: %s\n", SCANFILE, strerror(errno));
@@ -581,14 +628,11 @@ START_TEST(test_fildes_many)
     ck_assert_msg(send(sockd, idsession, sizeof(idsession), 0) == sizeof(idsession), "send IDSESSION failed\n");
     for (i = 0; i < 1024; i++) {
         if (sendmsg_fd(sockd, fildes, sizeof(fildes), dummyfd, 1) == -1) {
-            killed = 1;
             break;
         }
     }
     close(dummyfd);
-    if (send(sockd, end, sizeof(end), 0) == -1) {
-        killed = 1;
-    }
+    (void)send(sockd, end, sizeof(end), 0);
     conn_teardown();
 
     conn_setup();
@@ -854,10 +898,530 @@ START_TEST(test_idsession)
 }
 END_TEST
 
+struct stats_filename_test_state {
+    pthread_mutex_t mutex;
+    pthread_cond_t cond;
+    int stage;
+};
+
+static void stats_filename_test_handler(void *data)
+{
+    struct stats_filename_test_state *state = data;
+    char filename[64]                       = "task-filename-before-stack-reuse";
+
+    thrmgr_setactivetask(filename, "TEST");
+
+    pthread_mutex_lock(&state->mutex);
+    state->stage = 1;
+    pthread_cond_broadcast(&state->cond);
+    while (state->stage < 2)
+        pthread_cond_wait(&state->cond, &state->mutex);
+
+    strcpy(filename, "task-filename-after-stack-reuse");
+    state->stage = 3;
+    pthread_cond_broadcast(&state->cond);
+    while (state->stage < 4)
+        pthread_cond_wait(&state->cond, &state->mutex);
+    pthread_mutex_unlock(&state->mutex);
+
+    thrmgr_setactivetask(NULL, NULL);
+
+    pthread_mutex_lock(&state->mutex);
+    state->stage = 5;
+    pthread_cond_broadcast(&state->cond);
+    pthread_mutex_unlock(&state->mutex);
+}
+
+START_TEST(test_stats_owns_task_filename)
+{
+    struct stats_filename_test_state state;
+    threadpool_t *threadpool;
+    char *stats;
+    size_t stats_len;
+    int sockets[2];
+
+    memset(&state, 0, sizeof(state));
+    ck_assert_int_eq(pthread_mutex_init(&state.mutex, NULL), 0);
+    ck_assert_int_eq(pthread_cond_init(&state.cond, NULL), 0);
+
+    threadpool = thrmgr_new(1, 60, 1, stats_filename_test_handler);
+    ck_assert_ptr_nonnull(threadpool);
+    ck_assert_int_ne(thrmgr_dispatch(threadpool, &state), 0);
+
+    pthread_mutex_lock(&state.mutex);
+    while (state.stage < 1)
+        pthread_cond_wait(&state.cond, &state.mutex);
+    state.stage = 2;
+    pthread_cond_broadcast(&state.cond);
+    while (state.stage < 3)
+        pthread_cond_wait(&state.cond, &state.mutex);
+    pthread_mutex_unlock(&state.mutex);
+
+    create_tcp_socket_pair(sockets);
+    ck_assert_int_eq(thrmgr_printstats(sockets[1], '\n'), 0);
+    close_socket(sockets[1]);
+    stats = recvfull(sockets[0], &stats_len);
+    close_socket(sockets[0]);
+
+    ck_assert_msg(strstr(stats, "task-filename-before-stack-reuse") != NULL,
+                  "STATS did not retain its owned task filename:\n%s", stats);
+    ck_assert_msg(strstr(stats, "task-filename-after-stack-reuse") == NULL,
+                  "STATS read the task filename from reused caller storage:\n%s", stats);
+    free(stats);
+
+    pthread_mutex_lock(&state.mutex);
+    state.stage = 4;
+    pthread_cond_broadcast(&state.cond);
+    while (state.stage < 5)
+        pthread_cond_wait(&state.cond, &state.mutex);
+    pthread_mutex_unlock(&state.mutex);
+
+    thrmgr_destroy(threadpool);
+    pthread_cond_destroy(&state.cond);
+    pthread_mutex_destroy(&state.mutex);
+}
+END_TEST
+
+struct stats_slow_client_test_state {
+    pthread_mutex_t mutex;
+    pthread_cond_t cond;
+    const char *filename;
+    int stage;
+};
+
+struct stats_print_thread_state {
+    pthread_mutex_t mutex;
+    pthread_cond_t cond;
+    int socket_fd;
+    int result;
+    int started;
+    int done;
+};
+
+struct stats_pool_create_state {
+    pthread_mutex_t mutex;
+    pthread_cond_t cond;
+    threadpool_t *threadpool;
+    int started;
+    int done;
+};
+
+static void stats_slow_client_test_handler(void *data)
+{
+    struct stats_slow_client_test_state *state = data;
+
+    thrmgr_setactivetask(state->filename, "TEST");
+
+    pthread_mutex_lock(&state->mutex);
+    state->stage = 1;
+    pthread_cond_broadcast(&state->cond);
+    while (state->stage < 2)
+        pthread_cond_wait(&state->cond, &state->mutex);
+    pthread_mutex_unlock(&state->mutex);
+
+    thrmgr_setactivetask(NULL, NULL);
+
+    pthread_mutex_lock(&state->mutex);
+    state->stage = 3;
+    pthread_cond_broadcast(&state->cond);
+    pthread_mutex_unlock(&state->mutex);
+}
+
+static void stats_noop_handler(void *data)
+{
+    UNUSEDPARAM(data);
+}
+
+static void *stats_print_thread(void *data)
+{
+    struct stats_print_thread_state *state = data;
+
+    pthread_mutex_lock(&state->mutex);
+    state->started = 1;
+    pthread_cond_broadcast(&state->cond);
+    pthread_mutex_unlock(&state->mutex);
+
+    state->result = thrmgr_printstats(state->socket_fd, '\n');
+    close_socket(state->socket_fd);
+
+    pthread_mutex_lock(&state->mutex);
+    state->done = 1;
+    pthread_cond_broadcast(&state->cond);
+    pthread_mutex_unlock(&state->mutex);
+    return NULL;
+}
+
+static void *stats_pool_create_thread(void *data)
+{
+    struct stats_pool_create_state *state = data;
+
+    pthread_mutex_lock(&state->mutex);
+    state->started = 1;
+    pthread_cond_broadcast(&state->cond);
+    pthread_mutex_unlock(&state->mutex);
+
+    state->threadpool = thrmgr_new(1, 60, 1, stats_noop_handler);
+
+    pthread_mutex_lock(&state->mutex);
+    state->done = 1;
+    pthread_cond_broadcast(&state->cond);
+    pthread_mutex_unlock(&state->mutex);
+    return NULL;
+}
+
+START_TEST(test_stats_write_does_not_hold_pool_lock)
+{
+    struct stats_slow_client_test_state scan_state;
+    struct stats_print_thread_state print_state;
+    struct stats_pool_create_state pool_state;
+    threadpool_t *threadpool;
+    pthread_t print_thread;
+    pthread_t pool_thread;
+    struct timeval now;
+    struct timespec deadline;
+    char first_byte;
+    char *filename;
+    char *stats;
+    char *stats_tail;
+    size_t filename_size = (1024 * 1024) + 123;
+    size_t stats_len;
+    size_t stats_tail_len;
+    short int saved_send_timeout;
+    int send_buffer_size = 4096;
+    int socket_flags;
+    int sockets[2];
+    int print_completed_before_drain;
+    int pool_created_before_drain;
+    int stats_contains_filename;
+    int stats_has_end_marker;
+    int recv_result;
+
+    filename = malloc(filename_size + 1);
+    ck_assert_ptr_nonnull(filename);
+    memset(filename, 'A', filename_size);
+    filename[filename_size] = '\0';
+
+    memset(&scan_state, 0, sizeof(scan_state));
+    scan_state.filename = filename;
+    ck_assert_int_eq(pthread_mutex_init(&scan_state.mutex, NULL), 0);
+    ck_assert_int_eq(pthread_cond_init(&scan_state.cond, NULL), 0);
+
+    threadpool = thrmgr_new(1, 60, 1, stats_slow_client_test_handler);
+    ck_assert_ptr_nonnull(threadpool);
+    ck_assert_int_ne(thrmgr_dispatch(threadpool, &scan_state), 0);
+
+    pthread_mutex_lock(&scan_state.mutex);
+    while (scan_state.stage < 1)
+        pthread_cond_wait(&scan_state.cond, &scan_state.mutex);
+    pthread_mutex_unlock(&scan_state.mutex);
+
+    create_tcp_socket_pair(sockets);
+    ck_assert_int_eq(setsockopt(sockets[1], SOL_SOCKET, SO_SNDBUF,
+                               (const char *)&send_buffer_size, sizeof(send_buffer_size)),
+                     0);
+
+    /* Match clamd's accepted client sockets and force mdprintf() to retry
+     * after a partial, nonblocking send. */
+    socket_flags = fcntl(sockets[1], F_GETFL, 0);
+    ck_assert_int_ne(socket_flags, -1);
+    ck_assert_int_ne(fcntl(sockets[1], F_SETFL, socket_flags | O_NONBLOCK), -1);
+
+    memset(&print_state, 0, sizeof(print_state));
+    print_state.socket_fd = sockets[1];
+    ck_assert_int_eq(pthread_mutex_init(&print_state.mutex, NULL), 0);
+    ck_assert_int_eq(pthread_cond_init(&print_state.cond, NULL), 0);
+
+    /* Keep the writer waiting longer than the pool-creation deadline so a
+     * send timeout cannot make the lock test pass. */
+    saved_send_timeout   = mprintf_send_timeout;
+    mprintf_send_timeout = 900;
+    ck_assert_int_eq(pthread_create(&print_thread, NULL, stats_print_thread, &print_state), 0);
+
+    recv_result = recv(sockets[0], &first_byte, 1, 0);
+    ck_assert_int_eq(recv_result, 1);
+
+    pthread_mutex_lock(&print_state.mutex);
+    print_completed_before_drain = print_state.done;
+    pthread_mutex_unlock(&print_state.mutex);
+
+    memset(&pool_state, 0, sizeof(pool_state));
+    ck_assert_int_eq(pthread_mutex_init(&pool_state.mutex, NULL), 0);
+    ck_assert_int_eq(pthread_cond_init(&pool_state.cond, NULL), 0);
+    ck_assert_int_eq(pthread_create(&pool_thread, NULL, stats_pool_create_thread, &pool_state), 0);
+
+    pthread_mutex_lock(&pool_state.mutex);
+    while (!pool_state.started)
+        pthread_cond_wait(&pool_state.cond, &pool_state.mutex);
+    pthread_mutex_unlock(&pool_state.mutex);
+
+    gettimeofday(&now, NULL);
+    deadline.tv_sec  = now.tv_sec;
+    deadline.tv_nsec = now.tv_usec * 1000 + 500000000;
+    if (deadline.tv_nsec >= 1000000000) {
+        deadline.tv_sec++;
+        deadline.tv_nsec -= 1000000000;
+    }
+
+    pthread_mutex_lock(&pool_state.mutex);
+    while (!pool_state.done) {
+        if (ETIMEDOUT == pthread_cond_timedwait(&pool_state.cond, &pool_state.mutex, &deadline))
+            break;
+    }
+    pool_created_before_drain = pool_state.done;
+    pthread_mutex_unlock(&pool_state.mutex);
+
+    stats_tail = recvfull(sockets[0], &stats_tail_len);
+    close_socket(sockets[0]);
+
+    ck_assert_int_eq(pthread_join(print_thread, NULL), 0);
+    ck_assert_int_eq(pthread_join(pool_thread, NULL), 0);
+    mprintf_send_timeout = saved_send_timeout;
+    ck_assert_int_eq(print_state.result, 0);
+    ck_assert_ptr_nonnull(pool_state.threadpool);
+
+    stats_len = stats_tail_len + 1;
+    stats     = malloc(stats_len + 1);
+    ck_assert_ptr_nonnull(stats);
+    stats[0] = first_byte;
+    memcpy(stats + 1, stats_tail, stats_tail_len);
+    stats[stats_len] = '\0';
+    free(stats_tail);
+
+    stats_contains_filename = strstr(stats, filename) != NULL;
+    stats_has_end_marker    = stats_len >= 4 && memcmp(stats + stats_len - 4, "END\n", 4) == 0;
+    free(stats);
+
+    pthread_cond_destroy(&print_state.cond);
+    pthread_mutex_destroy(&print_state.mutex);
+
+    thrmgr_destroy(pool_state.threadpool);
+    pthread_cond_destroy(&pool_state.cond);
+    pthread_mutex_destroy(&pool_state.mutex);
+
+    pthread_mutex_lock(&scan_state.mutex);
+    scan_state.stage = 2;
+    pthread_cond_broadcast(&scan_state.cond);
+    while (scan_state.stage < 3)
+        pthread_cond_wait(&scan_state.cond, &scan_state.mutex);
+    pthread_mutex_unlock(&scan_state.mutex);
+
+    thrmgr_destroy(threadpool);
+    pthread_cond_destroy(&scan_state.cond);
+    pthread_mutex_destroy(&scan_state.mutex);
+    free(filename);
+
+    ck_assert_msg(!print_completed_before_drain,
+                  "STATS did not block on the intentionally non-reading client");
+    ck_assert_msg(pool_created_before_drain,
+                  "STATS held the global pool lock while writing to a slow client");
+    ck_assert_msg(stats_contains_filename,
+                  "STATS response did not include the complete active task filename");
+    ck_assert_msg(stats_has_end_marker,
+                  "STATS response was truncated or contained data after its END marker");
+}
+END_TEST
+
+struct stats_worker_retirement_test_state {
+    pthread_mutex_t mutex;
+    pthread_cond_t cond;
+    unsigned handled;
+};
+
+static void stats_worker_retirement_test_handler(void *data)
+{
+    struct stats_worker_retirement_test_state *state = data;
+
+    pthread_mutex_lock(&state->mutex);
+    state->handled++;
+    pthread_cond_broadcast(&state->cond);
+    pthread_mutex_unlock(&state->mutex);
+}
+
+static void stats_test_sleep_millisecond(void)
+{
+#ifdef _WIN32
+    Sleep(1);
+#else
+    struct timespec delay = { .tv_sec = 0, .tv_nsec = 1000000L };
+    nanosleep(&delay, NULL);
+#endif
+}
+
+START_TEST(test_stats_does_not_strand_work_during_worker_retirement)
+{
+    struct stats_worker_retirement_test_state state;
+    struct stats_print_thread_state print_state;
+    struct task_desc *desc;
+    threadpool_t *threadpool;
+    pthread_t print_thread;
+    char *stats;
+    size_t stats_len;
+    unsigned i;
+    int sockets[2];
+    int worker_is_retiring = 0;
+    int second_job_handled = 0;
+
+    memset(&state, 0, sizeof(state));
+    ck_assert_int_eq(pthread_mutex_init(&state.mutex, NULL), 0);
+    ck_assert_int_eq(pthread_cond_init(&state.cond, NULL), 0);
+
+    threadpool = thrmgr_new(1, 1, 2, stats_worker_retirement_test_handler);
+    ck_assert_ptr_nonnull(threadpool);
+    ck_assert_int_ne(thrmgr_dispatch(threadpool, &state), 0);
+
+    pthread_mutex_lock(&state.mutex);
+    while (state.handled < 1)
+        pthread_cond_wait(&state.cond, &state.mutex);
+    pthread_mutex_unlock(&state.mutex);
+
+    /* Wait until the worker has returned to its timed idle wait, then hold
+     * its task descriptor so STATS retains pools_lock while snapshotting it. */
+    pthread_mutex_lock(&threadpool->pool_mutex);
+    while (threadpool->thr_idle < 1)
+        pthread_cond_wait(&threadpool->idle_cond, &threadpool->pool_mutex);
+    desc = threadpool->tasks;
+    ck_assert_ptr_nonnull(desc);
+    ck_assert_int_eq(pthread_mutex_lock(&desc->mutex), 0);
+    pthread_mutex_unlock(&threadpool->pool_mutex);
+
+    create_tcp_socket_pair(sockets);
+    memset(&print_state, 0, sizeof(print_state));
+    print_state.socket_fd = sockets[1];
+    ck_assert_int_eq(pthread_mutex_init(&print_state.mutex, NULL), 0);
+    ck_assert_int_eq(pthread_cond_init(&print_state.cond, NULL), 0);
+    ck_assert_int_eq(pthread_create(&print_thread, NULL, stats_print_thread, &print_state), 0);
+
+    pthread_mutex_lock(&print_state.mutex);
+    while (!print_state.started)
+        pthread_cond_wait(&print_state.cond, &print_state.mutex);
+    pthread_mutex_unlock(&print_state.mutex);
+
+    /* Once idle is zero but the sole worker is still alive, its timeout has
+     * fired and it is waiting for the global STATS lock before retiring. */
+    for (i = 0; i < 5000; i++) {
+        pthread_mutex_lock(&threadpool->pool_mutex);
+        worker_is_retiring = threadpool->thr_alive == 1 && threadpool->thr_idle == 0;
+        pthread_mutex_unlock(&threadpool->pool_mutex);
+        if (worker_is_retiring)
+            break;
+        stats_test_sleep_millisecond();
+    }
+    ck_assert_msg(worker_is_retiring,
+                  "Worker did not reach the retirement checkpoint while STATS held the pool list lock");
+
+    /* The dispatcher sees the retiring worker as alive and therefore does
+     * not create a replacement. The worker must recheck the queue before it
+     * commits to exit. */
+    ck_assert_int_ne(thrmgr_dispatch(threadpool, &state), 0);
+    ck_assert_int_eq(pthread_mutex_unlock(&desc->mutex), 0);
+
+    for (i = 0; i < 5000; i++) {
+        pthread_mutex_lock(&state.mutex);
+        second_job_handled = state.handled == 2;
+        pthread_mutex_unlock(&state.mutex);
+        if (second_job_handled)
+            break;
+        stats_test_sleep_millisecond();
+    }
+
+    stats = recvfull(sockets[0], &stats_len);
+    close_socket(sockets[0]);
+    ck_assert_int_eq(pthread_join(print_thread, NULL), 0);
+
+    ck_assert_msg(second_job_handled,
+                  "Work dispatched during worker retirement remained queued without a worker");
+    ck_assert_int_eq(print_state.result, 0);
+    ck_assert_ptr_nonnull(stats);
+    ck_assert_msg(stats_len >= 4 && memcmp(stats + stats_len - 4, "END\n", 4) == 0,
+                  "STATS response was truncated during worker retirement:\n%s", stats);
+    free(stats);
+
+    thrmgr_destroy(threadpool);
+    pthread_cond_destroy(&print_state.cond);
+    pthread_mutex_destroy(&print_state.mutex);
+    pthread_cond_destroy(&state.cond);
+    pthread_mutex_destroy(&state.mutex);
+}
+END_TEST
+
+struct stats_queue_churn_test_state {
+    pthread_mutex_t mutex;
+    pthread_cond_t cond;
+    unsigned handled;
+};
+
+static void stats_queue_churn_test_handler(void *data)
+{
+    struct stats_queue_churn_test_state *state = data;
+
+    /* Keep the queue active long enough for repeated snapshots to overlap
+     * with work-item removal. */
+#ifdef _WIN32
+    Sleep(1);
+#else
+    struct timespec delay = { .tv_sec = 0, .tv_nsec = 1000000L };
+    nanosleep(&delay, NULL);
+#endif
+
+    pthread_mutex_lock(&state->mutex);
+    state->handled++;
+    pthread_cond_broadcast(&state->cond);
+    pthread_mutex_unlock(&state->mutex);
+}
+
+START_TEST(test_stats_while_queue_is_changing)
+{
+    enum {
+        STATS_QUEUE_CHURN_JOBS      = 256,
+        STATS_QUEUE_CHURN_SNAPSHOTS = 64
+    };
+    struct stats_queue_churn_test_state state;
+    threadpool_t *threadpool;
+    unsigned i;
+
+    memset(&state, 0, sizeof(state));
+    ck_assert_int_eq(pthread_mutex_init(&state.mutex, NULL), 0);
+    ck_assert_int_eq(pthread_cond_init(&state.cond, NULL), 0);
+
+    threadpool = thrmgr_new(1, 60, STATS_QUEUE_CHURN_JOBS * 2,
+                            stats_queue_churn_test_handler);
+    ck_assert_ptr_nonnull(threadpool);
+
+    for (i = 0; i < STATS_QUEUE_CHURN_JOBS; i++)
+        ck_assert_int_ne(thrmgr_dispatch(threadpool, &state), 0);
+
+    for (i = 0; i < STATS_QUEUE_CHURN_SNAPSHOTS; i++) {
+        char *stats;
+        size_t stats_len;
+        int sockets[2];
+
+        create_tcp_socket_pair(sockets);
+        ck_assert_int_eq(thrmgr_printstats(sockets[1], '\n'), 0);
+        close_socket(sockets[1]);
+        stats = recvfull(sockets[0], &stats_len);
+        close_socket(sockets[0]);
+
+        ck_assert_ptr_nonnull(stats);
+        ck_assert_msg(stats_len >= 4 && memcmp(stats + stats_len - 4, "END\n", 4) == 0,
+                      "STATS response was truncated while the work queue changed:\n%s", stats);
+        free(stats);
+    }
+
+    pthread_mutex_lock(&state.mutex);
+    while (state.handled < STATS_QUEUE_CHURN_JOBS)
+        pthread_cond_wait(&state.cond, &state.mutex);
+    pthread_mutex_unlock(&state.mutex);
+
+    thrmgr_destroy(threadpool);
+    pthread_cond_destroy(&state.cond);
+    pthread_mutex_destroy(&state.mutex);
+}
+END_TEST
+
 static Suite *test_clamd_suite(void)
 {
     Suite *s = suite_create("clamd");
-    TCase *tc_commands, *tc_stress;
+    TCase *tc_commands, *tc_stress, *tc_thrmgr;
     tc_commands = tcase_create("clamd commands");
     suite_add_tcase(s, tc_commands);
     tcase_add_unchecked_fixture(tc_commands, commands_setup, commands_teardown);
@@ -887,6 +1451,13 @@ static Suite *test_clamd_suite(void)
     tcase_add_test(tc_stress, test_connections); // Disabled on Windows because test uses fork() instead of threads, and needs to be rewritten.
 #endif
 #endif
+    tc_thrmgr = tcase_create("thread manager");
+    suite_add_tcase(s, tc_thrmgr);
+    tcase_add_test(tc_thrmgr, test_stats_owns_task_filename);
+    tcase_add_test(tc_thrmgr, test_stats_write_does_not_hold_pool_lock);
+    tcase_add_test(tc_thrmgr, test_stats_does_not_strand_work_during_worker_retirement);
+    tcase_add_test(tc_thrmgr, test_stats_while_queue_is_changing);
+
     return s;
 }
 

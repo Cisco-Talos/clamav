@@ -47,6 +47,13 @@ char *cli_mpool_strndup(mpool_t *mpool, const char *s, size_t n);
 char *cli_mpool_virname(mpool_t *mpool, const char *virname, unsigned int official);
 uint16_t *cli_mpool_hex2ui(mpool_t *mpool, const char *hex);
 void mpool_flush(mpool_t *mpool);
+
+/**
+ * @brief Get memory usage statistics for an engine's memory pool.
+ *
+ * The caller must retain a reference to the engine for the duration of the
+ * call.
+ */
 int mpool_getstats(const struct cl_engine *engine, size_t *used, size_t *total);
 
 #define MPOOL_MALLOC(a, b) mpool_malloc(a, b)

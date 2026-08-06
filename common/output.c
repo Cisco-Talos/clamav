@@ -170,7 +170,7 @@ int mdprintf(int desc, const char *str, ...)
     pthread_mutex_lock(&mdprintf_mutex);
 #endif
     while (todo > 0) {
-        ret = send(desc, buff, bytes, 0);
+        ret = send(desc, buff, todo, 0);
         if (ret < 0) {
             struct timeval tv;
             if (errno != EWOULDBLOCK)

@@ -49,7 +49,8 @@ typedef enum {
 } pool_state_t;
 
 struct task_desc {
-    const char *filename;
+    pthread_mutex_t mutex;
+    char *filename;
     const char *command;
     struct timeval tv;
     struct task_desc *prv;
