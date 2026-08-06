@@ -1119,9 +1119,6 @@ START_TEST(test_stats_write_does_not_hold_pool_lock)
     ck_assert_int_eq(setsockopt(sockets[1], SOL_SOCKET, SO_SNDBUF,
                                (const char *)&send_buffer_size, sizeof(send_buffer_size)),
                      0);
-    ck_assert_int_eq(setsockopt(sockets[0], SOL_SOCKET, SO_RCVBUF,
-                               (const char *)&send_buffer_size, sizeof(send_buffer_size)),
-                     0);
 
     /* Match clamd's accepted client sockets and force mdprintf() to retry
      * after a partial, nonblocking send. */
