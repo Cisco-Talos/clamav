@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>libclamav C API</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<aside class="rail">
+  <div class="brand">ClamAV<small>libclamav C API</small></div>
+  <nav>
+    <div class="group">
+      <h4>Pages</h4>
+      <a href="index.html">Architecture (HLD)</a>
+      <a class="current" href="api.html">libclamav C API</a>
+      <a href="clamd-protocol.html">clamd Protocol</a>
+    </div>
+    <div class="group">
+      <h4>On this page</h4>
+      <a href="#lifecycle">Engine lifecycle</a>
+      <a href="#scanning">Scanning</a>
+      <a href="#fmap">In-memory maps</a>
+      <a href="#callbacks">Callbacks</a>
+      <a href="#database">Databases</a>
+      <a href="#errors">Return codes</a>
+    </div>
+  </nav>
+</aside>
+<main>
+  <p class="eyebrow">API Reference · <code>libclamav/clamav.h</code></p>
+  <h1>libclamav C API</h1>
+  <p class="lede">The public interface for embedding the ClamAV scan engine. Operations below are grouped swagger-style: a category chip, the signature, then parameters and responses. All functions return <code>cl_error_t</code> unless noted; <code>CL_SUCCESS</code> means the call worked.</p>
+
+  <div class="note">Canonical flow: <code>cl_init()</code> → <code>cl_engine_new()</code> → <code>cl_load()</code> → <code>cl_engine_compile()</code> → scan → <code>cl_engine_free()</code>.</div>
+
+  <h2 id="lifecycle">Engine lifecycle</h2>
+
+  <details class="op"><summary><span class="chip ctrl">INIT</span><span class="sig">cl_error_t cl_init(unsigned int initoptions)</span><span class="summary-note">once per process</span></summary>
+    <div class="body">
+      <p>Initializes global library state (crypto, locale, rand). Must be called exactly once before any other API. Pass <code>CL_INIT_DEFAULT</code>.</p>
+      <p><span class="resp-ok">CL_SUCCESS</span> — library ready · <span class="resp-err">CL_E*</span> — initialization failed; do not proceed.</p>
+    </div>
+  </details>
+
+  <details class="op"><summary><span class="chip ctrl">CREATE</span><span class="sig">struct cl_engine *cl_engine_new(void)</span><span class="summary-note">new engine instance</span></summary>
+    <div class="body">
+      <p>Allocates a scan engine with default settings and a reference count of 1.</p>
+      <p><span class="resp-ok">engine*</span> — configure and load databases into it · <span class="resp-err">NULL</span> — allocation failure.</p>
+    </div>
+  </details>
+
+  <details class="op"><summary><span class="chip ctrl">CONFIG</span><span class="sig">cl_engine_set_num / get_num · set_str / get_str</span><span class="summary-note">tune limits &amp; options</span></summary>
+    <div class="body">
+      <p>Typed getters/setters keyed by <code>enum cl_engine_field</code>. Numeric fields include <code>CL_ENGINE_MAX_FILESIZE</code>, <code>CL_ENGINE_MAX_SCANSIZE</code>, <code>CL_ENGINE_MAX_RECURSION</code>, <code>CL_ENGINE_PCRE_MATCH_LIMIT</code>; string fields include <code>CL_ENGINE_TMPDIR</code> and <code>CL_ENGINE_PUA_CATEGORIES</code>.</p>
+      <div class="tablewrap"><table>
+        <tr><th>Param</th><th>Type</th><th>Description</th></tr>
+        <tr><td><code>engine</code></td><td><code>struct cl_engine *</code></td><td>Target engine (before <code>cl_engine_compile</code>)</td></tr>
+        <tr><td><code>field</code></td><td><code>enum cl_engine_field</code></td><td>Which setting</td></tr>
+        <tr><td><code>num / str</code></td><td><code>long long / const char *</code></td><td>New value (setters)</td></tr>
+      </table></div>
+      <p><span class="resp-ok">CL_SUCCESS</span> · <span class="resp-err">CL_EARG</span> — wrong field type or null engine.</p>
+    </div>
+  </details>
+
+  <details class="op"><summary><span class="chip ctrl">COMPILE</span><span class="sig">cl_error_t cl_engine_compile(struct cl_engine *engine)</span><span class="summary-note">finalize before scanning</span></summary>
+    <div class="body">
+      <p>Builds the matcher automata from all loaded signatures. Required after <code>cl_load()</code> and before any scan; the engine's settings are frozen afterward.</p>
+      <p><span class="resp-ok">CL_SUCCESS</span> — engine scannable · <span class="resp-err">CL_EMEM / CL_EMALFDB</span> — compilation failed.</p>
+    </div>
+  </details>
+
+  <details class="op"><summary><span class="chip ctrl">REFCOUNT</span><span class="sig">cl_engine_addref · cl_engine_free</span><span class="summary-note">shared ownership</span></summary>
+    <div class="body">
+      <p><code>cl_engine_addref()</code> increments the reference count for multithreaded sharing; <code>cl_engine_free()</code> decrements and destroys the engine when it reaches zero. <code>cl_engine_settings_copy / _apply / _free</code> snapshot settings across engine reloads.</p>
+    </div>
+  </details>
+
+  <h2 id="scanning">Scanning</h2>
+  <p>All scan entry points take a <code>struct cl_scan_options</code> with four bitfields — <code>general</code>, <code>parse</code>, <code>heuristic</code>, <code>mail</code>, <code>dev</code> — e.g. <code>CL_SCAN_GENERAL_ALLMATCHES</code>, <code>CL_SCAN_PARSE_ARCHIVE</code>, <code>CL_SCAN_HEURISTIC_ENCRYPTED_ARCHIVE</code>.</p>
+
+  <details class="op" open><summary><span class="chip scan">SCAN</span><span class="sig">cl_scanfile(path, &amp;virname, &amp;scanned, engine, options)</span><span class="summary-note">scan by path</span></summary>
+    <div class="body">
+      <div class="tablewrap"><table>
+        <tr><th>Param</th><th>Type</th><th>Description</th></tr>
+        <tr><td><code>filename</code></td><td><code>const char *</code></td><td>Path of the file to scan</td></tr>
+        <tr><td><code>virname</code></td><td><code>const char **</code></td><td>Out: detection name when a signature alerts</td></tr>
+        <tr><td><code>scanned</code></td><td><code>unsigned long *</code></td><td>Out (optional): data scanned, in CL_COUNT_PRECISION units</td></tr>
+        <tr><td><code>engine</code></td><td><code>const struct cl_engine *</code></td><td>Compiled engine</td></tr>
+        <tr><td><code>scanoptions</code></td><td><code>struct cl_scan_options *</code></td><td>Scan option bitfields</td></tr>
+      </table></div>
+      <p><span class="resp-ok">CL_CLEAN</span> — no detection · <span class="resp-err">CL_VIRUS</span> — detection, name in <code>virname</code> · <span class="resp-err">CL_E*</span> — scan error.</p>
+    </div>
+  </details>
+
+  <details class="op"><summary><span class="chip scan">SCAN</span><span class="sig">cl_scandesc(desc, filename, &amp;virname, &amp;scanned, engine, options)</span><span class="summary-note">scan an open fd</span></summary>
+    <div class="body">
+      <p>Same contract as <code>cl_scanfile()</code> but reads from an already-open file descriptor; <code>filename</code> is metadata only (may be NULL). This is what clamd uses for <code>FILDES</code>.</p>
+    </div>
+  </details>
+
+  <details class="op"><summary><span class="chip scan">SCAN</span><span class="sig">cl_scanmap_callback(map, filename, &amp;virname, &amp;scanned, engine, options, context)</span><span class="summary-note">scan memory</span></summary>
+    <div class="body">
+      <p>Scans a <code>cl_fmap_t</code> built from a buffer or handle — no file on disk required. The <code>context</code> pointer is passed through to every callback fired during the scan.</p>
+    </div>
+  </details>
+
+  <details class="op"><summary><span class="chip scan">SCAN-EX</span><span class="sig">cl_scanfile_ex · cl_scandesc_ex · cl_scanmap_ex</span><span class="summary-note">extended verdict API</span></summary>
+    <div class="body">
+      <p>Extended variants that report results through a <code>cl_verdict_t</code> and expose per-layer detail via the <code>cl_scan_layer</code> accessors (<code>cl_scan_layer_get_fmap / _get_type / _get_recursion_level / _get_last_alert / _get_attributes</code>…), pairing with the <code>cl_engine_set_scan_callback()</code> mid-scan hook.</p>
+    </div>
+  </details>
+
+  <h2 id="fmap">In-memory maps (cl_fmap)</h2>
+  <details class="op"><summary><span class="chip strm">MAP</span><span class="sig">cl_fmap_open_memory(start, len) · cl_fmap_open_handle(...)</span><span class="summary-note">wrap data for scanning</span></summary>
+    <div class="body">
+      <p><code>cl_fmap_open_memory()</code> wraps an existing buffer; <code>cl_fmap_open_handle()</code> wraps an arbitrary handle with a user-supplied <code>pread</code>-style callback so libclamav can page data on demand. Companion accessors: <code>cl_fmap_set_name/_set_path</code>, <code>cl_fmap_get_size/_get_fd/_get_data</code>, hash helpers (<code>cl_fmap_set_hash / _get_hash / _have_hash</code>), and <code>cl_fmap_close()</code> to release the map.</p>
+    </div>
+  </details>
+
+  <h2 id="callbacks">Callbacks</h2>
+  <p>Registered per-engine; each receives the scan's <code>context</code> pointer. A callback's return value can veto or alter the verdict for its layer.</p>
+  <div class="tablewrap"><table>
+    <tr><th>Setter</th><th>Fires</th><th>Typical use</th></tr>
+    <tr><td><code>cl_engine_set_clcb_pre_cache</code></td><td>Before the clean-cache lookup, for every layer</td><td>Force-scan or skip files</td></tr>
+    <tr><td><code>cl_engine_set_clcb_file_inspection</code></td><td>After type identification (clamd-oriented)</td><td>Policy on embedded content</td></tr>
+    <tr><td><code>cl_engine_set_clcb_pre_scan</code> / <code>_post_scan</code></td><td>Around each layer's matching</td><td>Logging, verdict override</td></tr>
+    <tr><td><code>cl_engine_set_clcb_virus_found</code></td><td>On each detection</td><td>Alert reporting (esp. all-match mode)</td></tr>
+    <tr><td><code>cl_engine_set_scan_callback</code></td><td>At selected pipeline locations (ex-API)</td><td>Layer-by-layer inspection</td></tr>
+    <tr><td><code>cl_engine_set_clcb_sigload</code> / <code>_sigload_progress</code></td><td>During <code>cl_load()</code></td><td>Skip signatures / progress bars</td></tr>
+    <tr><td><code>cl_engine_set_clcb_hash</code> · <code>_meta</code> · <code>_file_props</code> · <code>_vba</code></td><td>On hash computation, container metadata, file properties, extracted VBA</td><td>Telemetry &amp; DLP</td></tr>
+    <tr><td><code>cl_set_clcb_msg</code></td><td>Library log messages (global)</td><td>Route warnings into your logger</td></tr>
+  </table></div>
+
+  <h2 id="database">Databases &amp; updates</h2>
+  <details class="op"><summary><span class="chip stat">LOAD</span><span class="sig">cl_load(path, engine, &amp;signo, dboptions)</span><span class="summary-note">load signatures</span></summary>
+    <div class="body">
+      <p>Loads a database file or a whole directory (see <code>cl_retdbdir()</code> for the default). <code>signo</code> accumulates the signature count. <code>dboptions</code>: <code>CL_DB_STDOPT</code>, <code>CL_DB_BYTECODE</code>, <code>CL_DB_OFFICIAL_ONLY</code>, …</p>
+      <p><span class="resp-ok">CL_SUCCESS</span> · <span class="resp-err">CL_EMALFDB / CL_EOPEN</span> — malformed or unreadable database.</p>
+    </div>
+  </details>
+  <details class="op"><summary><span class="chip stat">CVD</span><span class="sig">cl_cvdhead · cl_cvdparse · cl_cvdverify(_ex) · cl_cvdunpack(_ex) · cl_cvdgetage</span><span class="summary-note">container inspection</span></summary>
+    <div class="body">
+      <p>Read a CVD's 512-byte header (version, signature count, build time), verify its digital signature (the <code>_ex</code> forms use the newer certs-directory external-signature scheme), unpack contents, or check database age.</p>
+    </div>
+  </details>
+  <details class="op"><summary><span class="chip stat">WATCH</span><span class="sig">cl_statinidir · cl_statchkdir · cl_statfree</span><span class="summary-note">detect db changes</span></summary>
+    <div class="body">
+      <p>Snapshot a database directory and later test whether it changed — the mechanism behind clamd's self-check/reload cycle.</p>
+    </div>
+  </details>
+
+  <h2 id="errors">Return codes (<code>cl_error_t</code>)</h2>
+  <div class="tablewrap"><table>
+    <tr><th>Code</th><th>Meaning</th></tr>
+    <tr><td><span class="resp-ok">CL_SUCCESS / CL_CLEAN</span></td><td>Operation succeeded / no detection</td></tr>
+    <tr><td><span class="resp-err">CL_VIRUS</span></td><td>Signature alerted; name via <code>virname</code> or callback</td></tr>
+    <tr><td><span class="resp-err">CL_EMEM · CL_EOPEN · CL_EREAD · CL_EWRITE</span></td><td>Resource and I/O failures</td></tr>
+    <tr><td><span class="resp-err">CL_EMALFDB · CL_EUNPACK · CL_EPARSE</span></td><td>Bad database / unpacking / parsing errors</td></tr>
+    <tr><td><span class="resp-err">CL_EMAXREC · CL_EMAXSIZE · CL_EMAXFILES</span></td><td>Engine limit reached (usually treated as clean)</td></tr>
+    <tr><td><span class="resp-err">CL_BREAK</span></td><td>Scan aborted by a callback</td></tr>
+  </table></div>
+  <p>Use <code>cl_strerror(code)</code> for a printable message and <code>cl_retver()</code> for the library version string.</p>
+
+  <footer>libclamav API — source of truth: <code>libclamav/clamav.h</code>. See also the <a href="clamd-protocol.html">clamd protocol</a>.</footer>
+</main>
+</body>
+</html>
