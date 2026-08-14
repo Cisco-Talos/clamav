@@ -353,6 +353,7 @@ void fc_cleanup(void)
     }
     if (NULL != g_signVerifier) {
         codesign_verifier_free(g_signVerifier);
+        g_signVerifier = NULL;
     }
 }
 
