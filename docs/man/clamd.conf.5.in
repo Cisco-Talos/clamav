@@ -609,7 +609,7 @@ Alert on OLE2 files containing VBA macros (Heuristics.OLE2.ContainsMacros).
 Default: no
 .TP
 \fBAlertExceedsMax BOOL\fR
-When AlertExceedsMax is set, files exceeding the MaxFileSize, MaxScanSize, or MaxRecursion limit will be flagged with the virus name starting with "Heuristics.Limits.Exceeded".
+When AlertExceedsMax is set, files exceeding the MaxFileSize, MaxScanSize, MaxRecursion, or PCREMaxFileSize limit will be flagged with a name starting with "Heuristics.Limits.Exceeded". Exceeding PCREMaxFileSize means PCRE subsignature evaluation was skipped and the scan had reduced detection coverage.
 .br
 Default: no
 .TP

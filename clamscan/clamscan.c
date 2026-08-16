@@ -339,7 +339,7 @@ void help(void)
     mprintf(LOGG_INFO, "    --alert-encrypted-archive[=yes/no(*)] Alert on encrypted archives.\n");
     mprintf(LOGG_INFO, "    --alert-encrypted-doc[=yes/no(*)]    Alert on encrypted documents.\n");
     mprintf(LOGG_INFO, "    --alert-macros[=yes/no(*)]           Alert on OLE2 files containing VBA macros.\n");
-    mprintf(LOGG_INFO, "    --alert-exceeds-max[=yes/no(*)]      Alert on files that exceed max file size, max scan size, or max recursion limit.\n");
+    mprintf(LOGG_INFO, "    --alert-exceeds-max[=yes/no(*)]      Alert on files that exceed max file size, max scan size, max recursion, or PCRE max file size.\n");
     mprintf(LOGG_INFO, "    --alert-phishing-ssl[=yes/no(*)]     Alert on emails containing SSL mismatches in URLs.\n");
     mprintf(LOGG_INFO, "    --alert-phishing-cloak[=yes/no(*)]   Alert on emails containing cloaked URLs.\n");
     mprintf(LOGG_INFO, "    --alert-partition-intersection[=yes/no(*)] Alert on raw DMG image files containing partition intersections.\n");
