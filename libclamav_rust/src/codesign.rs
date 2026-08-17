@@ -591,8 +591,13 @@ impl Verifier {
                             .find(|name_entry| {
                                 name_entry.object().nid() == openssl::nid::Nid::COMMONNAME
                             })
-                            .map(|name_entry| name_entry.data().as_utf8().unwrap().to_string())
-                            .unwrap();
+                            .ok_or_else(|| {
+                                Error::CertificateStore(
+                                    "Certificate is missing a common name".to_string(),
+                                )
+                            })?
+                            .data()
+                            .to_string()?;
 
                         if root_common_names.contains(&common_name) {
                             return Err(Error::CertificateStore(format!(
@@ -627,16 +632,21 @@ impl Verifier {
             let signer = pkcs7.signers(&certs, flags)?;
             let signers: Vec<String> = signer
                 .iter()
-                .map(|cert| {
-                    cert.subject_name()
+                .map(|cert| -> Result<String, Error> {
+                    let name_entry = cert
+                        .subject_name()
                         .entries()
                         .find(|name_entry| {
                             name_entry.object().nid() == openssl::nid::Nid::COMMONNAME
                         })
-                        .map(|name_entry| name_entry.data().as_utf8().unwrap().to_string())
-                        .unwrap()
+                        .ok_or_else(|| {
+                            Error::CertificateStore(
+                                "Signer certificate is missing a common name".to_string(),
+                            )
+                        })?;
+                    Ok(name_entry.data().to_string()?)
                 })
-                .collect();
+                .collect::<Result<Vec<String>, Error>>()?;
 
             match result {
                 Ok(()) => {
