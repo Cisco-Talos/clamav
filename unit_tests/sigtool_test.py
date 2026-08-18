@@ -10,7 +10,6 @@ import platform
 import shutil
 import subprocess
 import sys
-import time
 import unittest
 
 import testcase
