@@ -748,9 +748,8 @@ Example
 # Default: 100M
 #PCREMaxFileSize 400M
 
-# When AlertExceedsMax is set, files exceeding the MaxFileSize, MaxScanSize,
-# MaxRecursion, or PCREMaxFileSize limit will be flagged with a name starting with
-# "Heuristics.Limits.Exceeded".
+# When AlertExceedsMax is set, files exceeding a configured scan limit will
+# be flagged with a virus name starting with "Heuristics.Limits.Exceeded".
 # Default: no
 #AlertExceedsMax yes
 
