@@ -40,19 +40,20 @@ impl log::Log for ClamLogger {
         if self.enabled(record.metadata()) {
             let msg = CString::new(format!("{}\n", record.args())).unwrap();
             let ptr = msg.as_ptr();
+            let format = b"%s\0".as_ptr() as *const c_char;
 
             match record.level() {
                 Level::Debug => unsafe {
-                    sys::cli_dbgmsg_no_inline(ptr);
+                    sys::cli_dbgmsg_no_inline(format, ptr);
                 },
                 Level::Error => unsafe {
-                    sys::cli_errmsg(ptr);
+                    sys::cli_errmsg(format, ptr);
                 },
                 Level::Info => unsafe {
-                    sys::cli_infomsg_simple(ptr);
+                    sys::cli_infomsg_simple(format, ptr);
                 },
                 Level::Warn => unsafe {
-                    sys::cli_warnmsg(ptr);
+                    sys::cli_warnmsg(format, ptr);
                 },
                 _ => {}
             }
