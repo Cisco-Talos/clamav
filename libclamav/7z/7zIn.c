@@ -897,6 +897,27 @@ static SRes SzReadSubStreamsInfo(
 }
 
 
+/**
+ * Validate that every folder's packed-stream range is contained in PackSizes.
+ */
+static SRes SzAr_CheckPackStreams(const CSzAr *p)
+{
+  UInt32 i;
+  UInt32 packStreamIndex = 0;
+
+  for (i = 0; i < p->NumFolders; i++)
+  {
+    const UInt32 numPackStreams = p->Folders[i].NumPackStreams;
+
+    if (numPackStreams > p->NumPackStreams - packStreamIndex)
+      return SZ_ERROR_ARCHIVE;
+
+    packStreamIndex += numPackStreams;
+  }
+
+  return SZ_OK;
+}
+
 static SRes SzReadStreamsInfo(
     CSzData *sd,
     UInt64 *dataOffset,
@@ -917,7 +938,7 @@ static SRes SzReadStreamsInfo(
     switch((int)type)
     {
       case k7zIdEnd:
-        return SZ_OK;
+        return SzAr_CheckPackStreams(p);
       case k7zIdPackInfo:
       {
         RINOK(SzReadPackInfo(sd, dataOffset, &p->NumPackStreams,
