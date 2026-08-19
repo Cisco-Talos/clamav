@@ -27,6 +27,7 @@ TIMEOUT_EXIT_CODE = 111
 STRICT_ORDER = 0
 ANY_ORDER = 1
 CHUNK_SIZE = 100
+CLEAN_SCAN_RESULT = r": OK(?:\r?\n|$)"
 
 loggers = {}
 

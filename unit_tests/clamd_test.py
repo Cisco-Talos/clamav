@@ -846,7 +846,11 @@ class TC(testcase.TestCase):
         output = self.execute_command('{clamdscan} -c {clamd_config} --wait --ping 10 {test_exe}'.format(
             clamdscan=TC.clamdscan, clamd_config=clamd_config, test_exe=big_file))
         expected_results = ['MaxFileSize FOUND']
-        unexpected_results = ['OK', 'MaxScanSize FOUND', 'Can\'t allocate memory ERROR']
+        unexpected_results = [
+            testcase.CLEAN_SCAN_RESULT,
+            'MaxScanSize FOUND',
+            'Can\'t allocate memory ERROR',
+        ]
         self.verify_output(output.out, expected=expected_results, unexpected=unexpected_results)
         assert output.ec == 1
 
@@ -854,7 +858,11 @@ class TC(testcase.TestCase):
         output = self.execute_command('{clamdscan} -c {clamd_config} {test_exe}'.format(
             clamdscan=TC.clamdscan, clamd_config=clamd_config, test_exe=big_zip))
         expected_results = ['MaxScanSize FOUND']
-        unexpected_results = ['OK', 'MaxFileSize FOUND', 'Can\'t allocate memory ERROR']
+        unexpected_results = [
+            testcase.CLEAN_SCAN_RESULT,
+            'MaxFileSize FOUND',
+            'Can\'t allocate memory ERROR',
+        ]
         self.verify_output(output.out, expected=expected_results, unexpected=unexpected_results)
         assert output.ec == 1
 

@@ -54,6 +54,6 @@ class TC(testcase.TestCase):
             'logo.png.UNOFFICIAL FOUND',
         ]
         unexpected_stdout = [
-            'OK',
+            testcase.CLEAN_SCAN_RESULT,
         ]
-        self.verify_output(output.out, expected=expected_stdout)
+        self.verify_output(output.out, expected=expected_stdout, unexpected=unexpected_stdout)

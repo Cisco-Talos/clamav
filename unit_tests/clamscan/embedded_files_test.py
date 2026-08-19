@@ -49,7 +49,7 @@ class TC(testcase.TestCase):
             'test.png.emb-zips: test-file-2-2.UNOFFICIAL FOUND',
         ]
         unexpected_stdout = [
-            'OK',
+            testcase.CLEAN_SCAN_RESULT,
         ]
         self.verify_output(output.out, expected=expected_stdout, unexpected=unexpected_stdout)
 
@@ -75,7 +75,7 @@ class TC(testcase.TestCase):
             'test.png.emb-arjs: test-file-2-2.UNOFFICIAL FOUND',
         ]
         unexpected_stdout = [
-            'OK',
+            testcase.CLEAN_SCAN_RESULT,
         ]
         self.verify_output(output.out, expected=expected_stdout, unexpected=unexpected_stdout)
 
@@ -101,7 +101,7 @@ class TC(testcase.TestCase):
             'test.png.emb-cabs: test-file-2-2.UNOFFICIAL FOUND',
         ]
         unexpected_stdout = [
-            'OK',
+            testcase.CLEAN_SCAN_RESULT,
         ]
         self.verify_output(output.out, expected=expected_stdout, unexpected=unexpected_stdout)
 
@@ -125,6 +125,6 @@ class TC(testcase.TestCase):
             'clam.exe.emb-exes: Win.Test.SmolEXE.UNOFFICIAL FOUND',
         ]
         unexpected_stdout = [
-            'OK',
+            testcase.CLEAN_SCAN_RESULT,
         ]
         self.verify_output(output.out, expected=expected_stdout, unexpected=unexpected_stdout)
