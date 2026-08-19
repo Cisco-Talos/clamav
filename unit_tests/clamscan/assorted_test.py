@@ -110,7 +110,7 @@ class TC(testcase.TestCase):
 
         assert output.ec == 0
 
-        expected_results = ['OK']
+        expected_results = [testcase.CLEAN_SCAN_RESULT]
 
         # The alert sig files are all given the signature name, so we can verify that the correct sigs were found.
         # We need only to trim off the extension and say "FOUND" for the alerting sigs.
@@ -211,7 +211,7 @@ class TC(testcase.TestCase):
             'trust_plus_mal.zip: ClamAV-Test-File.UNOFFICIAL FOUND',
             'trust_plus_mal2.zip: ClamAV-Test-File.UNOFFICIAL FOUND',
         ]
-        unexpected_results = ['OK']
+        unexpected_results = [testcase.CLEAN_SCAN_RESULT]
 
         self.verify_output(output.out, expected=expected_results, unexpected=unexpected_results)
 
@@ -237,7 +237,7 @@ class TC(testcase.TestCase):
             'iso_normal.logo.iso: logo.png.UNOFFICIAL FOUND',
             'iso_no_joliet.logo.iso: logo.png.UNOFFICIAL FOUND',
         ]
-        unexpected_results = ['OK']
+        unexpected_results = [testcase.CLEAN_SCAN_RESULT]
 
         self.verify_output(output.out, expected=expected_results, unexpected=unexpected_results)
 

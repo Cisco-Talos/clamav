@@ -154,7 +154,7 @@ class TC(testcase.TestCase):
             )
         else:
             command = '{clamd} --config-file={clamd_config}'.format(
-                clamd=TC.clamd, clamd_config=TC.clamd_config
+                clamd=TC.clamd, clamd_config=clamd_config
             )
         self.log.info('Starting clamd: {}'.format(command))
         self.proc = subprocess.Popen(
@@ -163,6 +163,19 @@ class TC(testcase.TestCase):
             stdout=sys.stdout.buffer,
             stderr=sys.stdout.buffer,
         )
+
+        startup = self.execute_command(
+            '{clamdscan} --ping 60 -c {clamd_config}'.format(
+                clamdscan=TC.clamdscan,
+                clamd_config=clamd_config,
+            )
+        )
+        poll = self.proc.poll()
+        assert poll == None, (
+            'clamd exited with status {} before becoming ready'.format(poll)
+        )
+        assert startup.ec == 0, 'clamd did not become ready:\n{}'.format(startup.err)
+        self.verify_output(startup.out, expected=['PONG'])
 
     def run_clamdscan(self,
                       scan_args,
@@ -846,7 +859,11 @@ class TC(testcase.TestCase):
         output = self.execute_command('{clamdscan} -c {clamd_config} --wait --ping 10 {test_exe}'.format(
             clamdscan=TC.clamdscan, clamd_config=clamd_config, test_exe=big_file))
         expected_results = ['MaxFileSize FOUND']
-        unexpected_results = ['OK', 'MaxScanSize FOUND', 'Can\'t allocate memory ERROR']
+        unexpected_results = [
+            testcase.CLEAN_SCAN_RESULT,
+            'MaxScanSize FOUND',
+            'Can\'t allocate memory ERROR',
+        ]
         self.verify_output(output.out, expected=expected_results, unexpected=unexpected_results)
         assert output.ec == 1
 
@@ -854,7 +871,11 @@ class TC(testcase.TestCase):
         output = self.execute_command('{clamdscan} -c {clamd_config} {test_exe}'.format(
             clamdscan=TC.clamdscan, clamd_config=clamd_config, test_exe=big_zip))
         expected_results = ['MaxScanSize FOUND']
-        unexpected_results = ['OK', 'MaxFileSize FOUND', 'Can\'t allocate memory ERROR']
+        unexpected_results = [
+            testcase.CLEAN_SCAN_RESULT,
+            'MaxFileSize FOUND',
+            'Can\'t allocate memory ERROR',
+        ]
         self.verify_output(output.out, expected=expected_results, unexpected=unexpected_results)
         assert output.ec == 1
 
