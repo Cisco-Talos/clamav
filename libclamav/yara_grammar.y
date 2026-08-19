@@ -21,19 +21,19 @@
 /* This file was originally derived from yara 3.1.0 libyara/parser.y and is
    revised for running YARA rules in ClamAV. Following is the YARA copyright. */
 /*
-Copyright (c) 2007-2013. The YARA Authors. All Rights Reserved.
+Copyright (c) 2007-2016. The YARA Authors. All Rights Reserved.
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-   http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote products derived from this software
+   without specific prior written permission.
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS
+BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
+IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 %code requires {
@@ -113,6 +113,15 @@ limitations under the License.
 
 #define MSG(op)  "wrong type \"string\" for \"" op "\" operator"
 
+#define UNSUPPORTED_STRING_MODIFIER(modifier) \
+    do { \
+      yr_compiler_set_error_extra_info( \
+          compiler, "unsupported string modifier \"" modifier "\""); \
+      compiler->last_result = ERROR_INVALID_MODIFIER; \
+      yyerror(yyscanner, compiler, NULL); \
+      YYERROR; \
+    } while (0)
+
 %}
 
 
@@ -144,6 +153,9 @@ limitations under the License.
 %token <sized_string> _REGEXP_
 %token _ASCII_
 %token _WIDE_
+%token _XOR_
+%token _BASE64_
+%token _BASE64_WIDE_
 %token _NOCASE_
 %token _FULLWORD_
 %token _AT_
@@ -191,6 +203,8 @@ limitations under the License.
 
 %type <integer> string_modifier
 %type <integer> string_modifiers
+%type <integer> hex_modifier
+%type <integer> hex_modifiers
 
 %type <integer> integer_set
 
@@ -533,11 +547,11 @@ string_declaration
 
         ERROR_IF($$ == NULL);
       }
-    | _STRING_IDENTIFIER_ '=' _HEX_STRING_
+    | _STRING_IDENTIFIER_ '=' _HEX_STRING_ hex_modifiers
       {
         $$ = yr_parser_reduce_string_declaration(
             yyscanner,
-            STRING_GFLAGS_HEXADECIMAL,
+            $4 | STRING_GFLAGS_HEXADECIMAL,
             $1,
             $3);
 
@@ -551,7 +565,16 @@ string_declaration
 
 string_modifiers
     : /* empty */                         { $$ = 0; }
-    | string_modifiers string_modifier    { $$ = $1 | $2; }
+    | string_modifiers string_modifier
+      {
+        if ($1 & $2)
+        {
+          compiler->last_result = ERROR_DUPLICATED_MODIFIER;
+          ERROR_IF(compiler->last_result != ERROR_SUCCESS);
+        }
+
+        $$ = $1 | $2;
+      }
     ;
 
 
@@ -560,6 +583,60 @@ string_modifier
     | _ASCII_       { $$ = STRING_GFLAGS_ASCII; }
     | _NOCASE_      { $$ = STRING_GFLAGS_NO_CASE; }
     | _FULLWORD_    { $$ = STRING_GFLAGS_FULL_WORD; }
+    | _PRIVATE_     { $$ = STRING_GFLAGS_PRIVATE; }
+    | _XOR_         { $$ = 0; UNSUPPORTED_STRING_MODIFIER("xor"); }
+    | _XOR_ '(' _NUMBER_ ')'
+      {
+        $$ = 0;
+        UNSUPPORTED_STRING_MODIFIER("xor");
+      }
+    | _XOR_ '(' _NUMBER_ '-' _NUMBER_ ')'
+      {
+        $$ = 0;
+        UNSUPPORTED_STRING_MODIFIER("xor");
+      }
+    | _BASE64_
+      {
+        $$ = 0;
+        UNSUPPORTED_STRING_MODIFIER("base64");
+      }
+    | _BASE64_ '(' _TEXT_STRING_ ')'
+      {
+        yr_free($3);
+        $$ = 0;
+        UNSUPPORTED_STRING_MODIFIER("base64");
+      }
+    | _BASE64_WIDE_
+      {
+        $$ = 0;
+        UNSUPPORTED_STRING_MODIFIER("base64wide");
+      }
+    | _BASE64_WIDE_ '(' _TEXT_STRING_ ')'
+      {
+        yr_free($3);
+        $$ = 0;
+        UNSUPPORTED_STRING_MODIFIER("base64wide");
+      }
+    ;
+
+
+hex_modifiers
+    : /* empty */                         { $$ = 0; }
+    | hex_modifiers hex_modifier
+      {
+        if ($1 & $2)
+        {
+          compiler->last_result = ERROR_DUPLICATED_MODIFIER;
+          ERROR_IF(compiler->last_result != ERROR_SUCCESS);
+        }
+
+        $$ = $1 | $2;
+      }
+    ;
+
+
+hex_modifier
+    : _PRIVATE_     { $$ = STRING_GFLAGS_PRIVATE; }
     ;
 
 
@@ -1115,7 +1192,7 @@ expression
         yr_parser_emit_with_arg(
             yyscanner, OP_PUSH_M, mem_offset + 1, NULL);
 
-        yr_parser_emit(yyscanner, OP_LE, NULL);
+        yr_parser_emit(yyscanner, OP_OF_COUNT, NULL);
 
         compiler->loop_identifier[compiler->loop_depth] = NULL;
         yr_free($3);
@@ -1194,7 +1271,7 @@ expression
         yr_parser_emit_with_arg(
             yyscanner, OP_PUSH_M, mem_offset + 1, NULL);
 
-        yr_parser_emit(yyscanner, OP_LE, NULL);
+        yr_parser_emit(yyscanner, OP_OF_COUNT, NULL);
         $$ = EXPRESSION_TYPE_BOOLEAN;
 
       }

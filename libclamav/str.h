@@ -71,8 +71,13 @@ char *__cli_strnstr(const char *s, const char *find, size_t slen);
 int cli_strbcasestr(const char *haystack, const char *needle);
 int cli_chomp(char *string);
 char *cli_strtok(const char *line, int field, const char *delim);
-int cli_realhex2ui(const char *hex, uint16_t *ptr, unsigned int len);
+/*
+ * Hex patterns contain two-character byte tokens and three-character negated
+ * tokens. decoded_len reports the number of uint16_t matcher units produced.
+ */
+int cli_realhex2ui(const char *hex, uint16_t *ptr, unsigned int len, size_t *decoded_len);
 uint16_t *cli_hex2ui(const char *hex);
+uint16_t *cli_hex2ui_len(const char *hex, size_t *decoded_len);
 int cli_hex2str_to(const char *hex, char *ptr, size_t len);
 char *cli_hex2str(const char *hex);
 int cli_hex2num(const char *hex);

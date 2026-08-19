@@ -703,6 +703,29 @@ done:
  * @param options   Database options.  See CL_DB_* macros in clamav.h.
  * @return cl_error_t
  */
+static bool cli_valid_hex_negations(const char *hexsig)
+{
+    size_t i;
+    size_t len = strlen(hexsig);
+
+    for (i = 0; i < len; i++) {
+        if (hexsig[i] != '~')
+            continue;
+
+        if (i + 2 >= len ||
+            (!isxdigit((unsigned char)hexsig[i + 1]) && hexsig[i + 1] != '?') ||
+            (!isxdigit((unsigned char)hexsig[i + 2]) && hexsig[i + 2] != '?') ||
+            (hexsig[i + 1] == '?' && hexsig[i + 2] == '?')) {
+            cli_errmsg("cli_add_content_match_pattern: Invalid hex negation near: %s\n", &hexsig[i]);
+            return false;
+        }
+
+        i += 2;
+    }
+
+    return true;
+}
+
 cl_error_t cli_add_content_match_pattern(struct cli_matcher *root, const char *virname, const char *hexsig,
                                          uint8_t sigopts, uint16_t rtype, uint16_t type,
                                          const char *offset, const uint32_t *lsigid, unsigned int options)
@@ -717,6 +740,9 @@ cl_error_t cli_add_content_match_pattern(struct cli_matcher *root, const char *v
     char *start = NULL;
 
     hexlen = strlen(hexsig);
+
+    if (!cli_valid_hex_negations(hexsig))
+        return CL_EMALFDB;
 
     if ((wild = strchr(hexsig, '{'))) {
         /*
@@ -928,7 +954,7 @@ cl_error_t cli_add_content_match_pattern(struct cli_matcher *root, const char *v
             free(pt);
         }
 
-    } else if (root->ac_only || type || lsigid || sigopts || strpbrk(hexsig, "?([") || (root->bm_offmode && (!strcmp(offset, "*") || strchr(offset, ','))) || strstr(offset, "VI") || strchr(offset, '$')) {
+    } else if (root->ac_only || type || lsigid || sigopts || strpbrk(hexsig, "?([~") || (root->bm_offmode && (!strcmp(offset, "*") || strchr(offset, ','))) || strstr(offset, "VI") || strchr(offset, '$')) {
         /*
          * format seems like it must be handled with the Aho-Corasick (AC) pattern matcher.
          */
@@ -3567,12 +3593,44 @@ static char *parse_yara_hex_string(YR_STRING *string, int *ret)
     str = strchr(str, '{') + 1;
 
     for (i = 0; i < slen - 1; i++) {
+        if (str[i] == '/' && i + 1 < slen - 1) {
+            if (str[i + 1] == '*') {
+                i += 2;
+                while (i + 1 < slen - 1 && !(str[i] == '*' && str[i + 1] == '/'))
+                    i++;
+                if (i + 1 >= slen - 1) {
+                    if (ret) *ret = CL_EMALFDB;
+                    return NULL;
+                }
+                i++;
+                continue;
+            } else if (str[i + 1] == '/') {
+                i += 2;
+                while (i < slen - 1 && str[i] != '\n' && str[i] != '\r')
+                    i++;
+                continue;
+            }
+        }
+
         switch (str[i]) {
             case ' ':
             case '\t':
             case '\r':
             case '\n':
             case '}': /* end of hex string */
+                break;
+            case '~':
+                if ((i + 2 >= slen - 1) ||
+                    (!isxdigit((unsigned char)str[i + 1]) && str[i + 1] != '?') ||
+                    (!isxdigit((unsigned char)str[i + 2]) && str[i + 2] != '?') ||
+                    (str[i + 1] == '?' && str[i + 2] == '?')) {
+                    cli_errmsg("parse_yara_hex_string: Invalid YARA hex negation near: %.*s\n",
+                               (int)MIN((size_t)3, slen - 1 - i), &str[i]);
+                    if (ret) *ret = CL_EMALFDB;
+                    return NULL;
+                }
+                reslen += 3;
+                i += 2;
                 break;
             default:
                 reslen++;
@@ -3588,6 +3646,26 @@ static char *parse_yara_hex_string(YR_STRING *string, int *ret)
     }
 
     for (i = 0, j = 0; i < slen - 1 && j < reslen; i++) {
+        if (str[i] == '/' && i + 1 < slen - 1) {
+            if (str[i + 1] == '*') {
+                i += 2;
+                while (i + 1 < slen - 1 && !(str[i] == '*' && str[i + 1] == '/'))
+                    i++;
+                if (i + 1 >= slen - 1) {
+                    free(res);
+                    if (ret) *ret = CL_EMALFDB;
+                    return NULL;
+                }
+                i++;
+                continue;
+            } else if (str[i + 1] == '/') {
+                i += 2;
+                while (i < slen - 1 && str[i] != '\n' && str[i] != '\r')
+                    i++;
+                continue;
+            }
+        }
+
         switch (str[i]) {
             case ' ':
             case '\t':
@@ -3606,6 +3684,26 @@ static char *parse_yara_hex_string(YR_STRING *string, int *ret)
                 break;
             case ']':
                 res[j++] = '}';
+                break;
+            case '~':
+                if ((i + 2 >= slen - 1) ||
+                    (!isxdigit((unsigned char)str[i + 1]) && str[i + 1] != '?') ||
+                    (!isxdigit((unsigned char)str[i + 2]) && str[i + 2] != '?') ||
+                    (str[i + 1] == '?' && str[i + 2] == '?')) {
+                    cli_errmsg("parse_yara_hex_string: Invalid YARA hex negation near: %.*s\n",
+                               (int)MIN((size_t)3, slen - 1 - i), &str[i]);
+                    free(res);
+                    if (ret) *ret = CL_EMALFDB;
+                    return NULL;
+                }
+                /*
+                 * Preserve the native matcher token instead of expanding it
+                 * into positive alternatives.
+                 */
+                res[j++] = str[i];
+                res[j++] = str[i + 1];
+                res[j++] = str[i + 2];
+                i += 2;
                 break;
             default:
                 res[j++] = str[i];
