@@ -318,7 +318,10 @@ static bool ac_select_repeated_prefix_exact_window(const uint16_t *pattern, uint
             }
         }
 
-        if (!valid || repeated_count >= depth) {
+        /* Replacing one repeated trie head with another only changes which
+         * common byte can produce excessive candidates. Require the shifted
+         * window to contain a transition, regardless of the repeated value. */
+        if (!valid || repeated_count >= depth || distinct_count < 2) {
             continue;
         }
 
