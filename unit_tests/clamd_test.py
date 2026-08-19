@@ -154,7 +154,7 @@ class TC(testcase.TestCase):
             )
         else:
             command = '{clamd} --config-file={clamd_config}'.format(
-                clamd=TC.clamd, clamd_config=TC.clamd_config
+                clamd=TC.clamd, clamd_config=clamd_config
             )
         self.log.info('Starting clamd: {}'.format(command))
         self.proc = subprocess.Popen(
@@ -163,6 +163,19 @@ class TC(testcase.TestCase):
             stdout=sys.stdout.buffer,
             stderr=sys.stdout.buffer,
         )
+
+        startup = self.execute_command(
+            '{clamdscan} --ping 60 -c {clamd_config}'.format(
+                clamdscan=TC.clamdscan,
+                clamd_config=clamd_config,
+            )
+        )
+        poll = self.proc.poll()
+        assert poll == None, (
+            'clamd exited with status {} before becoming ready'.format(poll)
+        )
+        assert startup.ec == 0, 'clamd did not become ready:\n{}'.format(startup.err)
+        self.verify_output(startup.out, expected=['PONG'])
 
     def run_clamdscan(self,
                       scan_args,
