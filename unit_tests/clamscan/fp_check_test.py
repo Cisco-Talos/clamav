@@ -134,7 +134,7 @@ rename()
                 db2=TC.normalized_hash_fp,
             )
         )
-        self.verify_output(output.out, expected=["OK"], unexpected=[])
+        self.verify_output(output.out, expected=[testcase.CLEAN_SCAN_RESULT], unexpected=[])
 
     def test_fp_for_normalized_wild(self):
         """
@@ -152,7 +152,7 @@ rename()
                 db2=TC.normalized_hash_wild_fp,
             )
         )
-        self.verify_output(output.out, expected=["OK"], unexpected=[])
+        self.verify_output(output.out, expected=[testcase.CLEAN_SCAN_RESULT], unexpected=[])
 
     def test_fp_for_nonnormalized(self):
         """
@@ -169,7 +169,7 @@ rename()
                 db2=TC.original_hash_fp,
             )
         )
-        self.verify_output(output.out, expected=["OK"], unexpected=[])
+        self.verify_output(output.out, expected=[testcase.CLEAN_SCAN_RESULT], unexpected=[])
 
     def test_fp_for_nonnormalized_wild(self):
         """
@@ -186,7 +186,7 @@ rename()
                 db2=TC.original_hash_wild_fp,
             )
         )
-        self.verify_output(output.out, expected=["OK"], unexpected=[])
+        self.verify_output(output.out, expected=[testcase.CLEAN_SCAN_RESULT], unexpected=[])
 
     def test_fp_for_zipped_file(self):
         """
@@ -202,7 +202,7 @@ rename()
                 db2=TC.test_file_zipped_hash_fp,
             )
         )
-        self.verify_output(output.out, expected=["OK"], unexpected=[])
+        self.verify_output(output.out, expected=[testcase.CLEAN_SCAN_RESULT], unexpected=[])
 
     def test_fp_for_zipped_file_wild(self):
         """
@@ -218,4 +218,4 @@ rename()
                 db2=TC.test_file_zipped_hash_wild_fp,
             )
         )
-        self.verify_output(output.out, expected=["OK"], unexpected=[])
+        self.verify_output(output.out, expected=[testcase.CLEAN_SCAN_RESULT], unexpected=[])
