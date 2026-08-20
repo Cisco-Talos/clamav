@@ -44,6 +44,9 @@
 #ifdef HAVE_SYS_SELECT_H
 #include <sys/select.h>
 #endif
+#ifdef _WIN32
+#include <windows.h>
+#endif
 #ifndef _WIN32
 #include <sys/resource.h>
 #endif
@@ -346,6 +349,7 @@ struct client_parallel_data {
     } *ids;
     unsigned int action_sources;
     unsigned int max_action_sources;
+    int restarts;
 };
 
 /* Sends a proper scan request to clamd and parses its replies
@@ -409,6 +413,11 @@ static int dspresult(struct client_parallel_data *c)
         free(bol);
     } while (rcv.cur != rcv.buf); /* clamd sends whole lines, so, on partial lines, we just assume
                                     more data can be recv()'d with close to zero latency */
+
+    /* The session is working again, so only consecutive failures count against
+     * the restart budget. */
+    c->restarts = 0;
+
     return 0;
 }
 
@@ -434,6 +443,119 @@ static void free_scanids(struct client_parallel_data *c)
         }
         free(id);
     }
+}
+
+/* Restarts allowed in a row without a verdict coming back in between. */
+#define MAX_SESSION_RESTARTS 3
+
+/* Delay before the second restart in a row, doubled for each further one. */
+#define SESSION_RESTART_DELAY 1
+
+static void session_restart_wait(unsigned int seconds)
+{
+#ifdef _WIN32
+    Sleep(seconds * 1000);
+#else
+    sleep(seconds);
+#endif
+}
+
+/* Re-establish the IDSESSION after clamd unexpectedly closed the
+ * connection, and re-send every outstanding (unanswered) request.
+ * Returns 0 on success, nonzero if the session could not be restored. */
+static int session_restart(struct client_parallel_data *c)
+{
+    static const char zIDSESSION[] = "zIDSESSION";
+    struct SCANID *outstanding;
+    struct SCANID *cur;
+    unsigned int n = 0;
+
+    if (++c->restarts > MAX_SESSION_RESTARTS) {
+        logg(LOGG_ERROR, "Connection to clamd lost %d consecutive times, giving up\n",
+             MAX_SESSION_RESTARTS);
+        return 1;
+    }
+
+    outstanding = c->ids;
+    c->ids      = NULL;
+    c->lastid   = 0;
+
+    closesocket(c->sockd);
+
+    if (c->restarts > 1) {
+        unsigned int delay = SESSION_RESTART_DELAY << (c->restarts - 2);
+        logg(LOGG_DEBUG, "Waiting %u second(s) before restarting the session\n", delay);
+        session_restart_wait(delay);
+    }
+
+    /* On failure the requests go back on the list, for free_scanids() to release. */
+    if ((c->sockd = dconnect(clamdopts)) < 0) {
+        c->ids = outstanding;
+        return 1;
+    }
+    if (sendln(c->sockd, zIDSESSION, sizeof(zIDSESSION))) {
+        closesocket(c->sockd);
+        c->sockd = -1;
+        c->ids   = outstanding;
+        return 1;
+    }
+
+    for (cur = outstanding; cur; cur = cur->next) n++;
+    logg(LOGG_WARNING,
+         "Connection to clamd lost (restart %d/%d); last request before "
+         "disconnect: %s; re-sending %u outstanding request(s)\n",
+         c->restarts, MAX_SESSION_RESTARTS,
+         outstanding ? outstanding->file : "(none)", n);
+
+    while ((cur = outstanding)) {
+        int res     = 0;
+        outstanding = cur->next;
+        switch (c->scantype) {
+#ifdef HAVE_FD_PASSING
+            case FILDES:
+                res = (NULL != cur->action_source)
+                          ? send_fdpass_fd(c->sockd, cur->action_source->scan_fd)
+                          : send_fdpass(c->sockd, cur->file);
+                break;
+#endif
+            case STREAM:
+                res = (NULL != cur->action_source)
+                          ? send_stream_fd_action(c->sockd, cur->action_source->scan_fd,
+                                                  cur->action_source->display_path, clamdopts)
+                          : send_stream(c->sockd, cur->file, clamdopts);
+                break;
+        }
+        if (res > 0) {
+            cur->id   = ++c->lastid;
+            cur->next = c->ids;
+            c->ids    = cur;
+            continue;
+        }
+        if (res == 0) {
+            /* Soft failure, e.g. the file vanished. */
+            logg(LOGG_ERROR, "Failed to re-send %s after reconnect\n", cur->file);
+            c->errors++;
+            free((void *)cur->file);
+            if (NULL != cur->action_source) {
+                action_source_close(cur->action_source);
+                free(cur->action_source);
+                if (c->action_sources > 0)
+                    c->action_sources--;
+            }
+            free(cur);
+            continue;
+        }
+        /* The new connection died as well. Put back both the not-yet-resent tail
+         * and the already-resent entries; re-sending a request twice is harmless. */
+        outstanding = cur; /* cur->next still points at the tail */
+        while ((cur = outstanding)) {
+            outstanding = cur->next;
+            cur->next   = c->ids;
+            c->ids      = cur;
+        }
+        return session_restart(c);
+    }
+    return 0;
 }
 
 /* FTW callback for scanning in IDSESSION mode
@@ -494,8 +616,10 @@ static cl_error_t parallel_callback(STATBUF *sb, char *filename, const char *pat
     if (action) {
         while (c->action_sources >= c->max_action_sources) {
             if (dspresult(c)) {
-                status = CL_BREAK;
-                goto done;
+                if (session_restart(c)) {
+                    status = CL_BREAK;
+                    goto done;
+                }
             }
         }
 
@@ -531,28 +655,41 @@ static cl_error_t parallel_callback(STATBUF *sb, char *filename, const char *pat
         }
         if (FD_ISSET(c->sockd, &rfds)) {
             if (dspresult(c)) {
-                status = CL_BREAK;
-                goto done;
-            } else
-                continue;
+                if (session_restart(c)) {
+                    status = CL_BREAK;
+                    goto done;
+                }
+            }
+            continue;
         }
         if (FD_ISSET(c->sockd, &wfds)) break;
     }
 
-    switch (c->scantype) {
+    while (1) {
+        switch (c->scantype) {
 #ifdef HAVE_FD_PASSING
-        case FILDES:
-            res = (NULL != action_source) ? send_fdpass_fd(c->sockd, action_source->scan_fd) : send_fdpass(c->sockd, scan_path);
-            break;
+            case FILDES:
+                res = (NULL != action_source) ? send_fdpass_fd(c->sockd, action_source->scan_fd) : send_fdpass(c->sockd, scan_path);
+                break;
 #endif
-        case STREAM:
-            res = (NULL != action_source) ? send_stream_fd_action(c->sockd, action_source->scan_fd, action_source->display_path, clamdopts) : send_stream(c->sockd, scan_path, clamdopts);
+            case STREAM:
+                res = (NULL != action_source) ? send_stream_fd_action(c->sockd, action_source->scan_fd, action_source->display_path, clamdopts) : send_stream(c->sockd, scan_path, clamdopts);
+                break;
+        }
+        if (res >= 0)
             break;
+        /* Connection-level failure: restore the session and send this file again. */
+        if (session_restart(c)) {
+            c->printok = 0;
+            c->errors++;
+            status = CL_BREAK;
+            goto done;
+        }
     }
-    if (res <= 0) {
+    if (res == 0) {
         c->printok = 0;
         c->errors++;
-        status = res ? CL_BREAK : CL_SUCCESS;
+        status = CL_SUCCESS;
         goto done;
     }
 
@@ -619,6 +756,7 @@ int parallel_client_scan(char *file, int scantype, int *infected, int *err, int 
     cdata.printok            = printinfected ^ 1;
     cdata.action_sources     = 0;
     cdata.max_action_sources = get_max_action_sources();
+    cdata.restarts           = 0;
     client_walk_policy_init(&cdata.walk_policy, file);
     data.data = &cdata;
 
@@ -628,13 +766,22 @@ int parallel_client_scan(char *file, int scantype, int *infected, int *err, int 
         *err += cdata.errors;
         *infected += cdata.infected;
         free_scanids(&cdata);
-        closesocket(cdata.sockd);
+        if (cdata.sockd >= 0)
+            closesocket(cdata.sockd);
         return 1;
     }
 
     sendln(cdata.sockd, zEND, sizeof(zEND));
-    while (cdata.ids && !dspresult(&cdata)) continue;
-    closesocket(cdata.sockd);
+    while (cdata.ids) {
+        if (dspresult(&cdata)) {
+            if (session_restart(&cdata))
+                break;
+            /* New session: terminate it too so remaining replies flush. */
+            sendln(cdata.sockd, zEND, sizeof(zEND));
+        }
+    }
+    if (cdata.sockd >= 0)
+        closesocket(cdata.sockd);
 
     *infected += cdata.infected;
     *err += cdata.errors;

@@ -381,6 +381,15 @@ if(ENABLE_APP)
         set_property(TEST clamd_valgrind PROPERTY ENVIRONMENT ${ENVIRONMENT} VALGRIND=${Valgrind_EXECUTABLE})
     endif()
 
+    add_test(NAME clamdscan COMMAND ${PythonTest_COMMAND};clamdscan
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+    set_property(TEST clamdscan PROPERTY ENVIRONMENT ${ENVIRONMENT})
+    if(Valgrind_FOUND)
+        add_test(NAME clamdscan_valgrind COMMAND ${PythonTest_COMMAND};clamdscan
+            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+        set_property(TEST clamdscan_valgrind PROPERTY ENVIRONMENT ${ENVIRONMENT} VALGRIND=${Valgrind_EXECUTABLE})
+    endif()
+
     add_test(NAME freshclam COMMAND ${PythonTest_COMMAND};freshclam_test.py
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
     set_property(TEST freshclam PROPERTY ENVIRONMENT ${ENVIRONMENT})
