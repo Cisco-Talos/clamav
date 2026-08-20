@@ -52,6 +52,7 @@ cl_error_t cli_scanapm(cli_ctx *ctx)
     cl_error_t status = CL_SUCCESS;
     struct apm_driver_desc_map ddm;
     struct apm_partition_info aptable, apentry;
+    char partition_name[sizeof(apentry.name) + 1];
     bool old_school = false;
     size_t sectorsize, maplen, partsize;
     size_t pos = 0, partoff = 0;
@@ -151,8 +152,8 @@ cl_error_t cli_scanapm(cli_ctx *ctx)
 
     /* print debugging info on partition tables */
     cli_dbgmsg("APM Partition Table:\n");
-    cli_dbgmsg("Name: %s\n", (char *)aptable.name);
-    cli_dbgmsg("Type: %s\n", (char *)aptable.type);
+    cli_dbgmsg("Name: %.*s\n", (int)sizeof(aptable.name), (char *)aptable.name);
+    cli_dbgmsg("Type: %.*s\n", (int)sizeof(aptable.type), (char *)aptable.type);
     cli_dbgmsg("Signature: %x\n", aptable.signature);
     cli_dbgmsg("Partition Count: %u\n", aptable.numPartitions);
     cli_dbgmsg("Blocks: [%u, +%u), ([%lu, +%lu))\n",
@@ -223,15 +224,18 @@ cl_error_t cli_scanapm(cli_ctx *ctx)
 
         /* print debugging info on partition */
         cli_dbgmsg("APM Partition Entry %u:\n", i);
-        cli_dbgmsg("Name: %s\n", (char *)apentry.name);
-        cli_dbgmsg("Type: %s\n", (char *)apentry.type);
+        cli_dbgmsg("Name: %.*s\n", (int)sizeof(apentry.name), (char *)apentry.name);
+        cli_dbgmsg("Type: %.*s\n", (int)sizeof(apentry.type), (char *)apentry.type);
         cli_dbgmsg("Signature: %x\n", apentry.signature);
         cli_dbgmsg("Partition Count: %u\n", apentry.numPartitions);
         cli_dbgmsg("Blocks: [%u, +%u), ([%zu, +%zu))\n",
                    apentry.pBlockStart, apentry.pBlockCount, partoff, partsize);
 
+        memcpy(partition_name, apentry.name, sizeof(apentry.name));
+        partition_name[sizeof(apentry.name)] = '\0';
+
         /* send the partition to cli_magic_scan_nested_fmap_type */
-        status = cli_magic_scan_nested_fmap_type(ctx->fmap, partoff, partsize, ctx, CL_TYPE_PART_ANY, (const char *)apentry.name, LAYER_ATTRIBUTES_NONE);
+        status = cli_magic_scan_nested_fmap_type(ctx->fmap, partoff, partsize, ctx, CL_TYPE_PART_ANY, partition_name, LAYER_ATTRIBUTES_NONE);
         if (status != CL_SUCCESS) {
             goto done;
         }
@@ -294,8 +298,8 @@ static cl_error_t apm_partition_intersection(cli_ctx *ctx, struct apm_partition_
         ret = partition_intersection_list_check(&prtncheck, &pitxn, apentry.pBlockStart, apentry.pBlockCount);
         if (ret != CL_CLEAN) {
             if (ret == CL_VIRUS) {
-                apm_parsemsg("Name: %s\n", (char *)aptable.name);
-                apm_parsemsg("Type: %s\n", (char *)aptable.type);
+                apm_parsemsg("Name: %.*s\n", (int)sizeof(aptable->name), (char *)aptable->name);
+                apm_parsemsg("Type: %.*s\n", (int)sizeof(aptable->type), (char *)aptable->type);
 
                 cli_dbgmsg("cli_scanapm: detected intersection with partitions "
                            "[%u, %u]\n",
