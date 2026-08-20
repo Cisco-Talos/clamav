@@ -50,7 +50,7 @@ class TC(testcase.TestCase):
         TC.clamd_socket =   'clamd-test.socket'             # <-- A relative path here and in check_clamd to avoid-
                                                             # test failures caused by (invalid) long socket filepaths.
                                                             # The max length for a socket file path is _really_ short.
-        TC.clamd_port_num = 3319                            # <-- This is hard-coded into the `check_clamd` program
+        TC.clamd_port_num = 3319                            # <-- This is hard-coded into the `check_clamd` program on Windows.
         TC.path_db = TC.path_tmp / 'database'
         TC.path_db.mkdir(parents=True)
         shutil.copy(
@@ -98,9 +98,7 @@ class TC(testcase.TestCase):
             # Use LocalSocket for Posix, because that's what check_clamd expects.
             config += '''
                 LocalSocket {localsocket}
-                TCPSocket {tcpsocket}
-                TCPAddr localhost
-                '''.format(localsocket=TC.clamd_socket, tcpsocket=TC.clamd_port_num)
+                '''.format(localsocket=TC.clamd_socket)
 
         TC.clamd_config = TC.path_tmp / 'clamd-test.conf'
         TC.clamd_config.write_text(config)
@@ -838,9 +836,7 @@ class TC(testcase.TestCase):
             # Use LocalSocket for Posix, because that's what check_clamd expects.
             config += '''
                 LocalSocket {localsocket}
-                TCPSocket {tcpsocket}
-                TCPAddr localhost
-                '''.format(localsocket=TC.clamd_socket, tcpsocket=TC.clamd_port_num)
+                '''.format(localsocket=TC.clamd_socket)
 
         clamd_config = TC.path_tmp / 'clamd-test.conf'
         clamd_config.write_text(config)
@@ -922,9 +918,7 @@ class TC(testcase.TestCase):
             # Use LocalSocket for Posix, because that's what check_clamd expects.
             config += '''
                 LocalSocket {localsocket}
-                TCPSocket {tcpsocket}
-                TCPAddr localhost
-                '''.format(localsocket=TC.clamd_socket, tcpsocket=TC.clamd_port_num)
+                '''.format(localsocket=TC.clamd_socket)
 
         clamd_config = TC.path_tmp / 'clamd-test.conf'
         clamd_config.write_text(config)
@@ -1006,9 +1000,7 @@ class TC(testcase.TestCase):
             # Use LocalSocket for Posix, because that's what check_clamd expects.
             config += '''
                 LocalSocket {localsocket}
-                TCPSocket {tcpsocket}
-                TCPAddr localhost
-                '''.format(localsocket=TC.clamd_socket, tcpsocket=TC.clamd_port_num)
+                '''.format(localsocket=TC.clamd_socket)
 
         clamd_config = TC.path_tmp / 'clamd-test.conf'
         clamd_config.write_text(config)

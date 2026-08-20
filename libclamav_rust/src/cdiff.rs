@@ -24,6 +24,7 @@ use std::{
     fs::{self, File, OpenOptions},
     io::{prelude::*, BufReader, BufWriter, Read, Seek, SeekFrom, Write},
     iter::*,
+    mem::ManuallyDrop,
     os::raw::c_char,
     path::{Path, PathBuf},
     str::{self, FromStr},
@@ -571,7 +572,10 @@ pub fn script2cdiff(script_file_name: &str, builder: &str, server: &str) -> Resu
     Ok(())
 }
 
-/// This function is only meant to be called from sigtool.c
+/// Apply a CDIFF from a descriptor borrowed from the C caller.
+///
+/// The caller retains ownership of the descriptor and closes it after this
+/// function returns.
 #[export_name = "cdiff_apply"]
 pub extern "C" fn _cdiff_apply(fd: i32, mode: u16) -> i32 {
     debug!(
@@ -585,9 +589,9 @@ pub extern "C" fn _cdiff_apply(fd: i32, mode: u16) -> i32 {
         ApplyMode::Script
     };
 
-    let mut file = util::file_from_fd_or_handle(fd);
+    let mut file = ManuallyDrop::new(util::file_from_fd_or_handle(fd));
 
-    if let Err(e) = cdiff_apply(&mut file, mode) {
+    if let Err(e) = cdiff_apply(&mut *file, mode) {
         error!("{}", e);
         -1
     } else {
