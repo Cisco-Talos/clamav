@@ -344,6 +344,7 @@ struct client_parallel_data {
     struct SCANID {
         unsigned int id;
         const char *file;
+        const char *scan_path; /* resolved path the request was sent for; NULL if it is `file` itself */
         action_source_t *action_source;
         struct SCANID *next;
     } *ids;
@@ -401,6 +402,7 @@ static int dspresult(struct client_parallel_data *c)
             }
         }
         free((void *)filename);
+        free((void *)(*id)->scan_path);
         if (NULL != action_source) {
             action_source_close(action_source);
             free(action_source);
@@ -434,6 +436,7 @@ static void free_scanids(struct client_parallel_data *c)
         c->ids = id->next;
 
         free((void *)id->file);
+        free((void *)id->scan_path);
         if (NULL != id->action_source) {
             action_source_close(id->action_source);
             free(id->action_source);
@@ -508,22 +511,47 @@ static int session_restart(struct client_parallel_data *c)
          outstanding ? outstanding->file : "(none)", n);
 
     while ((cur = outstanding)) {
-        int res     = 0;
-        outstanding = cur->next;
-        switch (c->scantype) {
+        const char *scan_path = cur->scan_path ? cur->scan_path : cur->file;
+        int res               = 0;
+
+        /* As in parallel_callback: consume the replies already available before
+         * sending, or clamd could sit blocked on a full reply pipe while we in
+         * turn sit blocked in send(). */
+        while (res == 0) {
+            fd_set rfds, wfds;
+            FD_ZERO(&rfds);
+            FD_SET(c->sockd, &rfds);
+            FD_ZERO(&wfds);
+            FD_SET(c->sockd, &wfds);
+            if (select(c->sockd + 1, &rfds, &wfds, NULL, NULL) < 0) {
+                if (errno == EINTR) continue;
+                logg(LOGG_ERROR, "select() failed while re-sending: %s\n", strerror(errno));
+                res = -1;
+            } else if (FD_ISSET(c->sockd, &rfds)) {
+                if (dspresult(c))
+                    res = -1;
+            } else if (FD_ISSET(c->sockd, &wfds)) {
+                break;
+            }
+        }
+
+        if (res == 0) {
+            outstanding = cur->next;
+            switch (c->scantype) {
 #ifdef HAVE_FD_PASSING
-            case FILDES:
-                res = (NULL != cur->action_source)
-                          ? send_fdpass_fd(c->sockd, cur->action_source->scan_fd)
-                          : send_fdpass(c->sockd, cur->file);
-                break;
+                case FILDES:
+                    res = (NULL != cur->action_source)
+                              ? send_fdpass_fd(c->sockd, cur->action_source->scan_fd)
+                              : send_fdpass(c->sockd, scan_path);
+                    break;
 #endif
-            case STREAM:
-                res = (NULL != cur->action_source)
-                          ? send_stream_fd_action(c->sockd, cur->action_source->scan_fd,
-                                                  cur->action_source->display_path, clamdopts)
-                          : send_stream(c->sockd, cur->file, clamdopts);
-                break;
+                case STREAM:
+                    res = (NULL != cur->action_source)
+                              ? send_stream_fd_action(c->sockd, cur->action_source->scan_fd,
+                                                      cur->action_source->display_path, clamdopts)
+                              : send_stream(c->sockd, scan_path, clamdopts);
+                    break;
+            }
         }
         if (res > 0) {
             cur->id   = ++c->lastid;
@@ -536,6 +564,7 @@ static int session_restart(struct client_parallel_data *c)
             logg(LOGG_ERROR, "Failed to re-send %s after reconnect\n", cur->file);
             c->errors++;
             free((void *)cur->file);
+            free((void *)cur->scan_path);
             if (NULL != cur->action_source) {
                 action_source_close(cur->action_source);
                 free(cur->action_source);
@@ -700,8 +729,11 @@ static cl_error_t parallel_callback(STATBUF *sb, char *filename, const char *pat
         goto done;
     }
 
-    cid->id            = ++c->lastid;
-    cid->file          = filename;
+    cid->id   = ++c->lastid;
+    cid->file = filename;
+    /* Keep the resolved path: a re-send must reopen what was first scanned,
+     * even if a symlink in the submitted path has been retargeted since. */
+    cid->scan_path     = real_filter_path;
     cid->action_source = action_source;
     cid->next          = c->ids;
     c->ids             = cid;
@@ -710,8 +742,9 @@ static cl_error_t parallel_callback(STATBUF *sb, char *filename, const char *pat
     }
 
     /* Give up ownership of the filename to the client parallel scan ID list */
-    filename      = NULL;
-    action_source = NULL;
+    filename         = NULL;
+    real_filter_path = NULL;
+    action_source    = NULL;
 
     status = CL_SUCCESS;
 

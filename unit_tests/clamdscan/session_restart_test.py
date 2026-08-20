@@ -152,10 +152,17 @@ class FakeClamd(threading.Thread):
     SERVE_NORMALLY, or a (requests, replies) pair meaning "answer the first this
     many requests, then stop answering, and close the connection once this many
     requests have arrived".  Whatever went unanswered is exactly what clamdscan
-    has to re-send.  Connections past the end of `behaviors` are served normally.
+    has to re-send.  A pair may carry a third element, a callable run just
+    before that hangup.  Connections past the end of `behaviors` are served
+    normally.
+
+    `reply_buffer` shrinks the send buffer of every accepted connection, so
+    that replying blocks until clamdscan reads: the back-pressure of a clamd
+    whose threads are all stuck in send().
     """
 
-    def __init__(self, socket_path, behaviors=(), accept_limit=None):
+    def __init__(self, socket_path, behaviors=(), accept_limit=None,
+                 reply_buffer=None):
         threading.Thread.__init__(self)
         self.daemon = True
 
@@ -164,6 +171,7 @@ class FakeClamd(threading.Thread):
         # Stop listening after this many connections, so that clamdscan's next
         # reconnect is refused outright rather than the session merely dying.
         self.accept_limit = accept_limit
+        self.reply_buffer = reply_buffer
 
         self.connections = 0    # how many times clamdscan (re)connected
         self.scanned = []       # digest of every file received, in order
@@ -203,6 +211,9 @@ class FakeClamd(threading.Thread):
 
             try:
                 conn.settimeout(None)
+                if self.reply_buffer is not None:
+                    conn.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF,
+                                    self.reply_buffer)
                 self._serve(conn, behavior)
             except Exception as exc:  # noqa: BLE001 - reported back to the test
                 if self.error is None:
@@ -259,6 +270,8 @@ class FakeClamd(threading.Thread):
             if behavior is not SERVE_NORMALLY and received >= behavior[0]:
                 # Hang up, leaving whatever went unanswered outstanding for
                 # clamdscan to re-send on a new session.
+                if len(behavior) > 2:
+                    behavior[2]()
                 conn.close()
                 return
 
@@ -320,13 +333,14 @@ class TC(testcase.TestCase):
 
         return digests
 
-    def start_fake_clamd(self, behaviors=(), accept_limit=None):
+    def start_fake_clamd(self, behaviors=(), accept_limit=None, reply_buffer=None):
         self.server = FakeClamd(self.socket_path, behaviors=behaviors,
-                                accept_limit=accept_limit)
+                                accept_limit=accept_limit,
+                                reply_buffer=reply_buffer)
         self.server.start()
         return self.server
 
-    def run_clamdscan(self, mode):
+    def run_clamdscan(self, mode, target=None):
         config = self.path_tmp / '{}-clamd.conf'.format(self._testMethodName)
         config.write_text('LocalSocket {}\n'.format(self.socket_path))
 
@@ -337,7 +351,7 @@ class TC(testcase.TestCase):
                 clamdscan=TC.clamdscan,
                 mode=mode,
                 config=config,
-                target=self.scan_dir))
+                target=target if target is not None else self.scan_dir))
 
     def assert_server_healthy(self):
         if self.server.error is not None:
@@ -491,6 +505,71 @@ class TC(testcase.TestCase):
         self.verify_output(output.err, expected=['Could not connect to clamd'])
         # Reconnecting is not retried, so the restart budget is untouched.
         self.verify_output(output.err, unexpected=['giving up'])
+
+    def test_session_restart_07_resends_the_resolved_path(self):
+        """A re-send reopens the file the verdict will be reported for, even if
+        a symlink in the submitted path has been retargeted since."""
+        self.step_name('Testing that a re-send uses the resolved scan path')
+
+        submitted = b'the file that was submitted\n'
+
+        original = self.scan_dir / 'original'
+        original.mkdir()
+        (original / 'file.dat').write_bytes(submitted)
+        replacement = self.scan_dir / 'replacement'
+        replacement.mkdir()
+        (replacement / 'file.dat').write_bytes(b'the file swapped in afterwards\n')
+
+        link = self.scan_dir / 'link'
+        link.symlink_to(original, target_is_directory=True)
+
+        def retarget_link():
+            staged = self.scan_dir / 'staged-link'
+            staged.symlink_to(replacement, target_is_directory=True)
+            os.replace(staged, link)
+
+        # The session dies right after the request arrives, and the symlink is
+        # retargeted before clamdscan gets to re-send.
+        self.start_fake_clamd(behaviors=[(1, 0, retarget_link)])
+
+        output = self.run_clamdscan('--stream', target=link / 'file.dat')
+        self.assert_server_healthy()
+
+        assert output.ec == 1
+
+        self.verify_output(output.out, expected=['Infected files: 1'])
+
+        # Both sessions must have received the originally scanned file, not
+        # whatever the link points at by re-send time.
+        digest = hashlib.sha256(submitted).hexdigest()
+        assert self.server.scanned == [digest, digest]
+
+    def test_session_restart_08_drains_replies_while_resending(self):
+        """Replies arriving during a re-send are consumed, so a clamd that
+        cannot take more requests until they are does not deadlock the scan."""
+        self.step_name('Testing that a re-send does not deadlock on unread replies')
+
+        file_count = 200
+
+        # Far more data than fits in the socket buffers, so an unread backlog
+        # is guaranteed to stall the re-send.
+        expected = self.create_scan_files(file_count, size=64 * 1024)
+
+        # The first session takes everything and answers nothing, leaving the
+        # whole scan to be re-sent.  The second answers every request, but its
+        # shrunken send buffer only lets it keep reading if clamdscan consumes
+        # the replies while still re-sending.
+        self.start_fake_clamd(behaviors=[(file_count, 0)], reply_buffer=4096)
+
+        output = self.run_clamdscan('--stream')
+        self.assert_server_healthy()
+
+        assert output.ec == 1
+
+        self.verify_output(output.out, expected=['Infected files: {}'.format(file_count)])
+
+        assert self.server.connections == 2
+        assert set(self.server.scanned) == set(expected)
 
 
 if __name__ == '__main__':
