@@ -460,7 +460,7 @@ int filter_add_acpatt(struct filter *m, const struct cli_ac_patt *pat)
     if (!prefix_len) {
         while ((pat->pattern[i] & CLI_MATCH_METADATA) == CLI_MATCH_SPECIAL) {
             /* we support only ALT_CHAR, skip the rest */
-            if (pat->special_table[altcnt]->type == 1)
+            if (AC_EXT_SPECIAL_TABLE(pat)[altcnt]->type == 1)
                 break;
             altcnt++;
             i++;
@@ -497,16 +497,16 @@ int filter_add_acpatt(struct filter *m, const struct cli_ac_patt *pat)
                 spec->step  = 1;
                 break;
             case CLI_MATCH_SPECIAL:
-                assert(pat->special_table);
+                assert(AC_EXT_SPECIAL_TABLE(pat));
                 /* assert(altcnt < pat->alt); */
-                assert(pat->special_table[altcnt]);
-                spec->negative = pat->special_table[altcnt]->negative;
-                switch (pat->special_table[altcnt++]->type) {
+                assert(AC_EXT_SPECIAL_TABLE(pat)[altcnt]);
+                spec->negative = AC_EXT_SPECIAL_TABLE(pat)[altcnt]->negative;
+                switch (AC_EXT_SPECIAL_TABLE(pat)[altcnt++]->type) {
                     case 1: /* ALT_CHAR */
                         spec->start = 0;
-                        spec->end   = pat->special_table[altcnt - 1]->num - 1;
+                        spec->end   = AC_EXT_SPECIAL_TABLE(pat)[altcnt - 1]->num - 1;
                         spec->step  = 1;
-                        spec->alt   = pat->special_table[altcnt - 1];
+                        spec->alt   = AC_EXT_SPECIAL_TABLE(pat)[altcnt - 1];
                         break;
                     default:
                         stop = 1;

@@ -480,10 +480,18 @@ cl_error_t readdb_parse_ldb_subsignature(struct cli_matcher *root, const char *v
 
         /* this is not a pattern that will be matched by AC itself, rather it is a
          * pattern checked by the lsig code */
-        patt->ch_mindist[0] = smin;
-        patt->ch_maxdist[0] = smax;
-        patt->sigid         = tid;
-        patt->length[0]     = root->ac_mindepth;
+        /* Needs an extension: the distances are read back through
+         * macropt->ch_mindist in cli_ac_chkmacro(). */
+        if (NULL == cli_ac_patt_ext_new(root, patt)) {
+            cli_errmsg("Failed to allocate memory for macro AC pattern extension\n");
+            MPOOL_FREE(root->mempool, patt);
+            status = CL_EMEM;
+            goto done;
+        }
+        patt->ext->ch_mindist[0] = smin;
+        patt->ext->ch_maxdist[0] = smax;
+        patt->sigid              = tid;
+        patt->length[0]          = root->ac_mindepth;
 
         /* dummy */
         patt->pattern = MPOOL_CALLOC(root->mempool, patt->length[0], sizeof(*patt->pattern));

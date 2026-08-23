@@ -172,8 +172,12 @@ struct cli_matcher {
     /* Bytecode Tracker */
     uint32_t linked_bcs;
 
+    /* Transition index -> node, for the scan path. Built by
+     * ac_build_nodeidx(). */
+    struct cli_ac_node **ac_nodeidx;
+
     /*Store pointers to malloced trans values so that they can be more easily freed*/
-    struct cli_ac_node ***trans_array;
+    uint32_t **trans_array;
     size_t trans_cnt;
     size_t trans_capacity;
 
