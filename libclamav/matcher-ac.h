@@ -87,24 +87,53 @@ struct cli_ac_special {
     uint16_t type, negative;
 };
 
-struct cli_ac_patt {
-    uint16_t *pattern, *prefix, length[3], prefix_length[3];
-    uint32_t mindist, maxdist;
-    uint32_t sigid;
-    uint32_t lsigid[3];
-    uint16_t ch[2];
-    char *virname;
+/* Rarely-used tail of struct cli_ac_patt. Read it through the AC_EXT_*
+ * accessors, never directly: they return what the inline field held when
+ * the feature was unused, which keeps patt_cmp_fn() equivalent. */
+struct cli_ac_patt_ext {
     void *customdata;
+    struct cli_ac_special **special_table;
+    uint32_t mindist, maxdist;
+    uint32_t boundary;
+    uint16_t special, special_pattern;
+    uint16_t ch[2];
     uint16_t ch_mindist[2];
     uint16_t ch_maxdist[2];
-    uint16_t parts, partno, special, special_pattern;
-    struct cli_ac_special **special_table;
-    uint16_t rtype, type;
+};
+
+/* Field order avoids interior padding, per 9381324ad (bb#748):
+ * pointers, then 4-byte, then 2-byte, then 1-byte members. */
+struct cli_ac_patt {
+    uint16_t *pattern, *prefix;
+    struct cli_ac_patt_ext *ext;
+    char *virname;
+    uint32_t sigid;
+    uint32_t lsigid[3];
     uint32_t offdata[4], offset_min, offset_max;
-    uint32_t boundary;
+    uint16_t length[3], prefix_length[3];
+    uint16_t parts, partno;
+    uint16_t rtype, type;
     uint8_t depth;
     uint8_t sigopts;
 };
+
+/* Each accessor returns what the inline field held when the feature was
+ * unused. AC_EXT_CH is in matcher-ac.c: it needs CLI_MATCH_IGNORE, which
+ * matcher.h defines after including this header. */
+#define AC_EXT_CUSTOMDATA(p) ((p)->ext ? (p)->ext->customdata : NULL)
+#define AC_EXT_SPECIAL_TABLE(p) ((p)->ext ? (p)->ext->special_table : NULL)
+#define AC_EXT_MINDIST(p) ((p)->ext ? (p)->ext->mindist : 0U)
+#define AC_EXT_MAXDIST(p) ((p)->ext ? (p)->ext->maxdist : 0U)
+#define AC_EXT_BOUNDARY(p) ((p)->ext ? (p)->ext->boundary : 0U)
+#define AC_EXT_SPECIAL(p) ((p)->ext ? (p)->ext->special : (uint16_t)0)
+#define AC_EXT_SPECIAL_PATTERN(p) ((p)->ext ? (p)->ext->special_pattern : (uint16_t)0)
+#define AC_EXT_CH_MINDIST(p, i) ((p)->ext ? (p)->ext->ch_mindist[i] : (uint16_t)0)
+#define AC_EXT_CH_MAXDIST(p, i) ((p)->ext ? (p)->ext->ch_maxdist[i] : (uint16_t)0)
+
+struct cli_matcher;
+/* Attach an extension to a pattern, for the few call sites outside
+ * cli_ac_addsig that set a cold field. Returns NULL only on OOM. */
+struct cli_ac_patt_ext *cli_ac_patt_ext_new(struct cli_matcher *root, struct cli_ac_patt *p);
 
 struct cli_ac_list {
     struct cli_ac_patt *me;

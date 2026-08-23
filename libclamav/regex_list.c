@@ -710,12 +710,11 @@ static cl_error_t add_newsuffix(struct regex_matcher *matcher, struct regex_list
     new->sigid      = 0;
     new->parts      = 0;
     new->partno     = 0;
-    new->mindist    = 0;
-    new->maxdist    = 0;
     new->offset_min = CLI_OFF_ANY;
     new->length[0]  = (uint16_t)len;
 
-    new->ch[0] = new->ch[1] |= CLI_MATCH_IGNORE;
+    /* mindist/maxdist 0 and ch[] CLI_MATCH_IGNORE are what the accessors
+     * report without an extension, so those assignments are dropped. */
     if (new->length[0] > root->maxpatlen)
         root->maxpatlen = new->length[0];
 
@@ -729,8 +728,14 @@ static cl_error_t add_newsuffix(struct regex_matcher *matcher, struct regex_list
         new->pattern[i] = suffix[i]; /*new->pattern is short int* */
     }
 
-    new->customdata = info;
-    new->virname    = NULL;
+    /* customdata is the one cold field this pattern needs. */
+    if (NULL == cli_ac_patt_ext_new(root, new)) {
+        cli_errmsg("add_newsuffix: Unable to allocate pattern extension\n");
+        ret = CL_EMEM;
+        goto done;
+    }
+    new->ext->customdata = info;
+    new->virname         = NULL;
     if ((ret = cli_ac_addpatt(root, new))) {
         goto done;
     }
