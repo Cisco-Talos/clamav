@@ -314,13 +314,13 @@ static void link_lists(struct cli_matcher *root)
  * @param trans     The trans node to be tracked.
  * @return bool
  */
-static bool store_trans_node(struct cli_matcher *root, struct cli_ac_node **trans)
+static bool store_trans_node(struct cli_matcher *root, uint32_t *trans)
 {
     bool bRet = false;
 
     if (root->trans_cnt + 1 > root->trans_capacity) {
-        size_t newCapacity        = root->trans_capacity + 1024;
-        struct cli_ac_node ***ret = MPOOL_REALLOC(root->mempool, root->trans_array, newCapacity * sizeof(struct cli_ac_node **));
+        size_t newCapacity = root->trans_capacity + 1024;
+        uint32_t **ret     = MPOOL_REALLOC(root->mempool, root->trans_array, newCapacity * sizeof(uint32_t *));
         if (NULL == ret) {
             cli_errmsg("cli_ac_addpatt: Can't allocate memory for cleanup storage of trans\n");
             goto done;
@@ -342,6 +342,55 @@ done:
  *
  * @param root      The matcher root.
  */
+
+/**
+ * @brief Resolve a transition index to a node while the trie is built.
+ *
+ * @param root  The matcher root.
+ * @param idx   0 = unset, 1 = ac_root, i + 2 = ac_nodetable[i].
+ * @return struct cli_ac_node*  The node, or NULL when idx is 0.
+ */
+static inline struct cli_ac_node *ac_node(const struct cli_matcher *root, uint32_t idx)
+{
+    if (!idx)
+        return NULL;
+    if (1 == idx)
+        return root->ac_root;
+    return root->ac_nodetable[idx - 2];
+}
+
+/**
+ * @brief Build the index -> node table that the scan loop indexes.
+ *
+ * Entry 0 is NULL and is never taken: after ac_maketrans() the DFA is
+ * complete and every row entry names a real target.
+ *
+ * @param root  The matcher root.
+ * @return cl_error_t  CL_SUCCESS, or CL_EMEM on allocation failure.
+ */
+static cl_error_t ac_build_nodeidx(struct cli_matcher *root)
+{
+    size_t total;
+    uint32_t n;
+
+    if (!root || !root->ac_root)
+        return CL_SUCCESS;
+
+    total            = (size_t)root->ac_nodes + 2;
+    root->ac_nodeidx = MPOOL_CALLOC(root->mempool, total, sizeof(struct cli_ac_node *));
+    if (!root->ac_nodeidx) {
+        cli_errmsg("ac_build_nodeidx: Can't allocate index table\n");
+        return CL_EMEM;
+    }
+
+    root->ac_nodeidx[0] = NULL;
+    root->ac_nodeidx[1] = root->ac_root;
+    for (n = 0; n < root->ac_nodes; n++)
+        root->ac_nodeidx[n + 2] = root->ac_nodetable[n];
+
+    return CL_SUCCESS;
+}
+
 static void free_trans_nodes(struct cli_matcher *root)
 {
     uint32_t i = 0;
@@ -356,7 +405,7 @@ static void free_trans_nodes(struct cli_matcher *root)
     root->trans_capacity = 0;
 }
 
-static inline struct cli_ac_node *add_new_node(struct cli_matcher *root, uint16_t i, uint16_t len)
+static inline struct cli_ac_node *add_new_node(struct cli_matcher *root, uint16_t i, uint16_t len, uint32_t *out_idx)
 {
     struct cli_ac_node *new;
     struct cli_ac_node **newtable;
@@ -368,7 +417,7 @@ static inline struct cli_ac_node *add_new_node(struct cli_matcher *root, uint16_
     }
 
     if (i != len - 1) {
-        new->trans = (struct cli_ac_node **)MPOOL_CALLOC(root->mempool, 256, sizeof(struct cli_ac_node *));
+        new->trans = (uint32_t *)MPOOL_CALLOC(root->mempool, 256, sizeof(uint32_t));
         if (!new->trans) {
             cli_errmsg("cli_ac_addpatt: Can't allocate memory for new->trans\n");
             MPOOL_FREE(root->mempool, new);
@@ -396,6 +445,10 @@ static inline struct cli_ac_node *add_new_node(struct cli_matcher *root, uint16_
     root->ac_nodetable                     = newtable;
     root->ac_nodetable[root->ac_nodes - 1] = new;
 
+    /* ac_nodetable[ac_nodes - 1] is transition index ac_nodes + 1. */
+    if (out_idx)
+        *out_idx = root->ac_nodes + 1;
+
     return new;
 }
 
@@ -411,7 +464,7 @@ static int cli_ac_addpatt_recursive(struct cli_matcher *root, struct cli_ac_patt
 
     /* if current node has no trans table, generate one */
     if (!pt->trans) {
-        pt->trans = (struct cli_ac_node **)MPOOL_CALLOC(root->mempool, 256, sizeof(struct cli_ac_node *));
+        pt->trans = (uint32_t *)MPOOL_CALLOC(root->mempool, 256, sizeof(uint32_t));
         if (!pt->trans) {
             cli_errmsg("cli_ac_addpatt: Can't allocate memory for pt->trans\n");
             return CL_EMEM;
@@ -426,26 +479,34 @@ static int cli_ac_addpatt_recursive(struct cli_matcher *root, struct cli_ac_patt
      * it's why this function was re-written to be recursive
      */
     if ((pattern->sigopts & ACPATT_OPTION_NOCASE) && (pattern->pattern[i] & 0xff) < 0x80 && isalpha((unsigned char)(pattern->pattern[i] & 0xff))) {
-        next = pt->trans[CLI_NOCASEI((unsigned char)(pattern->pattern[i] & 0xff))];
+        unsigned char nc = CLI_NOCASEI((unsigned char)(pattern->pattern[i] & 0xff));
+        uint32_t nidx    = pt->trans[nc];
+
+        next = ac_node(root, nidx);
         if (!next)
-            next = add_new_node(root, i, len);
+            next = add_new_node(root, i, len, &nidx);
         if (!next)
             return CL_EMEM;
         else
-            pt->trans[CLI_NOCASEI((unsigned char)(pattern->pattern[i] & 0xff))] = next;
+            pt->trans[nc] = nidx;
 
         if ((ret = cli_ac_addpatt_recursive(root, pattern, next, i + 1, len)) != CL_SUCCESS)
             return ret;
     }
 
     /* normal transition, also enumerates the 'normal' nocase */
-    next = pt->trans[(unsigned char)(pattern->pattern[i] & 0xff)];
-    if (!next)
-        next = add_new_node(root, i, len);
-    if (!next)
-        return CL_EMEM;
-    else
-        pt->trans[(unsigned char)(pattern->pattern[i] & 0xff)] = next;
+    {
+        unsigned char c = (unsigned char)(pattern->pattern[i] & 0xff);
+        uint32_t cidx   = pt->trans[c];
+
+        next = ac_node(root, cidx);
+        if (!next)
+            next = add_new_node(root, i, len, &cidx);
+        if (!next)
+            return CL_EMEM;
+        else
+            pt->trans[c] = cidx;
+    }
 
     return cli_ac_addpatt_recursive(root, pattern, next, i + 1, len);
 }
@@ -539,9 +600,9 @@ static int ac_maketrans(struct cli_matcher *root)
     int i, ret;
 
     for (i = 0; i < 256; i++) {
-        node = ac_root->trans[i];
+        node = ac_node(root, ac_root->trans[i]);
         if (!node) {
-            ac_root->trans[i] = ac_root;
+            ac_root->trans[i] = 1; /* index 1 == ac_root */
         } else {
             node->fail = ac_root;
             if ((ret = bfs_enqueue(&bfs, &bfs_last, node)))
@@ -563,14 +624,14 @@ static int ac_maketrans(struct cli_matcher *root)
         }
 
         for (i = 0; i < 256; i++) {
-            child = node->trans[i];
+            child = ac_node(root, node->trans[i]);
             if (child) {
                 fail = node->fail;
 
                 while (IS_LEAF(fail) || !fail->trans[i])
                     fail = fail->fail;
 
-                child->fail = fail->trans[i];
+                child->fail = ac_node(root, fail->trans[i]);
 
                 if ((ret = bfs_enqueue(&bfs, &bfs_last, child)) != 0)
                     return ret;
@@ -580,7 +641,7 @@ static int ac_maketrans(struct cli_matcher *root)
 
     bfs = bfs_last = NULL;
     for (i = 0; i < 256; i++) {
-        node = ac_root->trans[i];
+        node = ac_node(root, ac_root->trans[i]);
         if (node != ac_root) {
             if ((ret = bfs_enqueue(&bfs, &bfs_last, node)))
                 return ret;
@@ -591,15 +652,14 @@ static int ac_maketrans(struct cli_matcher *root)
         if (IS_LEAF(node))
             continue;
         for (i = 0; i < 256; i++) {
-            child = node->trans[i];
+            child = ac_node(root, node->trans[i]);
             if (!child || (!IS_FINAL(child) && IS_LEAF(child))) {
                 struct cli_ac_node *failtarget = node->fail;
 
                 while (IS_LEAF(failtarget) || !failtarget->trans[i])
                     failtarget = failtarget->fail;
 
-                failtarget     = failtarget->trans[i];
-                node->trans[i] = failtarget;
+                node->trans[i] = failtarget->trans[i];
             } else if (IS_FINAL(child) && IS_LEAF(child)) {
                 struct cli_ac_list *list;
 
@@ -639,7 +699,12 @@ cl_error_t cli_ac_buildtrie(struct cli_matcher *root)
 
     link_lists(root);
 
-    return ac_maketrans(root);
+    {
+        cl_error_t ac_ret = ac_maketrans(root);
+        if (CL_SUCCESS == ac_ret)
+            ac_ret = ac_build_nodeidx(root);
+        return ac_ret;
+    }
 }
 
 cl_error_t cli_ac_init(struct cli_matcher *root, uint8_t mindepth, uint8_t maxdepth, uint8_t dconf_prefiltering)
@@ -654,7 +719,7 @@ cl_error_t cli_ac_init(struct cli_matcher *root, uint8_t mindepth, uint8_t maxde
         return CL_EMEM;
     }
 
-    root->ac_root->trans = (struct cli_ac_node **)MPOOL_CALLOC(root->mempool, 256, sizeof(struct cli_ac_node *));
+    root->ac_root->trans = (uint32_t *)MPOOL_CALLOC(root->mempool, 256, sizeof(uint32_t));
     if (!root->ac_root->trans) {
         cli_errmsg("cli_ac_init: Can't allocate memory for ac_root->trans\n");
         MPOOL_FREE(root->mempool, root->ac_root);
@@ -762,6 +827,11 @@ void cli_ac_free(struct cli_matcher *root)
     if (root->ac_root) {
         MPOOL_FREE(root->mempool, root->ac_root->trans);
         MPOOL_FREE(root->mempool, root->ac_root);
+    }
+
+    if (root->ac_nodeidx) {
+        MPOOL_FREE(root->mempool, root->ac_nodeidx);
+        root->ac_nodeidx = NULL;
     }
 
     if (root->filter) {
@@ -1853,7 +1923,7 @@ cl_error_t cli_ac_scanbuff(
     current = root->ac_root;
 
     for (i = 0; i < length; i++) {
-        current = current->trans[buffer[i]];
+        current = root->ac_nodeidx[current->trans[buffer[i]]];
 
         if (UNLIKELY(IS_FINAL(current))) {
             struct cli_ac_list *faillist = current->fail->list;

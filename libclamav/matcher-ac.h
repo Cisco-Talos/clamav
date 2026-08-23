@@ -117,7 +117,10 @@ struct cli_ac_list {
 
 struct cli_ac_node {
     struct cli_ac_list *list;
-    struct cli_ac_node **trans, *fail;
+    /* 256 transition indices: 0 = unset, 1 = ac_root, i + 2 =
+     * ac_nodetable[i]. Resolve with ac_node(), or root->ac_nodeidx[]. */
+    uint32_t *trans;
+    struct cli_ac_node *fail;
 };
 
 #define IS_LEAF(node) (!node->trans)
