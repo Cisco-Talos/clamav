@@ -2352,21 +2352,30 @@ fn macho_target_sections(file: &macho::MachoFile) -> Option<Vec<CliExeSection>> 
         .iter()
         .map(|section| {
             let alignment = macho_section_alignment(section.align)?;
-            let size = section.size;
-            let aligned_size = if alignment == 0 {
-                size
+            let virtual_size = u32::try_from(section.size).ok()?;
+            let raw_size = if section.zero_fill {
+                0
             } else {
-                size.checked_add((alignment - (size % alignment)) % alignment)?
+                let aligned_size = section
+                    .size
+                    .checked_add((alignment - (section.size % alignment)) % alignment)?;
+                u32::try_from(aligned_size).ok()?
             };
             Some(CliExeSection {
-                rva: u32::try_from(section.address).ok()?,
-                vsz: u32::try_from(section.size).ok()?,
+                rva: macho_legacy_rva(section.address),
+                vsz: virtual_size,
                 raw: section.offset,
-                rsz: u32::try_from(aligned_size).ok()?,
+                rsz: raw_size,
                 ..CliExeSection::default()
             })
         })
         .collect()
+}
+
+/// Preserve the low-32-bit Mach-O address representation historically stored
+/// in `struct cli_exe_section` by the legacy C parser.
+fn macho_legacy_rva(address: u64) -> u32 {
+    u32::try_from(address & u64::from(u32::MAX)).expect("masked Mach-O address fits in u32")
 }
 
 fn macho_section_alignment(align_exponent: u32) -> Option<u64> {
@@ -2379,6 +2388,9 @@ fn macho_section_alignment(align_exponent: u32) -> Option<u64> {
 fn macho_entry_file_offset(file: &macho::MachoFile) -> Option<u32> {
     let entrypoint = file.entrypoint?;
     for section in &file.sections {
+        if section.zero_fill {
+            continue;
+        }
         let end = section.address.checked_add(section.size)?;
         if section.address <= entrypoint && entrypoint < end {
             let relative = entrypoint.checked_sub(section.address)?;
@@ -2466,4 +2478,79 @@ unsafe fn scan_generated_bytes(ctx: *mut cli_ctx, bytes: &[u8], name: Option<&st
 
 fn cstring_or_null(name: Option<&str>) -> Option<CString> {
     name.and_then(|name| CString::new(name).ok())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn macho_section(
+        address: u64,
+        size: u64,
+        offset: u32,
+        align: u32,
+        zero_fill: bool,
+    ) -> macho::MachoSection {
+        macho::MachoSection {
+            address,
+            size,
+            offset,
+            align,
+            zero_fill,
+            ..macho::MachoSection::default()
+        }
+    }
+
+    #[test]
+    fn macho_target_sections_preserve_legacy_rva_and_zero_fill_semantics() {
+        let file = macho::MachoFile {
+            sections: vec![
+                macho_section(0x1_0000_0700, 0x21, 0x200, 4, false),
+                macho_section(0x1_0000_1000, 0x200, u32::MAX, 31, true),
+            ],
+            ..macho::MachoFile::default()
+        };
+
+        let sections = macho_target_sections(&file).expect("valid Mach-O target sections");
+        assert_eq!(sections.len(), 2);
+        assert_eq!(sections[0].rva, 0x700);
+        assert_eq!(sections[0].vsz, 0x21);
+        assert_eq!(sections[0].raw, 0x200);
+        assert_eq!(sections[0].rsz, 0x30);
+        assert_eq!(sections[1].rva, 0x1000);
+        assert_eq!(sections[1].vsz, 0x200);
+        assert_eq!(sections[1].rsz, 0);
+    }
+
+    #[test]
+    fn macho_target_sections_reject_unrepresentable_sizes_and_alignment() {
+        let oversized_zero_fill = macho::MachoFile {
+            sections: vec![macho_section(
+                0x1_0000_1000,
+                u64::from(u32::MAX) + 1,
+                0,
+                4,
+                true,
+            )],
+            ..macho::MachoFile::default()
+        };
+        assert!(macho_target_sections(&oversized_zero_fill).is_none());
+
+        let invalid_alignment = macho::MachoFile {
+            sections: vec![macho_section(0x1000, 0x20, 0, 32, true)],
+            ..macho::MachoFile::default()
+        };
+        assert!(macho_target_sections(&invalid_alignment).is_none());
+    }
+
+    #[test]
+    fn macho_entry_file_offset_ignores_zero_fill_sections() {
+        let file = macho::MachoFile {
+            entrypoint: Some(0x1_0000_1010),
+            sections: vec![macho_section(0x1_0000_1000, 0x100, 0x200, 4, true)],
+            ..macho::MachoFile::default()
+        };
+
+        assert_eq!(macho_entry_file_offset(&file), None);
+    }
 }

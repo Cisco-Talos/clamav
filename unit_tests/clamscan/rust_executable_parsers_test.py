@@ -56,18 +56,41 @@ def minimal_elf64_with_ep_marker():
 
 def minimal_macho64_with_ep_marker():
     marker = b'CLAMMACHO'
-    entry_file_offset = 0x38
+    image_base = 0x1_0000_0000
+    entry_file_offset = 0x200
     data = bytearray(entry_file_offset + len(marker))
     data[0:4] = bytes.fromhex('cffaedfe')  # MH_CIGAM_64; little-endian fields follow.
     data[4:8] = (0x0100_0007).to_bytes(4, 'little')  # CPU_TYPE_X86_64
     data[8:12] = (3).to_bytes(4, 'little')
     data[12:16] = (2).to_bytes(4, 'little')  # MH_EXECUTE
-    data[16:20] = (1).to_bytes(4, 'little')
-    data[20:24] = (24).to_bytes(4, 'little')
+    data[16:20] = (2).to_bytes(4, 'little')
+    data[20:24] = (176).to_bytes(4, 'little')
     data[24:28] = (0).to_bytes(4, 'little')
     data[28:32] = (0).to_bytes(4, 'little')
 
     command_offset = 32
+    data[command_offset:command_offset + 4] = (0x19).to_bytes(4, 'little')  # LC_SEGMENT_64
+    data[command_offset + 4:command_offset + 8] = (152).to_bytes(4, 'little')
+    data[command_offset + 8:command_offset + 14] = b'__TEXT'
+    data[command_offset + 24:command_offset + 32] = image_base.to_bytes(8, 'little')
+    data[command_offset + 32:command_offset + 40] = (0x1000).to_bytes(8, 'little')
+    data[command_offset + 40:command_offset + 48] = (0).to_bytes(8, 'little')
+    data[command_offset + 48:command_offset + 56] = len(data).to_bytes(8, 'little')
+    data[command_offset + 56:command_offset + 60] = (7).to_bytes(4, 'little')
+    data[command_offset + 60:command_offset + 64] = (5).to_bytes(4, 'little')
+    data[command_offset + 64:command_offset + 68] = (1).to_bytes(4, 'little')
+
+    section_offset = command_offset + 72
+    data[section_offset:section_offset + 6] = b'__text'
+    data[section_offset + 16:section_offset + 22] = b'__TEXT'
+    data[section_offset + 32:section_offset + 40] = (
+        image_base + entry_file_offset
+    ).to_bytes(8, 'little')
+    data[section_offset + 40:section_offset + 48] = len(marker).to_bytes(8, 'little')
+    data[section_offset + 48:section_offset + 52] = entry_file_offset.to_bytes(4, 'little')
+    data[section_offset + 52:section_offset + 56] = (0).to_bytes(4, 'little')
+
+    command_offset += 152
     data[command_offset:command_offset + 4] = (0x8000_0028).to_bytes(4, 'little')  # LC_MAIN
     data[command_offset + 4:command_offset + 8] = (24).to_bytes(4, 'little')
     data[command_offset + 8:command_offset + 16] = entry_file_offset.to_bytes(8, 'little')
@@ -395,7 +418,8 @@ class TC(testcase.TestCase):
         testfile.write_bytes(minimal_macho64_with_ep_marker())
         sigfile = self.path_tmp / 'rust-macho-ep.ldb'
         sigfile.write_text(
-            'Rust.MachO.EP;Engine:52-255,Target:9;0;EP+0:434c414d4d4143484f\n'
+            'Rust.MachO.EP;Engine:52-255,Target:9;0&1;'
+            'EP+0:434c414d4d4143484f;S0+0:434c414d4d4143484f\n'
         )
         command = (
             '{valgrind} {valgrind_args} {clamscan} '
@@ -441,7 +465,7 @@ class TC(testcase.TestCase):
                 '"Endian":"little"',
                 '"CpuType":"x86_64"',
                 '"FileType":"Executable"',
-                '"EntryPoint":"0x38"',
+                '"EntryPoint":"0x200"',
             ],
         )
 
@@ -502,6 +526,6 @@ class TC(testcase.TestCase):
                 '"Universal":true',
                 '"FileCount":1',
                 '"SliceCount":1',
-                '"EntryPoint":"0x38"',
+                '"EntryPoint":"0x200"',
             ],
         )

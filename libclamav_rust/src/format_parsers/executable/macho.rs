@@ -118,6 +118,11 @@ const LC_BUILD_VERSION: u32 = 0x32;
 const LC_DYLD_EXPORTS_TRIE: u32 = 0x8000_0033;
 const LC_DYLD_CHAINED_FIXUPS: u32 = 0x8000_0034;
 
+const SECTION_TYPE_MASK: u32 = 0x0000_00ff;
+const S_ZEROFILL: u32 = 0x01;
+const S_GB_ZEROFILL: u32 = 0x0c;
+const S_THREAD_LOCAL_ZEROFILL: u32 = 0x12;
+
 const BIND_OPCODE_MASK: u8 = 0xf0;
 #[cfg(test)]
 const BIND_OPCODE_DONE: u8 = 0x00;
@@ -263,6 +268,7 @@ pub(crate) struct MachoSection {
     pub(crate) relocation_offset: u32,
     pub(crate) relocation_count: u32,
     pub(crate) flags: u32,
+    pub(crate) zero_fill: bool,
     pub(crate) reserved1: u32,
     pub(crate) reserved2: u32,
     pub(crate) reserved3: Option<u32>,
@@ -761,6 +767,7 @@ fn parse_sections32(
         let Some(offset) = section_record_offset(command, start, section_size, index, file) else {
             break;
         };
+        let flags = header.endian.read_u32(command, offset + 56).unwrap_or(0);
         file.sections.push(MachoSection {
             index: file.sections.len() + 1,
             name: fixed_name(&command[offset..offset + 16]),
@@ -777,7 +784,8 @@ fn parse_sections32(
             align: header.endian.read_u32(command, offset + 44).unwrap_or(0),
             relocation_offset: header.endian.read_u32(command, offset + 48).unwrap_or(0),
             relocation_count: header.endian.read_u32(command, offset + 52).unwrap_or(0),
-            flags: header.endian.read_u32(command, offset + 56).unwrap_or(0),
+            flags,
+            zero_fill: is_zero_fill_section(flags),
             reserved1: header.endian.read_u32(command, offset + 60).unwrap_or(0),
             reserved2: header.endian.read_u32(command, offset + 64).unwrap_or(0),
             reserved3: None,
@@ -797,6 +805,7 @@ fn parse_sections64(
         let Some(offset) = section_record_offset(command, start, section_size, index, file) else {
             break;
         };
+        let flags = header.endian.read_u32(command, offset + 64).unwrap_or(0);
         file.sections.push(MachoSection {
             index: file.sections.len() + 1,
             name: fixed_name(&command[offset..offset + 16]),
@@ -807,12 +816,20 @@ fn parse_sections64(
             align: header.endian.read_u32(command, offset + 52).unwrap_or(0),
             relocation_offset: header.endian.read_u32(command, offset + 56).unwrap_or(0),
             relocation_count: header.endian.read_u32(command, offset + 60).unwrap_or(0),
-            flags: header.endian.read_u32(command, offset + 64).unwrap_or(0),
+            flags,
+            zero_fill: is_zero_fill_section(flags),
             reserved1: header.endian.read_u32(command, offset + 68).unwrap_or(0),
             reserved2: header.endian.read_u32(command, offset + 72).unwrap_or(0),
             reserved3: header.endian.read_u32(command, offset + 76),
         });
     }
+}
+
+fn is_zero_fill_section(flags: u32) -> bool {
+    matches!(
+        flags & SECTION_TYPE_MASK,
+        S_ZEROFILL | S_GB_ZEROFILL | S_THREAD_LOCAL_ZEROFILL
+    )
 }
 
 fn section_record_offset(
@@ -1558,6 +1575,42 @@ mod tests {
         bytes
     }
 
+    fn macho64_with_section(
+        section_type: u32,
+        section_address: u64,
+        section_size: u64,
+        section_offset: u32,
+        align: u32,
+    ) -> Vec<u8> {
+        let command_size = 72usize + 80;
+        let mut bytes = minimal_macho64();
+        bytes.resize(32 + command_size, 0);
+        bytes[16..20].copy_from_slice(&1u32.to_le_bytes());
+        bytes[20..24].copy_from_slice(&fixture_usize_to_u32(command_size).to_le_bytes());
+
+        let command = 32usize;
+        write_command_header(
+            &mut bytes,
+            command,
+            LC_SEGMENT_64,
+            fixture_usize_to_u32(command_size),
+        );
+        bytes[command + 8..command + 14].copy_from_slice(b"__DATA");
+        bytes[command + 24..command + 32].copy_from_slice(&section_address.to_le_bytes());
+        bytes[command + 32..command + 40].copy_from_slice(&section_size.to_le_bytes());
+        bytes[command + 64..command + 68].copy_from_slice(&1u32.to_le_bytes());
+
+        let section = command + 72;
+        bytes[section..section + 5].copy_from_slice(b"__bss");
+        bytes[section + 16..section + 22].copy_from_slice(b"__DATA");
+        bytes[section + 32..section + 40].copy_from_slice(&section_address.to_le_bytes());
+        bytes[section + 40..section + 48].copy_from_slice(&section_size.to_le_bytes());
+        bytes[section + 48..section + 52].copy_from_slice(&section_offset.to_le_bytes());
+        bytes[section + 52..section + 56].copy_from_slice(&align.to_le_bytes());
+        bytes[section + 64..section + 68].copy_from_slice(&section_type.to_le_bytes());
+        bytes
+    }
+
     fn macho64_with_truncated_excessive_section_count() -> Vec<u8> {
         let mut bytes = minimal_macho64();
         bytes.resize(32 + 72, 0);
@@ -1696,6 +1749,27 @@ mod tests {
             "{:?}",
             file.parse_errors
         );
+    }
+
+    #[test]
+    fn classifies_all_zero_fill_section_types() {
+        for section_type in [S_ZEROFILL, S_GB_ZEROFILL, S_THREAD_LOCAL_ZEROFILL] {
+            let analysis = analyze(&macho64_with_section(
+                section_type,
+                0x1_0000_1000,
+                u64::from(u32::MAX) + 1,
+                u32::MAX,
+                31,
+            ));
+            let section = &analysis.files[0].sections[0];
+
+            assert_eq!(section.address, 0x1_0000_1000);
+            assert_eq!(section.size, u64::from(u32::MAX) + 1);
+            assert!(section.zero_fill);
+        }
+
+        let analysis = analyze(&macho64_with_section(0, 0x1000, 0x20, 0x100, 4));
+        assert!(!analysis.files[0].sections[0].zero_fill);
     }
 
     #[test]
