@@ -4088,8 +4088,10 @@ rfc822comments(const char *in, char *out, bool preserveQuotedPairs)
                     backslash = 1;
                     break;
                 case '\"':
-                    *optr++ = '\"';
-                    inquote = !inquote;
+                    if (commentlevel == 0) {
+                        *optr++ = '\"';
+                        inquote = !inquote;
+                    }
                     break;
                 case '(':
                     if (inquote)
@@ -5377,17 +5379,48 @@ do_multipart(message *mainMessage, message **messages, int i, mbox_status *rc, m
     return mainMessage;
 }
 
-/*
- * Returns the number of quote characters in the given string
+/**
+ * @brief Count unescaped quote characters outside RFC 822 comments.
+ *
+ * @param buf  Header value to inspect.
+ * @return The number of syntactic quote characters.
  */
 static int
 count_quotes(const char *buf)
 {
-    int quotes = 0;
+    int commentLevel  = 0;
+    int quotes        = 0;
+    bool backslash    = false;
+    bool inquote      = false;
 
-    while (*buf)
-        if (*buf++ == '\"')
-            quotes++;
+    while (*buf) {
+        char c = *buf++;
+
+        if (backslash) {
+            backslash = false;
+            continue;
+        }
+
+        switch (c) {
+            case '\\':
+                backslash = true;
+                break;
+            case '(':
+                if (!inquote)
+                    commentLevel++;
+                break;
+            case ')':
+                if (!inquote && (commentLevel > 0))
+                    commentLevel--;
+                break;
+            case '\"':
+                if (commentLevel == 0) {
+                    quotes++;
+                    inquote = !inquote;
+                }
+                break;
+        }
+    }
 
     return quotes;
 }
