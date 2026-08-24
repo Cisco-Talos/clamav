@@ -73,6 +73,16 @@ bool messageAddArgumentDecoded(message *m, const char *arg);
 void messageAddArguments(message *m, const char *arg);
 char *messageFindArgument(const message *m, const char *variable);
 char *messageFindArgumentLast(const message *m, const char *variable);
+/**
+ * @brief Get the canonical MIME boundary.
+ *
+ * The canonical boundary is already decoded, so this preserves leading and
+ * embedded quote characters in the stored value.
+ *
+ * @param m  Message containing the boundary.
+ * @return An allocated copy of the value, or NULL if absent.
+ */
+char *messageGetBoundary(const message *m);
 char *messageGetFilename(const message *m);
 int messageHasFilename(const message *m);
 void messageSetEncoding(message *m, const char *enctype);

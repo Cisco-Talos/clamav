@@ -1028,7 +1028,7 @@ parseEmailFile(fmap_t *map, size_t *at, const table_t *rfc821, const char *first
                     }
 
                     if (boundary ||
-                        ((boundary = (char *)messageFindArgumentLast(ret, "boundary")) != NULL)) {
+                        ((boundary = messageGetBoundary(ret)) != NULL)) {
                         lastWasBlank = true;
                         continue;
                     }
@@ -1849,7 +1849,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                 break;
             case MULTIPART:
                 cli_dbgmsg("Content-type 'multipart' handler\n");
-                boundary = messageFindArgumentLast(mainMessage, "boundary");
+                boundary = messageGetBoundary(mainMessage);
 
                 if (mctx->wrkobj != NULL)
                     cli_jsonstr(mctx->wrkobj, "Boundary", boundary);
@@ -3444,7 +3444,8 @@ nextMimeArgument(const char *ptr, char *buf, size_t buflen)
             } else {
                 switch (*p) {
                     case '\\':
-                        backslash = true;
+                        if (inquote)
+                            backslash = true;
                         break;
                     case '"':
                         inquote = !inquote;
@@ -3926,12 +3927,7 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
                     return PARSE_HEADER_ALLOC_FAIL;
                 }
 
-                /*
-                 * messageAddArgument() treats a leading pair of quotes as syntax.
-                 * Leave values that would be reparsed differently on the existing path.
-                 */
-                if ((contentTypeBoundary != NULL) && (*contentTypeBoundary != '\0') &&
-                    ((*contentTypeBoundary != '"') || (strchr(contentTypeBoundary + 1, '"') == NULL))) {
+                if ((contentTypeBoundary != NULL) && (*contentTypeBoundary != '\0')) {
                     char *boundaryArgument;
                     size_t boundaryArgumentSize = strlen(contentTypeBoundary) + sizeof("boundary=");
 

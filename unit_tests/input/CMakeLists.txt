@@ -39,8 +39,10 @@ set(ENCRYPTED_TESTFILES
     clamav_hdb_scanfiles/clam.mail-boundary-escaped-quote.eml
     clamav_hdb_scanfiles/clam.mail-boundary-rfc2231-continuation.eml
     clamav_hdb_scanfiles/clam.mail-boundary-rfc2231-encoded-first.eml
+    clamav_hdb_scanfiles/clam.mail-boundary-rfc2231-literal-quotes.eml
     clamav_hdb_scanfiles/clam.mail-boundary-rfc2231-nonascii-continuation.eml
     clamav_hdb_scanfiles/clam.mail-boundary-rfc2231-literal-syntax-continuation.eml
+    clamav_hdb_scanfiles/clam.mail-boundary-unquoted-escaped-semicolon.eml
     clamav_hdb_scanfiles/clam.mail-semicolon-boundary.eml
     clamav_hdb_scanfiles/clam.mail-nested-comment-header-name.eml
     clamav_hdb_scanfiles/clam.mail-disposition-rfc2231-boundary.eml

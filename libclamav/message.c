@@ -676,7 +676,7 @@ messageGetArgument(const message *m, size_t arg)
 }
 
 static char *
-messageArgumentValue(const char *ptr, const char *variable)
+messageArgumentValue(const char *ptr, const char *variable, bool alreadyDecoded)
 {
     size_t len;
 
@@ -693,7 +693,7 @@ messageArgumentValue(const char *ptr, const char *variable)
             return NULL;
         }
         ptr++;
-        if ((strlen(ptr) > 1) && (*ptr == '"') && (strchr(&ptr[1], '"') != NULL)) {
+        if (!alreadyDecoded && (strlen(ptr) > 1) && (*ptr == '"') && (strchr(&ptr[1], '"') != NULL)) {
             /* Remove any quote characters */
             char *ret = cli_safer_strdup(++ptr);
             char *p;
@@ -746,7 +746,7 @@ messageFindArgument(const message *m, const char *variable)
 #ifdef CL_DEBUG
         cli_dbgmsg("messageFindArgument: compare %s with %s\n", variable, ptr);
 #endif
-        ret = messageArgumentValue(ptr, variable);
+        ret = messageArgumentValue(ptr, variable, false);
         if (ret)
             return ret;
     }
@@ -757,8 +757,8 @@ messageFindArgument(const message *m, const char *variable)
  * Find the last MIME variable from the header and return a COPY to the value
  * of that variable. The caller must free the copy.
  */
-char *
-messageFindArgumentLast(const message *m, const char *variable)
+static char *
+messageFindArgumentLastInternal(const message *m, const char *variable, bool alreadyDecoded)
 {
     size_t i;
     char *match = NULL;
@@ -776,7 +776,7 @@ messageFindArgumentLast(const message *m, const char *variable)
 #ifdef CL_DEBUG
         cli_dbgmsg("messageFindArgumentLast: compare %s with %s\n", variable, ptr);
 #endif
-        ret = messageArgumentValue(ptr, variable);
+        ret = messageArgumentValue(ptr, variable, alreadyDecoded);
         if (ret) {
             free(match);
             match = ret;
@@ -784,6 +784,18 @@ messageFindArgumentLast(const message *m, const char *variable)
     }
 
     return match;
+}
+
+char *
+messageFindArgumentLast(const message *m, const char *variable)
+{
+    return messageFindArgumentLastInternal(m, variable, false);
+}
+
+char *
+messageGetBoundary(const message *m)
+{
+    return messageFindArgumentLastInternal(m, "boundary", true);
 }
 
 char *
