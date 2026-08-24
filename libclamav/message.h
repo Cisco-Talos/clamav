@@ -62,6 +62,13 @@ const char *messageGetMimeSubtype(const message *m);
 void messageSetDispositionType(message *m, const char *disptype);
 const char *messageGetDispositionType(const message *m);
 void messageAddArgument(message *m, const char *arg);
+/**
+ * @brief Store an already-decoded MIME argument without RFC 2231 reparsing.
+ *
+ * @param m    Message receiving the argument.
+ * @param arg  Decoded argument in `name=value` form.
+ */
+void messageAddArgumentDecoded(message *m, const char *arg);
 void messageAddArguments(message *m, const char *arg);
 char *messageFindArgument(const message *m, const char *variable);
 char *messageFindArgumentLast(const message *m, const char *variable);

@@ -390,7 +390,8 @@ messageGetDispositionType(const message *m)
  * different values for charset? Probably doesn't matter for the use this
  * code will be given, but will need fixing if this code is used elsewhere
  */
-void messageAddArgument(message *m, const char *arg)
+static void
+messageAddArgumentInternal(message *m, const char *arg, bool alreadyDecoded)
 {
     size_t offset;
     char *p;
@@ -433,10 +434,9 @@ void messageAddArgument(message *m, const char *arg)
         m->mimeArguments = q;
     }
 
-    p = m->mimeArguments[offset] = rfc2231(arg);
+    p = m->mimeArguments[offset] = alreadyDecoded ? cli_safer_strdup(arg) : rfc2231(arg);
     if (!p) {
-        /* problem inside rfc2231() */
-        cli_dbgmsg("messageAddArgument, error from rfc2231()\n");
+        cli_dbgmsg("messageAddArgument, unable to store argument\n");
         return;
     }
 
@@ -472,6 +472,18 @@ void messageAddArgument(message *m, const char *arg)
             cli_dbgmsg("Force mime encoding to application\n");
             messageSetMimeType(m, "application");
         }
+}
+
+void
+messageAddArgument(message *m, const char *arg)
+{
+    messageAddArgumentInternal(m, arg, false);
+}
+
+void
+messageAddArgumentDecoded(message *m, const char *arg)
+{
+    messageAddArgumentInternal(m, arg, true);
 }
 
 /*

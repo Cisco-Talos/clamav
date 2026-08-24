@@ -3945,7 +3945,7 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
                     }
 
                     snprintf(boundaryArgument, boundaryArgumentSize, "boundary=%s", contentTypeBoundary);
-                    messageAddArgument(m, boundaryArgument);
+                    messageAddArgumentDecoded(m, boundaryArgument);
                     free(boundaryArgument);
                 }
             }
