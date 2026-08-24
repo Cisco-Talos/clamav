@@ -29,6 +29,7 @@ set(ENCRYPTED_TESTFILES
     clamav_hdb_scanfiles/clam.mail
     clamav_hdb_scanfiles/clam.ppt
     clamav_hdb_scanfiles/clam.tnef
+    clamav_hdb_scanfiles/clam.mail-content-disposition-escaped-semicolon.eml
     clamav_hdb_scanfiles/clam.mail-multiple-content-type.eml
     clamav_hdb_scanfiles/clam.mail-comment-header-name.eml
     clamav_hdb_scanfiles/clam.mail-multiple-boundaries.eml

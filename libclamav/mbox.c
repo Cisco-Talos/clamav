@@ -3416,8 +3416,18 @@ isMimeParameter(const char *arg, const char *variable)
     return (*arg == '=') || (*arg == ':');
 }
 
+/**
+ * @brief Copy the next semicolon-delimited MIME argument.
+ *
+ * @param ptr                        Header value to parse.
+ * @param buf                        Destination buffer.
+ * @param buflen                     Size of @p buf.
+ * @param backslashEscapesUnquoted   Whether a backslash outside quotes
+ *                                   escapes the following delimiter.
+ * @return The next parse position, or NULL when no argument remains.
+ */
 static const char *
-nextMimeArgument(const char *ptr, char *buf, size_t buflen)
+nextMimeArgument(const char *ptr, char *buf, size_t buflen, bool backslashEscapesUnquoted)
 {
     const char *p;
 
@@ -3444,7 +3454,7 @@ nextMimeArgument(const char *ptr, char *buf, size_t buflen)
             } else {
                 switch (*p) {
                     case '\\':
-                        if (inquote)
+                        if (inquote || backslashEscapesUnquoted)
                             backslash = true;
                         break;
                     case '"':
@@ -3621,7 +3631,7 @@ findMimeBoundary(const char *contentType, char **boundary)
         return -1;
     }
 
-    while ((next = nextMimeArgument(next, argument, argumentSize)) != NULL) {
+    while ((next = nextMimeArgument(next, argument, argumentSize, false)) != NULL) {
         const char *nameStart = argument;
         const char *nameEnd;
         const char *separator;
@@ -3923,7 +3933,7 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
                  * Content-Type:', arg='multipart/mixed; boundary=foo
                  * we find the boundary argument set it
                  */
-                ptr = nextMimeArgument(ptr, buf, buflen);
+                ptr = nextMimeArgument(ptr, buf, buflen, true);
                 while (ptr != NULL) {
                     cli_dbgmsg("mimeArgs = '%s'\n", buf);
 
@@ -3932,7 +3942,7 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
                         break;
                     }
                     messageAddArguments(m, buf);
-                    ptr = nextMimeArgument(ptr, buf, buflen);
+                    ptr = nextMimeArgument(ptr, buf, buflen, true);
                 }
 
                 if (findMimeBoundary(arg, &contentTypeBoundary) < 0) {
@@ -3985,7 +3995,7 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
                 const char *disposition_arg;
 
                 messageSetDispositionType(m, p);
-                disposition_arg = nextMimeArgument(ptr, buf, buflen);
+                disposition_arg = nextMimeArgument(ptr, buf, buflen, true);
                 while (disposition_arg != NULL) {
                     argCnt++;
                     if (haveTooManyMIMEArguments(argCnt, ctx, heuristicFound)) {
@@ -3996,7 +4006,7 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
                     } else {
                         messageAddArgument(m, buf);
                     }
-                    disposition_arg = nextMimeArgument(disposition_arg, buf, buflen);
+                    disposition_arg = nextMimeArgument(disposition_arg, buf, buflen, true);
                 }
             }
             if (!messageHasFilename(m))
