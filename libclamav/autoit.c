@@ -615,10 +615,14 @@ static uint32_t getbits(struct UNP *UNP, uint32_t size)
 {
     // cli_dbgmsg("In getbits, (size: %u, bits_avail: %u, UNP->cur_input: %u)\n", size, UNP->bits_avail, UNP->cur_input);
     UNP->bitmap.half.h = 0;
-    if (size > UNP->bits_avail && ((size - UNP->bits_avail - 1) / 16 + 1) * 2 > UNP->csize - UNP->cur_input) {
-        cli_dbgmsg("autoit: getbits() - not enough bits available\n");
-        UNP->error = 1;
-        return 0; /* won't infloop nor spam */
+    if (size > UNP->bits_avail) {
+        uint32_t bytes_needed = ((size - UNP->bits_avail - 1) / 16 + 1) * 2;
+
+        if (UNP->cur_input > UNP->csize || bytes_needed > UNP->csize - UNP->cur_input) {
+            cli_dbgmsg("autoit: getbits() - not enough bits available\n");
+            UNP->error = 1;
+            return 0; /* won't infloop nor spam */
+        }
     }
     while (size) {
         if (!UNP->bits_avail) {
@@ -632,6 +636,17 @@ static uint32_t getbits(struct UNP *UNP, uint32_t size)
         size--;
     }
     return (uint32_t)UNP->bitmap.half.h;
+}
+
+/**
+ * @brief Check that an AutoIt field is contained in the current fmap.
+ *
+ * This validates cursor advances without paging an entire field that the
+ * caller may intentionally skip because of configured scan limits.
+ */
+static bool autoit_range_is_contained(const fmap_t *map, const uint8_t *base, size_t size)
+{
+    return size == 0 || CLI_ISCONTAINED_0_TO(map->len, fmap_ptr2off(map, base), size);
 }
 
 /*********************
@@ -677,8 +692,11 @@ static cl_error_t ea05(cli_ctx *ctx, const uint8_t *base, char *tmpd)
             goto done;
         }
         base += 8;
+        if (!autoit_range_is_contained(map, base, s)) {
+            goto done;
+        }
         if (cli_debug_flag && s < sizeof(b)) {
-            if (!fmap_need_ptr_once(map, base, s)) {
+            if (s && !fmap_need_ptr_once(map, base, s)) {
                 goto done;
             }
             memcpy(b, base, s);
@@ -697,11 +715,13 @@ static cl_error_t ea05(cli_ctx *ctx, const uint8_t *base, char *tmpd)
             goto done;
         }
         base += 4;
+        if (!autoit_range_is_contained(map, base, s)) {
+            goto done;
+        }
         if (cli_debug_flag && s < sizeof(b)) {
-            if (!fmap_need_ptr_once(map, base, s)) {
+            if (s && !fmap_need_ptr_once(map, base, s)) {
                 goto done;
             }
-
             memcpy(b, base, s);
             MT_decrypt(b, s, s + 0xf25e);
             b[s] = '\0';
@@ -709,7 +729,7 @@ static cl_error_t ea05(cli_ctx *ctx, const uint8_t *base, char *tmpd)
         }
         base += s;
 
-        if (!fmap_need_ptr_once(map, base, 13)) {
+        if (!fmap_need_ptr_once(map, base, 13 + 16)) {
             goto done;
         }
 
@@ -720,24 +740,29 @@ static cl_error_t ea05(cli_ctx *ctx, const uint8_t *base, char *tmpd)
             goto done;
         }
 
-        if (!UNP.csize) {
-            cli_dbgmsg("autoit: skipping empty file\n");
-            base += 13 + 16;
-            continue;
-        }
         cli_dbgmsg("autoit: compressed size: %x\n", UNP.csize);
         cli_dbgmsg("autoit: advertised uncompressed size %x\n", cli_readint32(base + 5) ^ 0x45aa);
         cli_dbgmsg("autoit: ref chksum: %x\n", cli_readint32(base + 9) ^ 0xc3d2);
 
         base += 13 + 16;
+        if (!autoit_range_is_contained(map, base, UNP.csize)) {
+            cli_dbgmsg("autoit: failed to read compressed stream. broken/truncated file?\n");
+            goto done;
+        }
+
+        if (!UNP.csize) {
+            cli_dbgmsg("autoit: skipping empty file\n");
+            continue;
+        }
 
         if (cli_checklimits("autoit", ctx, UNP.csize, 0, 0) != CL_CLEAN) {
             base += UNP.csize;
             continue;
         }
 
-        if (comp == 1 && UNP.csize < sizeof(union unaligned_32)) {
+        if (comp == 1 && UNP.csize < sizeof(union unaligned_64)) {
             cli_dbgmsg("autoit: compressed size too small, skipping\n");
+            base += UNP.csize;
             continue;
         }
 
@@ -749,7 +774,6 @@ static cl_error_t ea05(cli_ctx *ctx, const uint8_t *base, char *tmpd)
             cli_dbgmsg("autoit: failed to read compressed stream. broken/truncated file?\n");
             goto done;
         }
-
         memcpy(UNP.inputbuf, base, UNP.csize);
         base += UNP.csize;
         MT_decrypt(UNP.inputbuf, UNP.csize, 0x22af + m4sum);
@@ -795,7 +819,8 @@ static cl_error_t ea05(cli_ctx *ctx, const uint8_t *base, char *tmpd)
 
             while (!UNP.error && UNP.cur_output < UNP.usize) {
                 if (getbits(&UNP, 1)) {
-                    uint32_t bb, bs, addme = 0;
+                    uint32_t bb, bs;
+                    uint64_t addme = 0, match_length;
                     bb = getbits(&UNP, 15);
 
                     if ((bs = getbits(&UNP, 2)) == 3) {
@@ -813,20 +838,18 @@ static cl_error_t ea05(cli_ctx *ctx, const uint8_t *base, char *tmpd)
                             }
                         }
                     }
-                    bs += 3 + addme;
-
                     /* If getbits set UNP.error, bail out here, since otherwise
                      * the data we'd write out would be garbage */
                     if (UNP.error) {
                         break;
                     }
 
-                    if (!CLI_ISCONTAINED(UNP.outputbuf, UNP.usize, &UNP.outputbuf[UNP.cur_output], bs) ||
-                        !CLI_ISCONTAINED(UNP.outputbuf, UNP.usize, &UNP.outputbuf[UNP.cur_output - bb], bs)) {
+                    match_length = (uint64_t)bs + 3 + addme;
+                    if (!bb || bb > UNP.cur_output || match_length > UNP.usize - UNP.cur_output) {
                         UNP.error = 1;
                         break;
                     }
-                    while (bs--) {
+                    while (match_length--) {
                         UNP.outputbuf[UNP.cur_output] = UNP.outputbuf[UNP.cur_output - bb];
                         UNP.cur_output++;
                     }
@@ -1041,10 +1064,14 @@ static int ea06(cli_ctx *ctx, const uint8_t *base, char *tmpd)
     /*     return CL_CLEAN; */
     /*   LAME_decrypt(buf, 0x10, 0x99f2); */
     /*   buf+=0x10; */
+    if (!fmap_need_ptr_once(map, base, 16)) {
+        return CL_SUCCESS;
+    }
     base += 16; /* for now we just skip the garbage */
 
     while (CL_SUCCESS == (ret = cli_checklimits("cli_autoit", ctx, 0, 0, 0))) {
         bool script = false;
+        uint32_t string_size;
 
         if (!fmap_need_ptr_once(map, base, 8)) {
             return CL_SUCCESS;
@@ -1057,20 +1084,26 @@ static int ea06(cli_ctx *ctx, const uint8_t *base, char *tmpd)
         }
 
         s = cli_readint32(base + 4) ^ 0xadbc;
-        if ((int32_t)(s * 2) < 0) {
+        if (s > INT32_MAX / 2) {
             return CL_SUCCESS; /* the original code wouldn't seek back here */
         }
+        string_size = s * 2;
 
         base += 8;
+        if (!autoit_range_is_contained(map, base, string_size)) {
+            return CL_SUCCESS;
+        }
 
         if (s < sizeof(b) / 2) {
-            if (!fmap_need_ptr_once(map, base, s * 2)) {
+            unsigned int printable_size;
+
+            if (string_size && !fmap_need_ptr_once(map, base, string_size)) {
                 return CL_SUCCESS;
             }
-
-            memcpy(b, base, s * 2);
-            LAME_decrypt(b, s * 2, s + 0xb33f);
-            u2a(b, s * 2);
+            memcpy(b, base, string_size);
+            LAME_decrypt(b, string_size, s + 0xb33f);
+            printable_size    = u2a(b, string_size);
+            b[printable_size] = '\0';
             cli_dbgmsg("autoit: magic string '%s'\n", b);
 
             if (s == 19 && !memcmp(">>>AUTOIT SCRIPT<<<", b, 19)) {
@@ -1080,36 +1113,40 @@ static int ea06(cli_ctx *ctx, const uint8_t *base, char *tmpd)
             cli_dbgmsg("autoit: magic string too long to print\n");
         }
 
-        base += s * 2;
+        base += string_size;
 
         if (!fmap_need_ptr_once(map, base, 4)) {
             return CL_SUCCESS;
         }
 
         s = cli_readint32(base) ^ 0xf820;
-        if ((int32_t)(s * 2) < 0) {
+        if (s > INT32_MAX / 2) {
             return CL_SUCCESS; /* the original code wouldn't seek back here */
         }
+        string_size = s * 2;
 
         base += 4;
+        if (!autoit_range_is_contained(map, base, string_size)) {
+            return CL_SUCCESS;
+        }
 
         if (cli_debug_flag && s < sizeof(b) / 2) {
-            if (!fmap_need_ptr_once(map, base, s * 2)) {
+            unsigned int printable_size;
+
+            if (string_size && !fmap_need_ptr_once(map, base, string_size)) {
                 return CL_SUCCESS;
             }
-
-            memcpy(b, base, s * 2);
-            LAME_decrypt(b, s * 2, s + 0xf479);
-            b[s * 2]     = '\0';
-            b[s * 2 + 1] = '\0';
-            u2a(b, s * 2);
+            memcpy(b, base, string_size);
+            LAME_decrypt(b, string_size, s + 0xf479);
+            printable_size    = u2a(b, string_size);
+            b[printable_size] = '\0';
 
             cli_dbgmsg("autoit: original filename '%s'\n", b);
         }
 
-        base += s * 2;
+        base += string_size;
 
-        if (!fmap_need_ptr_once(map, base, 13)) {
+        if (!fmap_need_ptr_once(map, base, 13 + 16)) {
             return CL_SUCCESS;
         }
 
@@ -1120,25 +1157,29 @@ static int ea06(cli_ctx *ctx, const uint8_t *base, char *tmpd)
             return CL_SUCCESS;
         }
 
-        if (!UNP.csize) {
-            cli_dbgmsg("autoit: skipping empty file\n");
-            base += 13 + 16;
-            continue;
-        }
-
         cli_dbgmsg("autoit: compressed size: %x\n", UNP.csize);
         cli_dbgmsg("autoit: advertised uncompressed size %x\n", cli_readint32(base + 5) ^ 0x87bc);
         cli_dbgmsg("autoit: ref chksum: %x\n", cli_readint32(base + 9) ^ 0xa685);
 
         base += 13 + 16;
+        if (!autoit_range_is_contained(map, base, UNP.csize)) {
+            cli_dbgmsg("autoit: failed to read compressed stream. broken/truncated file?\n");
+            return CL_SUCCESS;
+        }
+
+        if (!UNP.csize) {
+            cli_dbgmsg("autoit: skipping empty file\n");
+            continue;
+        }
 
         if (cli_checklimits("autoit", ctx, UNP.csize, 0, 0) != CL_CLEAN) {
             base += UNP.csize;
             continue;
         }
 
-        if (comp == 1 && UNP.csize < sizeof(union unaligned_32)) {
+        if (comp == 1 && UNP.csize < sizeof(union unaligned_64)) {
             cli_dbgmsg("autoit: compressed size too small, skipping\n");
+            base += UNP.csize;
             continue;
         }
 
@@ -1153,7 +1194,6 @@ static int ea06(cli_ctx *ctx, const uint8_t *base, char *tmpd)
             free(UNP.inputbuf);
             return CL_SUCCESS;
         }
-
         memcpy(UNP.inputbuf, base, UNP.csize);
         base += UNP.csize;
 
@@ -1192,7 +1232,8 @@ static int ea06(cli_ctx *ctx, const uint8_t *base, char *tmpd)
 
             while (!UNP.error && UNP.cur_output < UNP.usize) {
                 if (!getbits(&UNP, 1)) {
-                    uint32_t bb, bs, addme = 0;
+                    uint32_t bb, bs;
+                    uint64_t addme = 0, match_length;
                     bb = getbits(&UNP, 15);
 
                     if ((bs = getbits(&UNP, 2)) == 3) {
@@ -1210,8 +1251,6 @@ static int ea06(cli_ctx *ctx, const uint8_t *base, char *tmpd)
                             }
                         }
                     }
-                    bs += 3 + addme;
-
                     /* If getbits set UNP.error, bail out here, since otherwise
                      * the data we'd write out would be garbage */
                     if (UNP.error) {
@@ -1219,13 +1258,13 @@ static int ea06(cli_ctx *ctx, const uint8_t *base, char *tmpd)
                     }
 
                     // cli_dbgmsg("cur_output: %u, bs: %u, bb: %u\n", UNP.cur_output, bs, bb);
-                    if (!CLI_ISCONTAINED(UNP.outputbuf, UNP.usize, &UNP.outputbuf[UNP.cur_output], bs) ||
-                        !CLI_ISCONTAINED(UNP.outputbuf, UNP.usize, &UNP.outputbuf[UNP.cur_output - bb], bs)) {
+                    match_length = (uint64_t)bs + 3 + addme;
+                    if (!bb || bb > UNP.cur_output || match_length > UNP.usize - UNP.cur_output) {
                         UNP.error = 1;
                         break;
                     }
 
-                    while (bs--) {
+                    while (match_length--) {
                         UNP.outputbuf[UNP.cur_output] = UNP.outputbuf[UNP.cur_output - bb];
                         UNP.cur_output++;
                     }
