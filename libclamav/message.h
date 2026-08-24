@@ -67,8 +67,9 @@ void messageAddArgument(message *m, const char *arg);
  *
  * @param m    Message receiving the argument.
  * @param arg  Decoded argument in `name=value` form.
+ * @return true if no allocation failed; false otherwise.
  */
-void messageAddArgumentDecoded(message *m, const char *arg);
+bool messageAddArgumentDecoded(message *m, const char *arg);
 void messageAddArguments(message *m, const char *arg);
 char *messageFindArgument(const message *m, const char *variable);
 char *messageFindArgumentLast(const message *m, const char *variable);

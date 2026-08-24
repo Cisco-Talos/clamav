@@ -3945,7 +3945,14 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
                     }
 
                     snprintf(boundaryArgument, boundaryArgumentSize, "boundary=%s", contentTypeBoundary);
-                    messageAddArgumentDecoded(m, boundaryArgument);
+                    if (!messageAddArgumentDecoded(m, boundaryArgument)) {
+                        free(boundaryArgument);
+                        free(contentTypeBoundary);
+                        if (copy)
+                            free(copy);
+                        free(buf);
+                        return PARSE_HEADER_ALLOC_FAIL;
+                    }
                     free(boundaryArgument);
                 }
             }

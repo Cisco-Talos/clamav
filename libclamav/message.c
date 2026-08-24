@@ -390,7 +390,7 @@ messageGetDispositionType(const message *m)
  * different values for charset? Probably doesn't matter for the use this
  * code will be given, but will need fixing if this code is used elsewhere
  */
-static void
+static bool
 messageAddArgumentInternal(message *m, const char *arg, bool alreadyDecoded)
 {
     size_t offset;
@@ -398,29 +398,29 @@ messageAddArgumentInternal(message *m, const char *arg, bool alreadyDecoded)
 
     if (m == NULL) {
         cli_errmsg("Internal email parser error: message is pointer is NULL when trying to add an argument\n");
-        return;
+        return true;
     }
 
     if (arg == NULL)
-        return; /* Note: this is not an error condition */
+        return true; /* Note: this is not an error condition */
 
     while (isspace((unsigned char)*arg))
         arg++;
 
     if (*arg == '\0')
         /* Empty argument? Probably a broken mail client... */
-        return;
+        return true;
 
     cli_dbgmsg("messageAddArgument, arg='%s'\n", arg);
 
     if (!usefulArg(arg))
-        return;
+        return true;
 
     for (offset = 0; offset < m->numberOfArguments; offset++)
         if (m->mimeArguments[offset] == NULL)
             break;
         else if (strcasecmp(arg, m->mimeArguments[offset]) == 0)
-            return; /* already in there */
+            return true; /* already in there */
 
     if (offset == m->numberOfArguments) {
         char **q;
@@ -429,7 +429,7 @@ messageAddArgumentInternal(message *m, const char *arg, bool alreadyDecoded)
         q = (char **)cli_max_realloc(m->mimeArguments, m->numberOfArguments * sizeof(char *));
         if (q == NULL) {
             m->numberOfArguments--;
-            return;
+            return false;
         }
         m->mimeArguments = q;
     }
@@ -437,7 +437,7 @@ messageAddArgumentInternal(message *m, const char *arg, bool alreadyDecoded)
     p = m->mimeArguments[offset] = alreadyDecoded ? cli_safer_strdup(arg) : rfc2231(arg);
     if (!p) {
         cli_dbgmsg("messageAddArgument, unable to store argument\n");
-        return;
+        return false;
     }
 
     if (strchr(p, '=') == NULL) {
@@ -457,7 +457,7 @@ messageAddArgumentInternal(message *m, const char *arg, bool alreadyDecoded)
                 cli_dbgmsg("messageAddArgument, '%s' contains no '='\n", p);
             free(m->mimeArguments[offset]);
             m->mimeArguments[offset] = NULL;
-            return;
+            return true;
         }
     }
 
@@ -472,18 +472,20 @@ messageAddArgumentInternal(message *m, const char *arg, bool alreadyDecoded)
             cli_dbgmsg("Force mime encoding to application\n");
             messageSetMimeType(m, "application");
         }
+
+    return true;
 }
 
 void
 messageAddArgument(message *m, const char *arg)
 {
-    messageAddArgumentInternal(m, arg, false);
+    (void)messageAddArgumentInternal(m, arg, false);
 }
 
-void
+bool
 messageAddArgumentDecoded(message *m, const char *arg)
 {
-    messageAddArgumentInternal(m, arg, true);
+    return messageAddArgumentInternal(m, arg, true);
 }
 
 /*
