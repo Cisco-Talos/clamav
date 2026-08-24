@@ -3705,6 +3705,15 @@ findMimeBoundary(const char *contentType, char **boundary)
             goto done;
         }
 
+        /* A repeated section zero starts a new continuation. Preserve
+         * out-of-order segments when the first section zero arrives. */
+        if ((section == 0) && (segments[0] != NULL)) {
+            for (i = 1; i < HEURISTIC_EMAIL_MAX_ARGUMENTS_PER_HEADER; i++) {
+                free(segments[i]);
+                segments[i] = NULL;
+            }
+        }
+
         free(segments[section]);
         segments[section] = decoded;
         if (section == 0)
