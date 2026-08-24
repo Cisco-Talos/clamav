@@ -26,6 +26,10 @@
 #include "clamav-config.h"
 #endif
 
+#ifdef HAVE_MALLOC_TRIM
+#include <malloc.h>
+#endif
+
 #ifdef USE_MPOOL
 
 #include "clamav-types.h"
@@ -83,7 +87,12 @@ typedef void mpool_t;
 #define CLI_MPOOL_STRNDUP(mpool, s, n) cli_safer_strdup(s, n)
 #define CLI_MPOOL_VIRNAME(mpool, a, b) cli_virname(a, b)
 #define CLI_MPOOL_HEX2UI(mpool, hex) cli_hex2ui(hex)
+#ifdef HAVE_MALLOC_TRIM
+/* No pool to flush: return the freed scratch to the OS instead. */
+#define MPOOL_FLUSH(val) malloc_trim(0)
+#else
 #define MPOOL_FLUSH(val)
+#endif
 #define MPOOL_GETSTATS(mpool, used, total) -1
 
 #endif /* USE_MPOOL */
