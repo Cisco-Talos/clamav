@@ -202,6 +202,7 @@ static int boundaryEnd(const char *line, const char *boundary);
 static int initialiseTables(table_t **rfc821Table, table_t **subtypeTable);
 static int getTextPart(message *const messages[], size_t size);
 static size_t strip(char *buf, int len);
+static int findMimeBoundary(const char *contentType, char **boundary);
 static int parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const char *arg, cli_ctx *ctx, bool *heuristicFound);
 static int tableFindRfc822Header(const table_t *rfc821Table, const char *cmd);
 static int saveTextPart(mbox_ctx *mctx, message *m, int destroy_text);
@@ -3472,6 +3473,283 @@ nextMimeArgument(const char *ptr, char *buf, size_t buflen)
     }
 }
 
+static int
+hexDigitValue(unsigned char c)
+{
+    if ((c >= '0') && (c <= '9'))
+        return c - '0';
+    if ((c >= 'A') && (c <= 'F'))
+        return c - 'A' + 10;
+    if ((c >= 'a') && (c <= 'f'))
+        return c - 'a' + 10;
+    return -1;
+}
+
+/**
+ * @brief Decode a MIME boundary parameter value.
+ *
+ * This removes surrounding quotes, resolves quoted-pairs, and optionally
+ * decodes the RFC 2231 percent encoding used by a continuation segment.
+ * Invalid percent escapes and encoded NULs are preserved so malformed input
+ * cannot introduce an embedded NUL into the boundary string.
+ *
+ * @param value         Parameter value to decode.
+ * @param encoded       Whether the segment uses RFC 2231 encoding.
+ * @param firstSegment  Whether this is the first continuation segment.
+ * @param decoded       Receives an allocated decoded value.
+ * @return 0 on success, -1 on allocation failure.
+ */
+static int
+decodeMimeBoundaryValue(const char *value, bool encoded, bool firstSegment, char **decoded)
+{
+    const char *input;
+    char *buffer;
+    char *out;
+    bool quoted = false;
+
+    *decoded = NULL;
+
+    while (isspace((unsigned char)*value))
+        value++;
+
+    buffer = cli_max_malloc(strlen(value) + 1);
+    if (buffer == NULL)
+        return -1;
+
+    input = value;
+    out   = buffer;
+
+    if (*input == '"') {
+        quoted = true;
+        input++;
+    }
+
+    while (*input != '\0') {
+        if (quoted && (*input == '"'))
+            break;
+
+        if (quoted && (*input == '\\') && (input[1] != '\0'))
+            input++;
+
+        *out++ = *input++;
+    }
+    *out = '\0';
+
+    if (!quoted)
+        strstrip(buffer);
+
+    input = buffer;
+    if (encoded && firstSegment) {
+        const char *charset = strchr(input, '\'');
+
+        if (charset != NULL) {
+            const char *language = strchr(charset + 1, '\'');
+
+            if (language != NULL)
+                input = language + 1;
+        }
+    }
+
+    if (encoded) {
+        out = buffer;
+        while (*input != '\0') {
+            if ((*input == '%') && (input[1] != '\0') && (input[2] != '\0')) {
+                int high = hexDigitValue((unsigned char)input[1]);
+                int low  = hexDigitValue((unsigned char)input[2]);
+
+                if ((high >= 0) && (low >= 0) && ((high != 0) || (low != 0))) {
+                    *out++ = (char)((high << 4) | low);
+                    input += 3;
+                    continue;
+                }
+            }
+
+            *out++ = *input++;
+        }
+        *out = '\0';
+    }
+
+    *decoded = buffer;
+    return 0;
+}
+
+/**
+ * @brief Select the MIME boundary represented by a Content-Type value.
+ *
+ * The general MIME argument parser intentionally accepts many malformed
+ * forms. Boundary selection needs a single client-compatible value, so this
+ * helper also handles quoted-pairs, RFC 2231 continuations, leading value
+ * whitespace, and malformed unquoted values containing spaces. The last
+ * applicable boundary declaration wins, matching existing ClamAV behavior.
+ *
+ * @param contentType  Complete Content-Type field value.
+ * @param boundary     Receives an allocated boundary, or NULL if absent.
+ * @return 0 on success, -1 on allocation failure.
+ */
+static int
+findMimeBoundary(const char *contentType, char **boundary)
+{
+    char *segments[HEURISTIC_EMAIL_MAX_ARGUMENTS_PER_HEADER] = {NULL};
+    char *directBoundary                                    = NULL;
+    char *continuedBoundary                                 = NULL;
+    char *argument                                          = NULL;
+    const char *next                                        = contentType;
+    size_t directOrder                                      = 0;
+    size_t continuationOrder                                = 0;
+    size_t argumentCount                                    = 0;
+    size_t argumentSize;
+    size_t order                                            = 0;
+    size_t i;
+    int status = 0;
+
+    *boundary = NULL;
+
+    if (contentType == NULL)
+        return 0;
+
+    argumentSize = strlen(contentType) + 1;
+    argument     = cli_max_malloc(argumentSize);
+    if (argument == NULL)
+        return -1;
+
+    while ((next = nextMimeArgument(next, argument, argumentSize)) != NULL) {
+        const char *nameStart = argument;
+        const char *nameEnd;
+        const char *separator;
+        const char *suffix;
+        char *decoded = NULL;
+        size_t nameLength;
+        size_t section = 0;
+        bool encoded   = false;
+
+        order++;
+        argumentCount++;
+        if (argumentCount >= HEURISTIC_EMAIL_MAX_ARGUMENTS_PER_HEADER)
+            break;
+
+        while (isspace((unsigned char)*nameStart))
+            nameStart++;
+
+        separator = strchr(nameStart, '=');
+        if (separator == NULL)
+            separator = strchr(nameStart, ':');
+        if (separator == NULL)
+            continue;
+
+        nameEnd = separator;
+        while ((nameEnd > nameStart) && isspace((unsigned char)nameEnd[-1]))
+            nameEnd--;
+
+        nameLength = (size_t)(nameEnd - nameStart);
+        if ((nameLength < 8) || (strncasecmp(nameStart, "boundary", 8) != 0))
+            continue;
+
+        suffix = nameStart + 8;
+        if (nameLength == 8) {
+            if (decodeMimeBoundaryValue(separator + 1, false, false, &decoded) < 0) {
+                status = -1;
+                goto done;
+            }
+
+            free(directBoundary);
+            directBoundary = decoded;
+            directOrder    = order;
+            continue;
+        }
+
+        if (*suffix++ != '*')
+            continue;
+        if (suffix == nameEnd) {
+            if (decodeMimeBoundaryValue(separator + 1, true, true, &decoded) < 0) {
+                status = -1;
+                goto done;
+            }
+
+            free(directBoundary);
+            directBoundary = decoded;
+            directOrder    = order;
+            continue;
+        }
+        if (!isdigit((unsigned char)*suffix))
+            continue;
+
+        do {
+            unsigned int digit = (unsigned int)(*suffix++ - '0');
+
+            if (section > ((HEURISTIC_EMAIL_MAX_ARGUMENTS_PER_HEADER - 1 - digit) / 10)) {
+                section = HEURISTIC_EMAIL_MAX_ARGUMENTS_PER_HEADER;
+                break;
+            }
+            section = (section * 10) + digit;
+        } while (isdigit((unsigned char)*suffix));
+
+        if (*suffix == '*') {
+            encoded = true;
+            suffix++;
+        }
+
+        if ((suffix != nameEnd) || (section >= HEURISTIC_EMAIL_MAX_ARGUMENTS_PER_HEADER))
+            continue;
+
+        if (decodeMimeBoundaryValue(separator + 1, encoded, section == 0, &decoded) < 0) {
+            status = -1;
+            goto done;
+        }
+
+        free(segments[section]);
+        segments[section] = decoded;
+        if (section == 0)
+            continuationOrder = order;
+    }
+
+    if (segments[0] != NULL) {
+        size_t length = 1;
+        char *out;
+
+        for (i = 0; (i < HEURISTIC_EMAIL_MAX_ARGUMENTS_PER_HEADER) && (segments[i] != NULL); i++) {
+            size_t segmentLength = strlen(segments[i]);
+
+            if (segmentLength > SIZE_MAX - length) {
+                status = -1;
+                goto done;
+            }
+            length += segmentLength;
+        }
+
+        continuedBoundary = cli_max_malloc(length);
+        if (continuedBoundary == NULL) {
+            status = -1;
+            goto done;
+        }
+
+        out = continuedBoundary;
+        for (i = 0; (i < HEURISTIC_EMAIL_MAX_ARGUMENTS_PER_HEADER) && (segments[i] != NULL); i++) {
+            size_t segmentLength = strlen(segments[i]);
+
+            memcpy(out, segments[i], segmentLength);
+            out += segmentLength;
+        }
+        *out = '\0';
+    }
+
+    if ((continuedBoundary != NULL) &&
+        ((directBoundary == NULL) || (continuationOrder >= directOrder))) {
+        *boundary          = continuedBoundary;
+        continuedBoundary = NULL;
+    } else if (directBoundary != NULL) {
+        *boundary       = directBoundary;
+        directBoundary = NULL;
+    }
+
+done:
+    for (i = 0; i < HEURISTIC_EMAIL_MAX_ARGUMENTS_PER_HEADER; i++)
+        free(segments[i]);
+    free(continuedBoundary);
+    free(directBoundary);
+    free(argument);
+    return status;
+}
+
 /*
  * Returns 0 for OK, PARSE_HEADER_ALLOC_FAIL for allocation failure.
  */
@@ -3479,6 +3757,8 @@ static int
 parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const char *arg, cli_ctx *ctx, bool *heuristicFound)
 {
     char *copy, *p, *buf;
+    char *contentTypeBoundary = NULL;
+    const char *headerValue;
     const char *ptr;
     int commandNumber;
     size_t argCnt = 0;
@@ -3497,6 +3777,7 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
     } else {
         ptr = arg;
     }
+    headerValue = ptr;
 
     buf = NULL;
 
@@ -3637,6 +3918,36 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
                     messageAddArguments(m, buf);
                     ptr = nextMimeArgument(ptr, buf, buflen);
                 }
+
+                if (findMimeBoundary(headerValue, &contentTypeBoundary) < 0) {
+                    if (copy)
+                        free(copy);
+                    free(buf);
+                    return PARSE_HEADER_ALLOC_FAIL;
+                }
+
+                /*
+                 * messageAddArgument() treats a leading pair of quotes as syntax.
+                 * Leave values that would be reparsed differently on the existing path.
+                 */
+                if ((contentTypeBoundary != NULL) && (*contentTypeBoundary != '\0') &&
+                    ((*contentTypeBoundary != '"') || (strchr(contentTypeBoundary + 1, '"') == NULL))) {
+                    char *boundaryArgument;
+                    size_t boundaryArgumentSize = strlen(contentTypeBoundary) + sizeof("boundary=");
+
+                    boundaryArgument = cli_max_malloc(boundaryArgumentSize);
+                    if (boundaryArgument == NULL) {
+                        free(contentTypeBoundary);
+                        if (copy)
+                            free(copy);
+                        free(buf);
+                        return PARSE_HEADER_ALLOC_FAIL;
+                    }
+
+                    snprintf(boundaryArgument, boundaryArgumentSize, "boundary=%s", contentTypeBoundary);
+                    messageAddArgument(m, boundaryArgument);
+                    free(boundaryArgument);
+                }
             }
             break;
         case CONTENT_TRANSFER_ENCODING:
@@ -3684,6 +3995,7 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
         free(copy);
     if (buf)
         free(buf);
+    free(contentTypeBoundary);
 
     return 0;
 }
