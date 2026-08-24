@@ -207,7 +207,7 @@ static int parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Tab
 static int tableFindRfc822Header(const table_t *rfc821Table, const char *cmd);
 static int saveTextPart(mbox_ctx *mctx, message *m, int destroy_text);
 static char *rfc2047(const char *in);
-static char *rfc822comments(const char *in, char *out);
+static char *rfc822comments(const char *in, char *out, bool preserveQuotedPairs);
 static int rfc1341(mbox_ctx *mctx, message *m);
 static bool usefulHeader(int commandNumber, const char *cmd);
 static char *getline_from_mbox(char *buffer, size_t len, fmap_t *map, size_t *at);
@@ -892,7 +892,7 @@ tableFindRfc822Header(const table_t *rfc821Table, const char *cmd)
     if ((rfc821Table == NULL) || (cmd == NULL))
         return -1;
 
-    stripped = rfc822comments(cmd, NULL);
+    stripped = rfc822comments(cmd, NULL, false);
     if (stripped) {
         strstrip(stripped);
         commandNumber = tableFind(rfc821Table, stripped);
@@ -3121,9 +3121,9 @@ boundaryStart(const char *line, const char *boundary)
 
     if (strlen(newline) <= sizeof(buf)) {
         out = NULL;
-        ptr = rfc822comments(newline, buf);
+        ptr = rfc822comments(newline, buf, false);
     } else
-        ptr = out = rfc822comments(newline, NULL);
+        ptr = out = rfc822comments(newline, NULL, false);
 
     if (ptr == NULL)
         ptr = newline;
@@ -3593,8 +3593,9 @@ findMimeBoundary(const char *contentType, char **boundary)
     char *segments[HEURISTIC_EMAIL_MAX_ARGUMENTS_PER_HEADER] = {NULL};
     char *directBoundary                                    = NULL;
     char *continuedBoundary                                 = NULL;
+    char *commentStrippedContentType                         = NULL;
     char *argument                                          = NULL;
-    const char *next                                        = contentType;
+    const char *next;
     size_t directOrder                                      = 0;
     size_t continuationOrder                                = 0;
     size_t argumentCount                                    = 0;
@@ -3608,10 +3609,17 @@ findMimeBoundary(const char *contentType, char **boundary)
     if (contentType == NULL)
         return 0;
 
-    argumentSize = strlen(contentType) + 1;
-    argument     = cli_max_malloc(argumentSize);
-    if (argument == NULL)
+    commentStrippedContentType = rfc822comments(contentType, NULL, true);
+    if ((commentStrippedContentType == NULL) && (strchr(contentType, '(') != NULL))
         return -1;
+
+    next         = (commentStrippedContentType != NULL) ? commentStrippedContentType : contentType;
+    argumentSize = strlen(next) + 1;
+    argument     = cli_max_malloc(argumentSize);
+    if (argument == NULL) {
+        free(commentStrippedContentType);
+        return -1;
+    }
 
     while ((next = nextMimeArgument(next, argument, argumentSize)) != NULL) {
         const char *nameStart = argument;
@@ -3748,6 +3756,7 @@ done:
     free(continuedBoundary);
     free(directBoundary);
     free(argument);
+    free(commentStrippedContentType);
     return status;
 }
 
@@ -3759,7 +3768,6 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 {
     char *copy, *p, *buf;
     char *contentTypeBoundary = NULL;
-    const char *headerValue;
     const char *ptr;
     int commandNumber;
     size_t argCnt = 0;
@@ -3771,15 +3779,13 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 
     commandNumber = tableFindRfc822Header(rfc821Table, cmd);
 
-    copy = rfc822comments(arg, NULL);
+    copy = rfc822comments(arg, NULL, false);
 
     if (copy) {
         ptr = copy;
     } else {
         ptr = arg;
     }
-    headerValue = ptr;
-
     buf = NULL;
 
     switch (commandNumber) {
@@ -3920,7 +3926,7 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
                     ptr = nextMimeArgument(ptr, buf, buflen);
                 }
 
-                if (findMimeBoundary(headerValue, &contentTypeBoundary) < 0) {
+                if (findMimeBoundary(arg, &contentTypeBoundary) < 0) {
                     if (copy)
                         free(copy);
                     free(buf);
@@ -4024,16 +4030,20 @@ saveTextPart(mbox_ctx *mctx, message *m, int destroy_text)
     return CL_ETMPFILE;
 }
 
-/*
- * Handle RFC822 comments in headers.
- * If out == NULL, return a buffer without the comments, the caller must free
- *    the returned buffer
- * Return NULL on error or if the input * has no comments.
- * See section 3.4.3 of RFC822
- * TODO: handle comments that go on to more than one line
+/**
+ * @brief Remove RFC 822 comments from a header value.
+ *
+ * @param in                   Header value to process.
+ * @param out                  Optional output buffer, or NULL to allocate one.
+ * @param preserveQuotedPairs  Whether to retain backslashes outside comments.
+ * @return The comment-stripped value, or NULL on error or when no comments
+ *         are present.
+ *
+ * @note The caller must free the returned value when @p out is NULL.
+ * @note This does not handle comments that continue onto another line.
  */
 static char *
-rfc822comments(const char *in, char *out)
+rfc822comments(const char *in, char *out, bool preserveQuotedPairs)
 {
     const char *iptr;
     char *optr;
@@ -4073,6 +4083,8 @@ rfc822comments(const char *in, char *out)
         } else
             switch (*iptr) {
                 case '\\':
+                    if (preserveQuotedPairs && (commentlevel == 0))
+                        *optr++ = '\\';
                     backslash = 1;
                     break;
                 case '\"':
@@ -4096,7 +4108,7 @@ rfc822comments(const char *in, char *out)
                         *optr++ = *iptr;
             }
 
-    if (backslash) /* last character was a single backslash */
+    if (backslash && !preserveQuotedPairs) /* last character was a single backslash */
         *optr++ = '\\';
     *optr = '\0';
 
