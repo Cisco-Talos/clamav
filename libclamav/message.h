@@ -65,6 +65,9 @@ void messageAddArgument(message *m, const char *arg);
 /**
  * @brief Store an already-decoded MIME argument without RFC 2231 reparsing.
  *
+ * An existing duplicate is moved after earlier arguments so it remains the
+ * authoritative last value.
+ *
  * @param m    Message receiving the argument.
  * @param arg  Decoded argument in `name=value` form.
  * @return true if no allocation failed; false otherwise.

@@ -45,6 +45,7 @@ set(ENCRYPTED_TESTFILES
     clamav_hdb_scanfiles/clam.mail-boundary-comment-quoted-pair.eml
     clamav_hdb_scanfiles/clam.mail-boundary-escaped-quote.eml
     clamav_hdb_scanfiles/clam.mail-boundary-rfc2231-continuation.eml
+    clamav_hdb_scanfiles/clam.mail-boundary-rfc2231-duplicate-canonical.eml
     clamav_hdb_scanfiles/clam.mail-boundary-rfc2231-encoded-first.eml
     clamav_hdb_scanfiles/clam.mail-boundary-rfc2231-literal-quotes.eml
     clamav_hdb_scanfiles/clam.mail-boundary-rfc2231-nonascii-continuation.eml

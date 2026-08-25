@@ -419,8 +419,27 @@ messageAddArgumentInternal(message *m, const char *arg, bool alreadyDecoded)
     for (offset = 0; offset < m->numberOfArguments; offset++)
         if (m->mimeArguments[offset] == NULL)
             break;
-        else if (strcasecmp(arg, m->mimeArguments[offset]) == 0)
+        else if (strcasecmp(arg, m->mimeArguments[offset]) == 0) {
+            /* Decoded boundary values are case-sensitive. Keep looking for an
+             * exact duplicate, or append the canonical spelling. */
+            if (alreadyDecoded && strcmp(arg, m->mimeArguments[offset]) != 0)
+                continue;
+
+            if (alreadyDecoded && (offset + 1 < m->numberOfArguments)) {
+                char *duplicate = m->mimeArguments[offset];
+                size_t readOffset;
+                size_t writeOffset = offset;
+
+                for (readOffset = offset + 1; readOffset < m->numberOfArguments; readOffset++) {
+                    if (m->mimeArguments[readOffset] != NULL)
+                        m->mimeArguments[writeOffset++] = m->mimeArguments[readOffset];
+                }
+                m->mimeArguments[writeOffset++] = duplicate;
+                while (writeOffset < m->numberOfArguments)
+                    m->mimeArguments[writeOffset++] = NULL;
+            }
             return true; /* already in there */
+        }
 
     if (offset == m->numberOfArguments) {
         char **q;
