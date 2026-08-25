@@ -3417,15 +3417,76 @@ isMimeParameter(const char *arg, const char *variable)
 }
 
 /**
- * @brief Check whether text begins with a MIME parameter token.
+ * @brief Check whether text begins with a canonical MIME boundary parameter.
+ *
+ * Unlike the permissive legacy parameter parser, canonical boundary parsing
+ * accepts only the standard equals separator and validates the complete RFC
+ * 2231 suffix. This keeps tokenizer look-ahead consistent with
+ * findMimeBoundary(), so an invalid boundary-like token cannot change where a
+ * preceding value ends.
  *
  * @param arg  Header text to inspect.
- * @return Whether the first token contains a non-empty name and separator.
+ * @return Whether the text begins with a supported boundary parameter.
  */
 static bool
-isMimeParameterToken(const char *arg)
+isCanonicalBoundaryParameter(const char *arg)
+{
+    size_t section = 0;
+
+    if (arg == NULL)
+        return false;
+
+    while (isspace((unsigned char)*arg))
+        arg++;
+
+    if (strncasecmp(arg, "boundary", 8) != 0)
+        return false;
+    arg += 8;
+
+    while (isspace((unsigned char)*arg))
+        arg++;
+
+    if (*arg == '*') {
+        arg++;
+
+        if (isdigit((unsigned char)*arg)) {
+            do {
+                unsigned int digit = (unsigned int)(*arg++ - '0');
+
+                if (section > ((HEURISTIC_EMAIL_MAX_ARGUMENTS_PER_HEADER - 1 - digit) / 10))
+                    return false;
+                section = (section * 10) + digit;
+            } while (isdigit((unsigned char)*arg));
+
+            if (*arg == '*')
+                arg++;
+        }
+    }
+
+    while (isspace((unsigned char)*arg))
+        arg++;
+
+    return *arg == '=';
+}
+
+/**
+ * @brief Check whether text begins with a MIME parameter token.
+ *
+ * This deliberately follows messageAddArguments()' permissive parsing: after
+ * a non-empty name, an equals sign or colon anywhere before the next unescaped,
+ * unquoted semicolon makes the text parameter-shaped. This preserves the
+ * legacy end of an unquoted boundary value even when the following parameter
+ * is malformed.
+ *
+ * @param arg  Header text to inspect.
+ * @return Whether the candidate contains a non-empty name and separator.
+ */
+static bool
+hasMimeParameterAhead(const char *arg)
 {
     const char *nameStart;
+    bool backslash = false;
+    bool inquote   = false;
 
     if (arg == NULL)
         return false;
@@ -3434,7 +3495,17 @@ isMimeParameterToken(const char *arg)
         arg++;
     nameStart = arg;
 
-    while ((*arg != '\0') && (*arg != ';') && !isspace((unsigned char)*arg)) {
+    while (*arg != '\0') {
+        if (backslash) {
+            backslash = false;
+        } else if (*arg == '\\') {
+            backslash = true;
+        } else if (*arg == '"') {
+            inquote = !inquote;
+        } else if ((*arg == ';') && !inquote) {
+            break;
+        }
+
         if ((*arg == '=') || (*arg == ':'))
             return arg != nameStart;
         arg++;
@@ -3465,6 +3536,9 @@ nextMimeArgument(const char *ptr, char *buf, size_t buflen, bool splitBoundaryAr
     for (;;) {
         bool inquote = false, backslash = false;
         bool argumentIsBoundary;
+        bool argumentHasSeparator = false;
+        /* Avoid rescanning a long tail after proving it has no separator. */
+        bool checkedParameterTail = false;
         char *out = buf;
 
         if (splitBoundaryArguments) {
@@ -3474,14 +3548,14 @@ nextMimeArgument(const char *ptr, char *buf, size_t buflen, bool splitBoundaryAr
             while ((*p != '\0') && (*p != ';')) {
                 if (seekBackslash) {
                     seekBackslash = false;
-                    if (isspace((unsigned char)*p) && isMimeParameter(p, "boundary"))
+                    if (isspace((unsigned char)*p) && isCanonicalBoundaryParameter(p))
                         break;
                 } else if (*p == '\\') {
                     seekBackslash = true;
                 } else if (*p == '"') {
                     seekInquote = !seekInquote;
                 } else if (!seekInquote && isspace((unsigned char)*p) &&
-                           isMimeParameter(p, "boundary")) {
+                           isCanonicalBoundaryParameter(p)) {
                     break;
                 }
                 p++;
@@ -3499,20 +3573,22 @@ nextMimeArgument(const char *ptr, char *buf, size_t buflen, bool splitBoundaryAr
         while (isspace((unsigned char)*p))
             p++;
 
-        argumentIsBoundary = isMimeParameter(p, "boundary");
+        argumentIsBoundary = isCanonicalBoundaryParameter(p);
 
         while (*p) {
             if (backslash) {
                 backslash = false;
-                if (!inquote && splitBoundaryArguments && isspace((unsigned char)*p) &&
-                    isMimeParameterToken(p)) {
-                    goto done;
+                if (!inquote && splitBoundaryArguments && !checkedParameterTail &&
+                    isspace((unsigned char)*p)) {
+                    checkedParameterTail = true;
+                    if (hasMimeParameterAhead(p))
+                        goto done;
                 }
             } else {
                 switch (*p) {
                     case '\\':
                         if (inquote || !splitBoundaryArguments || (p[1] != ';') ||
-                            !isMimeParameter(p + 2, "boundary")) {
+                            !isCanonicalBoundaryParameter(p + 2)) {
                             backslash = true;
                         }
                         break;
@@ -3524,12 +3600,22 @@ nextMimeArgument(const char *ptr, char *buf, size_t buflen, bool splitBoundaryAr
                             goto done;
                         break;
                     default:
-                        if (!inquote && splitBoundaryArguments && isspace((unsigned char)*p)) {
-                            bool nextIsBoundary = isMimeParameter(p, "boundary");
+                        if (!inquote && ((*p == '=') || (*p == ':')))
+                            argumentHasSeparator = true;
 
-                            if ((!argumentIsBoundary && nextIsBoundary) ||
-                                (argumentIsBoundary && !nextIsBoundary && isMimeParameterToken(p))) {
+                        if (!inquote && splitBoundaryArguments && isspace((unsigned char)*p)) {
+                            bool nextIsBoundary = isCanonicalBoundaryParameter(p);
+
+                            /* Before the separator, whitespace may belong to
+                             * a tolerated form such as boundary *0=value. */
+                            if (!argumentIsBoundary && nextIsBoundary)
                                 goto done;
+
+                            if (argumentIsBoundary && argumentHasSeparator && !nextIsBoundary &&
+                                !checkedParameterTail) {
+                                checkedParameterTail = true;
+                                if (hasMimeParameterAhead(p))
+                                    goto done;
                             }
                         }
                         break;
@@ -3720,8 +3806,6 @@ findMimeBoundary(const char *contentType, char **boundary)
 
         separator = strchr(nameStart, '=');
         if (separator == NULL)
-            separator = strchr(nameStart, ':');
-        if (separator == NULL)
             continue;
 
         nameEnd = separator;
@@ -3733,7 +3817,10 @@ findMimeBoundary(const char *contentType, char **boundary)
             continue;
 
         suffix = nameStart + 8;
-        if (nameLength == 8) {
+        while ((suffix < nameEnd) && isspace((unsigned char)*suffix))
+            suffix++;
+
+        if (suffix == nameEnd) {
             if (decodeMimeBoundaryValue(separator + 1, false, false, &decoded) < 0) {
                 status = -1;
                 goto done;
@@ -4123,7 +4210,7 @@ saveTextPart(mbox_ctx *mctx, message *m, int destroy_text)
  *
  * @param in                   Header value to process.
  * @param out                  Optional output buffer, or NULL to allocate one.
- * @param preserveQuotedPairs  Whether to retain backslashes outside comments.
+ * @param preserveQuotedPairs  Whether to retain backslashes in quoted strings.
  * @return The comment-stripped value, or NULL on error or when no comments
  *         are present.
  *
@@ -4171,7 +4258,7 @@ rfc822comments(const char *in, char *out, bool preserveQuotedPairs)
         } else
             switch (*iptr) {
                 case '\\':
-                    if (preserveQuotedPairs && (commentlevel == 0))
+                    if (preserveQuotedPairs && (commentlevel == 0) && inquote)
                         *optr++ = '\\';
                     backslash = 1;
                     break;
@@ -4198,7 +4285,9 @@ rfc822comments(const char *in, char *out, bool preserveQuotedPairs)
                         *optr++ = *iptr;
             }
 
-    if (backslash && !preserveQuotedPairs) /* last character was a single backslash */
+    /* A quoted backslash was already copied. Preserve a trailing unquoted
+     * backslash, but do not leak one from an unterminated comment. */
+    if (backslash && (!preserveQuotedPairs || ((commentlevel == 0) && !inquote)))
         *optr++ = '\\';
     *optr = '\0';
 
