@@ -16,7 +16,10 @@ class TC(testcase.TestCase):
     def setUpClass(cls):
         super(TC, cls).setUpClass()
 
-        TC.testpaths = list(TC.path_build.glob('unit_tests/input/clamav_hdb_scanfiles/clam*')) # A list of Path()'s of each of our generated test files
+        TC.path_testfiles = (
+            TC.path_build / 'unit_tests' / 'input' / 'clamav_hdb_scanfiles'
+        )
+        TC.testpaths = list(TC.path_testfiles.glob('clam*'))
 
         (TC.path_tmp / 'Clam-VI.ldb').write_text(
             "Clam-VI-Test:Target;Engine:52-255,Target:1;(0&1);VI:43006f006d00700061006e0079004e0061006d0065000000000063006f006d00700061006e007900;VI:500072006f0064007500630074004e0061006d0065000000000063006c0061006d00\n"
@@ -42,9 +45,8 @@ class TC(testcase.TestCase):
     def test_LDB_VI(self):
         self.step_name('Test LDB VI feature')
 
-        testfiles = ' '.join([str(testpath) for testpath in TC.testpaths])
         command = '{valgrind} {valgrind_args} {clamscan} -d {path_db} {testfiles}'.format(
-            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan, path_db=TC.path_tmp / 'Clam-VI.ldb', testfiles=testfiles,
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan, path_db=TC.path_tmp / 'Clam-VI.ldb', testfiles=TC.path_testfiles,
         )
         output = self.execute_command(command)
 
@@ -60,9 +62,8 @@ class TC(testcase.TestCase):
     def test_yara_at_offset(self):
         self.step_name('Test yara signature - detect TAR file magic at an offset')
 
-        testfiles = ' '.join([str(testpath) for testpath in TC.testpaths])
         command = '{valgrind} {valgrind_args} {clamscan} -d {path_db} {testfiles}'.format(
-            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan, path_db=TC.path_tmp / 'yara-at-offset.yara', testfiles=testfiles,
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan, path_db=TC.path_tmp / 'yara-at-offset.yara', testfiles=TC.path_testfiles,
         )
         output = self.execute_command(command)
 
@@ -78,9 +79,8 @@ class TC(testcase.TestCase):
     def test_yara_in_range(self):
         self.step_name('Test yara signature - detect TAR file magic in a range')
 
-        testfiles = ' '.join([str(testpath) for testpath in TC.testpaths])
         command = '{valgrind} {valgrind_args} {clamscan} -d {path_db} {testfiles}'.format(
-            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan, path_db=TC.path_tmp / 'yara-in-range.yara', testfiles=testfiles,
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan, path_db=TC.path_tmp / 'yara-in-range.yara', testfiles=TC.path_testfiles,
         )
         output = self.execute_command(command)
 
