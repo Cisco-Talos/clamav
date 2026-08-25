@@ -3548,15 +3548,29 @@ nextMimeArgument(const char *ptr, char *buf, size_t buflen, bool splitBoundaryAr
             while ((*p != '\0') && (*p != ';')) {
                 if (seekBackslash) {
                     seekBackslash = false;
-                    if (isspace((unsigned char)*p) && isCanonicalBoundaryParameter(p))
-                        break;
+                    if (isspace((unsigned char)*p)) {
+                        const char *next = p;
+
+                        while (isspace((unsigned char)*next))
+                            next++;
+                        if (isCanonicalBoundaryParameter(next))
+                            break;
+                        p = next;
+                        continue;
+                    }
                 } else if (*p == '\\') {
                     seekBackslash = true;
                 } else if (*p == '"') {
                     seekInquote = !seekInquote;
-                } else if (!seekInquote && isspace((unsigned char)*p) &&
-                           isCanonicalBoundaryParameter(p)) {
-                    break;
+                } else if (!seekInquote && isspace((unsigned char)*p)) {
+                    const char *next = p;
+
+                    while (isspace((unsigned char)*next))
+                        next++;
+                    if (isCanonicalBoundaryParameter(next))
+                        break;
+                    p = next;
+                    continue;
                 }
                 p++;
             }
@@ -3604,7 +3618,12 @@ nextMimeArgument(const char *ptr, char *buf, size_t buflen, bool splitBoundaryAr
                             argumentHasSeparator = true;
 
                         if (!inquote && splitBoundaryArguments && isspace((unsigned char)*p)) {
-                            bool nextIsBoundary = isCanonicalBoundaryParameter(p);
+                            const char *next = p;
+                            bool nextIsBoundary;
+
+                            while (isspace((unsigned char)*next))
+                                next++;
+                            nextIsBoundary = isCanonicalBoundaryParameter(next);
 
                             /* Before the separator, whitespace may belong to
                              * a tolerated form such as boundary *0=value. */
@@ -3617,6 +3636,15 @@ nextMimeArgument(const char *ptr, char *buf, size_t buflen, bool splitBoundaryAr
                                 if (hasMimeParameterAhead(p))
                                     goto done;
                             }
+
+                            /* Preserve the whitespace while advancing over it
+                             * once, so boundary look-ahead remains linear. */
+                            while (p != next) {
+                                if ((size_t)(out - buf) < buflen - 1)
+                                    *out++ = *p;
+                                p++;
+                            }
+                            continue;
                         }
                         break;
                 }
