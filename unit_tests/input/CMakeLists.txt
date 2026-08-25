@@ -34,6 +34,7 @@ set(ENCRYPTED_TESTFILES
     clamav_hdb_scanfiles/clam.mail-comment-header-name.eml
     clamav_hdb_scanfiles/clam.mail-multiple-boundaries.eml
     clamav_hdb_scanfiles/clam.mail-boundary-content-disposition.eml
+    clamav_hdb_scanfiles/clam.mail-boundary-escaped-whitespace-parameter.eml
     clamav_hdb_scanfiles/clam.mail-boundary-leading-whitespace.eml
     clamav_hdb_scanfiles/clam.mail-boundary-intervening-parameter.eml
     clamav_hdb_scanfiles/clam.mail-boundary-lone-escaped-semicolon.eml

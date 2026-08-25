@@ -3474,6 +3474,8 @@ nextMimeArgument(const char *ptr, char *buf, size_t buflen, bool splitBoundaryAr
             while ((*p != '\0') && (*p != ';')) {
                 if (seekBackslash) {
                     seekBackslash = false;
+                    if (isspace((unsigned char)*p) && isMimeParameter(p, "boundary"))
+                        break;
                 } else if (*p == '\\') {
                     seekBackslash = true;
                 } else if (*p == '"') {
@@ -3502,6 +3504,10 @@ nextMimeArgument(const char *ptr, char *buf, size_t buflen, bool splitBoundaryAr
         while (*p) {
             if (backslash) {
                 backslash = false;
+                if (!inquote && splitBoundaryArguments && isspace((unsigned char)*p) &&
+                    isMimeParameterToken(p)) {
+                    goto done;
+                }
             } else {
                 switch (*p) {
                     case '\\':
