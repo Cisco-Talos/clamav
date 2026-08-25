@@ -3417,17 +3417,54 @@ isMimeParameter(const char *arg, const char *variable)
 }
 
 /**
+ * @brief Check for a later boundary-style MIME parameter outside quotes.
+ *
+ * @param arg       Header text to search.
+ * @param variable  Parameter name to find.
+ * @return Whether the parameter occurs at the start of a later token.
+ */
+static bool
+hasMimeParameterAhead(const char *arg, const char *variable)
+{
+    bool inquote   = false;
+    bool backslash = false;
+
+    if (arg == NULL || variable == NULL)
+        return false;
+
+    if (isMimeParameter(arg, variable))
+        return true;
+
+    for (; *arg != '\0'; arg++) {
+        if (backslash) {
+            backslash = false;
+        } else if (*arg == '\\') {
+            backslash = true;
+        } else if (*arg == '"') {
+            inquote = !inquote;
+        } else if (!inquote && ((*arg == ';') || isspace((unsigned char)*arg))) {
+            const char *candidate = (*arg == ';') ? arg + 1 : arg;
+
+            if (isMimeParameter(candidate, variable))
+                return true;
+        }
+    }
+
+    return false;
+}
+
+/**
  * @brief Copy the next semicolon-delimited MIME argument.
  *
  * @param ptr                       Header value to parse.
  * @param buf                       Destination buffer.
  * @param buflen                    Size of @p buf.
- * @param splitEscapedBoundary      Whether an escaped semicolon before a
- *                                  following boundary parameter is a delimiter.
+ * @param splitBoundaryArguments    Whether malformed separators before a later
+ *                                  boundary parameter are delimiters.
  * @return The next parse position, or NULL when no argument remains.
  */
 static const char *
-nextMimeArgument(const char *ptr, char *buf, size_t buflen, bool splitEscapedBoundary)
+nextMimeArgument(const char *ptr, char *buf, size_t buflen, bool splitBoundaryArguments)
 {
     const char *p;
 
@@ -3437,16 +3474,23 @@ nextMimeArgument(const char *ptr, char *buf, size_t buflen, bool splitEscapedBou
     p = ptr;
     for (;;) {
         bool inquote = false, backslash = false;
+        bool argumentIsBoundary;
         char *out = buf;
 
-        while (*p && *p != ';')
+        while (*p && *p != ';' &&
+               !(splitBoundaryArguments && (p == ptr) &&
+                 isspace((unsigned char)*p) && isMimeParameter(p, "boundary")))
             p++;
         if (*p == '\0')
             return NULL;
-        p++;
+
+        if (*p == ';')
+            p++;
 
         while (isspace((unsigned char)*p))
             p++;
+
+        argumentIsBoundary = isMimeParameter(p, "boundary");
 
         while (*p) {
             if (backslash) {
@@ -3454,8 +3498,8 @@ nextMimeArgument(const char *ptr, char *buf, size_t buflen, bool splitEscapedBou
             } else {
                 switch (*p) {
                     case '\\':
-                        if (inquote || !splitEscapedBoundary || (p[1] != ';') ||
-                            !isMimeParameter(p + 2, "boundary")) {
+                        if (inquote || !splitBoundaryArguments || (p[1] != ';') ||
+                            !hasMimeParameterAhead(p + 2, "boundary")) {
                             backslash = true;
                         }
                         break;
@@ -3465,6 +3509,12 @@ nextMimeArgument(const char *ptr, char *buf, size_t buflen, bool splitEscapedBou
                     case ';':
                         if (!inquote)
                             goto done;
+                        break;
+                    default:
+                        if (!inquote && splitBoundaryArguments && !argumentIsBoundary &&
+                            isspace((unsigned char)*p) && isMimeParameter(p, "boundary")) {
+                            goto done;
+                        }
                         break;
                 }
             }
