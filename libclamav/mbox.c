@@ -3417,37 +3417,27 @@ isMimeParameter(const char *arg, const char *variable)
 }
 
 /**
- * @brief Check for a later boundary-style MIME parameter outside quotes.
+ * @brief Check whether text begins with a MIME parameter token.
  *
- * @param arg       Header text to search.
- * @param variable  Parameter name to find.
- * @return Whether the parameter occurs at the start of a later token.
+ * @param arg  Header text to inspect.
+ * @return Whether the first token contains a non-empty name and separator.
  */
 static bool
-hasMimeParameterAhead(const char *arg, const char *variable)
+isMimeParameterToken(const char *arg)
 {
-    bool inquote   = false;
-    bool backslash = false;
+    const char *nameStart;
 
-    if (arg == NULL || variable == NULL)
+    if (arg == NULL)
         return false;
 
-    if (isMimeParameter(arg, variable))
-        return true;
+    while (isspace((unsigned char)*arg))
+        arg++;
+    nameStart = arg;
 
-    for (; *arg != '\0'; arg++) {
-        if (backslash) {
-            backslash = false;
-        } else if (*arg == '\\') {
-            backslash = true;
-        } else if (*arg == '"') {
-            inquote = !inquote;
-        } else if (!inquote && ((*arg == ';') || isspace((unsigned char)*arg))) {
-            const char *candidate = (*arg == ';') ? arg + 1 : arg;
-
-            if (isMimeParameter(candidate, variable))
-                return true;
-        }
+    while ((*arg != '\0') && (*arg != ';') && !isspace((unsigned char)*arg)) {
+        if ((*arg == '=') || (*arg == ':'))
+            return arg != nameStart;
+        arg++;
     }
 
     return false;
@@ -3477,10 +3467,27 @@ nextMimeArgument(const char *ptr, char *buf, size_t buflen, bool splitBoundaryAr
         bool argumentIsBoundary;
         char *out = buf;
 
-        while (*p && *p != ';' &&
-               !(splitBoundaryArguments && (p == ptr) &&
-                 isspace((unsigned char)*p) && isMimeParameter(p, "boundary")))
-            p++;
+        if (splitBoundaryArguments) {
+            bool seekInquote   = false;
+            bool seekBackslash = false;
+
+            while ((*p != '\0') && (*p != ';')) {
+                if (seekBackslash) {
+                    seekBackslash = false;
+                } else if (*p == '\\') {
+                    seekBackslash = true;
+                } else if (*p == '"') {
+                    seekInquote = !seekInquote;
+                } else if (!seekInquote && isspace((unsigned char)*p) &&
+                           isMimeParameter(p, "boundary")) {
+                    break;
+                }
+                p++;
+            }
+        } else {
+            while (*p && *p != ';')
+                p++;
+        }
         if (*p == '\0')
             return NULL;
 
@@ -3499,7 +3506,7 @@ nextMimeArgument(const char *ptr, char *buf, size_t buflen, bool splitBoundaryAr
                 switch (*p) {
                     case '\\':
                         if (inquote || !splitBoundaryArguments || (p[1] != ';') ||
-                            !hasMimeParameterAhead(p + 2, "boundary")) {
+                            !isMimeParameter(p + 2, "boundary")) {
                             backslash = true;
                         }
                         break;
@@ -3511,9 +3518,13 @@ nextMimeArgument(const char *ptr, char *buf, size_t buflen, bool splitBoundaryAr
                             goto done;
                         break;
                     default:
-                        if (!inquote && splitBoundaryArguments && !argumentIsBoundary &&
-                            isspace((unsigned char)*p) && isMimeParameter(p, "boundary")) {
-                            goto done;
+                        if (!inquote && splitBoundaryArguments && isspace((unsigned char)*p)) {
+                            bool nextIsBoundary = isMimeParameter(p, "boundary");
+
+                            if ((!argumentIsBoundary && nextIsBoundary) ||
+                                (argumentIsBoundary && !nextIsBoundary && isMimeParameterToken(p))) {
+                                goto done;
+                            }
                         }
                         break;
                 }
