@@ -3548,7 +3548,7 @@ nextMimeArgument(const char *ptr, char *buf, size_t buflen, bool splitBoundaryAr
             while ((*p != '\0') && (*p != ';')) {
                 if (seekBackslash) {
                     seekBackslash = false;
-                    if (isspace((unsigned char)*p)) {
+                    if (!seekInquote && isspace((unsigned char)*p)) {
                         const char *next = p;
 
                         while (isspace((unsigned char)*next))
