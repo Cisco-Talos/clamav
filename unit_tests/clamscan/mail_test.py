@@ -183,6 +183,63 @@ class TC(testcase.TestCase):
                 b'name="a; boundary=BAD"',
                 b'X',
             ),
+            (
+                'clam.mail-boundary-adjacent-after-quote.eml',
+                b'Content-Type: multipart/mixed; boundary="X"boundary=Y',
+                b'Y',
+            ),
+            (
+                'clam.mail-boundary-adjacent-colon-after-quote.eml',
+                b'Content-Type: multipart/mixed; boundary:"X"boundary:Y',
+                b'Y',
+            ),
+            (
+                'clam.mail-boundary-parameter-after-quote.eml',
+                b'Content-Type: multipart/mixed; '
+                b'boundary="X"name=a boundary=Y',
+                b'Y',
+            ),
+            (
+                'clam.mail-boundary-extended-after-quote.eml',
+                b"Content-Type: multipart/mixed; "
+                b"boundary*=\"utf-8''X\"boundary=Y",
+                b'Y',
+            ),
+            (
+                'clam.mail-boundary-immediate-extended-after-quote.eml',
+                b"Content-Type: multipart/mixed; "
+                b"boundary=\"X\"boundary*=utf-8''Y",
+                b'Y',
+            ),
+            (
+                'clam.mail-boundary-immediate-continuation-after-quote.eml',
+                b'Content-Type: multipart/mixed; '
+                b'boundary*0="X"boundary*1=Y',
+                b'XY',
+            ),
+            (
+                'clam.mail-boundary-after-intervening-quote.eml',
+                b'Content-Type: multipart/mixed; '
+                b'boundary="X"name="a boundary=BAD"boundary=Y',
+                b'Y',
+            ),
+            (
+                'clam.mail-boundary-colon-only-after-quote.eml',
+                b'Content-Type: multipart/mixed; '
+                b'boundary="X"name:a boundary:Y',
+                b'Y',
+            ),
+            (
+                'clam.mail-boundary-whitespace-after-quote.eml',
+                b'Content-Type: multipart/mixed; boundary="X" boundary=Y',
+                b'X',
+            ),
+            (
+                'clam.mail-boundary-literal-after-quote.eml',
+                b'Content-Type: multipart/mixed; '
+                b'boundary="X"foo boundary=Y',
+                b'X',
+            ),
         )
         testfiles = []
 

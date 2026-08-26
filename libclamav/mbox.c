@@ -3541,6 +3541,43 @@ hasMimeParameterAhead(const char *arg)
 }
 
 /**
+ * @brief Check whether text immediately begins with a MIME parameter.
+ *
+ * Unlike hasMimeParameterAhead(), this does not search past a whitespace-
+ * delimited token. It is used after a closing quote, where the legacy parser
+ * resumes at the very next parameter name even when no delimiter is present.
+ *
+ * @param arg  Header text to inspect.
+ * @return Whether the first token contains a parameter separator.
+ */
+static bool
+hasImmediateMimeParameter(const char *arg)
+{
+    const char *nameStart;
+
+    if ((arg == NULL) || isspace((unsigned char)*arg) || (*arg == ';'))
+        return false;
+    nameStart = arg;
+
+    while (*arg != '\0') {
+        if ((*arg == '=') || (*arg == ':'))
+            return arg != nameStart;
+
+        if (isspace((unsigned char)*arg)) {
+            while (isspace((unsigned char)*arg))
+                arg++;
+            return (arg != nameStart) && ((*arg == '=') || (*arg == ':'));
+        }
+
+        if (*arg == ';')
+            break;
+        arg++;
+    }
+
+    return false;
+}
+
+/**
  * @brief Copy the next semicolon-delimited MIME argument.
  *
  * @param ptr                       Header value to parse.
@@ -3575,8 +3612,12 @@ nextMimeArgument(const char *ptr, char *buf, size_t buflen, bool splitBoundaryAr
             bool seekHasSeparator = false;
             bool seekTokenStarted = false;
             bool seekValueStarted = false;
+            bool seekStartsAtBoundary;
 
-            while (*p != '\0') {
+            /* A malformed argument may begin immediately after a quoted
+             * value, without a semicolon or whitespace separator. */
+            seekStartsAtBoundary = isCanonicalBoundaryParameter(p);
+            while ((*p != '\0') && !seekStartsAtBoundary) {
                 if (seekBackslash) {
                     seekBackslash = false;
                     if (!seekInquote && isspace((unsigned char)*p)) {
@@ -3597,6 +3638,10 @@ nextMimeArgument(const char *ptr, char *buf, size_t buflen, bool splitBoundaryAr
                 } else if (*p == '"') {
                     if (seekInquote) {
                         seekInquote = false;
+                        if (seekHasSeparator && isCanonicalBoundaryParameter(p + 1)) {
+                            p++;
+                            break;
+                        }
                     } else if (!seekTokenStarted ||
                                (seekHasSeparator && !seekValueStarted)) {
                         /* Quotes open syntax only at the start of a media
@@ -3672,6 +3717,10 @@ nextMimeArgument(const char *ptr, char *buf, size_t buflen, bool splitBoundaryAr
                     case '"':
                         if (inquote) {
                             inquote = false;
+                            if (splitBoundaryArguments && hasImmediateMimeParameter(p + 1)) {
+                                p++;
+                                goto done;
+                            }
                         } else if (!splitBoundaryArguments ||
                                    (argumentHasSeparator && !argumentValueStarted)) {
                             /* Canonical parsing opens quoted syntax only at
