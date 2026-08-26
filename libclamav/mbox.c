@@ -3543,10 +3543,13 @@ nextMimeArgument(const char *ptr, char *buf, size_t buflen, bool splitBoundaryAr
         char *out = buf;
 
         if (splitBoundaryArguments) {
-            bool seekInquote   = false;
-            bool seekBackslash = false;
+            bool seekInquote      = false;
+            bool seekBackslash    = false;
+            bool seekHasSeparator = false;
+            bool seekTokenStarted = false;
+            bool seekValueStarted = false;
 
-            while ((*p != '\0') && (*p != ';')) {
+            while (*p != '\0') {
                 if (seekBackslash) {
                     seekBackslash = false;
                     if (!seekInquote && isspace((unsigned char)*p)) {
@@ -3560,9 +3563,30 @@ nextMimeArgument(const char *ptr, char *buf, size_t buflen, bool splitBoundaryAr
                         continue;
                     }
                 } else if (*p == '\\') {
-                    seekBackslash = true;
+                    seekBackslash    = true;
+                    seekTokenStarted = true;
+                    if (seekHasSeparator)
+                        seekValueStarted = true;
                 } else if (*p == '"') {
-                    seekInquote = !seekInquote;
+                    if (seekInquote) {
+                        seekInquote = false;
+                    } else if (!seekTokenStarted ||
+                               (seekHasSeparator && !seekValueStarted)) {
+                        /* Quotes open syntax only at the start of a media
+                         * type or parameter value; embedded quotes are data. */
+                        seekInquote      = true;
+                        seekTokenStarted = true;
+                        if (seekHasSeparator)
+                            seekValueStarted = true;
+                    }
+                } else if (!seekInquote && (*p == ';')) {
+                    break;
+                } else if (!seekInquote && ((*p == '=') || (*p == ':'))) {
+                    if (seekHasSeparator)
+                        seekValueStarted = true;
+                    else
+                        seekHasSeparator = true;
+                    seekTokenStarted = true;
                 } else if (!seekInquote && isspace((unsigned char)*p)) {
                     const char *next = p;
 
@@ -3572,6 +3596,10 @@ nextMimeArgument(const char *ptr, char *buf, size_t buflen, bool splitBoundaryAr
                         break;
                     p = next;
                     continue;
+                } else if (!seekInquote) {
+                    seekTokenStarted = true;
+                    if (seekHasSeparator)
+                        seekValueStarted = true;
                 }
                 p++;
             }

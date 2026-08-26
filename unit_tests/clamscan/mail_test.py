@@ -147,21 +147,48 @@ class TC(testcase.TestCase):
             (
                 'clam.mail-boundary-quoted-media-type.eml',
                 b'Content-Type: "multipart/mixed\x5c boundary=X"; boundary=Y',
+                b'Y',
             ),
             (
                 'clam.mail-boundary-embedded-quote-parameter.eml',
                 b'Content-Type: multipart/mixed; boundary=X; name=a"foo; boundary=Y z=b"',
+                b'Y',
             ),
             (
                 'clam.mail-boundary-embedded-quote-value.eml',
                 b'Content-Type: multipart/mixed; boundary=X"foo; boundary=Y z=b"',
+                b'Y',
+            ),
+            (
+                'clam.mail-boundary-embedded-quote-resume.eml',
+                b'Content-Type: multipart/mixed; boundary=X '
+                b'name=a" boundary=Y z=b"',
+                b'Y',
+            ),
+            (
+                'clam.mail-boundary-embedded-quote-resume-colon.eml',
+                b'Content-Type: multipart/mixed; boundary=X '
+                b'name=a" boundary:"Y" z=b"',
+                b'Y',
+            ),
+            (
+                'clam.mail-boundary-quoted-resume-colon.eml',
+                b'Content-Type: multipart/mixed; boundary=X '
+                b'name:"a boundary:BAD"; boundary=Y',
+                b'Y',
+            ),
+            (
+                'clam.mail-boundary-quoted-resume-semicolon.eml',
+                b'Content-Type: multipart/mixed; boundary=X '
+                b'name="a; boundary=BAD"',
+                b'X',
             ),
         )
         testfiles = []
 
-        for filename, header in cases:
+        for filename, header, delimiter in cases:
             message = source.replace(original_header, header, 1)
-            message = message.replace(b'--X\\;', b'--Y')
+            message = message.replace(b'--X\\;', b'--' + delimiter)
             testfile = TC.path_tmp / filename
             testfile.write_bytes(message)
             testfiles.append(testfile)
@@ -179,12 +206,8 @@ class TC(testcase.TestCase):
         self.verify_output(
             output.out,
             expected=[
-                'clam.mail-boundary-quoted-media-type.eml: '
-                'ClamAV-Test-File.UNOFFICIAL FOUND',
-                'clam.mail-boundary-embedded-quote-parameter.eml: '
-                'ClamAV-Test-File.UNOFFICIAL FOUND',
-                'clam.mail-boundary-embedded-quote-value.eml: '
-                'ClamAV-Test-File.UNOFFICIAL FOUND',
+                f'{testfile.name}: ClamAV-Test-File.UNOFFICIAL FOUND'
+                for testfile in testfiles
             ],
         )
 
