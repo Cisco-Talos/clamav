@@ -309,6 +309,24 @@ class TC(testcase.TestCase):
                 b'XY',
             ),
             (
+                'clam.mail-boundary-adjacent-ordinary-extended.eml',
+                b"Content-Type: multipart/mixed; boundary=X "
+                b"boundary*=utf-8''Y",
+                b'Y',
+            ),
+            (
+                'clam.mail-boundary-adjacent-ordinary-continuation.eml',
+                b'Content-Type: multipart/mixed; boundary=X '
+                b'boundary*0=Y boundary*1=Z',
+                b'YZ',
+            ),
+            (
+                'clam.mail-boundary-adjacent-quoted-ordinary-extended.eml',
+                b"Content-Type: multipart/mixed; boundary=\"X\" "
+                b"boundary*:utf-8''Y",
+                b'Y',
+            ),
+            (
                 'clam.mail-boundary-extended-trailing-text.eml',
                 b"Content-Type: multipart/mixed; boundary*=utf-8''X junk",
                 b'X',

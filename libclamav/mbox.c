@@ -3698,6 +3698,7 @@ nextMimeArgument(const char *ptr, char *buf, size_t buflen, bool splitBoundaryAr
                         if (!inquote && splitBoundaryArguments && isspace((unsigned char)*p)) {
                             const char *next = p;
                             bool nextIsBoundary;
+                            bool nextIsOrdinaryBoundary;
 
                             if (argumentIsBoundary && !argumentIsOrdinaryBoundary &&
                                 argumentHasSeparator && argumentValueStarted)
@@ -3705,11 +3706,14 @@ nextMimeArgument(const char *ptr, char *buf, size_t buflen, bool splitBoundaryAr
 
                             while (isspace((unsigned char)*next))
                                 next++;
-                            nextIsBoundary = isCanonicalBoundaryParameter(next);
+                            nextIsBoundary         = isCanonicalBoundaryParameter(next);
+                            nextIsOrdinaryBoundary = isOrdinaryBoundaryParameter(next);
 
-                            /* Before the separator, whitespace may belong to
-                             * a tolerated form such as boundary *0=value. */
-                            if (!argumentIsOrdinaryBoundary && nextIsBoundary)
+                            /* Preserve whitespace adjacency only between two
+                             * ordinary boundary declarations. Extended and
+                             * continued declarations remain distinct. */
+                            if (nextIsBoundary &&
+                                (!argumentIsOrdinaryBoundary || !nextIsOrdinaryBoundary))
                                 goto done;
 
                             if (argumentIsBoundary && argumentHasSeparator && !nextIsBoundary &&
