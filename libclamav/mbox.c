@@ -3791,7 +3791,6 @@ findMimeBoundary(const char *contentType, char **boundary)
     const char *next;
     size_t directOrder                                      = 0;
     size_t continuationOrder                                = 0;
-    size_t argumentCount                                    = 0;
     size_t argumentSize;
     size_t order                                            = 0;
     size_t i;
@@ -3825,9 +3824,6 @@ findMimeBoundary(const char *contentType, char **boundary)
         bool encoded   = false;
 
         order++;
-        argumentCount++;
-        if (argumentCount >= HEURISTIC_EMAIL_MAX_ARGUMENTS_PER_HEADER)
-            break;
 
         while (isspace((unsigned char)*nameStart))
             nameStart++;
@@ -4121,11 +4117,10 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
                 while (ptr != NULL) {
                     cli_dbgmsg("mimeArgs = '%s'\n", buf);
 
-                    argCnt++;
-                    if (haveTooManyMIMEArguments(argCnt, ctx, heuristicFound)) {
+                    if (!messageAddArguments(m, buf, &argCnt, HEURISTIC_EMAIL_MAX_ARGUMENTS_PER_HEADER)) {
+                        (void)haveTooManyMIMEArguments(argCnt, ctx, heuristicFound);
                         break;
                     }
-                    messageAddArguments(m, buf);
                     ptr = nextMimeArgument(ptr, buf, buflen, false);
                 }
 

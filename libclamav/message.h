@@ -73,7 +73,17 @@ void messageAddArgument(message *m, const char *arg);
  * @return true if no allocation failed; false otherwise.
  */
 bool messageAddArgumentDecoded(message *m, const char *arg);
-void messageAddArguments(message *m, const char *arg);
+/**
+ * @brief Parse and store MIME arguments while enforcing a shared limit.
+ *
+ * @param m               Message receiving the arguments.
+ * @param arg             String containing one or more MIME arguments.
+ * @param argumentCount   Running argument count for the current header.
+ * @param argumentLimit   Count at which parsing must stop.
+ * @return true when all arguments were processed; false when the limit was
+ *         reached before processing the current argument.
+ */
+bool messageAddArguments(message *m, const char *arg, size_t *argumentCount, size_t argumentLimit);
 char *messageFindArgument(const message *m, const char *variable);
 char *messageFindArgumentLast(const message *m, const char *variable);
 /**

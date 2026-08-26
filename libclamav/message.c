@@ -513,7 +513,7 @@ messageAddArgumentDecoded(message *m, const char *arg)
  *    name="foo bar.doc"
  *    charset=foo name=bar
  */
-void messageAddArguments(message *m, const char *s)
+bool messageAddArguments(message *m, const char *s, size_t *argumentCount, size_t argumentLimit)
 {
     const char *string = s;
 
@@ -521,7 +521,12 @@ void messageAddArguments(message *m, const char *s)
 
     if (string == NULL) {
         cli_errmsg("Internal email parser error: message is pointer is NULL when trying to add message arguments\n");
-        return;
+        return true;
+    }
+
+    if ((argumentCount == NULL) || (argumentLimit == 0)) {
+        cli_errmsg("Internal email parser error: invalid MIME argument limit state\n");
+        return false;
     }
 
     while (*string) {
@@ -533,6 +538,10 @@ void messageAddArguments(message *m, const char *s)
             string++;
             continue;
         }
+
+        (*argumentCount)++;
+        if (*argumentCount >= argumentLimit)
+            return false;
 
         key = string;
 
@@ -557,7 +566,7 @@ void messageAddArguments(message *m, const char *s)
              * Completely broken, give up
              */
             cli_dbgmsg("Can't parse header \"%s\"\n", s);
-            return;
+            return true;
         }
 
         string = &data[1];
@@ -589,7 +598,7 @@ void messageAddArguments(message *m, const char *s)
             kcopy = cli_safer_strdup(key);
 
             if (kcopy == NULL)
-                return;
+                return true;
 
             ptr = strchr(kcopy, '=');
             if (ptr == NULL) {
@@ -597,7 +606,7 @@ void messageAddArguments(message *m, const char *s)
                 if (ptr == NULL) {
                     cli_dbgmsg("Can't parse header \"%s\"\n", s);
                     free(kcopy);
-                    return;
+                    return true;
                 }
             }
 
@@ -621,7 +630,7 @@ void messageAddArguments(message *m, const char *s)
             if (!data) {
                 cli_dbgmsg("Can't parse header \"%s\" - if you believe this file contains a missed virus, report it to bugs@clamav.net\n", s);
                 free(kcopy);
-                return;
+                return true;
             }
 
             ptr = strchr(data, '"');
@@ -654,7 +663,7 @@ void messageAddArguments(message *m, const char *s)
 
             if (*cptr == '\0') {
                 cli_dbgmsg("Ignoring empty field in \"%s\"\n", s);
-                return;
+                return true;
             }
 
             /*
@@ -677,6 +686,8 @@ void messageAddArguments(message *m, const char *s)
             free(field);
         }
     }
+
+    return true;
 }
 
 static const char *
