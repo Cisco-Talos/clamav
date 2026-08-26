@@ -3417,6 +3417,32 @@ isMimeParameter(const char *arg, const char *variable)
 }
 
 /**
+ * @brief Check whether text begins with an ordinary MIME boundary parameter.
+ *
+ * @param arg  Header text to inspect.
+ * @return Whether the text begins with boundary followed by a separator,
+ *         without an RFC 2231 suffix.
+ */
+static bool
+isOrdinaryBoundaryParameter(const char *arg)
+{
+    if (arg == NULL)
+        return false;
+
+    while (isspace((unsigned char)*arg))
+        arg++;
+
+    if (strncasecmp(arg, "boundary", 8) != 0)
+        return false;
+    arg += 8;
+
+    while (isspace((unsigned char)*arg))
+        arg++;
+
+    return (*arg == '=') || (*arg == ':');
+}
+
+/**
  * @brief Check whether text begins with a canonical MIME boundary parameter.
  *
  * Canonical boundary parsing accepts the standard equals separator and the
@@ -3536,6 +3562,7 @@ nextMimeArgument(const char *ptr, char *buf, size_t buflen, bool splitBoundaryAr
     for (;;) {
         bool inquote = false, backslash = false;
         bool argumentIsBoundary;
+        bool argumentIsOrdinaryBoundary;
         bool argumentHasSeparator = false;
         bool argumentValueStarted = false;
         /* Avoid rescanning a long tail after proving it has no separator. */
@@ -3616,13 +3643,18 @@ nextMimeArgument(const char *ptr, char *buf, size_t buflen, bool splitBoundaryAr
         while (isspace((unsigned char)*p))
             p++;
 
-        argumentIsBoundary = isCanonicalBoundaryParameter(p);
+        argumentIsBoundary         = isCanonicalBoundaryParameter(p);
+        argumentIsOrdinaryBoundary = isOrdinaryBoundaryParameter(p);
 
         while (*p) {
             if (backslash) {
                 backslash = false;
                 if (!inquote && splitBoundaryArguments && !checkedParameterTail &&
                     isspace((unsigned char)*p)) {
+                    if (argumentIsBoundary && !argumentIsOrdinaryBoundary &&
+                        argumentHasSeparator && argumentValueStarted)
+                        goto done;
+
                     checkedParameterTail = true;
                     if (hasMimeParameterAhead(p))
                         goto done;
@@ -3667,13 +3699,17 @@ nextMimeArgument(const char *ptr, char *buf, size_t buflen, bool splitBoundaryAr
                             const char *next = p;
                             bool nextIsBoundary;
 
+                            if (argumentIsBoundary && !argumentIsOrdinaryBoundary &&
+                                argumentHasSeparator && argumentValueStarted)
+                                goto done;
+
                             while (isspace((unsigned char)*next))
                                 next++;
                             nextIsBoundary = isCanonicalBoundaryParameter(next);
 
                             /* Before the separator, whitespace may belong to
                              * a tolerated form such as boundary *0=value. */
-                            if (!argumentIsBoundary && nextIsBoundary)
+                            if (!argumentIsOrdinaryBoundary && nextIsBoundary)
                                 goto done;
 
                             if (argumentIsBoundary && argumentHasSeparator && !nextIsBoundary &&
