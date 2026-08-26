@@ -3537,6 +3537,7 @@ nextMimeArgument(const char *ptr, char *buf, size_t buflen, bool splitBoundaryAr
         bool inquote = false, backslash = false;
         bool argumentIsBoundary;
         bool argumentHasSeparator = false;
+        bool argumentValueStarted = false;
         /* Avoid rescanning a long tail after proving it has no separator. */
         bool checkedParameterTail = false;
         char *out = buf;
@@ -3601,21 +3602,38 @@ nextMimeArgument(const char *ptr, char *buf, size_t buflen, bool splitBoundaryAr
             } else {
                 switch (*p) {
                     case '\\':
+                        if (splitBoundaryArguments && argumentHasSeparator)
+                            argumentValueStarted = true;
                         if (inquote || !splitBoundaryArguments || (p[1] != ';') ||
                             !isCanonicalBoundaryParameter(p + 2)) {
                             backslash = true;
                         }
                         break;
                     case '"':
-                        inquote = !inquote;
+                        if (inquote) {
+                            inquote = false;
+                        } else if (!splitBoundaryArguments ||
+                                   (argumentHasSeparator && !argumentValueStarted)) {
+                            /* Canonical parsing opens quoted syntax only at
+                             * the start of a value; embedded quotes are data. */
+                            inquote              = true;
+                            argumentValueStarted = true;
+                        }
                         break;
                     case ';':
                         if (!inquote)
                             goto done;
                         break;
                     default:
-                        if (!inquote && ((*p == '=') || (*p == ':')))
-                            argumentHasSeparator = true;
+                        if (!inquote && ((*p == '=') || (*p == ':'))) {
+                            if (argumentHasSeparator)
+                                argumentValueStarted = true;
+                            else
+                                argumentHasSeparator = true;
+                        } else if (!inquote && splitBoundaryArguments &&
+                                   argumentHasSeparator && !isspace((unsigned char)*p)) {
+                            argumentValueStarted = true;
+                        }
 
                         if (!inquote && splitBoundaryArguments && isspace((unsigned char)*p)) {
                             const char *next = p;

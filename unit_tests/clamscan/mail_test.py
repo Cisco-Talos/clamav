@@ -135,27 +135,43 @@ class TC(testcase.TestCase):
             ],
         )
 
-    def test_content_type_quoted_media_type_boundary_text(self):
-        self.step_name('Test boundary-like text inside a quoted media type')
+    def test_content_type_quote_state(self):
+        self.step_name('Test MIME boundary look-ahead quote state')
 
         source = (
             TC.path_build / 'unit_tests' / 'input' / 'clamav_hdb_scanfiles' /
             'clam.mail-boundary-ordinary-parameter.eml'
         ).read_bytes()
         original_header = b'Content-Type: multipart/mixed; boundary=X\\; name=a'
-        header = b'Content-Type: "multipart/mixed\x5c boundary=X"; boundary=Y'
+        cases = (
+            (
+                'clam.mail-boundary-quoted-media-type.eml',
+                b'Content-Type: "multipart/mixed\x5c boundary=X"; boundary=Y',
+            ),
+            (
+                'clam.mail-boundary-embedded-quote-parameter.eml',
+                b'Content-Type: multipart/mixed; boundary=X; name=a"foo; boundary=Y z=b"',
+            ),
+            (
+                'clam.mail-boundary-embedded-quote-value.eml',
+                b'Content-Type: multipart/mixed; boundary=X"foo; boundary=Y z=b"',
+            ),
+        )
+        testfiles = []
 
-        message = source.replace(original_header, header, 1)
-        message = message.replace(b'--X\\;', b'--Y')
-        testfile = TC.path_tmp / 'clam.mail-boundary-quoted-media-type.eml'
-        testfile.write_bytes(message)
+        for filename, header in cases:
+            message = source.replace(original_header, header, 1)
+            message = message.replace(b'--X\\;', b'--Y')
+            testfile = TC.path_tmp / filename
+            testfile.write_bytes(message)
+            testfiles.append(testfile)
 
-        command = '{valgrind} {valgrind_args} {clamscan} --no-summary -d {path_db} {testfile}'.format(
+        command = '{valgrind} {valgrind_args} {clamscan} --disable-cache --no-summary -d {path_db} {testfiles}'.format(
             valgrind=TC.valgrind,
             valgrind_args=TC.valgrind_args,
             clamscan=TC.clamscan,
             path_db=TC.path_build / 'unit_tests' / 'input' / 'clamav.hdb',
-            testfile=testfile,
+            testfiles=' '.join(str(testfile) for testfile in testfiles),
         )
         output = self.execute_command(command)
 
@@ -164,6 +180,10 @@ class TC(testcase.TestCase):
             output.out,
             expected=[
                 'clam.mail-boundary-quoted-media-type.eml: '
+                'ClamAV-Test-File.UNOFFICIAL FOUND',
+                'clam.mail-boundary-embedded-quote-parameter.eml: '
+                'ClamAV-Test-File.UNOFFICIAL FOUND',
+                'clam.mail-boundary-embedded-quote-value.eml: '
                 'ClamAV-Test-File.UNOFFICIAL FOUND',
             ],
         )
