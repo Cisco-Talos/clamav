@@ -3419,11 +3419,11 @@ isMimeParameter(const char *arg, const char *variable)
 /**
  * @brief Check whether text begins with a canonical MIME boundary parameter.
  *
- * Unlike the permissive legacy parameter parser, canonical boundary parsing
- * accepts only the standard equals separator and validates the complete RFC
- * 2231 suffix. This keeps tokenizer look-ahead consistent with
- * findMimeBoundary(), so an invalid boundary-like token cannot change where a
- * preceding value ends.
+ * Canonical boundary parsing accepts the standard equals separator and the
+ * legacy colon separator supported by messageAddArguments(), while validating
+ * the complete RFC 2231 suffix. This keeps tokenizer look-ahead consistent
+ * with findMimeBoundary(), so an invalid boundary-like token cannot change
+ * where a preceding value ends.
  *
  * @param arg  Header text to inspect.
  * @return Whether the text begins with a supported boundary parameter.
@@ -3466,7 +3466,7 @@ isCanonicalBoundaryParameter(const char *arg)
     while (isspace((unsigned char)*arg))
         arg++;
 
-    return *arg == '=';
+    return (*arg == '=') || (*arg == ':');
 }
 
 /**
@@ -3847,6 +3847,8 @@ findMimeBoundary(const char *contentType, char **boundary)
             nameStart++;
 
         separator = strchr(nameStart, '=');
+        if (separator == NULL)
+            separator = strchr(nameStart, ':');
         if (separator == NULL)
             continue;
 

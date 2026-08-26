@@ -188,6 +188,79 @@ class TC(testcase.TestCase):
             ],
         )
 
+    def test_content_type_legacy_colon_boundaries(self):
+        self.step_name('Test legacy colon-separated MIME boundaries')
+
+        source = (
+            TC.path_build / 'unit_tests' / 'input' / 'clamav_hdb_scanfiles' /
+            'clam.mail-boundary-ordinary-parameter.eml'
+        ).read_bytes()
+        original_header = b'Content-Type: multipart/mixed; boundary=X\\; name=a'
+        cases = (
+            (
+                'clam.mail-boundary-colon-direct.eml',
+                b'Content-Type: multipart/mixed; boundary=X; boundary:"Y"',
+                b'Y',
+            ),
+            (
+                'clam.mail-boundary-colon-extended.eml',
+                b"Content-Type: multipart/mixed; boundary=X; boundary*:utf-8''Y",
+                b'Y',
+            ),
+            (
+                'clam.mail-boundary-colon-continuation.eml',
+                b'Content-Type: multipart/mixed; boundary=X; '
+                b'boundary*0:Y; boundary*1:Z',
+                b'YZ',
+            ),
+            (
+                'clam.mail-boundary-colon-escaped-semicolon.eml',
+                b'Content-Type: multipart/mixed; boundary=X\\; boundary:"Y"',
+                b'Y',
+            ),
+            (
+                'clam.mail-boundary-colon-whitespace.eml',
+                b'Content-Type: multipart/mixed; boundary=X name=a boundary:"Y"',
+                b'Y',
+            ),
+            (
+                'clam.mail-boundary-colon-missing-semicolon.eml',
+                b'Content-Type: multipart/mixed boundary:"Y"',
+                b'Y',
+            ),
+            (
+                'clam.mail-boundary-colon-equals-precedence.eml',
+                b'Content-Type: multipart/mixed; boundary=X; boundary:"Y=Z"',
+                b'X',
+            ),
+        )
+        testfiles = []
+
+        for filename, header, delimiter in cases:
+            message = source.replace(original_header, header, 1)
+            message = message.replace(b'--X\\;', b'--' + delimiter)
+            testfile = TC.path_tmp / filename
+            testfile.write_bytes(message)
+            testfiles.append(testfile)
+
+        command = '{valgrind} {valgrind_args} {clamscan} --disable-cache --no-summary -d {path_db} {testfiles}'.format(
+            valgrind=TC.valgrind,
+            valgrind_args=TC.valgrind_args,
+            clamscan=TC.clamscan,
+            path_db=TC.path_build / 'unit_tests' / 'input' / 'clamav.hdb',
+            testfiles=' '.join(str(testfile) for testfile in testfiles),
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 1  # virus found, no failures
+        self.verify_output(
+            output.out,
+            expected=[
+                f'{testfile.name}: ClamAV-Test-File.UNOFFICIAL FOUND'
+                for testfile in testfiles
+            ],
+        )
+
     def test_content_type_argument_limit_alignment(self):
         self.step_name('Test MIME boundary and argument limit accounting')
 
