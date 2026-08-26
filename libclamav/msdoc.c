@@ -31,6 +31,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <errno.h>
 #include <conv.h>
 #ifdef HAVE_UNISTD_H
@@ -73,8 +74,9 @@ static char *ole2_convert_utf(summary_ctx_t *sctx, char *begin, size_t sz, const
         return calloc(1, 1); // Just send back an empty NULL-terminated string.
     }
 
-    /* applies in the both case */
-    if (sctx->codepage == CODEPAGE_US_7BIT_ASCII || sctx->codepage == CODEPAGE_UTF8) {
+    /* Directly copy single-byte encodings only when no encoding was specified. */
+    if (encoding == NULL &&
+        (sctx->codepage == CODEPAGE_US_7BIT_ASCII || sctx->codepage == CODEPAGE_UTF8)) {
         char *track;
         size_t bcnt, scnt;
 
@@ -196,6 +198,22 @@ static char *ole2_convert_utf(summary_ctx_t *sctx, char *begin, size_t sz, const
     return outbuf;
 }
 
+/**
+ * Check whether a byte range is contained within a larger byte range.
+ *
+ * A zero-length range at the end of the containing range is valid. This form
+ * avoids overflowing when an archive-controlled offset and size are added.
+ *
+ * @param container_size Size of the containing byte range.
+ * @param offset Byte offset relative to the containing range.
+ * @param size Number of bytes in the range.
+ * @return true if the complete range is contained in the containing range.
+ */
+static bool ole2_range_is_valid(size_t container_size, size_t offset, size_t size)
+{
+    return offset <= container_size && size <= container_size - offset;
+}
+
 static int
 ole2_process_property(summary_ctx_t *sctx, unsigned char *databuf, uint32_t offset)
 {
@@ -207,7 +225,7 @@ ole2_process_property(summary_ctx_t *sctx, unsigned char *databuf, uint32_t offs
         return CL_ETIMEOUT;
     }
 
-    if (offset + sizeof(proptype) + sizeof(padding) > sctx->pssize) {
+    if (!ole2_range_is_valid(sctx->pssize, offset, sizeof(proptype) + sizeof(padding))) {
         sctx->flags |= OLE2_SUMMARY_ERROR_OOB;
         return CL_EFORMAT;
     }
@@ -233,7 +251,7 @@ ole2_process_property(summary_ctx_t *sctx, unsigned char *databuf, uint32_t offs
             break;
         case PT_INT16: {
             int16_t dout;
-            if (offset + sizeof(dout) > sctx->pssize) {
+            if (!ole2_range_is_valid(sctx->pssize, offset, sizeof(dout))) {
                 sctx->flags |= OLE2_SUMMARY_ERROR_OOB;
                 return CL_EFORMAT;
             }
@@ -252,7 +270,7 @@ ole2_process_property(summary_ctx_t *sctx, unsigned char *databuf, uint32_t offs
         case PT_INT32:
         case PT_INT32v1: {
             int32_t dout;
-            if (offset + sizeof(dout) > sctx->pssize) {
+            if (!ole2_range_is_valid(sctx->pssize, offset, sizeof(dout))) {
                 sctx->flags |= OLE2_SUMMARY_ERROR_OOB;
                 return CL_EFORMAT;
             }
@@ -264,40 +282,52 @@ ole2_process_property(summary_ctx_t *sctx, unsigned char *databuf, uint32_t offs
             ret = cli_jsonint(sctx->summary, sctx->propname, dout);
             break;
         }
-        case PT_FLOAT32: /* review this please */
-        {
+        case PT_FLOAT32: {
+            uint32_t raw;
             float dout;
-            if (offset + sizeof(dout) > sctx->pssize) {
+            if (!ole2_range_is_valid(sctx->pssize, offset, sizeof(raw))) {
                 sctx->flags |= OLE2_SUMMARY_ERROR_OOB;
                 return CL_EFORMAT;
             }
-            memcpy(&dout, databuf + offset, sizeof(dout));
-            offset += sizeof(dout);
-            /* endian conversion */
-            dout = sum32_endian_convert(dout);
+            memcpy(&raw, databuf + offset, sizeof(raw));
+            raw = sum32_endian_convert(raw);
+
+            if ((raw & 0x7f800000U) == 0x7f800000U) {
+                cli_dbgmsg("ole2_process_property: non-finite 32-bit floating-point value\n");
+                sctx->flags |= OLE2_SUMMARY_ERROR_INVALID_ENTRY;
+                return CL_EFORMAT;
+            }
+
+            memcpy(&dout, &raw, sizeof(dout));
 
             ret = cli_jsondouble(sctx->summary, sctx->propname, dout);
             break;
         }
         case PT_DATE:
-        case PT_DOUBLE64: /* review this please */
-        {
+        case PT_DOUBLE64: {
+            uint64_t raw;
             double dout;
-            if (offset + sizeof(dout) > sctx->pssize) {
+            if (!ole2_range_is_valid(sctx->pssize, offset, sizeof(raw))) {
                 sctx->flags |= OLE2_SUMMARY_ERROR_OOB;
                 return CL_EFORMAT;
             }
-            memcpy(&dout, databuf + offset, sizeof(dout));
-            offset += sizeof(dout);
-            /* endian conversion */
-            dout = sum64_endian_convert(dout);
+            memcpy(&raw, databuf + offset, sizeof(raw));
+            raw = sum64_endian_convert(raw);
+
+            if ((raw & 0x7ff0000000000000ULL) == 0x7ff0000000000000ULL) {
+                cli_dbgmsg("ole2_process_property: non-finite 64-bit floating-point value\n");
+                sctx->flags |= OLE2_SUMMARY_ERROR_INVALID_ENTRY;
+                return CL_EFORMAT;
+            }
+
+            memcpy(&dout, &raw, sizeof(dout));
 
             ret = cli_jsondouble(sctx->summary, sctx->propname, dout);
             break;
         }
         case PT_BOOL: {
             uint16_t dout;
-            if (offset + sizeof(dout) > sctx->pssize) {
+            if (!ole2_range_is_valid(sctx->pssize, offset, sizeof(dout))) {
                 sctx->flags |= OLE2_SUMMARY_ERROR_OOB;
                 return CL_EFORMAT;
             }
@@ -310,7 +340,7 @@ ole2_process_property(summary_ctx_t *sctx, unsigned char *databuf, uint32_t offs
         }
         case PT_INT8v1: {
             int8_t dout;
-            if (offset + sizeof(dout) > sctx->pssize) {
+            if (!ole2_range_is_valid(sctx->pssize, offset, sizeof(dout))) {
                 sctx->flags |= OLE2_SUMMARY_ERROR_OOB;
                 return CL_EFORMAT;
             }
@@ -323,7 +353,7 @@ ole2_process_property(summary_ctx_t *sctx, unsigned char *databuf, uint32_t offs
         }
         case PT_UINT8: {
             uint8_t dout;
-            if (offset + sizeof(dout) > sctx->pssize) {
+            if (!ole2_range_is_valid(sctx->pssize, offset, sizeof(dout))) {
                 sctx->flags |= OLE2_SUMMARY_ERROR_OOB;
                 return CL_EFORMAT;
             }
@@ -336,7 +366,7 @@ ole2_process_property(summary_ctx_t *sctx, unsigned char *databuf, uint32_t offs
         }
         case PT_UINT16: {
             uint16_t dout;
-            if (offset + sizeof(dout) > sctx->pssize) {
+            if (!ole2_range_is_valid(sctx->pssize, offset, sizeof(dout))) {
                 sctx->flags |= OLE2_SUMMARY_ERROR_OOB;
                 return CL_EFORMAT;
             }
@@ -354,7 +384,7 @@ ole2_process_property(summary_ctx_t *sctx, unsigned char *databuf, uint32_t offs
         case PT_UINT32:
         case PT_UINT32v1: {
             uint32_t dout;
-            if (offset + sizeof(dout) > sctx->pssize) {
+            if (!ole2_range_is_valid(sctx->pssize, offset, sizeof(dout))) {
                 sctx->flags |= OLE2_SUMMARY_ERROR_OOB;
                 return CL_EFORMAT;
             }
@@ -363,12 +393,12 @@ ole2_process_property(summary_ctx_t *sctx, unsigned char *databuf, uint32_t offs
             /* endian conversion */
             dout = sum32_endian_convert(dout);
 
-            ret = cli_jsonint(sctx->summary, sctx->propname, dout);
+            ret = cli_jsonuint64(sctx->summary, sctx->propname, dout);
             break;
         }
         case PT_INT64: {
             int64_t dout;
-            if (offset + sizeof(dout) > sctx->pssize) {
+            if (!ole2_range_is_valid(sctx->pssize, offset, sizeof(dout))) {
                 sctx->flags |= OLE2_SUMMARY_ERROR_OOB;
                 return CL_EFORMAT;
             }
@@ -382,7 +412,7 @@ ole2_process_property(summary_ctx_t *sctx, unsigned char *databuf, uint32_t offs
         }
         case PT_UINT64: {
             uint64_t dout;
-            if (offset + sizeof(dout) > sctx->pssize) {
+            if (!ole2_range_is_valid(sctx->pssize, offset, sizeof(dout))) {
                 sctx->flags |= OLE2_SUMMARY_ERROR_OOB;
                 return CL_EFORMAT;
             }
@@ -391,7 +421,7 @@ ole2_process_property(summary_ctx_t *sctx, unsigned char *databuf, uint32_t offs
             /* endian conversion */
             dout = sum64_endian_convert(dout);
 
-            ret = cli_jsonint64(sctx->summary, sctx->propname, dout);
+            ret = cli_jsonuint64(sctx->summary, sctx->propname, dout);
             break;
         }
         case PT_BSTR:
@@ -403,7 +433,7 @@ ole2_process_property(summary_ctx_t *sctx, unsigned char *databuf, uint32_t offs
                 uint32_t strsize;
                 char *outstr, *outstr2;
 
-                if (offset + sizeof(strsize) > sctx->pssize) {
+                if (!ole2_range_is_valid(sctx->pssize, offset, sizeof(strsize))) {
                     sctx->flags |= OLE2_SUMMARY_ERROR_OOB;
                     return CL_EFORMAT;
                 }
@@ -413,7 +443,7 @@ ole2_process_property(summary_ctx_t *sctx, unsigned char *databuf, uint32_t offs
                 /* endian conversion? */
                 strsize = sum32_endian_convert(strsize);
 
-                if (offset + strsize > sctx->pssize) {
+                if (!ole2_range_is_valid(sctx->pssize, offset, strsize)) {
                     sctx->flags |= OLE2_SUMMARY_ERROR_OOB;
                     return CL_EFORMAT;
                 }
@@ -461,17 +491,29 @@ ole2_process_property(summary_ctx_t *sctx, unsigned char *databuf, uint32_t offs
             }
             break;
         case PT_LPWSTR: {
-            uint32_t strsize;
+            uint32_t strlength;
+            size_t strsize;
             char *outstr, *outstr2;
 
-            if (offset + sizeof(strsize) > sctx->pssize) {
+            if (!ole2_range_is_valid(sctx->pssize, offset, sizeof(strlength))) {
                 sctx->flags |= OLE2_SUMMARY_ERROR_OOB;
                 return CL_EFORMAT;
             }
-            memcpy(&strsize, databuf + offset, sizeof(strsize));
-            offset += sizeof(strsize);
+            memcpy(&strlength, databuf + offset, sizeof(strlength));
+            offset += sizeof(strlength);
             /* endian conversion; wide strings are by length, not size (x2) */
-            strsize = sum32_endian_convert(strsize) * 2;
+            strlength = sum32_endian_convert(strlength);
+
+            if (strlength > UINT32_MAX / 2) {
+                sctx->flags |= OLE2_SUMMARY_ERROR_OOB;
+                return CL_EFORMAT;
+            }
+            strsize = (size_t)strlength * 2;
+
+            if (!ole2_range_is_valid(sctx->pssize, offset, strsize)) {
+                sctx->flags |= OLE2_SUMMARY_ERROR_OOB;
+                return CL_EFORMAT;
+            }
 
             /* limitation on string length */
             if (strsize > (2 * PROPSTRLIMIT)) {
@@ -481,10 +523,6 @@ ole2_process_property(summary_ctx_t *sctx, unsigned char *databuf, uint32_t offs
                 strsize = (2 * PROPSTRLIMIT);
             }
 
-            if (offset + strsize > sctx->pssize) {
-                sctx->flags |= OLE2_SUMMARY_ERROR_OOB;
-                return CL_EFORMAT;
-            }
             outstr = cli_max_calloc(strsize + 2, 1); /* last two chars must be NULL */
             if (!outstr) {
                 return CL_EMEM;
@@ -520,7 +558,7 @@ ole2_process_property(summary_ctx_t *sctx, unsigned char *databuf, uint32_t offs
             uint32_t ltime, htime;
             uint64_t wtime = 0, utime = 0;
 
-            if (offset + sizeof(ltime) + sizeof(htime) > sctx->pssize) {
+            if (!ole2_range_is_valid(sctx->pssize, offset, sizeof(ltime) + sizeof(htime))) {
                 sctx->flags |= OLE2_SUMMARY_ERROR_OOB;
                 return CL_EFORMAT;
             }
@@ -542,7 +580,7 @@ ole2_process_property(summary_ctx_t *sctx, unsigned char *databuf, uint32_t offs
             if ((uint32_t)((utime & 0xFFFFFFFF00000000) >> 32)) {
                 cli_dbgmsg("ole2_process_property: UNIX timestamp is larger than 32-bit number\n");
             } else {
-                ret = cli_jsonint(sctx->summary, sctx->propname, (uint32_t)(utime & 0xFFFFFFFF));
+                ret = cli_jsonuint64(sctx->summary, sctx->propname, (uint32_t)(utime & 0xFFFFFFFF));
             }
             break;
         }
@@ -713,12 +751,11 @@ static void ole2_translate_summary_propid(summary_ctx_t *sctx, uint32_t propid)
     }
 }
 
-static int ole2_summary_propset_json(summary_ctx_t *sctx, off_t offset)
+static int ole2_summary_propset_json(summary_ctx_t *sctx, uint32_t offset)
 {
     unsigned char *hdr, *ps;
     uint32_t numprops, limitprops;
-    off_t foff = offset, psoff = 0;
-    uint32_t poffset;
+    size_t foff = offset, psoff = 0;
     int ret;
     uint32_t i;
 
@@ -730,7 +767,7 @@ static int ole2_summary_propset_json(summary_ctx_t *sctx, off_t offset)
     sctx->propname = NULL;
 
     /* examine property set metadata */
-    if ((foff + (2 * sizeof(uint32_t))) > sctx->maplen) {
+    if (!ole2_range_is_valid(sctx->maplen, foff, 2 * sizeof(uint32_t))) {
         sctx->flags |= OLE2_SUMMARY_ERROR_TOOSMALL;
         return CL_EFORMAT;
     }
@@ -757,7 +794,7 @@ static int ole2_summary_propset_json(summary_ctx_t *sctx, off_t offset)
                limitprops, numprops, PROPCNTLIMIT);
 
     /* extract remaining fragment of propset */
-    if ((size_t)(foff + (sctx->pssize)) > (size_t)(sctx->maplen)) {
+    if (!ole2_range_is_valid(sctx->maplen, foff, sctx->pssize)) {
         sctx->flags |= OLE2_SUMMARY_ERROR_TOOSMALL;
         return CL_EFORMAT;
     }
@@ -771,7 +808,7 @@ static int ole2_summary_propset_json(summary_ctx_t *sctx, off_t offset)
     for (i = 0; i < limitprops; ++i) {
         uint32_t propid, propoff;
 
-        if (psoff + sizeof(propid) + sizeof(poffset) > sctx->pssize) {
+        if (!ole2_range_is_valid(sctx->pssize, psoff, sizeof(propid) + sizeof(propoff))) {
             sctx->flags |= OLE2_SUMMARY_ERROR_OOB;
             return CL_EFORMAT;
         }
@@ -876,7 +913,7 @@ int cli_ole2_summary_json(cli_ctx *ctx, int fd, int mode, const char *filepath)
 {
     summary_ctx_t sctx;
     STATBUF statbuf;
-    off_t foff = 0;
+    size_t foff = 0;
     unsigned char *databuf;
     summary_stub_t sumstub;
     propset_entry_t pentry;
@@ -971,7 +1008,7 @@ int cli_ole2_summary_json(cli_ctx *ctx, int fd, int mode, const char *filepath)
     cli_dbgmsg("ole2_summary_json: %u property set(s) detected\n", sumstub.num_propsets);
 
     /* first property set (index=0) is always SummaryInfo or DocSummaryInfo */
-    if ((sctx.maplen - foff) < sizeof(propset_entry_t)) {
+    if (!ole2_range_is_valid(sctx.maplen, foff, sizeof(propset_entry_t))) {
         sctx.flags |= OLE2_SUMMARY_ERROR_TOOSMALL;
         return cli_ole2_summary_json_cleanup(&sctx, CL_EFORMAT);
     }
