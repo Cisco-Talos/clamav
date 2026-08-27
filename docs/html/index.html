@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ClamAV Engine Atlas</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<aside class="rail">
+  <div class="brand">ClamAV<small>Engine Atlas — HLD</small></div>
+  <nav>
+    <div class="group">
+      <h4>Pages</h4>
+      <a class="current" href="index.html">Architecture (HLD)</a>
+      <a href="api.html">libclamav C API</a>
+      <a href="clamd-protocol.html">clamd Protocol</a>
+    </div>
+    <div class="group">
+      <h4>On this page</h4>
+      <a href="#overview">System overview</a>
+      <a href="#diagram">Layer diagram</a>
+      <a href="#components">Components</a>
+      <a href="#scanflow">Scan pipeline</a>
+      <a href="#signatures">Signature databases</a>
+      <a href="#build">Build &amp; layout</a>
+    </div>
+  </nav>
+</aside>
+<main>
+  <p class="eyebrow">High-Level Design</p>
+  <h1>ClamAV Engine Atlas</h1>
+  <p class="lede">ClamAV is an open-source antivirus toolkit built around a single scanning library, <code>libclamav</code>, with a family of daemons and command-line tools layered on top. This atlas maps the components, the scan pipeline, and where each responsibility lives in the source tree.</p>
+
+  <h2 id="overview">System overview</h2>
+  <p>Everything that detects malware lives in <strong>libclamav</strong>: file-type identification, archive and document extraction, unpacking, pattern matching, and a sandboxed bytecode virtual machine for complex signatures. The tools around it are thin by design:</p>
+  <ul>
+    <li><strong>clamscan</strong> links libclamav directly for one-shot command-line scanning.</li>
+    <li><strong>clamd</strong> loads the engine once and serves scans over a TCP or Unix socket (see the <a href="clamd-protocol.html">protocol reference</a>); <strong>clamdscan</strong>, <strong>clamdtop</strong>, <strong>clamonacc</strong> (on-access scanning via fanotify), and <strong>clamav-milter</strong> (sendmail/postfix mail filtering) are its clients.</li>
+    <li><strong>freshclam</strong> / <strong>libfreshclam</strong> download and verify signature databases (CVD/CLD) from mirrors.</li>
+    <li><strong>sigtool</strong>, <strong>clambc</strong>, and <strong>clamsubmit</strong> support signature authoring, bytecode inspection, and sample submission.</li>
+  </ul>
+
+  <h2 id="diagram">Layer diagram</h2>
+  <div class="diagram">
+    <div class="layer">
+      <h4>Clients &amp; integrations</h4>
+      <div class="boxes">
+        <span class="box">clamdscan</span><span class="box">clamdtop</span><span class="box">clamonacc</span><span class="box">clamav-milter</span><span class="box">third-party apps</span>
+      </div>
+    </div>
+    <div class="arrow">▼ clamd wire protocol (TCP / Unix socket) ▼</div>
+    <div class="layer">
+      <h4>Front ends</h4>
+      <div class="boxes">
+        <span class="box">clamd (multithreaded daemon)</span><span class="box">clamscan (CLI)</span><span class="box">freshclam (updater)</span><span class="box">sigtool</span><span class="box">clambc</span>
+      </div>
+    </div>
+    <div class="arrow">▼ C API — <code>libclamav/clamav.h</code> ▼</div>
+    <div class="layer">
+      <h4>Scan engine — libclamav</h4>
+      <div class="boxes">
+        <span class="box core">scanners.c dispatch</span><span class="box core">matcher-ac / matcher-bm / matcher-pcre</span><span class="box">filetypes</span><span class="box">fmap (file mapping)</span><span class="box">cache (clean-file cache)</span><span class="box">bytecode VM</span><span class="box">phishcheck</span><span class="box">dconf</span>
+      </div>
+    </div>
+    <div class="arrow">▼ format parsers &amp; unpackers ▼</div>
+    <div class="layer">
+      <h4>Parsers, unpackers &amp; helpers</h4>
+      <div class="boxes">
+        <span class="box">pe / elf / macho</span><span class="box">zip · rar (libclamunrar) · 7z · cab (libclammspack)</span><span class="box">pdf · ole2 · msdoc · xlm</span><span class="box">html · js normalizer</span><span class="box">upx · aspack · petite …</span><span class="box">libclamav_rust (Rust parsers: onenote, alz, udf, …)</span>
+      </div>
+    </div>
+  </div>
+
+  <h2 id="components">Components</h2>
+  <div class="tablewrap"><table>
+    <tr><th>Directory</th><th>Component</th><th>Responsibility</th></tr>
+    <tr><td><code>libclamav/</code></td><td>Scan engine</td><td>Core detection library: engine lifecycle, file-type magic, format parsers, matchers, bytecode VM, clean-file cache.</td></tr>
+    <tr><td><code>libclamav_rust/</code></td><td>Rust engine half</td><td>Memory-safe parsers (OneNote, ALZ, UDF, EVTX…), CVD signing/verification, logging bridge. Built into libclamav.</td></tr>
+    <tr><td><code>clamd/</code></td><td>Scan daemon</td><td>Threaded server (<code>server-th.c</code>, <code>thrmgr.c</code>), session/command handling (<code>session.c</code>), TCP + local sockets.</td></tr>
+    <tr><td><code>clamscan/</code></td><td>CLI scanner</td><td>Direct libclamav consumer; option parsing and file-tree walking.</td></tr>
+    <tr><td><code>clamdscan/</code> · <code>clamdtop/</code> · <code>clamonacc/</code></td><td>Daemon clients</td><td>Remote scanning, live monitoring TUI, on-access scanning (fanotify) forwarding to clamd.</td></tr>
+    <tr><td><code>freshclam/</code> + <code>libfreshclam/</code></td><td>Updater</td><td>Mirror negotiation, CDIFF incremental updates, CVD signature verification.</td></tr>
+    <tr><td><code>clamav-milter/</code></td><td>Mail filter</td><td>Milter-protocol integration for MTAs, scanning mail through clamd.</td></tr>
+    <tr><td><code>libclamunrar/</code> · <code>libclammspack/</code></td><td>Bundled decompressors</td><td>RAR extraction (separately licensed) and Microsoft CAB/CHM/SZDD support.</td></tr>
+    <tr><td><code>sigtool/</code> · <code>clambc/</code> · <code>clamsubmit/</code> · <code>clamconf/</code></td><td>Tooling</td><td>Signature authoring/inspection, bytecode testing, sample submission, config dump.</td></tr>
+    <tr><td><code>common/</code></td><td>Shared code</td><td>Option parsing, config file handling, output helpers shared by the tools.</td></tr>
+    <tr><td><code>unit_tests/</code> · <code>fuzz/</code></td><td>Quality</td><td>libcheck unit tests, integration tests, libFuzzer harnesses.</td></tr>
+  </table></div>
+
+  <h2 id="scanflow">Scan pipeline</h2>
+  <p>Every scan — whether it enters through <code>cl_scanfile()</code>, a descriptor, or an in-memory map — converges on the same recursive pipeline inside libclamav:</p>
+  <div class="diagram">
+    <div class="arrow"><code>cl_scanfile / cl_scandesc / cl_scanmap_*</code></div>
+    <div class="arrow">▼</div>
+    <div class="boxes" style="justify-content:center"><span class="box core">fmap — map file into memory (fmap.c)</span></div>
+    <div class="arrow">▼ hash lookup — skip if known clean (cache.c) ▼</div>
+    <div class="boxes" style="justify-content:center"><span class="box core">file-type identification (filetypes.c, magic + type signatures)</span></div>
+    <div class="arrow">▼ dispatch by type (scanners.c) ▼</div>
+    <div class="boxes" style="justify-content:center"><span class="box">container parser extracts children (zip, pdf, ole2, pe resources…)</span><span class="box">↺ recurse on each embedded object</span></div>
+    <div class="arrow">▼ every layer's raw + normalized data ▼</div>
+    <div class="boxes" style="justify-content:center"><span class="box core">matchers: Aho-Corasick · Boyer-Moore · PCRE · hash sets · YARA rules</span><span class="box core">bytecode signatures (sandboxed VM)</span></div>
+    <div class="arrow">▼</div>
+    <div class="boxes" style="justify-content:center"><span class="box">verdict: CL_CLEAN → cache hash · CL_VIRUS → report name via callbacks</span></div>
+  </div>
+  <p>Recursion is bounded by engine limits (<code>max-recursion</code>, <code>max-filesize</code>, <code>max-scansize</code>…) set through <code>cl_engine_set_num()</code>. Scan-phase callbacks (<code>pre_cache</code>, <code>pre_scan</code>, <code>post_scan</code>, <code>file_inspection</code>, <code>virus_found</code>) let embedding applications observe or veto each layer.</p>
+
+  <h2 id="signatures">Signature databases</h2>
+  <p>Detections come from database files loaded with <code>cl_load()</code>, distributed as signed <strong>CVD</strong> archives (<code>main.cvd</code>, <code>daily.cvd</code>, <code>bytecode.cvd</code>) and patched incrementally into <strong>CLD</strong> files by freshclam. Major signature types:</p>
+  <div class="tablewrap"><table>
+    <tr><th>Extension</th><th>Type</th><th>Matcher</th></tr>
+    <tr><td><code>.hdb / .hsb</code></td><td>File hash (MD5/SHA)</td><td>Hash table</td></tr>
+    <tr><td><code>.ndb / .ldb</code></td><td>Body patterns / logical signatures</td><td>Aho-Corasick + Boyer-Moore, logical expression evaluator</td></tr>
+    <tr><td><code>.cbc</code></td><td>Bytecode signatures</td><td>Sandboxed bytecode VM (interpreter or JIT)</td></tr>
+    <tr><td><code>.pdb / .wdb</code></td><td>Phishing URL rules / allow-lists</td><td>phishcheck / regex</td></tr>
+    <tr><td><code>.yar / .yara</code></td><td>YARA rules</td><td>Embedded YARA compiler</td></tr>
+    <tr><td><code>.crb</code></td><td>Authenticode certificate trust/block</td><td>crtmgr</td></tr>
+  </table></div>
+
+  <h2 id="build">Build &amp; layout</h2>
+  <p>The project builds with <strong>CMake</strong> (<code>CMakeLists.txt</code>, presets in <code>CMakePresets.json</code>) and <strong>Cargo</strong> for the Rust components, which CMake orchestrates. Windows-specific glue lives in <code>win32/</code>; packaging metadata in <code>vcpkg.json</code> and the Docker notes in <code>README.Docker.md</code>.</p>
+  <pre><code>cmake -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build
+ctest --test-dir build</code></pre>
+
+  <footer>ClamAV Engine Atlas — generated from source at branch <code>man-html</code>. Continue with the <a href="api.html">libclamav C API</a> or the <a href="clamd-protocol.html">clamd protocol</a>.</footer>
+</main>
+</body>
+</html>

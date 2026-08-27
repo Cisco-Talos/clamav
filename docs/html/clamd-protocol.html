@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>clamd Wire Protocol</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<aside class="rail">
+  <div class="brand">ClamAV<small>clamd Wire Protocol</small></div>
+  <nav>
+    <div class="group">
+      <h4>Pages</h4>
+      <a href="index.html">Architecture (HLD)</a>
+      <a href="api.html">libclamav C API</a>
+      <a class="current" href="clamd-protocol.html">clamd Protocol</a>
+    </div>
+    <div class="group">
+      <h4>On this page</h4>
+      <a href="#conventions">Conventions</a>
+      <a href="#scan-cmds">Scan commands</a>
+      <a href="#stream-cmds">Streaming</a>
+      <a href="#control-cmds">Control</a>
+      <a href="#stats-cmds">Introspection</a>
+      <a href="#sessions">Sessions</a>
+    </div>
+  </nav>
+</aside>
+<main>
+  <p class="eyebrow">Protocol Reference · <code>clamd/session.c</code></p>
+  <h1>clamd Wire Protocol</h1>
+  <p class="lede">clamd speaks a plain-text command protocol over a TCP or Unix-domain socket. Each command below is documented like an API endpoint: category chip, command line, request semantics, and response format.</p>
+
+  <h2 id="conventions">Conventions</h2>
+  <ul>
+    <li>Terminate commands with a newline (<code>\n</code>) or NUL (<code>\0</code>). Prefix with <code>z</code> for NUL-delimited or <code>n</code> for newline-delimited responses — e.g. <code>zSCAN file\0</code>. Prefixed form is strongly recommended so filenames with newlines can't break parsing.</li>
+    <li>Path-taking commands require the path to be readable <em>by the clamd process</em> — clients on remote hosts should use <code>INSTREAM</code> instead.</li>
+    <li>Scan replies follow <code>&lt;path&gt;: &lt;result&gt;</code>, where result is <span class="resp-ok">OK</span>, <span class="resp-err">&lt;Signature.Name&gt; FOUND</span>, or <span class="resp-err">&lt;message&gt; ERROR</span>.</li>
+  </ul>
+
+  <h2 id="scan-cmds">Scan commands</h2>
+
+  <details class="op" open><summary><span class="chip scan">SCAN</span><span class="sig">SCAN &lt;path&gt;</span><span class="summary-note">scan file or directory</span></summary>
+    <div class="body">
+      <p>Scans a file or recursively a directory; stops at the first detection.</p>
+      <pre><code>→ zSCAN /home/user/eicar.com\0
+← /home/user/eicar.com: Win.Test.EICAR_HDB-1 FOUND</code></pre>
+    </div>
+  </details>
+
+  <details class="op"><summary><span class="chip scan">SCAN</span><span class="sig">CONTSCAN &lt;path&gt;</span><span class="summary-note">don't stop on detection</span></summary>
+    <div class="body"><p>Like <code>SCAN</code>, but continues through the rest of the tree after a detection, reporting one line per file.</p></div>
+  </details>
+
+  <details class="op"><summary><span class="chip scan">SCAN</span><span class="sig">MULTISCAN &lt;path&gt;</span><span class="summary-note">parallel scan</span></summary>
+    <div class="body"><p>Distributes the files under <code>path</code> across clamd's thread pool (thrmgr) for parallel scanning. Not allowed inside an <code>IDSESSION</code>.</p></div>
+  </details>
+
+  <details class="op"><summary><span class="chip scan">SCAN</span><span class="sig">ALLMATCHSCAN &lt;path&gt;</span><span class="summary-note">report every signature</span></summary>
+    <div class="body"><p>Scans with all-match mode enabled so every matching signature is reported for each file, not just the first.</p></div>
+  </details>
+
+  <h2 id="stream-cmds">Streaming &amp; descriptor passing</h2>
+
+  <details class="op" open><summary><span class="chip strm">STREAM</span><span class="sig">INSTREAM</span><span class="summary-note">scan data sent over the socket</span></summary>
+    <div class="body">
+      <p>Client streams file content in chunks: each chunk is a 4-byte <strong>big-endian length</strong> followed by that many bytes; a zero-length chunk ends the stream. Exceeding the daemon's <code>StreamMaxLength</code> gets <code>INSTREAM size limit exceeded ERROR</code> and disconnect.</p>
+      <pre><code>→ zINSTREAM\0
+→ [00 00 10 00][4096 bytes] … [00 00 00 00]
+← stream: Eicar-Signature FOUND</code></pre>
+    </div>
+  </details>
+
+  <details class="op"><summary><span class="chip strm">STREAM</span><span class="sig">FILDES</span><span class="summary-note">pass an open fd (Unix socket only)</span></summary>
+    <div class="body"><p>Sends a file descriptor via <code>SCM_RIGHTS</code> ancillary data; clamd scans the descriptor directly. Fastest local option — no copy, no path-permission issues.</p></div>
+  </details>
+
+  <h2 id="control-cmds">Control</h2>
+
+  <details class="op"><summary><span class="chip ctrl">CTRL</span><span class="sig">PING</span><span class="summary-note">liveness check</span></summary>
+    <div class="body"><p>Replies <span class="resp-ok">PONG</span>. Used by clamdscan and health checks.</p></div>
+  </details>
+
+  <details class="op"><summary><span class="chip ctrl">CTRL</span><span class="sig">RELOAD</span><span class="summary-note">reload databases</span></summary>
+    <div class="body"><p>Reloads the signature databases (concurrently with ongoing scans, since the engine is refcounted). Replies <span class="resp-ok">RELOADING</span>.</p></div>
+  </details>
+
+  <details class="op"><summary><span class="chip ctrl">CTRL</span><span class="sig">SHUTDOWN</span><span class="summary-note">stop the daemon</span></summary>
+    <div class="body"><p>Performs a clean shutdown, closing sockets and finishing in-flight work.</p></div>
+  </details>
+
+  <details class="op"><summary><span class="chip ctrl">CTRL</span><span class="sig">SELFCHECK</span><span class="summary-note">trigger db freshness check</span></summary>
+    <div class="body"><p>Runs the periodic database self-check (normally driven by <code>SelfCheck</code> interval) immediately.</p></div>
+  </details>
+
+  <h2 id="stats-cmds">Introspection</h2>
+
+  <details class="op"><summary><span class="chip stat">INFO</span><span class="sig">VERSION</span><span class="summary-note">engine + db version</span></summary>
+    <div class="body"><pre><code>← ClamAV 1.x.x/27xxx/&lt;db build date&gt;</code></pre></div>
+  </details>
+
+  <details class="op"><summary><span class="chip stat">INFO</span><span class="sig">VERSIONCOMMANDS</span><span class="summary-note">capability discovery</span></summary>
+    <div class="body"><p>Returns the version plus a pipe-separated list of supported commands — use this for feature detection instead of parsing version numbers.</p></div>
+  </details>
+
+  <details class="op"><summary><span class="chip stat">INFO</span><span class="sig">STATS</span><span class="summary-note">thread-pool &amp; queue state</span></summary>
+    <div class="body"><p>Multi-line report of pool threads (live/idle/max), queue length, and memory stats, terminated by <code>END</code>. This is what clamdtop renders.</p></div>
+  </details>
+
+  <details class="op"><summary><span class="chip stat">INFO</span><span class="sig">DETSTATS · DETSTATSCLEAR</span><span class="summary-note">detection counters</span></summary>
+    <div class="body"><p>Reads (and resets) internal detection statistics counters.</p></div>
+  </details>
+
+  <h2 id="sessions">Sessions</h2>
+
+  <details class="op" open><summary><span class="chip ctrl">SESSION</span><span class="sig">IDSESSION … END</span><span class="summary-note">multiplexed connection</span></summary>
+    <div class="body">
+      <p>Opens a session in which multiple commands can be pipelined on one connection. Every reply is prefixed with a request ID: <code>&lt;id&gt;: &lt;reply&gt;</code>, so responses can be matched even when they arrive out of order. Within a session, only NUL-delimited (<code>z</code>-prefixed) commands are accepted, and <code>SCAN</code>/<code>MULTISCAN</code>-style path recursion is restricted — prefer <code>INSTREAM</code> and <code>FILDES</code>. <code>END</code> closes the session.</p>
+      <pre><code>→ zIDSESSION\0 zPING\0 zINSTREAM\0[chunks] zEND\0
+← 1: PONG
+← 2: stream: OK</code></pre>
+    </div>
+  </details>
+
+  <div class="warn">Commands not recognized, oversized command lines, or size-limit violations cause clamd to reply with an <code>ERROR</code> line and close the connection. Idle connections are dropped after <code>CommandReadTimeout</code>.</div>
+
+  <footer>clamd protocol — sources: <code>clamd/session.h</code>, <code>clamd/session.c</code>, <code>clamd/server-th.c</code>. Also documented in <code>man clamd(8)</code>.</footer>
+</main>
+</body>
+</html>
