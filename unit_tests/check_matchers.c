@@ -241,6 +241,49 @@ START_TEST(test_ac_scanbuff)
 }
 END_TEST
 
+START_TEST(test_ac_repeated_prefix_does_not_shift_to_repeated_window)
+{
+    static const unsigned char data[] = {0xff, 0xff, 0xff, 0x00, 0x00, 0x00};
+    struct cli_ac_data mdata;
+    struct cli_ac_patt *pattern;
+    struct cli_matcher *root;
+    cl_error_t status;
+
+    root = ctx.engine->root[0];
+    ck_assert_msg(root != NULL, "root == NULL");
+    root->ac_only = 1;
+
+#ifdef USE_MPOOL
+    root->mempool = mpool_create();
+#endif
+    status = cli_ac_init(root, CLI_DEFAULT_AC_MINDEPTH, CLI_DEFAULT_AC_MAXDEPTH, 1);
+    ck_assert_msg(status == CL_SUCCESS, "cli_ac_init() failed");
+
+    status = cli_add_content_match_pattern(root, "RepeatedPrefixTransition", "ffffff000000", 0, 0, 0, "*", NULL, 0);
+    ck_assert_msg(status == CL_SUCCESS, "cli_add_content_match_pattern failed");
+    ck_assert_uint_eq(root->ac_patterns, 1);
+
+    pattern = root->ac_pattable[0];
+    ck_assert_ptr_nonnull(pattern);
+    ck_assert_uint_eq(pattern->prefix_length[0], 2);
+    ck_assert_uint_eq(pattern->depth, CLI_DEFAULT_AC_MAXDEPTH);
+    ck_assert_uint_eq(pattern->pattern[0] & 0xff, 0xff);
+    ck_assert_uint_eq(pattern->pattern[1] & 0xff, 0x00);
+    ck_assert_uint_eq(pattern->pattern[2] & 0xff, 0x00);
+
+    status = cli_ac_buildtrie(root);
+    ck_assert_msg(status == CL_SUCCESS, "cli_ac_buildtrie() failed");
+    status = cli_ac_initdata(&mdata, root->ac_partsigs, 0, 0, CLI_DEFAULT_AC_TRACKLEN);
+    ck_assert_msg(status == CL_SUCCESS, "cli_ac_initdata() failed");
+
+    status = cli_ac_scanbuff(data, sizeof(data), &virname, NULL, NULL, root, &mdata, 0, 0, NULL, AC_SCAN_VIR, NULL);
+    ck_assert_msg(status == CL_VIRUS, "cli_ac_scanbuff() failed");
+    ck_assert_msg(!strncmp(virname, "RepeatedPrefixTransition", strlen("RepeatedPrefixTransition")), "Incorrect signature matched in cli_ac_scanbuff()\n");
+
+    cli_ac_freedata(&mdata);
+}
+END_TEST
+
 START_TEST(test_ac_scanbuff_allscan)
 {
     struct cli_ac_data mdata;
@@ -584,6 +627,7 @@ Suite *test_matchers_suite(void)
     suite_add_tcase(s, tc_matchers);
     tcase_add_checked_fixture(tc_matchers, setup, teardown);
     tcase_add_test(tc_matchers, test_ac_scanbuff);
+    tcase_add_test(tc_matchers, test_ac_repeated_prefix_does_not_shift_to_repeated_window);
     tcase_add_test(tc_matchers, test_ac_scanbuff_ex);
     tcase_add_test(tc_matchers, test_bm_scanbuff);
     tcase_add_test(tc_matchers, test_pcre_scanbuff);
