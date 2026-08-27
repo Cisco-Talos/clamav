@@ -55,30 +55,63 @@ if(HAVE_CONTROL_IN_MSGHDR)
         set(EXTRA_COMPILE_DEFINITIONS "${EXTRA_COMPILE_DEFINITIONS} -DHAVE_SYS_UIO_H=1")
     endif()
 
-    # Try without _XOPEN_SOURCE first
-    try_run(
-        # Name of variable to store the run result (process exit status; number) in:
-        test_run_result
-        # Name of variable to store the compile result (TRUE or FALSE) in:
-        test_compile_result
-        # Binary directory:
-        ${CMAKE_CURRENT_BINARY_DIR}
-        # Source file to be compiled:
-        ${_selfdir_CheckFDPassing}/CheckFDPassing.c
-        # Extra -D Compile Definitions
-        COMPILE_DEFINITIONS ${EXTRA_COMPILE_DEFINITIONS}
-        # Where to store the output produced during compilation:
-        COMPILE_OUTPUT_VARIABLE test_compile_output
-        # Where to store the output produced by running the compiled executable:
-        RUN_OUTPUT_VARIABLE test_run_output )
-
-    # Did compilation succeed and process return 0 (success)?
-    if("${test_compile_result}" AND ("${test_run_result}" EQUAL 0))
-        set(HAVE_FD_PASSING 1)
-    else()
-        # Try again, this time with: #define _XOPEN_SOURCE 500
+    # OpenBSD requires _XOPEN_SOURCE for proper fdpassing support
+    if(CMAKE_SYSTEM_NAME STREQUAL "OpenBSD")
         set(EXTRA_COMPILE_DEFINITIONS "${EXTRA_COMPILE_DEFINITIONS} -D_XOPEN_SOURCE=500")
+        set(FORCE_XOPEN_TEST 1)
+    else()
+        set(FORCE_XOPEN_TEST 0)
+    endif()
 
+    # Try without _XOPEN_SOURCE first (unless OpenBSD)
+    if(NOT FORCE_XOPEN_TEST)
+        try_run(
+            # Name of variable to store the run result (process exit status; number) in:
+            test_run_result
+            # Name of variable to store the compile result (TRUE or FALSE) in:
+            test_compile_result
+            # Binary directory:
+            ${CMAKE_CURRENT_BINARY_DIR}
+            # Source file to be compiled:
+            ${_selfdir_CheckFDPassing}/CheckFDPassing.c
+            # Extra -D Compile Definitions
+            COMPILE_DEFINITIONS ${EXTRA_COMPILE_DEFINITIONS}
+            # Where to store the output produced during compilation:
+            COMPILE_OUTPUT_VARIABLE test_compile_output
+            # Where to store the output produced by running the compiled executable:
+            RUN_OUTPUT_VARIABLE test_run_output )
+
+        # Did compilation succeed and process return 0 (success)?
+        if("${test_compile_result}" AND ("${test_run_result}" EQUAL 0))
+            set(HAVE_FD_PASSING 1)
+        else()
+            # Try again, this time with: #define _XOPEN_SOURCE 500
+            set(EXTRA_COMPILE_DEFINITIONS "${EXTRA_COMPILE_DEFINITIONS} -D_XOPEN_SOURCE=500")
+
+            try_run(
+                # Name of variable to store the run result (process exit status; number) in:
+                test_run_result
+                # Name of variable to store the compile result (TRUE or FALSE) in:
+                test_compile_result
+                # Binary directory:
+                ${CMAKE_CURRENT_BINARY_DIR}
+                # Source file to be compiled:
+                ${_selfdir_CheckFDPassing}/CheckFDPassing.c
+                # Extra -D Compile Definitions
+                COMPILE_DEFINITIONS ${EXTRA_COMPILE_DEFINITIONS}
+                # Where to store the output produced during compilation:
+                COMPILE_OUTPUT_VARIABLE test_compile_output
+                # Where to store the output produced by running the compiled executable:
+                RUN_OUTPUT_VARIABLE test_run_output )
+
+            # Did compilation succeed and process return 0 (success)?
+            if("${test_compile_result}" AND ("${test_run_result}" EQUAL 0))
+                set(HAVE_FD_PASSING 1)
+                set(FDPASS_NEED_XOPEN 1)
+            endif()
+        endif()
+    else()
+        # For OpenBSD, test directly with _XOPEN_SOURCE=500
         try_run(
             # Name of variable to store the run result (process exit status; number) in:
             test_run_result
