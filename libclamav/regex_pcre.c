@@ -88,7 +88,7 @@ cl_error_t cli_pcre_addoptions(struct cli_pcre_data *pd, const char **opt, int e
     return CL_SUCCESS;
 }
 
-cl_error_t cli_pcre_compile(struct cli_pcre_data *pd, long long unsigned match_limit, long long unsigned match_limit_recursion, unsigned int options, int opt_override)
+cl_error_t cli_pcre_compile(struct cli_pcre_data *pd, long long unsigned match_limit, long long unsigned match_limit_recursion, unsigned int options, int opt_override, int try_jit)
 {
     int errornum;
     PCRE2_SIZE erroffset;
@@ -140,6 +140,27 @@ cl_error_t cli_pcre_compile(struct cli_pcre_data *pd, long long unsigned match_l
     pcre2_set_match_limit(pd->mctx, match_limit);
     pcre2_set_recursion_limit(pd->mctx, match_limit_recursion);
 
+    /* Optionally JIT-compile the pattern for faster matching. Best-effort:
+     * pcre2_match() automatically uses the JIT code when a pattern has been
+     * JIT-compiled. If JIT compilation fails (e.g. the linked PCRE2 was built
+     * without JIT, or the pattern uses an unsupported construct), the pattern
+     * is left interpreter-only and matching proceeds unchanged. Disabled by
+     * default; controlled by the PCREJit / --pcre-jit option.
+     *
+     * Note: PCRE2 does not enforce the depth/recursion limit set above via
+     * pcre2_set_recursion_limit() (PCRERecMatchLimit) for JIT matches -- the
+     * documented PCRE2_ERROR_DEPTHLIMIT is never returned under JIT. The
+     * overall match limit (PCREMatchLimit) is still enforced. This is why the
+     * option is opt-in and documented as such. */
+    if (try_jit) {
+        int jitrc = pcre2_jit_compile(pd->re, PCRE2_JIT_COMPLETE);
+        if (jitrc != 0) {
+            PCRE2_UCHAR jiterr[256];
+            pcre2_get_error_message(jitrc, jiterr, sizeof(jiterr));
+            cli_dbgmsg("cli_pcre_compile: JIT compilation unavailable (%s); using interpreter\n", jiterr);
+        }
+    }
+
     /* non-dynamic allocated fields set by caller */
     pcre2_compile_context_free(cctx);
     pcre2_general_context_free(gctx);
@@ -158,8 +179,16 @@ int cli_pcre_match(struct cli_pcre_data *pd, const unsigned char *buffer, size_t
     if (override_offset != pd->search_offset)
         startoffset = override_offset;
 
-    /* execute the pcre and return */
+    /* execute the pcre and return. pcre2_match() automatically uses the JIT
+     * code when the pattern was JIT-compiled. */
     rc = pcre2_match(pd->re, buffer, buflen, startoffset, options, results->match_data, pd->mctx);
+    if (rc == PCRE2_ERROR_JIT_STACKLIMIT) {
+        /* The JIT matcher exhausted its fixed stack. Unlike the interpreter it
+         * does not grow on demand, so retry this match with JIT disabled to
+         * preserve identical results to the interpreter-only path. */
+        cli_dbgmsg("cli_pcre_match: JIT stack limit exceeded; retrying with interpreter\n");
+        rc = pcre2_match(pd->re, buffer, buflen, startoffset, options | PCRE2_NO_JIT, results->match_data, pd->mctx);
+    }
     if (rc < 0 && rc != PCRE2_ERROR_NOMATCH) {
         switch (rc) {
             case PCRE2_ERROR_CALLOUT:

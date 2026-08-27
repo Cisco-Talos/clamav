@@ -748,6 +748,17 @@ Example
 # Default: 100M
 #PCREMaxFileSize 400M
 
+# When enabled, PCRE regex subsignatures are JIT-compiled at database load and
+# matched with native code. This can significantly reduce scan time for content
+# that triggers many PCRE subsignatures. Requires the linked PCRE2 library to be
+# built with JIT support; otherwise matching transparently falls back to the
+# interpreter. Detection results are unchanged when enabled.
+# Note: PCRE2 does not enforce the depth/recursion limit (PCRERecMatchLimit) for
+# JIT matches; PCREMatchLimit is still enforced. Leave this disabled if you rely
+# on PCRERecMatchLimit to bound recursive backtracking.
+# Default: no
+#PCREJit yes
+
 # When AlertExceedsMax is set, files exceeding the MaxFileSize, MaxScanSize, or
 # MaxRecursion limit will be flagged with the virus name starting with
 # "Heuristics.Limits.Exceeded".

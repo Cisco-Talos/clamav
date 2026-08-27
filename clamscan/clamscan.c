@@ -363,6 +363,7 @@ void help(void)
     mprintf(LOGG_INFO, "    --pcre-match-limit=#n                Maximum calls to the PCRE match function.\n");
     mprintf(LOGG_INFO, "    --pcre-recmatch-limit=#n             Maximum recursive calls to the PCRE match function.\n");
     mprintf(LOGG_INFO, "    --pcre-max-filesize=#n               Maximum size file to perform PCRE subsig matching.\n");
+    mprintf(LOGG_INFO, "    --pcre-jit[=yes/no(*)]               JIT-compile PCRE subsignatures for faster matching (requires PCRE2 JIT support; pcre-recmatch-limit is not enforced for JIT matches).\n");
     mprintf(LOGG_INFO, "    --disable-cache                      Disable caching and cache checks for hash sums of scanned files.\n");
     mprintf(LOGG_INFO, "    --hash-hint                          The file hash so that libclamav does not need to calculate it.\n");
     mprintf(LOGG_INFO, "                                         The type of hash must match the '--hash-alg'.\n");
