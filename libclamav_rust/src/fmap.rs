@@ -22,7 +22,7 @@
 
 use std::convert::TryFrom;
 
-use log::{debug, error};
+use log::debug;
 
 use crate::{sys, util::str_from_ptr};
 
@@ -93,6 +93,10 @@ impl<'a> FMap {
 
     pub fn is_empty(&self) -> bool {
         unsafe { (*self.fmap_ptr).len == 0 }
+    }
+
+    pub fn as_ptr(&self) -> *mut sys::cl_fmap_t {
+        self.fmap_ptr
     }
 
     pub fn name(&self) -> &'static str {

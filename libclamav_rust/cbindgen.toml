@@ -17,7 +17,14 @@ no_includes = false
 sys_includes = []
 
 [export]
-exclude = []
+exclude = [
+  "asn1_check_mscat",
+  "cli_check_auth_header",
+  "cli_rawaddr",
+  "cli_rawaddr_rust",
+  "cli_trust_this_layer",
+  "scanners::cli_rawaddr_rust",
+]
 include = [
   "cdiff::cdiff_apply",
   "cdiff::script2cdiff",
@@ -58,6 +65,7 @@ include = [
   "evidence::IndicatorType",
   "scanners::scan_onenote",
   "scanners::cli_scanalz",
+  "scanners::genhash_pe_rust",
   "util::glob_rm",
   "util::mkdir_w32",
 ]
