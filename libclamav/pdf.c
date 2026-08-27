@@ -896,11 +896,11 @@ struct pdf_obj *find_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t o
  *          77 % The length of the preceding stream
  *      endobj
  *
- * @param pdf       Pdf context structure.
- * @param obj       Pdf object context structure.
- * @param start     Pointer start of the dictionary string.
- * @param len       Remaining length of the dictioary string in bytes.
- * @return size_t   Unsigned integer value of the "/Length" key
+ * @param pdf           Pdf context structure.
+ * @param obj           Pdf object context structure.
+ * @param dict_start    Pointer start of the dictionary string.
+ * @param dict_len      Remaining length of the dictionary string in bytes.
+ * @return size_t       Unsigned integer value of the "/Length" key
  */
 static size_t find_length(struct pdf_struct *pdf, struct pdf_obj *obj, const char *dict_start, size_t dict_len)
 {
