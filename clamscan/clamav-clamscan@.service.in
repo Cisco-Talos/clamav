@@ -1,0 +1,8 @@
+[Unit]
+Description=ClamAV clamscan %f
+Documentation=man:clamscan(1) man:clamscan.conf(5) https://docs.clamav.net/
+
+[Service]
+Nice=19
+IOSchedulingClass=idle
+ExecStart=@prefix@/bin/clamscan --recursive=yes --infected --suppress-ok-results %f
