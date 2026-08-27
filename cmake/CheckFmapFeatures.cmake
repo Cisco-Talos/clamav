@@ -145,15 +145,66 @@ check_c_source_compiles(
     HAVE_SYSCONF_SC_PAGESIZE
 )
 
-# Check for mempool support
+# Which general-purpose allocator will libclamav be using?
+#
+# mpool outperforms glibc malloc, but not jemalloc or tcmalloc. Where one
+# of those is already in use the pool costs memory instead of saving it,
+# so prefer it. Nothing below runs a test program: cross compiling is
+# unaffected (see PR #90), and no library is added to the link line -
+# choosing the allocator stays the packager's decision.
+set(CLAMAV_ALLOCATOR "system")
+
+if(CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
+    # FreeBSD ships jemalloc as libc's malloc. Decided on the platform
+    # rather than probed, so that a probe failing for an unrelated
+    # reason cannot silently leave mpool enabled. STREQUAL, not MATCHES:
+    # GNU/kFreeBSD is glibc.
+    set(CLAMAV_ALLOCATOR "jemalloc")
+else()
+    # Only detectable when the allocator is on the probe's link line.
+    # LD_PRELOAD is not visible at configure time; nor is
+    # LDFLAGS=-ljemalloc, which CMake places ahead of the object file
+    # where --as-needed discards it. Use -D ENABLE_MPOOL=OFF for those.
+    check_symbol_exists(mallocx "jemalloc/jemalloc.h" HAVE_JEMALLOC_HEADER)
+    check_symbol_exists(tc_malloc_size "gperftools/tcmalloc.h" HAVE_TCMALLOC_HEADER)
+
+    if(HAVE_JEMALLOC_HEADER)
+        set(CLAMAV_ALLOCATOR "jemalloc")
+    elseif(HAVE_TCMALLOC_HEADER)
+        set(CLAMAV_ALLOCATOR "tcmalloc")
+    endif()
+endif()
+message(STATUS "General-purpose allocator detected: ${CLAMAV_ALLOCATOR}")
+
+# ENABLE_MPOOL: ON always, OFF never, AUTO (default) unless a better
+# allocator was detected. See #1377.
+if(NOT DEFINED ENABLE_MPOOL)
+    set(ENABLE_MPOOL "AUTO" CACHE STRING
+        "Use the built-in mpool allocator: ON, OFF, or AUTO (AUTO disables it when jemalloc or tcmalloc is detected)")
+endif()
+set_property(CACHE ENABLE_MPOOL PROPERTY STRINGS ON OFF AUTO)
+
+# DISABLE_MPOOL predates ENABLE_MPOOL and is still set by existing
+# packaging.
 if(DISABLE_MPOOL)
-    message("****** mempool support disabled (DISABLE_MPOOL enabled)")
+    set(ENABLE_MPOOL OFF)
+endif()
+
+# Check for mempool support
+if(ENABLE_MPOOL STREQUAL "OFF" OR NOT ENABLE_MPOOL)
+    message("****** mempool support disabled (ENABLE_MPOOL=OFF)")
+elseif(WIN32)
+    # Windows has no mmap and mpool uses its own backend, so the checks
+    # below do not apply to it.
+    set(USE_MPOOL 1)
 elseif(NOT HAVE_MMAP)
     message("****** mempool support disabled (mmap() not available or not usable)")
 elseif(NOT HAVE_GETPAGESIZE AND NOT HAVE_SYSCONF_SC_PAGESIZE)
     message("****** mempool support disabled (pagesize cannot be determined)")
 elseif(NOT HAVE_MMAP_MAP_ANON AND NOT HAVE_MMAP_MAP_ANONYMOUS)
     message("****** mempool support disabled (anonymous mmap not available)")
+elseif(ENABLE_MPOOL STREQUAL "AUTO" AND NOT CLAMAV_ALLOCATOR STREQUAL "system")
+    message("****** mempool support disabled (${CLAMAV_ALLOCATOR} detected; use -D ENABLE_MPOOL=ON to override)")
 else()
     set(USE_MPOOL 1)
 endif()
