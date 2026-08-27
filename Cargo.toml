@@ -1,8 +1,6 @@
 [workspace]
 
-members = [
-    "libclamav_rust",
-]
+members = ["clamav-sys", "libclamav_rust"]
 
 [profile.dev.package."*"]
 opt-level = 2
