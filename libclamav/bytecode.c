@@ -44,7 +44,7 @@
 #include "builtin_bytecodes.h"
 
 #ifndef MAX_TRACKED_BC
-#define MAX_TRACKED_BC 64
+#define MAX_TRACKED_BC (84 * 2) /* 84 is the number of signatures in the bytecode database as of 2026-04-15 */
 #endif
 #define BC_EVENTS_PER_SIG 2
 #define MAX_BC_SIGEVENT_ID MAX_TRACKED_BC *BC_EVENTS_PER_SIG
