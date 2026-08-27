@@ -93,6 +93,15 @@ Follow directory symlinks. There are 3 options: 0 - never follow directory symli
 \fB\-\-follow\-file\-symlinks=[0/1(*)/2]\fR
 Follow file symlinks. There are 3 options: 0 - never follow file symlinks, 1 (default) - only follow file symlinks, which are passed as direct arguments to clamscan. 2 - always follow file symlinks.
 .TP
+\fB\-\-ignore\-socket\-errors=[yes/no(*)]\fR
+Do not return error code 2 when a direct scan target or file-list entry is a Unix domain socket. The file is still reported with an informational message, but does not count as an error. Other unsupported file types and file access errors are still treated as errors.
+.TP
+\fB\-\-ignore\-pipe\-errors=[yes/no(*)]\fR
+Same as \-\-ignore\-socket\-errors, but for named pipes (FIFOs).
+.TP
+\fB\-\-ignore\-device\-errors=[yes/no(*)]\fR
+Same as \-\-ignore\-socket\-errors, but for character and block device files.
+.TP
 \fB\-f FILE, \-\-file\-list=FILE\fR
 Scan files listed line by line in FILE.
 .TP
