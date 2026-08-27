@@ -6073,7 +6073,6 @@ cl_error_t cl_engine_compile(struct cl_engine *engine)
     }
 
     cli_dconf_print(engine->dconf);
-    MPOOL_FLUSH(engine->mempool);
 
     /* Compile bytecode */
     if (CL_SUCCESS != (ret = cli_bytecode_prepare2(engine, &engine->bcs, engine->dconf->bytecode))) {
@@ -6081,6 +6080,8 @@ cl_error_t cl_engine_compile(struct cl_engine *engine)
         return ret;
     }
     TASK_COMPLETE();
+
+    MPOOL_FLUSH(engine->mempool);
 
     engine->dboptions |= CL_DB_COMPILED;
     return CL_SUCCESS;
