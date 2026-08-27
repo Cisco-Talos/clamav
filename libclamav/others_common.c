@@ -1465,35 +1465,52 @@ cl_error_t cli_get_filepath_from_filedesc(int desc, char **filepath)
     char *evaluated_filepath = NULL;
 
 #ifdef __linux__
-    char fname[PATH_MAX];
-
+    size_t fname_size = PATH_MAX;
     char link[32];
     ssize_t linksz;
-
-    memset(&fname, 0, PATH_MAX);
 
     if (NULL == filepath) {
         cli_errmsg("cli_get_filepath_from_filedesc: Invalid args.\n");
         goto done;
     }
 
+    *filepath = NULL;
+
     snprintf(link, sizeof(link), "/proc/self/fd/%u", desc);
     link[sizeof(link) - 1] = '\0';
 
-    if (-1 == (linksz = readlink(link, fname, PATH_MAX - 1))) {
-        cli_dbgmsg("cli_get_filepath_from_filedesc: Failed to resolve filename for descriptor %d (%s)\n", desc, link);
-        status = CL_EOPEN;
-        goto done;
-    }
+    while (fname_size <= CLI_MAX_ALLOCATION) {
+        evaluated_filepath = cli_max_malloc(fname_size);
+        if (NULL == evaluated_filepath) {
+            status = CL_EMEM;
+            goto done;
+        }
 
-    /* Success. Add null terminator */
-    fname[linksz] = '\0';
+        linksz = readlink(link, evaluated_filepath, fname_size - 1);
+        if (-1 == linksz) {
+            int readlink_errno = errno;
 
-    evaluated_filepath = CLI_STRNDUP(fname, CLI_STRNLEN(fname, PATH_MAX));
-    if (NULL == evaluated_filepath) {
-        cli_errmsg("cli_get_filepath_from_filedesc: Failed to allocate memory to store filename\n");
-        status = CL_EMEM;
-        goto done;
+            cli_dbgmsg("cli_get_filepath_from_filedesc: Failed to resolve filename for descriptor %d (%s)\n", desc, link);
+            free(evaluated_filepath);
+            evaluated_filepath = NULL;
+            status             = CL_EOPEN;
+            errno              = readlink_errno;
+            goto done;
+        }
+
+        if ((size_t)linksz < fname_size - 1) {
+            evaluated_filepath[linksz] = '\0';
+            break;
+        }
+
+        free(evaluated_filepath);
+        evaluated_filepath = NULL;
+
+        if (fname_size > CLI_MAX_ALLOCATION / 2) {
+            status = CL_EMAXSIZE;
+            goto done;
+        }
+        fname_size *= 2;
     }
 
 #elif defined(__FreeBSD__) && defined(F_KINFO)
