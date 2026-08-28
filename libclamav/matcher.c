@@ -655,7 +655,15 @@ cl_error_t cli_check_fp(cli_ctx *ctx, const char *vname)
 
                 }
 
-                if (cli_hm_scan(hash, map->len, &virname, ctx->engine->hm_fp, hash_type) == CL_VIRUS) {
+                ret = cli_hm_scan(hash, map->len, &virname, ctx->engine->hm_fp, hash_type);
+                if (CL_SUCCESS != ret && CL_VIRUS != ret) {
+                    /* The file could not be checked against the false positive
+                     * signatures, so the alert has to stand. */
+                    cli_dbgmsg("cli_check_fp: Failed to check the hash against the false positive signatures\n");
+                    status = CL_VIRUS;
+                    goto done;
+                }
+                if (CL_VIRUS == ret) {
                     cli_dbgmsg("cli_check_fp: Found false positive detection for %s (fp sig: %s)\n", cli_hash_name(hash_type), virname);
 
                     source_len = strlen(virname) + strlen("false positive signature match: ") + 1;
@@ -673,7 +681,13 @@ cl_error_t cli_check_fp(cli_ctx *ctx, const char *vname)
                     status = CL_VERIFIED;
                     goto done;
                 }
-                if (cli_hm_scan_wild(hash, &virname, ctx->engine->hm_fp, hash_type) == CL_VIRUS) {
+                ret = cli_hm_scan_wild(hash, &virname, ctx->engine->hm_fp, hash_type);
+                if (CL_SUCCESS != ret && CL_VIRUS != ret) {
+                    cli_dbgmsg("cli_check_fp: Failed to check the hash against the false positive signatures\n");
+                    status = CL_VIRUS;
+                    goto done;
+                }
+                if (CL_VIRUS == ret) {
                     cli_dbgmsg("cli_check_fp: Found false positive detection for %s (fp sig: %s)\n", cli_hash_name(hash_type), virname);
 
                     source_len = strlen(virname) + strlen("false positive signature match: ") + 1;
@@ -695,7 +709,13 @@ cl_error_t cli_check_fp(cli_ctx *ctx, const char *vname)
                 if (CLI_HASH_MD5 != hash_type) {
                     /* See whether the hash matches those loaded in from .cat files
                      * (associated with the .CAB file type) */
-                    if (cli_hm_scan(hash, 1, &virname, ctx->engine->hm_fp, hash_type) == CL_VIRUS) {
+                    ret = cli_hm_scan(hash, 1, &virname, ctx->engine->hm_fp, hash_type);
+                    if (CL_SUCCESS != ret && CL_VIRUS != ret) {
+                        cli_dbgmsg("cli_check_fp: Failed to check the hash against the catalog false positive signatures\n");
+                        status = CL_VIRUS;
+                        goto done;
+                    }
+                    if (CL_VIRUS == ret) {
                         cli_dbgmsg("cli_check_fp: Found .CAB false positive detection for %s via catalog file\n", cli_hash_name(hash_type));
 
                         source_len = strlen(virname) + strlen("false positive signature match: ") + 1;
@@ -1379,6 +1399,9 @@ cl_error_t cli_scan_fmap(cli_ctx *ctx, cli_file_t ftype, bool filetype_only, str
                 if (ret != CL_SUCCESS) {
                     goto done;
                 }
+            } else if (ret != CL_SUCCESS) {
+                cli_dbgmsg("cli_scan_fmap: Error checking size-based hash signatures\n");
+                goto done;
             }
 
             /* Do hash scan checking hash sigs with wildcard size.
@@ -1390,6 +1413,9 @@ cl_error_t cli_scan_fmap(cli_ctx *ctx, cli_file_t ftype, bool filetype_only, str
                 if (ret != CL_SUCCESS) {
                     goto done;
                 }
+            } else if (ret != CL_SUCCESS) {
+                cli_dbgmsg("cli_scan_fmap: Error checking size-agnostic hash signatures\n");
+                goto done;
             }
         }
     }

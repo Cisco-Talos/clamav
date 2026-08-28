@@ -37,9 +37,26 @@ typedef enum {
     HASH_PURPOSE_PE_IMPORT_DETECT       /** PE import hash malware detection (aka .imp) */
 } hash_purpose_t;
 
+/** Name table entry number of a signature that was added without a name.
+ * asn1.c adds authenticode false-positive hashes that way. */
+#define HM_NAME_NONE 0xffffffff
+
+/** Number of front-coded name entries per restart point. A decode walks
+ * from the start of the block, so this trades decode work against the
+ * size of the block offset table. */
+#define HM_NAME_BLOCK 16
+
+/** Front-coded virus names for one matcher root, shared by all of its
+ * size buckets. Opaque outside matcher-hash.c. */
+struct cli_hm_names;
+
 struct cli_sz_hash {
     uint8_t *hash_array;
-    const char **virusnames;
+    /** Per signature, an entry number in root->hm_names, or HM_NAME_NONE.
+     * Between hm_addhash_bin() and hm_flush() this holds a byte offset
+     * into the load-time name arena instead; hm_flush() rewrites every
+     * entry once the names have been sorted and coded. */
+    uint32_t *name_idx;
     uint32_t items;
 };
 
@@ -51,9 +68,13 @@ struct cli_hash_wild {
     struct cli_sz_hash hashes[CLI_HASH_AVAIL_TYPES];
 };
 
+/* hm_addhash_str() and hm_addhash_bin() copy virusname; the caller keeps
+ * ownership of the buffer it passes, and may pass NULL for no name. */
 cl_error_t hm_addhash_str(struct cl_engine *engine, hash_purpose_t purpose, const char *strhash, uint32_t size, const char *virusname);
 cl_error_t hm_addhash_bin(struct cl_engine *engine, hash_purpose_t purpose, const void *binhash, cli_hash_type_t type, uint32_t size, const char *virusname);
-void hm_flush(struct cli_matcher *root);
+/* Sorts every hash set and builds the name table. Must be called once,
+ * after loading and before scanning. */
+cl_error_t hm_flush(struct cli_matcher *root);
 cl_error_t cli_hm_scan(const uint8_t *digest, uint32_t size, const char **virname, const struct cli_matcher *root, cli_hash_type_t type);
 cl_error_t cli_hm_scan_wild(const uint8_t *digest, const char **virname, const struct cli_matcher *root, cli_hash_type_t type);
 bool cli_hm_have_size(const struct cli_matcher *root, cli_hash_type_t type, uint32_t size);
