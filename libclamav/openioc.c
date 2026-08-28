@@ -299,10 +299,12 @@ int openioc_parse(const char *fname, int fd, struct cl_engine *engine, unsigned 
             }
         }
 
-        vp        = virusname;
-        virusname = CLI_MPOOL_VIRNAME(engine->mempool, virusname, options & CL_DB_OFFICIAL);
+        vp = virusname;
+        /* hm_addhash_str() copies the name; this buffer only has to live
+         * until it returns, so it does not come from the pool. */
+        virusname = cli_virname(virusname, options & CL_DB_OFFICIAL);
         if (!(virusname)) {
-            cli_dbgmsg("openioc_parse: MPOOL_MALLOC for virname memory failed.\n");
+            cli_dbgmsg("openioc_parse: allocating virname memory failed.\n");
             xmlTextReaderClose(reader);
             xmlFreeTextReader(reader);
             free(vp);
@@ -317,6 +319,8 @@ int openioc_parse(const char *fname, int fd, struct cl_engine *engine, unsigned 
                        rc, hashlen, virusname);
         else
             hash_count++;
+
+        free(virusname);
 
         xmlFree(elem->hash);
         free(elem);
