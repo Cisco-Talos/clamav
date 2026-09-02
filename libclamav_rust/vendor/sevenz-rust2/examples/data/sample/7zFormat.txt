@@ -1,0 +1,38 @@
+7z is the new archive format, providing high compression ratio.
+
+The main features of 7z format:
+
+Open architecture
+High compression ratio
+Strong AES-256 encryption
+Ability of using any compression, conversion or encryption method
+Supporting files with sizes up to 16000000000 GB
+Unicode file names
+Solid compressing
+Archive headers compressing
+7z has open architecture, so it can support any new compression methods. Now the following methods are integrated to 7z:
+
+Method	Description
+LZMA	Improved and optimized version of LZ77 algorithm
+LZMA2	Improved version of LZMA
+PPMD	Dmitry Shkarin's PPMdH with small changes
+BCJ	Converter for 32-bit x86 executables
+BCJ2	Converter for 32-bit x86 executables
+BZip2	Standard BWT algorithm
+Deflate	Standard LZ77-based algorithm
+LZMA is default and general compression method of 7z format. The main features of LZMA method:
+
+High compression ratio
+Variable dictionary size (up to 4 GB)
+Compressing speed: about 1 MB/s on 2 GHz CPU
+Decompressing speed: about 10-20 MB/s on 2 GHz CPU
+Small memory requirements for decompressing (depend from dictionary size)
+Small code size for decompressing: about 5 KB
+Supporting multi-threading and P4's hyper-threading
+LZMA compression algorithm is very suitable for embedded applications. LZMA is released under the terms of the GNU LGPL. LZMA is also available under a proprietary license for those who can not use the GNU LGPL in their code. If you want to use LZMA code, you can ask consultations, custom code programming and required developer licenses from page for support: Send message to LZMA developer. Check also information about LZMA SDK.
+
+7-Zip also supports encryption with AES-256 algorithm. This algorithm uses cipher key with length of 256 bits. To create that key 7-Zip uses derivation function based on SHA-256 hash algorithm. A key derivation function produces a derived key from text password defined by user. For increasing the cost of exhaustive search for passwords 7-Zip uses big number of iterations to produce cipher key from text password.
+
+7z is a part of 7-Zip program distributed under the GNU LGPL. You can download 7-Zip sources and binaries from Download Page.
+
+Applications that support 7z archives: WinRAR, PowerArchiver, TUGZip, IZArc.

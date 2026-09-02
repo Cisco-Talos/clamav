@@ -1,0 +1,66 @@
+[package]
+description = "LZMA / LZMA2 / LZIP / XZ compression ported from 'tukaani xz for java'"
+edition = "2024"
+homepage = "https://github.com/hasenbanck/lzma-rust2/"
+name = "lzma-rust2"
+repository = "https://github.com/hasenbanck/lzma-rust2/"
+rust-version = "1.85"
+version = "0.19.0"
+keywords = ["lzma", "lzip", "xz"]
+categories = ["compression", "no-std"]
+license = "Apache-2.0"
+exclude = ["/tests/data"]
+
+[features]
+default = ["std", "encoder", "optimization", "lzip", "xz"]
+std = []
+optimization = []
+encoder = []
+xz = ["sha2"]
+lzip = []
+
+[dependencies]
+sha2 = { version = "0.11", optional = true }
+
+[dev-dependencies]
+criterion = { version = "=0.7", features = ["html_reports"] }
+liblzma = { version = "0.4", features = ["static"] }
+
+[[example]]
+name = "lzip_reader"
+required-features = ["std", "lzip"]
+
+[[example]]
+name = "lzip_writer"
+required-features = ["std", "encoder", "lzip"]
+
+[[example]]
+name = "lzma2_reader"
+required-features = ["std"]
+
+[[example]]
+name = "lzma2_writer"
+required-features = ["std", "encoder"]
+
+[[example]]
+name = "lzma_reader"
+required-features = ["std"]
+
+[[example]]
+name = "lzma_writer"
+required-features = ["std", "encoder"]
+
+[[example]]
+name = "xz_reader"
+required-features = ["std", "xz"]
+
+[[example]]
+name = "xz_writer"
+required-features = ["std", "encoder", "xz"]
+
+[[bench]]
+name = "comparison"
+harness = false
+
+[package.metadata.docs.rs]
+all-features = true
