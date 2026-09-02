@@ -135,6 +135,7 @@ if(MAINTAINER_MODE)
     # TODO: Gperf required to generate JS-normalization code.
     # find_package(GPERF REQUIRED)
 endif()
+set(RUSTC_MINIMUM_REQUIRED 1.93)
 find_package(Rust REQUIRED)
 
 if(ENABLE_FUZZ)

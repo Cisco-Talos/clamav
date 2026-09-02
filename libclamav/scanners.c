@@ -104,7 +104,6 @@
 #include "dmg.h"
 #include "xar.h"
 #include "hfsplus.h"
-#include "xz_iface.h"
 #include "mbr.h"
 #include "gpt.h"
 #include "apm.h"
@@ -1321,103 +1320,6 @@ static cl_error_t cli_scanbzip(cli_ctx *ctx)
             ret = CL_EUNLINK;
     free(tmpname);
 
-    return ret;
-}
-
-static cl_error_t cli_scanxz(cli_ctx *ctx)
-{
-    cl_error_t ret = CL_SUCCESS;
-    int fd, rc;
-    unsigned long int size = 0;
-    char *tmpname;
-    struct CLI_XZ strm;
-    size_t off = 0;
-    size_t avail;
-    unsigned char *buf;
-
-    buf = malloc(CLI_XZ_OBUF_SIZE);
-    if (buf == NULL) {
-        cli_errmsg("cli_scanxz: nomemory for decompress buffer.\n");
-        return CL_EMEM;
-    }
-    memset(&strm, 0x00, sizeof(struct CLI_XZ));
-    strm.next_out  = buf;
-    strm.avail_out = CLI_XZ_OBUF_SIZE;
-    rc             = cli_XzInit(&strm);
-    if (rc != XZ_RESULT_OK) {
-        cli_errmsg("cli_scanxz: DecompressInit failed: %i\n", rc);
-        free(buf);
-        return CL_EOPEN;
-    }
-
-    if ((ret = cli_gentempfd(ctx->this_layer_tmpdir, &tmpname, &fd))) {
-        cli_errmsg("cli_scanxz: Can't generate temporary file.\n");
-        cli_XzShutdown(&strm);
-        free(buf);
-        return ret;
-    }
-    cli_dbgmsg("cli_scanxz: decompressing to file %s\n", tmpname);
-
-    do {
-        /* set up input buffer */
-        if (!strm.avail_in) {
-            strm.next_in  = (void *)fmap_need_off_once_len(ctx->fmap, off, CLI_XZ_IBUF_SIZE, &avail);
-            strm.avail_in = avail;
-            off += avail;
-            if (!strm.avail_in) {
-                cli_errmsg("cli_scanxz: premature end of compressed stream\n");
-                ret = CL_EFORMAT;
-                goto xz_exit;
-            }
-        }
-
-        /* xz decompress a chunk */
-        rc = cli_XzDecode(&strm);
-        if (XZ_RESULT_OK != rc && XZ_STREAM_END != rc) {
-            cli_dbgmsg("cli_scanxz: decompress error: %d\n", rc);
-            ret = CL_EMEM;
-            goto xz_exit;
-        }
-        // cli_dbgmsg("cli_scanxz: xz decompressed %li of %li available bytes\n",
-        //            avail - strm.avail_in, avail);
-
-        /* write decompress buffer */
-        if (!strm.avail_out || rc == XZ_STREAM_END) {
-            size_t towrite = CLI_XZ_OBUF_SIZE - strm.avail_out;
-            size += towrite;
-
-            // cli_dbgmsg("Writing %li bytes to XZ decompress temp file(%li byte total)\n",
-            //            towrite, size);
-
-            if (cli_writen(fd, buf, towrite) != towrite) {
-                cli_errmsg("cli_scanxz: Can't write to file.\n");
-                ret = CL_EWRITE;
-                goto xz_exit;
-            }
-            if (cli_checklimits("cli_scanxz", ctx, size, 0, 0) != CL_SUCCESS) {
-                cli_warnmsg("cli_scanxz: decompress file size exceeds limits - "
-                            "only scanning %li bytes\n",
-                            size);
-                break;
-            }
-            strm.next_out  = buf;
-            strm.avail_out = CLI_XZ_OBUF_SIZE;
-        }
-    } while (XZ_STREAM_END != rc);
-
-    /* scan decompressed file */
-    ret = cli_magic_scan_desc(fd, tmpname, ctx, NULL, LAYER_ATTRIBUTES_NONE);
-
-xz_exit:
-    cli_XzShutdown(&strm);
-    close(fd);
-    if (!ctx->engine->keeptmp) {
-        if (cli_unlink(tmpname) && ret == CL_SUCCESS) {
-            ret = CL_EUNLINK;
-        }
-    }
-    free(tmpname);
-    free(buf);
     return ret;
 }
 
@@ -4723,7 +4625,8 @@ done:
 
 cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
 {
-    cl_error_t status = CL_SUCCESS;
+    cl_error_t status                = CL_SUCCESS;
+    cl_error_t deferred_format_error = CL_SUCCESS;
     cl_error_t ret;
 
     cl_error_t cache_check_result      = CL_VIRUS;
@@ -5173,8 +5076,20 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
             break;
 
         case CL_TYPE_7Z:
-            if (SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_7Z))
+            if (SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_7Z)) {
                 ret = cli_7unz(ctx, 0);
+                if (CL_EFORMAT == ret) {
+                    /*
+                     * The former 7z SDK scanner logged malformed, CRC,
+                     * truncated, and decoder-memory errors and returned clean.
+                     * Preserve the Rust scanner's explicit format result, but
+                     * defer it so raw signature scanning still runs and any
+                     * malware detection or more serious scan error wins.
+                     */
+                    deferred_format_error = ret;
+                    ret                   = CL_SUCCESS;
+                }
+            }
             break;
 
         case CL_TYPE_POSIX_TAR:
@@ -5607,6 +5522,10 @@ done:
     if ((CL_VERDICT_TRUSTED == ctx->recursion_stack[ctx->recursion_level].verdict) &&
         (CL_VIRUS == status)) {
         status = CL_SUCCESS;
+    }
+
+    if ((CL_SUCCESS == status) && (CL_SUCCESS != deferred_format_error)) {
+        status = deferred_format_error;
     }
 
     cli_dbgmsg("cli_magic_scan: returning %d %s\n", status, __AT__);

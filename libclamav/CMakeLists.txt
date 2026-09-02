@@ -51,66 +51,6 @@ if(WIN32)
     target_link_libraries( regex PRIVATE ClamAV::win32_compat )
 endif()
 
-add_library( lzma_sdk OBJECT )
-target_sources( lzma_sdk
-    PRIVATE
-        7z/7zAlloc.c
-        7z/7zBuf.c
-        7z/7zBuf2.c
-        7z/7zCrc.c
-        7z/7zCrcOpt.c
-        7z/7zDec.c
-        7z/7zFile.c
-        7z/7zIn.c
-        7z/7zStream.c
-        7z/Bcj2.c
-        7z/Bra.c
-        7z/Bra86.c
-        7z/BraIA64.c
-        7z/CpuArch.c
-        7z/Delta.c
-        7z/Lzma2Dec.c
-        7z/LzmaDec.c
-        7z/Ppmd7.c
-        7z/Ppmd7Dec.c
-        7z/Xz.c
-        7z/XzCrc64.c
-        7z/XzDec.c
-        7z/XzIn.c
-    PUBLIC
-        7z/7z.h
-        7z/Xz.h
-        7z/Alloc.h
-        7z/7zFile.h
-        7z/XzCrc64.h
-        7z/RotateDefs.h
-        7z/Types.h
-        7z/Ppmd7.h
-        7z/LzmaDec.h
-        7z/Ppmd.h
-        7z/Lzma2Dec.h
-        7z/Delta.h
-        7z/CpuArch.h
-        7z/CpuArch.h
-        7z/Bra.h
-        7z/Bcj2.h
-        7z/7zVersion.h
-        7z/7zCrc.h
-        7z/7zBuf.h
-        7z/7zAlloc.h )
-target_include_directories( lzma_sdk
-    PRIVATE ${CMAKE_BINARY_DIR}
-    PUBLIC  ${CMAKE_CURRENT_SOURCE_DIR} )
-set_target_properties( lzma_sdk PROPERTIES
-    COMPILE_FLAGS "${WARNCFLAGS}" )
-target_link_libraries( lzma_sdk
-    PRIVATE
-        PCRE2::pcre2
-        JSONC::jsonc )
-if(WIN32)
-    target_link_libraries( lzma_sdk PRIVATE ClamAV::win32_compat )
-endif()
-
 if(MAINTAINER_MODE)
     bison_target( yara_grammar
         yara_grammar.y ${CMAKE_CURRENT_SOURCE_DIR}/yara_grammar.c )
@@ -279,7 +219,6 @@ set(LIBCLAMAV_SOURCES
     inflate64_priv.h    inflate64.c     inflate64.h
     lzma_iface.c        lzma_iface.h
     lzw/lzwdec.c        lzw/lzwdec.h
-    xz_iface.c          xz_iface.h
     # utils: encryption
     arc4.c              arc4.h
     rijndael.c          rijndael.h
@@ -431,7 +370,6 @@ if(ENABLE_SHARED_LIB)
     target_link_libraries( clamav
         PUBLIC
             regex
-            lzma_sdk
             yara
             bytecode_runtime
             ${LIBMSPACK}
@@ -556,7 +494,6 @@ if(ENABLE_STATIC_LIB)
     target_link_libraries( clamav_static
         PUBLIC
             regex
-            lzma_sdk
             yara
             bytecode_runtime
             ${LIBMSPACK}
