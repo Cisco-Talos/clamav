@@ -162,3 +162,31 @@ class TC(testcase.TestCase):
             'not_eicar.zip: OK',
         ]
         self.verify_output(output.out, expected=expected_stdout, unexpected=unexpected_stdout)
+
+    def test_handler_type_does_not_alert_on_retyped_layer(self):
+        self.step_name('Test that a HandlerType signature does not alert after retyping the layer')
+
+        marker = b'CLAMAV-TEST-HANDLERTYPE'
+        testfile = TC.path_tmp / 'handler_type_retype'
+        testfile.write_bytes(marker)
+
+        (TC.path_tmp / 'handler_type_retype.ldb').write_text(
+            'handler_type_retype;Engine:51-255,HandlerType:CL_TYPE_ZIP,Target:0;0;{}\n'.format(marker.hex())
+        )
+
+        command = '{valgrind} {valgrind_args} {clamscan} -d {path_db} {testfile} --allmatch'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan,
+            path_db=TC.path_tmp / 'handler_type_retype.ldb',
+            testfile=testfile,
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 0
+
+        expected_stdout = [
+            'handler_type_retype: OK',
+        ]
+        unexpected_stdout = [
+            'handler_type_retype.UNOFFICIAL FOUND',
+        ]
+        self.verify_output(output.out, expected=expected_stdout, unexpected=unexpected_stdout)
