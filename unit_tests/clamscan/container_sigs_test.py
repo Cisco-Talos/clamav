@@ -190,3 +190,37 @@ class TC(testcase.TestCase):
             'handler_type_retype.UNOFFICIAL FOUND',
         ]
         self.verify_output(output.out, expected=expected_stdout, unexpected=unexpected_stdout)
+
+    def test_handler_type_retyped_layer_is_not_cached(self):
+        self.step_name('Test that one HandlerType scan does not cache a later HandlerType scan as clean')
+
+        marker = b'CLAMAV-TEST-HANDLERTYPE-CACHE'
+        testfile = TC.path_tmp / 'handler_type_cache'
+        testfile.write_bytes(marker)
+
+        (TC.path_tmp / 'handler_type_cache.ldb').write_text(
+            'handler_type_zip;Engine:51-255,HandlerType:CL_TYPE_ZIP,Target:0;0;{}\n'
+            'handler_type_pe;Engine:51-255,HandlerType:CL_TYPE_MSEXE,Target:0;0;{}\n'
+            'handler_type_pe_detection;Engine:51-255,Target:1;0;{}\n'.format(
+                marker.hex(), marker.hex(), marker.hex()
+            )
+        )
+
+        command = '{valgrind} {valgrind_args} {clamscan} -d {path_db} {testfile} --allmatch'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan,
+            path_db=TC.path_tmp / 'handler_type_cache.ldb',
+            testfile=testfile,
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 1
+
+        expected_stdout = [
+            'handler_type_cache: handler_type_pe_detection.UNOFFICIAL FOUND',
+        ]
+        unexpected_stdout = [
+            'handler_type_cache: OK',
+            'handler_type_cache: handler_type_zip.UNOFFICIAL FOUND',
+            'handler_type_cache: handler_type_pe.UNOFFICIAL FOUND',
+        ]
+        self.verify_output(output.out, expected=expected_stdout, unexpected=unexpected_stdout)
