@@ -4767,10 +4767,13 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
     /*
      * Determine if caching is enabled.
      * The application may have specifically disabled caching. Also, if the application never loaded any signatures,
-     * then the cache will be NULL and caching will also be disabled.
+     * then the cache will be NULL and caching will also be disabled. Retyped
+     * layers must bypass the cache because its key does not include the
+     * HandlerType used to scan the layer.
      */
     if ((ctx->engine->engine_options & ENGINE_OPTIONS_DISABLE_CACHE) ||
-        (ctx->engine->cache == NULL)) {
+        (ctx->engine->cache == NULL) ||
+        (ctx->recursion_stack[ctx->recursion_level].attributes & LAYER_ATTRIBUTES_RETYPED)) {
         cache_enabled = false;
     }
 
