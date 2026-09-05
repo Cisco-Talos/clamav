@@ -229,7 +229,14 @@ cl_unrar_error_t unrar_open(const char* filename, void** hArchive, char** commen
     }
     archiveData->ArcName  = (char*)filename;
     archiveData->OpenMode = RAR_OM_EXTRACT;
-    archiveData->OpFlags |= ROADOF_KEEPBROKEN;
+    /*
+     * ClamAV can ask UnRAR to open a temporary archive while the descriptor
+     * used to create it is still open.  The previously vendored UnRAR release
+     * always enabled shared access, but UnRAR 7.23 requires DLL callers to
+     * request it explicitly.  Without this flag, streamed RAR scans fail to
+     * reopen the temporary archive on Windows.
+     */
+    archiveData->OpFlags |= ROADOF_KEEPBROKEN | ROADOF_SHARED;
     archiveData->CmtBuf = (char*)calloc(1, CMTBUFSIZE);
     if (archiveData->CmtBuf == NULL) {
         unrar_dbgmsg("unrar_open: Not enough memory to allocate main archive header comment buffer.\n");

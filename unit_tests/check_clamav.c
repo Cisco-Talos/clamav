@@ -345,6 +345,37 @@ START_TEST(test_cl_scandesc)
 }
 END_TEST
 
+#if HAVE_UNRAR
+/*
+ * Scan RAR input without supplying its pathname.  This forces libclamav to
+ * dump the descriptor to a temporary file and reopen it through libclamav's
+ * normal UnRAR integration path, as it does for clamd INSTREAM scans.
+ */
+START_TEST(test_cl_scandesc_unrar_without_filepath)
+{
+    const char *archive_path = unrar_test_archives[_i];
+    const char *virname      = NULL;
+    unsigned long scanned    = 0;
+    cl_error_t status;
+    struct cl_scan_options options;
+    int fd;
+
+    memset(&options, 0, sizeof(options));
+    options.parse |= ~0;
+
+    fd = open(archive_path, O_RDONLY | O_BINARY);
+    ck_assert_msg(fd >= 0, "Failed to open %s", archive_path);
+
+    status = cl_scandesc(fd, NULL, &virname, &scanned, g_engine, &options);
+    close(fd);
+
+    ck_assert_msg(status == CL_VIRUS, "cl_scandesc failed for %s: %s", archive_path, cl_strerror(status));
+    ck_assert_msg(NULL != virname, "No virus name returned for %s", archive_path);
+    ck_assert_msg(!strcmp(virname, "ClamAV-Test-File.UNOFFICIAL"), "virusname: %s", virname);
+}
+END_TEST
+#endif
+
 START_TEST(test_cl_scandesc_allscan)
 {
     const char *virname = NULL;
@@ -1619,6 +1650,9 @@ static Suite *test_cl_suite(void)
         expect--;
     expect -= skip_files();
     tcase_add_loop_test(tc_cl_scan, test_cl_scandesc, 0, expect);
+#if HAVE_UNRAR
+    tcase_add_loop_test(tc_cl_scan, test_cl_scandesc_unrar_without_filepath, 0, 2);
+#endif
     tcase_add_loop_test(tc_cl_scan, test_cl_scandesc_allscan, 0, expect);
     tcase_add_loop_test(tc_cl_scan, test_cl_scanfile, 0, expect);
     tcase_add_loop_test(tc_cl_scan, test_cl_scanfile_allscan, 0, expect);
