@@ -1,7 +1,7 @@
 #include "rar.hpp"
 #include "sha256.hpp"
 
-static const uint32 K[64] = 
+static const uint32 K[64] =
 {
   0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5,
   0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
@@ -63,7 +63,7 @@ static void sha256_transform(sha256_context *ctx)
 
   for (uint I = 0; I < 64; I++)
   {
-    uint T1 = v[7] + Sg1(v[4]) + Ch(v[4], v[5], v[6]) + K[I] + W[I];
+    uint32 T1 = v[7] + Sg1(v[4]) + Ch(v[4], v[5], v[6]) + K[I] + W[I];
 
     // It is possible to eliminate variable copying if we unroll loop
     // and rename variables every time. But my test did not show any speed
@@ -74,7 +74,7 @@ static void sha256_transform(sha256_context *ctx)
     v[4] = v[3] + T1;
 
     // It works a little faster when moved here from beginning of loop.
-    uint T2 = Sg0(v[0]) + Maj(v[0], v[1], v[2]);
+    uint32 T2 = Sg0(v[0]) + Maj(v[0], v[1], v[2]);
 
     v[3] = v[2];
     v[2] = v[1];
@@ -145,4 +145,13 @@ void sha256_done(sha256_context *ctx, byte *Digest)
   RawPutBE4(ctx->H[7], Digest + 28);
 
   sha256_init(ctx);
+}
+
+
+void sha256_get(const void *Data, size_t Size, byte *Digest)
+{
+  sha256_context ctx;
+  sha256_init(&ctx);
+  sha256_process(&ctx, Data, Size);
+  sha256_done(&ctx, Digest);
 }
