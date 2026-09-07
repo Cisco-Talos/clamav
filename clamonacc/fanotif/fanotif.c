@@ -113,8 +113,9 @@ cl_error_t onas_setup_fanotif(struct onas_context **ctx)
             }
             pt = (struct optstruct *)pt->nextarg;
         }
+    }
 
-    } else if ((pt = optget((*ctx)->clamdopts, "OnAccessFilesystemPath"))->enabled) {
+    if ((pt = optget((*ctx)->clamdopts, "OnAccessFilesystemPath"))->enabled) {
 #ifdef FAN_MARK_FILESYSTEM
         while (pt) {
             if (fanotify_mark(onas_fan_fd, FAN_MARK_ADD | FAN_MARK_FILESYSTEM, (*ctx)->fan_mask, (*ctx)->fan_fd, pt->strarg) != 0) {
@@ -129,10 +130,11 @@ cl_error_t onas_setup_fanotif(struct onas_context **ctx)
         logg(LOGG_ERROR, "ClamFanotif: OnAccessFilesystemPath needs FAN_MARK_FILESYSTEM, missing in the headers this build was made with\n");
         return CL_EARG;
 #endif
+    }
 
-    } else if (!optget((*ctx)->clamdopts, "OnAccessDisableDDD")->enabled) {
+    if (!whole_fs && !optget((*ctx)->clamdopts, "OnAccessDisableDDD")->enabled) {
         (*ctx)->ddd_enabled = 1;
-    } else {
+    } else if (!whole_fs) {
         if ((pt = optget((*ctx)->clamdopts, "OnAccessIncludePath"))->enabled) {
             while (pt) {
                 if (0 == strcmp(clamd_tmpdir, pt->strarg)) {

@@ -275,7 +275,14 @@ static cl_error_t onas_scan_thread_handle_file(struct onas_scan_event *event_dat
         return CL_ENULLARG;
     }
 
-    fres = CLAMSTAT(pathname, &sb);
+#if defined(HAVE_SYS_FANOTIFY_H)
+    if ((event_data->bool_opts & ONAS_SCTH_B_FANOTIFY) && NULL != event_data->fmd && event_data->fmd->fd >= 0) {
+        /* the event may come from a mount that has a different path, or none at all,
+           in this process' mount namespace, so size it through the event descriptor */
+        fres = FSTAT(event_data->fmd->fd, &sb);
+    } else
+#endif
+        fres = CLAMSTAT(pathname, &sb);
     if (event_data->sizelimit) {
         if (fres != 0 || (uint64_t)sb.st_size > event_data->sizelimit) {
             /* don't skip so we avoid lockups, but don't scan either;
