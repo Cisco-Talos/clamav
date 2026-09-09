@@ -390,36 +390,56 @@ messageGetDispositionType(const message *m)
  * different values for charset? Probably doesn't matter for the use this
  * code will be given, but will need fixing if this code is used elsewhere
  */
-void messageAddArgument(message *m, const char *arg)
+static bool
+messageAddArgumentInternal(message *m, const char *arg, bool alreadyDecoded)
 {
     size_t offset;
     char *p;
 
     if (m == NULL) {
         cli_errmsg("Internal email parser error: message is pointer is NULL when trying to add an argument\n");
-        return;
+        return true;
     }
 
     if (arg == NULL)
-        return; /* Note: this is not an error condition */
+        return true; /* Note: this is not an error condition */
 
     while (isspace((unsigned char)*arg))
         arg++;
 
     if (*arg == '\0')
         /* Empty argument? Probably a broken mail client... */
-        return;
+        return true;
 
     cli_dbgmsg("messageAddArgument, arg='%s'\n", arg);
 
     if (!usefulArg(arg))
-        return;
+        return true;
 
     for (offset = 0; offset < m->numberOfArguments; offset++)
         if (m->mimeArguments[offset] == NULL)
             break;
-        else if (strcasecmp(arg, m->mimeArguments[offset]) == 0)
-            return; /* already in there */
+        else if (strcasecmp(arg, m->mimeArguments[offset]) == 0) {
+            /* Decoded boundary values are case-sensitive. Keep looking for an
+             * exact duplicate, or append the canonical spelling. */
+            if (alreadyDecoded && strcmp(arg, m->mimeArguments[offset]) != 0)
+                continue;
+
+            if (alreadyDecoded && (offset + 1 < m->numberOfArguments)) {
+                char *duplicate = m->mimeArguments[offset];
+                size_t readOffset;
+                size_t writeOffset = offset;
+
+                for (readOffset = offset + 1; readOffset < m->numberOfArguments; readOffset++) {
+                    if (m->mimeArguments[readOffset] != NULL)
+                        m->mimeArguments[writeOffset++] = m->mimeArguments[readOffset];
+                }
+                m->mimeArguments[writeOffset++] = duplicate;
+                while (writeOffset < m->numberOfArguments)
+                    m->mimeArguments[writeOffset++] = NULL;
+            }
+            return true; /* already in there */
+        }
 
     if (offset == m->numberOfArguments) {
         char **q;
@@ -428,16 +448,15 @@ void messageAddArgument(message *m, const char *arg)
         q = (char **)cli_max_realloc(m->mimeArguments, m->numberOfArguments * sizeof(char *));
         if (q == NULL) {
             m->numberOfArguments--;
-            return;
+            return false;
         }
         m->mimeArguments = q;
     }
 
-    p = m->mimeArguments[offset] = rfc2231(arg);
+    p = m->mimeArguments[offset] = alreadyDecoded ? cli_safer_strdup(arg) : rfc2231(arg);
     if (!p) {
-        /* problem inside rfc2231() */
-        cli_dbgmsg("messageAddArgument, error from rfc2231()\n");
-        return;
+        cli_dbgmsg("messageAddArgument, unable to store argument\n");
+        return false;
     }
 
     if (strchr(p, '=') == NULL) {
@@ -457,7 +476,7 @@ void messageAddArgument(message *m, const char *arg)
                 cli_dbgmsg("messageAddArgument, '%s' contains no '='\n", p);
             free(m->mimeArguments[offset]);
             m->mimeArguments[offset] = NULL;
-            return;
+            return true;
         }
     }
 
@@ -472,6 +491,20 @@ void messageAddArgument(message *m, const char *arg)
             cli_dbgmsg("Force mime encoding to application\n");
             messageSetMimeType(m, "application");
         }
+
+    return true;
+}
+
+void
+messageAddArgument(message *m, const char *arg)
+{
+    (void)messageAddArgumentInternal(m, arg, false);
+}
+
+bool
+messageAddArgumentDecoded(message *m, const char *arg)
+{
+    return messageAddArgumentInternal(m, arg, true);
 }
 
 /*
@@ -480,7 +513,7 @@ void messageAddArgument(message *m, const char *arg)
  *    name="foo bar.doc"
  *    charset=foo name=bar
  */
-void messageAddArguments(message *m, const char *s)
+bool messageAddArguments(message *m, const char *s, size_t *argumentCount, size_t argumentLimit)
 {
     const char *string = s;
 
@@ -488,7 +521,12 @@ void messageAddArguments(message *m, const char *s)
 
     if (string == NULL) {
         cli_errmsg("Internal email parser error: message is pointer is NULL when trying to add message arguments\n");
-        return;
+        return true;
+    }
+
+    if ((argumentCount == NULL) || (argumentLimit == 0)) {
+        cli_errmsg("Internal email parser error: invalid MIME argument limit state\n");
+        return false;
     }
 
     while (*string) {
@@ -500,6 +538,10 @@ void messageAddArguments(message *m, const char *s)
             string++;
             continue;
         }
+
+        (*argumentCount)++;
+        if (*argumentCount >= argumentLimit)
+            return false;
 
         key = string;
 
@@ -524,7 +566,7 @@ void messageAddArguments(message *m, const char *s)
              * Completely broken, give up
              */
             cli_dbgmsg("Can't parse header \"%s\"\n", s);
-            return;
+            return true;
         }
 
         string = &data[1];
@@ -556,7 +598,7 @@ void messageAddArguments(message *m, const char *s)
             kcopy = cli_safer_strdup(key);
 
             if (kcopy == NULL)
-                return;
+                return true;
 
             ptr = strchr(kcopy, '=');
             if (ptr == NULL) {
@@ -564,7 +606,7 @@ void messageAddArguments(message *m, const char *s)
                 if (ptr == NULL) {
                     cli_dbgmsg("Can't parse header \"%s\"\n", s);
                     free(kcopy);
-                    return;
+                    return true;
                 }
             }
 
@@ -588,7 +630,7 @@ void messageAddArguments(message *m, const char *s)
             if (!data) {
                 cli_dbgmsg("Can't parse header \"%s\" - if you believe this file contains a missed virus, report it to bugs@clamav.net\n", s);
                 free(kcopy);
-                return;
+                return true;
             }
 
             ptr = strchr(data, '"');
@@ -621,7 +663,7 @@ void messageAddArguments(message *m, const char *s)
 
             if (*cptr == '\0') {
                 cli_dbgmsg("Ignoring empty field in \"%s\"\n", s);
-                return;
+                return true;
             }
 
             /*
@@ -644,6 +686,8 @@ void messageAddArguments(message *m, const char *s)
             free(field);
         }
     }
+
+    return true;
 }
 
 static const char *
@@ -662,7 +706,7 @@ messageGetArgument(const message *m, size_t arg)
 }
 
 static char *
-messageArgumentValue(const char *ptr, const char *variable)
+messageArgumentValue(const char *ptr, const char *variable, bool alreadyDecoded)
 {
     size_t len;
 
@@ -679,7 +723,7 @@ messageArgumentValue(const char *ptr, const char *variable)
             return NULL;
         }
         ptr++;
-        if ((strlen(ptr) > 1) && (*ptr == '"') && (strchr(&ptr[1], '"') != NULL)) {
+        if (!alreadyDecoded && (strlen(ptr) > 1) && (*ptr == '"') && (strchr(&ptr[1], '"') != NULL)) {
             /* Remove any quote characters */
             char *ret = cli_safer_strdup(++ptr);
             char *p;
@@ -732,7 +776,7 @@ messageFindArgument(const message *m, const char *variable)
 #ifdef CL_DEBUG
         cli_dbgmsg("messageFindArgument: compare %s with %s\n", variable, ptr);
 #endif
-        ret = messageArgumentValue(ptr, variable);
+        ret = messageArgumentValue(ptr, variable, false);
         if (ret)
             return ret;
     }
@@ -743,8 +787,8 @@ messageFindArgument(const message *m, const char *variable)
  * Find the last MIME variable from the header and return a COPY to the value
  * of that variable. The caller must free the copy.
  */
-char *
-messageFindArgumentLast(const message *m, const char *variable)
+static char *
+messageFindArgumentLastInternal(const message *m, const char *variable, bool alreadyDecoded)
 {
     size_t i;
     char *match = NULL;
@@ -762,7 +806,7 @@ messageFindArgumentLast(const message *m, const char *variable)
 #ifdef CL_DEBUG
         cli_dbgmsg("messageFindArgumentLast: compare %s with %s\n", variable, ptr);
 #endif
-        ret = messageArgumentValue(ptr, variable);
+        ret = messageArgumentValue(ptr, variable, alreadyDecoded);
         if (ret) {
             free(match);
             match = ret;
@@ -770,6 +814,18 @@ messageFindArgumentLast(const message *m, const char *variable)
     }
 
     return match;
+}
+
+char *
+messageFindArgumentLast(const message *m, const char *variable)
+{
+    return messageFindArgumentLastInternal(m, variable, false);
+}
+
+char *
+messageGetBoundary(const message *m)
+{
+    return messageFindArgumentLastInternal(m, "boundary", true);
 }
 
 char *

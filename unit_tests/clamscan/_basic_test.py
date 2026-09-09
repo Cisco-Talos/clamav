@@ -16,7 +16,10 @@ class TC(testcase.TestCase):
     def setUpClass(cls):
         super(TC, cls).setUpClass()
 
-        TC.testpaths = list(TC.path_build.glob('unit_tests/input/clamav_hdb_scanfiles/clam*')) # A list of Path()'s of each of our generated test files
+        TC.path_testfiles = (
+            TC.path_build / 'unit_tests' / 'input' / 'clamav_hdb_scanfiles'
+        )
+        TC.testpaths = list(TC.path_testfiles.glob('clam*'))
 
         # Prepare a directory to store our test databases
         TC.path_db = TC.path_tmp / 'database'
@@ -56,12 +59,11 @@ class TC(testcase.TestCase):
     def test_01_all_testfiles(self):
         self.step_name('Test that clamscan alerts on all test files')
 
-        testfiles = ' '.join([str(testpath) for testpath in TC.testpaths])
         command = '{valgrind} {valgrind_args} {clamscan} -d {path_db} {testfiles}'.format(
             valgrind=TC.valgrind, valgrind_args=TC.valgrind_args,
             clamscan=TC.clamscan,
             path_db=TC.path_db / 'clamav.hdb',
-            testfiles=testfiles,
+            testfiles=TC.path_testfiles,
         )
         output = self.execute_command(command)
 
@@ -79,12 +81,11 @@ class TC(testcase.TestCase):
         # in our scan, we'll just use the whole directory, which should load the ignore db *first*.
         (TC.path_db / 'clamav.ign2').write_text('ClamAV-Test-File\n')
 
-        testfiles = ' '.join([str(testpath) for testpath in TC.testpaths])
         command = '{valgrind} {valgrind_args} {clamscan} -d {path_db} {testfiles}'.format(
             valgrind=TC.valgrind, valgrind_args=TC.valgrind_args,
             clamscan=TC.clamscan,
             path_db=TC.path_db,
-            testfiles=testfiles,
+            testfiles=TC.path_testfiles,
         )
         output = self.execute_command(command)
 
