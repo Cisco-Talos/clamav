@@ -3416,6 +3416,97 @@ isMimeParameter(const char *arg, const char *variable)
     return (*arg == '=') || (*arg == ':');
 }
 
+typedef enum {
+    MIME_BOUNDARY_PARAMETER_INVALID,
+    MIME_BOUNDARY_PARAMETER_ORDINARY,
+    MIME_BOUNDARY_PARAMETER_EXTENDED,
+    MIME_BOUNDARY_PARAMETER_CONTINUATION
+} mime_boundary_parameter_type;
+
+/**
+ * @brief Parse a supported MIME boundary parameter name.
+ *
+ * Whitespace is accepted before the parameter name and after "boundary" for
+ * compatibility with the legacy parser and existing evasion handling. An RFC
+ * 2231 suffix must be immediately adjacent to its separator so trailing name
+ * whitespace cannot turn a malformed parameter into an authoritative one.
+ *
+ * @param arg      Header text to inspect.
+ * @param value    Optional output pointing just after the name separator.
+ * @param section  Optional RFC 2231 continuation section output.
+ * @param encoded  Optional output indicating an encoded RFC 2231 value.
+ * @return The recognized boundary parameter type.
+ */
+static mime_boundary_parameter_type
+parseMimeBoundaryParameter(const char *arg, const char **value, size_t *section, bool *encoded)
+{
+    size_t parsedSection = 0;
+    bool parsedEncoded   = false;
+    mime_boundary_parameter_type type;
+
+    if (value != NULL)
+        *value = NULL;
+    if (section != NULL)
+        *section = 0;
+    if (encoded != NULL)
+        *encoded = false;
+
+    if (arg == NULL)
+        return MIME_BOUNDARY_PARAMETER_INVALID;
+
+    while (isspace((unsigned char)*arg))
+        arg++;
+
+    if (strncasecmp(arg, "boundary", 8) != 0)
+        return MIME_BOUNDARY_PARAMETER_INVALID;
+    arg += 8;
+
+    while (isspace((unsigned char)*arg))
+        arg++;
+
+    if (*arg != '*') {
+        if ((*arg != '=') && (*arg != ':'))
+            return MIME_BOUNDARY_PARAMETER_INVALID;
+        type = MIME_BOUNDARY_PARAMETER_ORDINARY;
+    } else {
+        arg++;
+
+        if ((*arg == '=') || (*arg == ':')) {
+            type          = MIME_BOUNDARY_PARAMETER_EXTENDED;
+            parsedEncoded = true;
+        } else {
+            if (!isdigit((unsigned char)*arg))
+                return MIME_BOUNDARY_PARAMETER_INVALID;
+
+            do {
+                unsigned int digit = (unsigned int)(*arg++ - '0');
+
+                if (parsedSection > ((HEURISTIC_EMAIL_MAX_ARGUMENTS_PER_HEADER - 1 - digit) / 10))
+                    return MIME_BOUNDARY_PARAMETER_INVALID;
+                parsedSection = (parsedSection * 10) + digit;
+            } while (isdigit((unsigned char)*arg));
+
+            if (*arg == '*') {
+                parsedEncoded = true;
+                arg++;
+            }
+
+            if ((*arg != '=') && (*arg != ':'))
+                return MIME_BOUNDARY_PARAMETER_INVALID;
+            type = MIME_BOUNDARY_PARAMETER_CONTINUATION;
+        }
+    }
+
+    if (value != NULL)
+        *value = arg + 1;
+    if (section != NULL)
+        *section = parsedSection;
+    if (encoded != NULL)
+        *encoded = parsedEncoded;
+
+    return type;
+}
+
 /**
  * @brief Check whether text begins with an ordinary MIME boundary parameter.
  *
@@ -3426,20 +3517,7 @@ isMimeParameter(const char *arg, const char *variable)
 static bool
 isOrdinaryBoundaryParameter(const char *arg)
 {
-    if (arg == NULL)
-        return false;
-
-    while (isspace((unsigned char)*arg))
-        arg++;
-
-    if (strncasecmp(arg, "boundary", 8) != 0)
-        return false;
-    arg += 8;
-
-    while (isspace((unsigned char)*arg))
-        arg++;
-
-    return (*arg == '=') || (*arg == ':');
+    return parseMimeBoundaryParameter(arg, NULL, NULL, NULL) == MIME_BOUNDARY_PARAMETER_ORDINARY;
 }
 
 /**
@@ -3457,42 +3535,7 @@ isOrdinaryBoundaryParameter(const char *arg)
 static bool
 isCanonicalBoundaryParameter(const char *arg)
 {
-    size_t section = 0;
-
-    if (arg == NULL)
-        return false;
-
-    while (isspace((unsigned char)*arg))
-        arg++;
-
-    if (strncasecmp(arg, "boundary", 8) != 0)
-        return false;
-    arg += 8;
-
-    while (isspace((unsigned char)*arg))
-        arg++;
-
-    if (*arg == '*') {
-        arg++;
-
-        if (isdigit((unsigned char)*arg)) {
-            do {
-                unsigned int digit = (unsigned int)(*arg++ - '0');
-
-                if (section > ((HEURISTIC_EMAIL_MAX_ARGUMENTS_PER_HEADER - 1 - digit) / 10))
-                    return false;
-                section = (section * 10) + digit;
-            } while (isdigit((unsigned char)*arg));
-
-            if (*arg == '*')
-                arg++;
-        }
-    }
-
-    while (isspace((unsigned char)*arg))
-        arg++;
-
-    return (*arg == '=') || (*arg == ':');
+    return parseMimeBoundaryParameter(arg, NULL, NULL, NULL) != MIME_BOUNDARY_PARAMETER_INVALID;
 }
 
 /**
@@ -3949,40 +3992,27 @@ findMimeBoundary(const char *contentType, char **boundary)
     }
 
     while ((next = nextMimeArgument(next, argument, argumentSize, true)) != NULL) {
-        const char *nameStart = argument;
-        const char *nameEnd;
-        const char *separator;
-        const char *suffix;
+        const char *value;
         char *decoded = NULL;
-        size_t nameLength;
         size_t section = 0;
         bool encoded   = false;
+        mime_boundary_parameter_type type;
 
         order++;
 
-        while (isspace((unsigned char)*nameStart))
-            nameStart++;
-
-        separator = strchr(nameStart, '=');
-        if (separator == NULL)
-            separator = strchr(nameStart, ':');
-        if (separator == NULL)
+        type = parseMimeBoundaryParameter(argument, &value, &section, &encoded);
+        if (type == MIME_BOUNDARY_PARAMETER_INVALID)
             continue;
 
-        nameEnd = separator;
-        while ((nameEnd > nameStart) && isspace((unsigned char)nameEnd[-1]))
-            nameEnd--;
-
-        nameLength = (size_t)(nameEnd - nameStart);
-        if ((nameLength < 8) || (strncasecmp(nameStart, "boundary", 8) != 0))
+        /* messageAddArguments() treats the first equals sign as the name
+         * separator even when a colon appears earlier. Preserve that legacy
+         * precedence for colon-separated boundaries. */
+        if ((value[-1] == ':') && (strchr(value, '=') != NULL))
             continue;
 
-        suffix = nameStart + 8;
-        while ((suffix < nameEnd) && isspace((unsigned char)*suffix))
-            suffix++;
-
-        if (suffix == nameEnd) {
-            if (decodeMimeBoundaryValue(separator + 1, false, false, &decoded) < 0) {
+        if ((type == MIME_BOUNDARY_PARAMETER_ORDINARY) ||
+            (type == MIME_BOUNDARY_PARAMETER_EXTENDED)) {
+            if (decodeMimeBoundaryValue(value, encoded, encoded, &decoded) < 0) {
                 status = -1;
                 goto done;
             }
@@ -3993,41 +4023,7 @@ findMimeBoundary(const char *contentType, char **boundary)
             continue;
         }
 
-        if (*suffix++ != '*')
-            continue;
-        if (suffix == nameEnd) {
-            if (decodeMimeBoundaryValue(separator + 1, true, true, &decoded) < 0) {
-                status = -1;
-                goto done;
-            }
-
-            free(directBoundary);
-            directBoundary = decoded;
-            directOrder    = order;
-            continue;
-        }
-        if (!isdigit((unsigned char)*suffix))
-            continue;
-
-        do {
-            unsigned int digit = (unsigned int)(*suffix++ - '0');
-
-            if (section > ((HEURISTIC_EMAIL_MAX_ARGUMENTS_PER_HEADER - 1 - digit) / 10)) {
-                section = HEURISTIC_EMAIL_MAX_ARGUMENTS_PER_HEADER;
-                break;
-            }
-            section = (section * 10) + digit;
-        } while (isdigit((unsigned char)*suffix));
-
-        if (*suffix == '*') {
-            encoded = true;
-            suffix++;
-        }
-
-        if ((suffix != nameEnd) || (section >= HEURISTIC_EMAIL_MAX_ARGUMENTS_PER_HEADER))
-            continue;
-
-        if (decodeMimeBoundaryValue(separator + 1, encoded, section == 0, &decoded) < 0) {
+        if (decodeMimeBoundaryValue(value, encoded, section == 0, &decoded) < 0) {
             status = -1;
             goto done;
         }
