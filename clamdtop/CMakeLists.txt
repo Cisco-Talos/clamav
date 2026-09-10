@@ -50,6 +50,7 @@ if(WIN32)
                 UNRESOLVED_DEPENDENCIES_VAR _u_deps
                 DIRECTORIES
                     $<TARGET_FILE_DIR:Curses::curses>
+                    $<TARGET_LINKER_FILE_DIR:Curses::curses>/../bin
                 POST_EXCLUDE_REGEXES
                     "[cC]:[\\/][wW][iI][nN][dD][oO][wW][sS]"
             )

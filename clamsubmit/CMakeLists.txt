@@ -58,7 +58,9 @@ if(WIN32)
                 UNRESOLVED_DEPENDENCIES_VAR _u_deps
                 DIRECTORIES
                     $<TARGET_FILE_DIR:CURL::libcurl>
+                    $<TARGET_LINKER_FILE_DIR:CURL::libcurl>/../bin
                     $<TARGET_FILE_DIR:JSONC::jsonc>
+                    $<TARGET_LINKER_FILE_DIR:JSONC::jsonc>/../bin
                 POST_EXCLUDE_REGEXES
                     "[cC]:[\\/][wW][iI][nN][dD][oO][wW][sS]"
             )
