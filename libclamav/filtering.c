@@ -298,6 +298,7 @@ static inline unsigned char spec_ith_char(const struct char_spec *spec, unsigned
         cc0   = spec0->negative ? 0 : c0;            \
         cc1   = spec1->negative ? 0 : c1;            \
         for (; cc0 <= c0end; cc0++) {                \
+            cc1 = spec1->negative ? 0 : c1;          \
             for (; cc1 <= c1end; cc1++) {            \
                 uint16_t a = cc0 | (cc1 << 8);       \
                 if (spec0->negative && cc0 == c0)    \

@@ -34,6 +34,11 @@ class TC(testcase.TestCase):
             'boundary-marker-match.bin': b'xx AB xx',
             'line-marker-match.bin': b'xx\nAB\nxx',
             'word-marker-match.bin': b'xx!AB!xx',
+            'alternate-negation-match.bin': b'AB\x02DEF',
+            'alternate-negation-no-match.bin': b'AB\x00DEF',
+            'wide-negation-match.bin': b'a\x00\x01\x00b\x00',
+            'prefilter-negation-match.bin': b'\x02\x00\x00',
+            'prefilter-negation-no-match.bin': b'\x01\x00\x00',
         }
         for name, data in samples.items():
             (TC.path_tmp / name).write_bytes(data)
@@ -50,9 +55,22 @@ class TC(testcase.TestCase):
             'boundary-marker.ndb': 'Native.BoundaryMarker:0:*:(B)4142(B)\n',
             'line-marker.ndb': 'Native.LineMarker:0:*:(L)4142(L)\n',
             'word-marker.ndb': 'Native.WordMarker:0:*:(W)4142(W)\n',
+            'alternate-negation.ndb': 'Native.AlternateNegation:0:*:4142(~00|~0144)4546\n',
+            'prefilter-negation.ndb': 'Native.PrefilterNegation:0:*:~010000\n',
         }
         for name, signature in native_signatures.items():
             (TC.path_tmp / name).write_text(signature)
+
+        (TC.path_tmp / 'native-invalid-no-anchor-prefix.ndb').write_text(
+            'Native.Invalid.NoAnchorPrefix:0:*:~0041\n'
+        )
+        (TC.path_tmp / 'native-invalid-no-anchor-suffix.ndb').write_text(
+            'Native.Invalid.NoAnchorSuffix:0:*:41~00\n'
+        )
+
+        (TC.path_tmp / 'wide-negation.ldb').write_text(
+            'Native.WideNegation;Engine:90-255,Target:0;0;41~0042:*:w\n'
+        )
 
         (TC.path_tmp / 'logical.ldb').write_text(
             'Native.Logical;Engine:90-255,Target:0;0&1;4141;~004243\n'
@@ -156,6 +174,26 @@ class TC(testcase.TestCase):
         self.verify_match('gap.ndb', 'gap-match.bin', 'Native.Gap')
         self.verify_match('mixed.ndb', 'mixed-match.bin', 'Native.Mixed')
 
+    def test_native_negation_alternates_backtrack(self):
+        self.step_name('Test overlapping negated alternatives backtrack before suffix verification')
+        self.verify_match('alternate-negation.ndb', 'alternate-negation-match.bin', 'Native.AlternateNegation')
+        self.verify_no_match('alternate-negation.ndb', 'alternate-negation-no-match.bin')
+
+    def test_native_negation_wide_modifier(self):
+        self.step_name('Test wide modifier preserves negated units')
+        self.verify_match('wide-negation.ldb', 'wide-negation-match.bin', 'Native.WideNegation')
+
+    def test_native_negation_prefilter_enumerates_all_values(self):
+        self.step_name('Test prefilter does not drop accepted values after a negated q-gram')
+        self.verify_match('prefilter-negation.ndb', 'prefilter-negation-match.bin', 'Native.PrefilterNegation')
+        self.verify_no_match('prefilter-negation.ndb', 'prefilter-negation-no-match.bin')
+
+    def test_native_negation_requires_ac_anchor(self):
+        self.step_name('Test negation-only anchors respect the AC minimum depth')
+        for database in ('native-invalid-no-anchor-prefix.ndb', 'native-invalid-no-anchor-suffix.ndb'):
+            output = self.scan(database, 'not-byte-match.bin')
+            assert output.ec == 2
+
     def test_native_negation_in_logical_signature(self):
         self.step_name('Test native negation in a multi-part logical signature')
         self.verify_match('logical.ldb', 'logical-match.bin', 'Native.Logical')
@@ -199,6 +237,17 @@ class TC(testcase.TestCase):
             output = self.scan(database.name, 'not-byte-match.bin')
             assert output.ec == 2
             self.verify_output(output.err, expected=['Invalid hex negation'])
+
+    def test_native_negation_nocase_is_rejected(self):
+        self.step_name('Test nocase rejects negated hex units')
+        database = TC.path_tmp / 'native-invalid-nocase.ldb'
+        database.write_text('Native.Invalid.nocase;Engine:90-255,Target:0;0;4142~0043:*:i\n')
+        output = self.scan(database.name, 'not-byte-match.bin')
+        assert output.ec == 2
+        self.verify_output(
+            output.err,
+            expected=['nocase modifier [i] is not supported for negated hex units'],
+        )
 
     def test_existing_special_syntax_is_unchanged(self):
         self.step_name('Test existing negated alternates and marker classes')
