@@ -208,6 +208,13 @@ cl_error_t cli_sigopts_handler(struct cli_matcher *root, const char *virname, co
         return ret;
     }
 
+    /* Nocase folding does not apply to negated matcher units. */
+    if ((sigopts & ACPATT_OPTION_NOCASE) && strchr(hexcpy, '~')) {
+        cli_errmsg("cli_sigopts_handler: nocase modifier [i] is not supported for negated hex units\n");
+        free(hexcpy);
+        return CL_EMALFDB;
+    }
+
     /* NORMAL HEXSIG sigopt handling */
     /* FULLWORD sigopt handling - only happens once */
     if (sigopts & ACPATT_OPTION_FULLWORD) {
@@ -270,6 +277,24 @@ cl_error_t cli_sigopts_handler(struct cli_matcher *root, const char *virname, co
                     hexovr[len++] = hexcpy[i++];
 
                 hexovr[len] = '}';
+            } else if (hexcpy[i] == '~') {
+                /* A negated unit is three source characters and must remain atomic. */
+                if (i + 2 >= hexcpylen ||
+                    (!isxdigit((unsigned char)hexcpy[i + 1]) && hexcpy[i + 1] != '?') ||
+                    (!isxdigit((unsigned char)hexcpy[i + 2]) && hexcpy[i + 2] != '?') ||
+                    (hexcpy[i + 1] == '?' && hexcpy[i + 2] == '?')) {
+                    cli_errmsg("cli_sigopts_handler: invalid negated hex unit in %s\n", virname);
+                    free(hexcpy);
+                    free(hexovr);
+                    return CL_EMALFDB;
+                }
+
+                hexovr[len++] = hexcpy[i];
+                hexovr[len++] = hexcpy[i + 1];
+                hexovr[len++] = hexcpy[i + 2];
+                hexovr[len++] = '0';
+                hexovr[len]   = '0';
+                i += 2;
             } else if (hexcpy[i] == '!' || hexcpy[i] == '(') {
                 if (hexcpy[i] == '!')
                     hexovr[len++] = hexcpy[i++];

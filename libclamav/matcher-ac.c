@@ -463,11 +463,7 @@ cl_error_t cli_ac_addpatt(struct cli_matcher *root, struct cli_ac_patt *pattern)
         }
     }
 
-    /*
-     * Negation may separate every literal byte, as in 41~0042. In that case,
-     * use one literal trie transition and verify the full predicate pattern.
-     */
-    if (len < root->ac_mindepth && !(pattern->has_negation && len == 1)) {
+    if (len < root->ac_mindepth) {
         /* cli_errmsg("cli_ac_addpatt: Signature for %s is too short\n", pattern->virname); */
         return CL_EMALFDB;
     }
@@ -623,17 +619,6 @@ static int ac_maketrans(struct cli_matcher *root)
                     return ret;
             }
         }
-    }
-
-    /*
-     * A negated pattern may use a one-byte literal anchor when no multi-byte
-     * literal window is available. These final root children were leaves throughout
-     * transition construction, so connect them only after the BFS is done.
-     */
-    for (i = 0; i < 256; i++) {
-        node = ac_root->trans[i];
-        if (node != ac_root && IS_FINAL(node) && IS_LEAF(node))
-            node->trans = node->fail->trans;
     }
 
     return CL_SUCCESS;
@@ -2396,149 +2381,55 @@ inline static int ac_analyze_expr(char *hexstr, int *fixed_len, int *sub_len)
     return numexpr;
 }
 
+static inline int ac_alt_unit_matches(uint16_t unit, unsigned char byte)
+{
+    switch (unit & CLI_MATCH_METADATA) {
+        case CLI_MATCH_CHAR:
+            return (unit & 0xff) == byte;
+        case CLI_MATCH_NOCASE:
+            return CLI_NOCASE(unit & 0xff) == CLI_NOCASE(byte);
+        case CLI_MATCH_IGNORE:
+            return 1;
+        case CLI_MATCH_NIBBLE_HIGH:
+            return (unit & 0xf0) == (byte & 0xf0);
+        case CLI_MATCH_NIBBLE_LOW:
+            return (unit & 0x0f) == (byte & 0x0f);
+        case CLI_MATCH_NOT_BYTE:
+            return (unit & 0xff) != byte;
+        case CLI_MATCH_NOT_NIBBLE_HIGH:
+            return (unit & 0xf0) != (byte & 0xf0);
+        case CLI_MATCH_NOT_NIBBLE_LOW:
+            return (unit & 0x0f) != (byte & 0x0f);
+        default:
+            /* Unknown units are handled conservatively as overlapping. */
+            return 1;
+    }
+}
+
+/* Return zero when two alternate strings can match the same bytes. */
 inline static int ac_uicmp(uint16_t *a, size_t alen, uint16_t *b, size_t blen, int *wild)
 {
-    uint16_t awild, bwild, side_wild;
     size_t i, minlen = MIN(alen, blen);
-
-    side_wild = 0;
+    int differs = alen != blen;
 
     for (i = 0; i < minlen; i++) {
-        awild = a[i] & CLI_MATCH_WILDCARD;
-        bwild = b[i] & CLI_MATCH_WILDCARD;
+        unsigned int byte;
 
-        if (awild == bwild) {
-            switch (awild) {
-                case CLI_MATCH_CHAR:
-                    if ((a[i] & 0xff) != (b[i] & 0xff)) {
-                        return (b[i] & 0xff) - (a[i] & 0xff);
-                    }
-                    break;
-                case CLI_MATCH_IGNORE:
-                    break;
-                case CLI_MATCH_NIBBLE_HIGH:
-                    if ((a[i] & 0xf0) != (b[i] & 0xf0)) {
-                        return (b[i] & 0xf0) - (a[i] & 0xf0);
-                    }
-                    break;
-                case CLI_MATCH_NIBBLE_LOW:
-                    if ((a[i] & 0x0f) != (b[i] & 0x0f)) {
-                        return (b[i] & 0x0f) - (a[i] & 0x0f);
-                    }
-                    break;
-                case CLI_MATCH_NOT_BYTE:
-                    if ((a[i] & 0xff) != (b[i] & 0xff)) {
-                        return (b[i] & 0xff) - (a[i] & 0xff);
-                    }
-                    break;
-                case CLI_MATCH_NOT_NIBBLE_HIGH:
-                    if ((a[i] & 0xf0) != (b[i] & 0xf0)) {
-                        return (b[i] & 0xf0) - (a[i] & 0xf0);
-                    }
-                    break;
-                case CLI_MATCH_NOT_NIBBLE_LOW:
-                    if ((a[i] & 0x0f) != (b[i] & 0x0f)) {
-                        return (b[i] & 0x0f) - (a[i] & 0x0f);
-                    }
-                    break;
-                default:
-                    cli_errmsg("ac_uicmp: unhandled wildcard type\n");
-                    return 1;
-            }
-        } else {                           /* not identical wildcard types */
-            if (awild == CLI_MATCH_CHAR) { /* b is only wild */
-                switch (bwild) {
-                    case CLI_MATCH_IGNORE:
-                        side_wild |= 2;
-                        break;
-                    case CLI_MATCH_NIBBLE_HIGH:
-                        if ((a[i] & 0xf0) != (b[i] & 0xf0)) {
-                            return (b[i] & 0xf0) - (a[i] & 0xff);
-                        }
-                        side_wild |= 2;
-                        break;
-                    case CLI_MATCH_NIBBLE_LOW:
-                        if ((a[i] & 0x0f) != (b[i] & 0x0f)) {
-                            return (b[i] & 0x0f) - (a[i] & 0xff);
-                        }
-                        side_wild |= 2;
-                        break;
-                    case CLI_MATCH_NOT_BYTE:
-                        if ((a[i] & 0xff) == (b[i] & 0xff))
-                            return 1;
-                        side_wild |= 2;
-                        break;
-                    case CLI_MATCH_NOT_NIBBLE_HIGH:
-                        if ((a[i] & 0xf0) == (b[i] & 0xf0))
-                            return 1;
-                        side_wild |= 2;
-                        break;
-                    case CLI_MATCH_NOT_NIBBLE_LOW:
-                        if ((a[i] & 0x0f) == (b[i] & 0x0f))
-                            return 1;
-                        side_wild |= 2;
-                        break;
-                    default:
-                        cli_errmsg("ac_uicmp: unhandled wildcard type\n");
-                        return -1;
-                }
-            } else if (bwild == CLI_MATCH_CHAR) { /* a is only wild */
-                switch (awild) {
-                    case CLI_MATCH_IGNORE:
-                        side_wild |= 1;
-                        break;
-                    case CLI_MATCH_NIBBLE_HIGH:
-                        if ((a[i] & 0xf0) != (b[i] & 0xf0)) {
-                            return (b[i] & 0xff) - (a[i] & 0xf0);
-                        }
-                        side_wild |= 1;
-                        break;
-                    case CLI_MATCH_NIBBLE_LOW:
-                        if ((a[i] & 0x0f) != (b[i] & 0x0f)) {
-                            return (b[i] & 0xff) - (a[i] & 0x0f);
-                        }
-                        side_wild |= 1;
-                        break;
-                    case CLI_MATCH_NOT_BYTE:
-                        if ((a[i] & 0xff) == (b[i] & 0xff))
-                            return 1;
-                        side_wild |= 1;
-                        break;
-                    case CLI_MATCH_NOT_NIBBLE_HIGH:
-                        if ((a[i] & 0xf0) == (b[i] & 0xf0))
-                            return 1;
-                        side_wild |= 1;
-                        break;
-                    case CLI_MATCH_NOT_NIBBLE_LOW:
-                        if ((a[i] & 0x0f) == (b[i] & 0x0f))
-                            return 1;
-                        side_wild |= 1;
-                        break;
-                    default:
-                        cli_errmsg("ac_uicmp: unhandled wild typing\n");
-                        return 1;
-                }
-            } else { /* not identical, both wildcards */
-                if (awild == CLI_MATCH_IGNORE || bwild == CLI_MATCH_IGNORE) {
-                    if (awild == CLI_MATCH_IGNORE) {
-                        side_wild |= 1;
-                    } else if (bwild == CLI_MATCH_IGNORE) {
-                        side_wild |= 2;
-                    }
-                } else {
-                    /* only high and low nibbles should be left here */
-                    side_wild |= 3;
-                }
-            }
+        if (a[i] != b[i])
+            differs = 1;
+
+        for (byte = 0; byte <= 0xff; byte++) {
+            if (ac_alt_unit_matches(a[i], (unsigned char)byte) &&
+                ac_alt_unit_matches(b[i], (unsigned char)byte))
+                break;
         }
 
-        /* both sides contain a wildcard that contains the other, therefore unique by wildcards */
-        if (side_wild == 3)
+        if (byte > 0xff)
             return 1;
     }
 
     if (wild)
-        *wild = side_wild;
+        *wild = differs;
     return 0;
 }
 
@@ -2603,6 +2494,10 @@ inline static int ac_addspecial_add_alt_node(const char *subexpr, uint8_t sigopt
                 MPOOL_FREE(root->mempool, newnode->str);
                 MPOOL_FREE(root->mempool, newnode);
                 return CL_SUCCESS;
+            } else {
+                /* Overlapping alternatives of equal length still need suffix backtracking. */
+                newnode->unique = 0;
+                ins->unique     = 0;
             }
         } /* TODO - possible sorting of altstr uniques and derivative groups? */
 
@@ -3159,12 +3054,6 @@ cl_error_t cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
     for (i = 0, j = 0; i < new->length[0]; i++) {
         uint16_t metadata = new->pattern[i] & CLI_MATCH_METADATA;
 
-        if (metadata == CLI_MATCH_NOT_BYTE ||
-            metadata == CLI_MATCH_NOT_NIBBLE_HIGH ||
-            metadata == CLI_MATCH_NOT_NIBBLE_LOW) {
-            new->has_negation = 1;
-        }
-
         if (metadata == CLI_MATCH_SPECIAL) {
             new->length[1] += new->special_table[j]->len[0];
             new->length[2] += new->special_table[j]->len[1];
@@ -3282,11 +3171,7 @@ cl_error_t cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
             ppos = nzpos;
         }
 
-        /*
-         * A negated pattern may have no adjacent literal pair. One literal is
-         * still a valid anchor because the remaining units are verified later.
-         */
-        if (plen < root->ac_mindepth && !(new->has_negation && plen == 1)) {
+        if (plen < root->ac_mindepth) {
             cli_errmsg("cli_ac_addsig: Can't find a static subpattern of length %u\n", root->ac_mindepth);
             mpool_ac_free_special(root->mempool, new);
             MPOOL_FREE(root->mempool, new->pattern);
