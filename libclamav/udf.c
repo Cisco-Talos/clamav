@@ -180,6 +180,13 @@ static cl_error_t extractFile(cli_ctx *ctx, PartitionDescriptor *pPartitionDescr
             goto done;
     }
 
+    ret = cli_checklimits("UDF", ctx, length, 0, 0);
+    if (CL_SUCCESS != ret) {
+        cli_dbgmsg("extractFile: Skipping file that exceeds scanning limits.\n");
+        emax_reached(ctx);
+        goto done;
+    }
+
     contents = (uint8_t *)fmap_need_off(ctx->fmap, offset, length);
     if (NULL == contents) {
         cli_warnmsg("extractFile: Unable to get offset referenced in the file.\n");
