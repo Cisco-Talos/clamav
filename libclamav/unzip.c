@@ -166,6 +166,7 @@ static cl_error_t unz(
                 if (ctx->engine->maxfilesize && csize > ctx->engine->maxfilesize) {
                     cli_dbgmsg("cli_unzip: trimming output size to maxfilesize (" STDu64 ")\n",
                                ctx->engine->maxfilesize);
+                    cli_append_potentially_unwanted_if_heur_exceedsmax(ctx, "Heuristics.Limits.Exceeded.MaxFileSize");
                     csize = ctx->engine->maxfilesize;
                 }
                 if (cli_writen(out_file, src, csize) != csize)
@@ -231,6 +232,7 @@ static cl_error_t unz(
                     if (ctx->engine->maxfilesize && written > ctx->engine->maxfilesize) {
                         cli_dbgmsg("cli_unzip: trimming output size to maxfilesize (" STDu64 ")\n",
                                    ctx->engine->maxfilesize);
+                        cli_append_potentially_unwanted_if_heur_exceedsmax(ctx, "Heuristics.Limits.Exceeded.MaxFileSize");
                         res = Z_STREAM_END;
                         break;
                     }
@@ -274,6 +276,7 @@ static cl_error_t unz(
                     written += sizeof(obuf) - strm.avail_out;
                     if (ctx->engine->maxfilesize && written > ctx->engine->maxfilesize) {
                         cli_dbgmsg("cli_unzip: trimming output size to maxfilesize (" STDu64 ")\n", ctx->engine->maxfilesize);
+                        cli_append_potentially_unwanted_if_heur_exceedsmax(ctx, "Heuristics.Limits.Exceeded.MaxFileSize");
                         res = BZ_STREAM_END;
                         break;
                     }
@@ -309,6 +312,7 @@ static cl_error_t unz(
                     written += sizeof(obuf) - strm.avail_out;
                     if (ctx->engine->maxfilesize && written > ctx->engine->maxfilesize) {
                         cli_dbgmsg("cli_unzip: trimming output size to maxfilesize (" STDu64 ")\n", ctx->engine->maxfilesize);
+                        cli_append_potentially_unwanted_if_heur_exceedsmax(ctx, "Heuristics.Limits.Exceeded.MaxFileSize");
                         res = 0;
                         break;
                     }
