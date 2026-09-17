@@ -170,6 +170,54 @@ START_TEST(test_htmlnorm_api)
 }
 END_TEST
 
+static void check_htmlnorm_tag_contents_boundary(
+    const unsigned char *boundary_bytes,
+    size_t boundary_length,
+    unsigned char expected_last_byte)
+{
+    static const unsigned char prefix[] = "<html><body><a href=\"https://example.test/\">";
+    static const unsigned char suffix[] = "</a></body></html>";
+    const size_t content_prefix_length   = 1023;
+    const size_t input_length = sizeof(prefix) - 1 + content_prefix_length +
+                                boundary_length + sizeof(suffix) - 1;
+    unsigned char *input                 = malloc(input_length);
+    unsigned char *cursor;
+    tag_arguments_t hrefs = {0};
+
+    ck_assert_ptr_nonnull(input);
+
+    cursor = input;
+    memcpy(cursor, prefix, sizeof(prefix) - 1);
+    cursor += sizeof(prefix) - 1;
+    memset(cursor, 'A', content_prefix_length);
+    cursor += content_prefix_length;
+    memcpy(cursor, boundary_bytes, boundary_length);
+    cursor += boundary_length;
+    memcpy(cursor, suffix, sizeof(suffix) - 1);
+
+    hrefs.scanContents = 1;
+    ck_assert_msg(html_normalise_mem(NULL, input, (off_t)input_length, NULL, &hrefs, dconf) == 1,
+                  "html_normalise_mem failed");
+    ck_assert_int_eq(hrefs.count, 1);
+    ck_assert_ptr_nonnull(hrefs.contents);
+    ck_assert_ptr_nonnull(hrefs.contents[0]);
+    ck_assert_uint_eq(strlen((const char *)hrefs.contents[0]), content_prefix_length + 1);
+    ck_assert_uint_eq(hrefs.contents[0][content_prefix_length], expected_last_byte);
+
+    html_tag_arg_free(&hrefs);
+    free(input);
+}
+
+START_TEST(test_htmlnorm_tag_contents_boundary)
+{
+    static const unsigned char utf8_full_stop_then_ascii[] = {0xe3, 0x80, 0x82, 'B'};
+    static const unsigned char big5_full_stop[]            = {0xa1, 0x43};
+
+    check_htmlnorm_tag_contents_boundary(utf8_full_stop_then_ascii, sizeof(utf8_full_stop_then_ascii), 'B');
+    check_htmlnorm_tag_contents_boundary(big5_full_stop, sizeof(big5_full_stop), '.');
+}
+END_TEST
+
 START_TEST(test_screnc_nullterminate)
 {
     int fd = open_testfile("input" PATHSEP "other_scanfiles" PATHSEP "screnc_test", O_RDONLY | O_BINARY);
@@ -197,6 +245,7 @@ Suite *test_htmlnorm_suite(void)
 
     tcase_add_unchecked_fixture(tc_htmlnorm_api,
                                 htmlnorm_setup, htmlnorm_teardown);
+    tcase_add_test(tc_htmlnorm_api, test_htmlnorm_tag_contents_boundary);
     tcase_add_test(tc_htmlnorm_api, test_screnc_nullterminate);
 
     return s;
