@@ -12,6 +12,7 @@ import socket
 import subprocess
 import shutil
 import sys
+import threading
 import time
 import unittest
 import hashlib
@@ -319,6 +320,49 @@ class TC(testcase.TestCase):
 
         assert output.ec == 0  # success
         self.verify_output(output.out, expected=['PONG'])
+
+    def test_clamd_01a_ping_requires_pong(self):
+        '''
+        Verify that clamdscan --ping fails when the peer does not reply with PONG.
+
+        A listener that accepts the connection but never sends a reply must not be
+        mistaken for a working clamd.
+        '''
+        self.step_name('Testing clamdscan PING without a PONG reply')
+
+        fake_port = TC.clamd_port_num + 1
+        while not check_port_available(fake_port):
+            fake_port += 1
+
+        fake_config = TC.path_tmp / 'fake-clamd.conf'
+        fake_config.write_text('TCPSocket {port}\nTCPAddr 127.0.0.1\n'.format(port=fake_port))
+
+        listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        listener.bind(('127.0.0.1', fake_port))
+        listener.listen(2)
+
+        def accept_and_close():
+            while True:
+                try:
+                    conn, _ = listener.accept()
+                except OSError:
+                    return  # the listener was closed, we are done
+                conn.close()  # accept the connection, but never send a reply
+
+        acceptor = threading.Thread(target=accept_and_close)
+        acceptor.daemon = True
+        acceptor.start()
+
+        try:
+            output = self.execute_command('{clamdscan} -p 2:1 -c {config}'.format(
+                clamdscan=TC.clamdscan, config=fake_config))
+        finally:
+            listener.close()
+            acceptor.join(timeout=5)
+
+        assert output.ec != 0  # must not report success
+        self.verify_output(output.out, unexpected=['PONG'])
 
     def test_clamd_02_clamdscan_version(self):
         '''
