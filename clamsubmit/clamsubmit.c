@@ -183,6 +183,10 @@ static bool curl_option_ok(CURLcode result, const char *description)
 /** @brief Configure options shared by all clamsubmit HTTP handles. */
 static bool configure_curl(CURL *curl, const char *user_agent, response_buffer_t *response)
 {
+#if !defined(C_DARWIN) && !defined(_WIN32)
+    const char *ca_bundle;
+#endif
+
     if (!curl_option_ok(curl_easy_setopt(curl, CURLOPT_USERAGENT, user_agent), "the HTTP user agent") ||
         !curl_option_ok(curl_easy_setopt(curl, CURLOPT_HTTP_VERSION, (long)CURL_HTTP_VERSION_1_1), "HTTP/1.1") ||
         !curl_option_ok(curl_easy_setopt(curl, CURLOPT_WRITEDATA, response), "the response destination") ||
@@ -200,7 +204,11 @@ static bool configure_curl(CURL *curl, const char *user_agent, response_buffer_t
     }
 #else
     /* Use an alternate CA bundle when CURL_CA_BUNDLE is set. */
-    set_tls_ca_bundle(curl);
+    ca_bundle = getenv("CURL_CA_BUNDLE");
+    if (ca_bundle != NULL &&
+        !curl_option_ok(curl_easy_setopt(curl, CURLOPT_CAINFO, ca_bundle), "the alternate CA bundle")) {
+        return false;
+    }
 #endif
     return true;
 }
