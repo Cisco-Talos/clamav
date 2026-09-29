@@ -357,16 +357,43 @@ static json_object *parse_presigned_response(const response_buffer_t *response)
     return object;
 }
 
-/** @brief Extract the Rails authenticity token from the report form. */
-static char *extract_authenticity_token(const response_buffer_t *response)
+/** @brief Copy a quoted attribute value from an HTML tag. */
+static char *copy_tag_attribute(const char *tag, const char *tag_end, const char *attribute_prefix,
+                                const char *attribute_name, const char *tag_description)
+{
+    const char *value;
+    const char *value_end;
+    size_t value_len;
+    char *copy;
+
+    value = strstr(tag, attribute_prefix);
+    if (value == NULL || value >= tag_end) {
+        logg(LOGG_ERROR, "%s has no %s attribute.\n", tag_description, attribute_name);
+        return NULL;
+    }
+    value += strlen(attribute_prefix);
+    value_end = strchr(value, '"');
+    if (value_end == NULL || value_end > tag_end || value_end == value) {
+        logg(LOGG_ERROR, "%s has a malformed %s attribute.\n", tag_description, attribute_name);
+        return NULL;
+    }
+    value_len = (size_t)(value_end - value);
+    copy      = malloc(value_len + 1);
+    if (copy == NULL) {
+        logg(LOGG_ERROR, "Out of memory while copying the %s attribute.\n", attribute_name);
+        return NULL;
+    }
+    memcpy(copy, value, value_len);
+    copy[value_len] = '\0';
+    return copy;
+}
+
+/** @brief Extract the Rails authenticity token scoped to the report form. */
+static char *extract_form_authenticity_token(const response_buffer_t *response)
 {
     const char *input;
     const char *tag_end;
     const char *name;
-    const char *value;
-    const char *value_end;
-    size_t token_len;
-    char *token;
 
     if (response->data == NULL || response->len == 0) {
         logg(LOGG_ERROR, "Report form response body is empty.\n");
@@ -380,30 +407,38 @@ static char *extract_authenticity_token(const response_buffer_t *response)
         }
         name = strstr(input, "name=\"authenticity_token\"");
         if (name != NULL && name < tag_end) {
-            value = strstr(input, "value=\"");
-            if (value == NULL || value >= tag_end) {
-                logg(LOGG_ERROR, "Authenticity token input has no value.\n");
-                return NULL;
-            }
-            value += strlen("value=\"");
-            value_end = strchr(value, '"');
-            if (value_end == NULL || value_end > tag_end || value_end == value) {
-                logg(LOGG_ERROR, "Authenticity token input is malformed.\n");
-                return NULL;
-            }
-            token_len = (size_t)(value_end - value);
-            token     = malloc(token_len + 1);
-            if (token == NULL) {
-                logg(LOGG_ERROR, "Out of memory while copying the authenticity token.\n");
-                return NULL;
-            }
-            memcpy(token, value, token_len);
-            token[token_len] = '\0';
-            return token;
+            return copy_tag_attribute(input, tag_end, "value=\"", "value", "Authenticity token input");
         }
         input = tag_end + 1;
     }
     logg(LOGG_ERROR, "Report form does not contain an authenticity token.\n");
+    return NULL;
+}
+
+/** @brief Extract the page-level Rails CSRF token used by AJAX requests. */
+static char *extract_csrf_token(const response_buffer_t *response)
+{
+    const char *meta;
+    const char *tag_end;
+    const char *name;
+
+    if (response->data == NULL || response->len == 0) {
+        logg(LOGG_ERROR, "Report form response body is empty.\n");
+        return NULL;
+    }
+    meta = response->data;
+    while ((meta = strstr(meta, "<meta")) != NULL) {
+        tag_end = strchr(meta, '>');
+        if (tag_end == NULL) {
+            break;
+        }
+        name = strstr(meta, "name=\"csrf-token\"");
+        if (name != NULL && name < tag_end) {
+            return copy_tag_attribute(meta, tag_end, "content=\"", "content", "CSRF meta tag");
+        }
+        meta = tag_end + 1;
+    }
+    logg(LOGG_ERROR, "Report form does not contain a page-level CSRF token.\n");
     return NULL;
 }
 
@@ -594,16 +629,17 @@ int main(int argc, char *argv[])
     CURL *clam_curl = NULL;
     CURL *aws_curl  = NULL;
     CURLcode curl_result;
-    struct curl_httppost *post = NULL;
-    struct curl_httppost *last = NULL;
-    struct curl_slist *headers = NULL;
-    char *name                 = NULL;
-    char *email                = NULL;
-    char *filename             = NULL;
-    char *false_positive_name  = NULL;
-    char *authenticity_token   = NULL;
-    char *authenticity_header  = NULL;
-    char *submission_id        = NULL;
+    struct curl_httppost *post    = NULL;
+    struct curl_httppost *last    = NULL;
+    struct curl_slist *headers    = NULL;
+    char *name                    = NULL;
+    char *email                   = NULL;
+    char *filename                = NULL;
+    char *false_positive_name     = NULL;
+    char *form_authenticity_token = NULL;
+    char *csrf_token              = NULL;
+    char *csrf_header             = NULL;
+    char *submission_id           = NULL;
     const char *json_string;
     response_buffer_t response = {0};
     json_object *presigned     = NULL;
@@ -716,28 +752,32 @@ int main(int argc, char *argv[])
     if (!perform_request(clam_curl, "report form", 200, 299, &response)) {
         goto done;
     }
-    authenticity_token = extract_authenticity_token(&response);
-    if (authenticity_token == NULL) {
+    form_authenticity_token = extract_form_authenticity_token(&response);
+    if (form_authenticity_token == NULL) {
+        goto done;
+    }
+    csrf_token = extract_csrf_token(&response);
+    if (csrf_token == NULL) {
         goto done;
     }
     response_buffer_reset(&response);
 
-    if (strlen(authenticity_token) > SIZE_MAX - strlen("X-CSRF-Token: ") - 1) {
-        logg(LOGG_ERROR, "Authenticity token is too long.\n");
+    if (strlen(csrf_token) > SIZE_MAX - strlen("X-CSRF-Token: ") - 1) {
+        logg(LOGG_ERROR, "Page-level CSRF token is too long.\n");
         goto done;
     }
-    header_length       = strlen("X-CSRF-Token: ") + strlen(authenticity_token) + 1;
-    authenticity_header = malloc(header_length);
-    if (authenticity_header == NULL) {
+    header_length = strlen("X-CSRF-Token: ") + strlen(csrf_token) + 1;
+    csrf_header   = malloc(header_length);
+    if (csrf_header == NULL) {
         logg(LOGG_ERROR, "Out of memory while constructing the CSRF header.\n");
         goto done;
     }
-    user_agent_length = snprintf(authenticity_header, header_length, "X-CSRF-Token: %s", authenticity_token);
+    user_agent_length = snprintf(csrf_header, header_length, "X-CSRF-Token: %s", csrf_token);
     if (user_agent_length < 0 || (size_t)user_agent_length >= header_length) {
         logg(LOGG_ERROR, "Failed to construct the CSRF header.\n");
         goto done;
     }
-    if (!append_header(&headers, authenticity_header)) {
+    if (!append_header(&headers, csrf_header)) {
         goto done;
     }
 
@@ -828,7 +868,7 @@ int main(int argc, char *argv[])
     response_buffer_reset(&response);
 
     if (!form_add_string(&post, &last, "utf8", "\xE2\x9C\x93") ||
-        !form_add_string(&post, &last, "authenticity_token", authenticity_token) ||
+        !form_add_string(&post, &last, "authenticity_token", form_authenticity_token) ||
         !form_add_string(&post, &last, "submissionID", submission_id) ||
         !form_add_string(&post, &last, "type", malware ? "malware" : "fp") ||
         !form_add_string(&post, &last, "sendername", name) ||
@@ -893,8 +933,9 @@ done:
         json_object_put(presigned);
     }
     response_buffer_reset(&response);
-    free(authenticity_header);
-    free(authenticity_token);
+    free(csrf_header);
+    free(csrf_token);
+    free(form_authenticity_token);
     free(submission_id);
     if (from_stream && filename != NULL) {
         if (remove(filename) != 0) {
