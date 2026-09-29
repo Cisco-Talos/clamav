@@ -1225,13 +1225,20 @@ enum phish_status cli_url_canon(const char* inurl, size_t len, char* urlbuff, si
 {
     char *url, *p, *last;
     char *host_begin, *path_begin;
-    const char* urlend = urlbuff + len;
+    const char* urlend;
     size_t host_len, path_len;
 
+    if (dest_len < 3)
+        return CL_PHISH_CLEAN;
+
     dest_len -= 3;
-    strncpy(urlbuff, inurl, dest_len);
-    urlbuff[dest_len] = urlbuff[dest_len + 1] = urlbuff[dest_len + 2] = '\0';
-    url                                                               = urlbuff;
+    if (len > dest_len)
+        len = dest_len;
+
+    memcpy(urlbuff, inurl, len);
+    urlbuff[len] = urlbuff[len + 1] = urlbuff[len + 2] = '\0';
+    urlend = urlbuff + len;
+    url    = urlbuff;
 
     /* canonicalize only real URLs, with a protocol */
     host_begin = strchr(url, ':');
@@ -1252,7 +1259,9 @@ enum phish_status cli_url_canon(const char* inurl, size_t len, char* urlbuff, si
     len        = urlend - url;
     /* skip to beginning of hostname */
     while ((host_begin < urlend) && *host_begin == '/') ++host_begin;
-    while (*host_begin == '.' && host_begin < urlend) ++host_begin;
+    while ((host_begin < urlend) && *host_begin == '.') ++host_begin;
+    url = host_begin;
+    len = urlend - url;
 
     last = strchr(host_begin, '/');
     p    = host_begin;
