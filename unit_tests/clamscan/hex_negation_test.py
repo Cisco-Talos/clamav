@@ -27,7 +27,7 @@ class TC(testcase.TestCase):
             'suffix-match.bin': b'XXABC\x01',
             'suffix-no-match.bin': b'XXABC\x00',
             'gap-match.bin': b'AAxyz\x01BC',
-            'mixed-match.bin': b'AXYABXX',
+            'mixed-match.bin': b'AXYABCXX',
             'logical-match.bin': b'AAxyz\x01BC',
             'legacy-special-match.bin': b'AA\x01BBXX',
             'legacy-special-no-match.bin': b'AA\x00BBXX',
@@ -35,10 +35,10 @@ class TC(testcase.TestCase):
             'line-marker-match.bin': b'xx\nAB\nxx',
             'word-marker-match.bin': b'xx!AB!xx',
             'alternate-negation-match.bin': b'AB\x02DEF',
-            'alternate-negation-no-match.bin': b'AB\x00DEF',
-            'wide-negation-match.bin': b'a\x00\x01\x00b\x00',
-            'prefilter-negation-match.bin': b'\x02\x00\x00',
-            'prefilter-negation-no-match.bin': b'\x01\x00\x00',
+            'alternate-negation-no-match.bin': b'AB\x00CEF',
+            'wide-negation-match.bin': b'A\x00\x01\x00B\x00',
+            'prefilter-negation-match.bin': b'\x02\x00\x00XXX',
+            'prefilter-negation-no-match.bin': b'\x01\x00\x00XXX',
         }
         for name, data in samples.items():
             (TC.path_tmp / name).write_bytes(data)
@@ -50,7 +50,7 @@ class TC(testcase.TestCase):
             'prefix.ndb': 'Native.Prefix:0:0:~00414243\n',
             'suffix.ndb': 'Native.Suffix:0:2:414243~00\n',
             'gap.ndb': 'Native.Gap:0:*:4141*~004243\n',
-            'mixed.ndb': 'Native.Mixed:0:*:41??~?04?42\n',
+            'mixed.ndb': 'Native.Mixed:0:*:41??~?04?4243\n',
             'legacy-special.ndb': 'Native.LegacySpecial:0:*:4141!(00)4242\n',
             'boundary-marker.ndb': 'Native.BoundaryMarker:0:*:(B)4142(B)\n',
             'line-marker.ndb': 'Native.LineMarker:0:*:(L)4142(L)\n',
@@ -77,9 +77,9 @@ class TC(testcase.TestCase):
         )
 
         yara_patterns = {
-            'not-byte': '~00 42',
-            'not-low': '~?0 42',
-            'not-high': '~0? 42',
+            'not-byte': '~00 42 43',
+            'not-low': '~?0 42 43',
+            'not-high': '~0? 42 43',
         }
         for name, pattern in yara_patterns.items():
             (TC.path_tmp / f'yara-{name}.yara').write_text(
@@ -246,7 +246,7 @@ class TC(testcase.TestCase):
         assert output.ec == 2
         self.verify_output(
             output.err,
-            expected=['nocase modifier [i] is not supported for negated hex units'],
+            expected=['nocase modifier \\[i\\] is not supported for negated hex units'],
         )
 
     def test_existing_special_syntax_is_unchanged(self):
