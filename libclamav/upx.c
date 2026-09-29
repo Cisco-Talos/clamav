@@ -117,14 +117,14 @@ static char *checkpe(char *dst, uint32_t dsize, char *pehdr, uint32_t *valign, u
 
 /* PE from UPX */
 
-static int pefromupx(const char *src, uint32_t ssize, char *dst, uint32_t *dsize, uint32_t ep, uint32_t upx0, uint32_t upx1, uint32_t *magic, uint32_t dend)
+static int pefromupx(const char *src, uint32_t ssize, char *dst, uint32_t *dsize, uint32_t dst_capacity, uint32_t ep, uint32_t upx0, uint32_t upx1, uint32_t *magic, uint32_t dend)
 {
     char *imports, *sections = NULL, *pehdr = NULL, *newbuf;
     unsigned int sectcnt = 0, upd = 1;
     uint32_t realstuffsz = 0, valign = 0;
     uint32_t foffset = 0xd0 + 0xf8;
 
-    if ((dst == NULL) || (src == NULL))
+    if ((dst == NULL) || (src == NULL) || (dsize == NULL) || (*dsize > dst_capacity))
         return 0;
 
     while ((valign = magic[sectcnt++])) {
@@ -187,6 +187,10 @@ static int pefromupx(const char *src, uint32_t ssize, char *dst, uint32_t *dsize
     if (!pehdr) {
         uint32_t rebsz = PESALIGN(dend, 0x1000);
         cli_dbgmsg("UPX: no luck - brutally crafting a reasonable PE\n");
+        if (dst_capacity < 0x200 || rebsz > dst_capacity - 0x200) {
+            cli_dbgmsg("UPX: rebuilt PE exceeds destination capacity\n");
+            return 0;
+        }
         if (!(newbuf = (char *)cli_max_calloc(rebsz + 0x200, sizeof(char)))) {
             cli_dbgmsg("UPX: malloc failed - giving up rebuild\n");
             return 0;
@@ -231,6 +235,11 @@ static int pefromupx(const char *src, uint32_t ssize, char *dst, uint32_t *dsize
         sections += 0x28;
     }
 
+    if (foffset > dst_capacity) {
+        cli_dbgmsg("UPX: wrong raw size - giving up rebuild\n");
+        return 0;
+    }
+
     cli_writeint32(pehdr + 8, 0x4d414c43);
     cli_writeint32(pehdr + 0x3c, valign);
 
@@ -252,7 +261,7 @@ static int pefromupx(const char *src, uint32_t ssize, char *dst, uint32_t *dsize
         }
 
         offset3 = (uint32_t)cli_readint32(sections + 12);
-        if (offset3 - upx0 > *dsize) {
+        if (offset3 < upx0 || offset3 - upx0 > *dsize || offset2 > *dsize - (offset3 - upx0)) {
             free(newbuf);
             return 1;
         }
@@ -263,11 +272,6 @@ static int pefromupx(const char *src, uint32_t ssize, char *dst, uint32_t *dsize
     /* CBA restoring the imports they'll look different from the originals anyway... */
     /* ...and yeap i miss the icon too :P */
 
-    if (foffset > *dsize + 8192) {
-        cli_dbgmsg("UPX: wrong raw size - giving up rebuild\n");
-        free(newbuf);
-        return 0;
-    }
     memcpy(dst, newbuf, foffset);
     *dsize = foffset;
     free(newbuf);
@@ -293,13 +297,33 @@ static int doubleebx(const char *src, uint32_t *myebx, uint32_t *scur, uint32_t 
     return (oldebx >> 31);
 }
 
+/**
+ * Decode a UPX back-reference offset without signed left-shift overflow.
+ *
+ * @param backbytes The 24-bit prefix decoded from the bit stream.
+ * @param next      The final byte of the encoded offset.
+ * @return The decoded two's-complement offset.
+ */
+static int32_t decode_backbytes(uint32_t backbytes, uint8_t next)
+{
+    uint32_t decoded = ~((backbytes << 8) | next);
+
+    if (decoded <= INT32_MAX)
+        return (int32_t)decoded;
+
+    return -((int32_t)(UINT32_MAX - decoded)) - 1;
+}
+
 /* [inflate] */
 
-int upx_inflate2b(const char *src, uint32_t ssize, char *dst, uint32_t *dsize, uint32_t upx0, uint32_t upx1, uint32_t ep)
+int upx_inflate2b(const char *src, uint32_t ssize, char *dst, uint32_t *dsize, uint32_t dst_capacity, uint32_t upx0, uint32_t upx1, uint32_t ep)
 {
     int32_t backbytes, unp_offset = -1;
     uint32_t backsize, myebx = 0, scur = 0, dcur = 0, i, magic[] = {0x108, 0x110, 0xd5, 0};
     int oob;
+
+    if (src == NULL || dst == NULL || dsize == NULL || *dsize > dst_capacity)
+        return -1;
 
     while (1) {
         while ((oob = doubleebx(src, &myebx, &scur, ssize)) == 1) {
@@ -333,9 +357,7 @@ int upx_inflate2b(const char *src, uint32_t ssize, char *dst, uint32_t *dsize, u
                 return -1;
             if (backbytes & 0xff000000)
                 return -1;
-            backbytes <<= 8;
-            backbytes += (unsigned char)(src[scur++]);
-            backbytes ^= 0xffffffff;
+            backbytes = decode_backbytes((uint32_t)backbytes, (uint8_t)src[scur++]);
 
             if (!backbytes)
                 break;
@@ -377,14 +399,17 @@ int upx_inflate2b(const char *src, uint32_t ssize, char *dst, uint32_t *dsize, u
         dcur += backsize;
     }
 
-    return pefromupx(src, ssize, dst, dsize, ep, upx0, upx1, magic, dcur);
+    return pefromupx(src, ssize, dst, dsize, dst_capacity, ep, upx0, upx1, magic, dcur);
 }
 
-int upx_inflate2d(const char *src, uint32_t ssize, char *dst, uint32_t *dsize, uint32_t upx0, uint32_t upx1, uint32_t ep)
+int upx_inflate2d(const char *src, uint32_t ssize, char *dst, uint32_t *dsize, uint32_t dst_capacity, uint32_t upx0, uint32_t upx1, uint32_t ep)
 {
     int32_t backbytes, unp_offset = -1;
     uint32_t backsize, myebx = 0, scur = 0, dcur = 0, i, magic[] = {0x11c, 0x124, 0};
     int oob;
+
+    if (src == NULL || dst == NULL || dsize == NULL || *dsize > dst_capacity)
+        return -1;
 
     while (1) {
         while ((oob = doubleebx(src, &myebx, &scur, ssize)) == 1) {
@@ -425,9 +450,7 @@ int upx_inflate2d(const char *src, uint32_t ssize, char *dst, uint32_t *dsize, u
                 return -1;
             if (backbytes & 0xff000000)
                 return -1;
-            backbytes <<= 8;
-            backbytes += (unsigned char)(src[scur++]);
-            backbytes ^= 0xffffffff;
+            backbytes = decode_backbytes((uint32_t)backbytes, (uint8_t)src[scur++]);
 
             if (!backbytes)
                 break;
@@ -471,14 +494,17 @@ int upx_inflate2d(const char *src, uint32_t ssize, char *dst, uint32_t *dsize, u
         dcur += backsize;
     }
 
-    return pefromupx(src, ssize, dst, dsize, ep, upx0, upx1, magic, dcur);
+    return pefromupx(src, ssize, dst, dsize, dst_capacity, ep, upx0, upx1, magic, dcur);
 }
 
-int upx_inflate2e(const char *src, uint32_t ssize, char *dst, uint32_t *dsize, uint32_t upx0, uint32_t upx1, uint32_t ep)
+int upx_inflate2e(const char *src, uint32_t ssize, char *dst, uint32_t *dsize, uint32_t dst_capacity, uint32_t upx0, uint32_t upx1, uint32_t ep)
 {
     int32_t backbytes, unp_offset = -1;
     uint32_t backsize, myebx = 0, scur = 0, dcur = 0, i, magic[] = {0x128, 0x130, 0};
     int oob;
+
+    if (src == NULL || dst == NULL || dsize == NULL || *dsize > dst_capacity)
+        return -1;
 
     for (;;) {
         while ((oob = doubleebx(src, &myebx, &scur, ssize))) {
@@ -517,9 +543,7 @@ int upx_inflate2e(const char *src, uint32_t ssize, char *dst, uint32_t *dsize, u
                 return -1;
             if (backbytes & 0xff000000)
                 return -1;
-            backbytes <<= 8;
-            backbytes += (unsigned char)(src[scur++]);
-            backbytes ^= 0xffffffff;
+            backbytes = decode_backbytes((uint32_t)backbytes, (uint8_t)src[scur++]);
 
             if (!backbytes)
                 break;
@@ -574,14 +598,17 @@ int upx_inflate2e(const char *src, uint32_t ssize, char *dst, uint32_t *dsize, u
         dcur += backsize;
     }
 
-    return pefromupx(src, ssize, dst, dsize, ep, upx0, upx1, magic, dcur);
+    return pefromupx(src, ssize, dst, dsize, dst_capacity, ep, upx0, upx1, magic, dcur);
 }
 
-int upx_inflatelzma(const char *src, uint32_t ssize, char *dst, uint32_t *dsize, uint32_t upx0, uint32_t upx1, uint32_t ep, uint32_t properties)
+int upx_inflatelzma(const char *src, uint32_t ssize, char *dst, uint32_t *dsize, uint32_t dst_capacity, uint32_t upx0, uint32_t upx1, uint32_t ep, uint32_t properties)
 {
     struct CLI_LZMA l;
     uint32_t magic[] = {0xb16, 0xb1e, 0};
     unsigned char fake_lzmahdr[5];
+
+    if (src == NULL || dst == NULL || dsize == NULL || *dsize == 0 || *dsize > dst_capacity || ssize <= 2)
+        return -1;
 
     memset(&l, 0, sizeof(l));
     cli_writeint32(fake_lzmahdr + 1, *dsize);
@@ -595,18 +622,18 @@ int upx_inflatelzma(const char *src, uint32_t ssize, char *dst, uint32_t *dsize,
     l.next_in     = fake_lzmahdr;
     l.avail_in    = 5;
     if (cli_LzmaInit(&l, *dsize) != LZMA_RESULT_OK)
-        return 0;
-    l.avail_in  = ssize;
+        return -1;
+    l.avail_in  = ssize - 2;
     l.avail_out = *dsize;
     l.next_in   = (unsigned char *)src + 2;
     l.next_out  = (unsigned char *)dst;
 
-    if (cli_LzmaDecode(&l) == LZMA_RESULT_DATA_ERROR) {
+    if (cli_LzmaDecode(&l) != LZMA_STREAM_END || l.avail_out != 0) {
         /*     __asm__ __volatile__("int3"); */
         cli_LzmaShutdown(&l);
         return -1;
     }
     cli_LzmaShutdown(&l);
 
-    return pefromupx(src, ssize, dst, dsize, ep, upx0, upx1, magic, *dsize);
+    return pefromupx(src, ssize, dst, dsize, dst_capacity, ep, upx0, upx1, magic, *dsize);
 }
