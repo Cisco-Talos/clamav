@@ -658,8 +658,12 @@ int cli_scanxar(cli_ctx *ctx)
     /* Walk the TOC XML and extract files */
     fd      = -1;
     tmpname = NULL;
-    while (CL_SUCCESS == (rc = xar_get_toc_data_values(reader, &length, &offset, &size, &encoding,
-                                                       &a_cksum, &a_hash, &e_cksum, &e_hash))) {
+    while (1) {
+        rc = xar_get_toc_data_values(reader, &length, &offset, &size, &encoding,
+                                     &a_cksum, &a_hash, &e_cksum, &e_hash);
+        if (rc != CL_SUCCESS)
+            break;
+
         int do_extract_cksum = 1;
         unsigned char *blockp;
         void *a_sc, *e_sc;
@@ -673,6 +677,11 @@ int cli_scanxar(cli_ctx *ctx)
             if (rc != CL_SUCCESS)
                 goto exit_reader;
         }
+
+        /* Do not create or extract another member after a file-count limit. */
+        rc = cli_checklimits("cli_scanxar", ctx, 0, 0, 0);
+        if (rc == CL_ETIMEOUT || rc == CL_EMAXFILES || ctx->abort_scan)
+            goto exit_reader;
 
         at = offset + hdr.toc_length_compressed + hdr.size;
 
@@ -690,7 +699,11 @@ int cli_scanxar(cli_ctx *ctx)
 
         switch (encoding) {
             case CL_TYPE_GZ:
-                /* inflate gzip directly because file segments do not contain magic */
+            {
+                uint64_t out_size = 0;
+
+                /* Inflate XAR's zlib-wrapped deflate stream directly because file
+                 * segments do not contain magic. */
                 memset(&strm, 0, sizeof(strm));
                 if ((rc = inflateInit(&strm)) != Z_OK) {
                     cli_dbgmsg("cli_scanxar: InflateInit failed: %d\n", rc);
@@ -713,7 +726,9 @@ int cli_scanxar(cli_ctx *ctx)
                     at += bytes;
                     strm.avail_in = avail_in = bytes;
                     do {
-                        int inf, outsize = 0;
+                        cl_error_t limitret;
+                        int inf;
+                        size_t writelen;
                         unsigned char buff[FILEBUFF];
                         strm.avail_out = sizeof(buff);
                         strm.next_out  = buff;
@@ -727,17 +742,72 @@ int cli_scanxar(cli_ctx *ctx)
 
                         bytes = sizeof(buff) - strm.avail_out;
 
-                        if (e_hash_ctx != NULL)
-                            xar_hash_update(e_hash_ctx, buff, bytes, e_hash);
+                        if (out_size > UINT64_MAX - bytes) {
+                            cli_dbgmsg("cli_scanxar: decompressed output size overflow.\n");
+                            rc = CL_EMAXSIZE;
+                            break;
+                        }
 
-                        if (cli_writen(fd, buff, bytes) == (size_t)-1) {
+                        writelen = bytes;
+                        limitret = cli_checklimits("cli_scanxar", ctx, out_size + bytes, 0, 0);
+                        if (limitret == CL_EMAXSIZE) {
+                            uint64_t allowed = writelen;
+
+                            if (ctx->engine->maxfilesize) {
+                                uint64_t remaining = (out_size < ctx->engine->maxfilesize) ?
+                                                         (ctx->engine->maxfilesize - out_size) :
+                                                         0;
+                                if (remaining < allowed)
+                                    allowed = remaining;
+                            }
+
+                            if (ctx->engine->maxscansize) {
+                                /* cli_checklimits() receives cumulative member output. */
+                                uint64_t remaining_scan =
+                                    (ctx->scansize < ctx->engine->maxscansize) ?
+                                        (ctx->engine->maxscansize - ctx->scansize) :
+                                        0;
+                                uint64_t remaining_output =
+                                    (out_size < remaining_scan) ? (remaining_scan - out_size) : 0;
+                                if (remaining_output < allowed)
+                                    allowed = remaining_output;
+                            }
+
+                            cli_dbgmsg("cli_scanxar: trimming gzip output to size limits (" STDu64
+                                       " vs " STDu64 ").\n",
+                                       out_size + bytes, out_size + allowed);
+                            writelen = (size_t)allowed;
+                            do_extract_cksum = 0;
+                        } else if (limitret != CL_CLEAN) {
+                            rc = limitret;
+                            break;
+                        }
+
+                        if (e_hash_ctx != NULL)
+                            xar_hash_update(e_hash_ctx, buff, writelen, e_hash);
+
+                        if (writelen && cli_writen(fd, buff, writelen) == (size_t)-1) {
                             cli_dbgmsg("cli_scanxar: cli_writen error file %s.\n", tmpname);
                             inflateEnd(&strm);
                             rc = CL_EWRITE;
                             goto exit_tmpfile;
                         }
-                        outsize += sizeof(buff) - strm.avail_out;
-                        if (cli_checklimits("cli_scanxar", ctx, outsize, 0, 0) != CL_CLEAN) {
+                        out_size += writelen;
+                        if (writelen != bytes) {
+                            /*
+                             * This member will not be scanned because it exceeded a
+                             * size limit. Reserve the bytes written against the
+                             * aggregate scan-size budget so subsequent members cannot
+                             * reuse the same MaxScanSize allowance.
+                             */
+                            if (ctx->engine->maxscansize) {
+                                if (ctx->scansize >= ctx->engine->maxscansize ||
+                                    out_size >= ctx->engine->maxscansize - ctx->scansize)
+                                    ctx->scansize = ctx->engine->maxscansize;
+                                else
+                                    ctx->scansize += out_size;
+                            }
+                            rc = CL_EMAXSIZE;
                             break;
                         }
                         if (inf == Z_STREAM_END) {
@@ -755,6 +825,7 @@ int cli_scanxar(cli_ctx *ctx)
 
                 inflateEnd(&strm);
                 break;
+            }
             case CL_TYPE_7Z:
 #define CLI_LZMA_OBUF_SIZE 1024 * 1024
 #define CLI_LZMA_HDR_SIZE LZMA_PROPS_SIZE + 8
@@ -907,6 +978,13 @@ int cli_scanxar(cli_ctx *ctx)
                     /*break;*/
                 }
         } /* end of switch */
+
+        if (ctx->abort_scan || rc == CL_ETIMEOUT || rc == CL_EMAXFILES)
+            goto exit_tmpfile;
+
+        if (rc == CL_EMAXSIZE && ctx->engine->maxscansize &&
+            ctx->scansize >= ctx->engine->maxscansize)
+            goto exit_tmpfile;
 
         if (a_hash_ctx != NULL) {
             xar_hash_final(a_hash_ctx, a_hash_result, a_hash);
