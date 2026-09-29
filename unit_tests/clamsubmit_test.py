@@ -13,7 +13,8 @@ import threading
 import unittest
 
 
-AUTHENTICITY_TOKEN = "test-authenticity-token"
+CSRF_TOKEN = "test-page-level-csrf-token"
+FORM_AUTHENTICITY_TOKEN = "test-form-authenticity-token"
 SESSION_COOKIE = "_clamav-net_session=test-session"
 
 
@@ -45,8 +46,11 @@ class Scenario:
     ):
         self.report_status = report_status
         self.report_body = (
-            '<html><form><input value="{}" name="authenticity_token" '
-            'type="hidden"></form></html>'.format(AUTHENTICITY_TOKEN).encode("utf-8")
+            '<html><head><meta name="csrf-token" content="{}"></head>'
+            '<body><form><input value="{}" name="authenticity_token" '
+            'type="hidden"></form></body></html>'.format(
+                CSRF_TOKEN, FORM_AUTHENTICITY_TOKEN
+            ).encode("utf-8")
             if report_body is None
             else report_body
         )
@@ -103,6 +107,12 @@ def make_handler(scenario):
             body = self.rfile.read(content_length)
             self.record_request(body)
             if self.path == "/presigned":
+                if (
+                    self.headers.get("X-CSRF-Token") != CSRF_TOKEN
+                    or SESSION_COOKIE not in self.headers.get("Cookie", "")
+                ):
+                    self.send_body(422)
+                    return
                 self.send_body(
                     scenario.presigned_status,
                     scenario.presigned_body,
@@ -204,7 +214,7 @@ class ClamSubmitTest(unittest.TestCase):
             request["headers"].get("content-type"),
             "application/x-www-form-urlencoded",
         )
-        self.assertEqual(request["headers"].get("x-csrf-token"), AUTHENTICITY_TOKEN)
+        self.assertEqual(request["headers"].get("x-csrf-token"), CSRF_TOKEN)
         self.assertIn(SESSION_COOKIE, request["headers"].get("cookie", ""))
         self.assertTrue(
             request["headers"].get("referer", "").endswith(
@@ -229,6 +239,10 @@ class ClamSubmitTest(unittest.TestCase):
         )
         submit_request = self.request_for_path(scenario, "/reports/submit")
         self.assertIn(SESSION_COOKIE, submit_request["headers"].get("cookie", ""))
+        self.assertEqual(
+            submit_fields["authenticity_token"],
+            FORM_AUTHENTICITY_TOKEN.encode("utf-8"),
+        )
         self.assertEqual(submit_fields["submissionID"], b"12345")
         self.assertEqual(submit_fields["type"], b"malware")
         self.assertEqual(submit_fields["utf8"], "✓".encode("utf-8"))
@@ -375,6 +389,18 @@ class ClamSubmitTest(unittest.TestCase):
         self.assertIn(b"does not contain an authenticity token", result.stderr)
         self.assertEqual(len(scenario.requests), 1)
 
+    def test_missing_page_csrf_token_fails_cleanly(self):
+        scenario = Scenario(
+            report_body=(
+                '<html><form><input value="{}" name="authenticity_token" '
+                'type="hidden"></form></html>'.format(FORM_AUTHENTICITY_TOKEN)
+            ).encode("utf-8")
+        )
+        result = self.run_client(scenario, self.standard_arguments())
+        self.assertEqual(result.returncode, 1)
+        self.assertIn(b"does not contain a page-level CSRF token", result.stderr)
+        self.assertEqual(len(scenario.requests), 1)
+
     def test_empty_report_form_fails_cleanly(self):
         scenario = Scenario(report_body=b"")
         result = self.run_client(scenario, self.standard_arguments())
@@ -387,7 +413,8 @@ class ClamSubmitTest(unittest.TestCase):
         result = self.run_client(scenario, self.standard_arguments() + ["-d"])
         self.assertEqual(result.returncode, 0, result.stderr.decode())
         for secret in (
-            AUTHENTICITY_TOKEN,
+            CSRF_TOKEN,
+            FORM_AUTHENTICITY_TOKEN,
             "test-session",
             "test-policy",
             "test-credential",
