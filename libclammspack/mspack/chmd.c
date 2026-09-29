@@ -537,8 +537,8 @@ static int chmd_read_headers(struct mspack_system *sys, struct mspack_file *fh,
  * uses PMGI index chunks and quickref data to quickly locate a file
  * directly from the on-disk index.
  *
- * TODO: protect against infinite loops in chunks (where pgml_NextChunk
- * or a PMGI index entry point to an already visited chunk)
+ * Traversal is bounded by the number of directory chunks, so corrupt PMGI
+ * or PMGL references cannot make this search loop indefinitely.
  */
 static int chmd_fast_find(struct mschm_decompressor *base,
                           struct mschmd_header *chm, const char *filename,
@@ -551,8 +551,9 @@ static int chmd_fast_find(struct mschm_decompressor *base,
      * uninitialised usage. This is provably untrue, but MS won't fix:
      * https://developercommunity.visualstudio.com/content/problem/363489/c4701-false-positive-warning.html */
     const unsigned char *chunk, *p = NULL, *end = NULL;
+    off_t child;
     int err = MSPACK_ERR_OK, result = -1;
-    unsigned int n, sec;
+    unsigned int n, sec, chunks_left;
 
     if (!self || !chm || !f_ptr || (f_size != sizeof(struct mschmd_file))) {
         return MSPACK_ERR_ARGS;
@@ -569,7 +570,14 @@ static int chmd_fast_find(struct mschm_decompressor *base,
     /* go through PMGI chunk hierarchy to reach PMGL chunk */
     if (chm->index_root < chm->num_chunks) {
         n = chm->index_root;
+        chunks_left = chm->num_chunks;
         for (;;) {
+            if (!chunks_left || n >= chm->num_chunks) {
+                result = -1;
+                break;
+            }
+            chunks_left--;
+
             if (!(chunk = read_chunk(self, chm, fh, n))) {
                 sys->close(fh);
                 return self->error;
@@ -583,15 +591,27 @@ static int chmd_fast_find(struct mschm_decompressor *base,
             /* found result. loop around for next chunk if this is PMGI */
             if (chunk[3] == 0x4C) break;
 
-            n = read_encint(&p, end, &err);
+            child = read_encint(&p, end, &err);
             if (err) goto encint_err;
+            if (child >= (off_t) chm->num_chunks) {
+                result = -1;
+                break;
+            }
+            n = (unsigned int) child;
         }
     }
     else {
         /* PMGL chunks only, search from first_pmgl to last_pmgl */
+        chunks_left = chm->num_chunks;
         for (n = chm->first_pmgl; n <= chm->last_pmgl;
              n = EndGetI32(&chunk[pmgl_NextChunk]))
         {
+            if (!chunks_left || n >= chm->num_chunks) {
+                result = -1;
+                break;
+            }
+            chunks_left--;
+
             if (!(chunk = read_chunk(self, chm, fh, n))) {
                 err = self->error;
                 break;
