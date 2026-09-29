@@ -2770,7 +2770,8 @@ int cli_scanpe(cli_ctx *ctx)
     size_t bytes;
     unsigned int i, j, found, upx_success = 0, err;
     unsigned int ssize = 0, dsize = 0, corrupted_cur;
-    int (*upxfn)(const char *, uint32_t, char *, uint32_t *, uint32_t, uint32_t, uint32_t) = NULL;
+    uint32_t dest_capacity = 0;
+    int (*upxfn)(const char *, uint32_t, char *, uint32_t *, uint32_t, uint32_t, uint32_t, uint32_t) = NULL;
     const char *src                                                                        = NULL;
     char *dest                                                                             = NULL;
     int ndesc;
@@ -3795,7 +3796,7 @@ int cli_scanpe(cli_ctx *ctx)
 
         CLI_UNPSIZELIMITS("cli_scanpe: UPX", MAX(dsize, ssize));
 
-        if (ssize <= 0x19 || dsize <= ssize || dsize > CLI_MAX_ALLOCATION) {
+        if (ssize <= 0x19 || dsize <= ssize || dsize > CLI_MAX_ALLOCATION - UPX_REBUILD_HEADROOM) {
             cli_dbgmsg("cli_scanpe: UPX: Size mismatch or dsize too big (ssize: %d, dsize: %d)\n", ssize, dsize);
             cli_exe_info_destroy(peinfo);
             return CL_CLEAN;
@@ -3807,24 +3808,84 @@ int cli_scanpe(cli_ctx *ctx)
             return CL_EREAD;
         }
 
-        if ((dest = (char *)cli_max_calloc(dsize + 8192, sizeof(char))) == NULL) {
+        dest_capacity = dsize + UPX_REBUILD_HEADROOM;
+        if ((dest = (char *)cli_max_calloc(dest_capacity, sizeof(char))) == NULL) {
             cli_exe_info_destroy(peinfo);
             return CL_EMEM;
         }
 
-        /* try to detect UPX code */
-        if (cli_memstr(UPX_NRV2B, 24, epbuff + 0x69, 13) || cli_memstr(UPX_NRV2B, 24, epbuff + 0x69 + 8, 13)) {
-            cli_dbgmsg("cli_scanpe: UPX: Looks like a NRV2B decompression routine\n");
-            upxfn = upx_inflate2b;
-        } else if (cli_memstr(UPX_NRV2D, 24, epbuff + 0x69, 13) || cli_memstr(UPX_NRV2D, 24, epbuff + 0x69 + 8, 13)) {
-            cli_dbgmsg("cli_scanpe: UPX: Looks like a NRV2D decompression routine\n");
-            upxfn = upx_inflate2d;
-        } else if (cli_memstr(UPX_NRV2E, 24, epbuff + 0x69, 13) || cli_memstr(UPX_NRV2E, 24, epbuff + 0x69 + 8, 13)) {
-            cli_dbgmsg("cli_scanpe: UPX: Looks like a NRV2E decompression routine\n");
-            upxfn = upx_inflate2e;
+        /*
+         * Prefer the explicit LZMA stub signatures over the heuristic NRV
+         * detection below. A non-negative decompressor result means that the
+         * stream was decoded, even if rebuilding a PE around the decoded data
+         * failed, so no other decoder may reuse the destination afterward.
+         */
+        if (cli_memstr(UPX_LZMA2, 20, epbuff + 0x2f, 20)) {
+            uint32_t strictdsize = cli_readint32(epbuff + 0x21), skew = 0;
+            int upx_result;
+            cli_dbgmsg("cli_scanpe: UPX: Looks like an LZMA2 decompression routine\n");
+            if (ssize > 0x15 && epbuff[0] == '\x60' && epbuff[1] == '\xbe') {
+                // TODO Add EC32
+                skew = cli_readint32(epbuff + 2) - peinfo->sections[i + 1].rva - peinfo->pe_opt.opt32.ImageBase;
+                if (skew != 0x15)
+                    skew = 0;
+            }
+
+            if (strictdsize && strictdsize <= dsize) {
+                upx_result = upx_inflatelzma(src + skew, ssize - skew, dest, &strictdsize, dest_capacity, peinfo->sections[i].rva, peinfo->sections[i + 1].rva, peinfo->vep, 0x20003);
+                if (upx_result >= 0) {
+                    dsize       = strictdsize;
+                    upx_success = 1;
+                } else {
+                    /*
+                     * Restore the destination to its initial zeroed state before
+                     * trying another decoder.
+                     */
+                    memset(dest, 0, strictdsize);
+                }
+            }
+        } else if (cli_memstr(UPX_LZMA1_FIRST, 8, epbuff + 0x39, 8) && cli_memstr(UPX_LZMA1_SECOND, 8, epbuff + 0x45, 8)) {
+            uint32_t strictdsize = cli_readint32(epbuff + 0x2b), skew = 0;
+            uint32_t properties = cli_readint32(epbuff + 0x41);
+            int upx_result;
+            cli_dbgmsg("cli_scanpe: UPX: Looks like an LZMA1 decompression routine\n");
+            if (ssize > 0x15 && epbuff[0] == '\x60' && epbuff[1] == '\xbe') {
+                // TODO Add EC32
+                skew = cli_readint32(epbuff + 2) - peinfo->sections[i + 1].rva - peinfo->pe_opt.opt32.ImageBase;
+                if (skew != 0x15)
+                    skew = 0;
+            }
+
+            if (strictdsize && strictdsize <= dsize) {
+                upx_result = upx_inflatelzma(src + skew, ssize - skew, dest, &strictdsize, dest_capacity, peinfo->sections[i].rva, peinfo->sections[i + 1].rva, peinfo->vep, properties);
+                if (upx_result >= 0) {
+                    dsize       = strictdsize;
+                    upx_success = 1;
+                } else {
+                    /*
+                     * Restore the destination to its initial zeroed state before
+                     * trying another decoder.
+                     */
+                    memset(dest, 0, strictdsize);
+                }
+            }
         }
 
-        if (upxfn) {
+        /* try to detect UPX code */
+        if (!upx_success) {
+            if (cli_memstr(UPX_NRV2B, 24, epbuff + 0x69, 13) || cli_memstr(UPX_NRV2B, 24, epbuff + 0x69 + 8, 13)) {
+                cli_dbgmsg("cli_scanpe: UPX: Looks like a NRV2B decompression routine\n");
+                upxfn = upx_inflate2b;
+            } else if (cli_memstr(UPX_NRV2D, 24, epbuff + 0x69, 13) || cli_memstr(UPX_NRV2D, 24, epbuff + 0x69 + 8, 13)) {
+                cli_dbgmsg("cli_scanpe: UPX: Looks like a NRV2D decompression routine\n");
+                upxfn = upx_inflate2d;
+            } else if (cli_memstr(UPX_NRV2E, 24, epbuff + 0x69, 13) || cli_memstr(UPX_NRV2E, 24, epbuff + 0x69 + 8, 13)) {
+                cli_dbgmsg("cli_scanpe: UPX: Looks like a NRV2E decompression routine\n");
+                upxfn = upx_inflate2e;
+            }
+        }
+
+        if (!upx_success && upxfn) {
             int skew = cli_readint32(epbuff + 2) - EC32(peinfo->pe_opt.opt32.ImageBase) - peinfo->sections[i + 1].rva;
 
             if (epbuff[1] != '\xbe' || skew <= 0 || skew > 0xfff) {
@@ -3838,11 +3899,11 @@ int cli_scanpe(cli_ctx *ctx)
             }
 
             /* Try skewed first (skew may be zero) */
-            if (upxfn(src + skew, ssize - skew, dest, &dsize, peinfo->sections[i].rva, peinfo->sections[i + 1].rva, peinfo->vep - skew) >= 0) {
+            if (upxfn(src + skew, ssize - skew, dest, &dsize, dest_capacity, peinfo->sections[i].rva, peinfo->sections[i + 1].rva, peinfo->vep - skew) >= 0) {
                 upx_success = 1;
             }
             /* If skew not successful and non-zero, try no skew */
-            else if (skew && (upxfn(src, ssize, dest, &dsize, peinfo->sections[i].rva, peinfo->sections[i + 1].rva, peinfo->vep) >= 0)) {
+            else if (skew && (upxfn(src, ssize, dest, &dsize, dest_capacity, peinfo->sections[i].rva, peinfo->sections[i + 1].rva, peinfo->vep) >= 0)) {
                 upx_success = 1;
             }
 
@@ -3853,7 +3914,7 @@ int cli_scanpe(cli_ctx *ctx)
         }
 
         if (!upx_success && upxfn != upx_inflate2b) {
-            if (upx_inflate2b(src, ssize, dest, &dsize, peinfo->sections[i].rva, peinfo->sections[i + 1].rva, peinfo->vep) == -1 && upx_inflate2b(src + 0x15, ssize - 0x15, dest, &dsize, peinfo->sections[i].rva, peinfo->sections[i + 1].rva, peinfo->vep - 0x15) == -1) {
+            if (upx_inflate2b(src, ssize, dest, &dsize, dest_capacity, peinfo->sections[i].rva, peinfo->sections[i + 1].rva, peinfo->vep) == -1 && upx_inflate2b(src + 0x15, ssize - 0x15, dest, &dsize, dest_capacity, peinfo->sections[i].rva, peinfo->sections[i + 1].rva, peinfo->vep - 0x15) == -1) {
 
                 cli_dbgmsg("cli_scanpe: UPX: NRV2B decompressor failed\n");
             } else {
@@ -3863,7 +3924,7 @@ int cli_scanpe(cli_ctx *ctx)
         }
 
         if (!upx_success && upxfn != upx_inflate2d) {
-            if (upx_inflate2d(src, ssize, dest, &dsize, peinfo->sections[i].rva, peinfo->sections[i + 1].rva, peinfo->vep) == -1 && upx_inflate2d(src + 0x15, ssize - 0x15, dest, &dsize, peinfo->sections[i].rva, peinfo->sections[i + 1].rva, peinfo->vep - 0x15) == -1) {
+            if (upx_inflate2d(src, ssize, dest, &dsize, dest_capacity, peinfo->sections[i].rva, peinfo->sections[i + 1].rva, peinfo->vep) == -1 && upx_inflate2d(src + 0x15, ssize - 0x15, dest, &dsize, dest_capacity, peinfo->sections[i].rva, peinfo->sections[i + 1].rva, peinfo->vep - 0x15) == -1) {
 
                 cli_dbgmsg("cli_scanpe: UPX: NRV2D decompressor failed\n");
             } else {
@@ -3873,37 +3934,12 @@ int cli_scanpe(cli_ctx *ctx)
         }
 
         if (!upx_success && upxfn != upx_inflate2e) {
-            if (upx_inflate2e(src, ssize, dest, &dsize, peinfo->sections[i].rva, peinfo->sections[i + 1].rva, peinfo->vep) == -1 && upx_inflate2e(src + 0x15, ssize - 0x15, dest, &dsize, peinfo->sections[i].rva, peinfo->sections[i + 1].rva, peinfo->vep - 0x15) == -1) {
+            if (upx_inflate2e(src, ssize, dest, &dsize, dest_capacity, peinfo->sections[i].rva, peinfo->sections[i + 1].rva, peinfo->vep) == -1 && upx_inflate2e(src + 0x15, ssize - 0x15, dest, &dsize, dest_capacity, peinfo->sections[i].rva, peinfo->sections[i + 1].rva, peinfo->vep - 0x15) == -1) {
                 cli_dbgmsg("cli_scanpe: UPX: NRV2E decompressor failed\n");
             } else {
                 upx_success = 1;
                 cli_dbgmsg("cli_scanpe: UPX: Successfully decompressed with NRV2E\n");
             }
-        }
-
-        if (cli_memstr(UPX_LZMA2, 20, epbuff + 0x2f, 20)) {
-            uint32_t strictdsize = cli_readint32(epbuff + 0x21), skew = 0;
-            if (ssize > 0x15 && epbuff[0] == '\x60' && epbuff[1] == '\xbe') {
-                // TODO Add EC32
-                skew = cli_readint32(epbuff + 2) - peinfo->sections[i + 1].rva - peinfo->pe_opt.opt32.ImageBase;
-                if (skew != 0x15)
-                    skew = 0;
-            }
-
-            if (strictdsize <= dsize)
-                upx_success = upx_inflatelzma(src + skew, ssize - skew, dest, &strictdsize, peinfo->sections[i].rva, peinfo->sections[i + 1].rva, peinfo->vep, 0x20003) >= 0;
-        } else if (cli_memstr(UPX_LZMA1_FIRST, 8, epbuff + 0x39, 8) && cli_memstr(UPX_LZMA1_SECOND, 8, epbuff + 0x45, 8)) {
-            uint32_t strictdsize = cli_readint32(epbuff + 0x2b), skew = 0;
-            uint32_t properties = cli_readint32(epbuff + 0x41);
-            if (ssize > 0x15 && epbuff[0] == '\x60' && epbuff[1] == '\xbe') {
-                // TODO Add EC32
-                skew = cli_readint32(epbuff + 2) - peinfo->sections[i + 1].rva - peinfo->pe_opt.opt32.ImageBase;
-                if (skew != 0x15)
-                    skew = 0;
-            }
-
-            if (strictdsize <= dsize)
-                upx_success = upx_inflatelzma(src + skew, ssize - skew, dest, &strictdsize, peinfo->sections[i].rva, peinfo->sections[i + 1].rva, peinfo->vep, properties) >= 0;
         }
 
         if (!upx_success) {
