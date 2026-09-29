@@ -627,11 +627,11 @@ int lzxd_decompress(struct lzxd_stream *lzx, off_t out_bytes) {
                 return lzx->error = MSPACK_ERR_DECRUNCH;
               }
               /* j = length from match offset to end of window */
-              j = match_offset - window_posn;
-              if (j > (int) lzx->window_size) {
+              if ((match_offset - window_posn) > lzx->window_size) {
                 D(("match offset beyond window boundaries"))
                 return lzx->error = MSPACK_ERR_DECRUNCH;
               }
+              j = (int) (match_offset - window_posn);
               runsrc = &window[lzx->window_size - j];
               if (j < i) {
                 /* if match goes over the window edge, do two copy runs */
