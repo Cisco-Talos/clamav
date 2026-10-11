@@ -34,7 +34,7 @@ jobs:
         run: rm /usr/bin/link.exe
         shell: bash
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Install Build Tools
         uses: crazy-max/ghaction-chocolatey@v3
@@ -73,7 +73,7 @@ jobs:
     runs-on: macos-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Install Build Tools
         run: brew install bison flex pipx
@@ -124,7 +124,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Update package listings
         run: sudo apt-get update
