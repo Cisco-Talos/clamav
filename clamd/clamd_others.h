@@ -55,7 +55,7 @@ struct fd_buf {
     uint32_t chunksize;
     long quota;
     char *dumpname;
-    time_t timeout_at; /* 0 - no timeout */
+    time_t timeout_at; /* 0 - no timeout, else a clamd_monotonic_time() value */
     jobgroup_t *group;
 };
 
@@ -89,5 +89,6 @@ void fds_remove(struct fd_data *data, int fd);
 void fds_cleanup(struct fd_data *data);
 int fds_poll_recv(struct fd_data *data, int timeout, int check_signals, void *event);
 void fds_free(struct fd_data *data);
+time_t clamd_monotonic_time(void);
 
 #endif
