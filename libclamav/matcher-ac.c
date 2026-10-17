@@ -91,21 +91,25 @@ fail:
     close(lsig_cow_fd);
     lsig_cow_fd = -1;
 }
+static void *lsig_cow_offset_malloc(size_t count, size_t bytes)
+{
+    uint32_t *p = (uint32_t *)malloc(bytes);
+    size_t k;
+    if (!p) return NULL;
+    for (k = 0; k < count; k++) p[k] = CLI_OFF_NONE;
+    return p;
+}
 static void *lsig_cow_offset_alloc(size_t count)
 {
     size_t bytes;
     void *result;
     if (count > SIZE_MAX / sizeof(uint32_t)) return NULL;
     bytes = count * sizeof(uint32_t);
-    if (bytes < LSIG_COW_THRESHOLD || bytes > LSIG_COW_TEMPLATE_BYTES) {
-        uint32_t *p = (uint32_t *)malloc(bytes);
-        size_t k;
-        if (!p) return NULL;
-        for (k = 0; k < count; k++) p[k] = CLI_OFF_NONE;
-        return p;
-    }
+    if (bytes < LSIG_COW_THRESHOLD || bytes > LSIG_COW_TEMPLATE_BYTES)
+        return lsig_cow_offset_malloc(count, bytes);
     if (pthread_once(&lsig_cow_once, lsig_cow_prepare) != 0) return NULL;
-    if (lsig_cow_fd < 0) return NULL;
+    if (lsig_cow_fd < 0)
+        return lsig_cow_offset_malloc(count, bytes);
     result = mmap(NULL, bytes, PROT_READ | PROT_WRITE, MAP_PRIVATE, lsig_cow_fd, 0);
     return result == MAP_FAILED ? NULL : result;
 }
@@ -115,8 +119,10 @@ static void lsig_cow_offset_free(uint32_t *ptr, size_t count)
     if (!ptr) return;
     if (count > SIZE_MAX / sizeof(uint32_t)) return;
     bytes = count * sizeof(uint32_t);
-    if (bytes >= LSIG_COW_THRESHOLD && bytes <= LSIG_COW_TEMPLATE_BYTES) munmap(ptr, bytes);
-    else free(ptr);
+    if (lsig_cow_fd >= 0 && bytes >= LSIG_COW_THRESHOLD && bytes <= LSIG_COW_TEMPLATE_BYTES)
+        munmap(ptr, bytes);
+    else
+        free(ptr);
 }
 /* Template FD intentionally lives until library unload for mapping lifetime. */
 __attribute__((destructor)) static void lsig_cow_shutdown(void)
