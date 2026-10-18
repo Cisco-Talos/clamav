@@ -31,6 +31,7 @@
 #if defined(__linux__)
 #include <sys/mman.h>
 #include <sys/syscall.h>
+#include <sys/resource.h>
 #include <fcntl.h>
 #include <pthread.h>
 #include <limits.h>
@@ -57,17 +58,34 @@
 /* Logical-signature offset arrays: preinitialised copy-on-write template
  * (Linux) with a portable allocation fallback elsewhere. */
 #if defined(__linux__)
-#define LSIG_COW_TEMPLATE_BYTES (128u * 1024u * 1024u)
+/* Fixed, immutable copy-on-write template ceiling. Sized to the largest
+ * observed COW-eligible offset-array allocation (76,051,200 bytes = ~72.5 MiB,
+ * the target/PE root of the full official signature database) with ~10%
+ * headroom. A restrictive RLIMIT_FSIZE below this ceiling is handled by the
+ * guard in lsig_cow_prepare(), which falls back to ordinary allocation. */
+#define LSIG_COW_TEMPLATE_BYTES (80u * 1024u * 1024u)
 #define LSIG_COW_THRESHOLD (8u * 1024u * 1024u)
 static pthread_once_t lsig_cow_once = PTHREAD_ONCE_INIT;
 static int lsig_cow_fd = -1;
 static void lsig_cow_prepare(void)
 {
     void *base;
+    struct rlimit rl;
 #if defined(SYS_memfd_create)
     lsig_cow_fd = (int)syscall(SYS_memfd_create, "clamav-lsig-offset-template", 0x0001U /* MFD_CLOEXEC */);
 #endif
     if (lsig_cow_fd < 0) return;
+
+    /* Growing the template past a restrictive RLIMIT_FSIZE soft limit would
+     * raise SIGXFSZ and terminate the process inside ftruncate() before any
+     * fallback can run. Refuse to create the template in that case so the
+     * caller takes the ordinary malloc path. */
+    if (getrlimit(RLIMIT_FSIZE, &rl) == 0 &&
+        rl.rlim_cur != RLIM_INFINITY &&
+        rl.rlim_cur < (rlim_t)LSIG_COW_TEMPLATE_BYTES) {
+        goto fail;
+    }
+
     if (ftruncate(lsig_cow_fd, LSIG_COW_TEMPLATE_BYTES) != 0) goto fail;
     base = mmap(NULL, LSIG_COW_TEMPLATE_BYTES, PROT_READ | PROT_WRITE,
                 MAP_SHARED, lsig_cow_fd, 0);
