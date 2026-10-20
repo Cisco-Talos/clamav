@@ -751,6 +751,9 @@ int cli_scanxar(cli_ctx *ctx)
                         writelen = bytes;
                         limitret = cli_checklimits("cli_scanxar", ctx, out_size + bytes, 0, 0);
                         if (limitret == CL_EMAXSIZE) {
+                            /* This member will be truncated and not fully scanned. */
+                            emax_reached(ctx);
+
                             uint64_t allowed = writelen;
 
                             if (ctx->engine->maxfilesize) {
