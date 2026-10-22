@@ -1170,6 +1170,21 @@ static int ac_forward_match_branch(const unsigned char *buffer, uint32_t bp, uin
                 match = 0;                                           \
             break;                                                   \
                                                                      \
+        case CLI_MATCH_NOT_BYTE:                                     \
+            if ((unsigned char)(p & 0x00ff) == b)                    \
+                match = 0;                                           \
+            break;                                                   \
+                                                                     \
+        case CLI_MATCH_NOT_NIBBLE_HIGH:                              \
+            if ((unsigned char)(p & 0x00f0) == (b & 0xf0))           \
+                match = 0;                                           \
+            break;                                                   \
+                                                                     \
+        case CLI_MATCH_NOT_NIBBLE_LOW:                               \
+            if ((unsigned char)(p & 0x000f) == (b & 0x0f))           \
+                match = 0;                                           \
+            break;                                                   \
+                                                                     \
         default:                                                     \
             cli_errmsg("ac_findmatch: Unknown metatype 0x%x\n", wc); \
             match = 0;                                               \
@@ -1214,6 +1229,21 @@ static int ac_forward_match_branch(const unsigned char *buffer, uint32_t bp, uin
                                                                                               \
         case CLI_MATCH_NIBBLE_LOW:                                                            \
             if ((unsigned char)(p & 0x000f) != (b & 0x0f))                                    \
+                match = 0;                                                                    \
+            break;                                                                            \
+                                                                                              \
+        case CLI_MATCH_NOT_BYTE:                                                              \
+            if ((unsigned char)(p & 0x00ff) == b)                                             \
+                match = 0;                                                                    \
+            break;                                                                            \
+                                                                                              \
+        case CLI_MATCH_NOT_NIBBLE_HIGH:                                                       \
+            if ((unsigned char)(p & 0x00f0) == (b & 0xf0))                                    \
+                match = 0;                                                                    \
+            break;                                                                            \
+                                                                                              \
+        case CLI_MATCH_NOT_NIBBLE_LOW:                                                        \
+            if ((unsigned char)(p & 0x000f) == (b & 0x0f))                                    \
                 match = 0;                                                                    \
             break;                                                                            \
                                                                                               \
@@ -1406,7 +1436,11 @@ static int ac_backward_match_branch(const unsigned char *buffer, uint32_t bp, ui
     }
 
     /* bp is shifted for left anchor check, thus invalidated as pattern start */
-    if (!(pattern->ch[0] & CLI_MATCH_IGNORE)) {
+    /*
+     * Compare the complete tag: negation tags share bits with
+     * CLI_MATCH_IGNORE but must still be verified after a gap.
+     */
+    if ((pattern->ch[0] & CLI_MATCH_METADATA) != CLI_MATCH_IGNORE) {
         if (pattern->ch_mindist[0] + (uint32_t)1 > bp)
             return 0;
 
@@ -1485,7 +1519,11 @@ static int ac_forward_match_branch(const unsigned char *buffer, uint32_t bp, uin
     }
 
     /* bp is shifted for right anchor check, thus invalidated as pattern right-side */
-    if (!(pattern->ch[1] & CLI_MATCH_IGNORE)) {
+    /*
+     * Compare the complete tag: negation tags share bits with
+     * CLI_MATCH_IGNORE but must still be verified after a gap.
+     */
+    if ((pattern->ch[1] & CLI_MATCH_METADATA) != CLI_MATCH_IGNORE) {
         bp += pattern->ch_mindist[1];
 
         for (i = pattern->ch_mindist[1]; i <= pattern->ch_maxdist[1]; i++) {
@@ -2441,7 +2479,11 @@ inline static int ac_analyze_expr(char *hexstr, int *fixed_len, int *sub_len)
             len = 0;
             numexpr++;
         } else {
-            if (hexstr[i] == '?')
+            /*
+             * A negated token has fixed width, but not a fixed value. Route
+             * alternates containing it through predicate-aware verification.
+             */
+            if (hexstr[i] == '?' || hexstr[i] == '~')
                 flen = 0;
             len++;
         }
@@ -2462,104 +2504,55 @@ inline static int ac_analyze_expr(char *hexstr, int *fixed_len, int *sub_len)
     return numexpr;
 }
 
+static inline int ac_alt_unit_matches(uint16_t unit, unsigned char byte)
+{
+    switch (unit & CLI_MATCH_METADATA) {
+        case CLI_MATCH_CHAR:
+            return (unit & 0xff) == byte;
+        case CLI_MATCH_NOCASE:
+            return CLI_NOCASE(unit & 0xff) == CLI_NOCASE(byte);
+        case CLI_MATCH_IGNORE:
+            return 1;
+        case CLI_MATCH_NIBBLE_HIGH:
+            return (unit & 0xf0) == (byte & 0xf0);
+        case CLI_MATCH_NIBBLE_LOW:
+            return (unit & 0x0f) == (byte & 0x0f);
+        case CLI_MATCH_NOT_BYTE:
+            return (unit & 0xff) != byte;
+        case CLI_MATCH_NOT_NIBBLE_HIGH:
+            return (unit & 0xf0) != (byte & 0xf0);
+        case CLI_MATCH_NOT_NIBBLE_LOW:
+            return (unit & 0x0f) != (byte & 0x0f);
+        default:
+            /* Unknown units are handled conservatively as overlapping. */
+            return 1;
+    }
+}
+
+/* Return zero when two alternate strings can match the same bytes. */
 inline static int ac_uicmp(uint16_t *a, size_t alen, uint16_t *b, size_t blen, int *wild)
 {
-    uint16_t awild, bwild, side_wild;
     size_t i, minlen = MIN(alen, blen);
-
-    side_wild = 0;
+    int differs = alen != blen;
 
     for (i = 0; i < minlen; i++) {
-        awild = a[i] & CLI_MATCH_WILDCARD;
-        bwild = b[i] & CLI_MATCH_WILDCARD;
+        unsigned int byte;
 
-        if (awild == bwild) {
-            switch (awild) {
-                case CLI_MATCH_CHAR:
-                    if ((a[i] & 0xff) != (b[i] & 0xff)) {
-                        return (b[i] & 0xff) - (a[i] & 0xff);
-                    }
-                    break;
-                case CLI_MATCH_IGNORE:
-                    break;
-                case CLI_MATCH_NIBBLE_HIGH:
-                    if ((a[i] & 0xf0) != (b[i] & 0xf0)) {
-                        return (b[i] & 0xf0) - (a[i] & 0xf0);
-                    }
-                    break;
-                case CLI_MATCH_NIBBLE_LOW:
-                    if ((a[i] & 0x0f) != (b[i] & 0x0f)) {
-                        return (b[i] & 0x0f) - (a[i] & 0x0f);
-                    }
-                    break;
-                default:
-                    cli_errmsg("ac_uicmp: unhandled wildcard type\n");
-                    return 1;
-            }
-        } else {                           /* not identical wildcard types */
-            if (awild == CLI_MATCH_CHAR) { /* b is only wild */
-                switch (bwild) {
-                    case CLI_MATCH_IGNORE:
-                        side_wild |= 2;
-                        break;
-                    case CLI_MATCH_NIBBLE_HIGH:
-                        if ((a[i] & 0xf0) != (b[i] & 0xf0)) {
-                            return (b[i] & 0xf0) - (a[i] & 0xff);
-                        }
-                        side_wild |= 2;
-                        break;
-                    case CLI_MATCH_NIBBLE_LOW:
-                        if ((a[i] & 0x0f) != (b[i] & 0x0f)) {
-                            return (b[i] & 0x0f) - (a[i] & 0xff);
-                        }
-                        side_wild |= 2;
-                        break;
-                    default:
-                        cli_errmsg("ac_uicmp: unhandled wildcard type\n");
-                        return -1;
-                }
-            } else if (bwild == CLI_MATCH_CHAR) { /* a is only wild */
-                switch (awild) {
-                    case CLI_MATCH_IGNORE:
-                        side_wild |= 1;
-                        break;
-                    case CLI_MATCH_NIBBLE_HIGH:
-                        if ((a[i] & 0xf0) != (b[i] & 0xf0)) {
-                            return (b[i] & 0xff) - (a[i] & 0xf0);
-                        }
-                        side_wild |= 1;
-                        break;
-                    case CLI_MATCH_NIBBLE_LOW:
-                        if ((a[i] & 0x0f) != (b[i] & 0x0f)) {
-                            return (b[i] & 0xff) - (a[i] & 0x0f);
-                        }
-                        side_wild |= 1;
-                        break;
-                    default:
-                        cli_errmsg("ac_uicmp: unhandled wild typing\n");
-                        return 1;
-                }
-            } else { /* not identical, both wildcards */
-                if (awild == CLI_MATCH_IGNORE || bwild == CLI_MATCH_IGNORE) {
-                    if (awild == CLI_MATCH_IGNORE) {
-                        side_wild |= 1;
-                    } else if (bwild == CLI_MATCH_IGNORE) {
-                        side_wild |= 2;
-                    }
-                } else {
-                    /* only high and low nibbles should be left here */
-                    side_wild |= 3;
-                }
-            }
+        if (a[i] != b[i])
+            differs = 1;
+
+        for (byte = 0; byte <= 0xff; byte++) {
+            if (ac_alt_unit_matches(a[i], (unsigned char)byte) &&
+                ac_alt_unit_matches(b[i], (unsigned char)byte))
+                break;
         }
 
-        /* both sides contain a wildcard that contains the other, therefore unique by wildcards */
-        if (side_wild == 3)
+        if (byte > 0xff)
             return 1;
     }
 
     if (wild)
-        *wild = side_wild;
+        *wild = differs;
     return 0;
 }
 
@@ -2584,14 +2577,22 @@ inline static int ac_addspecial_add_alt_node(const char *subexpr, uint8_t sigopt
         return CL_EMEM;
     }
 
-    s = CLI_MPOOL_HEX2UI(root->mempool, subexpr);
+    {
+        size_t decoded_len = 0;
+
+        s = CLI_MPOOL_HEX2UI_LEN(root->mempool, subexpr, &decoded_len);
+        if (decoded_len > UINT16_MAX) {
+            MPOOL_FREE(root->mempool, s);
+            s = NULL;
+        }
+        newnode->len = (uint16_t)decoded_len;
+    }
     if (!s) {
         MPOOL_FREE(root->mempool, newnode);
         return CL_EMALFDB;
     }
 
     newnode->str    = s;
-    newnode->len    = (uint16_t)strlen(subexpr) / 2;
     newnode->unique = 1;
 
     /* setting nocase match */
@@ -2616,6 +2617,10 @@ inline static int ac_addspecial_add_alt_node(const char *subexpr, uint8_t sigopt
                 MPOOL_FREE(root->mempool, newnode->str);
                 MPOOL_FREE(root->mempool, newnode);
                 return CL_SUCCESS;
+            } else {
+                /* Overlapping alternatives of equal length still need suffix backtracking. */
+                newnode->unique = 0;
+                ins->unique     = 0;
             }
         } /* TODO - possible sorting of altstr uniques and derivative groups? */
 
@@ -2848,6 +2853,7 @@ cl_error_t cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
     struct cli_ac_patt *new;
     char *pt, *pt2, *hex = NULL, *hexcpy = NULL;
     uint16_t i, j, ppos = 0, pend, *dec, nzpos = 0;
+    size_t decoded_len;
     uint8_t wprefix = 0, zprefix = 1, plen = 0, nzplen = 0;
     struct cli_ac_special *newspecial, **newtable;
     int ret, error = CL_SUCCESS;
@@ -2919,14 +2925,15 @@ cl_error_t cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
                 break;
             }
 
-            if (strlen(hex) == 2) {
+            if (strlen(hex) == 2 || strlen(hex) == 3) {
                 if (i) {
                     error = CL_EMALFDB;
                     break;
                 }
 
-                dec = cli_hex2ui(hex);
-                if (!dec) {
+                dec = cli_hex2ui_len(hex, &decoded_len);
+                if (!dec || decoded_len != 1) {
+                    free(dec);
                     error = CL_EMALFDB;
                     break;
                 }
@@ -2939,10 +2946,11 @@ cl_error_t cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
                 new->ch_mindist[i] = n1;
                 new->ch_maxdist[i] = n2;
                 hex                = pt2;
-            } else if (strlen(pt2) == 2) {
+            } else if (strlen(pt2) == 2 || strlen(pt2) == 3) {
                 i   = 1;
-                dec = cli_hex2ui(pt2);
-                if (!dec) {
+                dec = cli_hex2ui_len(pt2, &decoded_len);
+                if (!dec || decoded_len != 1) {
+                    free(dec);
                     error = CL_EMALFDB;
                     break;
                 }
@@ -3134,7 +3142,7 @@ cl_error_t cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
     /*
      * Convert the hex string pattern to a uint16_t* pattern (flags + byte) patterns.
      */
-    new->pattern = CLI_MPOOL_HEX2UI(root->mempool, hex ? hex : hexsig);
+    new->pattern = CLI_MPOOL_HEX2UI_LEN(root->mempool, hex ? hex : hexsig, &decoded_len);
     if (new->pattern == NULL) {
         if (new->special)
             mpool_ac_free_special(root->mempool, new);
@@ -3144,7 +3152,17 @@ cl_error_t cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
         return CL_EMALFDB;
     }
 
-    new->length[0] = (uint16_t)strlen(hex ? hex : hexsig) / 2;
+    if (decoded_len > UINT16_MAX) {
+        if (new->special)
+            mpool_ac_free_special(root->mempool, new);
+
+        MPOOL_FREE(root->mempool, new->pattern);
+        MPOOL_FREE(root->mempool, new);
+        free(hex);
+        return CL_EMALFDB;
+    }
+
+    new->length[0] = (uint16_t)decoded_len;
     if (new->length[0] < root->ac_mindepth) {
         cli_errmsg("cli_ac_addsig: Subpattern in signature is shorter than the minimum depth of the AC trie. (%u < %u)\n", new->length[0], root->ac_mindepth);
         if (new->special)
@@ -3157,7 +3175,9 @@ cl_error_t cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
     }
 
     for (i = 0, j = 0; i < new->length[0]; i++) {
-        if ((new->pattern[i] & CLI_MATCH_METADATA) == CLI_MATCH_SPECIAL) {
+        uint16_t metadata = new->pattern[i] & CLI_MATCH_METADATA;
+
+        if (metadata == CLI_MATCH_SPECIAL) {
             new->length[1] += new->special_table[j]->len[0];
             new->length[2] += new->special_table[j]->len[1];
             j++;

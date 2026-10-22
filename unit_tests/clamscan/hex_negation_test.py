@@ -1,0 +1,274 @@
+# Copyright (C) 2026 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+
+"""
+Run native and YARA hexadecimal negation tests.
+"""
+
+import sys
+
+sys.path.append('../unit_tests')
+import testcase
+
+
+class TC(testcase.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        super(TC, cls).setUpClass()
+
+        samples = {
+            'not-byte-match.bin': b'A\x01BCXX',
+            'not-byte-no-match.bin': b'A\x00BCXX',
+            'not-low-match.bin': b'A\x01BCXX',
+            'not-low-no-match.bin': b'A\x10BCXX',
+            'not-high-match.bin': b'A\x10BCXX',
+            'not-high-no-match.bin': b'A\x0fBCXX',
+            'prefix-match.bin': b'\x01ABCXX',
+            'prefix-no-match.bin': b'\x00ABCXX',
+            'suffix-match.bin': b'XXABC\x01',
+            'suffix-no-match.bin': b'XXABC\x00',
+            'gap-match.bin': b'AAxyz\x01BC',
+            'mixed-match.bin': b'AXYABCXX',
+            'logical-match.bin': b'AAxyz\x01BC',
+            'legacy-special-match.bin': b'AA\x01BBXX',
+            'legacy-special-no-match.bin': b'AA\x00BBXX',
+            'boundary-marker-match.bin': b'xx AB xx',
+            'line-marker-match.bin': b'xx\nAB\nxx',
+            'word-marker-match.bin': b'xx!AB!xx',
+            'alternate-negation-match.bin': b'AB\x02DEF',
+            'alternate-negation-no-match.bin': b'AB\x00CEF',
+            'wide-negation-match.bin': b'A\x00\x01\x00B\x00',
+            'prefilter-negation-match.bin': b'\x02\x00\x00XXX',
+            'prefilter-negation-no-match.bin': b'\x01\x00\x00XXX',
+        }
+        for name, data in samples.items():
+            (TC.path_tmp / name).write_bytes(data)
+
+        native_signatures = {
+            'not-byte.ndb': 'Native.NotByte:0:*:41~004243\n',
+            'not-low.ndb': 'Native.NotLowNibble:0:*:41~?04243\n',
+            'not-high.ndb': 'Native.NotHighNibble:0:*:41~0?4243\n',
+            'prefix.ndb': 'Native.Prefix:0:0:~00414243\n',
+            'suffix.ndb': 'Native.Suffix:0:2:414243~00\n',
+            'gap.ndb': 'Native.Gap:0:*:4141*~004243\n',
+            'mixed.ndb': 'Native.Mixed:0:*:41??~?04?4243\n',
+            'legacy-special.ndb': 'Native.LegacySpecial:0:*:4141!(00)4242\n',
+            'boundary-marker.ndb': 'Native.BoundaryMarker:0:*:(B)4142(B)\n',
+            'line-marker.ndb': 'Native.LineMarker:0:*:(L)4142(L)\n',
+            'word-marker.ndb': 'Native.WordMarker:0:*:(W)4142(W)\n',
+            'alternate-negation.ndb': 'Native.AlternateNegation:0:*:4142(~00|~0144)4546\n',
+            'prefilter-negation.ndb': 'Native.PrefilterNegation:0:*:~010000\n',
+        }
+        for name, signature in native_signatures.items():
+            (TC.path_tmp / name).write_text(signature)
+
+        (TC.path_tmp / 'native-invalid-no-anchor-prefix.ndb').write_text(
+            'Native.Invalid.NoAnchorPrefix:0:*:~0041\n'
+        )
+        (TC.path_tmp / 'native-invalid-no-anchor-suffix.ndb').write_text(
+            'Native.Invalid.NoAnchorSuffix:0:*:41~00\n'
+        )
+
+        (TC.path_tmp / 'wide-negation.ldb').write_text(
+            'Native.WideNegation;Engine:90-255,Target:0;0;41~0042:*:w\n'
+        )
+
+        (TC.path_tmp / 'logical.ldb').write_text(
+            'Native.Logical;Engine:90-255,Target:0;0&1;4141;~004243\n'
+        )
+
+        yara_patterns = {
+            'not-byte': '~00 42 43',
+            'not-low': '~?0 42 43',
+            'not-high': '~0? 42 43',
+        }
+        for name, pattern in yara_patterns.items():
+            (TC.path_tmp / f'yara-{name}.yara').write_text(
+                f'''rule yara_{name.replace("-", "_")}
+{{
+    strings:
+        $a = {{ 41 {pattern} }}
+    condition:
+        $a
+}}
+'''
+            )
+
+        invalid_yara_patterns = {
+            'bare': '41 42 ~',
+            'all-wildcard': '41 ~?? 42',
+            'alternate': '41 ~( 42 | 43 ) 44',
+            'double': '41 ~~00 42',
+            'jump': '41 ~[1-2] 42',
+        }
+        for name, pattern in invalid_yara_patterns.items():
+            (TC.path_tmp / f'yara-invalid-{name}.yara').write_text(
+                f'''rule yara_invalid_{name.replace("-", "_")}
+{{
+    strings:
+        $a = {{ {pattern} }}
+    condition:
+        $a
+}}
+'''
+            )
+
+    @classmethod
+    def tearDownClass(cls):
+        super(TC, cls).tearDownClass()
+
+    def setUp(self):
+        super(TC, self).setUp()
+
+    def tearDown(self):
+        super(TC, self).tearDown()
+        self.verify_valgrind_log()
+
+    def scan(self, database, sample, extra_args=''):
+        command = '{valgrind} {valgrind_args} {clamscan} {extra_args} -d {path_db} {testfile}'.format(
+            valgrind=TC.valgrind,
+            valgrind_args=TC.valgrind_args,
+            clamscan=TC.clamscan,
+            extra_args=extra_args,
+            path_db=TC.path_tmp / database,
+            testfile=TC.path_tmp / sample,
+        )
+        return self.execute_command(command)
+
+    def verify_match(self, database, sample, signature_name):
+        output = self.scan(database, sample)
+        assert output.ec == 1
+        self.verify_output(
+            output.out,
+            expected=[
+                f'{sample}: {signature_name}.UNOFFICIAL FOUND',
+                'Infected files: 1',
+            ],
+        )
+
+    def verify_no_match(self, database, sample):
+        output = self.scan(database, sample)
+        assert output.ec == 0
+        self.verify_output(output.out, expected=[f'{sample}: OK'], unexpected=['FOUND'])
+
+    def test_native_negated_byte(self):
+        self.step_name('Test native exact-byte negation')
+        self.verify_match('not-byte.ndb', 'not-byte-match.bin', 'Native.NotByte')
+        self.verify_no_match('not-byte.ndb', 'not-byte-no-match.bin')
+
+    def test_native_negated_nibbles(self):
+        self.step_name('Test native high- and low-nibble negation')
+        self.verify_match('not-low.ndb', 'not-low-match.bin', 'Native.NotLowNibble')
+        self.verify_no_match('not-low.ndb', 'not-low-no-match.bin')
+        self.verify_match('not-high.ndb', 'not-high-match.bin', 'Native.NotHighNibble')
+        self.verify_no_match('not-high.ndb', 'not-high-no-match.bin')
+
+    def test_native_negation_at_file_boundaries(self):
+        self.step_name('Test native negation at the start and end of a file')
+        self.verify_match('prefix.ndb', 'prefix-match.bin', 'Native.Prefix')
+        self.verify_no_match('prefix.ndb', 'prefix-no-match.bin')
+        self.verify_match('suffix.ndb', 'suffix-match.bin', 'Native.Suffix')
+        self.verify_no_match('suffix.ndb', 'suffix-no-match.bin')
+
+    def test_native_negation_with_gap_and_wildcards(self):
+        self.step_name('Test native negation with gaps and ordinary wildcards')
+        self.verify_match('gap.ndb', 'gap-match.bin', 'Native.Gap')
+        self.verify_match('mixed.ndb', 'mixed-match.bin', 'Native.Mixed')
+
+    def test_native_negation_alternates_backtrack(self):
+        self.step_name('Test overlapping negated alternatives backtrack before suffix verification')
+        self.verify_match('alternate-negation.ndb', 'alternate-negation-match.bin', 'Native.AlternateNegation')
+        self.verify_no_match('alternate-negation.ndb', 'alternate-negation-no-match.bin')
+
+    def test_native_negation_wide_modifier(self):
+        self.step_name('Test wide modifier preserves negated units')
+        self.verify_match('wide-negation.ldb', 'wide-negation-match.bin', 'Native.WideNegation')
+
+    def test_native_negation_prefilter_enumerates_all_values(self):
+        self.step_name('Test prefilter does not drop accepted values after a negated q-gram')
+        self.verify_match('prefilter-negation.ndb', 'prefilter-negation-match.bin', 'Native.PrefilterNegation')
+        self.verify_no_match('prefilter-negation.ndb', 'prefilter-negation-no-match.bin')
+
+    def test_native_negation_requires_ac_anchor(self):
+        self.step_name('Test negation-only anchors respect the AC minimum depth')
+        for database in ('native-invalid-no-anchor-prefix.ndb', 'native-invalid-no-anchor-suffix.ndb'):
+            output = self.scan(database, 'not-byte-match.bin')
+            assert output.ec == 2
+
+    def test_native_negation_in_logical_signature(self):
+        self.step_name('Test native negation in a multi-part logical signature')
+        self.verify_match('logical.ldb', 'logical-match.bin', 'Native.Logical')
+
+    def test_yara_negation_semantics(self):
+        self.step_name('Test YARA byte and nibble negation semantics')
+        cases = [
+            ('yara-not-byte.yara', 'not-byte-match.bin', 'YARA.yara_not_byte'),
+            ('yara-not-low.yara', 'not-low-match.bin', 'YARA.yara_not_low'),
+            ('yara-not-high.yara', 'not-high-match.bin', 'YARA.yara_not_high'),
+        ]
+        for database, sample, signature_name in cases:
+            self.verify_match(database, sample, signature_name)
+
+        self.verify_no_match('yara-not-byte.yara', 'not-byte-no-match.bin')
+        self.verify_no_match('yara-not-low.yara', 'not-low-no-match.bin')
+        self.verify_no_match('yara-not-high.yara', 'not-high-no-match.bin')
+
+    def test_invalid_yara_negation_is_rejected(self):
+        self.step_name('Test invalid YARA negation forms')
+        for name in ('bare', 'all-wildcard', 'alternate', 'double', 'jump'):
+            output = self.scan(f'yara-invalid-{name}.yara', 'not-byte-match.bin')
+            assert output.ec == 2
+            self.verify_output(
+                output.err,
+                expected=['Invalid YARA hex negation'],
+            )
+
+    def test_invalid_native_negation_is_rejected(self):
+        self.step_name('Test invalid native negation forms')
+        invalid_signatures = {
+            'bare': '4142~',
+            'all-wildcard': '4142~??43',
+            'alternate': '41~(42|43)44',
+            'double': '4142~~0043',
+            'jump': '4142~[1-2]4344',
+        }
+        for name, pattern in invalid_signatures.items():
+            database = TC.path_tmp / f'native-invalid-{name}.ndb'
+            database.write_text(f'Native.Invalid.{name}:0:*:{pattern}\n')
+            output = self.scan(database.name, 'not-byte-match.bin')
+            assert output.ec == 2
+            self.verify_output(output.err, expected=['Invalid hex negation'])
+
+    def test_native_negation_nocase_is_rejected(self):
+        self.step_name('Test nocase rejects negated hex units')
+        database = TC.path_tmp / 'native-invalid-nocase.ldb'
+        database.write_text('Native.Invalid.nocase;Engine:90-255,Target:0;0;4142~0043:*:i\n')
+        output = self.scan(database.name, 'not-byte-match.bin')
+        assert output.ec == 2
+        self.verify_output(
+            output.err,
+            expected=['nocase modifier \\[i\\] is not supported for negated hex units'],
+        )
+
+    def test_existing_special_syntax_is_unchanged(self):
+        self.step_name('Test existing negated alternates and marker classes')
+        self.verify_match(
+            'legacy-special.ndb',
+            'legacy-special-match.bin',
+            'Native.LegacySpecial',
+        )
+        self.verify_no_match('legacy-special.ndb', 'legacy-special-no-match.bin')
+        self.verify_match(
+            'boundary-marker.ndb',
+            'boundary-marker-match.bin',
+            'Native.BoundaryMarker',
+        )
+        self.verify_match(
+            'line-marker.ndb',
+            'line-marker-match.bin',
+            'Native.LineMarker',
+        )
+        self.verify_match(
+            'word-marker.ndb',
+            'word-marker-match.bin',
+            'Native.WordMarker',
+        )

@@ -72,77 +72,116 @@ static inline int cli_hex2int(const char c)
     return hex_chars[(const unsigned char)c];
 }
 
-int cli_realhex2ui(const char *hex, uint16_t *ptr, unsigned int len)
+int cli_realhex2ui(const char *hex, uint16_t *ptr, unsigned int len, size_t *decoded_len)
 {
     uint16_t val;
-    unsigned int i;
+    size_t count   = 0;
+    unsigned int i = 0;
     int c;
 
-    for (i = 0; i < len; i += 2) {
+    while (i < len) {
         val = 0;
 
-        if (hex[i] == '?' && hex[i + 1] == '?') {
-            val |= CLI_MATCH_IGNORE;
+        if (hex[i] == '~') {
+            int high, low;
 
-        } else if (hex[i + 1] == '?') {
-            if ((c = cli_hex2int(hex[i])) >= 0) {
-                val = c << 4;
-            } else {
+            if (i + 2 >= len || (hex[i + 1] == '?' && hex[i + 2] == '?')) {
+                cli_errmsg("cli_realhex2ui(): Invalid hex negation near: %s\n", &hex[i]);
                 return 0;
             }
-            val |= CLI_MATCH_NIBBLE_HIGH;
 
-        } else if (hex[i] == '?') {
-            if ((c = cli_hex2int(hex[i + 1])) >= 0) {
-                val = c;
+            high = cli_hex2int(hex[i + 1]);
+            low  = cli_hex2int(hex[i + 2]);
+
+            if (hex[i + 1] == '?' && low >= 0) {
+                val = CLI_MATCH_NOT_NIBBLE_LOW | low;
+            } else if (high >= 0 && hex[i + 2] == '?') {
+                val = CLI_MATCH_NOT_NIBBLE_HIGH | (high << 4);
+            } else if (high >= 0 && low >= 0) {
+                val = CLI_MATCH_NOT_BYTE | (high << 4) | low;
             } else {
+                cli_errmsg("cli_realhex2ui(): Invalid hex negation near: %s\n", &hex[i]);
                 return 0;
             }
-            val |= CLI_MATCH_NIBBLE_LOW;
 
-        } else if (hex[i] == '(') {
-            val |= CLI_MATCH_SPECIAL;
-
+            i += 3;
         } else {
-            if ((c = cli_hex2int(hex[i])) >= 0) {
-                val = c;
-                if ((c = cli_hex2int(hex[i + 1])) >= 0) {
-                    val = (val << 4) + c;
+            if (i + 1 >= len) {
+                cli_errmsg("cli_realhex2ui(): Incomplete hex byte near: %s\n", &hex[i]);
+                return 0;
+            }
+
+            if (hex[i] == '?' && hex[i + 1] == '?') {
+                val |= CLI_MATCH_IGNORE;
+
+            } else if (hex[i + 1] == '?') {
+                if ((c = cli_hex2int(hex[i])) >= 0) {
+                    val = c << 4;
                 } else {
                     return 0;
                 }
+                val |= CLI_MATCH_NIBBLE_HIGH;
+
+            } else if (hex[i] == '?') {
+                if ((c = cli_hex2int(hex[i + 1])) >= 0) {
+                    val = c;
+                } else {
+                    return 0;
+                }
+                val |= CLI_MATCH_NIBBLE_LOW;
+
+            } else if (hex[i] == '(') {
+                val |= CLI_MATCH_SPECIAL;
+
             } else {
-                return 0;
+                if ((c = cli_hex2int(hex[i])) >= 0) {
+                    val = c;
+                    if ((c = cli_hex2int(hex[i + 1])) >= 0) {
+                        val = (val << 4) + c;
+                    } else {
+                        return 0;
+                    }
+                } else {
+                    return 0;
+                }
             }
+
+            i += 2;
         }
 
-        *ptr++ = val;
+        ptr[count++] = val;
     }
+
+    if (decoded_len)
+        *decoded_len = count;
+
     return 1;
 }
 
-uint16_t *cli_hex2ui(const char *hex)
+uint16_t *cli_hex2ui_len(const char *hex, size_t *decoded_len)
 {
     uint16_t *str;
     unsigned int len;
 
-    len = strlen(hex);
+    if (decoded_len)
+        *decoded_len = 0;
 
-    if (len % 2 != 0) {
-        cli_errmsg("cli_hex2ui(): Malformed hexstring: %s (length: %u)\n", hex,
-                   len);
-        return NULL;
-    }
+    len = strlen(hex);
 
     str = cli_max_calloc((len / 2) + 1, sizeof(uint16_t));
     if (!str)
         return NULL;
 
-    if (cli_realhex2ui(hex, str, len))
+    if (cli_realhex2ui(hex, str, len, decoded_len))
         return str;
 
     free(str);
     return NULL;
+}
+
+uint16_t *cli_hex2ui(const char *hex)
+{
+    return cli_hex2ui_len(hex, NULL);
 }
 
 char *cli_hex2str(const char *hex)
