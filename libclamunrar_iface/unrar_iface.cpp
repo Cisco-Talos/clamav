@@ -79,6 +79,15 @@ extern "C" {
 
 int CALLBACK CallbackProc(UINT msg, LPARAM UserData, LPARAM P1, LPARAM P2);
 
+typedef struct unrar_buffer_context_tag {
+    uint8_t* buffer;
+    size_t capacity;
+    size_t written;
+    int overflow;
+} unrar_buffer_context_t;
+
+static int CALLBACK BufferCallbackProc(UINT msg, LPARAM UserData, LPARAM P1, LPARAM P2);
+
 static void unrar_dbgmsg_internal(const char* str, ...)
 {
     va_list ap;
@@ -158,6 +167,10 @@ static cl_unrar_error_t unrar_retcode(int retcode)
             unrar_dbgmsg("unrar_retcode: Error attempting to unpack the reference record without its source file.\n");
             break;
         }
+        case ERAR_LARGE_DICT: {
+            unrar_dbgmsg("unrar_retcode: Dictionary exceeds the configured size limit.\n");
+            break;
+        }
         default: {
             unrar_dbgmsg("unrar_retcode: Unexpected error code: %d\n", retcode);
         }
@@ -216,7 +229,14 @@ cl_unrar_error_t unrar_open(const char* filename, void** hArchive, char** commen
     }
     archiveData->ArcName  = (char*)filename;
     archiveData->OpenMode = RAR_OM_EXTRACT;
-    archiveData->OpFlags |= ROADOF_KEEPBROKEN;
+    /*
+     * ClamAV can ask UnRAR to open a temporary archive while the descriptor
+     * used to create it is still open.  The previously vendored UnRAR release
+     * always enabled shared access, but UnRAR 7.23 requires DLL callers to
+     * request it explicitly.  Without this flag, streamed RAR scans fail to
+     * reopen the temporary archive on Windows.
+     */
+    archiveData->OpFlags |= ROADOF_KEEPBROKEN | ROADOF_SHARED;
     archiveData->CmtBuf = (char*)calloc(1, CMTBUFSIZE);
     if (archiveData->CmtBuf == NULL) {
         unrar_dbgmsg("unrar_open: Not enough memory to allocate main archive header comment buffer.\n");
@@ -384,9 +404,12 @@ cl_unrar_error_t unrar_extract_file(void* hArchive, const char* destPath, char* 
     if (NULL != outputBuffer) {
         LPARAM UserData = (LPARAM)outputBuffer;
         RARSetCallback(hArchive, CallbackProc, UserData);
+    } else {
+        RARSetCallback(hArchive, CallbackProc, 0);
     }
 
-    process_file_ret = RARProcessFile(hArchive, RAR_EXTRACT, NULL, (char*)destPath);
+    process_file_ret = RARProcessFile(hArchive, RAR_EXTRACT_CURRENT, NULL, (char*)destPath);
+    RARSetCallback(hArchive, CallbackProc, 0);
     if (ERAR_BAD_DATA == process_file_ret) {
         unrar_dbgmsg("unrar_extract_file: Warning: Bad data/Invalid CRC. Attempting to scan anyways...\n");
     } else if (ERAR_SUCCESS != process_file_ret) {
@@ -404,6 +427,59 @@ cl_unrar_error_t unrar_extract_file(void* hArchive, const char* destPath, char* 
 
 done:
 
+    return status;
+}
+
+/**
+ * @brief Extract the current archive member to a bounded memory buffer.
+ *
+ * @param hArchive Archive handle positioned at a file header.
+ * @param buffer Destination buffer.
+ * @param capacity Destination buffer capacity in bytes.
+ * @param written Receives the number of bytes written.
+ * @return UNRAR_OK on success or an appropriate private interface error.
+ */
+cl_unrar_error_t unrar_extract_file_to_buffer(void* hArchive, uint8_t* buffer, size_t capacity, size_t* written)
+{
+    cl_unrar_error_t status = UNRAR_ERR;
+    int process_file_ret    = 0;
+    unrar_buffer_context_t context;
+
+    if (NULL != written) {
+        *written = 0;
+    }
+
+    if (NULL == hArchive || NULL == buffer || 0 == capacity || NULL == written) {
+        unrar_dbgmsg("unrar_extract_file_to_buffer: Invalid arguments.\n");
+        goto done;
+    }
+
+    context.buffer   = buffer;
+    context.capacity = capacity;
+    context.written  = 0;
+    context.overflow = 0;
+
+    RARSetCallback(hArchive, BufferCallbackProc, (LPARAM)&context);
+    process_file_ret = RARProcessFile(hArchive, RAR_TEST_CURRENT, NULL, NULL);
+    RARSetCallback(hArchive, CallbackProc, 0);
+
+    *written = context.written;
+    if (context.overflow) {
+        unrar_dbgmsg("unrar_extract_file_to_buffer: Output exceeded the provided buffer.\n");
+        goto done;
+    }
+
+    if (ERAR_BAD_DATA == process_file_ret) {
+        unrar_dbgmsg("unrar_extract_file_to_buffer: Warning: Bad data/Invalid CRC. Attempting to scan anyways...\n");
+    } else if (ERAR_SUCCESS != process_file_ret) {
+        status = unrar_retcode(process_file_ret);
+        goto done;
+    }
+
+    unrar_dbgmsg("unrar_extract_file_to_buffer: Extracted %zu bytes to memory.\n", context.written);
+    status = UNRAR_OK;
+
+done:
     return status;
 }
 
@@ -430,6 +506,41 @@ cl_unrar_error_t unrar_skip_file(void* hArchive)
 done:
 
     return status;
+}
+
+static int CALLBACK BufferCallbackProc(UINT msg, LPARAM UserData, LPARAM P1, LPARAM P2)
+{
+    unrar_buffer_context_t* context = (unrar_buffer_context_t*)UserData;
+    size_t chunk_size;
+
+    if (UCM_PROCESSDATA != msg) {
+        return CallbackProc(msg, 0, P1, P2);
+    }
+
+    if (NULL == context || NULL == context->buffer || P2 < 0 ||
+        (0 != P2 && 0 == P1)) {
+        if (NULL != context) {
+            context->overflow = 1;
+        }
+        unrar_dbgmsg("BufferCallbackProc: Invalid output chunk.\n");
+        return -1;
+    }
+
+    chunk_size = (size_t)P2;
+    if (context->written > context->capacity ||
+        chunk_size > context->capacity - context->written) {
+        context->overflow = 1;
+        unrar_dbgmsg("BufferCallbackProc: Output exceeds the provided buffer.\n");
+        return -1;
+    }
+
+    if (0 != chunk_size) {
+        memcpy(context->buffer + context->written, (const void*)P1, chunk_size);
+        context->written += chunk_size;
+    }
+
+    unrar_dbgmsg("BufferCallbackProc: Copied %zu bytes to the provided buffer.\n", chunk_size);
+    return 1;
 }
 
 void unrar_close(void* hArchive)
@@ -479,6 +590,11 @@ int CALLBACK CallbackProc(UINT msg, LPARAM UserData, LPARAM P1, LPARAM P2)
 
             status = 1;
             unrar_dbgmsg("CallbackProc: Password required, attempting empty password.\n");
+            break;
+        }
+        case UCM_LARGEDICT: {
+            status = -1;
+            unrar_dbgmsg("CallbackProc: Rejecting a dictionary larger than 1 GiB.\n");
             break;
         }
         default: {

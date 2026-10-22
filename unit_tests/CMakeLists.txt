@@ -120,17 +120,11 @@ target_link_libraries(check_clamav
         ClamAV::common
         libcheck::check)
 if (ENABLE_UNRAR)
-    if(ENABLE_SHARED_LIB)
-        target_link_libraries(check_clamav
-            PRIVATE
-                ClamAV::libunrar_iface_iface)
-    else()
-        if (ENABLE_UNRAR)
-            target_link_libraries(check_clamav
-                PRIVATE
-                    ClamAV::libunrar_iface_static)
-        endif()
-    endif()
+    # The UnRAR unit tests call the private interface directly rather than
+    # reaching it through libclamav's dynamically loaded function pointers.
+    target_link_libraries(check_clamav
+        PRIVATE
+            ClamAV::libunrar_iface)
 endif()
 
 if(LLVM_FOUND)
