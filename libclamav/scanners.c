@@ -3470,6 +3470,8 @@ static struct
     {PERFT_RAWTYPENO, "raw container", ev_time},
     {PERFT_MAP, "map", ev_time},
     {PERFT_BYTECODE, "bytecode", ev_time},
+    {PERFT_ELF, "elf", ev_time},
+    {PERFT_MACHO, "macho", ev_time},
     {PERFT_KTIME, "kernel", ev_int},
     {PERFT_UTIME, "user", ev_int}};
 
