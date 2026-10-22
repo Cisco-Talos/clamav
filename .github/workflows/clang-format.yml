@@ -56,9 +56,9 @@ jobs:
           - check: "win32/compat"
             exclude: ""
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1             # v7.0.1
       - name: Run clang-format style check for C/C++ programs.
-        uses: jidicula/clang-format-action@v4.13.0
+        uses: jidicula/clang-format-action@654a770daa28443dd111d133e4083e21c1075674 # v4.18.0
         with:
           clang-format-version: "16"
           check-path: ${{ matrix.path['check'] }}

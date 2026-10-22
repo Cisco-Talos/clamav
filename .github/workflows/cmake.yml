@@ -34,7 +34,7 @@ jobs:
         run: rm /usr/bin/link.exe
         shell: bash
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Install Build Tools
         uses: crazy-max/ghaction-chocolatey@v3
@@ -49,7 +49,7 @@ jobs:
       # Restore from cache the previously built ports. If cache-miss, download, build vcpkg ports.
       - name: Restore vcpkg ports from cache or install vcpkg
         # Download and build vcpkg, without installing any port. If content is cached already, it is a no-op.
-        uses: lukka/run-vcpkg@v11
+        uses: lukka/run-vcpkg@b1a0dd252f06b9e25b3c022a9a03bd7a427fb6a2 # v11.6
         id: runvcpkg
 
       - name: Print the VCPKG_ROOT (for debugging)
@@ -60,7 +60,7 @@ jobs:
         run: dir ${{ steps.runvcpkg.outputs.RUNVCPKG_VCPKG_ROOT_OUT }}
 
       - name: Run CMake+Ninja
-        uses: lukka/run-cmake@v10
+        uses: lukka/run-cmake@5d55ea7949e25f69f0ecb516d8d572297e03a956  # v10.9
         id: runcmake_cmd
         with:
           cmakeListsTxtPath: "${{runner.workspace}}/clamav/CMakeLists.txt"
@@ -73,7 +73,7 @@ jobs:
     runs-on: macos-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Install Build Tools
         run: brew install bison flex pipx
@@ -124,7 +124,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Update package listings
         run: sudo apt-get update
