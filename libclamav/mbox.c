@@ -202,11 +202,12 @@ static int boundaryEnd(const char *line, const char *boundary);
 static int initialiseTables(table_t **rfc821Table, table_t **subtypeTable);
 static int getTextPart(message *const messages[], size_t size);
 static size_t strip(char *buf, int len);
+static int findMimeBoundary(const char *contentType, char **boundary);
 static int parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const char *arg, cli_ctx *ctx, bool *heuristicFound);
 static int tableFindRfc822Header(const table_t *rfc821Table, const char *cmd);
 static int saveTextPart(mbox_ctx *mctx, message *m, int destroy_text);
 static char *rfc2047(const char *in);
-static char *rfc822comments(const char *in, char *out);
+static char *rfc822comments(const char *in, char *out, bool preserveQuotedPairs);
 static int rfc1341(mbox_ctx *mctx, message *m);
 static bool usefulHeader(int commandNumber, const char *cmd);
 static char *getline_from_mbox(char *buffer, size_t len, fmap_t *map, size_t *at);
@@ -891,7 +892,7 @@ tableFindRfc822Header(const table_t *rfc821Table, const char *cmd)
     if ((rfc821Table == NULL) || (cmd == NULL))
         return -1;
 
-    stripped = rfc822comments(cmd, NULL);
+    stripped = rfc822comments(cmd, NULL, false);
     if (stripped) {
         strstrip(stripped);
         commandNumber = tableFind(rfc821Table, stripped);
@@ -1027,7 +1028,7 @@ parseEmailFile(fmap_t *map, size_t *at, const table_t *rfc821, const char *first
                     }
 
                     if (boundary ||
-                        ((boundary = (char *)messageFindArgumentLast(ret, "boundary")) != NULL)) {
+                        ((boundary = messageGetBoundary(ret)) != NULL)) {
                         lastWasBlank = true;
                         continue;
                     }
@@ -1848,7 +1849,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                 break;
             case MULTIPART:
                 cli_dbgmsg("Content-type 'multipart' handler\n");
-                boundary = messageFindArgumentLast(mainMessage, "boundary");
+                boundary = messageGetBoundary(mainMessage);
 
                 if (mctx->wrkobj != NULL)
                     cli_jsonstr(mctx->wrkobj, "Boundary", boundary);
@@ -3120,9 +3121,9 @@ boundaryStart(const char *line, const char *boundary)
 
     if (strlen(newline) <= sizeof(buf)) {
         out = NULL;
-        ptr = rfc822comments(newline, buf);
+        ptr = rfc822comments(newline, buf, false);
     } else
-        ptr = out = rfc822comments(newline, NULL);
+        ptr = out = rfc822comments(newline, NULL, false);
 
     if (ptr == NULL)
         ptr = newline;
@@ -3415,8 +3416,222 @@ isMimeParameter(const char *arg, const char *variable)
     return (*arg == '=') || (*arg == ':');
 }
 
+typedef enum {
+    MIME_BOUNDARY_PARAMETER_INVALID,
+    MIME_BOUNDARY_PARAMETER_ORDINARY,
+    MIME_BOUNDARY_PARAMETER_EXTENDED,
+    MIME_BOUNDARY_PARAMETER_CONTINUATION
+} mime_boundary_parameter_type;
+
+/**
+ * @brief Parse a supported MIME boundary parameter name.
+ *
+ * Whitespace is accepted before the parameter name and after "boundary" for
+ * compatibility with the legacy parser and existing evasion handling. An RFC
+ * 2231 suffix must be immediately adjacent to its separator so trailing name
+ * whitespace cannot turn a malformed parameter into an authoritative one.
+ *
+ * @param arg      Header text to inspect.
+ * @param value    Optional output pointing just after the name separator.
+ * @param section  Optional RFC 2231 continuation section output.
+ * @param encoded  Optional output indicating an encoded RFC 2231 value.
+ * @return The recognized boundary parameter type.
+ */
+static mime_boundary_parameter_type
+parseMimeBoundaryParameter(const char *arg, const char **value, size_t *section, bool *encoded)
+{
+    size_t parsedSection = 0;
+    bool parsedEncoded   = false;
+    mime_boundary_parameter_type type;
+
+    if (value != NULL)
+        *value = NULL;
+    if (section != NULL)
+        *section = 0;
+    if (encoded != NULL)
+        *encoded = false;
+
+    if (arg == NULL)
+        return MIME_BOUNDARY_PARAMETER_INVALID;
+
+    while (isspace((unsigned char)*arg))
+        arg++;
+
+    if (strncasecmp(arg, "boundary", 8) != 0)
+        return MIME_BOUNDARY_PARAMETER_INVALID;
+    arg += 8;
+
+    while (isspace((unsigned char)*arg))
+        arg++;
+
+    if (*arg != '*') {
+        if ((*arg != '=') && (*arg != ':'))
+            return MIME_BOUNDARY_PARAMETER_INVALID;
+        type = MIME_BOUNDARY_PARAMETER_ORDINARY;
+    } else {
+        arg++;
+
+        if ((*arg == '=') || (*arg == ':')) {
+            type          = MIME_BOUNDARY_PARAMETER_EXTENDED;
+            parsedEncoded = true;
+        } else {
+            if (!isdigit((unsigned char)*arg))
+                return MIME_BOUNDARY_PARAMETER_INVALID;
+
+            do {
+                unsigned int digit = (unsigned int)(*arg++ - '0');
+
+                if (parsedSection > ((HEURISTIC_EMAIL_MAX_ARGUMENTS_PER_HEADER - 1 - digit) / 10))
+                    return MIME_BOUNDARY_PARAMETER_INVALID;
+                parsedSection = (parsedSection * 10) + digit;
+            } while (isdigit((unsigned char)*arg));
+
+            if (*arg == '*') {
+                parsedEncoded = true;
+                arg++;
+            }
+
+            if ((*arg != '=') && (*arg != ':'))
+                return MIME_BOUNDARY_PARAMETER_INVALID;
+            type = MIME_BOUNDARY_PARAMETER_CONTINUATION;
+        }
+    }
+
+    if (value != NULL)
+        *value = arg + 1;
+    if (section != NULL)
+        *section = parsedSection;
+    if (encoded != NULL)
+        *encoded = parsedEncoded;
+
+    return type;
+}
+
+/**
+ * @brief Check whether text begins with an ordinary MIME boundary parameter.
+ *
+ * @param arg  Header text to inspect.
+ * @return Whether the text begins with boundary followed by a separator,
+ *         without an RFC 2231 suffix.
+ */
+static bool
+isOrdinaryBoundaryParameter(const char *arg)
+{
+    return parseMimeBoundaryParameter(arg, NULL, NULL, NULL) == MIME_BOUNDARY_PARAMETER_ORDINARY;
+}
+
+/**
+ * @brief Check whether text begins with a canonical MIME boundary parameter.
+ *
+ * Canonical boundary parsing accepts the standard equals separator and the
+ * legacy colon separator supported by messageAddArguments(), while validating
+ * the complete RFC 2231 suffix. This keeps tokenizer look-ahead consistent
+ * with findMimeBoundary(), so an invalid boundary-like token cannot change
+ * where a preceding value ends.
+ *
+ * @param arg  Header text to inspect.
+ * @return Whether the text begins with a supported boundary parameter.
+ */
+static bool
+isCanonicalBoundaryParameter(const char *arg)
+{
+    return parseMimeBoundaryParameter(arg, NULL, NULL, NULL) != MIME_BOUNDARY_PARAMETER_INVALID;
+}
+
+/**
+ * @brief Check whether text begins with a MIME parameter token.
+ *
+ * This deliberately follows messageAddArguments()' permissive parsing: after
+ * a non-empty name, an equals sign or colon anywhere before the next unescaped,
+ * unquoted semicolon makes the text parameter-shaped. This preserves the
+ * legacy end of an unquoted boundary value even when the following parameter
+ * is malformed.
+ *
+ * @param arg  Header text to inspect.
+ * @return Whether the candidate contains a non-empty name and separator.
+ */
+static bool
+hasMimeParameterAhead(const char *arg)
+{
+    const char *nameStart;
+    bool backslash = false;
+    bool inquote   = false;
+
+    if (arg == NULL)
+        return false;
+
+    while (isspace((unsigned char)*arg))
+        arg++;
+    nameStart = arg;
+
+    while (*arg != '\0') {
+        if (backslash) {
+            backslash = false;
+        } else if (*arg == '\\') {
+            backslash = true;
+        } else if (*arg == '"') {
+            inquote = !inquote;
+        } else if ((*arg == ';') && !inquote) {
+            break;
+        }
+
+        if ((*arg == '=') || (*arg == ':'))
+            return arg != nameStart;
+        arg++;
+    }
+
+    return false;
+}
+
+/**
+ * @brief Check whether text immediately begins with a MIME parameter.
+ *
+ * Unlike hasMimeParameterAhead(), this does not search past a whitespace-
+ * delimited token. It is used after a closing quote, where the legacy parser
+ * resumes at the very next parameter name even when no delimiter is present.
+ *
+ * @param arg  Header text to inspect.
+ * @return Whether the first token contains a parameter separator.
+ */
+static bool
+hasImmediateMimeParameter(const char *arg)
+{
+    const char *nameStart;
+
+    if ((arg == NULL) || isspace((unsigned char)*arg) || (*arg == ';'))
+        return false;
+    nameStart = arg;
+
+    while (*arg != '\0') {
+        if ((*arg == '=') || (*arg == ':'))
+            return arg != nameStart;
+
+        if (isspace((unsigned char)*arg)) {
+            while (isspace((unsigned char)*arg))
+                arg++;
+            return (arg != nameStart) && ((*arg == '=') || (*arg == ':'));
+        }
+
+        if (*arg == ';')
+            break;
+        arg++;
+    }
+
+    return false;
+}
+
+/**
+ * @brief Copy the next semicolon-delimited MIME argument.
+ *
+ * @param ptr                       Header value to parse.
+ * @param buf                       Destination buffer.
+ * @param buflen                    Size of @p buf.
+ * @param splitBoundaryArguments    Whether malformed separators before a later
+ *                                  boundary parameter are delimiters.
+ * @return The next parse position, or NULL when no argument remains.
+ */
 static const char *
-nextMimeArgument(const char *ptr, char *buf, size_t buflen)
+nextMimeArgument(const char *ptr, char *buf, size_t buflen, bool splitBoundaryArguments)
 {
     const char *p;
 
@@ -3426,31 +3641,189 @@ nextMimeArgument(const char *ptr, char *buf, size_t buflen)
     p = ptr;
     for (;;) {
         bool inquote = false, backslash = false;
+        bool argumentIsBoundary;
+        bool argumentIsOrdinaryBoundary;
+        bool argumentHasSeparator = false;
+        bool argumentValueStarted = false;
+        /* Avoid rescanning a long tail after proving it has no separator. */
+        bool checkedParameterTail = false;
         char *out = buf;
 
-        while (*p && *p != ';')
-            p++;
+        if (splitBoundaryArguments) {
+            bool seekInquote      = false;
+            bool seekBackslash    = false;
+            bool seekHasSeparator = false;
+            bool seekTokenStarted = false;
+            bool seekValueStarted = false;
+            bool seekStartsAtBoundary;
+
+            /* A malformed argument may begin immediately after a quoted
+             * value, without a semicolon or whitespace separator. */
+            seekStartsAtBoundary = isCanonicalBoundaryParameter(p);
+            while ((*p != '\0') && !seekStartsAtBoundary) {
+                if (seekBackslash) {
+                    seekBackslash = false;
+                    if (!seekInquote && isspace((unsigned char)*p)) {
+                        const char *next = p;
+
+                        while (isspace((unsigned char)*next))
+                            next++;
+                        if (isCanonicalBoundaryParameter(next))
+                            break;
+                        p = next;
+                        continue;
+                    }
+                } else if (*p == '\\') {
+                    seekBackslash    = true;
+                    seekTokenStarted = true;
+                    if (seekHasSeparator)
+                        seekValueStarted = true;
+                } else if (*p == '"') {
+                    if (seekInquote) {
+                        seekInquote = false;
+                        if (seekHasSeparator && isCanonicalBoundaryParameter(p + 1)) {
+                            p++;
+                            break;
+                        }
+                    } else if (!seekTokenStarted ||
+                               (seekHasSeparator && !seekValueStarted)) {
+                        /* Quotes open syntax only at the start of a media
+                         * type or parameter value; embedded quotes are data. */
+                        seekInquote      = true;
+                        seekTokenStarted = true;
+                        if (seekHasSeparator)
+                            seekValueStarted = true;
+                    }
+                } else if (!seekInquote && (*p == ';')) {
+                    break;
+                } else if (!seekInquote && ((*p == '=') || (*p == ':'))) {
+                    if (seekHasSeparator)
+                        seekValueStarted = true;
+                    else
+                        seekHasSeparator = true;
+                    seekTokenStarted = true;
+                } else if (!seekInquote && isspace((unsigned char)*p)) {
+                    const char *next = p;
+
+                    while (isspace((unsigned char)*next))
+                        next++;
+                    if (isCanonicalBoundaryParameter(next))
+                        break;
+                    p = next;
+                    continue;
+                } else if (!seekInquote) {
+                    seekTokenStarted = true;
+                    if (seekHasSeparator)
+                        seekValueStarted = true;
+                }
+                p++;
+            }
+        } else {
+            while (*p && *p != ';')
+                p++;
+        }
         if (*p == '\0')
             return NULL;
-        p++;
+
+        if (*p == ';')
+            p++;
 
         while (isspace((unsigned char)*p))
             p++;
 
+        argumentIsBoundary         = isCanonicalBoundaryParameter(p);
+        argumentIsOrdinaryBoundary = isOrdinaryBoundaryParameter(p);
+
         while (*p) {
             if (backslash) {
                 backslash = false;
+                if (!inquote && splitBoundaryArguments && !checkedParameterTail &&
+                    isspace((unsigned char)*p)) {
+                    if (argumentIsBoundary && !argumentIsOrdinaryBoundary &&
+                        argumentHasSeparator && argumentValueStarted)
+                        goto done;
+
+                    checkedParameterTail = true;
+                    if (hasMimeParameterAhead(p))
+                        goto done;
+                }
             } else {
                 switch (*p) {
                     case '\\':
-                        backslash = true;
+                        if (splitBoundaryArguments && argumentHasSeparator)
+                            argumentValueStarted = true;
+                        if (inquote || !splitBoundaryArguments || (p[1] != ';') ||
+                            !isCanonicalBoundaryParameter(p + 2)) {
+                            backslash = true;
+                        }
                         break;
                     case '"':
-                        inquote = !inquote;
+                        if (inquote) {
+                            inquote = false;
+                            if (splitBoundaryArguments && hasImmediateMimeParameter(p + 1)) {
+                                p++;
+                                goto done;
+                            }
+                        } else if (!splitBoundaryArguments ||
+                                   (argumentHasSeparator && !argumentValueStarted)) {
+                            /* Canonical parsing opens quoted syntax only at
+                             * the start of a value; embedded quotes are data. */
+                            inquote              = true;
+                            argumentValueStarted = true;
+                        }
                         break;
                     case ';':
                         if (!inquote)
                             goto done;
+                        break;
+                    default:
+                        if (!inquote && ((*p == '=') || (*p == ':'))) {
+                            if (argumentHasSeparator)
+                                argumentValueStarted = true;
+                            else
+                                argumentHasSeparator = true;
+                        } else if (!inquote && splitBoundaryArguments &&
+                                   argumentHasSeparator && !isspace((unsigned char)*p)) {
+                            argumentValueStarted = true;
+                        }
+
+                        if (!inquote && splitBoundaryArguments && isspace((unsigned char)*p)) {
+                            const char *next = p;
+                            bool nextIsBoundary;
+                            bool nextIsOrdinaryBoundary;
+
+                            if (argumentIsBoundary && !argumentIsOrdinaryBoundary &&
+                                argumentHasSeparator && argumentValueStarted)
+                                goto done;
+
+                            while (isspace((unsigned char)*next))
+                                next++;
+                            nextIsBoundary         = isCanonicalBoundaryParameter(next);
+                            nextIsOrdinaryBoundary = isOrdinaryBoundaryParameter(next);
+
+                            /* Preserve whitespace adjacency only between two
+                             * ordinary boundary declarations. Extended and
+                             * continued declarations remain distinct. */
+                            if (nextIsBoundary &&
+                                (!argumentIsOrdinaryBoundary || !nextIsOrdinaryBoundary))
+                                goto done;
+
+                            if (argumentIsBoundary && argumentHasSeparator && !nextIsBoundary &&
+                                !checkedParameterTail) {
+                                checkedParameterTail = true;
+                                if (hasMimeParameterAhead(p))
+                                    goto done;
+                            }
+
+                            /* Preserve the whitespace while advancing over it
+                             * once, so boundary look-ahead remains linear. */
+                            while (p != next) {
+                                if ((size_t)(out - buf) < buflen - 1)
+                                    *out++ = *p;
+                                p++;
+                            }
+                            continue;
+                        }
                         break;
                 }
             }
@@ -3472,6 +3845,253 @@ nextMimeArgument(const char *ptr, char *buf, size_t buflen)
     }
 }
 
+static int
+hexDigitValue(unsigned char c)
+{
+    if ((c >= '0') && (c <= '9'))
+        return c - '0';
+    if ((c >= 'A') && (c <= 'F'))
+        return c - 'A' + 10;
+    if ((c >= 'a') && (c <= 'f'))
+        return c - 'a' + 10;
+    return -1;
+}
+
+/**
+ * @brief Decode a MIME boundary parameter value.
+ *
+ * This removes surrounding quotes, resolves quoted-pairs, and optionally
+ * decodes the RFC 2231 percent encoding used by a continuation segment.
+ * Invalid percent escapes and encoded NULs are preserved so malformed input
+ * cannot introduce an embedded NUL into the boundary string.
+ *
+ * @param value         Parameter value to decode.
+ * @param encoded       Whether the segment uses RFC 2231 encoding.
+ * @param firstSegment  Whether this is the first continuation segment.
+ * @param decoded       Receives an allocated decoded value.
+ * @return 0 on success, -1 on allocation failure.
+ */
+static int
+decodeMimeBoundaryValue(const char *value, bool encoded, bool firstSegment, char **decoded)
+{
+    const char *input;
+    char *buffer;
+    char *out;
+    bool quoted = false;
+
+    *decoded = NULL;
+
+    while (isspace((unsigned char)*value))
+        value++;
+
+    buffer = cli_max_malloc(strlen(value) + 1);
+    if (buffer == NULL)
+        return -1;
+
+    input = value;
+    out   = buffer;
+
+    if (*input == '"') {
+        quoted = true;
+        input++;
+    }
+
+    while (*input != '\0') {
+        if (quoted && (*input == '"'))
+            break;
+
+        if (quoted && (*input == '\\') && (input[1] != '\0'))
+            input++;
+
+        *out++ = *input++;
+    }
+    *out = '\0';
+
+    if (!quoted)
+        strstrip(buffer);
+
+    input = buffer;
+    if (encoded && firstSegment) {
+        const char *charset = strchr(input, '\'');
+
+        if (charset != NULL) {
+            const char *language = strchr(charset + 1, '\'');
+
+            if (language != NULL)
+                input = language + 1;
+        }
+    }
+
+    if (encoded) {
+        out = buffer;
+        while (*input != '\0') {
+            if ((*input == '%') && (input[1] != '\0') && (input[2] != '\0')) {
+                int high = hexDigitValue((unsigned char)input[1]);
+                int low  = hexDigitValue((unsigned char)input[2]);
+
+                if ((high >= 0) && (low >= 0) && ((high != 0) || (low != 0))) {
+                    *out++ = (char)((high << 4) | low);
+                    input += 3;
+                    continue;
+                }
+            }
+
+            *out++ = *input++;
+        }
+        *out = '\0';
+    }
+
+    *decoded = buffer;
+    return 0;
+}
+
+/**
+ * @brief Select the MIME boundary represented by a Content-Type value.
+ *
+ * The general MIME argument parser intentionally accepts many malformed
+ * forms. Boundary selection needs a single client-compatible value, so this
+ * helper also handles quoted-pairs, RFC 2231 continuations, leading value
+ * whitespace, and malformed unquoted values containing spaces. The last
+ * applicable boundary declaration wins, matching existing ClamAV behavior.
+ *
+ * @param contentType  Complete Content-Type field value.
+ * @param boundary     Receives an allocated boundary, or NULL if absent.
+ * @return 0 on success, -1 on allocation failure.
+ */
+static int
+findMimeBoundary(const char *contentType, char **boundary)
+{
+    char *segments[HEURISTIC_EMAIL_MAX_ARGUMENTS_PER_HEADER] = {NULL};
+    char *directBoundary                                    = NULL;
+    char *continuedBoundary                                 = NULL;
+    char *commentStrippedContentType                         = NULL;
+    char *argument                                          = NULL;
+    const char *next;
+    size_t directOrder                                      = 0;
+    size_t continuationOrder                                = 0;
+    size_t argumentSize;
+    size_t order                                            = 0;
+    size_t i;
+    int status = 0;
+
+    *boundary = NULL;
+
+    if (contentType == NULL)
+        return 0;
+
+    commentStrippedContentType = rfc822comments(contentType, NULL, true);
+    if ((commentStrippedContentType == NULL) && (strchr(contentType, '(') != NULL))
+        return -1;
+
+    next         = (commentStrippedContentType != NULL) ? commentStrippedContentType : contentType;
+    argumentSize = strlen(next) + 1;
+    argument     = cli_max_malloc(argumentSize);
+    if (argument == NULL) {
+        free(commentStrippedContentType);
+        return -1;
+    }
+
+    while ((next = nextMimeArgument(next, argument, argumentSize, true)) != NULL) {
+        const char *value;
+        char *decoded = NULL;
+        size_t section = 0;
+        bool encoded   = false;
+        mime_boundary_parameter_type type;
+
+        order++;
+
+        type = parseMimeBoundaryParameter(argument, &value, &section, &encoded);
+        if (type == MIME_BOUNDARY_PARAMETER_INVALID)
+            continue;
+
+        /* messageAddArguments() treats the first equals sign as the name
+         * separator even when a colon appears earlier. Preserve that legacy
+         * precedence for colon-separated boundaries. */
+        if ((value[-1] == ':') && (strchr(value, '=') != NULL))
+            continue;
+
+        if ((type == MIME_BOUNDARY_PARAMETER_ORDINARY) ||
+            (type == MIME_BOUNDARY_PARAMETER_EXTENDED)) {
+            if (decodeMimeBoundaryValue(value, encoded, encoded, &decoded) < 0) {
+                status = -1;
+                goto done;
+            }
+
+            free(directBoundary);
+            directBoundary = decoded;
+            directOrder    = order;
+            continue;
+        }
+
+        if (decodeMimeBoundaryValue(value, encoded, section == 0, &decoded) < 0) {
+            status = -1;
+            goto done;
+        }
+
+        /* A repeated section zero starts a new continuation. Preserve
+         * out-of-order segments when the first section zero arrives. */
+        if ((section == 0) && (segments[0] != NULL)) {
+            for (i = 1; i < HEURISTIC_EMAIL_MAX_ARGUMENTS_PER_HEADER; i++) {
+                free(segments[i]);
+                segments[i] = NULL;
+            }
+        }
+
+        free(segments[section]);
+        segments[section] = decoded;
+        if (section == 0)
+            continuationOrder = order;
+    }
+
+    if (segments[0] != NULL) {
+        size_t length = 1;
+        char *out;
+
+        for (i = 0; (i < HEURISTIC_EMAIL_MAX_ARGUMENTS_PER_HEADER) && (segments[i] != NULL); i++) {
+            size_t segmentLength = strlen(segments[i]);
+
+            if (segmentLength > SIZE_MAX - length) {
+                status = -1;
+                goto done;
+            }
+            length += segmentLength;
+        }
+
+        continuedBoundary = cli_max_malloc(length);
+        if (continuedBoundary == NULL) {
+            status = -1;
+            goto done;
+        }
+
+        out = continuedBoundary;
+        for (i = 0; (i < HEURISTIC_EMAIL_MAX_ARGUMENTS_PER_HEADER) && (segments[i] != NULL); i++) {
+            size_t segmentLength = strlen(segments[i]);
+
+            memcpy(out, segments[i], segmentLength);
+            out += segmentLength;
+        }
+        *out = '\0';
+    }
+
+    if ((continuedBoundary != NULL) &&
+        ((directBoundary == NULL) || (continuationOrder >= directOrder))) {
+        *boundary          = continuedBoundary;
+        continuedBoundary = NULL;
+    } else if (directBoundary != NULL) {
+        *boundary       = directBoundary;
+        directBoundary = NULL;
+    }
+
+done:
+    for (i = 0; i < HEURISTIC_EMAIL_MAX_ARGUMENTS_PER_HEADER; i++)
+        free(segments[i]);
+    free(continuedBoundary);
+    free(directBoundary);
+    free(argument);
+    free(commentStrippedContentType);
+    return status;
+}
+
 /*
  * Returns 0 for OK, PARSE_HEADER_ALLOC_FAIL for allocation failure.
  */
@@ -3479,6 +4099,7 @@ static int
 parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const char *arg, cli_ctx *ctx, bool *heuristicFound)
 {
     char *copy, *p, *buf;
+    char *contentTypeBoundary = NULL;
     const char *ptr;
     int commandNumber;
     size_t argCnt = 0;
@@ -3490,14 +4111,13 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 
     commandNumber = tableFindRfc822Header(rfc821Table, cmd);
 
-    copy = rfc822comments(arg, NULL);
+    copy = rfc822comments(arg, NULL, false);
 
     if (copy) {
         ptr = copy;
     } else {
         ptr = arg;
     }
-
     buf = NULL;
 
     switch (commandNumber) {
@@ -3626,16 +4246,47 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
                  * Content-Type:', arg='multipart/mixed; boundary=foo
                  * we find the boundary argument set it
                  */
-                ptr = nextMimeArgument(ptr, buf, buflen);
+                ptr = nextMimeArgument(ptr, buf, buflen, false);
                 while (ptr != NULL) {
                     cli_dbgmsg("mimeArgs = '%s'\n", buf);
 
-                    argCnt++;
-                    if (haveTooManyMIMEArguments(argCnt, ctx, heuristicFound)) {
+                    if (!messageAddArguments(m, buf, &argCnt, HEURISTIC_EMAIL_MAX_ARGUMENTS_PER_HEADER)) {
+                        (void)haveTooManyMIMEArguments(argCnt, ctx, heuristicFound);
                         break;
                     }
-                    messageAddArguments(m, buf);
-                    ptr = nextMimeArgument(ptr, buf, buflen);
+                    ptr = nextMimeArgument(ptr, buf, buflen, false);
+                }
+
+                if (findMimeBoundary(arg, &contentTypeBoundary) < 0) {
+                    if (copy)
+                        free(copy);
+                    free(buf);
+                    return PARSE_HEADER_ALLOC_FAIL;
+                }
+
+                if ((contentTypeBoundary != NULL) && (*contentTypeBoundary != '\0')) {
+                    char *boundaryArgument;
+                    size_t boundaryArgumentSize = strlen(contentTypeBoundary) + sizeof("boundary=");
+
+                    boundaryArgument = cli_max_malloc(boundaryArgumentSize);
+                    if (boundaryArgument == NULL) {
+                        free(contentTypeBoundary);
+                        if (copy)
+                            free(copy);
+                        free(buf);
+                        return PARSE_HEADER_ALLOC_FAIL;
+                    }
+
+                    snprintf(boundaryArgument, boundaryArgumentSize, "boundary=%s", contentTypeBoundary);
+                    if (!messageAddArgumentDecoded(m, boundaryArgument)) {
+                        free(boundaryArgument);
+                        free(contentTypeBoundary);
+                        if (copy)
+                            free(copy);
+                        free(buf);
+                        return PARSE_HEADER_ALLOC_FAIL;
+                    }
+                    free(boundaryArgument);
                 }
             }
             break;
@@ -3656,7 +4307,7 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
                 const char *disposition_arg;
 
                 messageSetDispositionType(m, p);
-                disposition_arg = nextMimeArgument(ptr, buf, buflen);
+                disposition_arg = nextMimeArgument(ptr, buf, buflen, false);
                 while (disposition_arg != NULL) {
                     argCnt++;
                     if (haveTooManyMIMEArguments(argCnt, ctx, heuristicFound)) {
@@ -3667,7 +4318,7 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
                     } else {
                         messageAddArgument(m, buf);
                     }
-                    disposition_arg = nextMimeArgument(disposition_arg, buf, buflen);
+                    disposition_arg = nextMimeArgument(disposition_arg, buf, buflen, false);
                 }
             }
             if (!messageHasFilename(m))
@@ -3684,6 +4335,7 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
         free(copy);
     if (buf)
         free(buf);
+    free(contentTypeBoundary);
 
     return 0;
 }
@@ -3709,16 +4361,20 @@ saveTextPart(mbox_ctx *mctx, message *m, int destroy_text)
     return CL_ETMPFILE;
 }
 
-/*
- * Handle RFC822 comments in headers.
- * If out == NULL, return a buffer without the comments, the caller must free
- *    the returned buffer
- * Return NULL on error or if the input * has no comments.
- * See section 3.4.3 of RFC822
- * TODO: handle comments that go on to more than one line
+/**
+ * @brief Remove RFC 822 comments from a header value.
+ *
+ * @param in                   Header value to process.
+ * @param out                  Optional output buffer, or NULL to allocate one.
+ * @param preserveQuotedPairs  Whether to retain backslashes in quoted strings.
+ * @return The comment-stripped value, or NULL on error or when no comments
+ *         are present.
+ *
+ * @note The caller must free the returned value when @p out is NULL.
+ * @note This does not handle comments that continue onto another line.
  */
 static char *
-rfc822comments(const char *in, char *out)
+rfc822comments(const char *in, char *out, bool preserveQuotedPairs)
 {
     const char *iptr;
     char *optr;
@@ -3758,11 +4414,15 @@ rfc822comments(const char *in, char *out)
         } else
             switch (*iptr) {
                 case '\\':
+                    if (preserveQuotedPairs && (commentlevel == 0) && inquote)
+                        *optr++ = '\\';
                     backslash = 1;
                     break;
                 case '\"':
-                    *optr++ = '\"';
-                    inquote = !inquote;
+                    if (commentlevel == 0) {
+                        *optr++ = '\"';
+                        inquote = !inquote;
+                    }
                     break;
                 case '(':
                     if (inquote)
@@ -3781,7 +4441,9 @@ rfc822comments(const char *in, char *out)
                         *optr++ = *iptr;
             }
 
-    if (backslash) /* last character was a single backslash */
+    /* A quoted backslash was already copied. Preserve a trailing unquoted
+     * backslash, but do not leak one from an unterminated comment. */
+    if (backslash && (!preserveQuotedPairs || ((commentlevel == 0) && !inquote)))
         *optr++ = '\\';
     *optr = '\0';
 
@@ -5050,17 +5712,48 @@ do_multipart(message *mainMessage, message **messages, int i, mbox_status *rc, m
     return mainMessage;
 }
 
-/*
- * Returns the number of quote characters in the given string
+/**
+ * @brief Count unescaped quote characters outside RFC 822 comments.
+ *
+ * @param buf  Header value to inspect.
+ * @return The number of syntactic quote characters.
  */
 static int
 count_quotes(const char *buf)
 {
-    int quotes = 0;
+    int commentLevel  = 0;
+    int quotes        = 0;
+    bool backslash    = false;
+    bool inquote      = false;
 
-    while (*buf)
-        if (*buf++ == '\"')
-            quotes++;
+    while (*buf) {
+        char c = *buf++;
+
+        if (backslash) {
+            backslash = false;
+            continue;
+        }
+
+        switch (c) {
+            case '\\':
+                backslash = true;
+                break;
+            case '(':
+                if (!inquote)
+                    commentLevel++;
+                break;
+            case ')':
+                if (!inquote && (commentLevel > 0))
+                    commentLevel--;
+                break;
+            case '\"':
+                if (commentLevel == 0) {
+                    quotes++;
+                    inquote = !inquote;
+                }
+                break;
+        }
+    }
 
     return quotes;
 }

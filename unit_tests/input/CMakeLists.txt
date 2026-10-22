@@ -29,10 +29,39 @@ set(ENCRYPTED_TESTFILES
     clamav_hdb_scanfiles/clam.mail
     clamav_hdb_scanfiles/clam.ppt
     clamav_hdb_scanfiles/clam.tnef
+    clamav_hdb_scanfiles/clam.mail-content-disposition-escaped-semicolon.eml
     clamav_hdb_scanfiles/clam.mail-multiple-content-type.eml
     clamav_hdb_scanfiles/clam.mail-comment-header-name.eml
     clamav_hdb_scanfiles/clam.mail-multiple-boundaries.eml
     clamav_hdb_scanfiles/clam.mail-boundary-content-disposition.eml
+    clamav_hdb_scanfiles/clam.mail-boundary-escaped-semicolon-spaced-parameter.eml
+    clamav_hdb_scanfiles/clam.mail-boundary-escaped-whitespace-parameter.eml
+    clamav_hdb_scanfiles/clam.mail-boundary-leading-whitespace.eml
+    clamav_hdb_scanfiles/clam.mail-boundary-intervening-parameter.eml
+    clamav_hdb_scanfiles/clam.mail-boundary-invalid-continuation.eml
+    clamav_hdb_scanfiles/clam.mail-boundary-lone-escaped-semicolon.eml
+    clamav_hdb_scanfiles/clam.mail-boundary-malformed-spaced-parameter.eml
+    clamav_hdb_scanfiles/clam.mail-boundary-ordinary-parameter.eml
+    clamav_hdb_scanfiles/clam.mail-boundary-space-delimiter.eml
+    clamav_hdb_scanfiles/clam.mail-boundary-spaced-continuation.eml
+    clamav_hdb_scanfiles/clam.mail-boundary-spaced-escaped-semicolon-parameter.eml
+    clamav_hdb_scanfiles/clam.mail-boundary-spaced-parameter.eml
+    clamav_hdb_scanfiles/clam.mail-boundary-spaced-rfc2231-parameter.eml
+    clamav_hdb_scanfiles/clam.mail-boundary-backslash.eml
+    clamav_hdb_scanfiles/clam.mail-boundary-comment-quote.eml
+    clamav_hdb_scanfiles/clam.mail-boundary-comment-quoted-pair.eml
+    clamav_hdb_scanfiles/clam.mail-boundary-comment-unquoted-pair.eml
+    clamav_hdb_scanfiles/clam.mail-boundary-comment-unquoted-semicolon.eml
+    clamav_hdb_scanfiles/clam.mail-boundary-comment-unquoted-whitespace.eml
+    clamav_hdb_scanfiles/clam.mail-boundary-escaped-quote.eml
+    clamav_hdb_scanfiles/clam.mail-boundary-rfc2231-continuation.eml
+    clamav_hdb_scanfiles/clam.mail-boundary-rfc2231-duplicate-canonical.eml
+    clamav_hdb_scanfiles/clam.mail-boundary-rfc2231-encoded-first.eml
+    clamav_hdb_scanfiles/clam.mail-boundary-rfc2231-literal-quotes.eml
+    clamav_hdb_scanfiles/clam.mail-boundary-rfc2231-nonascii-continuation.eml
+    clamav_hdb_scanfiles/clam.mail-boundary-rfc2231-literal-syntax-continuation.eml
+    clamav_hdb_scanfiles/clam.mail-boundary-rfc2231-repeated-section-zero.eml
+    clamav_hdb_scanfiles/clam.mail-boundary-unquoted-escaped-semicolon.eml
     clamav_hdb_scanfiles/clam.mail-semicolon-boundary.eml
     clamav_hdb_scanfiles/clam.mail-nested-comment-header-name.eml
     clamav_hdb_scanfiles/clam.mail-disposition-rfc2231-boundary.eml

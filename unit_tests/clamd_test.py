@@ -44,7 +44,10 @@ class TC(testcase.TestCase):
     def setUpClass(cls):
         super(TC, cls).setUpClass()
 
-        TC.testpaths = list(TC.path_build.glob('unit_tests/input/clamav_hdb_scanfiles/clam*')) # A list of Path()'s of each of our generated test files
+        TC.path_testfiles = (
+            TC.path_build / 'unit_tests' / 'input' / 'clamav_hdb_scanfiles'
+        )
+        TC.testpaths = list(TC.path_testfiles.glob('clam*'))
 
         TC.clamd_pid = TC.path_tmp / 'clamd-test.pid'
         TC.clamd_socket =   'clamd-test.socket'             # <-- A relative path here and in check_clamd to avoid-
@@ -392,11 +395,10 @@ class TC(testcase.TestCase):
         poll = self.proc.poll()
         assert poll == None  # subprocess is alive if poll() returns None
 
-        testfiles = ' '.join([str(testpath) for testpath in TC.testpaths])
         expected_results = ['{}: ClamAV-Test-File.UNOFFICIAL FOUND'.format(testpath.name) for testpath in TC.testpaths]
         expected_results.append('Infected files: {}'.format(len(TC.testpaths)))
 
-        self.run_clamdscan(testfiles,
+        self.run_clamdscan(TC.path_testfiles,
             expected_ec=1, expected_out=expected_results)
 
     def test_clamd_05_check_clamd(self):

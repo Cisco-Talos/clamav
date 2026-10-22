@@ -62,9 +62,40 @@ const char *messageGetMimeSubtype(const message *m);
 void messageSetDispositionType(message *m, const char *disptype);
 const char *messageGetDispositionType(const message *m);
 void messageAddArgument(message *m, const char *arg);
-void messageAddArguments(message *m, const char *arg);
+/**
+ * @brief Store an already-decoded MIME argument without RFC 2231 reparsing.
+ *
+ * An existing duplicate is moved after earlier arguments so it remains the
+ * authoritative last value.
+ *
+ * @param m    Message receiving the argument.
+ * @param arg  Decoded argument in `name=value` form.
+ * @return true if no allocation failed; false otherwise.
+ */
+bool messageAddArgumentDecoded(message *m, const char *arg);
+/**
+ * @brief Parse and store MIME arguments while enforcing a shared limit.
+ *
+ * @param m               Message receiving the arguments.
+ * @param arg             String containing one or more MIME arguments.
+ * @param argumentCount   Running argument count for the current header.
+ * @param argumentLimit   Count at which parsing must stop.
+ * @return true when all arguments were processed; false when the limit was
+ *         reached before processing the current argument.
+ */
+bool messageAddArguments(message *m, const char *arg, size_t *argumentCount, size_t argumentLimit);
 char *messageFindArgument(const message *m, const char *variable);
 char *messageFindArgumentLast(const message *m, const char *variable);
+/**
+ * @brief Get the canonical MIME boundary.
+ *
+ * The canonical boundary is already decoded, so this preserves leading and
+ * embedded quote characters in the stored value.
+ *
+ * @param m  Message containing the boundary.
+ * @return An allocated copy of the value, or NULL if absent.
+ */
+char *messageGetBoundary(const message *m);
 char *messageGetFilename(const message *m);
 int messageHasFilename(const message *m);
 void messageSetEncoding(message *m, const char *enctype);
