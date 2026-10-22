@@ -5,7 +5,11 @@ Run clamscan tests.
 """
 
 import shutil
+import os
+import socket
+import stat
 import sys
+import unittest
 
 sys.path.append('../unit_tests')
 import testcase
@@ -94,3 +98,59 @@ class TC(testcase.TestCase):
         expected_results.append('Infected files: 0')
         unexpected_results = ['{}: ClamAV-Test-File.UNOFFICIAL FOUND'.format(testpath.name) for testpath in TC.testpaths]
         self.verify_output(output.out, expected=expected_results, unexpected=unexpected_results)
+
+    @unittest.skipIf(os.name == 'nt' or not hasattr(os, 'mkfifo') or not hasattr(socket, 'AF_UNIX'),
+                     'requires FIFO and Unix domain socket support')
+    def test_03_ignore_special_file_errors(self):
+        self.step_name('Test clamscan --ignore-{socket,pipe,device}-errors')
+
+        fifo  = TC.path_tmp / 'clamscan-fifo'
+        sockp = TC.path_tmp / 'clamscan.sock'
+        flist = TC.path_tmp / 'clamscan-file-list.txt'
+        dev   = '/dev/null' if os.path.exists('/dev/null') and stat.S_ISCHR(os.lstat('/dev/null').st_mode) else None
+
+        os.mkfifo(str(fifo))
+        sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+
+        def scan(*args):
+            return self.execute_command(
+                '{v} {va} {c} -d {db} --no-summary {a}'.format(
+                    v=TC.valgrind, va=TC.valgrind_args, c=TC.clamscan,
+                    db=TC.path_db / 'clamav.hdb',
+                    a=' '.join(str(x) for x in args)))
+
+        try:
+            sock.bind(str(sockp))
+
+            out = scan(fifo)
+            assert out.ec == 2
+            self.verify_output(out.err, expected=['{}: Not supported file type'.format(fifo)])
+
+            cases = [('--ignore-pipe-errors',   fifo,  'pipe'),
+                     ('--ignore-socket-errors', sockp, 'socket')]
+            if dev:
+                cases.append(('--ignore-device-errors', dev, 'device'))
+            for flag, path, label in cases:
+                out = scan(flag, path)
+                assert out.ec == 0, label
+                self.verify_output(out.out, expected=['{}: Skipping unsupported {}'.format(path, label)])
+
+            # A flag must not suppress ec=2 for an unrelated file type.
+            out = scan('--ignore-socket-errors', fifo)
+            assert out.ec == 2
+            self.verify_output(out.err, expected=['{}: Not supported file type'.format(fifo)])
+
+            # The -f file-list code path is separate from direct-target handling.
+            flist.write_text('{}\n'.format(fifo))
+            out = scan('--ignore-pipe-errors', '-f', flist)
+            assert out.ec == 0
+            self.verify_output(out.out, expected=['{}: Skipping unsupported pipe'.format(fifo)])
+
+            # An infection in another target must still surface as ec=1.
+            out = scan('--ignore-pipe-errors', fifo, TC.testpaths[0])
+            assert out.ec == 1
+        finally:
+            sock.close()
+            for p in [fifo, sockp, flist]:
+                try: p.unlink()
+                except Exception: pass
