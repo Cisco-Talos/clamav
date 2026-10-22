@@ -142,6 +142,7 @@ struct cli_matcher {
     /* HASH */
     struct cli_hash_patt hm;
     struct cli_hash_wild hwild;
+    struct cli_hm_names *hm_names;
 
     /* Extended Aho-Corasick */
     uint32_t ac_partsigs, ac_nodes, ac_lists, ac_patterns, ac_lsigs;

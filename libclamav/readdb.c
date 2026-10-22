@@ -2915,15 +2915,20 @@ static int cli_loadhash(FILE *fs, struct cl_engine *engine, unsigned int *signo,
             }
         }
 
-        virname = CLI_MPOOL_VIRNAME(engine->mempool, pt, options & CL_DB_OFFICIAL);
+        /* hm_addhash_str() copies the name into the root's name store,
+         * so this one only has to live until it returns - and must not
+         * come from the pool, which cannot recycle 3 M short-lived
+         * strings. */
+        virname = cli_virname(pt, options & CL_DB_OFFICIAL);
         if (!virname) {
             ret = CL_EMALFDB;
             break;
         }
 
-        if (CL_SUCCESS != (ret = hm_addhash_str(engine, purpose, tokens[hash_field], size, virname))) {
+        ret = hm_addhash_str(engine, purpose, tokens[hash_field], size, virname);
+        free((void *)virname);
+        if (CL_SUCCESS != ret) {
             cli_errmsg("cli_loadhash: Malformed hash string at line %u\n", line);
-            MPOOL_FREE(engine->mempool, (void *)virname);
             break;
         }
 
@@ -6016,19 +6021,23 @@ cl_error_t cl_engine_compile(struct cl_engine *engine)
     }
 
     if (engine->hm_hdb)
-        hm_flush(engine->hm_hdb);
+        if (CL_SUCCESS != (ret = hm_flush(engine->hm_hdb)))
+            return ret;
     TASK_COMPLETE();
 
     if (engine->hm_mdb)
-        hm_flush(engine->hm_mdb);
+        if (CL_SUCCESS != (ret = hm_flush(engine->hm_mdb)))
+            return ret;
     TASK_COMPLETE();
 
     if (engine->hm_imp)
-        hm_flush(engine->hm_imp);
+        if (CL_SUCCESS != (ret = hm_flush(engine->hm_imp)))
+            return ret;
     TASK_COMPLETE();
 
     if (engine->hm_fp)
-        hm_flush(engine->hm_fp);
+        if (CL_SUCCESS != (ret = hm_flush(engine->hm_fp)))
+            return ret;
     TASK_COMPLETE();
 
     if ((ret = cli_build_regex_list(engine->phish_allow_list_matcher))) {
