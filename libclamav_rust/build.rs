@@ -201,13 +201,13 @@ fn execute_cbindgen() -> Result<(), &'static str> {
 }
 
 fn detect_clamav_build() -> Result<(), &'static str> {
-    println!("cargo:rerun-if-env-changed=LIBCLAMAV");
-
     if search_and_link_lib("LIBCLAMAV")? {
         eprintln!("NOTE: LIBCLAMAV defined. Examining LIB* environment variables");
         // Need to link with libclamav dependencies
 
         // LLVM is optional, and don't have a path to each library like we do with the other libs.
+        println!("cargo:rerun-if-env-changed=LLVM_LIBS");
+        println!("cargo:rerun-if-env-changed=LLVM_DIRS");
         let llvm_libs = env::var("LLVM_LIBS").unwrap_or("".into());
         if !llvm_libs.is_empty() {
             match env::var("LLVM_DIRS") {
@@ -274,6 +274,7 @@ fn detect_clamav_build() -> Result<(), &'static str> {
 //
 fn search_and_link_lib(environment_variable: &str) -> Result<bool, &'static str> {
     eprintln!("  - checking for {:?} in environment", environment_variable);
+    println!("cargo:rerun-if-env-changed={environment_variable}");
     let filepath_str = match env::var(environment_variable) {
         Err(env::VarError::NotPresent) => return Ok(false),
         Err(env::VarError::NotUnicode(_)) => return Err("environment value not unicode"),
