@@ -201,6 +201,9 @@
 /* Define to 1 if you have the <malloc.h> header file. */
 #cmakedefine HAVE_MALLOC_H 1
 
+/* Define to 1 if you have the `malloc_trim' function. */
+#cmakedefine HAVE_MALLOC_TRIM 1
+
 /* Define to 1 if you have the `mkstemp' function. */
 #cmakedefine HAVE_MKSTEMP 1
 
