@@ -373,15 +373,15 @@ static int rtf_object_process(struct rtf_state* state, const unsigned char* inpu
                 break;
             }
             case WAIT_ZERO: {
-                if (out_cnt < 8 - data->bread) {
-                    out_cnt = 0;
+                const size_t zero_remaining = 8 - data->bread;
+
+                if (out_cnt < zero_remaining) {
                     data->bread += out_cnt;
+                    out_data += out_cnt;
+                    out_cnt = 0;
                 } else {
-                    out_cnt -= 8 - data->bread;
-                    data->bread = 8;
-                }
-                if (data->bread == 8) {
-                    out_data += 8;
+                    out_cnt -= zero_remaining;
+                    out_data += zero_remaining;
                     data->bread = 0;
                     cli_dbgmsg("RTF: next state: wait_data_size\n");
                     data->internal_state = WAIT_DATA_SIZE;
