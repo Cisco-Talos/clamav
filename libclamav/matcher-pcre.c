@@ -366,7 +366,7 @@ cl_error_t cli_pcre_addpatt(struct cli_matcher *root, const char *virname, const
     return CL_SUCCESS;
 }
 
-cl_error_t cli_pcre_build(struct cli_matcher *root, long long unsigned match_limit, long long unsigned recmatch_limit, const struct cli_dconf *dconf)
+cl_error_t cli_pcre_build(struct cli_matcher *root, long long unsigned match_limit, long long unsigned recmatch_limit, int try_jit, const struct cli_dconf *dconf)
 {
     unsigned int i;
     cl_error_t ret;
@@ -408,11 +408,11 @@ cl_error_t cli_pcre_build(struct cli_matcher *root, long long unsigned match_lim
         if (dconf && (dconf->pcre & PCRE_CONF_OPTIONS)) {
             /* compile the regex, no options override *wink* */
             pm_dbgmsg("cli_pcre_build: Compiling regex: /%s/\n", pm->pdata.expression);
-            ret = cli_pcre_compile(&(pm->pdata), match_limit, recmatch_limit, 0, 0);
+            ret = cli_pcre_compile(&(pm->pdata), match_limit, recmatch_limit, 0, 0, try_jit);
         } else {
             /* compile the regex, options overridden and disabled */
             pm_dbgmsg("cli_pcre_build: Compiling regex: /%s/ (without options)\n", pm->pdata.expression);
-            ret = cli_pcre_compile(&(pm->pdata), match_limit, recmatch_limit, 0, 1);
+            ret = cli_pcre_compile(&(pm->pdata), match_limit, recmatch_limit, 0, 1, try_jit);
         }
         if (ret != CL_SUCCESS) {
             cli_errmsg("cli_pcre_build: failed to build pcre regex\n");
