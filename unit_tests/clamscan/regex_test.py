@@ -122,6 +122,65 @@ rule regex
         ]
         self.verify_output(output.out, expected=expected_results)
 
+    def test_pcre_max_filesize_alert(self):
+        self.step_name('Test that skipped PCRE evaluation is visible with AlertExceedsMax')
+
+        testfile = TC.path_tmp / 'pcre-max-filesize.sample'
+        testfile.write_text('MZ hello blee' + ('A' * 1024))
+
+        regex_db = TC.path_tmp / 'pcre-max-filesize.ldb'
+        regex_db.write_text(
+            r'pcre_max_filesize;Engine:81-255,Target:0;0&1;68656c6c6f20;0/hello blee/'
+        )
+
+        command = (
+            '{valgrind} {valgrind_args} {clamscan} -d {path_db} '
+            '--pcre-max-filesize=512 --alert-exceeds-max=yes {testfile}'
+        ).format(
+            valgrind=TC.valgrind,
+            valgrind_args=TC.valgrind_args,
+            clamscan=TC.clamscan,
+            path_db=regex_db,
+            testfile=testfile,
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 1
+        self.verify_output(
+            output.out,
+            expected=['Heuristics.Limits.Exceeded.PCREMaxFileSize FOUND'],
+        )
+
+        command = (
+            '{valgrind} {valgrind_args} {clamscan} -d {path_db} '
+            '--pcre-max-filesize=512 --alert-exceeds-max=no {testfile}'
+        ).format(
+            valgrind=TC.valgrind,
+            valgrind_args=TC.valgrind_args,
+            clamscan=TC.clamscan,
+            path_db=regex_db,
+            testfile=testfile,
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 0
+        self.verify_output(output.out, expected=['pcre-max-filesize.sample: OK'])
+
+        command = (
+            '{valgrind} {valgrind_args} {clamscan} -d {path_db} '
+            '--pcre-max-filesize=2K --alert-exceeds-max=yes {testfile}'
+        ).format(
+            valgrind=TC.valgrind,
+            valgrind_args=TC.valgrind_args,
+            clamscan=TC.clamscan,
+            path_db=regex_db,
+            testfile=testfile,
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 1
+        self.verify_output(output.out, expected=['pcre_max_filesize.UNOFFICIAL FOUND'])
+
     def test_ldb_offset_pcre(self):
         self.step_name('Test LDB regex rules with an offset')
         # The offset feature starts the match some # of bytes after start of the pattern match
