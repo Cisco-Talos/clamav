@@ -296,7 +296,7 @@ cl_error_t cli_scan_buff(const unsigned char *buffer, uint32_t length, uint32_t 
 
         if (!acdata) {
             // no ac matcher data was provided, so we need to initialize our own.
-            ret = cli_ac_initdata(&matcher_data, target_ac_root->ac_partsigs, target_ac_root->ac_lsigs, target_ac_root->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN);
+            ret = cli_ac_initdata_for_matcher(&matcher_data, target_ac_root);
             if (CL_SUCCESS != ret) {
                 return ret;
             }
@@ -321,7 +321,7 @@ cl_error_t cli_scan_buff(const unsigned char *buffer, uint32_t length, uint32_t 
 
     if (!acdata) {
         // no ac matcher data was provided, so we need to initialize our own.
-        ret = cli_ac_initdata(&matcher_data, generic_ac_root->ac_partsigs, generic_ac_root->ac_lsigs, generic_ac_root->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN);
+        ret = cli_ac_initdata_for_matcher(&matcher_data, generic_ac_root);
         if (CL_SUCCESS != ret) {
             return ret;
         }
@@ -652,7 +652,6 @@ cl_error_t cli_check_fp(cli_ctx *ctx, const char *vname)
                     if (ctx->engine->cb_hash) {
                         ctx->engine->cb_hash(fmap_fd(ctx->fmap), map->len, hash_string, vname ? vname : "noname", ctx->cb_ctx);
                     }
-
                 }
 
                 if (cli_hm_scan(hash, map->len, &virname, ctx->engine->hm_fp, hash_type) == CL_VIRUS) {
@@ -849,14 +848,12 @@ static cl_error_t lsig_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_a
     uint64_t evalids            = 0;
     fmap_t *new_map             = NULL;
     struct cli_ac_lsig *ac_lsig = root->ac_lsigtable[lsid];
-    char *exp                   = ac_lsig->u.logic;
-    char *exp_end               = exp + strlen(exp);
 
     status = cli_ac_chkmacro(root, acdata, lsid);
     if (status != CL_SUCCESS)
         return status;
 
-    if (cli_ac_chklsig(exp, exp_end, acdata->lsigcnt[lsid], &evalcnt, &evalids, 0) != 1) {
+    if (cli_ac_eval_lsig(root, lsid, acdata->lsigcnt[lsid], &evalcnt, &evalids) != 1) {
         // Logical expression did not match.
         goto done;
     }
@@ -1169,7 +1166,7 @@ cl_error_t cli_scan_fmap(cli_ctx *ctx, cli_file_t ftype, bool filetype_only, str
         /* If we're not doing a filetype-only scan, so we definitely need to include generic signatures.
            So initialize the ac data for the generic signatures root. */
 
-        ret = cli_ac_initdata(&generic_ac_data, generic_ac_root->ac_partsigs, generic_ac_root->ac_lsigs, generic_ac_root->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN);
+        ret = cli_ac_initdata_for_matcher(&generic_ac_data, generic_ac_root);
         if (CL_SUCCESS != ret) {
             goto done;
         }
@@ -1194,7 +1191,7 @@ cl_error_t cli_scan_fmap(cli_ctx *ctx, cli_file_t ftype, bool filetype_only, str
         /* We have to match against target-specific signatures.
            So initialize the ac data for the target-specific signatures root. */
 
-        ret = cli_ac_initdata(&target_ac_data, target_ac_root->ac_partsigs, target_ac_root->ac_lsigs, target_ac_root->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN);
+        ret = cli_ac_initdata_for_matcher(&target_ac_data, target_ac_root);
         if (CL_SUCCESS != ret) {
             goto done;
         }

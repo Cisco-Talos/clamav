@@ -31,6 +31,7 @@
 #include "readdb.h"
 #include "matcher.h"
 #include "matcher-ac.h"
+#include "matcher-byte-comp.h"
 #include "matcher-bm.h"
 #include "matcher-pcre.h"
 #include "others.h"
@@ -238,6 +239,294 @@ START_TEST(test_ac_scanbuff)
     }
 
     cli_ac_freedata(&mdata);
+}
+END_TEST
+
+START_TEST(test_ac_compact_lsig_state)
+{
+    struct cli_matcher root    = {0};
+    struct cli_ac_lsig sigs[9] = {{0}};
+    struct cli_ac_lsig *table[10];
+    struct cli_bcomp_meta bytecomp     = {0};
+    struct cli_bcomp_meta *bytecomps[] = {&bytecomp};
+    struct cli_ac_data compact, independent, legacy;
+    const unsigned widths[] = {1, 3, 64, 64, 64, 64, 64, 64, 64, 64};
+    uint32_t macro          = 0;
+    size_t slots = 0, pos = 0;
+    unsigned i, j;
+
+    for (i = 0; i < 9; i++) {
+        table[i]     = &sigs[i];
+        sigs[i].type = CLI_LSIG_NORMAL;
+    }
+    table[9]                = NULL;
+    sigs[0].tdb.subsigs     = 1;
+    sigs[1].tdb.subsigs     = 3;
+    sigs[2].tdb.subsigs     = 64;
+    sigs[3].tdb.subsigs     = 6;
+    sigs[3].bc_idx          = 1;
+    sigs[4].tdb.subsigs     = 4;
+    sigs[4].type            = CLI_YARA_NORMAL;
+    sigs[5].tdb.subsigs     = 2;
+    sigs[5].tdb.macro_ptids = &macro;
+    sigs[7].tdb.subsigs     = 65;
+    sigs[8].tdb.subsigs     = 2;
+    bytecomp.lsigid[0]      = 1;
+    bytecomp.lsigid[1]      = 8;
+    bytecomp.ref_subsigid   = 63;
+    root.bcomp_metas        = 1;
+    root.bcomp_metatable    = bytecomps;
+    root.ac_lsigs           = 10;
+    root.ac_lsigtable       = table;
+#ifdef USE_MPOOL
+    root.mempool = mpool_create();
+    ck_assert_ptr_nonnull(root.mempool);
+#endif
+    ck_assert_int_eq(cli_ac_init(&root, 2, 3, 0), CL_SUCCESS);
+    ck_assert_int_eq(cli_ac_buildtrie(&root), CL_SUCCESS);
+    for (i = 0; i < 10; i++) {
+        ck_assert_uint_eq(root.ac_lsig_sizes[i], widths[i]);
+        slots += widths[i];
+    }
+    ck_assert_uint_eq(root.ac_lsig_slots, slots);
+    ck_assert_int_eq(cli_ac_initdata_for_matcher(&compact, &root), CL_SUCCESS);
+    ck_assert_int_eq(cli_ac_initdata_for_matcher(&independent, &root), CL_SUCCESS);
+    ck_assert_int_eq(cli_ac_initdata(&legacy, 0, 10, 0, CLI_DEFAULT_AC_TRACKLEN), CL_SUCCESS);
+    for (i = 0; i < 10; i++) {
+        ck_assert_ptr_eq(compact.lsigcnt[i], compact.lsigcnt[0] + pos);
+        ck_assert_ptr_eq(compact.lsigsuboff_first[i], compact.lsigsuboff_first[0] + pos);
+        ck_assert_ptr_eq(compact.lsigsuboff_last[i], compact.lsigsuboff_last[0] + pos);
+        ck_assert_ptr_eq(legacy.lsigcnt[i], legacy.lsigcnt[0] + i * 64);
+        for (j = 0; j < widths[i]; j++) {
+            ck_assert_uint_eq(compact.lsigcnt[i][j], 0);
+            ck_assert_uint_eq(compact.lsigsuboff_first[i][j], CLI_OFF_NONE);
+            ck_assert_uint_eq(compact.lsigsuboff_last[i][j], CLI_OFF_NONE);
+        }
+        /* Writing the end of one row must not overwrite the next row,
+         * nor any state belonging to another scan of the same engine. */
+        compact.lsigcnt[i][widths[i] - 1]          = 100 + i;
+        compact.lsigsuboff_first[i][widths[i] - 1] = 200 + i;
+        compact.lsigsuboff_last[i][widths[i] - 1]  = 300 + i;
+        ck_assert_uint_eq(independent.lsigcnt[i][widths[i] - 1], 0);
+        ck_assert_uint_eq(independent.lsigsuboff_first[i][widths[i] - 1], CLI_OFF_NONE);
+        ck_assert_uint_eq(independent.lsigsuboff_last[i][widths[i] - 1], CLI_OFF_NONE);
+        pos += widths[i];
+    }
+    cli_ac_freedata(&compact);
+    cli_ac_freedata(&independent);
+    cli_ac_freedata(&legacy);
+    cli_ac_free(&root);
+#ifdef USE_MPOOL
+    mpool_destroy(root.mempool);
+#endif
+    ck_assert_int_eq(cli_ac_initdata_for_matcher(&compact, NULL), CL_SUCCESS);
+    cli_ac_freedata(&compact);
+    ck_assert_int_eq(cli_ac_buildtrie(NULL), CL_EMALFDB);
+}
+END_TEST
+
+START_TEST(test_ac_compiled_lsig_expressions)
+{
+    static const char *cases[] = {
+        "0", "63", "0=0", "0<1", "0>2", "0=4294967295",
+        "0&1", "0|1", "0|1&2", "0&1|2", "(0|1&2)",
+        "((0))", "(0|1)>2", "(0&1)=0", "(0|1)<3,2",
+        "(0|1|2)>1,2", "(0|0)>1,2", "(0|63)=2,2",
+        "((0|1)>0,1)&2", "((0|1)>0,1|2)>0,2",
+        "(0=0|1<2)&(2>0|63)", "((0|1)&(2|3))>2,2"};
+    enum { GENERATED = 128,
+           FIXED     = sizeof(cases) / sizeof(cases[0]),
+           TOTAL     = FIXED + GENERATED + 2 };
+    struct cli_matcher root = {0};
+    struct cli_ac_lsig sigs[TOTAL];
+    struct cli_ac_lsig *table[TOTAL];
+    char generated[GENERATED][256], longexpr[4102];
+    uint32_t counts[64], state = 0x56a132ef;
+    unsigned i, j, k;
+
+    memset(sigs, 0, sizeof(sigs));
+    for (i = 0; i < TOTAL; i++) {
+        table[i]            = &sigs[i];
+        sigs[i].tdb.subsigs = 64;
+    }
+    for (i = 0; i < FIXED; i++)
+        sigs[i].u.logic = (char *)cases[i];
+    for (i = 0; i < GENERATED; i++) {
+        unsigned a = i % 64, b = (i * 7 + 3) % 64, c = (i * 13) % 64;
+        char op  = i & 1 ? '&' : '|';
+        char mod = "=<>"[i % 3];
+        snprintf(generated[i], sizeof(generated[i]), "((%u%c%u)%c%u,%u|%u%c%u)%c(%u|%u)",
+                 a, op, b, mod, i % 5, i % 4, c, mod, i % 3, op, b, c);
+        sigs[FIXED + i].u.logic = generated[i];
+    }
+    /* Identical source strings must share a compiled expression. */
+    sigs[TOTAL - 2].u.logic = (char *)cases[10];
+    /* Expressions exceeding the compilation limit still run unchanged. */
+    for (i = 0; i < sizeof(longexpr) - 1; i++)
+        longexpr[i] = i & 1 ? '|' : '0';
+    longexpr[sizeof(longexpr) - 1] = '\0';
+    sigs[TOTAL - 1].u.logic        = longexpr;
+    root.ac_lsigs                  = TOTAL;
+    root.ac_lsigtable              = table;
+#ifdef USE_MPOOL
+    root.mempool = mpool_create();
+    ck_assert_ptr_nonnull(root.mempool);
+#endif
+    ck_assert_int_eq(cli_ac_init(&root, 2, 3, 0), CL_SUCCESS);
+    ck_assert_int_eq(cli_ac_buildtrie(&root), CL_SUCCESS);
+    ck_assert_uint_eq(sigs[TOTAL - 2].expr_id, sigs[10].expr_id);
+    ck_assert_uint_eq(sigs[TOTAL - 1].expr_id, 0);
+    for (i = 0; i < TOTAL; i++) {
+        if (i != TOTAL - 1)
+            ck_assert_msg(sigs[i].expr_id != 0, "Expression was not compiled: %s", sigs[i].u.logic);
+        for (j = 0; j < (i == TOTAL - 1 ? 2 : 256); j++) {
+            unsigned original_count = 7, compiled_count = 7;
+            uint64_t original_ids = (uint64_t)1 << 62, compiled_ids = original_ids;
+            int original_result, compiled_result;
+            for (k = 0; k < 64; k++) {
+                state     = state * 1664525u + 1013904223u;
+                counts[k] = j == 0 ? 0 : j == 1 ? 1
+                                     : j == 2   ? UINT32_MAX
+                                     : j == 3   ? UINT32_MAX - k
+                                                : (state >> 24) % 6;
+            }
+            original_result = cli_ac_chklsig(sigs[i].u.logic, sigs[i].u.logic + strlen(sigs[i].u.logic),
+                                             counts, &original_count, &original_ids, 0);
+            compiled_result = cli_ac_eval_lsig(&root, i, counts, &compiled_count, &compiled_ids);
+            ck_assert_msg(original_result == compiled_result && original_count == compiled_count &&
+                              original_ids == compiled_ids,
+                          "Compiled expression differs: %s, vector %u", sigs[i].u.logic, j);
+        }
+    }
+    cli_ac_free(&root);
+#ifdef USE_MPOOL
+    mpool_destroy(root.mempool);
+#endif
+}
+END_TEST
+
+START_TEST(test_ac_lsig_compile_budget)
+{
+    enum { TOTAL = 24 };
+    struct cli_matcher root = {0};
+    struct cli_ac_lsig sigs[TOTAL];
+    struct cli_ac_lsig *table[TOTAL];
+    char expressions[TOTAL][4096];
+    uint32_t counts[64] = {0};
+    unsigned i, j;
+
+    memset(sigs, 0, sizeof(sigs));
+    for (i = 0; i < TOTAL; i++) {
+        table[i]            = &sigs[i];
+        sigs[i].tdb.subsigs = 64;
+        sigs[i].u.logic     = expressions[i];
+        for (j = 0; j < 4078; j++)
+            expressions[i][j] = j & 1 ? '|' : '0';
+        snprintf(expressions[i] + 4078, sizeof(expressions[i]) - 4078, "%u", 10 + i);
+    }
+    root.ac_lsigs     = TOTAL;
+    root.ac_lsigtable = table;
+#ifdef USE_MPOOL
+    root.mempool = mpool_create();
+    ck_assert_ptr_nonnull(root.mempool);
+#endif
+    ck_assert_int_eq(cli_ac_init(&root, 2, 3, 0), CL_SUCCESS);
+    ck_assert_int_eq(cli_ac_buildtrie(&root), CL_SUCCESS);
+    ck_assert_msg(root.ac_lsig_expr_count > 0 && root.ac_lsig_expr_count < TOTAL,
+                  "Compiled-expression storage budget did not retain a mix of compiled and interpreted signatures");
+    for (i = 0; i < TOTAL; i++) {
+        for (j = 0; j < 2; j++) {
+            unsigned original_count = 0, compiled_count = 0;
+            uint64_t original_ids = 0, compiled_ids = 0;
+            int original_result, compiled_result;
+            counts[0]       = j;
+            original_result = cli_ac_chklsig(expressions[i], expressions[i] + strlen(expressions[i]),
+                                             counts, &original_count, &original_ids, 0);
+            compiled_result = cli_ac_eval_lsig(&root, i, counts, &compiled_count, &compiled_ids);
+            ck_assert_int_eq(original_result, compiled_result);
+            ck_assert_uint_eq(original_count, compiled_count);
+            ck_assert_msg(original_ids == compiled_ids, "Matched IDs differ after the compilation budget was reached");
+        }
+    }
+    cli_ac_free(&root);
+#ifdef USE_MPOOL
+    mpool_destroy(root.mempool);
+#endif
+}
+END_TEST
+
+START_TEST(test_ac_candidate_rejection)
+{
+    static const struct {
+        const char *name, *hex, *offset;
+        uint8_t options;
+    } signatures[] = {
+        {"Long", "61626358", "*", 0},
+        {"FailureSuffix", "626359", "*", 0},
+        {"ExactHead", "707172", "*", 0},
+        {"Wildcard", "757677??78", "*", 0},
+        {"Nocase", "64656647", "*", ACPATT_OPTION_NOCASE},
+        {"FirstOffset", "68696a4b", "0", 0},
+        {"SecondOffset", "68696a4b", "1", 0},
+        {"Multipart", "31323334*35363738", "*", 0},
+        {"ZeroSuffix", "71737400", "*", 0},
+        {"HighSuffix", "717375ff", "*", 0},
+        {"FailureHead", "6b6c6d58", "*", 0},
+        {"FailureWildcard", "6c6d??", "*", 0},
+    };
+    static const struct {
+        const char *data, *name;
+        unsigned int length;
+    } cases[] = {
+        {"abcX", "Long", 4},
+        {"abcY", "FailureSuffix", 4},
+        {"abcZ", NULL, 4},
+        {"abc", NULL, 3},        /* no byte after the trie head */
+        {"pqr", "ExactHead", 3}, /* a pattern with no suffix */
+        {"uvwax", "Wildcard", 5},
+        {"uvw", NULL, 3},
+        {"DEFG", "Nocase", 4},
+        {"defg", "Nocase", 4},
+        {"hijK", "FirstOffset", 4},
+        {"!hijK", "SecondOffset", 5}, /* identical pattern, different offset */
+        {"!!hijK", NULL, 6},
+        {"1234!5678", "Multipart", 9},
+        {"5678", NULL, 4},
+        {"qst\0", "ZeroSuffix", 4},
+        {"qsu\xff", "HighSuffix", 4},
+        {"klmX", "FailureHead", 4},
+        {"klmY", "FailureWildcard", 4}, /* rejected head must still visit its failure list */
+    };
+    struct cli_matcher *root = ctx.engine->root[0];
+    struct cli_ac_data mdata;
+    unsigned int i;
+    cl_error_t status;
+
+    ck_assert_ptr_nonnull(root);
+    root->ac_only = 1;
+#ifdef USE_MPOOL
+    root->mempool = mpool_create();
+#endif
+    ck_assert_int_eq(cli_ac_init(root, CLI_DEFAULT_AC_MINDEPTH, CLI_DEFAULT_AC_MAXDEPTH, 1), CL_SUCCESS);
+    for (i = 0; i < sizeof(signatures) / sizeof(signatures[0]); i++) {
+        status = cli_sigopts_handler(root, signatures[i].name, signatures[i].hex,
+                                     signatures[i].options, 0, 0, signatures[i].offset, NULL, 0);
+        ck_assert_int_eq(status, CL_SUCCESS);
+    }
+    ck_assert_int_eq(cli_ac_buildtrie(root), CL_SUCCESS);
+    for (i = 0; i < sizeof(cases) / sizeof(cases[0]); i++) {
+        /* Multipart state must not leak between independent test files. */
+        ck_assert_int_eq(cli_ac_initdata(&mdata, root->ac_partsigs, 0, 0, CLI_DEFAULT_AC_TRACKLEN), CL_SUCCESS);
+        virname = NULL;
+        status  = cli_ac_scanbuff((const unsigned char *)cases[i].data, cases[i].length,
+                                  &virname, NULL, NULL, root, &mdata, 0, 0, NULL, AC_SCAN_VIR, NULL);
+        ck_assert_msg(status == (cases[i].name ? CL_VIRUS : CL_CLEAN), "candidate case %u: status %d", i, status);
+        if (cases[i].name) {
+            ck_assert_ptr_nonnull(virname);
+            ck_assert_msg(!strncmp(virname, cases[i].name, strlen(cases[i].name)), "candidate case %u: %s", i, virname);
+        }
+        cli_ac_freedata(&mdata);
+    }
 }
 END_TEST
 
@@ -532,7 +821,7 @@ START_TEST(test_pcre_scanbuff)
 
     // recomputate offsets
 
-    ret = cli_ac_initdata(&mdata, root->ac_partsigs, root->ac_lsigs, root->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN);
+    ret = cli_ac_initdata_for_matcher(&mdata, root);
     ck_assert_msg(ret == CL_SUCCESS, "[pcre] cli_ac_initdata() failed");
 
     ctx.options->general &= ~CL_SCAN_GENERAL_ALLMATCHES; /* make sure all-match is disabled */
@@ -584,7 +873,7 @@ START_TEST(test_pcre_scanbuff_allscan)
 
     // recomputate offsets
 
-    ret = cli_ac_initdata(&mdata, root->ac_partsigs, root->ac_lsigs, root->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN);
+    ret = cli_ac_initdata_for_matcher(&mdata, root);
     ck_assert_msg(ret == CL_SUCCESS, "[pcre] cli_ac_initdata() failed");
 
     ctx.options->general |= CL_SCAN_GENERAL_ALLMATCHES; /* enable all-match */
@@ -627,6 +916,10 @@ Suite *test_matchers_suite(void)
     suite_add_tcase(s, tc_matchers);
     tcase_add_checked_fixture(tc_matchers, setup, teardown);
     tcase_add_test(tc_matchers, test_ac_scanbuff);
+    tcase_add_test(tc_matchers, test_ac_compact_lsig_state);
+    tcase_add_test(tc_matchers, test_ac_compiled_lsig_expressions);
+    tcase_add_test(tc_matchers, test_ac_lsig_compile_budget);
+    tcase_add_test(tc_matchers, test_ac_candidate_rejection);
     tcase_add_test(tc_matchers, test_ac_repeated_prefix_does_not_shift_to_repeated_window);
     tcase_add_test(tc_matchers, test_ac_scanbuff_ex);
     tcase_add_test(tc_matchers, test_bm_scanbuff);

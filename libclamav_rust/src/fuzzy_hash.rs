@@ -29,13 +29,15 @@ use std::{
     panic, slice,
 };
 
-use image::{imageops::FilterType::Lanczos3, DynamicImage, ImageBuffer, Luma, Pixel, Rgb};
+use image::{DynamicImage, ImageBuffer, Luma, Rgb};
 use log::{debug, error, warn};
-use num_traits::{NumCast, ToPrimitive, Zero};
+use num_traits::{NumCast, ToPrimitive};
 use rustdct::DctPlanner;
 use transpose::transpose;
 
 use crate::{ffi_error, ffi_util::FFIError, rrf_call, sys, validate_str_param};
+
+mod resize;
 
 /// Error enumerates all possible errors returned by this library.
 #[derive(thiserror::Error, Debug)]
@@ -423,16 +425,13 @@ pub fn fuzzy_hash_calculate_image(buffer: &[u8]) -> Result<Vec<u8>, Error> {
     };
 
     // Drop the alpha channel (if exists).
-    let buff_rgb8 = og_image.to_rgb8();
+    let buff_rgb8 = og_image.into_rgb8();
 
     // Convert image to grayscale.
     let buff_luma8 = grayscale(&buff_rgb8);
 
-    // Convert back to a DynamicImage type so we can resize it.
-    let image_gs = DynamicImage::ImageLuma8(buff_luma8);
-
     // Shrink to a 32x32 (1024 pixel) image.
-    let image_small = image::DynamicImage::resize_exact(&image_gs, 32, 32, Lanczos3);
+    let image_small = DynamicImage::ImageLuma8(resize::lanczos3_32(&buff_luma8));
 
     // Convert the data to a Vec of floats.
     let mut imgbuff_f32 = image_small.to_luma32f().into_raw();
@@ -539,21 +538,10 @@ fn rgb_to_luma(rgb: &[u8]) -> u8 {
 /// See also: https://github.com/image-rs/image/issues/1554
 fn grayscale(image: &ImageBuffer<Rgb<u8>, Vec<u8>>) -> ImageBuffer<Luma<u8>, Vec<u8>> {
     let (width, height) = image.dimensions();
-    let mut out = ImageBuffer::new(width, height);
+    let mut out: ImageBuffer<Luma<u8>, Vec<u8>> = ImageBuffer::new(width, height);
 
-    for y in 0..height {
-        for x in 0..width {
-            let pixel = image.get_pixel(x, y);
-
-            let mut pix = Luma([Zero::zero()]);
-            let gray = pix.channels_mut();
-            let rgb = pixel.channels();
-            gray[0] = rgb_to_luma(rgb);
-
-            let pixel = Luma::from_slice(gray); //.into_color(); // no-op for luma->luma
-
-            out.put_pixel(x, y, *pixel);
-        }
+    for (source, dest) in image.pixels().zip(out.pixels_mut()) {
+        dest.0[0] = rgb_to_luma(&source.0);
     }
 
     out

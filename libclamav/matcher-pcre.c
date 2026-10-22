@@ -639,6 +639,11 @@ cl_error_t cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const 
 
         pm_dbgmsg("cli_pcre_scanbuf: passed buffer adjusted to %u +%u(%u)[%u]%s\n", adjbuffer, adjlength, adjbuffer + adjlength, adjshift, encompass ? " (encompass)" : "");
 
+        /* Allocate scan-local match data once for this pattern. Recreate it for
+         * the next pattern, whose capture count may be different. */
+        if ((ret = cli_pcre_results_reset(&p_res, pd)) != CL_SUCCESS)
+            break;
+
         /* if the global flag is set, loop through the scanning */
         do {
             if (cli_checktimelimit(ctx) != CL_SUCCESS) {
@@ -647,9 +652,9 @@ cl_error_t cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const 
                 break;
             }
 
-            /* reset the match results */
-            if ((ret = cli_pcre_results_reset(&p_res, pd)) != CL_SUCCESS)
-                break;
+            /* Reuse PCRE2's match data, but clear our per-match result state. */
+            p_res.err      = CL_SUCCESS;
+            p_res.match[0] = p_res.match[1] = 0;
 
             /* performance metrics */
             cli_event_time_start(p_sigevents, pm->sigtime_id);

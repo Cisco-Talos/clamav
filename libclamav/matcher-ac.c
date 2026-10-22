@@ -38,11 +38,13 @@
 #include "others.h"
 #include "matcher.h"
 #include "matcher-ac.h"
+#include "matcher-byte-comp.h"
 #include "filetypes.h"
 #include "str.h"
 #include "readdb.h"
 #include "default.h"
 #include "filtering.h"
+#include "hashtab.h"
 
 #include "mpool.h"
 
@@ -99,8 +101,14 @@ static inline int insert_list(struct cli_matcher *root, struct cli_ac_patt *patt
         cli_errmsg("cli_ac_addpatt: Can't allocate memory for list node\n");
         return CL_EMEM;
     }
-    new->me   = pattern;
-    new->node = pt;
+    new->me         = pattern;
+    new->node       = pt;
+    new->partno     = pattern->partno;
+    new->first_byte = 256;
+    if (pattern->depth < pattern->length[0] &&
+        (pattern->pattern[pattern->depth] & CLI_MATCH_METADATA) == CLI_MATCH_CHAR) {
+        new->first_byte = pattern->pattern[pattern->depth] & 0xff;
+    }
 
     root->ac_lists++;
     newtable = MPOOL_REALLOC(root->mempool, root->ac_listtable, root->ac_lists * sizeof(struct cli_ac_list *));
@@ -270,7 +278,7 @@ static bool ac_select_repeated_prefix_exact_window(const uint16_t *pattern, uint
     size_t best_start       = 0;
     unsigned int best_repeated_count;
     unsigned int best_distinct_count = 0;
-    bool found                        = false;
+    bool found                       = false;
     size_t start;
 
     if (!pattern || !ppos || 0 == depth || length <= depth) {
@@ -296,10 +304,10 @@ static bool ac_select_repeated_prefix_exact_window(const uint16_t *pattern, uint
     best_repeated_count = (unsigned int)depth + 1;
 
     for (start = 1; start <= (size_t)length - depth; start++) {
-        bool distinct[256]             = {false};
-        unsigned int repeated_count    = 0;
-        unsigned int distinct_count    = 0;
-        bool valid                     = true;
+        bool distinct[256]          = {false};
+        unsigned int repeated_count = 0;
+        unsigned int distinct_count = 0;
+        bool valid                  = true;
         size_t i;
 
         for (i = start; i < start + depth; i++) {
@@ -329,10 +337,10 @@ static bool ac_select_repeated_prefix_exact_window(const uint16_t *pattern, uint
             repeated_count < best_repeated_count ||
             (repeated_count == best_repeated_count && distinct_count > best_distinct_count) ||
             (repeated_count == best_repeated_count && distinct_count == best_distinct_count && start > best_start)) {
-            found                = true;
-            best_start           = start;
-            best_repeated_count  = repeated_count;
-            best_distinct_count  = distinct_count;
+            found               = true;
+            best_start          = start;
+            best_repeated_count = repeated_count;
+            best_distinct_count = distinct_count;
         }
     }
 
@@ -409,12 +417,28 @@ static void link_lists(struct cli_matcher *root)
 {
     struct cli_ac_node *curnode;
     unsigned int i, grouplen;
+    size_t list_count = root->ac_lists;
 
     if (!root->ac_lists)
         return;
 
     /* Group the list by owning node, pattern equality and sort by partno */
     cli_qsort(root->ac_listtable, root->ac_lists, sizeof(root->ac_listtable[0]), sort_list_fn);
+
+    /* Candidate traversal is hot with large databases. Keep entries belonging
+     * to the same trie node together instead of following allocations scattered
+     * throughout the signature pool. No links point to the entries yet.
+     * Allocation failure leaves the original representation usable. */
+    if (list_count <= SIZE_MAX / sizeof(struct cli_ac_list)) {
+        root->ac_liststorage = MPOOL_CALLOC(root->mempool, list_count, sizeof(struct cli_ac_list));
+    }
+    if (root->ac_liststorage) {
+        for (i = 0; i < root->ac_lists; i++) {
+            root->ac_liststorage[i] = *root->ac_listtable[i];
+            MPOOL_FREE(root->mempool, root->ac_listtable[i]);
+            root->ac_listtable[i] = &root->ac_liststorage[i];
+        }
+    }
 
     curnode = root->ac_listtable[0]->node;
     for (i = 1, grouplen = 1; i <= root->ac_lists; i++, grouplen++) {
@@ -747,10 +771,64 @@ static int ac_maketrans(struct cli_matcher *root)
     return CL_SUCCESS;
 }
 
+static cl_error_t ac_build_lsig_expressions(struct cli_matcher *root);
+static void ac_free_lsig_expressions(struct cli_matcher *root);
+
+static cl_error_t ac_build_lsig_layout(struct cli_matcher *root)
+{
+    uint32_t i;
+    size_t slots = 0;
+
+    if (!root->ac_lsigs || !root->ac_lsigtable)
+        return CL_SUCCESS;
+
+    root->ac_lsig_sizes = MPOOL_MALLOC(root->mempool, root->ac_lsigs);
+    if (!root->ac_lsig_sizes)
+        return CL_EMEM;
+
+    for (i = 0; i < root->ac_lsigs; i++) {
+        const struct cli_ac_lsig *lsig = root->ac_lsigtable[i];
+        unsigned int width             = 64;
+
+        /* Bytecode can read a complete 64-element row. YARA and macro
+         * signatures also keep the legacy layout. Missing metadata is used
+         * by some private callers and must not produce a zero-length row. */
+        if (lsig && lsig->type == CLI_LSIG_NORMAL && !lsig->bc_idx &&
+            !lsig->tdb.macro_ptids && lsig->tdb.subsigs && lsig->tdb.subsigs <= 64)
+            width = lsig->tdb.subsigs;
+
+        root->ac_lsig_sizes[i] = width;
+    }
+    /* Byte-compare references are not limited by tdb.subsigs at load time.
+     * Keep their owners at the legacy width, including unused reference IDs. */
+    for (i = 0; i < root->bcomp_metas; i++) {
+        const struct cli_bcomp_meta *meta = root->bcomp_metatable[i];
+        if (meta->lsigid[0] && meta->lsigid[1] < root->ac_lsigs)
+            root->ac_lsig_sizes[meta->lsigid[1]] = 64;
+    }
+    for (i = 0; i < root->ac_lsigs; i++) {
+        if (slots > SIZE_MAX / sizeof(uint32_t) - root->ac_lsig_sizes[i])
+            return CL_EMEM;
+        slots += root->ac_lsig_sizes[i];
+    }
+    root->ac_lsig_slots = slots;
+    return CL_SUCCESS;
+}
+
 cl_error_t cli_ac_buildtrie(struct cli_matcher *root)
 {
+    cl_error_t ret;
+
     if (!root)
         return CL_EMALFDB;
+
+    ret = ac_build_lsig_layout(root);
+    if (ret != CL_SUCCESS)
+        return ret;
+
+    ret = ac_build_lsig_expressions(root);
+    if (ret != CL_SUCCESS)
+        return ret;
 
     if (!(root->ac_root)) {
         cli_dbgmsg("cli_ac_buildtrie: AC pattern matcher is not initialised\n");
@@ -843,6 +921,9 @@ void cli_ac_free(struct cli_matcher *root)
     uint32_t i               = 0;
     struct cli_ac_patt *patt = NULL;
 
+    MPOOL_FREE(root->mempool, root->ac_lsig_sizes);
+    ac_free_lsig_expressions(root);
+
     for (i = 0; i < root->ac_patterns; i++) {
         patt = root->ac_pattable[i];
         MPOOL_FREE(root->mempool, patt->prefix ? patt->prefix : patt->pattern);
@@ -866,8 +947,12 @@ void cli_ac_free(struct cli_matcher *root)
         MPOOL_FREE(root->mempool, root->ac_reloff);
     }
 
-    for (i = 0; i < root->ac_lists; i++) {
-        MPOOL_FREE(root->mempool, root->ac_listtable[i]);
+    if (root->ac_liststorage) {
+        MPOOL_FREE(root->mempool, root->ac_liststorage);
+    } else {
+        for (i = 0; i < root->ac_lists; i++) {
+            MPOOL_FREE(root->mempool, root->ac_listtable[i]);
+        }
     }
 
     if (root->ac_listtable) {
@@ -894,10 +979,28 @@ void cli_ac_free(struct cli_matcher *root)
     free_trans_nodes(root);
 }
 
-/*
- * In parse_only mode this function returns -1 on error or the max subsig id
- */
-int cli_ac_chklsig(const char *expr, const char *end, uint32_t *lsigcnt, unsigned int *cnt, uint64_t *ids, unsigned int parse_only)
+/* The compiler uses the same parser as the interpreter. In particular,
+ * operator grouping and count/ID propagation are not ordinary Boolean AST
+ * semantics: a block modifier deliberately does not propagate its IDs. */
+struct cli_lsig_node {
+    uint32_t left, right, value1, value2;
+    char op, modifier;
+};
+
+struct cli_lsig_expr {
+    uint32_t count;
+    struct cli_lsig_node nodes[];
+};
+
+struct ac_lsig_builder {
+    struct cli_lsig_node *nodes;
+    uint32_t used, capacity;
+};
+
+/* In parse_only mode, returns -1 on error or the maximum subsignature ID.
+ * A non-NULL builder records the parsed tree during that same validation. */
+static int ac_chklsig(const char *expr, const char *end, uint32_t *lsigcnt, unsigned int *cnt, uint64_t *ids,
+                      unsigned int parse_only, struct ac_lsig_builder *builder, uint32_t *node_id)
 {
     unsigned int i, len = end - expr, pth = 0, opoff = 0, op1off = 0, val;
     unsigned int blkend = 0, id, modval1, modval2 = 0, lcnt = 0, rcnt = 0, tcnt, modoff = 0;
@@ -905,6 +1008,7 @@ int cli_ac_chklsig(const char *expr, const char *end, uint32_t *lsigcnt, unsigne
     int ret, lval, rval;
     char op = 0, op1 = 0, mod = 0, blkmod = 0;
     const char *lstart = expr, *lend = NULL, *rstart = NULL, *rend = end, *pt;
+    struct cli_lsig_node *node = NULL;
 
     for (i = 0; i < len; i++) {
         switch (expr[i]) {
@@ -975,7 +1079,7 @@ int cli_ac_chklsig(const char *expr, const char *end, uint32_t *lsigcnt, unsigne
 
     if (!op && !op1) {
         if (expr[0] == '(')
-            return cli_ac_chklsig(++expr, --end, lsigcnt, cnt, ids, parse_only);
+            return ac_chklsig(++expr, --end, lsigcnt, cnt, ids, parse_only, builder, node_id);
 
         ret = sscanf(expr, "%u", &id);
         if (!ret || ret == EOF) {
@@ -1021,6 +1125,16 @@ int cli_ac_chklsig(const char *expr, const char *end, uint32_t *lsigcnt, unsigne
         }
 
         if (parse_only) {
+            if (builder) {
+                if (id >= 64 || builder->used == builder->capacity ||
+                    (mod && mod != '=' && mod != '<' && mod != '>'))
+                    return -1;
+                *node_id       = builder->used++;
+                node           = &builder->nodes[*node_id];
+                node->left     = id;
+                node->modifier = mod;
+                node->value1   = mod ? modval1 : 0;
+            }
             return val;
         } else {
             if (val) {
@@ -1053,13 +1167,23 @@ int cli_ac_chklsig(const char *expr, const char *end, uint32_t *lsigcnt, unsigne
 
     rstart = &expr[opoff + 1];
 
-    lval = cli_ac_chklsig(lstart, lend, lsigcnt, &lcnt, &lids, parse_only);
+    if (builder) {
+        if (builder->used == builder->capacity)
+            return -1;
+        *node_id       = builder->used++;
+        node           = &builder->nodes[*node_id];
+        node->op       = op;
+        node->modifier = blkmod;
+        node->value1   = blkmod ? modval1 : 0;
+        node->value2   = modval2;
+    }
+    lval = ac_chklsig(lstart, lend, lsigcnt, &lcnt, &lids, parse_only, builder, node ? &node->left : NULL);
     if (lval == -1) {
         cli_errmsg("cli_ac_chklsig: Calculation of lval failed\n");
         return -1;
     }
 
-    rval = cli_ac_chklsig(rstart, rend, lsigcnt, &rcnt, &rids, parse_only);
+    rval = ac_chklsig(rstart, rend, lsigcnt, &rcnt, &rids, parse_only, builder, node ? &node->right : NULL);
     if (rval == -1) {
         cli_errmsg("cli_ac_chklsig: Calculation of rval failed\n");
         return -1;
@@ -1135,6 +1259,181 @@ int cli_ac_chklsig(const char *expr, const char *end, uint32_t *lsigcnt, unsigne
             return 1;
         }
     }
+}
+
+int cli_ac_chklsig(const char *expr, const char *end, uint32_t *lsigcnt, unsigned int *cnt, uint64_t *ids, unsigned int parse_only)
+{
+    return ac_chklsig(expr, end, lsigcnt, cnt, ids, parse_only, NULL, NULL);
+}
+
+static cl_error_t ac_compile_lsig_expr(const char *expr, size_t len, struct cli_lsig_expr **result)
+{
+    struct ac_lsig_builder builder;
+    struct cli_lsig_expr *compiled;
+    uint32_t node_id = 0;
+
+    *result = NULL;
+    /* Bound optional compilation work; longer expressions retain the
+     * interpreter. No signature is dropped when this limit is reached. */
+    if (!len || len > 4096)
+        return CL_SUCCESS;
+    builder.used     = 0;
+    builder.capacity = len;
+    builder.nodes    = calloc(len, sizeof(*builder.nodes));
+    if (!builder.nodes)
+        return CL_EMEM;
+    if (ac_chklsig(expr, expr + len, NULL, NULL, NULL, 1, &builder, &node_id) < 0) {
+        free(builder.nodes);
+        return CL_SUCCESS;
+    }
+    compiled = malloc(sizeof(*compiled) + builder.used * sizeof(*builder.nodes));
+    if (!compiled) {
+        free(builder.nodes);
+        return CL_EMEM;
+    }
+    compiled->count = builder.used;
+    memcpy(compiled->nodes, builder.nodes, builder.used * sizeof(*builder.nodes));
+    free(builder.nodes);
+    *result = compiled;
+    return CL_SUCCESS;
+}
+
+static cl_error_t ac_build_lsig_expressions(struct cli_matcher *root)
+{
+    struct cli_hashtable expressions;
+    cl_error_t ret;
+    uint32_t i;
+    size_t compiled_bytes = 0;
+
+    if (!root->ac_lsigs || !root->ac_lsigtable)
+        return CL_SUCCESS;
+    ret = cli_hashtab_init(&expressions, 256);
+    if (ret != CL_SUCCESS)
+        return ret;
+    for (i = 0; i < root->ac_lsigs; i++) {
+        struct cli_ac_lsig *lsig = root->ac_lsigtable[i];
+        const struct cli_element *entry;
+        struct cli_lsig_expr *compiled, **table;
+        size_t len;
+        uint16_t expr_id = 0;
+
+        if (!lsig || lsig->type != CLI_LSIG_NORMAL || !lsig->u.logic)
+            continue;
+        len   = strlen(lsig->u.logic);
+        entry = cli_hashtab_find(&expressions, lsig->u.logic, len);
+        if (entry) {
+            lsig->expr_id = entry->data;
+            continue;
+        }
+        /* The ID fits in existing struct padding. Excess unique expressions
+         * still use the interpreter, including all of their original checks. */
+        if (root->ac_lsig_expr_count == UINT16_MAX)
+            continue;
+        ret = ac_compile_lsig_expr(lsig->u.logic, len, &compiled);
+        if (ret != CL_SUCCESS)
+            break;
+        if (compiled) {
+            size_t bytes = sizeof(*compiled) + compiled->count * sizeof(*compiled->nodes) + sizeof(*table);
+            /* Cap requested compiled storage at 1 MiB per target matcher.
+             * Databases with many distinct large expressions retain the
+             * interpreter instead of multiplying their resident footprint. */
+            if (bytes > 1024 * 1024 - compiled_bytes) {
+                free(compiled);
+                continue;
+            }
+            table = realloc(root->ac_lsig_exprs, (root->ac_lsig_expr_count + 1) * sizeof(*table));
+            if (!table) {
+                free(compiled);
+                ret = CL_EMEM;
+                break;
+            }
+            root->ac_lsig_exprs               = table;
+            table[root->ac_lsig_expr_count++] = compiled;
+            compiled_bytes += bytes;
+            expr_id = root->ac_lsig_expr_count;
+        }
+        if (!cli_hashtab_insert(&expressions, lsig->u.logic, len, expr_id)) {
+            ret = CL_EMEM;
+            break;
+        }
+        lsig->expr_id = expr_id;
+    }
+    cli_hashtab_free(&expressions);
+    return ret;
+}
+
+static void ac_free_lsig_expressions(struct cli_matcher *root)
+{
+    uint32_t i;
+    for (i = 0; i < root->ac_lsig_expr_count; i++)
+        free(root->ac_lsig_exprs[i]);
+    free(root->ac_lsig_exprs);
+}
+
+static inline int ac_lsig_compare(uint32_t value, char modifier, uint32_t limit)
+{
+    switch (modifier) {
+        case '=':
+            return value == limit;
+        case '<':
+            return value < limit;
+        case '>':
+            return value > limit;
+        default:
+            return value != 0;
+    }
+}
+
+static int ac_eval_lsig_node(const struct cli_lsig_node *nodes, uint32_t index, const uint32_t *counts,
+                             unsigned int *cnt, uint64_t *ids)
+{
+    const struct cli_lsig_node *node = &nodes[index];
+    unsigned int lcnt = 0, rcnt = 0, total, distinct = 0;
+    uint64_t lids = 0, rids = 0, tids;
+    int left, right, result;
+
+    if (!node->op) {
+        total = counts[node->left];
+        if (!ac_lsig_compare(total, node->modifier, node->value1))
+            return 0;
+        *cnt += total;
+        *ids |= (uint64_t)1 << node->left;
+        return 1;
+    }
+    /* Both sides contribute counts/IDs, so Boolean short-circuiting would
+     * change the meaning of enclosing count and distinct-ID modifiers. */
+    left   = ac_eval_lsig_node(nodes, node->left, counts, &lcnt, &lids);
+    right  = ac_eval_lsig_node(nodes, node->right, counts, &rcnt, &rids);
+    result = node->op == '&' ? left && right : left || right;
+    total  = result ? lcnt + rcnt : 0;
+    tids   = result ? lids | rids : 0;
+    if (!node->modifier) {
+        if (result) {
+            *cnt += total;
+            *ids |= tids;
+        }
+        return result;
+    }
+    if (!ac_lsig_compare(total, node->modifier, node->value1))
+        return 0;
+    if (node->value2) {
+        while (tids) {
+            distinct += tids & 1;
+            tids >>= 1;
+        }
+        if (distinct < node->value2)
+            return 0;
+    }
+    *cnt += total;
+    return 1;
+}
+
+int cli_ac_eval_lsig(const struct cli_matcher *root, uint32_t lsid, uint32_t *counts, unsigned int *cnt, uint64_t *ids)
+{
+    const struct cli_ac_lsig *lsig = root->ac_lsigtable[lsid];
+    if (lsig->expr_id && lsig->expr_id <= root->ac_lsig_expr_count)
+        return ac_eval_lsig_node(root->ac_lsig_exprs[lsig->expr_id - 1]->nodes, 0, counts, cnt, ids);
+    return cli_ac_chklsig(lsig->u.logic, lsig->u.logic + strlen(lsig->u.logic), counts, cnt, ids, 0);
 }
 
 inline static int ac_findmatch_special(const unsigned char *buffer, uint32_t offset, uint32_t bp, uint32_t fileoffset, uint32_t length,
@@ -1522,11 +1821,11 @@ inline static int ac_findmatch(const unsigned char *buffer, uint32_t offset, uin
     return 0;
 }
 
-cl_error_t cli_ac_initdata(struct cli_ac_data *data, uint32_t partsigs, uint32_t lsigs, uint32_t reloffsigs, uint8_t tracklen)
+static cl_error_t ac_initdata(struct cli_ac_data *data, uint32_t partsigs, uint32_t lsigs, uint32_t reloffsigs,
+                              const uint8_t *sizes, size_t slots)
 {
-    unsigned int i, j;
-
-    UNUSEDPARAM(tracklen);
+    unsigned int i;
+    size_t j, pos;
 
     if (!data) {
         cli_errmsg("cli_ac_init: data == NULL\n");
@@ -1571,7 +1870,7 @@ cl_error_t cli_ac_initdata(struct cli_ac_data *data, uint32_t partsigs, uint32_t
             cli_errmsg("cli_ac_init: Can't allocate memory for data->lsigcnt\n");
             return CL_EMEM;
         }
-        data->lsigcnt[0] = (uint32_t *)calloc(lsigs * 64, sizeof(uint32_t));
+        data->lsigcnt[0] = (uint32_t *)calloc(slots, sizeof(uint32_t));
         if (!data->lsigcnt[0]) {
             free(data->lsigcnt);
             if (partsigs)
@@ -1583,8 +1882,10 @@ cl_error_t cli_ac_initdata(struct cli_ac_data *data, uint32_t partsigs, uint32_t
             cli_errmsg("cli_ac_init: Can't allocate memory for data->lsigcnt[0]\n");
             return CL_EMEM;
         }
-        for (i = 1; i < lsigs; i++)
-            data->lsigcnt[i] = data->lsigcnt[0] + 64 * i;
+        for (i = 1, pos = 0; i < lsigs; i++) {
+            pos += sizes ? sizes[i - 1] : 64;
+            data->lsigcnt[i] = data->lsigcnt[0] + pos;
+        }
         data->yr_matches = (uint8_t *)calloc(lsigs, sizeof(uint8_t));
         if (data->yr_matches == NULL) {
             free(data->lsigcnt[0]);
@@ -1630,8 +1931,10 @@ cl_error_t cli_ac_initdata(struct cli_ac_data *data, uint32_t partsigs, uint32_t
             cli_errmsg("cli_ac_init: Can't allocate memory for data->lsigsuboff_(last|first)\n");
             return CL_EMEM;
         }
-        data->lsigsuboff_last[0]  = (uint32_t *)calloc(lsigs * 64, sizeof(uint32_t));
-        data->lsigsuboff_first[0] = (uint32_t *)calloc(lsigs * 64, sizeof(uint32_t));
+        /* Every offset is initialized to CLI_OFF_NONE below. Avoid zeroing
+         * the same memory first, including when malloc reuses freed rows. */
+        data->lsigsuboff_last[0]  = (uint32_t *)malloc(slots * sizeof(uint32_t));
+        data->lsigsuboff_first[0] = (uint32_t *)malloc(slots * sizeof(uint32_t));
         if (!data->lsigsuboff_last[0] || !data->lsigsuboff_first[0]) {
             free(data->lsig_matches);
             free(data->lsigsuboff_last[0]);
@@ -1650,17 +1953,14 @@ cl_error_t cli_ac_initdata(struct cli_ac_data *data, uint32_t partsigs, uint32_t
             cli_errmsg("cli_ac_init: Can't allocate memory for data->lsigsuboff_(last|first)[0]\n");
             return CL_EMEM;
         }
-        for (j = 0; j < 64; j++) {
+        for (j = 0; j < slots; j++) {
             data->lsigsuboff_last[0][j]  = CLI_OFF_NONE;
             data->lsigsuboff_first[0][j] = CLI_OFF_NONE;
         }
-        for (i = 1; i < lsigs; i++) {
-            data->lsigsuboff_last[i]  = data->lsigsuboff_last[0] + 64 * i;
-            data->lsigsuboff_first[i] = data->lsigsuboff_first[0] + 64 * i;
-            for (j = 0; j < 64; j++) {
-                data->lsigsuboff_last[i][j]  = CLI_OFF_NONE;
-                data->lsigsuboff_first[i][j] = CLI_OFF_NONE;
-            }
+        for (i = 1, pos = 0; i < lsigs; i++) {
+            pos += sizes ? sizes[i - 1] : 64;
+            data->lsigsuboff_last[i]  = data->lsigsuboff_last[0] + pos;
+            data->lsigsuboff_first[i] = data->lsigsuboff_first[0] + pos;
         }
     }
     for (i = 0; i < 32; i++)
@@ -1669,6 +1969,25 @@ cl_error_t cli_ac_initdata(struct cli_ac_data *data, uint32_t partsigs, uint32_t
     data->min_partno = 1;
 
     return CL_SUCCESS;
+}
+
+cl_error_t cli_ac_initdata(struct cli_ac_data *data, uint32_t partsigs, uint32_t lsigs, uint32_t reloffsigs, uint8_t tracklen)
+{
+    size_t count = lsigs;
+    UNUSEDPARAM(tracklen);
+    if (count > SIZE_MAX / sizeof(uint32_t) / 64)
+        return CL_EMEM;
+    return ac_initdata(data, partsigs, lsigs, reloffsigs, NULL, count * 64);
+}
+
+cl_error_t cli_ac_initdata_for_matcher(struct cli_ac_data *data, const struct cli_matcher *root)
+{
+    if (root && root->ac_lsig_sizes)
+        return ac_initdata(data, root->ac_partsigs, root->ac_lsigs, root->ac_reloff_num,
+                           root->ac_lsig_sizes, root->ac_lsig_slots);
+
+    return cli_ac_initdata(data, root ? root->ac_partsigs : 0, root ? root->ac_lsigs : 0,
+                           root ? root->ac_reloff_num : 0, CLI_DEFAULT_AC_TRACKLEN);
 }
 
 cl_error_t cli_ac_caloff(const struct cli_matcher *root, struct cli_ac_data *data, const struct cli_target_info *info)
@@ -1982,13 +2301,21 @@ cl_error_t cli_ac_scanbuff(
             struct cli_ac_list *faillist = current->fail->list;
             pattN                        = current->list;
             while (pattN) {
-                patt = pattN->me;
-                if (patt->partno > mdata->min_partno) {
+                if (pattN->partno > mdata->min_partno) {
                     pattN    = faillist;
                     faillist = NULL;
                     continue;
                 }
-                bp = i + 1 - patt->depth;
+                /* Reject an exact suffix byte before fetching the much larger
+                 * pattern. Wildcards, nocase and an empty suffix still use the
+                 * full matcher; failure-link lists follow the same path. */
+                if (pattN->first_byte < 256 &&
+                    (i + 1 >= length || buffer[i + 1] != pattN->first_byte)) {
+                    pattN = pattN->next;
+                    continue;
+                }
+                patt = pattN->me;
+                bp   = i + 1 - patt->depth;
                 if (patt->offdata[0] != CLI_OFF_VERSION && patt->offdata[0] != CLI_OFF_MACRO && !pattN->next_same && (patt->offset_min != CLI_OFF_ANY) && (!patt->sigid || patt->partno == 1)) {
                     if (patt->offset_min == CLI_OFF_NONE) {
                         pattN = pattN->next;

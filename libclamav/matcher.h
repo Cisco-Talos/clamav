@@ -120,6 +120,8 @@ struct cli_ac_lsig {
     unsigned bc_idx;
     lsig_type_t type;
     uint8_t flag;
+    /* Zero uses the original interpreter. Fits in the existing padding. */
+    uint16_t expr_id;
     union {
         char *logic;
         uint8_t *code_start;
@@ -148,6 +150,7 @@ struct cli_matcher {
     struct cli_ac_lsig **ac_lsigtable;
     struct cli_ac_node *ac_root, **ac_nodetable;
     struct cli_ac_list **ac_listtable;
+    struct cli_ac_list *ac_liststorage;
     struct cli_ac_patt **ac_pattable;
     struct cli_ac_patt **ac_reloff;
     uint32_t ac_reloff_num, ac_absoff_num;
@@ -182,6 +185,11 @@ struct cli_matcher {
 #else
     void *_padding_mempool;
 #endif
+    /* Compiled per-logical-signature scan-state widths (1..64). */
+    uint8_t *ac_lsig_sizes;
+    size_t ac_lsig_slots;
+    struct cli_lsig_expr **ac_lsig_exprs;
+    uint32_t ac_lsig_expr_count;
 };
 
 struct cli_cdb {

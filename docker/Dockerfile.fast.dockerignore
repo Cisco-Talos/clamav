@@ -1,0 +1,7 @@
+**
+!docker/
+!docker/config/
+!docker/config/clamd.conf
+!docker/config/freshclam.conf
+!docker/entrypoint.sh
+!docker/healthcheck.sh
