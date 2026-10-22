@@ -22,8 +22,8 @@
 
 use std::{ffi::CStr, os::raw::c_char};
 
-use base64::{engine::general_purpose as base64_engine_standard, Engine as _};
-use log::{debug, error, warn};
+use base64::{Engine as _, engine::general_purpose as base64_engine_standard};
+use log::{debug, warn};
 use unicode_segmentation::UnicodeSegmentation;
 
 use crate::{
@@ -266,7 +266,7 @@ impl<'a> Iterator for CssImageExtractor<'a> {
 /// # Safety
 ///
 /// `file_bytes` must not be NULL
-#[export_name = "html_style_block_handler"]
+#[unsafe(export_name = "html_style_block_handler")]
 pub unsafe extern "C" fn html_style_block_handler(
     ctx: *mut cli_ctx,
     file_bytes: *const c_char,
@@ -315,7 +315,7 @@ mod tests {
             }
             ";
 
-        let mut extractor = CssImageExtractor::new(&doc).unwrap();
+        let mut extractor = CssImageExtractor::new(doc).unwrap();
 
         let image = extractor.next().unwrap();
 
@@ -324,7 +324,7 @@ mod tests {
         let hash = hasher.finalize();
 
         assert_eq!(
-            hash.as_slice(),
+            &hash[..],
             [
                 100, 170, 89, 45, 242, 93, 238, 12, 90, 181, 195, 223, 148, 123, 222, 106, 39, 76,
                 74, 77
@@ -340,7 +340,7 @@ mod tests {
             }
             ";
 
-        let mut extractor = CssImageExtractor::new(&doc).unwrap();
+        let mut extractor = CssImageExtractor::new(doc).unwrap();
 
         let image = extractor.next().unwrap();
 
@@ -349,7 +349,7 @@ mod tests {
         let hash = hasher.finalize();
 
         assert_eq!(
-            hash.as_slice(),
+            &hash[..],
             [
                 100, 170, 89, 45, 242, 93, 238, 12, 90, 181, 195, 223, 148, 123, 222, 106, 39, 76,
                 74, 77
@@ -366,7 +366,7 @@ mod tests {
             }
             ";
 
-        let mut extractor = CssImageExtractor::new(&doc).unwrap();
+        let mut extractor = CssImageExtractor::new(doc).unwrap();
 
         let image = extractor.next().unwrap();
 
@@ -375,7 +375,7 @@ mod tests {
         let hash = hasher.finalize();
 
         assert_eq!(
-            hash.as_slice(),
+            &hash[..],
             [
                 100, 170, 89, 45, 242, 93, 238, 12, 90, 181, 195, 223, 148, 123, 222, 106, 39, 76,
                 74, 77
@@ -389,7 +389,7 @@ mod tests {
         let hash = hasher.finalize();
 
         assert_eq!(
-            hash.as_slice(),
+            &hash[..],
             [
                 127, 44, 70, 143, 148, 237, 88, 201, 162, 82, 121, 211, 72, 66, 248, 201, 215, 6,
                 242, 112
@@ -408,7 +408,7 @@ mod tests {
             }
             ";
 
-        let mut extractor = CssImageExtractor::new(&doc).unwrap();
+        let mut extractor = CssImageExtractor::new(doc).unwrap();
 
         let image = extractor.next().unwrap();
 
@@ -417,7 +417,7 @@ mod tests {
         let hash = hasher.finalize();
 
         assert_eq!(
-            hash.as_slice(),
+            &hash[..],
             [
                 100, 170, 89, 45, 242, 93, 238, 12, 90, 181, 195, 223, 148, 123, 222, 106, 39, 76,
                 74, 77
@@ -431,7 +431,7 @@ mod tests {
         let hash = hasher.finalize();
 
         assert_eq!(
-            hash.as_slice(),
+            &hash[..],
             [
                 127, 44, 70, 143, 148, 237, 88, 201, 162, 82, 121, 211, 72, 66, 248, 201, 215, 6,
                 242, 112
@@ -450,7 +450,7 @@ mod tests {
             }
             ";
 
-        let mut extractor = CssImageExtractor::new(&doc).unwrap();
+        let mut extractor = CssImageExtractor::new(doc).unwrap();
 
         let image = extractor.next().unwrap();
 
@@ -459,7 +459,7 @@ mod tests {
         let hash = hasher.finalize();
 
         assert_eq!(
-            hash.as_slice(),
+            &hash[..],
             [
                 100, 170, 89, 45, 242, 93, 238, 12, 90, 181, 195, 223, 148, 123, 222, 106, 39, 76,
                 74, 77
@@ -473,7 +473,7 @@ mod tests {
         let hash = hasher.finalize();
 
         assert_eq!(
-            hash.as_slice(),
+            &hash[..],
             [
                 127, 44, 70, 143, 148, 237, 88, 201, 162, 82, 121, 211, 72, 66, 248, 201, 215, 6,
                 242, 112

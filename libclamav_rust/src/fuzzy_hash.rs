@@ -29,7 +29,7 @@ use std::{
     panic, slice,
 };
 
-use image::{imageops::FilterType::Lanczos3, DynamicImage, ImageBuffer, Luma, Pixel, Rgb};
+use image::{DynamicImage, ImageBuffer, Luma, Pixel, Rgb, imageops::FilterType::Lanczos3};
 use log::{debug, error, warn};
 use num_traits::{NumCast, ToPrimitive, Zero};
 use rustdct::DctPlanner;
@@ -122,16 +122,18 @@ pub struct FuzzyHashMeta {
 }
 
 /// Initialize the hashmap
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn fuzzy_hashmap_new() -> sys::fuzzyhashmap_t {
     Box::into_raw(Box::<FuzzyHashMap>::default()) as sys::fuzzyhashmap_t
 }
 
 /// Free the hashmap
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn fuzzy_hash_free_hashmap(fuzzy_hashmap: sys::fuzzyhashmap_t) {
     if fuzzy_hashmap.is_null() {
-        warn!("Attempted to free a NULL hashmap pointer. Please report this at: https://github.com/Cisco-Talos/clamav/issues");
+        warn!(
+            "Attempted to free a NULL hashmap pointer. Please report this at: https://github.com/Cisco-Talos/clamav/issues"
+        );
     } else {
         let _ = unsafe { Box::from_raw(fuzzy_hashmap as *mut FuzzyHashMap) };
     }
@@ -143,7 +145,7 @@ pub extern "C" fn fuzzy_hash_free_hashmap(fuzzy_hashmap: sys::fuzzyhashmap_t) {
 /// # Safety
 ///
 /// No parameters may be NULL
-#[export_name = "fuzzy_hash_check"]
+#[unsafe(export_name = "fuzzy_hash_check")]
 pub unsafe extern "C" fn _fuzzy_hash_check(
     fuzzy_hashmap: sys::fuzzyhashmap_t,
     mdata: *mut sys::cli_ac_data,
@@ -173,7 +175,7 @@ pub unsafe extern "C" fn _fuzzy_hash_check(
 /// # Safety
 ///
 /// `hexsig` and `err` must not be NULL
-#[export_name = "fuzzy_hash_load_subsignature"]
+#[unsafe(export_name = "fuzzy_hash_load_subsignature")]
 pub unsafe extern "C" fn _fuzzy_hash_load_subsignature(
     fuzzy_hashmap: sys::fuzzyhashmap_t,
     hexsig: *const c_char,
@@ -197,7 +199,7 @@ pub unsafe extern "C" fn _fuzzy_hash_load_subsignature(
 /// # Safety
 ///
 /// `file_bytes` and `hash_out` must not be NULL
-#[export_name = "fuzzy_hash_calculate_image"]
+#[unsafe(export_name = "fuzzy_hash_calculate_image")]
 pub unsafe extern "C" fn _fuzzy_hash_calculate_image(
     file_bytes: *const u8,
     file_size: usize,
@@ -284,8 +286,8 @@ impl FuzzyHashMap {
         // TODO: Support non-zero distance
         if distance != 0 {
             error!(
-            "Non-zero hamming distances for image fuzzy hashes are not supported in this version."
-        );
+                "Non-zero hamming distances for image fuzzy hashes are not supported in this version."
+            );
             return Err(Error::InvalidHammingDistance(distance));
         }
 
@@ -326,11 +328,11 @@ impl FuzzyHashMap {
 ///
 /// # Notes
 ///
-/// 1) I found that `image.grayscale() uses different RGB coefficients than
-/// the python `image.convert("L"). The docs for PIL.Image.convert() state:
+/// 1. I found that `image.grayscale() uses different RGB coefficients than
+///    the python `image.convert("L"). The docs for PIL.Image.convert() state:
 ///
 ///     When translating a color image to greyscale (mode "L"),
-///     the library uses the ITU-R 601-2 luma transform::
+///    the library uses the ITU-R 601-2 luma transform::
 ///
 ///         L = R * 299/1000 + G * 587/1000 + B * 114/1000
 ///
@@ -358,13 +360,13 @@ impl FuzzyHashMap {
 /// function, but to match the phash() function where the median is used instead
 /// of the mean -- this change is required.
 ///
-/// 2) scipy.fftpack.dct behaves differently on twodimensional arrays than
+/// 2. scipy.fftpack.dct behaves differently on twodimensional arrays than
 ///    single-dimensional arrays.
 ///    See https://docs.scipy.org/doc/scipy/reference/generated/scipy.fftpack.dct.html:
 ///
 ///     Note the optional "axis" argument:
-///         Axis along which the dct is computed; the default is over the last axis
-///         (i.e., axis=-1).
+///    Axis along which the dct is computed; the default is over the last axis
+///    (i.e., axis=-1).
 ///
 /// For the Python `imagehash` package:
 /// - The `phash_simple()` function is doing a DCT-2 transform on a 2-dimensional

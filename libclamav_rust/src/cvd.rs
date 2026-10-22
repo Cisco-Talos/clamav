@@ -21,7 +21,7 @@
 use std::{
     ffi::{CStr, CString},
     fs::File,
-    io::{prelude::*, BufReader},
+    io::{BufReader, prelude::*},
     mem::ManuallyDrop,
     os::raw::{c_char, c_void},
     path::{Path, PathBuf},
@@ -29,10 +29,10 @@ use std::{
     time::{Duration, SystemTime},
 };
 
-#[cfg(any(unix))]
+#[cfg(unix)]
 use std::os::fd::AsRawFd;
 
-#[cfg(any(windows))]
+#[cfg(windows)]
 use std::os::windows::io::AsRawHandle;
 
 use crate::codesign::Verifier;
@@ -336,8 +336,8 @@ impl CVD {
 
         debug!("Read {} bytes from CVD file", bytes_read);
 
-        let digest = md5::compute(&file_bytes);
-        let calculated_md5 = digest.as_slice();
+        let digest = md5_legacy::compute(&file_bytes);
+        let calculated_md5 = &digest[..];
         let calculated_md5 = hex::encode(calculated_md5);
 
         debug!("MD5 hash: {}", calculated_md5);
@@ -465,7 +465,9 @@ impl CVD {
         }
 
         if disable_legacy_dsig {
-            warn!("Unable to verify CVD with detached signature file and MD5 verification is disabled");
+            warn!(
+                "Unable to verify CVD with detached signature file and MD5 verification is disabled"
+            );
             return Err(Error::CannotVerify("Unable to verify CVD with detached signature file and MD5 verification is disabled".to_string()));
         }
 
@@ -492,7 +494,7 @@ impl CVD {
 /// # Safety
 ///
 /// No parameters may be NULL
-#[export_name = "cvd_check"]
+#[unsafe(export_name = "cvd_check")]
 pub unsafe extern "C" fn cvd_check(
     cvd_file_path_str: *const c_char,
     certs_directory_str: *const c_char,
@@ -565,7 +567,7 @@ pub unsafe extern "C" fn cvd_check(
 /// No parameters may be NULL
 /// The CVD pointer must be valid
 /// The destination path must be a valid path
-#[export_name = "cvd_unpack"]
+#[unsafe(export_name = "cvd_unpack")]
 pub unsafe extern "C" fn cvd_unpack(
     cvd: *mut c_void,
     destination_path_str: *const c_char,
@@ -604,7 +606,7 @@ pub unsafe extern "C" fn cvd_unpack(
 ///
 /// No parameters may be NULL
 /// The returned pointer must be freed with `cli_cvd_free`
-#[export_name = "cvd_open"]
+#[unsafe(export_name = "cvd_open")]
 pub unsafe extern "C" fn cvd_open(
     cvd_file_path_str: *const c_char,
     err: *mut *mut FFIError,
@@ -640,7 +642,7 @@ pub unsafe extern "C" fn cvd_open(
 ///
 /// No parameters may be NULL except for `certs_directory_str`.
 /// The CVD pointer must be valid
-#[export_name = "cvd_verify"]
+#[unsafe(export_name = "cvd_verify")]
 pub unsafe extern "C" fn cvd_verify(
     cvd: *const c_void,
     verifier_ptr: *const c_void,
@@ -685,10 +687,12 @@ pub unsafe extern "C" fn cvd_verify(
 ///
 /// The CVD pointer must be valid
 /// The CVD pointer must not be used after calling this function
-#[export_name = "cvd_free"]
+#[unsafe(export_name = "cvd_free")]
 pub unsafe extern "C" fn cvd_free(cvd: *mut c_void) {
     if cvd.is_null() {
-        warn!("Attempted to free a NULL CVD pointer. Please report this at: https://github.com/Cisco-Talos/clamav/issues");
+        warn!(
+            "Attempted to free a NULL CVD pointer. Please report this at: https://github.com/Cisco-Talos/clamav/issues"
+        );
     } else {
         let _ = unsafe { Box::from_raw(cvd as *mut CVD) };
     }
@@ -702,7 +706,7 @@ pub unsafe extern "C" fn cvd_free(cvd: *mut c_void) {
 ///
 /// No parameters may be NULL
 /// The CVD pointer must be valid
-#[export_name = "cvd_get_time_creation"]
+#[unsafe(export_name = "cvd_get_time_creation")]
 pub unsafe extern "C" fn cvd_get_time_creation(cvd: *const c_void) -> u64 {
     let cvd = ManuallyDrop::new(Box::from_raw(cvd as *mut CVD));
     cvd.time_creation
@@ -719,7 +723,7 @@ pub unsafe extern "C" fn cvd_get_time_creation(cvd: *const c_void) -> u64 {
 ///
 /// No parameters may be NULL
 /// The CVD pointer must be valid
-#[export_name = "cvd_get_version"]
+#[unsafe(export_name = "cvd_get_version")]
 pub unsafe extern "C" fn cvd_get_version(cvd: *const c_void) -> u32 {
     let cvd = ManuallyDrop::new(Box::from_raw(cvd as *mut CVD));
     cvd.version
@@ -734,7 +738,7 @@ pub unsafe extern "C" fn cvd_get_version(cvd: *const c_void) -> u32 {
 /// No parameters may be NULL
 /// The CVD pointer must be valid
 /// The caller is responsible for freeing the C string. See `ffi_cstring_free`.
-#[export_name = "cvd_get_name"]
+#[unsafe(export_name = "cvd_get_name")]
 pub unsafe extern "C" fn cvd_get_name(cvd: *const c_void) -> *mut c_char {
     let cvd = ManuallyDrop::new(Box::from_raw(cvd as *mut CVD));
 
@@ -749,7 +753,7 @@ pub unsafe extern "C" fn cvd_get_name(cvd: *const c_void) -> *mut c_char {
 ///
 /// No parameters may be NULL
 /// The CVD pointer must be valid
-#[export_name = "cvd_get_num_sigs"]
+#[unsafe(export_name = "cvd_get_num_sigs")]
 pub unsafe extern "C" fn cvd_get_num_sigs(cvd: *const c_void) -> u32 {
     let cvd = ManuallyDrop::new(Box::from_raw(cvd as *mut CVD));
     cvd.num_sigs
@@ -763,7 +767,7 @@ pub unsafe extern "C" fn cvd_get_num_sigs(cvd: *const c_void) -> u32 {
 ///
 /// No parameters may be NULL
 /// The CVD pointer must be valid
-#[export_name = "cvd_get_min_flevel"]
+#[unsafe(export_name = "cvd_get_min_flevel")]
 pub unsafe extern "C" fn cvd_get_min_flevel(cvd: *const c_void) -> u32 {
     let cvd = ManuallyDrop::new(Box::from_raw(cvd as *mut CVD));
     cvd.min_flevel
@@ -778,7 +782,7 @@ pub unsafe extern "C" fn cvd_get_min_flevel(cvd: *const c_void) -> u32 {
 ///
 /// No parameters may be NULL
 /// The CVD pointer must be valid
-#[export_name = "cvd_get_builder"]
+#[unsafe(export_name = "cvd_get_builder")]
 pub unsafe extern "C" fn cvd_get_builder(cvd: *const c_void) -> *mut c_char {
     let cvd = ManuallyDrop::new(Box::from_raw(cvd as *mut CVD));
     CString::new(cvd.builder.clone()).unwrap().into_raw()
@@ -794,8 +798,8 @@ pub unsafe extern "C" fn cvd_get_builder(cvd: *const c_void) -> *mut c_char {
 ///
 /// No parameters may be NULL
 /// The CVD pointer must be valid
-#[cfg(any(unix))]
-#[export_name = "cvd_get_file_descriptor"]
+#[cfg(unix)]
+#[unsafe(export_name = "cvd_get_file_descriptor")]
 pub unsafe extern "C" fn cvd_get_file_descriptor(cvd: *const c_void) -> i32 {
     let cvd = ManuallyDrop::new(Box::from_raw(cvd as *mut CVD));
 
@@ -812,8 +816,8 @@ pub unsafe extern "C" fn cvd_get_file_descriptor(cvd: *const c_void) -> i32 {
 ///
 /// No parameters may be NULL
 /// The CVD pointer must be valid
-#[cfg(any(windows))]
-#[export_name = "cvd_get_file_handle"]
+#[cfg(windows)]
+#[unsafe(export_name = "cvd_get_file_handle")]
 pub unsafe extern "C" fn cvd_get_file_handle(cvd: *const c_void) -> *mut c_void {
     let cvd = ManuallyDrop::new(Box::from_raw(cvd as *mut CVD));
 

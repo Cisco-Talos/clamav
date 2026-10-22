@@ -238,7 +238,7 @@ pub struct cl_cvd {
     pub builder: *mut ::std::os::raw::c_char,
     pub stime: ::std::os::raw::c_uint,
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " @brief Get the Functionality Level (FLEVEL).\n\n @return unsigned int The FLEVEL."]
     pub fn cl_retflevel() -> ::std::os::raw::c_uint;
 }
@@ -782,32 +782,32 @@ pub struct cl_engine {
     pub pcre_recmatch_limit: u64,
     pub pcre_max_filesize: u64,
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " @brief Append an alert.\n\n An FP-check will verify that the file is not allowed.\n The allow list check does not happen before the scan because allowing files\n is so infrequent that such action would be detrimental to performance.\n\n TODO: Replace implementation with severity scale, and severity threshold\n wherein signatures that do not meet the threshold are documented in JSON\n metadata but do not halt the scan.\n\n @param ctx       The scan context.\n @param virname   The alert name.\n @return cl_error_t CL_VIRUS if scan should be halted due to an alert, CL_CLEAN if scan should continue."]
     pub fn cli_append_virus(
         ctx: *mut cli_ctx,
         virname: *const ::std::os::raw::c_char,
     ) -> cl_error_t;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn cli_append_potentially_unwanted_if_heur_exceedsmax(
         ctx: *mut cli_ctx,
         vname: *mut ::std::os::raw::c_char,
     );
 }
-extern "C" {
+unsafe extern "C" {
     pub fn cli_warnmsg(str_: *const ::std::os::raw::c_char, ...);
 }
-extern "C" {
+unsafe extern "C" {
     pub fn cli_errmsg(str_: *const ::std::os::raw::c_char, ...);
 }
-extern "C" {
+unsafe extern "C" {
     pub fn cli_infomsg_simple(fmt: *const ::std::os::raw::c_char, ...);
 }
-extern "C" {
+unsafe extern "C" {
     pub fn cli_dbgmsg_no_inline(str_: *const ::std::os::raw::c_char, ...);
 }
-extern "C" {
+unsafe extern "C" {
     pub fn cli_checklimits(
         who: *const ::std::os::raw::c_char,
         ctx: *mut cli_ctx,
@@ -816,7 +816,7 @@ extern "C" {
         need3: u64,
     ) -> cl_error_t;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " @brief   Get the libclamav debug flag (e.g. if debug logging is enabled)\n\n This is required for unit tests to be able to link with clamav.dll and not\n directly manipulate libclamav global variables."]
     pub fn cli_get_debug_flag() -> u8;
 }
@@ -964,7 +964,7 @@ pub struct cli_ac_result {
     pub offset: off_t,
     pub next: *mut cli_ac_result,
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " @brief Increment the count for a subsignature of a logical signature.\n\n This is and alternative to lsig_increment_subsig_match() for use in subsigs that don't have a specific offset,\n like byte-compare subsigs and fuzzy-hash subsigs."]
     pub fn lsig_increment_subsig_match(mdata: *mut cli_ac_data, lsig_id: u32, subsig_id: u32);
 }
@@ -1167,7 +1167,7 @@ pub struct cli_cdb {
     pub res2: *mut ::std::os::raw::c_void,
     pub next: *mut cli_cdb,
 }
-extern "C" {
+unsafe extern "C" {
     pub fn cli_matchmeta(
         ctx: *mut cli_ctx,
         fname: *const ::std::os::raw::c_char,
@@ -1178,13 +1178,13 @@ extern "C" {
         res1: ::std::os::raw::c_int,
     ) -> cl_error_t;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn cli_versig(
         md5: *const ::std::os::raw::c_char,
         dsig: *const ::std::os::raw::c_char,
     ) -> cl_error_t;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn cli_versig2(
         sha2_256: *const ::std::os::raw::c_uchar,
         dsig_str: *const ::std::os::raw::c_char,
@@ -1192,7 +1192,7 @@ extern "C" {
         e_str: *const ::std::os::raw::c_char,
     ) -> cl_error_t;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " @brief Connect to a signing server, send the data to be signed, and return the digital signature.\n\n Caller is responsible for freeing the returned dsig.\n\n @param host\n @param user\n @param data\n @param datalen\n @param mode\n @return char*"]
     pub fn cli_getdsig(
         host: *const ::std::os::raw::c_char,
@@ -1202,7 +1202,7 @@ extern "C" {
         mode: ::std::os::raw::c_ushort,
     ) -> *mut ::std::os::raw::c_char;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " @brief   Convenience wrapper for cli_magic_scan_nested_fmap_type().\n\n Creates an fmap and calls cli_magic_scan_nested_fmap_type() for you, with type CL_TYPE_ANY.\n\n @param buffer        Pointer to the buffer to be scanned.\n @param length        Size in bytes of the buffer being scanned.\n @param ctx           Scanning context structure.\n @param name          (optional) Original name of the file (to set fmap name metadata)\n @param attributes    Layer attributes of the file being scanned (is it normalized, decrypted, etc)\n @return int          CL_SUCCESS, or an error code."]
     pub fn cli_magic_scan_buff(
         buffer: *const ::std::os::raw::c_void,

@@ -4079,20 +4079,13 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
                         case CL_TYPE_MSEXE:
                             if (SCAN_PARSE_PE && ctx->dconf->pe &&
                                 (type == CL_TYPE_MSEXE || type == CL_TYPE_ZIP || type == CL_TYPE_MSOLE2)) {
-                                struct cli_exe_info peinfo;
-
                                 if ((uint64_t)(ctx->fmap->len - fpt->offset) > ctx->engine->maxembeddedpe) {
                                     cli_dbgmsg("scanraw: MaxEmbeddedPE exceeded\n");
                                     break;
                                 }
 
-                                cli_exe_info_init(&peinfo, fpt->offset);
-
                                 // Header validity check to prevent false positives from being scanned.
-                                ret = cli_peheader(ctx, &peinfo, CLI_PEHEADER_OPT_NONE);
-
-                                // peinfo memory may have been allocated and must be freed even if it failed.
-                                cli_exe_info_destroy(&peinfo);
+                                ret = check_pe_header_at_rust(ctx, fpt->offset);
 
                                 if (CL_SUCCESS != ret) {
                                     cli_dbgmsg("Header check for MSEXE detection failed, probably not actually an embedded PE file.\n");
@@ -5456,19 +5449,6 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
                 ctx->corrupted_input         = corrupted_input;
             }
             perf_nested_stop(ctx, PERFT_PE, PERFT_SCAN);
-            break;
-
-        case CL_TYPE_ELF:
-            perf_nested_start(ctx, PERFT_ELF, PERFT_SCAN);
-            ret = cli_unpackelf(ctx);
-            perf_nested_stop(ctx, PERFT_ELF, PERFT_SCAN);
-            break;
-
-        case CL_TYPE_MACHO:
-        case CL_TYPE_MACHO_UNIBIN:
-            perf_nested_start(ctx, PERFT_MACHO, PERFT_SCAN);
-            ret = cli_unpackmacho(ctx);
-            perf_nested_stop(ctx, PERFT_MACHO, PERFT_SCAN);
             break;
 
         case CL_TYPE_AI_MODEL:
