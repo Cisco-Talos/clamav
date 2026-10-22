@@ -46,6 +46,30 @@ if(APPLE)
             ${APPLE_CORE_FOUNDATION}
             ${APPLE_SECURITY} )
 endif()
+
+if(ENABLE_TESTS)
+    # Build a non-installed client with local endpoint injection for deterministic
+    # HTTP workflow tests. Production clamsubmit retains fixed HTTPS endpoints.
+    add_executable( clamsubmit_test clamsubmit.c )
+    target_compile_definitions( clamsubmit_test PRIVATE CLAMSUBMIT_TEST_ENDPOINTS )
+    target_include_directories( clamsubmit_test PRIVATE ${CMAKE_BINARY_DIR} )
+    set_target_properties( clamsubmit_test PROPERTIES COMPILE_FLAGS "${WARNCFLAGS}" )
+    target_link_libraries( clamsubmit_test
+        PRIVATE
+            ClamAV::libclamav
+            ClamAV::common
+            OpenSSL::SSL
+            OpenSSL::Crypto
+            JSONC::jsonc
+            CURL::libcurl )
+    if(APPLE)
+        target_link_libraries( clamsubmit_test
+            PUBLIC
+                ${APPLE_CORE_FOUNDATION}
+                ${APPLE_SECURITY} )
+    endif()
+endif()
+
 install(TARGETS clamsubmit COMPONENT programs)
 if(WIN32)
     install(FILES $<TARGET_PDB_FILE:clamsubmit> TYPE BIN OPTIONAL COMPONENT programs)

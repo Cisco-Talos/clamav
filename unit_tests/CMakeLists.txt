@@ -199,6 +199,7 @@ if(WIN32)
         file(TO_NATIVE_PATH $<TARGET_FILE_DIR:check_clamav>/clamdtop.exe        CLAMDTOP)
         file(TO_NATIVE_PATH $<TARGET_FILE_DIR:check_clamav>/clamscan.exe        CLAMSCAN)
         file(TO_NATIVE_PATH $<TARGET_FILE_DIR:check_clamav>/clamsubmit.exe      CLAMSUBMIT)
+        file(TO_NATIVE_PATH $<TARGET_FILE:clamsubmit_test>                      CLAMSUBMIT_TEST)
         file(TO_NATIVE_PATH $<TARGET_FILE_DIR:check_clamav>/clamconf.exe        CLAMCONF)
         file(TO_NATIVE_PATH $<TARGET_FILE_DIR:check_clamav>/freshclam.exe       FRESHCLAM)
         file(TO_NATIVE_PATH $<TARGET_FILE_DIR:check_clamav>/sigtool.exe         SIGTOOL)
@@ -262,6 +263,7 @@ else()
         set(CLAMDTOP           $<TARGET_FILE:clamdtop>)
         set(CLAMSCAN           $<TARGET_FILE:clamscan>)
         set(CLAMSUBMIT         $<TARGET_FILE:clamsubmit>)
+        set(CLAMSUBMIT_TEST    $<TARGET_FILE:clamsubmit_test>)
         set(CLAMCONF           $<TARGET_FILE:clamconf>)
         set(FRESHCLAM          $<TARGET_FILE:freshclam-bin>)
         set(SIGTOOL            $<TARGET_FILE:sigtool>)
@@ -314,6 +316,7 @@ set(ENVIRONMENT
     CLAMDTOP=${CLAMDTOP}
     CLAMSCAN=${CLAMSCAN}
     CLAMSUBMIT=${CLAMSUBMIT}
+    CLAMSUBMIT_TEST=${CLAMSUBMIT_TEST}
     CLAMCONF=${CLAMCONF}
     FRESHCLAM=${FRESHCLAM}
     SIGTOOL=${SIGTOOL}
@@ -363,6 +366,10 @@ add_rust_test(NAME libclamav_rust
 set_property(TEST libclamav_rust PROPERTY ENVIRONMENT ${ENVIRONMENT})
 
 if(ENABLE_APP)
+    add_test(NAME clamsubmit COMMAND ${PythonTest_COMMAND};clamsubmit_test.py
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+    set_property(TEST clamsubmit PROPERTY ENVIRONMENT ${ENVIRONMENT})
+
     add_test(NAME clamscan COMMAND ${PythonTest_COMMAND};clamscan
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
     set_property(TEST clamscan PROPERTY ENVIRONMENT ${ENVIRONMENT})
