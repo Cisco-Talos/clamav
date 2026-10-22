@@ -925,6 +925,13 @@ static cl_error_t lsig_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_a
                 goto done;
             }
 
+            /*
+             * The clean-cache key does not include the HandlerType. Do not let
+             * this retyped scan cache a result that could suppress a later scan
+             * of the same content using a different handler.
+             */
+            new_map->dont_cache_flag = true;
+
             status = cli_recursion_stack_push(ctx, new_map, ac_lsig->tdb.handlertype[0], true, LAYER_ATTRIBUTES_RETYPED); /* Perform scan with child fmap */
             if (CL_SUCCESS != status) {
                 cli_dbgmsg("Failed to re-scan fmap as a new type.\n");
@@ -935,6 +942,10 @@ static cl_error_t lsig_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_a
 
             (void)cli_recursion_stack_pop(ctx); /* Restore the parent fmap */
 
+            goto done;
+        } else {
+            // The retyped layer was already scanned as the requested type. Do not alert on it again.
+            status = CL_SUCCESS;
             goto done;
         }
     }
