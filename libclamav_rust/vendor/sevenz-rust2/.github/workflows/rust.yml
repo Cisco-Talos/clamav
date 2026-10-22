@@ -1,0 +1,232 @@
+name: Rust
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    runs-on: ${{matrix.os}}
+    strategy:
+      matrix:
+        os:
+          - macos-latest
+          - ubuntu-latest
+          - windows-latest
+        toolchain:
+          - stable
+          - 1.93.0 # MSRV
+        include:
+          - os: macos-latest
+            target: x86_64-apple-darwin
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install rust version
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{matrix.toolchain}}
+          target: ${{matrix.target}}
+      - uses: actions/checkout@v7
+      - name: Build no default features
+        run: cargo build --no-default-features --release
+      - name: Build default features
+        run: cargo build --release
+      - name: Build all features
+        run: cargo build --release --all-features
+      - name: Run test no default features
+        run: cargo test --no-default-features
+      - name: Run test default features
+        run: cargo test
+      - name: Run test all features
+        run: cargo test --all-features
+
+
+  build-wasm:
+    runs-on: ${{matrix.os}}
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+        toolchain:
+          - stable
+          - 1.93.0 # MSRV
+        include:
+          - os: ubuntu-latest
+            target: wasm32-unknown-unknown
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install rust version
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{matrix.toolchain}}
+          target: ${{matrix.target}}
+      - uses: actions/checkout@v7
+      - name: Build default features
+        run: cargo build --target wasm32-unknown-unknown --release --no-default-features
+      - name: Build no default features
+        run: RUSTFLAGS='--cfg getrandom_backend="wasm_js"' cargo build --target wasm32-unknown-unknown --release --no-default-features --features default_wasm
+
+  rustfmt:
+    name: Rustfmt
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@v1
+        with:
+          toolchain: stable
+          components: rustfmt
+      - name: Cache build artifacts
+        uses: Swatinem/rust-cache@v2.9.1
+      - name: Check code formatted
+        run: cargo fmt --all -- --check
+
+  clippy:
+    name: Clippy
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@v1
+        with:
+          toolchain: stable
+          components: clippy
+      - name: Cache build artifacts
+        uses: Swatinem/rust-cache@v2.9.1
+
+      - name: Check no lint warnings
+        run: cargo clippy --workspace -- -D warnings
+      - name: Check no lint warnings (all features)
+        run: cargo clippy --workspace --all-features -- -D warnings
+      - name: Check no lint warnings (no default features)
+        run: cargo clippy --workspace --no-default-features -- -D warnings
+
+  windows-compatibility:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@v1
+        with:
+          toolchain: stable
+          components: clippy
+      - name: Cache build artifacts
+        uses: Swatinem/rust-cache@v2.9.1
+
+      - name: Create solid archive
+        shell: bash
+        run: |
+          cargo run --release --example compress -- --solid -o solid.7z src/*.rs
+
+      - name: Create non-solid archive
+        shell: bash
+        run: |
+          cargo run --release --example compress -- -o non-solid.7z src/*.rs
+
+      - name: Create solid archive with single file
+        shell: bash
+        run: |
+          cargo run --release --example compress -- --solid -o solid-file.7z LICENSE
+
+      - name: Create non-solid archive with single file
+        shell: bash
+        run: |
+          cargo run --release --example compress -- -o non-solid-file.7z LICENSE
+
+      - name: Test both archives with Explorer
+        shell: pwsh
+        run: |
+          $failed = $false
+          
+          function Get-AllArchiveItems {
+              param($folder, [string]$path = "")
+          
+              foreach ($item in $folder.Items()) {
+                  $itemPath = if ($path) { "$path\$($item.Name)" } else { $item.Name }
+                  Write-Host "    - $itemPath" -ForegroundColor Gray
+          
+                  if ($item.IsFolder) {
+                      Get-AllArchiveItems -folder $item.GetFolder -path $itemPath
+                  }
+              }
+          }
+          
+          function Test-NativeWindowsCompat {
+              param([string]$archivePath)
+          
+              Write-Host "`nTesting native Windows support for: $archivePath" -ForegroundColor Cyan
+          
+              if (-not (Test-Path $archivePath)) {
+                  Write-Error "File not found: $archivePath"
+                  return $false
+              }
+          
+              # Method 1: Test with Windows built-in tar command.
+              Write-Host "  Testing with Windows tar command..." -ForegroundColor Gray
+              try {
+                  $tarOutput = tar -tf $archivePath 2>&1
+                  if ($LASTEXITCODE -eq 0) {
+                      $fileCount = ($tarOutput | Measure-Object).Count
+                      Write-Host "  ✓ Windows tar can read archive ($fileCount files)" -ForegroundColor Green
+                  } else {
+                      Write-Error "  Windows tar cannot read the archive"
+                      return $false
+                  }
+              } catch {
+                  Write-Warning "  tar command failed: $_"
+              }
+          
+              # Method 2: Test with Shell.Application.
+              Write-Host "  Testing with Windows Shell..." -ForegroundColor Gray
+              $shell = New-Object -ComObject Shell.Application
+              $fullPath = (Resolve-Path $archivePath).Path
+              $archive = $shell.NameSpace($fullPath)
+          
+              if ($null -eq $archive) {
+                  Write-Error "  Windows Shell CANNOT open: $archivePath"
+                  return $false
+              } else {
+                  Write-Host "  ✓ Windows Shell can open (native): $archivePath" -ForegroundColor Green
+                  Write-Host "  Archive structure from Shell:" -ForegroundColor Gray
+                  Get-AllArchiveItems -folder $archive
+          
+                  return $true
+              }
+          }
+          
+          if (-not (Test-NativeWindowsCompat "solid.7z")) {
+              $failed = $true
+          }
+          
+          if (-not (Test-NativeWindowsCompat "non-solid.7z")) {
+              $failed = $true
+          }
+          
+          if (-not (Test-NativeWindowsCompat "solid-file.7z")) {
+              $failed = $true
+          }
+          
+          if (-not (Test-NativeWindowsCompat "non-solid-file.7z")) {
+              $failed = $true
+          }
+          
+          Write-Host "`n========================================" -ForegroundColor Yellow
+          if ($failed) {
+              Write-Error "One or more archives failed native Windows compatibility test"
+              exit 1
+          } else {
+              Write-Host "✓ All archives are compatible with native Windows support!" -ForegroundColor Green
+              exit 0
+          }

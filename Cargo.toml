@@ -1,8 +1,15 @@
 [workspace]
+resolver = "3"
 
 members = [
     "libclamav_rust",
 ]
+
+[patch.crates-io]
+# `sevenz-rust2` also depends on `lzma-rust2`. Force the entire dependency
+# graph to use our locally hardened decoder rather than compiling a second,
+# unpatched crates.io copy alongside it.
+lzma-rust2 = { path = "libclamav_rust/vendor/lzma-rust2" }
 
 [profile.dev.package."*"]
 opt-level = 2

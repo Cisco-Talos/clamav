@@ -763,7 +763,7 @@ int cli_scanxar(cli_ctx *ctx)
                 struct CLI_LZMA lz;
                 unsigned long in_remaining = MIN(length, map->len - at);
                 unsigned long out_size     = 0;
-                unsigned char *buff        = __lzma_wrap_alloc(NULL, CLI_LZMA_OBUF_SIZE);
+                unsigned char *buff        = cli_max_calloc(1, CLI_LZMA_OBUF_SIZE);
                 int lret;
 
                 if (length > in_remaining)
@@ -783,7 +783,7 @@ int cli_scanxar(cli_ctx *ctx)
                     cli_dbgmsg("cli_scanxar: Can't read %i bytes @ %zu, errno:%s.\n",
                                CLI_LZMA_HDR_SIZE, at, errbuff);
                     rc = CL_EREAD;
-                    __lzma_wrap_free(NULL, buff);
+                    free(buff);
                     goto exit_tmpfile;
                 }
 
@@ -797,7 +797,7 @@ int cli_scanxar(cli_ctx *ctx)
                 if (lret != LZMA_RESULT_OK) {
                     cli_dbgmsg("cli_scanxar: cli_LzmaInit() fails: %i.\n", lret);
                     rc = CL_EFORMAT;
-                    __lzma_wrap_free(NULL, buff);
+                    free(buff);
                     extract_errors++;
                     break;
                 }
@@ -805,8 +805,8 @@ int cli_scanxar(cli_ctx *ctx)
                 at += CLI_LZMA_HDR_SIZE;
                 in_remaining -= CLI_LZMA_HDR_SIZE;
                 while (at < map->len && at < offset + (size_t)hdr.toc_length_compressed + (size_t)hdr.size + length) {
-                    SizeT avail_in;
-                    SizeT avail_out;
+                    size_t avail_in;
+                    size_t avail_out;
                     void *next_in;
                     unsigned long in_consumed;
 
@@ -820,7 +820,7 @@ int cli_scanxar(cli_ctx *ctx)
                         cli_dbgmsg("cli_scanxar: Can't read %zu bytes @ %zu, errno: %s.\n",
                                    lz.avail_in, at, errbuff);
                         rc = CL_EREAD;
-                        __lzma_wrap_free(NULL, buff);
+                        free(buff);
                         cli_LzmaShutdown(&lz);
                         goto exit_tmpfile;
                     }
@@ -856,7 +856,7 @@ int cli_scanxar(cli_ctx *ctx)
                     if (cli_writen(fd, buff, avail_out) == (size_t)-1) {
                         cli_dbgmsg("cli_scanxar: cli_writen error writing lzma temp file for %llu bytes.\n",
                                    (long long unsigned)avail_out);
-                        __lzma_wrap_free(NULL, buff);
+                        free(buff);
                         cli_LzmaShutdown(&lz);
                         rc = CL_EWRITE;
                         goto exit_tmpfile;
@@ -873,7 +873,7 @@ int cli_scanxar(cli_ctx *ctx)
                 }
 
                 cli_LzmaShutdown(&lz);
-                __lzma_wrap_free(NULL, buff);
+                free(buff);
             } break;
             case CL_TYPE_ANY:
             default:

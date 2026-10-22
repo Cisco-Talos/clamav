@@ -28,9 +28,28 @@
 #include "clamav.h"
 #include "events.h"
 #include "others.h"
-#include "7z/7zCrc.h"
 #include "str.h"
 #include <string.h>
+
+/*
+ * Preserve the removed LZMA SDK's CrcUpdate() representation exactly: reflected
+ * CRC-32 with this initial value and no final inversion. Event values are only
+ * compared with one another, so changing to a conventional finalized CRC would
+ * silently change bytecode event behavior.
+ */
+#define CRC_INIT_VAL 0xffffffffU
+
+static uint32_t event_crc32_update(uint32_t crc, const uint8_t *data, size_t len)
+{
+    size_t i;
+
+    while (len--) {
+        crc ^= *data++;
+        for (i = 0; i < 8; i++)
+            crc = (crc >> 1) ^ (0xedb88320U & (0U - (crc & 1U)));
+    }
+    return crc;
+}
 
 struct cli_event {
     const char *name;
@@ -330,7 +349,7 @@ void cli_event_fastdata(cli_events_t *ctx, unsigned id, const void *data, uint32
         cli_event_error_str(ctx, "cli_event_fastdata must be called with ev_data_fast");
         return;
     }
-    ev->u.v_int = CrcUpdate(ev->u.v_int, data, len);
+    ev->u.v_int = event_crc32_update((uint32_t)ev->u.v_int, data, len);
     ev->count += len;
     /* when we are done we should invert all bits, but since we are just
      * comparing it doesn't matter */

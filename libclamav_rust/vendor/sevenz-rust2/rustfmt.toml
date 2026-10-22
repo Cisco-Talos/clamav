@@ -1,0 +1,6 @@
+# These don't change the "standard" how Rust programs normaly look, but make things more consistent.
+format_code_in_doc_comments = true
+hex_literal_case = "Upper"
+imports_granularity = "Crate"
+group_imports = "StdExternalCrate"
+use_try_shorthand = true

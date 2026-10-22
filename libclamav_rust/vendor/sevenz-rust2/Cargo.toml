@@ -1,0 +1,79 @@
+[package]
+description = "A 7z decompressor/compressor written in pure Rust"
+edition = "2024"
+homepage = "https://github.com/hasenbanck/sevenz-rust2"
+keywords = ["7z", "7zip", "sevenz", "decompress"]
+license = "Apache-2.0"
+name = "sevenz-rust2"
+readme = "README.md"
+repository = "https://github.com/hasenbanck/sevenz-rust"
+rust-version = "1.93"
+version = "0.21.5"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+default = ["aes256", "bzip2", "compress", "ppmd", "util"]
+default_wasm = ["aes256_wasm", "bzip2", "compress", "ppmd", "util"]
+nt-time = ["dep:nt-time"]
+aes256 = ["dep:aes", "dep:cbc", "dep:getrandom", "dep:sha2"]
+aes256_wasm = ["aes256", "getrandom/wasm_js"]
+brotli = ["dep:brotli"]
+bzip2 = ["dep:bzip2"]
+compress = ["lzma-rust2/encoder"]
+deflate = ["dep:flate2"]
+lz4 = ["dep:lz4_flex"]
+ppmd = ["dep:ppmd-rust"]
+util = []
+zstd = ["dep:zstd"]
+
+[dependencies]
+aes = { version = "0.9", optional = true }
+brotli = { version = ">= 7, < 9", default-features = false, optional = true, features = ["std"] }
+bzip2 = { version = "0.6", optional = true }
+cbc = { version = "0.2", optional = true }
+crc32fast = "1"
+flate2 = { version = "1", optional = true, features = ["zlib-rs"] }
+getrandom = { version = "0.4", optional = true }
+lzma-rust2 = { version = "0.19", default-features = false, features = ["std", "optimization"] }
+ppmd-rust = { version = "1", optional = true }
+lz4_flex = { version = "0.14", optional = true }
+nt-time = { version = "0.15", optional = true }
+sha2 = { version = "0.11", optional = true }
+zstd = { version = "0.13", optional = true }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+js-sys = "0.3"
+wasm-bindgen = "0.2"
+
+[dev-dependencies]
+rand = { version = "0.10" }
+tempfile = "3"
+
+[[example]]
+name = "advance"
+required-features = ["default"]
+
+[[example]]
+name = "block_decompress"
+required-features = ["default"]
+
+[[example]]
+name = "compress"
+required-features = ["default"]
+
+[[example]]
+name = "decompress"
+required-features = ["default"]
+
+[[example]]
+name = "decompress_progress"
+required-features = ["default"]
+
+[[example]]
+name = "mt_decompress"
+required-features = ["default"]
+
+[package.metadata.docs.rs]
+all-features = true

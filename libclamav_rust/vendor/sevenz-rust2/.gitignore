@@ -1,0 +1,6 @@
+/target
+/Cargo.lock
+/data
+.DS_Store
+.idea
+.junie

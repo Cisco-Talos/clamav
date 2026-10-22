@@ -1,0 +1,110 @@
+name: Rust
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    runs-on: ${{matrix.os}}
+    strategy:
+      matrix:
+        os:
+          - macos-latest
+          - ubuntu-latest
+          - windows-latest
+        toolchain:
+          - stable
+          - 1.85.0 # MSRV
+        include:
+          - os: macos-latest
+            target: x86_64-apple-darwin
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install rust version
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{matrix.toolchain}}
+          target: ${{matrix.target}}
+      - uses: actions/checkout@v7
+      - name: Build
+        run: cargo build --workspace --release --all-features
+      - name: Build (no_std)
+        run: cargo build --workspace --release --no-default-features --features=encoder,optimization
+      - name: Build (safe)
+        run: cargo build --workspace --no-default-features --features std,encoder,lzip,xz
+      - name: Build (decoder)
+        run: cargo build --workspace --no-default-features --features std,optimization,lzip,xz
+      - name: Build (safe decoder)
+        run: cargo build --workspace --no-default-features --features std,lzip,xz
+      - name: Run tests
+        run: cargo test --workspace --release --all-features
+
+  build-wasm:
+    runs-on: ${{matrix.os}}
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+        toolchain:
+          - stable
+          - 1.85.0 # MSRV
+        include:
+          - os: ubuntu-latest
+            target: wasm32-unknown-unknown
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install rust version
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{matrix.toolchain}}
+          target: ${{matrix.target}}
+      - uses: actions/checkout@v7
+      - name: Build Default
+        run: cargo build --target wasm32-unknown-unknown --release
+
+  rustfmt:
+    name: Rustfmt
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@v1
+        with:
+          toolchain: nightly
+          components: rustfmt
+      - name: Cache build artifacts
+        uses: Swatinem/rust-cache@v2.9.2
+      - name: Check code formatted
+        run: cargo fmt --all -- --check
+
+  clippy:
+    name: Clippy
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@v1
+        with:
+          toolchain: stable
+          components: clippy
+      - name: Cache build artifacts
+        uses: Swatinem/rust-cache@v2.9.2
+
+      - name: Check no lint warnings
+        run: cargo clippy --workspace -- -D warnings
+      - name: Check no lint warnings (all features)
+        run: cargo clippy --workspace --all-features -- -D warnings
+      - name: Check no lint warnings (no default features)
+        run: cargo clippy --workspace --no-default-features -- -D warnings

@@ -4,9 +4,6 @@
  *
  *  Authors: Alberto Wu
  *
- *  Acknowledgements: This contains an implementation of the LZMA algorithm
- *                    from Igor Pavlov (see COPYING.lzma).
- *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 as
  *  published by the Free Software Foundation.
@@ -27,22 +24,17 @@
 #ifndef __LZMA_IFACE_H
 #define __LZMA_IFACE_H
 
-#include "7z/LzmaDec.h"
 #include "clamav-types.h"
 #include "others.h"
 
+#define LZMA_PROPS_SIZE 5
+
 struct CLI_LZMA {
-    CLzmaDec state;
-    unsigned char header[LZMA_PROPS_SIZE];
-    unsigned int p_cnt;
-    unsigned int s_cnt;
-    unsigned int freeme;
-    unsigned int init;
-    uint64_t usize;
+    void *rust_state;
     unsigned char *next_in;
     unsigned char *next_out;
-    SizeT avail_in;
-    SizeT avail_out;
+    size_t avail_in;
+    size_t avail_out;
 };
 
 struct stream_state {
@@ -55,9 +47,6 @@ struct stream_state {
 int cli_LzmaInit(struct CLI_LZMA *, uint64_t);
 void cli_LzmaShutdown(struct CLI_LZMA *);
 int cli_LzmaDecode(struct CLI_LZMA *);
-
-void *__lzma_wrap_alloc(void *unused, size_t size);
-void __lzma_wrap_free(void *unused, void *freeme);
 
 #define LZMA_STREAM_END 2
 #define LZMA_RESULT_OK 0
