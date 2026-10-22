@@ -514,7 +514,9 @@ static inline void html_tag_contents_append(struct tag_contents *cont, const uns
         if (mbchar && (c < 0x80 || mbchar >= 0x10000)) {
             if (mbchar == 0xE38082 || mbchar == 0xEFBC8E || mbchar == 0xEFB992 ||
                 (mbchar == 0xA1 && (c == 0x43 || c == 0x44 || c == 0x4F))) {
-                cont->contents[i++] = '.';
+                /* Reserve room for c unless it completes a two-byte Big5 full stop. */
+                if (mbchar == 0xA1 || i + 1 < MAX_TAG_CONTENTS_LENGTH)
+                    cont->contents[i++] = '.';
                 if (mbchar == 0xA1) {
                     --i;
                     mbchar = 0;
