@@ -177,6 +177,8 @@ int16_t ping_clamd(const struct optstruct *opts)
     const struct optstruct *opt = NULL;
     int64_t sockd               = -1;
     struct RCVLN rcv;
+    char *buff   = NULL;
+    int len      = 0;
     uint16_t ret = 0;
 
     if (opts == NULL) {
@@ -222,10 +224,34 @@ int16_t ping_clamd(const struct optstruct *opts)
     do {
         if ((sockd = dconnect(clamdopts)) >= 0) {
             const char zPING[] = "zPING";
+
+            /*
+             * Bound the wait for the reply, so a peer that accepts the connection
+             * but never answers cannot block forever. Affects this socket only.
+             */
+            uint64_t recv_seconds = interval > 0 ? interval : 1;
+#ifdef _WIN32
+            DWORD recv_timeout = (DWORD)(recv_seconds * 1000);
+            if (setsockopt((SOCKET)sockd, SOL_SOCKET, SO_RCVTIMEO, (const char *)&recv_timeout, sizeof(recv_timeout)) == -1) {
+                logg(LOGG_DEBUG, "setsockopt(SO_RCVTIMEO) failed, waiting for PONG without a timeout\n");
+            }
+#else
+            struct timeval recv_timeout;
+            recv_timeout.tv_sec  = (time_t)recv_seconds;
+            recv_timeout.tv_usec = 0;
+            if (setsockopt((int)sockd, SOL_SOCKET, SO_RCVTIMEO, &recv_timeout, sizeof(recv_timeout)) == -1) {
+                logg(LOGG_DEBUG, "setsockopt(SO_RCVTIMEO) error: %s\n", strerror(errno));
+            }
+#endif
+
             recvlninit(&rcv, sockd);
 
             if (sendln(sockd, zPING, sizeof(zPING))) {
                 logg(LOGG_DEBUG, "PING failed...\n");
+                closesocket(sockd);
+                sockd = -1;
+            } else if (!(len = recvln(&rcv, &buff, NULL)) || len < 5 || memcmp(buff, "PONG", 4)) {
+                logg(LOGG_DEBUG, "PING sent, but clamd did not reply with PONG...\n");
                 closesocket(sockd);
                 sockd = -1;
             } else {
