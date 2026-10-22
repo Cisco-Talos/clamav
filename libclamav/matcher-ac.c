@@ -1685,7 +1685,8 @@ cl_error_t cli_ac_caloff(const struct cli_matcher *root, struct cli_ac_data *dat
         if (!info) {
             data->offset[patt->offset_min] = CLI_OFF_NONE;
         } else if (CL_SUCCESS != (ret = cli_caloff(NULL, info, root->type, patt->offdata, &data->offset[patt->offset_min], &data->offset[patt->offset_max]))) {
-            cli_errmsg("cli_ac_caloff: Can't calculate relative offset in signature for %s\n", patt->virname);
+            cli_errmsg("cli_ac_caloff: Can't calculate relative offset in signature for %s\n",
+                       patt->virname ? patt->virname : "<logical subsignature>");
             return ret;
         } else if ((data->offset[patt->offset_min] != CLI_OFF_NONE) && (data->offset[patt->offset_min] + patt->length[1] > info->fsize)) {
             data->offset[patt->offset_min] = CLI_OFF_NONE;
@@ -3183,7 +3184,10 @@ cl_error_t cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
     if (root->filter) {
         /* so that we can show meaningful messages */
         new->virname = (char *)virname;
-        if (filter_add_acpatt(root->filter, new) == -1) {
+        ret          = filter_add_acpatt(root->filter, new);
+        new->virname = NULL;
+
+        if (ret == -1) {
             cli_warnmsg("cli_ac_addsig: cannot use filter for trie\n");
             MPOOL_FREE(root->mempool, root->filter);
             root->filter = NULL;

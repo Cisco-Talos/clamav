@@ -198,6 +198,33 @@ static void teardown(void)
     free(ctx.recursion_stack);
 }
 
+START_TEST(test_ac_logical_pattern_does_not_keep_borrowed_virname)
+{
+    struct cli_matcher *root;
+    uint32_t lsigid[2]      = {0, 0};
+    char borrowed_virname[] = "Test.Logical.Signature";
+    cl_error_t status;
+
+    root = ctx.engine->root[0];
+    ck_assert_msg(root != NULL, "root == NULL");
+
+#ifdef USE_MPOOL
+    root->mempool = mpool_create();
+#endif
+    status = cli_ac_init(root, CLI_DEFAULT_AC_MINDEPTH, CLI_DEFAULT_AC_MAXDEPTH, 1);
+    ck_assert_msg(status == CL_SUCCESS, "cli_ac_init() failed");
+    ck_assert_msg(root->filter != NULL, "prefilter was not initialized");
+
+    status = cli_add_content_match_pattern(root, borrowed_virname, "deadbeef",
+                                           ACPATT_OPTION_NOOPTS, 0, 0, "EOF-0", lsigid, 0);
+    ck_assert_msg(status == CL_SUCCESS, "cli_add_content_match_pattern() failed");
+    ck_assert_uint_eq(root->ac_patterns, 1);
+    ck_assert_msg(root->ac_pattable[0]->lsigid[0] == 1,
+                  "pattern was not recorded as a logical subsignature");
+    ck_assert_ptr_null(root->ac_pattable[0]->virname);
+}
+END_TEST
+
 START_TEST(test_ac_scanbuff)
 {
     struct cli_ac_data mdata;
@@ -626,6 +653,7 @@ Suite *test_matchers_suite(void)
     tc_matchers = tcase_create("matchers");
     suite_add_tcase(s, tc_matchers);
     tcase_add_checked_fixture(tc_matchers, setup, teardown);
+    tcase_add_test(tc_matchers, test_ac_logical_pattern_does_not_keep_borrowed_virname);
     tcase_add_test(tc_matchers, test_ac_scanbuff);
     tcase_add_test(tc_matchers, test_ac_repeated_prefix_does_not_shift_to_repeated_window);
     tcase_add_test(tc_matchers, test_ac_scanbuff_ex);
