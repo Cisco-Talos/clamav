@@ -103,6 +103,55 @@ START_TEST(test_cl_debug)
 }
 END_TEST
 
+#ifdef __linux__
+START_TEST(test_cli_get_filepath_from_filedesc_long_path)
+{
+    char component[121];
+    char *expected_path = cli_safer_strdup(tmpdir);
+    char *resolved_path = NULL;
+    int fd              = -1;
+    unsigned int i;
+
+    ck_assert_ptr_nonnull(expected_path);
+    memset(component, 'a', sizeof(component) - 1);
+    component[sizeof(component) - 1] = '\0';
+
+    for (i = 0; i < 10; i++) {
+        size_t path_len = strlen(expected_path);
+        size_t new_len  = path_len + 1 + strlen(component) + 1;
+        char *new_path  = realloc(expected_path, new_len);
+
+        ck_assert_ptr_nonnull(new_path);
+        expected_path = new_path;
+        snprintf(expected_path + path_len, new_len - path_len, "/%s", component);
+        ck_assert_msg(0 == mkdir(expected_path, 0700), "mkdir failed for long path component: %s", strerror(errno));
+    }
+
+    {
+        size_t path_len = strlen(expected_path);
+        size_t new_len  = path_len + sizeof("/test-file");
+        char *new_path  = realloc(expected_path, new_len);
+
+        ck_assert_ptr_nonnull(new_path);
+        expected_path = new_path;
+        snprintf(expected_path + path_len, new_len - path_len, "/test-file");
+    }
+
+    ck_assert_msg(strlen(expected_path) > 1024, "test path is not long enough");
+    fd = open(expected_path, O_CREAT | O_RDONLY, 0600);
+    ck_assert_msg(fd >= 0, "open failed for long path: %s", strerror(errno));
+
+    ck_assert_int_eq(CL_SUCCESS, cli_get_filepath_from_filedesc(fd, &resolved_path));
+    ck_assert_ptr_nonnull(resolved_path);
+    ck_assert_str_eq(expected_path, resolved_path);
+
+    close(fd);
+    free(resolved_path);
+    free(expected_path);
+}
+END_TEST
+#endif
+
 #ifndef _WIN32
 /* extern const char *cl_retdbdir(void); */
 START_TEST(test_cl_retdbdir)
@@ -1465,6 +1514,9 @@ static Suite *test_cl_suite(void)
     tcase_add_test(tc_cl, test_cl_free);
     tcase_add_test(tc_cl, test_cl_build);
     tcase_add_test(tc_cl, test_cl_debug);
+#ifdef __linux__
+    tcase_add_test(tc_cl, test_cli_get_filepath_from_filedesc_long_path);
+#endif
 #ifndef _WIN32
     tcase_add_test(tc_cl, test_cl_retdbdir);
 #endif
