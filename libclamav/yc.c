@@ -290,6 +290,10 @@ int yc_decrypt(cli_ctx *ctx, char *fbuf, unsigned int filesize, struct cli_exe_s
 
     /* OEP resolving */
     /* OEP = DWORD PTR [ Start of yC section+ A0F] */
+    if (ycsect > ofilesize || ofilesize - ycsect < 0xa0f + sizeof(uint32_t)) {
+        cli_dbgmsg("yC: Original entry point is outside the file buffer\n");
+        return CL_EUNPACK;
+    }
     cli_writeint32((char *)pe + sizeof(struct pe_image_file_hdr) + 16, cli_readint32(fbuf + ycsect + 0xa0f));
 
     /* Fix SizeOfImage */
