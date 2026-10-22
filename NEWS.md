@@ -15,6 +15,17 @@ ClamAV 1.6.0 includes the following improvements and changes:
 
 ### Other improvements
 
+- Added support for extracting ZIP64 archives. ClamAV previously recognized
+  ZIP64 archives as ZIPs but was unable to extract anything from them, because
+  it did not parse the ZIP64 records that hold the real sizes and offsets when
+  the original 32-bit header fields contain the 0xFFFFFFFF placeholder.
+
+  ClamAV now reads the Zip64 Extended Information Extra Field in both local
+  file headers and central directory file headers, the Zip64 end of central
+  directory record and its locator, and the wider ZIP64 data descriptor. ZIP
+  offsets and sizes are tracked as 64-bit values throughout, so archives
+  larger than 4 GiB and archives with more than 65535 entries can be parsed.
+
 ### Bug fixes
 
 ### Acknowledgments
