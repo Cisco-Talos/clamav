@@ -28,6 +28,15 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <sys/stat.h>
+#if defined(__linux__)
+#include <sys/mman.h>
+#include <sys/syscall.h>
+#include <sys/resource.h>
+#include <fcntl.h>
+#include <pthread.h>
+#include <limits.h>
+#endif
+
 
 #include <assert.h>
 #ifdef HAVE_UNISTD_H
@@ -45,6 +54,118 @@
 #include "filtering.h"
 
 #include "mpool.h"
+
+/* Logical-signature offset arrays: preinitialised copy-on-write template
+ * (Linux) with a portable allocation fallback elsewhere. */
+#if defined(__linux__)
+/* Fixed, immutable copy-on-write template ceiling. Sized to the largest
+ * observed COW-eligible offset-array allocation (76,051,200 bytes = ~72.5 MiB,
+ * the target/PE root of the full official signature database) with ~10%
+ * headroom. A restrictive RLIMIT_FSIZE below this ceiling is handled by the
+ * guard in lsig_cow_prepare(), which falls back to ordinary allocation. */
+#define LSIG_COW_TEMPLATE_BYTES (80u * 1024u * 1024u)
+#define LSIG_COW_THRESHOLD (8u * 1024u * 1024u)
+static pthread_once_t lsig_cow_once = PTHREAD_ONCE_INIT;
+static int lsig_cow_fd = -1;
+static void lsig_cow_prepare(void)
+{
+    void *base;
+    struct rlimit rl;
+#if defined(SYS_memfd_create)
+    lsig_cow_fd = (int)syscall(SYS_memfd_create, "clamav-lsig-offset-template", 0x0001U /* MFD_CLOEXEC */);
+#endif
+    if (lsig_cow_fd < 0) return;
+
+    /* Growing the template past a restrictive RLIMIT_FSIZE soft limit would
+     * raise SIGXFSZ and terminate the process inside ftruncate() before any
+     * fallback can run. Refuse to create the template in that case so the
+     * caller takes the ordinary malloc path. */
+    if (getrlimit(RLIMIT_FSIZE, &rl) == 0 &&
+        rl.rlim_cur != RLIM_INFINITY &&
+        rl.rlim_cur < (rlim_t)LSIG_COW_TEMPLATE_BYTES) {
+        goto fail;
+    }
+
+    if (ftruncate(lsig_cow_fd, LSIG_COW_TEMPLATE_BYTES) != 0) goto fail;
+    base = mmap(NULL, LSIG_COW_TEMPLATE_BYTES, PROT_READ | PROT_WRITE,
+                MAP_SHARED, lsig_cow_fd, 0);
+    if (base == MAP_FAILED) goto fail;
+
+    /* Initialise using ClamAV's exact unmatched-offset sentinel. */
+    {
+        size_t k;
+        uint32_t *words = (uint32_t *)base;
+
+        for (k = 0;
+             k < LSIG_COW_TEMPLATE_BYTES / sizeof(uint32_t);
+             k++) {
+            words[k] = CLI_OFF_NONE;
+        }
+    }
+
+    munmap(base, LSIG_COW_TEMPLATE_BYTES);
+    return;
+fail:
+    close(lsig_cow_fd);
+    lsig_cow_fd = -1;
+}
+static void *lsig_cow_offset_malloc(size_t count, size_t bytes)
+{
+    uint32_t *p = (uint32_t *)malloc(bytes);
+    size_t k;
+    if (!p) return NULL;
+    for (k = 0; k < count; k++) p[k] = CLI_OFF_NONE;
+    return p;
+}
+static void *lsig_cow_offset_alloc(size_t count)
+{
+    size_t bytes;
+    void *result;
+    if (count > SIZE_MAX / sizeof(uint32_t)) return NULL;
+    bytes = count * sizeof(uint32_t);
+    if (bytes < LSIG_COW_THRESHOLD || bytes > LSIG_COW_TEMPLATE_BYTES)
+        return lsig_cow_offset_malloc(count, bytes);
+    if (pthread_once(&lsig_cow_once, lsig_cow_prepare) != 0) return NULL;
+    if (lsig_cow_fd < 0)
+        return lsig_cow_offset_malloc(count, bytes);
+    result = mmap(NULL, bytes, PROT_READ | PROT_WRITE, MAP_PRIVATE, lsig_cow_fd, 0);
+    return result == MAP_FAILED ? NULL : result;
+}
+static void lsig_cow_offset_free(uint32_t *ptr, size_t count)
+{
+    size_t bytes;
+    if (!ptr) return;
+    if (count > SIZE_MAX / sizeof(uint32_t)) return;
+    bytes = count * sizeof(uint32_t);
+    if (lsig_cow_fd >= 0 && bytes >= LSIG_COW_THRESHOLD && bytes <= LSIG_COW_TEMPLATE_BYTES)
+        munmap(ptr, bytes);
+    else
+        free(ptr);
+}
+/* Template FD intentionally lives until library unload for mapping lifetime. */
+__attribute__((destructor)) static void lsig_cow_shutdown(void)
+{
+    if (lsig_cow_fd >= 0) close(lsig_cow_fd);
+}
+#else /* !__linux__: keep original eager dense-offset semantics */
+static void *lsig_cow_offset_alloc(size_t count)
+{
+    uint32_t *p;
+    size_t i;
+
+    if (count > SIZE_MAX / sizeof(uint32_t)) return NULL;
+    p = (uint32_t *)malloc(count * sizeof(uint32_t));
+    if (!p) return NULL;
+    for (i = 0; i < count; i++) p[i] = CLI_OFF_NONE;
+    return p;
+}
+
+static void lsig_cow_offset_free(uint32_t *ptr, size_t count)
+{
+    (void)count;
+    free(ptr);
+}
+#endif
 
 // clang-format off
 
@@ -1630,12 +1751,12 @@ cl_error_t cli_ac_initdata(struct cli_ac_data *data, uint32_t partsigs, uint32_t
             cli_errmsg("cli_ac_init: Can't allocate memory for data->lsigsuboff_(last|first)\n");
             return CL_EMEM;
         }
-        data->lsigsuboff_last[0]  = (uint32_t *)calloc(lsigs * 64, sizeof(uint32_t));
-        data->lsigsuboff_first[0] = (uint32_t *)calloc(lsigs * 64, sizeof(uint32_t));
+        data->lsigsuboff_last[0] = (uint32_t *)lsig_cow_offset_alloc((size_t)lsigs * 64);
+        data->lsigsuboff_first[0] = (uint32_t *)lsig_cow_offset_alloc((size_t)lsigs * 64);
         if (!data->lsigsuboff_last[0] || !data->lsigsuboff_first[0]) {
             free(data->lsig_matches);
-            free(data->lsigsuboff_last[0]);
-            free(data->lsigsuboff_first[0]);
+            lsig_cow_offset_free(data->lsigsuboff_last[0], (size_t)lsigs * 64);
+            lsig_cow_offset_free(data->lsigsuboff_first[0], (size_t)lsigs * 64);
             free(data->lsigsuboff_last);
             free(data->lsigsuboff_first);
             free(data->yr_matches);
@@ -1650,17 +1771,9 @@ cl_error_t cli_ac_initdata(struct cli_ac_data *data, uint32_t partsigs, uint32_t
             cli_errmsg("cli_ac_init: Can't allocate memory for data->lsigsuboff_(last|first)[0]\n");
             return CL_EMEM;
         }
-        for (j = 0; j < 64; j++) {
-            data->lsigsuboff_last[0][j]  = CLI_OFF_NONE;
-            data->lsigsuboff_first[0][j] = CLI_OFF_NONE;
-        }
         for (i = 1; i < lsigs; i++) {
             data->lsigsuboff_last[i]  = data->lsigsuboff_last[0] + 64 * i;
             data->lsigsuboff_first[i] = data->lsigsuboff_first[0] + 64 * i;
-            for (j = 0; j < 64; j++) {
-                data->lsigsuboff_last[i][j]  = CLI_OFF_NONE;
-                data->lsigsuboff_first[i][j] = CLI_OFF_NONE;
-            }
         }
     }
     for (i = 0; i < 32; i++)
@@ -1736,9 +1849,9 @@ void cli_ac_freedata(struct cli_ac_data *data)
         free(data->yr_matches);
         free(data->lsigcnt[0]);
         free(data->lsigcnt);
-        free(data->lsigsuboff_last[0]);
+        lsig_cow_offset_free(data->lsigsuboff_last[0], (size_t)data->lsigs * 64);
         free(data->lsigsuboff_last);
-        free(data->lsigsuboff_first[0]);
+        lsig_cow_offset_free(data->lsigsuboff_first[0], (size_t)data->lsigs * 64);
         free(data->lsigsuboff_first);
         data->lsigs = 0;
     }
