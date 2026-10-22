@@ -339,7 +339,7 @@ int pdf_findobj_in_objstm(struct pdf_struct *pdf, struct objstm_struct *objstm, 
     index           = objstm->streambuf + objstm->current_pair;
     bytes_remaining = objstm->streambuf_len - objstm->current_pair;
 
-    obj = calloc(sizeof(struct pdf_obj), 1);
+    obj = calloc(1, sizeof(struct pdf_obj));
     if (!obj) {
         cli_warnmsg("pdf_findobj_in_objstm: out of memory finding objects in stream\n");
         status = CL_EMEM;

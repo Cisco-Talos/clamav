@@ -208,7 +208,7 @@ cl_unrar_error_t unrar_open(const char* filename, void** hArchive, char** commen
     /* Enable debug messages in unrar_iface.cpp */
     unrar_debug = debug_flag;
 
-    archiveData = (struct RAROpenArchiveDataEx*)calloc(sizeof(struct RAROpenArchiveDataEx), 1);
+    archiveData = (struct RAROpenArchiveDataEx*)calloc(1, sizeof(struct RAROpenArchiveDataEx));
     if (archiveData == NULL) {
         unrar_dbgmsg("unrar_open: Not enough memory to allocate main archive header data structure.\n");
         status = UNRAR_EMEM;
