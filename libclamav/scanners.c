@@ -5262,9 +5262,13 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
 
         case CL_TYPE_PNG: {
             if (SCAN_PARSE_IMAGE && (DCONF_OTHER & OTHER_CONF_PNG)) {
-                if (SCAN_HEURISTICS && SCAN_HEURISTIC_BROKEN_MEDIA) {
+                if (SCAN_HEURISTICS) {
                     /*
                      * Parse PNG files, checking for exploits and other file format issues.
+                     *
+                     * Not gated on SCAN_HEURISTIC_BROKEN_MEDIA: cli_parsepng() already gates its
+                     * Broken.Media alerts on that option, and the parser is also what scans data
+                     * appended after the IEND chunk as a nested file.
                      */
                     ret = cli_parsepng(ctx); /* PNG parser detects a couple CVE's as well as Broken.Media */
                     if (CL_SUCCESS != ret) {
