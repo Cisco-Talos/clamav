@@ -27,6 +27,33 @@ class TC(testcase.TestCase):
         super(TC, self).tearDown()
         self.verify_valgrind_log()
 
+    def test_png_trailing_data(self):
+        self.step_name('Test that data appended after the PNG IEND chunk is scanned by default')
+
+        # The signature is anchored at offset 0, so it only matches if the trailing data is scanned as its own layer.
+        (TC.path_tmp / 'png-trailing-data.ndb').write_text(
+            "Test.PNG.TrailingData:0:0:{}\n".format(b'CLAMAV-PNG-TRAILING-DATA-TEST'.hex())
+        )
+        testfile = TC.path_tmp / 'logo.png.trailing-data'
+        testfile.write_bytes((TC.path_source / 'logo.png').read_bytes() + b'CLAMAV-PNG-TRAILING-DATA-TEST')
+
+        command = '{valgrind} {valgrind_args} {clamscan} -d {path_db} {testfiles}'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan,
+            path_db=TC.path_tmp / 'png-trailing-data.ndb',
+            testfiles=testfile,
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 1  # virus
+
+        expected_stdout = [
+            'logo.png.trailing-data: Test.PNG.TrailingData.UNOFFICIAL FOUND',
+        ]
+        unexpected_stdout = [
+            testcase.CLEAN_SCAN_RESULT,
+        ]
+        self.verify_output(output.out, expected=expected_stdout, unexpected=unexpected_stdout)
+
     def test_embedded_zips(self):
         self.step_name('Test that clamav can successfully extract and alert on multiple embedded ZIP files')
 

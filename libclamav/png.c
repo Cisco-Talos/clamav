@@ -154,8 +154,13 @@ cl_error_t cli_parsepng(cli_ctx *ctx)
                 cli_dbgmsg("PNG: invalid IHDR length: " STDu64 "\n", chunk_data_length);
                 break;
             } else {
-                width  = be32_to_host(*(uint32_t *)ptr);
-                height = be32_to_host(*(uint32_t *)(ptr + 4));
+                uint32_t width_u32, height_u32;
+
+                /* ptr may not be 4-byte aligned, e.g. for a PNG nested at an odd offset. */
+                memcpy(&width_u32, ptr, sizeof(width_u32));
+                memcpy(&height_u32, ptr + 4, sizeof(height_u32));
+                width  = be32_to_host(width_u32);
+                height = be32_to_host(height_u32);
                 if (width == 0 || height == 0 || width > (uint64_t)0x7fffffff || height > (uint64_t)0x7fffffff) {
                     cli_dbgmsg("PNG: invalid image dimensions: width = " STDu64 ", height = " STDu64 "\n", width, height);
                     break;
