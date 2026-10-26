@@ -163,6 +163,28 @@ void cl_cleanup_crypto(void)
 }
 
 /**
+ * @brief Opaque hash context handle.
+ *
+ * When the caller asks for a FIPS bypass hash, the EVP_MD is fetched from a
+ * private OpenSSL library context so that neither the FIPS restrictions nor the
+ * provider configuration of the process-wide default library context are
+ * affected. OpenSSL requires that an object fetched from a library context is
+ * not used after that library context has been freed, because freeing it tears
+ * down the providers belonging to it. The private context is therefore owned by
+ * the hash context and is only released once the digest has been finalized.
+ */
+#if OPENSSL_VERSION_MAJOR >= 3
+struct cl_hash_ctx {
+    EVP_MD_CTX *mdctx;
+    OSSL_LIB_CTX *libctx;
+};
+#else
+struct cl_hash_ctx {
+    EVP_MD_CTX *mdctx;
+};
+#endif
+
+/**
  * @brief Generate a hash of data.
  *
  * @param alg               The hashing algorithm to use.
@@ -354,6 +376,7 @@ extern cl_error_t cl_hash_init_ex(
 {
     cl_error_t status = CL_ERROR;
     EVP_MD_CTX *ctx   = NULL;
+    struct cl_hash_ctx *hash_ctx = NULL;
 
 #if OPENSSL_VERSION_MAJOR >= 3
     OSSL_LIB_CTX *ossl_ctx = NULL;
@@ -412,8 +435,21 @@ extern cl_error_t cl_hash_init_ex(
         goto done;
     }
 
-    *ctx_out = (cl_hash_ctx_t *)ctx;
-    ctx      = NULL; // Ownership of ctx is transferred to the caller
+    hash_ctx = (struct cl_hash_ctx *)calloc(1, sizeof(*hash_ctx));
+    if (NULL == hash_ctx) {
+        cli_errmsg("cl_hash_init_ex: Failed to allocate memory for hash context\n");
+        status = CL_EMEM;
+        goto done;
+    }
+
+    hash_ctx->mdctx = ctx;
+    ctx             = NULL; // Ownership of ctx is transferred to hash_ctx
+#if OPENSSL_VERSION_MAJOR >= 3
+    hash_ctx->libctx = ossl_ctx;
+    ossl_ctx         = NULL; // The private library context outlives the digest
+#endif
+
+    *ctx_out = (cl_hash_ctx_t *)hash_ctx;
 
     status = CL_SUCCESS;
 
@@ -446,7 +482,8 @@ extern cl_error_t cl_update_hash_ex(
     const uint8_t *data,
     size_t length)
 {
-    cl_error_t status = CL_ERROR;
+    cl_error_t status            = CL_ERROR;
+    struct cl_hash_ctx *hash_ctx = (struct cl_hash_ctx *)ctx;
 #if defined(_WIN32)
     bool win_exception = false;
 #endif
@@ -458,7 +495,7 @@ extern cl_error_t cl_update_hash_ex(
     }
 
     EXCEPTION_PREAMBLE
-    if (!EVP_DigestUpdate((EVP_MD_CTX *)ctx, data, length)) {
+    if (!EVP_DigestUpdate(hash_ctx->mdctx, data, length)) {
         cli_errmsg("cl_update_hash_ex: Failed to update digest context\n");
         status = CL_EMEM;
         goto done;
@@ -496,7 +533,8 @@ extern cl_error_t cl_finish_hash_ex(
     size_t *hash_len,
     uint32_t flags)
 {
-    cl_error_t status = CL_ERROR;
+    cl_error_t status            = CL_ERROR;
+    struct cl_hash_ctx *hash_ctx = (struct cl_hash_ctx *)ctx;
 
     size_t required_hash_len;
     uint8_t *new_hash = NULL;
@@ -508,7 +546,7 @@ extern cl_error_t cl_finish_hash_ex(
         goto done;
     }
 
-    required_hash_len = (size_t)EVP_MD_CTX_size((EVP_MD_CTX *)ctx);
+    required_hash_len = (size_t)EVP_MD_CTX_size(hash_ctx->mdctx);
 
     if (flags & CL_HASH_FLAG_ALLOCATE) {
         new_hash = (uint8_t *)malloc(required_hash_len);
@@ -526,7 +564,7 @@ extern cl_error_t cl_finish_hash_ex(
         new_hash = *hash;
     }
 
-    if (!EVP_DigestFinal_ex((EVP_MD_CTX *)ctx, new_hash, &hash_len_final)) {
+    if (!EVP_DigestFinal_ex(hash_ctx->mdctx, new_hash, &hash_len_final)) {
         cli_errmsg("cl_hash_data_ex: Failed to finalize digest context\n");
         status = CL_EMEM;
         goto done;
@@ -542,8 +580,12 @@ extern cl_error_t cl_finish_hash_ex(
     status = CL_SUCCESS;
 
 done:
-    if (NULL != ctx) {
-        EVP_MD_CTX_free((EVP_MD_CTX *)ctx);
+    if (NULL != hash_ctx) {
+        EVP_MD_CTX_free(hash_ctx->mdctx);
+#if OPENSSL_VERSION_MAJOR >= 3
+        OSSL_LIB_CTX_free(hash_ctx->libctx);
+#endif
+        free(hash_ctx);
     }
     return status;
 }
@@ -555,9 +597,17 @@ done:
  */
 extern void cl_hash_destroy_ex(cl_hash_ctx_t *ctx)
 {
-    if (ctx) {
-        EVP_MD_CTX_free((EVP_MD_CTX *)ctx);
+    struct cl_hash_ctx *hash_ctx = (struct cl_hash_ctx *)ctx;
+
+    if (NULL == hash_ctx) {
+        return;
     }
+
+    EVP_MD_CTX_free(hash_ctx->mdctx);
+#if OPENSSL_VERSION_MAJOR >= 3
+    OSSL_LIB_CTX_free(hash_ctx->libctx);
+#endif
+    free(hash_ctx);
 }
 
 /**
@@ -1777,64 +1827,18 @@ X509_CRL *cl_load_crl(const char *file)
 
 void *cl_hash_init(const char *alg)
 {
-    EVP_MD_CTX *ctx;
+    cl_hash_ctx_t *ctx = NULL;
 
-#if OPENSSL_VERSION_MAJOR >= 3
-    OSSL_LIB_CTX *ossl_ctx = NULL;
-    EVP_MD *md             = NULL;
-#else
-    const EVP_MD *md = NULL;
-#endif
-
-#if OPENSSL_VERSION_MAJOR >= 3
-    /* Bypass FIPS restrictions the OpenSSL 3.0 way */
-    ossl_ctx = OSSL_LIB_CTX_new();
-    if (NULL == ossl_ctx) {
-        cli_errmsg("cl_hash_data_ex: Failed to create new OpenSSL library context\n");
+    if (CL_SUCCESS != cl_hash_init_ex(alg, CL_HASH_FLAG_FIPS_BYPASS, &ctx)) {
         return NULL;
     }
 
-    md = EVP_MD_fetch(ossl_ctx, to_openssl_alg(alg), "-fips");
-#else
-    md = EVP_get_digestbyname(to_openssl_alg(alg));
-#endif
-    if (!(md))
-        return NULL;
-
-    ctx = EVP_MD_CTX_new();
-    if (!(ctx)) {
-#if OPENSSL_VERSION_MAJOR >= 3
-        EVP_MD_free(md);
-        OSSL_LIB_CTX_free(ossl_ctx);
-#endif
-        return NULL;
-    }
-
-#ifdef EVP_MD_CTX_FLAG_NON_FIPS_ALLOW
-    if (OPENSSL_VERSION_NUMBER < 0x30000000L) {
-        /* Bypass FIPS restrictions the OpenSSL 1.x way */
-        EVP_MD_CTX_set_flags(ctx, EVP_MD_CTX_FLAG_NON_FIPS_ALLOW);
-    }
-#endif
-
-    if (!EVP_DigestInit_ex(ctx, md, NULL)) {
-#if OPENSSL_VERSION_MAJOR >= 3
-        EVP_MD_free(md);
-        OSSL_LIB_CTX_free(ossl_ctx);
-#endif
-        EVP_MD_CTX_free(ctx);
-        return NULL;
-    }
-
-#if OPENSSL_VERSION_MAJOR >= 3
-    EVP_MD_free(md);
-    OSSL_LIB_CTX_free(ossl_ctx);
-#endif
     return (void *)ctx;
 }
 
 int cl_update_hash(void *ctx, const void *data, size_t sz)
 {
+    struct cl_hash_ctx *hash_ctx = (struct cl_hash_ctx *)ctx;
 #if defined(_WIN32)
     bool win_exception = false;
 #endif
@@ -1843,7 +1847,7 @@ int cl_update_hash(void *ctx, const void *data, size_t sz)
         return -1;
 
     EXCEPTION_PREAMBLE
-    if (!EVP_DigestUpdate((EVP_MD_CTX *)ctx, data, sz))
+    if (!EVP_DigestUpdate(hash_ctx->mdctx, data, sz))
         return -1;
     EXCEPTION_POSTAMBLE
 
@@ -1858,23 +1862,34 @@ int cl_update_hash(void *ctx, const void *data, size_t sz)
 
 int cl_finish_hash(void *ctx, void *buf)
 {
-    int res = 0;
+    struct cl_hash_ctx *hash_ctx = (struct cl_hash_ctx *)ctx;
+    int res                      = 0;
 
     if (!(ctx) || !(buf))
         return -1;
 
-    if (!EVP_DigestFinal_ex((EVP_MD_CTX *)ctx, (unsigned char *)buf, NULL))
+    if (!EVP_DigestFinal_ex(hash_ctx->mdctx, (unsigned char *)buf, NULL))
         res = -1;
 
-    EVP_MD_CTX_free((EVP_MD_CTX *)ctx);
+    EVP_MD_CTX_free(hash_ctx->mdctx);
+#if OPENSSL_VERSION_MAJOR >= 3
+    OSSL_LIB_CTX_free(hash_ctx->libctx);
+#endif
+    free(hash_ctx);
 
     return res;
 }
 
 void cl_hash_destroy(void *ctx)
 {
+    struct cl_hash_ctx *hash_ctx = (struct cl_hash_ctx *)ctx;
+
     if (!(ctx))
         return;
 
-    EVP_MD_CTX_free((EVP_MD_CTX *)ctx);
+    EVP_MD_CTX_free(hash_ctx->mdctx);
+#if OPENSSL_VERSION_MAJOR >= 3
+    OSSL_LIB_CTX_free(hash_ctx->libctx);
+#endif
+    free(hash_ctx);
 }
