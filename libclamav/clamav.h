@@ -1587,6 +1587,8 @@ X509 *cl_load_cert(const char *certpath);
  *
  * @param timeobj   The ASN1_TIME object.
  * @return          A pointer to a (struct tm). Adjusted for time zone and daylight savings time.
+ *
+ * @deprecated This function is deprecated and will be removed in ClamAV 1.6.
  */
 struct tm *cl_ASN1_GetTimeT(ASN1_TIME *timeobj);
 

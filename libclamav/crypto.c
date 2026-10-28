@@ -55,6 +55,7 @@
 
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
 #define X509_CRL_get0_nextUpdate X509_CRL_get_nextUpdate
+#define ASN1_STRING_get0_data ASN1_STRING_data
 #endif
 
 #if !defined(_WIN32)
@@ -1052,7 +1053,9 @@ X509 *cl_load_cert(const char *certpath)
 struct tm *cl_ASN1_GetTimeT(ASN1_TIME *timeobj)
 {
     struct tm *t;
-    char *str;
+    const unsigned char *data;
+    int len;
+    char str[32];
     const char *fmt = NULL;
     time_t localt;
 #ifdef _WIN32
@@ -1061,10 +1064,20 @@ struct tm *cl_ASN1_GetTimeT(ASN1_TIME *timeobj)
     struct tm localtm;
 #endif
 
-    if (!(timeobj) || !(timeobj->data))
+    if (!(timeobj))
         return NULL;
 
-    str = (char *)(timeobj->data);
+    data = ASN1_STRING_get0_data(timeobj);
+    len  = ASN1_STRING_length(timeobj);
+    if (!(data) || len <= 0)
+        return NULL;
+
+    /* Parse a NUL-terminated copy: OpenSSL doesn't guarantee the data is terminated, and the month
+     * adjustment below must not modify the caller's ASN1_TIME. */
+    if ((size_t)len >= sizeof(str))
+        len = sizeof(str) - 1;
+    memcpy(str, data, len);
+    str[len] = '\0';
     if (strlen(str) < 12)
         return NULL;
 
@@ -1072,7 +1085,7 @@ struct tm *cl_ASN1_GetTimeT(ASN1_TIME *timeobj)
     if (!(t))
         return NULL;
 
-    if (timeobj->type == V_ASN1_UTCTIME) {
+    if (ASN1_STRING_type(timeobj) == V_ASN1_UTCTIME) {
         /* two digit year */
         fmt = "%y%m%d%H%M%S";
         if (str[3] == '0') {
@@ -1081,7 +1094,7 @@ struct tm *cl_ASN1_GetTimeT(ASN1_TIME *timeobj)
         } else {
             str[3]--;
         }
-    } else if (timeobj->type == V_ASN1_GENERALIZEDTIME) {
+    } else if (ASN1_STRING_type(timeobj) == V_ASN1_GENERALIZEDTIME) {
         /* four digit year */
         fmt = "%Y%m%d%H%M%S";
         if (str[5] == '0') {
