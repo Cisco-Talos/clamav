@@ -3,6 +3,121 @@
 Note: This file refers to the official packages. Things described here may
 differ slightly from third-party binary packages.
 
+## 1.5.5
+
+ClamAV 1.5.5 is a patch release with the following fixes:
+
+- [CVE-2026-76422](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2026-76422):
+  Fixed Rust-to-C logging so rendered messages are passed as data rather than
+  as C format strings. Crafted input could otherwise cause a crash, disclose
+  process memory, or corrupt memory when attacker-controlled text was logged.
+
+  This issue affects ClamAV 0.105.0 through 1.5.4.
+  The fix is included in 1.4.7 and 1.5.5.
+
+  Thank you to Feng Xue for identifying this issue.
+
+- [CVE-2026-76411](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2026-76411):
+  Fixed URL canonicalization length accounting that could write beyond a
+  stack buffer while scanning crafted email with full-hash phishing database
+  entries loaded.
+
+  This issue affects ClamAV 0.94 through 1.5.4.
+  The fix is included in 1.4.7 and 1.5.5.
+
+  Thank you to Feng Xue for identifying this issue.
+
+- [CVE-2026-76415](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2026-76415):
+  Fixed yC executable unpacker offset validation that could underflow and read
+  beyond a heap buffer while scanning a malformed file.
+
+  This issue affects ClamAV 0.96 through 1.5.4.
+  The fix is included in 1.4.7 and 1.5.5.
+
+  Thank you to Nebula Security for identifying this issue.
+
+- [CVE-2026-76414](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2026-76414):
+  Bounded CHM directory traversal to prevent cyclic directory data from
+  causing an infinite scan loop and denial of service.
+
+  This issue affects ClamAV 0.100.0 through 1.5.4.
+  The fix is included in 1.4.7 and 1.5.5.
+
+  Thank you to Nebula Security for identifying this issue.
+
+- [CVE-2026-76416](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2026-76416):
+  Validated InstallShield file table counts and offsets, and applied scan time
+  limits, to prevent malformed archives from pinning a scan worker.
+
+  This issue affects ClamAV 0.96 through 1.5.4.
+  The fix is included in 1.4.7 and 1.5.5.
+
+  Thank you to Nebula Security for identifying this issue.
+
+- [CVE-2026-76417](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2026-76417):
+  Fixed OLE2 property traversal recursion accounting to prevent a deeply
+  nested crafted document from exhausting the process stack.
+
+  This issue affects ClamAV 0.71 through 1.5.4.
+  The fix is included in 1.4.7 and 1.5.5.
+
+  Thank you to Nebula Security for identifying this issue.
+
+- [CVE-2026-76421](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2026-76421):
+  Validated LZX match offsets before narrowing them to prevent a malformed CHM
+  archive from causing an out-of-bounds heap write.
+
+  This issue affects ClamAV 0.80 through 1.5.4.
+  The fix is included in 1.4.7 and 1.5.5.
+
+  Thank you to Feng Xue and XGPT of ThreatBook for identifying this issue.
+
+- [CVE-2026-76430](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2026-76430):
+  Bounded UPX decompression and PE rebuilding output to prevent malformed
+  packed executables from causing out-of-bounds heap writes.
+
+  This issue affects ClamAV 0.94.1 through 1.5.4.
+  The fix is included in 1.4.7 and 1.5.5.
+
+  Thank you to Feng Xue and, independently, Nicola Ruaro for identifying this
+  issue.
+
+- [CVE-2026-76516](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2026-76516):
+  Enforced file-count and scan-size limits before XAR extraction writes to
+  prevent crafted archives from exhausting temporary storage.
+
+  This issue affects ClamAV 0.98 through 1.5.4.
+  The fix is included in 1.4.7 and 1.5.5.
+
+  Thank you to DieHardMan 300 for identifying this issue.
+
+- [CVE-2026-76515](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2026-76515):
+  Bounded OLE2 directory-chain traversal and applied scan time limits to
+  prevent crafted documents from causing excessive CPU use.
+
+  This issue affects ClamAV 0.98.1 through 1.5.4.
+  The fix is included in 1.4.7 and 1.5.5.
+
+  Thank you to Ziyue Wang, Liyi Zhou, Strick, Maurice, and Chenchen Yu of
+  Disproof AI Lab, University of Sydney, for identifying this issue.
+
+- Tightened the built-in HTML file type signatures so XML and custom elements
+  whose names merely start with an HTML tag name are not classified as HTML.
+
+- Sigtool now retries after a delay when building a database archive whose MD5
+  hash begins with `00`, preserving compatibility with ClamAV 1.1 through 1.4.
+
+- Improved compatibility with OpenSSL 4 and reduced hashing overhead by reusing
+  digest implementations fetched from a long-lived private library context.
+  Also read opaque `ASN1_TIME` values through supported accessors instead of
+  accessing OpenSSL internals directly.
+
+  Thank you to Seweryn Chlewicki and Sebastian Andrzej Siewior for these
+  improvements.
+
+- Upgraded the Rust `anyhow` and `rand` dependencies to resolve the
+  RUSTSEC-2026-0190 and RUSTSEC-2026-0097 advisories.
+
 ## 1.5.4
 
 ClamAV 1.5.4 is a patch release with the following fixes:
@@ -896,6 +1011,198 @@ Special thanks to the following people for code contributions and bug reports:
 - TITAN Team
 - userwiths
 - Yoann Lecuyer
+
+## 1.4.7
+
+ClamAV 1.4.7 is a patch release with the following fixes:
+
+- [CVE-2026-76422](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2026-76422):
+  Fixed Rust-to-C logging so rendered messages are passed as data rather than
+  as C format strings. Crafted input could otherwise cause a crash, disclose
+  process memory, or corrupt memory when attacker-controlled text was logged.
+
+  This issue affects ClamAV 0.105.0 through 1.5.4.
+  The fix is included in 1.4.7 and 1.5.5.
+
+  Thank you to Feng Xue for identifying this issue.
+
+- [CVE-2026-76411](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2026-76411):
+  Fixed URL canonicalization length accounting that could write beyond a
+  stack buffer while scanning crafted email with full-hash phishing database
+  entries loaded.
+
+  This issue affects ClamAV 0.94 through 1.5.4.
+  The fix is included in 1.4.7 and 1.5.5.
+
+  Thank you to Feng Xue for identifying this issue.
+
+- [CVE-2026-76415](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2026-76415):
+  Fixed yC executable unpacker offset validation that could underflow and read
+  beyond a heap buffer while scanning a malformed file.
+
+  This issue affects ClamAV 0.96 through 1.5.4.
+  The fix is included in 1.4.7 and 1.5.5.
+
+  Thank you to Nebula Security for identifying this issue.
+
+- [CVE-2026-76414](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2026-76414):
+  Bounded CHM directory traversal to prevent cyclic directory data from
+  causing an infinite scan loop and denial of service.
+
+  This issue affects ClamAV 0.100.0 through 1.5.4.
+  The fix is included in 1.4.7 and 1.5.5.
+
+  Thank you to Nebula Security for identifying this issue.
+
+- [CVE-2026-76416](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2026-76416):
+  Validated InstallShield file table counts and offsets, and applied scan time
+  limits, to prevent malformed archives from pinning a scan worker.
+
+  This issue affects ClamAV 0.96 through 1.5.4.
+  The fix is included in 1.4.7 and 1.5.5.
+
+  Thank you to Nebula Security for identifying this issue.
+
+- [CVE-2026-76417](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2026-76417):
+  Fixed OLE2 property traversal recursion accounting to prevent a deeply
+  nested crafted document from exhausting the process stack.
+
+  This issue affects ClamAV 0.71 through 1.5.4.
+  The fix is included in 1.4.7 and 1.5.5.
+
+  Thank you to Nebula Security for identifying this issue.
+
+- [CVE-2026-76421](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2026-76421):
+  Validated LZX match offsets before narrowing them to prevent a malformed CHM
+  archive from causing an out-of-bounds heap write.
+
+  This issue affects ClamAV 0.80 through 1.5.4.
+  The fix is included in 1.4.7 and 1.5.5.
+
+  Thank you to Feng Xue and XGPT of ThreatBook for identifying this issue.
+
+- [CVE-2026-76430](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2026-76430):
+  Bounded UPX decompression and PE rebuilding output to prevent malformed
+  packed executables from causing out-of-bounds heap writes.
+
+  This issue affects ClamAV 0.94.1 through 1.5.4.
+  The fix is included in 1.4.7 and 1.5.5.
+
+  Thank you to Feng Xue and, independently, Nicola Ruaro for identifying this
+  issue.
+
+- [CVE-2026-76516](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2026-76516):
+  Enforced file-count and scan-size limits before XAR extraction writes to
+  prevent crafted archives from exhausting temporary storage.
+
+  This issue affects ClamAV 0.98 through 1.5.4.
+  The fix is included in 1.4.7 and 1.5.5.
+
+  Thank you to DieHardMan 300 for identifying this issue.
+
+- [CVE-2026-76515](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2026-76515):
+  Bounded OLE2 directory-chain traversal and applied scan time limits to
+  prevent crafted documents from causing excessive CPU use.
+
+  This issue affects ClamAV 0.98.1 through 1.5.4.
+  The fix is included in 1.4.7 and 1.5.5.
+
+  Thank you to Ziyue Wang, Liyi Zhou, Strick, Maurice, and Chenchen Yu of
+  Disproof AI Lab, University of Sydney, for identifying this issue.
+
+- Fixed `clamd` shutdown cleanup so the server thread does not close listening
+  descriptors owned by `clamd`, preventing duplicate closes.
+
+- Fixed Rust CDIFF handling so a borrowed file descriptor remains owned by
+  the calling C code, preventing the descriptor from being closed twice.
+
+- Improved compatibility with OpenSSL 4 by reading opaque `ASN1_TIME` values
+  through supported accessors instead of accessing OpenSSL internals directly.
+
+  Thank you to Sebastian Andrzej Siewior for this improvement.
+
+- Upgraded the Rust `anyhow` and `rand` dependencies to resolve the
+  RUSTSEC-2026-0190 and RUSTSEC-2026-0097 advisories.
+
+## 1.4.6
+
+ClamAV 1.4.6 is a patch release with the following fixes:
+
+- [CVE-2026-20345](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2026-20345):
+  Fixed an indexing error while converting GPT partition names that could
+  read or write beyond a stack-allocated partition entry.
+
+  This issue affects ClamAV 0.98.2 through 1.5.3.
+  The fix is included in 1.4.6 and 1.5.4.
+
+  Thank you to Atuin - Automated Vulnerability Discovery Engine, Tianchu Chen
+  of Tencent Xuanwu Lab for identifying this issue.
+
+- [CVE-2026-20339](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2026-20339):
+  Fixed an integer overflow in the PESpin unpacker that could allocate an
+  undersized buffer and then write beyond it while rebuilding a PE file.
+
+  This issue affects ClamAV 0.90 through 1.5.3.
+  The fix is included in 1.4.6 and 1.5.4.
+
+  Thank you to Feng Xue and, independently, Yazdan Soltani for identifying
+  this issue.
+
+- [CVE-2026-20346](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2026-20346):
+  Fixed an integer underflow in the PDF parser that could cause a crash while
+  reading a malformed hex string.
+
+  This issue affects ClamAV 1.4.5 and earlier, and ClamAV 1.5.0 through
+  1.5.3.
+  The fix is included in 1.4.6 and 1.5.4.
+
+  Thank you to Tristan (@TristanInSec) for identifying this issue.
+
+- [CVE-2026-20347](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2026-20347):
+  Fixed undefined behavior and integer overflow in the Mach-O parser that
+  could cause a crash while scanning a malformed Mach-O file.
+
+  This issue affects ClamAV 1.4.5 and earlier, and ClamAV 1.5.0 through
+  1.5.3.
+  The fix is included in 1.4.6 and 1.5.4.
+
+  Thank you to Tristan (@TristanInSec) for identifying this issue.
+
+- [CVE-2026-20348](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2026-20348):
+  Fixed XAR parser size handling that could request an excessive allocation
+  or exceed scan limits while decompressing a malformed table of contents.
+
+  This issue affects ClamAV 0.98.1 through 1.5.3.
+  The fix is included in 1.4.6 and 1.5.4.
+
+  Thank you to leduckhuong for identifying this issue.
+
+- [CVE-2025-8088](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2025-8088):
+  Adopted the upstream UnRAR project fix in ClamAV's bundled UnRAR library.
+  The fix rejects path separators in NTFS alternate data stream names to
+  prevent extraction outside ClamAV's temporary scan directory on Windows.
+
+  This issue affects ClamAV 0.101.0 through 1.5.3.
+  The fix is included in 1.4.6 and 1.5.4.
+
+  Thank you to Yazdan Soltani for identifying that this issue affects ClamAV.
+
+- Fixed thread-safety issues in the `clamd` STATS command that could disclose
+  process memory or crash the daemon while scans and STATS requests run
+  concurrently. Also fixed partial socket-write handling used for large STATS
+  responses.
+
+  This issue affects ClamAV 0.95 through 1.5.3.
+  The fix is included in 1.4.6 and 1.5.4.
+
+- FreeBSD: Restored support for safe quarantine move and remove actions while
+  preserving protection against source-path replacement races.
+
+  This issue affects ClamAV 1.4.5 and 1.5.3.
+  The fix is included in 1.4.6 and 1.5.4.
+
+- Upgraded the Rust `crossbeam-epoch` dependency to resolve the
+  RUSTSEC-2026-0204 advisory.
 
 ## 1.4.3
 
