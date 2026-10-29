@@ -3,6 +3,118 @@
 Note: This file refers to the official packages. Things described here may
 differ slightly from third-party binary packages.
 
+## 1.4.7
+
+ClamAV 1.4.7 is a patch release with the following fixes:
+
+- [CVE-2026-76422](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2026-76422):
+  Fixed Rust-to-C logging so rendered messages are passed as data rather than
+  as C format strings. Crafted input could otherwise cause a crash, disclose
+  process memory, or corrupt memory when attacker-controlled text was logged.
+
+  This issue affects ClamAV 0.105.0 through 1.5.4.
+  The fix is included in 1.4.7 and 1.5.5.
+
+  Thank you to Feng Xue for identifying this issue.
+
+- [CVE-2026-76411](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2026-76411):
+  Fixed URL canonicalization length accounting that could write beyond a
+  stack buffer while scanning crafted email with full-hash phishing database
+  entries loaded.
+
+  This issue affects ClamAV 0.94 through 1.5.4.
+  The fix is included in 1.4.7 and 1.5.5.
+
+  Thank you to Feng Xue for identifying this issue.
+
+- [CVE-2026-76415](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2026-76415):
+  Fixed yC executable unpacker offset validation that could underflow and read
+  beyond a heap buffer while scanning a malformed file.
+
+  This issue affects ClamAV 0.96 through 1.5.4.
+  The fix is included in 1.4.7 and 1.5.5.
+
+  Thank you to Nebula Security for identifying this issue.
+
+- [CVE-2026-76414](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2026-76414):
+  Bounded CHM directory traversal to prevent cyclic directory data from
+  causing an infinite scan loop and denial of service.
+
+  This issue affects ClamAV 0.100.0 through 1.5.4.
+  The fix is included in 1.4.7 and 1.5.5.
+
+  Thank you to Nebula Security for identifying this issue.
+
+- [CVE-2026-76416](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2026-76416):
+  Validated InstallShield file table counts and offsets, and applied scan time
+  limits, to prevent malformed archives from pinning a scan worker.
+
+  This issue affects ClamAV 0.96 through 1.5.4.
+  The fix is included in 1.4.7 and 1.5.5.
+
+  Thank you to Nebula Security for identifying this issue.
+
+- [CVE-2026-76417](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2026-76417):
+  Fixed OLE2 property traversal recursion accounting to prevent a deeply
+  nested crafted document from exhausting the process stack.
+
+  This issue affects ClamAV 0.71 through 1.5.4.
+  The fix is included in 1.4.7 and 1.5.5.
+
+  Thank you to Nebula Security for identifying this issue.
+
+- [CVE-2026-76421](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2026-76421):
+  Validated LZX match offsets before narrowing them to prevent a malformed CHM
+  archive from causing an out-of-bounds heap write.
+
+  This issue affects ClamAV 0.80 through 1.5.4.
+  The fix is included in 1.4.7 and 1.5.5.
+
+  Thank you to Feng Xue and XGPT of ThreatBook for identifying this issue.
+
+- [CVE-2026-76430](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2026-76430):
+  Bounded UPX decompression and PE rebuilding output to prevent malformed
+  packed executables from causing out-of-bounds heap writes.
+
+  This issue affects ClamAV 0.94.1 through 1.5.4.
+  The fix is included in 1.4.7 and 1.5.5.
+
+  Thank you to Feng Xue and, independently, Nicola Ruaro for identifying this
+  issue.
+
+- [CVE-2026-76516](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2026-76516):
+  Enforced file-count and scan-size limits before XAR extraction writes to
+  prevent crafted archives from exhausting temporary storage.
+
+  This issue affects ClamAV 0.98 through 1.5.4.
+  The fix is included in 1.4.7 and 1.5.5.
+
+  Thank you to DieHardMan 300 for identifying this issue.
+
+- [CVE-2026-76515](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2026-76515):
+  Bounded OLE2 directory-chain traversal and applied scan time limits to
+  prevent crafted documents from causing excessive CPU use.
+
+  This issue affects ClamAV 0.98.1 through 1.5.4.
+  The fix is included in 1.4.7 and 1.5.5.
+
+  Thank you to Ziyue Wang, Liyi Zhou, Strick, Maurice, and Chenchen Yu of
+  Disproof AI Lab, University of Sydney, for identifying this issue.
+
+- Fixed `clamd` shutdown cleanup so the server thread does not close listening
+  descriptors owned by `clamd`, preventing duplicate closes.
+
+- Fixed Rust CDIFF handling so a borrowed file descriptor remains owned by
+  the calling C code, preventing the descriptor from being closed twice.
+
+- Improved compatibility with OpenSSL 4 by reading opaque `ASN1_TIME` values
+  through supported accessors instead of accessing OpenSSL internals directly.
+
+  Thank you to Sebastian Andrzej Siewior for this improvement.
+
+- Upgraded the Rust `anyhow` and `rand` dependencies to resolve the
+  RUSTSEC-2026-0190 and RUSTSEC-2026-0097 advisories.
+
 ## 1.4.6
 
 ClamAV 1.4.6 is a patch release with the following fixes:
