@@ -4,6 +4,7 @@
 Run clamscan tests.
 """
 
+import base64
 import sys
 from zipfile import ZIP_DEFLATED, ZipFile
 
@@ -224,3 +225,69 @@ class TC(testcase.TestCase):
             'handler_type_cache: handler_type_pe.UNOFFICIAL FOUND',
         ]
         self.verify_output(output.out, expected=expected_stdout, unexpected=unexpected_stdout)
+
+    def write_mail_container_pcre_samples(self):
+        db = TC.path_tmp / 'container_pcre.ldb'
+        db.write_text(
+            r'container_pcre_mail;Engine:81-255,Container:CL_TYPE_MAIL,Target:0;1;0:504b;0/hidden_member_[0-9]{4}\.txt/'
+            '\n'
+        )
+
+        archive = TC.path_tmp / 'container_pcre.zip'
+        with ZipFile(archive, 'w', ZIP_DEFLATED) as zf:
+            zf.writestr('hidden_member_1234.txt', 'plain text\n')
+
+        attachment = base64.encodebytes(archive.read_bytes()).decode()
+        mail = TC.path_tmp / 'container_pcre.eml'
+        mail.write_text(
+            'From: sender@example.com\n'
+            'To: recipient@example.com\n'
+            'Subject: archive\n'
+            'MIME-Version: 1.0\n'
+            'Content-Type: multipart/mixed; boundary="boundary"\n'
+            '\n'
+            '--boundary\n'
+            'Content-Type: application/zip\n'
+            'Content-Transfer-Encoding: base64\n'
+            'Content-Disposition: attachment; filename="container_pcre.zip"\n'
+            '\n'
+            + attachment +
+            '--boundary--\n'
+        )
+        return db, archive, mail
+
+    def test_container_pcre_skipped_outside_its_container(self):
+        self.step_name('Test that a PCRE subsignature is not evaluated where its Container constraint cannot match')
+
+        db, archive, _ = self.write_mail_container_pcre_samples()
+
+        command = '{valgrind} {valgrind_args} {clamscan} -d {path_db} {testfile} --debug'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan,
+            path_db=db, testfile=archive,
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 0  # no virus, no failures
+
+        self.verify_output(output.out, expected=['container_pcre.zip: OK'])
+        self.verify_output(output.err, expected=['its logical signature requires another container'])
+
+    def test_container_pcre_matches_inside_its_container(self):
+        self.step_name('Test that a PCRE subsignature still matches inside its container, '
+                       'after the same content was scanned outside it')
+
+        db, archive, mail = self.write_mail_container_pcre_samples()
+
+        command = '{valgrind} {valgrind_args} {clamscan} -d {path_db} {first} {second}'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan,
+            path_db=db, first=archive, second=mail,
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 1  # virus found
+
+        expected_stdout = [
+            'container_pcre.zip: OK',
+            'container_pcre.eml: container_pcre_mail.UNOFFICIAL FOUND',
+        ]
+        self.verify_output(output.out, expected=expected_stdout)

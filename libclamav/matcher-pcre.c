@@ -541,6 +541,24 @@ int cli_pcre_qoff(struct cli_pcre_meta *pm, uint32_t length, uint32_t *adjbuffer
     return CL_SUCCESS;
 }
 
+/*
+ * A logical signature with a Container constraint can only alert when the
+ * current layer sits in that container type (see lsig_eval()). Running its
+ * regex in any other layer cannot change the result, so it is skipped.
+ */
+static bool lsig_container_mismatch(const struct cli_matcher *root, const struct cli_pcre_meta *pm, cli_ctx *ctx)
+{
+    const struct cli_ac_lsig *ac_lsig;
+
+    if (!ctx || !ctx->fmap || !root->ac_lsigtable || pm->lsigid[1] >= root->ac_lsigs)
+        return false;
+
+    ac_lsig = root->ac_lsigtable[pm->lsigid[1]];
+
+    return ac_lsig && ac_lsig->tdb.container &&
+           ac_lsig->tdb.container[0] != cli_recursion_stack_get_type(ctx, -2);
+}
+
 cl_error_t cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const char **virname, struct cli_ac_result **res, const struct cli_matcher *root, struct cli_ac_data *mdata, const struct cli_pcre_off *data, cli_ctx *ctx)
 {
     cl_error_t ret = CL_SUCCESS;
@@ -587,6 +605,17 @@ cl_error_t cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const 
 #endif
                 if (cli_ac_chklsig(pm->trigger, pm->trigger + strlen(pm->trigger), mdata->lsigcnt[pm->lsigid[1]], &evalcnt, &evalids, 0) != 1)
                     continue;
+
+            if (lsig_container_mismatch(root, pm, ctx)) {
+                /*
+                 * The regex might have matched, and lsig_eval() does not cache a
+                 * layer whose match was rejected only for its container. Do the same,
+                 * so this content is still evaluated when it appears in that container.
+                 */
+                cli_dbgmsg("cli_pcre_scanbuf: skipping regex /%s/, its logical signature requires another container\n", pd->expression);
+                ctx->fmap->dont_cache_flag = true;
+                continue;
+            }
         } else {
             cli_dbgmsg("cli_pcre_scanbuf: skipping %s check due to uninitialized lsigid\n", pm->trigger);
             /* fall-through to unconditional execution - sigtool-only */
