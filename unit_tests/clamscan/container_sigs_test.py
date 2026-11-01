@@ -5,11 +5,110 @@ Run clamscan tests.
 """
 
 import base64
+import struct
 import sys
 from zipfile import ZIP_DEFLATED, ZipFile
 
 sys.path.append('../unit_tests')
 import testcase
+
+
+SECTOR_SIZE = 512
+STREAM_SIZE = 4096  # Streams this size or larger are stored in regular sectors, not the mini stream.
+FREESECT = 0xFFFFFFFF
+ENDOFCHAIN = 0xFFFFFFFE
+FATSECT = 0xFFFFFFFD
+
+
+def _directory_entry(name, entry_type, right=FREESECT, child=FREESECT, start=ENDOFCHAIN, size=0):
+    encoded_name = (name.encode('utf-16-le') + b'\x00\x00')[:64].ljust(64, b'\x00')
+    name_length = min(len(name) * 2 + 2, 64) if name else 0
+
+    entry = encoded_name
+    entry += struct.pack('<HBB', name_length, entry_type, 1)
+    entry += struct.pack('<III', FREESECT, right, child)
+    entry += b'\x00' * 16
+    entry += struct.pack('<I', 0)
+    entry += b'\x00' * 16
+    entry += struct.pack('<IQ', start, size)
+
+    assert len(entry) == 128
+    return entry
+
+
+def _write_ole2(path, streams):
+    """Write a minimal OLE2 file whose root storage holds the given (name, data) streams."""
+    assert 0 < len(streams) <= 3
+
+    fat = [FREESECT] * (SECTOR_SIZE // 4)
+    fat[0] = FATSECT
+    fat[1] = ENDOFCHAIN
+
+    entries = [_directory_entry('Root Entry', 5, child=1)]
+    sectors = []
+    next_sector = 2
+    for index, (name, data) in enumerate(streams):
+        assert len(data) >= STREAM_SIZE
+        sector_count = (len(data) + SECTOR_SIZE - 1) // SECTOR_SIZE
+        for offset in range(sector_count):
+            sector = next_sector + offset
+            fat[sector] = sector + 1 if offset + 1 < sector_count else ENDOFCHAIN
+        right = index + 2 if index + 1 < len(streams) else FREESECT
+        entries.append(_directory_entry(name, 2, right=right, start=next_sector, size=len(data)))
+        padded = data.ljust(sector_count * SECTOR_SIZE, b'\x00')
+        sectors.extend(padded[offset:offset + SECTOR_SIZE] for offset in range(0, len(padded), SECTOR_SIZE))
+        next_sector += sector_count
+    assert next_sector <= SECTOR_SIZE // 4
+    entries.extend([_directory_entry('', 0)] * (4 - len(entries)))
+
+    header = b'\xD0\xCF\x11\xE0\xA1\xB1\x1A\xE1'
+    header += b'\x00' * 16
+    header += struct.pack('<HHHH', 0x003E, 0x0003, 0xFFFE, 0x0009)
+    header += struct.pack('<H', 0x0006)
+    header += b'\x00' * 6
+    header += struct.pack('<IIIIIIIII', 0, 1, 1, 0, 0x1000, ENDOFCHAIN, 0, ENDOFCHAIN, 0)
+    header += b''.join(struct.pack('<I', sector) for sector in [0] + [FREESECT] * 108)
+    assert len(header) == SECTOR_SIZE
+
+    fat_sector = b''.join(struct.pack('<I', value) for value in fat)
+    path.write_bytes(header + fat_sector + b''.join(entries) + b''.join(sectors))
+
+
+def _write_vba_document(path, module_source):
+    """
+    Write an OLE2 document with a _VBA_PROJECT stream that names one module, and
+    that module's source, in the layout cli_vba_readdir() and cli_vba_inflate() read.
+    The source is stored as literal-only compressed chunks, so it never appears
+    contiguously in the module stream itself.
+    """
+    module_name = 'Module1'
+    assert len(module_source) < 4096
+
+    # Header: magic, version and ignored bytes.
+    vba_project = b'\xCC\x61' + b'\x00' * 32
+    # One project string, then a zero length that ends the strings.
+    vba_project += struct.pack('<H', 6) + '*\\g'.encode('utf-16-le')
+    vba_project += struct.pack('<H', 0) + b'\x00' * 10
+    # Skipped words up to 0xFFFF, two empty (0xFFFF) lengths, and 100 skipped bytes.
+    vba_project += b'\x00\x00\xFF\xFF'
+    vba_project += b'\xFF\xFF\xFF\xFF' + b'\x00' * 100
+    # One module record: its name, skipped fields, and the offset of its source.
+    vba_project += struct.pack('<H', 1)
+    vba_project += struct.pack('<H', len(module_name) * 2) + module_name.encode('utf-16-le')
+    vba_project += struct.pack('<HH', 0, 0) + b'\x00' * 10
+    vba_project += struct.pack('<H', 0) + b'\x00' * 5
+    source_offset = STREAM_SIZE
+    vba_project += struct.pack('<I', source_offset) + b'\x00' * 2
+
+    compressed = b'\x01' + struct.pack('<H', 0xB000)
+    for offset in range(0, len(module_source), 8):
+        compressed += b'\x00' + module_source[offset:offset + 8]
+    module = b'\x00' * source_offset + compressed
+
+    _write_ole2(path, [
+        ('_VBA_PROJECT', vba_project.ljust(STREAM_SIZE, b'\x00')),
+        (module_name, module),
+    ])
 
 
 class TC(testcase.TestCase):
@@ -289,5 +388,47 @@ class TC(testcase.TestCase):
         expected_stdout = [
             'container_pcre.zip: OK',
             'container_pcre.eml: container_pcre_mail.UNOFFICIAL FOUND',
+        ]
+        self.verify_output(output.out, expected=expected_stdout)
+
+    def write_ole2_container_pcre_samples(self):
+        db = TC.path_tmp / 'ole2_container_pcre.ldb'
+        db.write_text(
+            r'ole2_container_pcre_vba;Engine:81-255,Container:CL_TYPE_MSOLE2,Target:0;0&1;{};0/CLAMAV-TEST-VBA-[0-9]{{4}}-PCRE/'
+            '\n'.format(b'Sub AutoOpen'.hex())
+        )
+
+        document = TC.path_tmp / 'ole2_container_pcre.doc'
+        _write_vba_document(
+            document,
+            b'Attribute VB_Name = "Module1"\r\n'
+            b'Sub AutoOpen()\r\n'
+            b'    MsgBox "CLAMAV-TEST-VBA-1234-PCRE"\r\n'
+            b'End Sub\r\n'
+        )
+
+        archive = TC.path_tmp / 'ole2_container_pcre.zip'
+        with ZipFile(archive, 'w', ZIP_DEFLATED) as zf:
+            zf.writestr('ole2_container_pcre.doc', document.read_bytes())
+
+        return db, document, archive
+
+    def test_container_pcre_matches_vba_macro(self):
+        self.step_name('Test that a PCRE subsignature constrained to the OLE2 container still matches a VBA macro, '
+                       'which is matched before its own layer is entered')
+
+        db, document, archive = self.write_ole2_container_pcre_samples()
+
+        command = '{valgrind} {valgrind_args} {clamscan} -d {path_db} {document} {archive}'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan,
+            path_db=db, document=document, archive=archive,
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 1  # virus found
+
+        expected_stdout = [
+            'ole2_container_pcre.doc: ole2_container_pcre_vba.UNOFFICIAL FOUND',
+            'ole2_container_pcre.zip: ole2_container_pcre_vba.UNOFFICIAL FOUND',
         ]
         self.verify_output(output.out, expected=expected_stdout)
