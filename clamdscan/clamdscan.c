@@ -174,6 +174,7 @@ int main(int argc, char **argv)
     /* TODO: Implement STATUS in clamd */
     if (!optget(opts, "no-summary")->enabled) {
         struct tm tmp;
+        unsigned long long sigs = 0;
 
         date_end = time(NULL);
         gettimeofday(&t2, NULL);
@@ -182,6 +183,9 @@ int main(int argc, char **argv)
         ds -= (dms < 0) ? (1) : (0);
         dms += (dms < 0) ? (1000000) : (0);
         logg(LOGG_INFO, "\n----------- SCAN SUMMARY -----------\n");
+        if (get_clamd_signature_count(opts, &sigs) == 0) {
+            logg(LOGG_INFO, "Database: %llu signatures\n", sigs);
+        }
         logg(LOGG_INFO, "Infected files: %d\n", infected);
         if (err)
             logg(LOGG_INFO, "Total errors: %d\n", err);

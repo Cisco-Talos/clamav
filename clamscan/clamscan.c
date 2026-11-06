@@ -194,7 +194,7 @@ int main(int argc, char **argv)
         ds -= (dms < 0) ? (1) : (0);
         dms += (dms < 0) ? (1000000) : (0);
         logg(LOGG_INFO, "\n----------- SCAN SUMMARY -----------\n");
-        logg(LOGG_INFO, "Known viruses: %u\n", info.sigs);
+        logg(LOGG_INFO, "Database: %u signatures\n", info.sigs);
         logg(LOGG_INFO, "Engine version: %s\n", get_version());
         logg(LOGG_INFO, "Scanned directories: %u\n", info.dirs);
         logg(LOGG_INFO, "Scanned files: %u\n", info.files);
