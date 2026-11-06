@@ -276,6 +276,8 @@ const struct clam_option __clam_options[] = {
 
     {"LogFile", "log", 'l', CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMD | OPT_MILTER | OPT_CLAMSCAN | OPT_CLAMDSCAN | OPT_CLAMONACC, "Save all reports to a log file.", "/tmp/clamav.log"},
 
+    {"Sarif", "sarif", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMD | OPT_MILTER | OPT_CLAMSCAN | OPT_CLAMDSCAN | OPT_CLAMONACC, "Produce a report in SARIF format.", "/tmp/clamav.sarif"},
+
     {"LogFileUnlock", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_MILTER, "By default the log file is locked for writing and only a single\ndaemon process can write to it. This option disables the lock.", "yes"},
 
     {"LogFileMaxSize", NULL, 0, CLOPT_TYPE_SIZE, MATCH_SIZE, 1048576, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_MILTER, "Maximum size of the log file.\nValue of 0 disables the limit.", "5M"},
