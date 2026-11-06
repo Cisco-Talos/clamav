@@ -825,6 +825,19 @@ Example
 #OnAccessMountPath /
 #OnAccessMountPath /home/user
 
+# Set a path whose whole filesystem is to be watched. Unlike OnAccessMountPath,
+# the mark is placed on the filesystem itself, so events are reported for every
+# mount of that filesystem, including mounts made in other mount namespaces
+# (containers, systemd units with private mounts). Without this, writes done by
+# a process that has its own mount namespace produce no events at all.
+# As with OnAccessMountPath, this option preempts the DDD system, results in
+# verdicts only, and prevention is explicitly disallowed.
+# Requires Linux 4.20 or later.
+# It can be used multiple times.
+# Default: disabled
+#OnAccessFilesystemPath /
+#OnAccessFilesystemPath /home/user
+
 # With this option you can exclude the root UID (0). Processes run under
 # root with be able to access all files without triggering scans or
 # permission denied events.

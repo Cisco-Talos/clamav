@@ -239,9 +239,12 @@ static cl_error_t onas_scan_thread_handle_dir(struct onas_scan_event *event_data
         if (curr->fts_info != FTS_D) {
 
             fres = CLAMSTAT(curr->fts_path, &sb);
+            if (fres != 0) {
+                continue;
+            }
 
             if (event_data->sizelimit) {
-                if (fres != 0 || (uint64_t)sb.st_size > event_data->sizelimit) {
+                if ((uint64_t)sb.st_size > event_data->sizelimit) {
                     /* okay to skip w/o allow/deny since dir comes from inotify
                      * events and (probably) won't block w/ protection enabled */
                     event_data->bool_opts &= ((uint16_t)~ONAS_SCTH_B_SCAN);
@@ -275,14 +278,19 @@ static cl_error_t onas_scan_thread_handle_file(struct onas_scan_event *event_dat
         return CL_ENULLARG;
     }
 
-    fres = CLAMSTAT(pathname, &sb);
-    if (event_data->sizelimit) {
-        if (fres != 0 || (uint64_t)sb.st_size > event_data->sizelimit) {
-            /* don't skip so we avoid lockups, but don't scan either;
-             * while it should be obvious, this will unconditionally set
-             * the bit in the map to 0 regardless of original orientation */
-            event_data->bool_opts &= ((uint16_t)~ONAS_SCTH_B_SCAN);
-        }
+#if defined(HAVE_SYS_FANOTIFY_H)
+    if ((event_data->bool_opts & ONAS_SCTH_B_FANOTIFY) && NULL != event_data->fmd && event_data->fmd->fd >= 0) {
+        /* the event may come from a mount that has a different path, or none at all,
+           in this process' mount namespace, so size it through the event descriptor */
+        fres = FSTAT(event_data->fmd->fd, &sb);
+    } else
+#endif
+        fres = CLAMSTAT(pathname, &sb);
+    if (fres != 0 || (event_data->sizelimit && (uint64_t)sb.st_size > event_data->sizelimit)) {
+        /* don't skip so we avoid lockups, but don't scan either;
+         * while it should be obvious, this will unconditionally set
+         * the bit in the map to 0 regardless of original orientation */
+        event_data->bool_opts &= ((uint16_t)~ONAS_SCTH_B_SCAN);
     }
 
     ret = onas_scan_thread_scanfile(event_data, pathname, sb, &infected, &err, &ret_code);
