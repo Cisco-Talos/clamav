@@ -196,7 +196,7 @@ if(WIN32)
         file(TO_NATIVE_PATH $<TARGET_FILE_DIR:check_clamav>/clambc.exe          CLAMBC)
         file(TO_NATIVE_PATH $<TARGET_FILE_DIR:check_clamav>/clamd.exe           CLAMD)
         file(TO_NATIVE_PATH $<TARGET_FILE_DIR:check_clamav>/clamdscan.exe       CLAMDSCAN)
-        file(TO_NATIVE_PATH $<TARGET_FILE_DIR:check_clamav>/clamdtop.exe        CLAMDTOP)
+        file(TO_NATIVE_PATH $<TARGET_FILE:clamdtop_executable>                 CLAMDTOP)
         file(TO_NATIVE_PATH $<TARGET_FILE_DIR:check_clamav>/clamscan.exe        CLAMSCAN)
         file(TO_NATIVE_PATH $<TARGET_FILE_DIR:check_clamav>/clamsubmit.exe      CLAMSUBMIT)
         file(TO_NATIVE_PATH $<TARGET_FILE_DIR:check_clamav>/clamconf.exe        CLAMCONF)
@@ -259,7 +259,7 @@ else()
         set(CLAMBC             $<TARGET_FILE:clambc>)
         set(CLAMD              $<TARGET_FILE:clamd>)
         set(CLAMDSCAN          $<TARGET_FILE:clamdscan>)
-        set(CLAMDTOP           $<TARGET_FILE:clamdtop>)
+        set(CLAMDTOP           $<TARGET_FILE:clamdtop_executable>)
         set(CLAMSCAN           $<TARGET_FILE:clamscan>)
         set(CLAMSUBMIT         $<TARGET_FILE:clamsubmit>)
         set(CLAMCONF           $<TARGET_FILE:clamconf>)
@@ -461,7 +461,7 @@ if(WIN32)
                         $<TARGET_FILE:clambc>
                         $<TARGET_FILE:clamd>
                         $<TARGET_FILE:clamdscan>
-                        $<TARGET_FILE:clamdtop>
+                        $<TARGET_FILE:clamdtop_executable>
                         $<TARGET_FILE:clamscan>
                         $<TARGET_FILE:clamsubmit>
                         $<TARGET_FILE:clamconf>
@@ -509,7 +509,7 @@ if(WIN32)
                 file(COPY $<TARGET_FILE:clambc> DESTINATION $<TARGET_FILE_DIR:check_clamav>)
                 file(COPY $<TARGET_FILE:clamd> DESTINATION $<TARGET_FILE_DIR:check_clamav>)
                 file(COPY $<TARGET_FILE:clamdscan> DESTINATION $<TARGET_FILE_DIR:check_clamav>)
-                file(COPY $<TARGET_FILE:clamdtop> DESTINATION $<TARGET_FILE_DIR:check_clamav>)
+                file(COPY $<TARGET_FILE:clamdtop_executable> DESTINATION $<TARGET_FILE_DIR:check_clamav>)
                 file(COPY $<TARGET_FILE:clamscan> DESTINATION $<TARGET_FILE_DIR:check_clamav>)
                 file(COPY $<TARGET_FILE:clamsubmit> DESTINATION $<TARGET_FILE_DIR:check_clamav>)
                 file(COPY $<TARGET_FILE:clamconf> DESTINATION $<TARGET_FILE_DIR:check_clamav>)

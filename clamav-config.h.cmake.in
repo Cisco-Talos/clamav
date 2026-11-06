@@ -24,9 +24,6 @@
 /* thread safe */
 #cmakedefine CL_THREAD_SAFE 1
 
-/* curses header location */
-#cmakedefine CURSES_INCLUDE @CURSES_INCLUDE@
-
 /* os is aix */
 #cmakedefine C_AIX 1
 
@@ -182,12 +179,6 @@
 
 /* Define to '1' if you have the check.h library */
 #cmakedefine HAVE_LIBCHECK 1
-
-/* Define to '1' if you have the ncurses.h library */
-#cmakedefine HAVE_LIBNCURSES 1
-
-/* Define to '1' if you have the curses.h library */
-#cmakedefine HAVE_LIBPDCURSES 1
 
 /* Define to 1 if you have the <limits.h> header file. */
 #cmakedefine HAVE_LIMITS_H 1
