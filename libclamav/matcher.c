@@ -227,7 +227,7 @@ static inline cl_error_t matcher_run(const struct cli_matcher *root,
                     return CL_EMEM;
 
                 /* scan the full buffer */
-                ret = cli_pcre_scanbuf(buffer, map->len, virname, acres, root, mdata, poffdata, ctx);
+                ret = cli_pcre_scanbuf(buffer, map->len, virname, acres, root, mdata, poffdata, map == ctx->fmap, ctx);
             }
         } else if (pcremode == PCRE_SCAN_BUFF) {
             /* check that scanned buffer does not exceed pcre maxfilesize limit */
@@ -241,7 +241,7 @@ static inline cl_error_t matcher_run(const struct cli_matcher *root,
 
             cli_dbgmsg("matcher_run: performing regex matching on buffer with no map: %u+%u(%u)\n", offset, length, offset + length);
             /* scan the specified buffer */
-            ret = cli_pcre_scanbuf(buffer, length, virname, acres, root, mdata, poffdata, ctx);
+            ret = cli_pcre_scanbuf(buffer, length, virname, acres, root, mdata, poffdata, false, ctx);
         }
     }
 
