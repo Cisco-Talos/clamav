@@ -110,16 +110,29 @@ pkg_check_modules(SYSTEMD_PROGRAM QUIET systemd)
 
 if (SYSTEMD_PROGRAM_FOUND)
     if ("${SYSTEMD_UNIT_DIR}" STREQUAL "")
-        # Use pkg-config to look up the systemd unit install directory
+        # Use pkg-config to look up the systemd system unit install directory
         execute_process(COMMAND ${PKG_CONFIG_EXECUTABLE}
             --variable=systemdsystemunitdir systemd
             OUTPUT_VARIABLE SYSTEMD_UNIT_DIR)
         string(REGEX REPLACE "[ \t\n]+" "" SYSTEMD_UNIT_DIR "${SYSTEMD_UNIT_DIR}")
     endif()
 
-    message(STATUS "systemd services install dir: ${SYSTEMD_UNIT_DIR}")
+    message(STATUS "systemd system services install dir: ${SYSTEMD_UNIT_DIR}")
+
+    if ("${SYSTEMD_USER_UNIT_DIR}" STREQUAL "")
+        # Use pkg-config to look up the systemd user unit install directory
+        execute_process(COMMAND ${PKG_CONFIG_EXECUTABLE}
+            --variable=systemduserunitdir systemd
+            OUTPUT_VARIABLE SYSTEMD_USER_UNIT_DIR)
+        string(REGEX REPLACE "[ \t\n]+" "" SYSTEMD_USER_UNIT_DIR "${SYSTEMD_USER_UNIT_DIR}")
+    endif()
+
+    message(STATUS "systemd user services install dir: ${SYSTEMD_USER_UNIT_DIR}")
 else()
     if (SYSTEMD_UNIT_DIR)
         message (FATAL_ERROR "SYSTEMD_UNIT_DIR was defined but pkg-config was not able to find systemd!")
+    endif()
+    if (SYSTEMD_USER_UNIT_DIR)
+        message (FATAL_ERROR "SYSTEMD_USER_UNIT_DIR was defined but pkg-config was not able to find systemd!")
     endif()
 endif()
