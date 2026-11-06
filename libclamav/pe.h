@@ -39,8 +39,8 @@
  *  clamav-bytecode-compiler source at:
  *  - clang/lib/Headers/bytecode_pe.h
  *  - llvm/tools/clang/lib/Headers/bytecode_pe.h
- *  We allocate space for this, populate the values via cli_peheader, and pass
- *  it to the bytecode sig runtime for use.
+ *  We allocate space for this, populate the values via the Rust PE target-info
+ *  path, and pass it to the bytecode sig runtime for use.
  *
  *  TODO Next time we are making changes to the clamav-bytecode-compiler
  *  source, update pe_image_optional_hdr32 and pe_image_optional_hdr64 to
@@ -79,21 +79,12 @@ enum {
     CL_GENHASH_PE_CLASS_LAST
 };
 
-// For info about these, see the cli_peheader definition in pe.c
-#define CLI_PEHEADER_OPT_NONE 0x0
-#define CLI_PEHEADER_OPT_COLLECT_JSON 0x1
-#define CLI_PEHEADER_OPT_DBG_PRINT_INFO 0x2
-#define CLI_PEHEADER_OPT_EXTRACT_VINFO 0x4
-#define CLI_PEHEADER_OPT_STRICT_ON_PE_ERRORS 0x8
-#define CLI_PEHEADER_OPT_REMOVE_MISSING_SECTIONS 0x10
-
 cl_error_t cli_pe_targetinfo(cli_ctx *ctx, struct cli_exe_info *peinfo);
-cl_error_t cli_peheader(cli_ctx *ctx, struct cli_exe_info *peinfo, uint32_t opts);
 
 cl_error_t cli_check_auth_header(cli_ctx *ctx, struct cli_exe_info *peinfo);
 cl_error_t cli_genhash_pe(cli_ctx *ctx, unsigned int class, cli_hash_type_t type);
 
-uint32_t cli_rawaddr(uint32_t, const struct cli_exe_section *, uint16_t, unsigned int *, size_t, uint32_t);
+uint32_t cli_rawaddr(uint32_t, const void *, uint16_t, unsigned int *, size_t, uint32_t);
 void findres(uint32_t, uint32_t, fmap_t *map, struct cli_exe_info *, int (*)(void *, uint32_t, uint32_t, uint32_t, uint32_t), void *);
 
 #endif

@@ -20,6 +20,8 @@
  *  MA 02110-1301, USA.
  */
 
+#![allow(unsafe_op_in_unsafe_fn)]
+
 /// cbindgen:ignore
 pub mod sys;
 
@@ -32,8 +34,10 @@ pub mod cvd;
 pub mod evidence;
 pub mod ffi_util;
 pub mod fmap;
+pub mod format_parsers;
 pub mod fuzzy_hash;
 pub mod logging;
 pub mod onenote;
+pub mod scanner;
 pub mod scanners;
 pub mod util;

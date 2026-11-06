@@ -27,7 +27,7 @@ use std::{
 };
 
 use hex_literal::hex;
-use log::{debug, error};
+use log::debug;
 use onenote_parser;
 
 /// Error enumerates all possible errors returned by this library.
@@ -82,7 +82,7 @@ pub struct OneNote<'a> {
 }
 
 // https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-onestore/8806fd18-6735-4874-b111-227b83eaac26
-#[repr(packed)]
+#[repr(C, packed)]
 #[allow(dead_code)]
 struct FileDataHeader {
     guid_header: [u8; 16],
@@ -103,7 +103,8 @@ impl<'a> OneNote<'a> {
     pub fn from_bytes(data: &'a [u8], filename: &Path) -> Result<OneNote<'a>, Error> {
         debug!(
             "Inspecting OneNote file for attachments from in-memory buffer of size {}-bytes named {}\n",
-            data.len(), filename.to_string_lossy()
+            data.len(),
+            filename.to_string_lossy()
         );
 
         fn parse_section_buffer(data: &[u8], filename: &Path) -> Result<Vec<ExtractedFile>, Error> {
@@ -167,7 +168,9 @@ impl<'a> OneNote<'a> {
                 ..Default::default()
             })
         } else {
-            debug!("Unable to parse OneNote file with onenote_parser crate. Trying a different method known to work with older office 2010 OneNote files to extract attachments.");
+            debug!(
+                "Unable to parse OneNote file with onenote_parser crate. Trying a different method known to work with older office 2010 OneNote files to extract attachments."
+            );
 
             let embedded_files: Vec<ExtractedFile> = vec![];
 

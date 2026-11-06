@@ -19,9 +19,9 @@
  */
 
 use std::{
-    ffi::{c_void, CStr, CString},
+    ffi::{CStr, CString, c_void},
     fs::File,
-    io::{prelude::*, BufReader},
+    io::{BufReader, prelude::*},
     mem::ManuallyDrop,
     os::raw::c_char,
     path::{Path, PathBuf},
@@ -32,15 +32,15 @@ use openssl::{
     pkey::{PKey, Private},
     stack::{self, Stack},
     x509::{
+        X509, X509Ref,
         store::{X509Store, X509StoreBuilder},
-        X509Ref, X509,
     },
 };
 
 use clam_sigutil::{
+    SigType, Signature,
     sigbytes::{AppendSigBytes, SigBytes},
     signature::{digital_sig::DigitalSig, parse_from_cvd_with_meta},
-    SigType, Signature,
 };
 
 use log::{debug, warn};
@@ -123,7 +123,7 @@ fn certificate_common_name(cert: &X509Ref) -> Result<String, String> {
 /// # Safety
 ///
 /// No parameters may be NULL.
-#[export_name = "codesign_sign_file"]
+#[unsafe(export_name = "codesign_sign_file")]
 pub unsafe extern "C" fn codesign_sign_file(
     target_file_path_str: *const c_char,
     signature_file_path_str: *const c_char,
@@ -290,7 +290,7 @@ where
 /// # Safety
 ///
 /// No parameters may be NULL.
-#[export_name = "codesign_verify_file"]
+#[unsafe(export_name = "codesign_verify_file")]
 pub unsafe extern "C" fn codesign_verify_file(
     signed_file_path_str: *const c_char,
     signature_file_path_str: *const c_char,
@@ -366,7 +366,7 @@ pub unsafe extern "C" fn codesign_verify_file(
 /// # Safety
 ///
 /// No parameters may be NULL.
-#[export_name = "codesign_verifier_new"]
+#[unsafe(export_name = "codesign_verifier_new")]
 pub unsafe extern "C" fn codesign_verifier_new(
     certs_directory_str: *const c_char,
     verifier: *mut *mut c_void,
@@ -414,7 +414,7 @@ pub unsafe extern "C" fn codesign_verifier_new(
 /// # Safety
 ///
 /// No parameters may be NULL.
-#[export_name = "codesign_verifier_free"]
+#[unsafe(export_name = "codesign_verifier_free")]
 pub unsafe extern "C" fn codesign_verifier_free(verifier: *mut c_void) {
     if verifier.is_null() {
     } else {
@@ -639,7 +639,9 @@ impl Verifier {
 
                         if root_common_names.contains(&common_name) {
                             return Err(Error::CertificateStore(format!(
-                                "More than one certificate with the same common name '{}' found in the certs directory. Ref: https://github.com/openssl/openssl/issues/16304", common_name)));
+                                "More than one certificate with the same common name '{}' found in the certs directory. Ref: https://github.com/openssl/openssl/issues/16304",
+                                common_name
+                            )));
                         }
                         root_common_names.push(common_name.clone());
 

@@ -163,8 +163,7 @@ struct cli_exe_info {
 
 /**
  * Initialize a struct cli_exe_info so that it's ready to be populated
- * by the EXE header parsing functions (cli_peheader, cli_elfheader, and
- * cli_machoheader) and/or cli_exe_info_destroy.
+ * by the executable parser target-info paths and/or cli_exe_info_destroy.
  *
  * @param exeinfo a pointer to the struct cli_exe_info to initialize
  * @param offset the file offset corresponding to the start of the
