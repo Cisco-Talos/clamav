@@ -69,6 +69,7 @@
 
 extern unsigned long int maxstream;
 int printinfected;
+const struct optstruct *cmdline_opts;
 extern struct optstruct *clamdopts;
 
 #define DEFAULT_MAX_ACTION_SOURCES 64
@@ -207,8 +208,6 @@ static cl_error_t serial_callback(STATBUF *sb, char *filename, const char *path,
 
     action_source_init(&action_source);
 
-    UNUSEDPARAM(sb);
-
     if (CL_SUCCESS != cli_realpath((const char *)path, &real_filter_path)) {
         logg(LOGG_DEBUG, "Failed to determine real filename of %s.\n", path);
     } else {
@@ -238,11 +237,17 @@ static cl_error_t serial_callback(STATBUF *sb, char *filename, const char *path,
         case warning_skipped_link:
             status = CL_SUCCESS;
             goto done;
-        case warning_skipped_special:
-            logg(LOGG_WARNING, "%s: Not supported file type\n", path);
-            c->errors++;
+        case warning_skipped_special: {
+            const char *t = NULL;
+            if (sb && should_ignore_unsupported_file_type(sb->st_mode, cmdline_opts, &t)) {
+                logg(LOGG_INFO, "%s: Skipping unsupported %s\n", path, t);
+            } else {
+                logg(LOGG_WARNING, "%s: Not supported file type\n", path);
+                c->errors++;
+            }
             status = CL_SUCCESS;
             goto done;
+        }
         case visit_directory_toplev:
             if ((c->scantype >= STREAM) || action) {
                 status = CL_SUCCESS;
@@ -449,7 +454,6 @@ static cl_error_t parallel_callback(STATBUF *sb, char *filename, const char *pat
     const char *scan_path          = filename;
     char *real_filter_path         = NULL;
 
-    UNUSEDPARAM(sb);
     UNUSEDPARAM(path);
 
     if (CL_SUCCESS != cli_realpath((const char *)filename, &real_filter_path)) {
@@ -479,10 +483,17 @@ static cl_error_t parallel_callback(STATBUF *sb, char *filename, const char *pat
             logg(LOGG_WARNING, "Directory recursion limit reached\n");
             status = CL_SUCCESS;
             goto done;
-        case warning_skipped_special:
-            logg(LOGG_WARNING, "%s: Not supported file type\n", filename);
-            c->errors++;
-            /* fall-through */
+        case warning_skipped_special: {
+            const char *t = NULL;
+            if (sb && should_ignore_unsupported_file_type(sb->st_mode, cmdline_opts, &t)) {
+                logg(LOGG_INFO, "%s: Skipping unsupported %s\n", filename, t);
+            } else {
+                logg(LOGG_WARNING, "%s: Not supported file type\n", filename);
+                c->errors++;
+            }
+            status = CL_SUCCESS;
+            goto done;
+        }
         case warning_skipped_link:
         case visit_directory_toplev:
             status = CL_SUCCESS;
