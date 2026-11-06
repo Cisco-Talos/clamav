@@ -158,9 +158,7 @@ int onas_fan_eloop(struct onas_context **ctx)
     char buf[4096];
     ssize_t bread;
     struct fanotify_event_metadata *fmd;
-    char proc_fd_fname[1024];
-    char fname[1024];
-    int len, check;
+    int check;
 
     FD_ZERO(&rfds);
     FD_SET((*ctx)->fan_fd, &rfds);
@@ -208,13 +206,15 @@ int onas_fan_eloop(struct onas_context **ctx)
             }
             scan = 1;
             if (fmd->fd >= 0) {
-                sprintf(proc_fd_fname, "/proc/self/fd/%d", fmd->fd);
-                errno = 0;
-                len   = readlink(proc_fd_fname, fname, sizeof(fname) - 1);
-                if (len == -1) {
+                char *fname       = NULL;
+                cl_error_t status = cli_get_filepath_from_filedesc(fmd->fd, &fname);
+
+                if (CL_SUCCESS != status) {
+                    int path_errno = errno;
+
                     close(fmd->fd);
-                    logg(LOGG_ERROR, "ClamFanotif: internal error (readlink() failed), %d, %s\n", fmd->fd, strerror(errno));
-                    if (errno == EBADF) {
+                    logg(LOGG_ERROR, "ClamFanotif: failed to resolve pathname for file descriptor %d: %s\n", fmd->fd, cl_strerror(status));
+                    if (path_errno == EBADF) {
                         logg(LOGG_INFO, "ClamWorker: fd already closed ... recovering ...\n");
                         fmd = FAN_EVENT_NEXT(fmd, bread);
                         continue;
@@ -222,7 +222,6 @@ int onas_fan_eloop(struct onas_context **ctx)
                         return 2;
                     }
                 }
-                fname[len] = '\0';
 
                 if ((check = onas_fan_checkowner(fmd->pid, (*ctx)->clamdopts))) {
                     scan = 0;
@@ -237,6 +236,7 @@ int onas_fan_eloop(struct onas_context **ctx)
                     event_data = calloc(1, sizeof(struct onas_scan_event));
                     if (NULL == event_data) {
                         close(fmd->fd);
+                        free(fname);
                         logg(LOGG_ERROR, "ClamFanotif: could not allocate memory for event data struct\n");
                         return 2;
                     }
@@ -250,19 +250,13 @@ int onas_fan_eloop(struct onas_context **ctx)
                     event_data->fmd = malloc(sizeof(struct fanotify_event_metadata));
                     if (NULL == event_data->fmd) {
                         close(fmd->fd);
+                        free(fname);
                         free(event_data);
                         logg(LOGG_ERROR, "ClamFanotif: could not allocate memory for event data struct fmd\n");
                         return 2;
                     }
                     memcpy(event_data->fmd, fmd, sizeof(struct fanotify_event_metadata));
-                    event_data->pathname = cli_safer_strdup(fname);
-                    if (NULL == event_data->pathname) {
-                        close(fmd->fd);
-                        free(event_data->fmd);
-                        free(event_data);
-                        logg(LOGG_ERROR, "ClamFanotif: could not allocate memory for event data struct pathname\n");
-                        return 2;
-                    }
+                    event_data->pathname = fname;
 
                     logg(LOGG_DEBUG, "ClamFanotif: attempting to feed consumer queue\n");
                     /* feed consumer queue */
@@ -291,6 +285,7 @@ int onas_fan_eloop(struct onas_context **ctx)
 
                         if (-1 == write((*ctx)->fan_fd, &res, sizeof(res))) {
                             close(fmd->fd);
+                            free(fname);
                             logg(LOGG_ERROR, "ClamFanotif: error occurred while excluding event\n");
                             return 2;
                         }
@@ -304,6 +299,7 @@ int onas_fan_eloop(struct onas_context **ctx)
                             return 2;
                         }
                     }
+                    free(fname);
                 }
             }
             fmd = FAN_EVENT_NEXT(fmd, bread);
