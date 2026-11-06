@@ -86,8 +86,11 @@ if(ENABLE_SHARED_LIB)
                     UNRESOLVED_DEPENDENCIES_VAR _u_deps
                     DIRECTORIES
                         $<TARGET_FILE_DIR:CURL::libcurl>
+                        $<TARGET_LINKER_FILE_DIR:CURL::libcurl>/../bin
                         $<TARGET_FILE_DIR:OpenSSL::SSL>
+                        $<TARGET_LINKER_FILE_DIR:OpenSSL::SSL>/../bin
                         $<TARGET_FILE_DIR:OpenSSL::Crypto>
+                        $<TARGET_LINKER_FILE_DIR:OpenSSL::Crypto>/../bin
                     POST_EXCLUDE_REGEXES
                         "[cC]:[\\/][wW][iI][nN][dD][oO][wW][sS]"
                 )

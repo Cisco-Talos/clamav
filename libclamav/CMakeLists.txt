@@ -502,12 +502,21 @@ if(ENABLE_SHARED_LIB)
                     UNRESOLVED_DEPENDENCIES_VAR _u_deps
                     DIRECTORIES
                         $<TARGET_FILE_DIR:OpenSSL::SSL>
+                        $<TARGET_LINKER_FILE_DIR:OpenSSL::SSL>/../bin
                         $<TARGET_FILE_DIR:OpenSSL::Crypto>
+                        $<TARGET_LINKER_FILE_DIR:OpenSSL::Crypto>/../bin
                         $<TARGET_FILE_DIR:ZLIB::ZLIB>
+                        $<TARGET_LINKER_FILE_DIR:ZLIB::ZLIB>/../bin
                         $<TARGET_FILE_DIR:BZip2::BZip2>
+                        $<TARGET_LINKER_FILE_DIR:BZip2::BZip2>/../bin
                         $<TARGET_FILE_DIR:PCRE2::pcre2>
+                        $<TARGET_LINKER_FILE_DIR:PCRE2::pcre2>/../bin
                         $<TARGET_FILE_DIR:LibXml2::LibXml2>
+                        $<TARGET_LINKER_FILE_DIR:LibXml2::LibXml2>/../bin
                         $<TARGET_FILE_DIR:JSONC::jsonc>
+                        $<TARGET_LINKER_FILE_DIR:JSONC::jsonc>/../bin
+                        $<TARGET_FILE_DIR:PThreadW32::pthreadw32>
+                        $<TARGET_LINKER_FILE_DIR:PThreadW32::pthreadw32>/../bin
                     POST_EXCLUDE_REGEXES
                         "[cC]:[\\/][wW][iI][nN][dD][oO][wW][sS]"
                 )
