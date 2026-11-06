@@ -222,7 +222,6 @@ else()
 
     set(SOURCE             ${CMAKE_SOURCE_DIR})
     set(BUILD              ${CMAKE_BINARY_DIR})
-    set(TMP                ${CMAKE_CURRENT_BINARY_DIR})
 
     set(NEW_PATH "$ENV{PATH}")
 
