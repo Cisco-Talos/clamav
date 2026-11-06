@@ -123,18 +123,23 @@ const char* entity_norm(struct entity_conv* conv, const unsigned char* entity)
     return NULL;
 }
 
-#ifndef HAVE_ICONV
 static size_t encoding_bytes(const char* fromcode, enum encodings* encoding)
 {
+    enum encodings detected_encoding;
+
     /* special case for these unusual byteorders */
     struct cli_element* e = cli_hashtab_find(&aliases_htable, fromcode, strlen(fromcode));
     if (e && e->key) {
-        *encoding = (enum encodings)e->data;
+        detected_encoding = (enum encodings)e->data;
     } else {
-        *encoding = E_OTHER;
+        detected_encoding = E_OTHER;
     }
 
-    switch (*encoding) {
+    if (encoding) {
+        *encoding = detected_encoding;
+    }
+
+    switch (detected_encoding) {
         case E_UCS4:
         case E_UCS4_1234:
         case E_UCS4_4321:
@@ -153,6 +158,7 @@ static size_t encoding_bytes(const char* fromcode, enum encodings* encoding)
     }
 }
 
+#ifndef HAVE_ICONV
 static iconv_t iconv_open(const char* tocode, const char* fromcode)
 {
     UNUSEDPARAM(tocode);
@@ -271,31 +277,50 @@ static int iconv(iconv_t iconv_struct, char** inbuf, size_t* inbytesleft,
             const size_t maxread  = *inbytesleft;
             const size_t maxwrite = *outbytesleft;
             size_t j;
-            for (i = 0, j = 0; i < maxread && j < maxwrite;) {
+            for (i = 0, j = 0; i < maxread && j + 1 < maxwrite;) {
                 if (input[i] < 0x7F) {
                     output[j++] = 0;
                     output[j++] = input[i++];
                 } else if ((input[i] & 0xE0) == 0xC0) {
+                    if (i + 1 >= maxread) {
+                        output[j++] = 0;
+                        output[j++] = input[i++];
+                        continue;
+                    }
                     if ((input[i + 1] & 0xC0) == 0x80) {
                         /* 2 bytes long 110yyyyy zzzzzzzz -> 00000yyy yyzzzzzz*/
                         output[j++] = ((input[i] & 0x1F) >> 2) & 0x07;
                         output[j++] = ((input[i] & 0x1F) << 6) | (input[i + 1] & 0x3F);
                     } else {
                         cli_dbgmsg(MODULE_NAME "invalid UTF8 character encountered\n");
-                        break;
+                        output[j++] = 0;
+                        output[j++] = input[i++];
+                        continue;
                     }
                     i += 2;
                 } else if ((input[i] & 0xE0) == 0xE0) {
+                    if (i + 2 >= maxread) {
+                        output[j++] = 0;
+                        output[j++] = input[i++];
+                        continue;
+                    }
                     if ((input[i + 1] & 0xC0) == 0x80 && (input[i + 2] & 0xC0) == 0x80) {
                         /* 3 bytes long 1110xxxx 10yyyyyy 10zzzzzzzz -> xxxxyyyy yyzzzzzz*/
                         output[j++] = (input[i] << 4) | ((input[i + 1] >> 2) & 0x0F);
                         output[j++] = (input[i + 1] << 6) | (input[i + 2] & 0x3F);
                     } else {
                         cli_dbgmsg(MODULE_NAME "invalid UTF8 character encountered\n");
-                        break;
+                        output[j++] = 0;
+                        output[j++] = input[i++];
+                        continue;
                     }
                     i += 3;
                 } else if ((input[i] & 0xF8) == 0xF0) {
+                    if (i + 3 >= maxread) {
+                        output[j++] = 0;
+                        output[j++] = input[i++];
+                        continue;
+                    }
                     if ((input[i + 1] & 0xC0) == 0x80 && (input[i + 2] & 0xC0) == 0x80 && (input[i + 3] & 0xC0) == 0x80) {
                         /* 4 bytes long 11110www 10xxxxxx 10yyyyyy 10zzzzzz -> 000wwwxx xxxxyyyy yyzzzzzz*/
                         cli_dbgmsg(MODULE_NAME "UTF8 character out of UTF16 range encountered\n");
@@ -307,22 +332,21 @@ static int iconv(iconv_t iconv_struct, char** inbuf, size_t* inbytesleft,
                                                         out[j++] = (input[i+2] << 6) | (input[i+2] & 0x3F);*/
                     } else {
                         cli_dbgmsg(MODULE_NAME "invalid UTF8 character encountered\n");
-                        break;
+                        output[j++] = 0;
+                        output[j++] = input[i++];
+                        continue;
                     }
                     i += 4;
                 } else {
                     cli_dbgmsg(MODULE_NAME "invalid UTF8 character encountered\n");
-                    break;
+                    output[j++] = 0;
+                    output[j++] = input[i++];
                 }
             }
             *inbytesleft -= i;
             *outbytesleft -= j;
             *inbuf += i;
             *outbuf += j;
-            if (*inbytesleft && *outbytesleft) {
-                errno = EILSEQ; /* we had an early exit */
-                return -1;
-            }
             if (*inbytesleft) {
                 errno = E2BIG;
                 return -1;
@@ -676,7 +700,7 @@ static iconv_t iconv_open_cached(const char* fromcode)
     return (iconv_t)-1;
 }
 
-static int in_iconv_u16(const m_area_t* in_m_area, iconv_t* iconv_struct, m_area_t* out_m_area)
+static int in_iconv_u16(const m_area_t* in_m_area, iconv_t* iconv_struct, m_area_t* out_m_area, size_t encoding_width)
 {
     char tmp4[4];
     size_t inleft = in_m_area->length - in_m_area->offset;
@@ -689,29 +713,31 @@ static int in_iconv_u16(const m_area_t* in_m_area, iconv_t* iconv_struct, m_area
     if (!inleft) {
         return 0;
     }
+    if (encoding_width == 0 || encoding_width > sizeof(tmp4)) {
+        encoding_width = sizeof(tmp4);
+    }
     /* convert encoding conv->tmp_area. conv->out_area */
 
     /*
-     * iconv gives an error if we give it less than 4 bytes to convert,
-     * and we are using ucs4, ditto for utf16, and 1 byte.
+     * iconv gives an error if we give it an incomplete fixed-width code unit.
      *
      * If an alignfix is needed, we just trim the extra un-aligned
      * bytes from the buffer.
-     * We hold on to the extra bytes, putting them into an aligned 4-byte
+     * We hold on to the extra bytes, putting them into a zero-padded
      * buffer (tmp4), and then convert them with a final call to iconv.
      */
-    alignfix = inleft % 4;
+    alignfix = inleft % encoding_width;
     inleft -= alignfix;
 
     if (alignfix) {
-        /* Number of bytes is not mod(4).
+        /* Number of bytes is not a multiple of the encoding width.
          * Copy the unaligned bytes from the end of the input.*/
         memset(tmp4, 0, 4);
         memcpy(tmp4, input + inleft, alignfix);
 
         if (inleft == 0) {
-            /* Total number of bytes was < 4, so we only have the "unaligned" bytes to convert. */
-            inleft   = 4;
+            /* Only the unaligned bytes remain to convert. */
+            inleft   = encoding_width;
             input    = tmp4;
             alignfix = 0;
         }
@@ -731,7 +757,7 @@ static int in_iconv_u16(const m_area_t* in_m_area, iconv_t* iconv_struct, m_area
             cli_dbgmsg(MODULE_NAME "iconv consumed all input\n");
             if (alignfix) {
                 /* Convert the "unaligned" bytes. */
-                inleft   = 4;
+                inleft   = encoding_width;
                 input    = tmp4;
                 alignfix = 0;
                 continue;
@@ -757,7 +783,7 @@ static int in_iconv_u16(const m_area_t* in_m_area, iconv_t* iconv_struct, m_area
 
         if (0 == inleft && alignfix) {
             /* Convert the "unaligned" bytes. */
-            inleft   = 4;
+            inleft   = encoding_width;
             input    = tmp4;
             alignfix = 0;
             continue;
@@ -784,6 +810,7 @@ int encoding_normalize_toascii(const m_area_t* in_m_area, const char* initial_en
     iconv_t iconv_struct;
     off_t i, j;
     char* encoding;
+    size_t encoding_width;
 
     if (!initial_encoding || !in_m_area || !out_m_area) {
         return CL_ENULLARG;
@@ -796,6 +823,7 @@ int encoding_normalize_toascii(const m_area_t* in_m_area, const char* initial_en
     }
 
     cli_dbgmsg(MODULE_NAME "Encoding %s\n", encoding);
+    encoding_width = encoding_bytes(encoding, NULL);
     iconv_struct = iconv_open_cached(encoding);
     if (iconv_struct == (iconv_t)-1) {
         cli_dbgmsg(MODULE_NAME "Encoding not accepted by iconv_open(): %s\n", encoding);
@@ -803,7 +831,7 @@ int encoding_normalize_toascii(const m_area_t* in_m_area, const char* initial_en
         return -1;
     }
     free(encoding);
-    in_iconv_u16(in_m_area, &iconv_struct, out_m_area);
+    in_iconv_u16(in_m_area, &iconv_struct, out_m_area, encoding_width);
     for (i = 0, j = 0; i < out_m_area->length; i += 2) {
         const unsigned char c = (out_m_area->buffer[i] << 4) + out_m_area->buffer[i + 1];
         if (c) {

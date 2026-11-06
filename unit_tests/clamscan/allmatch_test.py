@@ -131,6 +131,35 @@ class TC(testcase.TestCase):
         ]
         self.verify_output(output.out, expected=expected_results)
 
+    def test_imphash_dll_name_with_spaces(self):
+        self.step_name('Test an import hash for a DLL name containing spaces.')
+
+        source = TC.path_build / 'unit_tests' / 'input' / 'clamav_hdb_scanfiles' / 'clam.exe'
+        testfile = TC.path_tmp / 'clam-spaced-dll.exe'
+        source_bytes = source.read_bytes()
+
+        assert source_bytes.count(b'KERNEL32.DLL') == 1
+        testfile.write_bytes(source_bytes.replace(b'KERNEL32.DLL', b'My Lib 1.dll'))
+
+        signature = TC.path_tmp / 'spaced-dll.imp'
+        signature.write_text(
+            "adde318b8c1d940e336fbb4451d30692:39:Test.Import.Hash.SpacedDll\n"
+        )
+
+        command = '{valgrind} {valgrind_args} {clamscan} -d {signature} {testfile}'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan,
+            signature=signature,
+            testfile=testfile,
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 1  # virus
+
+        expected_results = [
+            'Test.Import.Hash.SpacedDll.UNOFFICIAL FOUND',
+        ]
+        self.verify_output(output.out, expected=expected_results)
+
     def test_regression_cbc_and_ndb(self):
         self.step_name('Test that bytecode rules will run after content match alerts in all-match mode.')
 

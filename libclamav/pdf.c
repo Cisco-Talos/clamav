@@ -2389,12 +2389,16 @@ void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
 
         dict_length -= q2 - q;
         q = q2;
+        if (dict_length <= 1)
+            break;
         /* normalize PDF names */
-        for (i = 0; dict_length > 0 && (i < sizeof(pdfname) - 1); i++) {
+        for (i = 0; dict_length > 1 && (i < sizeof(pdfname) - 1); i++) {
             q++;
             dict_length--;
 
             if (*q == '#') {
+                if (dict_length < 3)
+                    break;
                 if (cli_hex2str_to(q + 1, pdfname + i, 2) == -1)
                     break;
 
@@ -2836,8 +2840,10 @@ static int pdf_readint(const char *q0, int len, const char *key)
         value = -1;
     } else if (CL_SUCCESS != cli_strntol_wrap(q, (size_t)len, 0, 10, &value)) {
         value = -1;
+    } else if (value < INT_MIN || value > INT_MAX) {
+        value = -1;
     }
-    return value;
+    return (int)value;
 }
 
 static int pdf_readbool(const char *q0, int len, const char *key, int Default)
