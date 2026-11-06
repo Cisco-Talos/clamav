@@ -76,7 +76,7 @@ struct match {
 	const char *beginp;	/* start of string -- virtual NUL precedes */
 	const char *endp;	/* end of string -- virtual NUL here */
 	const char *coldp;	/* can be no match starting before here */
-	const char **lastpos;	/* [nplus+1] */
+	char **lastpos;	/* [nplus+1] */
 	STATEVARS;
 	states st;		/* current states */
 	states fresh;		/* states for a fresh start */
