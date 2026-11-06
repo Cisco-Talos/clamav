@@ -1,17 +1,17 @@
 /*
-Copyright (c) 2013. The YARA Authors. All Rights Reserved.
+Copyright (c) 2007-2016. The YARA Authors. All Rights Reserved.
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-   http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote products derived from this software
+   without specific prior written permission.
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS
+BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
+IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include <string.h>
@@ -97,7 +97,7 @@ typedef struct _YR_MATCH
     int64_t read_##type(fmap_t * fmap, size_t offset) \
     { \
       const void *data;                                         \
-      if (offset + sizeof(type) >= fmap->len)                   \
+      if (offset > fmap->len || sizeof(type) > fmap->len - offset) \
           return UNDEFINED;                                     \
       data = fmap_need_off_once(fmap, offset, sizeof(type));    \
       if (!data)                                                \
@@ -322,6 +322,17 @@ int yr_execute_code(
         push(comparison(<=, r1, r2));
         break;
 
+      case OP_OF_COUNT:
+        pop(r2);
+        pop(r1);
+        if (IS_UNDEFINED(r1) || IS_UNDEFINED(r2))
+          push(0);
+        else if (r1 == 0)
+          push(r2 == 0 ? 1 : 0);
+        else
+          push(r1 <= r2 ? 1 : 0);
+        break;
+
       case OP_GE:
         pop(r2);
         pop(r1);
@@ -393,13 +404,21 @@ int yr_execute_code(
       case OP_DIV:
         pop(r2);
         pop(r1);
-        push(operation(/, r1, r2));
+        if (IS_UNDEFINED(r1) || IS_UNDEFINED(r2) ||
+            r2 == 0 || (r1 == INT64_MIN && r2 == -1))
+          push(UNDEFINED);
+        else
+          push(r1 / r2);
         break;
 
       case OP_MOD:
         pop(r2);
         pop(r1);
-        push(operation(%, r1, r2));
+        if (IS_UNDEFINED(r1) || IS_UNDEFINED(r2) ||
+            r2 == 0 || (r1 == INT64_MIN && r2 == -1))
+          push(UNDEFINED);
+        else
+          push(r1 % r2);
         break;
 
       case OP_NEG:
@@ -410,13 +429,23 @@ int yr_execute_code(
       case OP_SHR:
         pop(r2);
         pop(r1);
-        push(operation(>>, r1, r2));
+        if (IS_UNDEFINED(r1) || IS_UNDEFINED(r2) || r2 < 0)
+          push(UNDEFINED);
+        else if (r2 < 64)
+          push(r1 >> r2);
+        else
+          push(0);
         break;
 
       case OP_SHL:
         pop(r2);
         pop(r1);
-        push(operation(<<, r1, r2));
+        if (IS_UNDEFINED(r1) || IS_UNDEFINED(r2) || r2 < 0)
+          push(UNDEFINED);
+        else if (r2 < 64)
+          push(r1 << r2);
+        else
+          push(0);
         break;
 
       case OP_XOR:
@@ -773,10 +802,12 @@ int yr_execute_code(
 
         pop(r2);
 
-        if (r2 != UNDEFINED)
-          push(found >= r2 ? 1 : 0);
-        else
+        if (r2 == UNDEFINED)
           push(found >= count ? 1 : 0);
+        else if (r2 == 0)
+          push(found == 0 ? 1 : 0);
+        else
+          push(found >= r2 ? 1 : 0);
 
         break;
 
@@ -853,8 +884,11 @@ int yr_execute_code(
       case OP_CONTAINS:
         pop(r2);
         pop(r1);
-        push(strstr(UINT64_TO_PTR(char*, r1),
-                    UINT64_TO_PTR(char*, r2)) != NULL);
+        if (IS_UNDEFINED(r1) || IS_UNDEFINED(r2))
+          push(UNDEFINED);
+        else
+          push(strstr(UINT64_TO_PTR(char*, r1),
+                      UINT64_TO_PTR(char*, r2)) != NULL);
         break;
 
 
@@ -873,6 +907,12 @@ int yr_execute_code(
       case OP_MATCHES:
         pop(r2);
         pop(r1);
+
+        if (IS_UNDEFINED(r1) || IS_UNDEFINED(r2))
+        {
+          push(UNDEFINED);
+          break;
+        }
 
         count = strlen(UINT64_TO_PTR(char*, r1));
 

@@ -46,6 +46,7 @@ char *cli_mpool_strdup(mpool_t *mpool, const char *s);
 char *cli_mpool_strndup(mpool_t *mpool, const char *s, size_t n);
 char *cli_mpool_virname(mpool_t *mpool, const char *virname, unsigned int official);
 uint16_t *cli_mpool_hex2ui(mpool_t *mpool, const char *hex);
+uint16_t *cli_mpool_hex2ui_len(mpool_t *mpool, const char *hex, size_t *decoded_len);
 void mpool_flush(mpool_t *mpool);
 
 /**
@@ -66,6 +67,7 @@ int mpool_getstats(const struct cl_engine *engine, size_t *used, size_t *total);
 #define CLI_MPOOL_STRNDUP(mpool, s, n) cli_mpool_strndup(mpool, s, n)
 #define CLI_MPOOL_VIRNAME(mpool, a, b) cli_mpool_virname(mpool, a, b)
 #define CLI_MPOOL_HEX2UI(mpool, hex) cli_mpool_hex2ui(mpool, hex)
+#define CLI_MPOOL_HEX2UI_LEN(mpool, hex, decoded_len) cli_mpool_hex2ui_len(mpool, hex, decoded_len)
 #define MPOOL_FLUSH(val) mpool_flush(val)
 #define MPOOL_GETSTATS(mpool, used, total) mpool_getstats(mpool, used, total)
 
@@ -83,6 +85,7 @@ typedef void mpool_t;
 #define CLI_MPOOL_STRNDUP(mpool, s, n) cli_safer_strdup(s, n)
 #define CLI_MPOOL_VIRNAME(mpool, a, b) cli_virname(a, b)
 #define CLI_MPOOL_HEX2UI(mpool, hex) cli_hex2ui(hex)
+#define CLI_MPOOL_HEX2UI_LEN(mpool, hex, decoded_len) cli_hex2ui_len(hex, decoded_len)
 #define MPOOL_FLUSH(val)
 #define MPOOL_GETSTATS(mpool, used, total) -1
 

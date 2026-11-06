@@ -21,27 +21,30 @@
 /* This file was originally derived from yara 3.1.0 libyara/lexer.l and is
    revised for running YARA rules in ClamAV. Following is the YARA copyright. */
 /*
-Copyright (c) 2007-2013. The YARA Authors. All Rights Reserved.
+Copyright (c) 2007-2016. The YARA Authors. All Rights Reserved.
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-   http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote products derived from this software
+   without specific prior written permission.
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS
+BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
+IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 /* Lexical analyzer for YARA */
 
 %{
 
+#include <errno.h>
+#include <limits.h>
 #include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
 #ifdef REAL_YARA
 #include <stdint.h>
 #endif
@@ -108,6 +111,7 @@ limitations under the License.
 digit         [0-9]
 letter        [a-zA-Z]
 hexdigit      [a-fA-F0-9]
+octdigit      [0-7]
 
 %%
 
@@ -126,6 +130,9 @@ hexdigit      [a-fA-F0-9]
 "strings"               { return _STRINGS_;     }
 "ascii"                 { return _ASCII_;       }
 "wide"                  { return _WIDE_;        }
+"xor"                   { return _XOR_;         }
+"base64"                { return _BASE64_;      }
+"base64wide"            { return _BASE64_WIDE_; }
 "fullword"              { return _FULLWORD_;    }
 "nocase"                { return _NOCASE_;      }
 "condition"             { return _CONDITION_;   }
@@ -372,15 +379,42 @@ $({letter}|{digit}|_)*  {
 
 {digit}+(MB|KB){0,1}  {
 
-  yylval->integer = (size_t) atol(yytext);
+  char *endptr;
+
+  errno = 0;
+  yylval->integer = strtoll(yytext, &endptr, 10);
+
+  if (yylval->integer == LLONG_MAX && errno == ERANGE)
+  {
+    yr_compiler_set_error_extra_info(compiler, yytext);
+    compiler->last_result = ERROR_INTEGER_OVERFLOW;
+    yyerror(yyscanner, compiler, NULL);
+    yyterminate();
+  }
 
   if (strstr(yytext, "KB") != NULL)
   {
-     yylval->integer *= 1024;
+    if (yylval->integer > LLONG_MAX / 1024)
+    {
+      yr_compiler_set_error_extra_info(compiler, yytext);
+      compiler->last_result = ERROR_INTEGER_OVERFLOW;
+      yyerror(yyscanner, compiler, NULL);
+      yyterminate();
+    }
+
+    yylval->integer *= 1024;
   }
   else if (strstr(yytext, "MB") != NULL)
   {
-     yylval->integer *= 1048576;
+    if (yylval->integer > LLONG_MAX / 1048576)
+    {
+      yr_compiler_set_error_extra_info(compiler, yytext);
+      compiler->last_result = ERROR_INTEGER_OVERFLOW;
+      yyerror(yyscanner, compiler, NULL);
+      yyterminate();
+    }
+
+    yylval->integer *= 1048576;
   }
   return _NUMBER_;
 }
@@ -388,7 +422,38 @@ $({letter}|{digit}|_)*  {
 
 0x{hexdigit}+  {
 
-  yylval->integer = xtoi(yytext + 2);
+  char *endptr;
+
+  errno = 0;
+  yylval->integer = strtoll(yytext, &endptr, 16);
+
+  if (yylval->integer == LLONG_MAX && errno == ERANGE)
+  {
+    yr_compiler_set_error_extra_info(compiler, yytext);
+    compiler->last_result = ERROR_INTEGER_OVERFLOW;
+    yyerror(yyscanner, compiler, NULL);
+    yyterminate();
+  }
+
+  return _NUMBER_;
+}
+
+
+0o{octdigit}+  {
+
+  char *endptr;
+
+  errno = 0;
+  yylval->integer = strtoll(yytext + 2, &endptr, 8);
+
+  if (yylval->integer == LLONG_MAX && errno == ERANGE)
+  {
+    yr_compiler_set_error_extra_info(compiler, yytext);
+    compiler->last_result = ERROR_INTEGER_OVERFLOW;
+    yyerror(yyscanner, compiler, NULL);
+    yyterminate();
+  }
+
   return _NUMBER_;
 }
 
@@ -429,6 +494,14 @@ $({letter}|{digit}|_)*  {
 
   LEX_CHECK_SPACE_OK("\n", yyextra->lex_buf_len, LEX_BUF_SIZE);
   *yyextra->lex_buf_ptr++ = '\n';
+  yyextra->lex_buf_len++;
+}
+
+
+<str>\\r   {
+
+  LEX_CHECK_SPACE_OK("\r", yyextra->lex_buf_len, LEX_BUF_SIZE);
+  *yyextra->lex_buf_ptr++ = '\r';
   yyextra->lex_buf_len++;
 }
 
@@ -517,6 +590,10 @@ $({letter}|{digit}|_)*  {
 <regexp>\\. {
 
   LEX_CHECK_SPACE_OK("\\.", yyextra->lex_buf_len, LEX_BUF_SIZE);
+
+  if (yytext[1] == 0)
+    yyerror(yyscanner, compiler, "malformed regular expression");
+
   *yyextra->lex_buf_ptr++ = yytext[0];
   *yyextra->lex_buf_ptr++ = yytext[1];
   yyextra->lex_buf_len += 2;
@@ -549,7 +626,7 @@ $({letter}|{digit}|_)*  {
 }
 
 
-\{({hexdigit}|[ \-|\?\[\]\(\)\n\t])+\}  {
+\{(({hexdigit}|[ \-|\~\?\[\]\(\)\n\r\t]|\/\*(\/|\**[^*/])*\*+\/)+|\/\/.*\n)+\}  {
 
   int len = strlen(yytext);
   SIZED_STRING* s = (SIZED_STRING*) yr_malloc(len + sizeof(SIZED_STRING));

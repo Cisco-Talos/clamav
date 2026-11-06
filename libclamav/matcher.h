@@ -71,6 +71,10 @@ void cli_targetinfo_destroy(struct cli_target_info *info);
 #define CLI_MATCH_SPECIAL     0x0200
 #define CLI_MATCH_NIBBLE_HIGH 0x0300
 #define CLI_MATCH_NIBBLE_LOW  0x0400
+/* Negated predicates are wildcard-class units; the low byte stores the excluded value. */
+#define CLI_MATCH_NOT_BYTE        0x0500
+#define CLI_MATCH_NOT_NIBBLE_HIGH 0x0600
+#define CLI_MATCH_NOT_NIBBLE_LOW  0x0700
 
 typedef enum tdb_type {
     CLI_TDB_UINT,
