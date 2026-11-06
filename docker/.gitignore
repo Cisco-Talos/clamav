@@ -1,0 +1,5 @@
+/config/
+/.test-*/
+/build.log
+/test.log
+/*.tgz

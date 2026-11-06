@@ -1469,12 +1469,12 @@ static cl_error_t vba_scandata(const unsigned char *data, size_t len, cli_ctx *c
 
     cl_fmap_t *new_map = NULL;
 
-    if ((ret = cli_ac_initdata(&tmdata, target_ac_root->ac_partsigs, target_ac_root->ac_lsigs, target_ac_root->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN))) {
+    if ((ret = cli_ac_initdata_for_matcher(&tmdata, target_ac_root))) {
         goto done;
     }
     tmdata_initialized = true;
 
-    if ((ret = cli_ac_initdata(&gmdata, generic_ac_root->ac_partsigs, generic_ac_root->ac_lsigs, generic_ac_root->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN))) {
+    if ((ret = cli_ac_initdata_for_matcher(&gmdata, generic_ac_root))) {
         goto done;
     }
     gmdata_initialized = true;
@@ -2690,12 +2690,12 @@ static cl_error_t cli_scanscript(cli_ctx *ctx)
     }
     text_normalize_init(&state, normalized, SCANBUFF + maxpatlen);
 
-    if ((ret = cli_ac_initdata(&tmdata, target_ac_root ? target_ac_root->ac_partsigs : 0, target_ac_root ? target_ac_root->ac_lsigs : 0, target_ac_root ? target_ac_root->ac_reloff_num : 0, CLI_DEFAULT_AC_TRACKLEN))) {
+    if ((ret = cli_ac_initdata_for_matcher(&tmdata, target_ac_root))) {
         goto done;
     }
     tmdata_initialized = 1;
 
-    if ((ret = cli_ac_initdata(&gmdata, generic_ac_root->ac_partsigs, generic_ac_root->ac_lsigs, generic_ac_root->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN))) {
+    if ((ret = cli_ac_initdata_for_matcher(&gmdata, generic_ac_root))) {
         goto done;
     }
     gmdata_initialized = 1;

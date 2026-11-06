@@ -113,6 +113,9 @@ struct cli_ac_list {
         struct cli_ac_list *next;
     };
     struct cli_ac_list *next_same;
+    /* Hot rejection data, colocated with the list links. 256 means that the
+     * first byte after the trie head needs the full pattern matcher. */
+    uint16_t partno, first_byte;
 };
 
 struct cli_ac_node {
@@ -148,6 +151,7 @@ cl_error_t cli_ac_addpatt(struct cli_matcher *root, struct cli_ac_patt *pattern)
 void lsig_increment_subsig_match(struct cli_ac_data *mdata, uint32_t lsig_id, uint32_t subsig_id);
 
 cl_error_t cli_ac_initdata(struct cli_ac_data *data, uint32_t partsigs, uint32_t lsigs, uint32_t reloffsigs, uint8_t tracklen);
+cl_error_t cli_ac_initdata_for_matcher(struct cli_ac_data *data, const struct cli_matcher *root);
 
 /**
  * @brief Increment the count for a subsignature of a logical signature.
@@ -166,6 +170,7 @@ cl_error_t lsig_sub_matched(const struct cli_matcher *root, struct cli_ac_data *
 
 cl_error_t cli_ac_chkmacro(struct cli_matcher *root, struct cli_ac_data *data, unsigned lsigid1);
 int cli_ac_chklsig(const char *expr, const char *end, uint32_t *lsigcnt, unsigned int *cnt, uint64_t *ids, unsigned int parse_only);
+int cli_ac_eval_lsig(const struct cli_matcher *root, uint32_t lsid, uint32_t *counts, unsigned int *cnt, uint64_t *ids);
 void cli_ac_freedata(struct cli_ac_data *data);
 cl_error_t cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **virname, void **customdata, struct cli_ac_result **res, const struct cli_matcher *root, struct cli_ac_data *mdata, uint32_t offset, cli_file_t ftype, struct cli_matched_type **ftoffset, unsigned int mode, cli_ctx *ctx);
 cl_error_t cli_ac_buildtrie(struct cli_matcher *root);

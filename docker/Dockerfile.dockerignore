@@ -1,0 +1,22 @@
+# This Dockerfile's context is the repository root.
+.git
+.github
+.agents
+.codex
+.devcontainer
+build
+build-*
+target
+db
+benchmarks
+maintenance
+docs/*-results.md
+docs/performance-review.md
+.cargo
+**/__pycache__
+**/*.pyc
+**/*.log
+**/*.tgz
+docker/.test-*
+docker/README.md
+AGENTS.md

@@ -790,9 +790,10 @@ extern "C" {
     ) -> cl_error_t;
 }
 extern "C" {
+    #[doc = " @brief If the SCAN_HEURISTIC_EXCEEDS_MAX option is enabled, append a \"potentially unwanted\" indicator.\n\n There is no return value because the caller should select the appropriate \"CL_EMAX*\" error code regardless\n of whether or not an FP sig is found, or allmatch is enabled, or whatever.\n That is, the scan must not continue because of an FP sig.\n\n @param ctx       The scan context.\n @param virname   The name of the potentially unwanted indicator."]
     pub fn cli_append_potentially_unwanted_if_heur_exceedsmax(
         ctx: *mut cli_ctx,
-        vname: *mut ::std::os::raw::c_char,
+        virname: *mut ::std::os::raw::c_char,
     );
 }
 extern "C" {
@@ -942,6 +943,8 @@ pub struct cli_ac_list {
     pub me: *mut cli_ac_patt,
     pub __bindgen_anon_1: cli_ac_list__bindgen_ty_1,
     pub next_same: *mut cli_ac_list,
+    pub partno: u16,
+    pub first_byte: u16,
 }
 #[repr(C)]
 #[derive(Copy, Clone)]
@@ -1002,18 +1005,6 @@ pub struct cli_hash_patt {
 pub struct cli_hash_wild {
     pub hashes: [cli_sz_hash; 3usize],
 }
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct pcre2_real_match_context_8 {
-    _unused: [u8; 0],
-}
-pub type pcre2_match_context_8 = pcre2_real_match_context_8;
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct pcre2_real_code_8 {
-    _unused: [u8; 0],
-}
-pub type pcre2_code_8 = pcre2_real_code_8;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct cli_pcre_data {
@@ -1095,6 +1086,7 @@ pub struct cli_ac_lsig {
     pub bc_idx: ::std::os::raw::c_uint,
     pub type_: lsig_type_t,
     pub flag: u8,
+    pub expr_id: u16,
     pub u: cli_ac_lsig__bindgen_ty_1,
     pub virname: *mut ::std::os::raw::c_char,
     pub tdb: cli_lsig_tdb,
@@ -1130,6 +1122,7 @@ pub struct cli_matcher {
     pub ac_root: *mut cli_ac_node,
     pub ac_nodetable: *mut *mut cli_ac_node,
     pub ac_listtable: *mut *mut cli_ac_list,
+    pub ac_liststorage: *mut cli_ac_list,
     pub ac_pattable: *mut *mut cli_ac_patt,
     pub ac_reloff: *mut *mut cli_ac_patt,
     pub ac_reloff_num: u32,
@@ -1151,6 +1144,10 @@ pub struct cli_matcher {
     pub trans_cnt: usize,
     pub trans_capacity: usize,
     pub mempool: *mut mpool_t,
+    pub ac_lsig_sizes: *mut u8,
+    pub ac_lsig_slots: usize,
+    pub ac_lsig_exprs: *mut *mut cli_lsig_expr,
+    pub ac_lsig_expr_count: u32,
 }
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -1237,8 +1234,25 @@ pub struct phishcheck {
 pub struct CACHE {
     pub _address: u8,
 }
+pub type pcre2_code_8 = pcre2_real_code_8;
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct pcre2_real_code_8 {
+    pub _address: u8,
+}
+pub type pcre2_match_context_8 = pcre2_real_match_context_8;
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct pcre2_real_match_context_8 {
+    pub _address: u8,
+}
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct filter {
+    pub _address: u8,
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct cli_lsig_expr {
     pub _address: u8,
 }
