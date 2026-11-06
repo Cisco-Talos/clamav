@@ -767,8 +767,7 @@ static const char *parse_dispatch_cmd(client_conn_t *conn, struct fd_buf *buf, s
             }
         }
         /* we received a command, set readtimeout */
-        time(&buf->timeout_at);
-        buf->timeout_at += readtimeout;
+        buf->timeout_at = clamd_monotonic_time() + readtimeout;
         pos += cmdlen + 1;
         if (conn->mode == MODE_STREAM) {
             /* TODO: this doesn't belong here */
@@ -822,8 +821,7 @@ static int handle_stream(client_conn_t *conn, struct fd_buf *buf, const struct o
 
     logg(LOGG_DEBUG_NV, "mode == MODE_STREAM\n");
     /* we received some data, set readtimeout */
-    time(&buf->timeout_at);
-    buf->timeout_at += readtimeout;
+    buf->timeout_at = clamd_monotonic_time() + readtimeout;
     while (pos <= buf->off) {
         if (!buf->chunksize) {
             /* read chunksize */

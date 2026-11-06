@@ -364,6 +364,24 @@ read_fd_data(struct fd_buf *buf)
     return n;
 }
 
+/*
+ * Get the current time in seconds from a clock that does not jump. Use it for
+ * client timeouts only. A change of the system time does not change this clock.
+ * On Linux, this clock also stops while the system is suspended. Thus a client
+ * connection does not time out because of a suspend or a time change.
+ * If no monotonic clock is available, use the system time.
+ */
+time_t clamd_monotonic_time(void)
+{
+#if !defined(_WIN32) && defined(CLOCK_MONOTONIC)
+    struct timespec ts;
+
+    if (0 == clock_gettime(CLOCK_MONOTONIC, &ts))
+        return ts.tv_sec;
+#endif
+    return time(NULL);
+}
+
 static int
 buf_init(struct fd_buf *buf, int listen_only, int timeout)
 {
@@ -395,8 +413,7 @@ buf_init(struct fd_buf *buf, int listen_only, int timeout)
         buf->buffer  = NULL;
     }
     if (timeout) {
-        time(&buf->timeout_at);
-        buf->timeout_at += timeout;
+        buf->timeout_at = clamd_monotonic_time() + timeout;
     } else {
         buf->timeout_at = 0;
     }
@@ -495,7 +512,7 @@ int fds_poll_recv(struct fd_data *data, int timeout, int check_signals,
         data->buf[i].got_newdata = 0;
     }
 
-    time(&now);
+    now = clamd_monotonic_time();
     if (timeout > 0)
         closest_timeout = now + timeout;
     else
