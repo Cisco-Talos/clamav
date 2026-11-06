@@ -482,6 +482,11 @@ struct hwp3_docsummary_entry {
 
 #define HWP3_FIELD_LENGTH 512
 
+/* Additional information block #1 payload prefixes. */
+#define HWP3_IMAGE_INFO_SIZE 32             /* 16-byte name + 16-byte image format. */
+#define HWP3_BACKGROUND_IMAGE_INFO_SIZE 324 /* Fixed background-image fields before the image bytes. */
+#define HWP3_OLE2_MIN_SIZE 8                /* Size of an OLE2 compound-file signature. */
+
 #define PI_PPFS 0    /* offset 0 (1 byte)  - prior paragraph format style */
 #define PI_NCHARS 1  /* offset 1 (2 bytes) - character count */
 #define PI_NLINES 3  /* offset 3 (2 bytes) - line count */
@@ -1601,6 +1606,16 @@ static inline cl_error_t parsehwp3_infoblk_1(cli_ctx *ctx, fmap_t *dmap, size_t 
         case 1: /* Image Data */
             hwp3_debug("HWP3.x: Information Block[%llu]: TYPE: Image Data\n", infoloc);
 
+            /*
+             * The image bytes follow two fixed 16-byte fields: name and format.
+             * A shorter block cannot contain image data and subtracting the
+             * prefix size from its unsigned length would underflow.
+             */
+            if (infolen < HWP3_IMAGE_INFO_SIZE) {
+                cli_errmsg("HWP3.x: Information Block[%llu]: Image Data block is too short: %u\n", infoloc, infolen);
+                return CL_EFORMAT;
+            }
+
             if (SCAN_COLLECT_METADATA)
                 cli_jsonstr(entry, "Type", "Image Data");
 
@@ -1619,10 +1634,9 @@ static inline cl_error_t parsehwp3_infoblk_1(cli_ctx *ctx, fmap_t *dmap, size_t 
             }
             hwp3_debug("HWP3.x: Information Block[%llu]: FORM: %s\n", infoloc, field);
 #endif
-            /* 32 bytes for extra data fields */
-            if (infolen > 0)
-                ret = cli_magic_scan_nested_fmap_type(map, *offset + 32, infolen - 32, ctx,
-                                                      CL_TYPE_ANY, NULL, LAYER_ATTRIBUTES_NONE);
+            /* Scan only the image bytes after the fixed metadata fields. */
+            ret = cli_magic_scan_nested_fmap_type(map, *offset + HWP3_IMAGE_INFO_SIZE, infolen - HWP3_IMAGE_INFO_SIZE, ctx,
+                                                  CL_TYPE_ANY, NULL, LAYER_ATTRIBUTES_NONE);
             break;
         case 2: /* OLE2 Data */
             hwp3_debug("HWP3.x: Information Block[%llu]: TYPE: OLE2 Data\n", infoloc);
@@ -1682,9 +1696,19 @@ static inline cl_error_t parsehwp3_infoblk_1(cli_ctx *ctx, fmap_t *dmap, size_t 
         case 6: /* Background Image Data */
             hwp3_debug("HWP3.x: Information Block[%llu]: TYPE: Background Image Data\n", infoloc);
 
+            /*
+             * A background image has 324 bytes of fixed fields before its image.
+             * A shorter block cannot contain image data and subtracting the
+             * prefix size from its unsigned length would underflow.
+             */
+            if (infolen < HWP3_BACKGROUND_IMAGE_INFO_SIZE) {
+                cli_errmsg("HWP3.x: Information Block[%llu]: Background Image Data block is too short: %u\n", infoloc, infolen);
+                return CL_EFORMAT;
+            }
+
             if (SCAN_COLLECT_METADATA) {
                 cli_jsonstr(entry, "Type", "Background Image Data");
-                cli_jsonint(entry, "ImageSize", infolen - 324);
+                cli_jsonint(entry, "ImageSize", infolen - HWP3_BACKGROUND_IMAGE_INFO_SIZE);
             }
 
 #if HWP3_DEBUG /* additional fields can be added */
@@ -1695,10 +1719,10 @@ static inline cl_error_t parsehwp3_infoblk_1(cli_ctx *ctx, fmap_t *dmap, size_t 
             }
             hwp3_debug("HWP3.x: Information Block[%llu]: NAME: %s\n", infoloc, field);
 #endif
-            /* 324 bytes for extra data fields */
-            if (infolen > 0)
-                ret = cli_magic_scan_nested_fmap_type(map, *offset + 324, infolen - 324, ctx,
-                                                      CL_TYPE_ANY, NULL, LAYER_ATTRIBUTES_NONE);
+            /* Scan only the image bytes after the fixed background-image fields. */
+            ret = cli_magic_scan_nested_fmap_type(map, *offset + HWP3_BACKGROUND_IMAGE_INFO_SIZE,
+                                                  infolen - HWP3_BACKGROUND_IMAGE_INFO_SIZE, ctx,
+                                                  CL_TYPE_ANY, NULL, LAYER_ATTRIBUTES_NONE);
             break;
         case 0x100: /* Table Extension */
             hwp3_debug("HWP3.x: Information Block[%llu]: TYPE: Table Extension\n", infoloc);
@@ -1727,12 +1751,97 @@ static inline cl_error_t parsehwp3_infoblk_1(cli_ctx *ctx, fmap_t *dmap, size_t 
     return ret;
 }
 
+static bool hwp3_infoblk_1_header_is_plausible(fmap_t *map, size_t offset)
+{
+    uint32_t infoid, infolen;
+
+    if (fmap_readn(map, &infoid, offset, sizeof(infoid)) != sizeof(infoid))
+        return false;
+
+    infoid = le32_to_host(infoid);
+    /* Booking Information is the only block consisting solely of its 4-byte ID. */
+    if (infoid == 5)
+        return true;
+
+    /* Recovery accepts only information block types defined by the HWP3 parser. */
+    if ((infoid > 6) && (infoid != 0x100) && (infoid != 0x101))
+        return false;
+
+    if (fmap_readn(map, &infolen, offset + sizeof(infoid), sizeof(infolen)) != sizeof(infolen))
+        return false;
+
+    infolen = le32_to_host(infolen);
+    if ((infoid == 0) && (infolen != 0))
+        return false;
+
+    return infolen <= map->len - offset - sizeof(infoid) - sizeof(infolen);
+}
+
+static bool findhwp3_infoblk_1(fmap_t *map, size_t start, size_t *found)
+{
+    uint32_t infoid, infolen;
+    size_t offset, payload, next;
+
+    if ((start >= map->len) || (map->len - start < 12))
+        return false;
+
+    /*
+     * A paragraph error leaves its caller's offset at the start of the malformed
+     * paragraph, so the information-block boundary is no longer known. Search
+     * byte-by-byte because variable-length HWP3 paragraphs are not guaranteed to
+     * leave the following section on a fixed alignment.
+     */
+    for (offset = start; offset <= map->len - 12; offset++) {
+        if (fmap_readn(map, &infoid, offset, sizeof(infoid)) != sizeof(infoid))
+            return false;
+
+        infoid = le32_to_host(infoid);
+        if ((infoid != 1) && (infoid != 2) && (infoid != 6))
+            continue;
+
+        if (fmap_readn(map, &infolen, offset + sizeof(infoid), sizeof(infolen)) != sizeof(infolen))
+            return false;
+
+        infolen = le32_to_host(infolen);
+        /*
+         * Limit resynchronization candidates to blocks that contain nested data.
+         * Their fixed prefixes also provide useful minimum lengths that reduce
+         * false matches while scanning malformed paragraph bytes.
+         */
+        if (((infoid == 1) && (infolen < HWP3_IMAGE_INFO_SIZE)) ||
+            ((infoid == 2) && (infolen < HWP3_OLE2_MIN_SIZE)) ||
+            ((infoid == 6) && (infolen < HWP3_BACKGROUND_IMAGE_INFO_SIZE)))
+            continue;
+
+        payload = offset + sizeof(infoid) + sizeof(infolen);
+        if (infolen > map->len - payload)
+            continue;
+
+        next = payload + infolen;
+        /* Requiring a valid following header further avoids treating paragraph data as a block. */
+        if (!hwp3_infoblk_1_header_is_plausible(map, next))
+            continue;
+
+        *found = offset;
+        return true;
+    }
+
+    return false;
+}
+
+static bool hwp3_parse_error_is_recoverable(cl_error_t ret)
+{
+    /* Do not hide resource-limit, allocation, callback, or detection results. */
+    return (ret == CL_EREAD) || (ret == CL_EFORMAT) || (ret == CL_EPARSE);
+}
+
 static cl_error_t hwp3_cb(void *cbdata, int fd, const char *filepath, cli_ctx *ctx)
 {
     cl_error_t ret = CL_SUCCESS;
     fmap_t *map, *dmap;
     size_t offset, start, new_offset;
     int i, p = 0, last = 0;
+    bool paragraph_parse_failed = false;
     uint16_t nstyles;
     json_object *fonts = NULL;
 
@@ -1820,9 +1929,20 @@ static cl_error_t hwp3_cb(void *cbdata, int fd, const char *filepath, cli_ctx *c
     while (!last && ((ret = parsehwp3_paragraph(ctx, map, p++, 0, &offset, &last)) == CL_SUCCESS)) continue;
     /* return is never a virus */
     if (ret != CL_SUCCESS) {
-        if (dmap)
-            fmap_free(dmap);
-        return ret;
+        if (!hwp3_parse_error_is_recoverable(ret)) {
+            if (dmap)
+                fmap_free(dmap);
+            return ret;
+        }
+
+        paragraph_parse_failed = true;
+        cli_warnmsg("HWP3.x: Paragraph parsing failed; attempting to recover additional information blocks\n");
+
+        if (!findhwp3_infoblk_1(map, offset, &offset)) {
+            cli_warnmsg("HWP3.x: Failed to recover additional information blocks; scanning the complete content stream\n");
+            offset = map->len;
+        }
+        ret = CL_SUCCESS;
     }
 
     if (SCAN_COLLECT_METADATA)
@@ -1832,9 +1952,12 @@ static cl_error_t hwp3_cb(void *cbdata, int fd, const char *filepath, cli_ctx *c
     /* 'additional information block #1's - attachments and media */
     while (!last && ((ret = parsehwp3_infoblk_1(ctx, map, &offset, &last)) == CL_SUCCESS)) continue;
 
-    /* scan the uncompressed stream - both compressed and uncompressed cases [ALLMATCH] */
-    if (ret == CL_SUCCESS) {
-        size_t dlen = offset - start;
+    /*
+     * Scan the complete content stream after paragraph recovery. This preserves
+     * raw-signature coverage even if a later information block is also malformed.
+     */
+    if ((ret == CL_SUCCESS) || (paragraph_parse_failed && hwp3_parse_error_is_recoverable(ret))) {
+        size_t dlen = paragraph_parse_failed ? map->len - start : offset - start;
 
         ret = cli_magic_scan_nested_fmap_type(map, start, dlen, ctx, CL_TYPE_ANY, NULL, LAYER_ATTRIBUTES_NONE);
     }
