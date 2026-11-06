@@ -84,8 +84,6 @@ cmake .. -G "Visual Studio 17 2022" -A arm64 `
     -D LIBXML2_LIBRARY="$HOME\\.mussels\\install\\arm64\\lib\\libxml2.lib" `
     -D PCRE2_INCLUDE_DIR="$HOME\\.mussels\\install\\arm64\\include" `
     -D PCRE2_LIBRARY="$HOME\\.mussels\\install\\arm64\\lib\\pcre2-8.lib" `
-    -D PDCURSES_INCLUDE_DIR="$HOME\\.mussels\\install\\arm64\\include" `
-    -D CURSES_LIBRARY="$HOME\\.mussels\\install\\arm64\\lib\\pdcurses.lib" `
     -D PThreadW32_INCLUDE_DIR="$HOME\\.mussels\\install\\arm64\\include" `
     -D PThreadW32_LIBRARY="$HOME\\.mussels\\install\\arm64\\lib\\pthreadVC3.lib" `
     -D ZLIB_INCLUDE_DIR="$HOME\\.mussels\\install\\arm64\\include" `

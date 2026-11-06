@@ -135,6 +135,12 @@ if(MAINTAINER_MODE)
     # TODO: Gperf required to generate JS-normalization code.
     # find_package(GPERF REQUIRED)
 endif()
+if(ENABLE_APP AND NOT ENABLE_LIBCLAMAV_ONLY AND NOT ENABLE_FUZZ)
+    # Ratatui 0.30 uses this as its minimum supported Rust version.
+    if(NOT RUSTC_MINIMUM_REQUIRED OR "${RUSTC_MINIMUM_REQUIRED}" VERSION_LESS "1.88")
+        set(RUSTC_MINIMUM_REQUIRED 1.88)
+    endif()
+endif()
 find_package(Rust REQUIRED)
 
 if(ENABLE_FUZZ)
@@ -596,8 +602,6 @@ if(NOT ENABLE_LIBCLAMAV_ONLY)
     find_package(CURL REQUIRED)
 
     if(ENABLE_APP)
-        find_package(CURSES REQUIRED)
-
         if(NOT WIN32 AND ENABLE_MILTER)
             find_package(Milter REQUIRED)
         endif()
@@ -1280,18 +1284,6 @@ message(STATUS "${C}libfreshclam Extra Dependencies${e} --
 ${b}        HTTP support:       ${e}
 ${_}            curl            ${e}${CURL_INCLUDE_DIRS}
 ${_}                            ${e}${CURL_LIBRARIES}")
-endif()
-
-if(HAVE_LIBNCURSES)
-message(STATUS "${C}Application Extra Dependencies${e} --
-${b}        GUI support:        ${e}
-${_}            ncurses         ${e}${CURSES_INCLUDE_DIRS}
-${_}                            ${e}${CURSES_LIBRARIES}")
-elseif(HAVE_LIBPDCURSES)
-message(STATUS "${C}Application Extra Dependencies${e} --
-${b}        GUI support:        ${e}
-${_}            pdcurses        ${e}${CURSES_INCLUDE_DIRS}
-${_}                            ${e}${CURSES_LIBRARIES}")
 endif()
 
 if(C_LINUX)

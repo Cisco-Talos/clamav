@@ -123,6 +123,10 @@
 # -----------------------
 #
 # This allows a caller to create a Rust executable target.
+# The buildable custom target uses TARGET as its name, and the Cargo artifact is
+# also exposed as an imported executable target named <TARGET>_executable so
+# CMake consumers can use $<TARGET_FILE:<TARGET>_executable>.
+# OUTPUT_VARIABLE may be supplied to return the artifact path to the caller.
 #
 # Example `add_rust_executable()` usage:
 #
@@ -228,44 +232,151 @@ endfunction()
 
 function(add_rust_executable)
     set(options)
-    set(oneValueArgs TARGET SOURCE_DIRECTORY BINARY_DIRECTORY)
-    set(multiValueArgs ENVIRONMENT)
+    set(oneValueArgs TARGET SOURCE_DIRECTORY BINARY_DIRECTORY OUTPUT_VARIABLE)
+    set(multiValueArgs ENVIRONMENT DEPENDS)
     cmake_parse_arguments(ARGS "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
-    if(WIN32)
-        set(OUTPUT "${ARGS_BINARY_DIRECTORY}/${RUST_COMPILER_TARGET}/${CARGO_BUILD_TYPE}/${ARGS_TARGET}.exe")
-    else()
-        set(OUTPUT "${ARGS_BINARY_DIRECTORY}/${RUST_COMPILER_TARGET}/${CARGO_BUILD_TYPE}/${ARGS_TARGET}")
+    if(NOT ARGS_TARGET OR NOT ARGS_SOURCE_DIRECTORY OR NOT ARGS_BINARY_DIRECTORY)
+        message(FATAL_ERROR "add_rust_executable requires TARGET, SOURCE_DIRECTORY, and BINARY_DIRECTORY")
     endif()
 
-    file(GLOB_RECURSE EXE_SOURCES "${ARGS_SOURCE_DIRECTORY}/*.rs")
+    # CMake may request a single macOS architecture different from the host
+    # Rust target. Build the Cargo executable for that requested architecture
+    # so the output path and binary architecture agree.
+    if("${RUST_COMPILER_TARGET}" MATCHES "^universal-apple-darwin$")
+        set(RUST_EXECUTABLE_TARGET "${RUST_COMPILER_TARGET}")
+    elseif(APPLE AND "${CMAKE_OSX_ARCHITECTURES}" STREQUAL "arm64")
+        set(RUST_EXECUTABLE_TARGET "aarch64-apple-darwin")
+    elseif(APPLE AND "${CMAKE_OSX_ARCHITECTURES}" STREQUAL "x86_64")
+        set(RUST_EXECUTABLE_TARGET "x86_64-apple-darwin")
+    else()
+        set(RUST_EXECUTABLE_TARGET "${RUST_COMPILER_TARGET}")
+    endif()
+
+    if(WIN32)
+        set(RUST_EXECUTABLE_SUFFIX ".exe")
+    else()
+        set(RUST_EXECUTABLE_SUFFIX "")
+    endif()
+    if("${RUST_EXECUTABLE_TARGET}" MATCHES "^universal-apple-darwin$")
+        set(RUST_EXECUTABLE_DIRECTORY "${ARGS_BINARY_DIRECTORY}/${RUST_COMPILER_TARGET}")
+    else()
+        set(RUST_EXECUTABLE_DIRECTORY "${ARGS_BINARY_DIRECTORY}/${RUST_EXECUTABLE_TARGET}")
+    endif()
+    set(OUTPUT "${RUST_EXECUTABLE_DIRECTORY}/${CARGO_BUILD_TYPE}/${ARGS_TARGET}${RUST_EXECUTABLE_SUFFIX}")
+    set(DEBUG_OUTPUT "${RUST_EXECUTABLE_DIRECTORY}/debug/${ARGS_TARGET}${RUST_EXECUTABLE_SUFFIX}")
+    set(RELEASE_OUTPUT "${RUST_EXECUTABLE_DIRECTORY}/release/${ARGS_TARGET}${RUST_EXECUTABLE_SUFFIX}")
+
+    file(GLOB_RECURSE EXE_SOURCES CONFIGURE_DEPENDS "${ARGS_SOURCE_DIRECTORY}/*.rs")
+    set(CARGO_INPUTS
+        ${EXE_SOURCES}
+        "${ARGS_SOURCE_DIRECTORY}/Cargo.toml"
+        "${CMAKE_SOURCE_DIR}/Cargo.toml"
+        "${CMAKE_SOURCE_DIR}/Cargo.lock"
+        ${ARGS_DEPENDS}
+    )
+    if(EXISTS "${ARGS_SOURCE_DIRECTORY}/build.rs")
+        list(APPEND CARGO_INPUTS "${ARGS_SOURCE_DIRECTORY}/build.rs")
+    endif()
+    if(EXISTS "${CMAKE_SOURCE_DIR}/.cargo/config.toml")
+        list(APPEND CARGO_INPUTS "${CMAKE_SOURCE_DIR}/.cargo/config.toml")
+    endif()
 
     set(MY_CARGO_ARGS ${CARGO_ARGS})
+    list(FIND MY_CARGO_ARGS "--target" CARGO_TARGET_INDEX)
+    if(NOT CARGO_TARGET_INDEX EQUAL -1)
+        list(REMOVE_AT MY_CARGO_ARGS ${CARGO_TARGET_INDEX})
+        list(REMOVE_AT MY_CARGO_ARGS ${CARGO_TARGET_INDEX})
+    endif()
+    if(NOT "${RUST_EXECUTABLE_TARGET}" MATCHES "^universal-apple-darwin$")
+        list(APPEND MY_CARGO_ARGS "--target" ${RUST_EXECUTABLE_TARGET})
+    endif()
     list(APPEND MY_CARGO_ARGS "--target-dir" ${ARGS_BINARY_DIRECTORY})
     list(JOIN MY_CARGO_ARGS " " MY_CARGO_ARGS_STRING)
 
-    list(APPEND ARGS_ENVIRONMENT "CARGO_TARGET_DIR=${ARGS_BINARY_DIRECTORY}" "CARGO_INCLUDE_DIRECTORIES=\"${ARGS_INCLUDE_DIRECTORIES}\"")
+    list(APPEND ARGS_ENVIRONMENT "CARGO_TARGET_DIR=${ARGS_BINARY_DIRECTORY}" "RUSTFLAGS=${RUSTFLAGS}")
 
-    # Build the executable.
-    add_custom_command(
-        OUTPUT "${OUTPUT}"
-        COMMAND ${CMAKE_COMMAND} -E env ${ARGS_ENVIRONMENT} ${cargo_EXECUTABLE} ${MY_CARGO_ARGS}
-        WORKING_DIRECTORY "${ARGS_SOURCE_DIRECTORY}"
-        DEPENDS ${EXE_SOURCES}
-        COMMENT "Building ${ARGS_TARGET} in ${ARGS_BINARY_DIRECTORY} with:\n\t ${cargo_EXECUTABLE} ${MY_CARGO_ARGS_STRING}\n  Environment:  ${ARGS_ENVIRONMENT}")
+    if(CMAKE_CONFIGURATION_TYPES)
+        # Cargo has debug and release profiles while multi-config generators
+        # select Debug, Release, RelWithDebInfo, or MinSizeRel at build time.
+        # Make the utility target choose the matching Cargo profile and expose
+        # configuration-specific imported locations below. A custom target is
+        # intentionally used here because CMake 3.17 cannot express a
+        # configuration-dependent custom-command output.
+        set(RUST_RELEASE_CONFIGURATION "$<OR:$<CONFIG:Release>,$<CONFIG:RelWithDebInfo>,$<CONFIG:MinSizeRel>>")
+        set(RUST_CARGO_PROFILE "$<IF:${RUST_RELEASE_CONFIGURATION},release,dev>")
+        set(RUST_ARTIFACT_PROFILE "$<IF:${RUST_RELEASE_CONFIGURATION},release,debug>")
+        set(RUST_PROFILE_ARGUMENT "--profile=${RUST_CARGO_PROFILE}")
+        if("${RUST_COMPILER_TARGET}" MATCHES "^universal-apple-darwin$")
+            add_custom_target(${ARGS_TARGET}_target
+                COMMAND ${CMAKE_COMMAND} -E env ${ARGS_ENVIRONMENT} ${cargo_EXECUTABLE} ${MY_CARGO_ARGS} ${RUST_PROFILE_ARGUMENT} --target=x86_64-apple-darwin
+                COMMAND ${CMAKE_COMMAND} -E env ${ARGS_ENVIRONMENT} ${cargo_EXECUTABLE} ${MY_CARGO_ARGS} ${RUST_PROFILE_ARGUMENT} --target=aarch64-apple-darwin
+                COMMAND ${CMAKE_COMMAND} -E make_directory "${RUST_EXECUTABLE_DIRECTORY}/${RUST_ARTIFACT_PROFILE}"
+                COMMAND lipo -create "${ARGS_BINARY_DIRECTORY}/x86_64-apple-darwin/${RUST_ARTIFACT_PROFILE}/${ARGS_TARGET}" "${ARGS_BINARY_DIRECTORY}/aarch64-apple-darwin/${RUST_ARTIFACT_PROFILE}/${ARGS_TARGET}" -output "${RUST_EXECUTABLE_DIRECTORY}/${RUST_ARTIFACT_PROFILE}/${ARGS_TARGET}"
+                WORKING_DIRECTORY "${ARGS_SOURCE_DIRECTORY}"
+                DEPENDS ${CARGO_INPUTS}
+                COMMENT "Building ${ARGS_TARGET} in ${ARGS_BINARY_DIRECTORY}")
+        else()
+            add_custom_target(${ARGS_TARGET}_target
+                COMMAND ${CMAKE_COMMAND} -E env ${ARGS_ENVIRONMENT} ${cargo_EXECUTABLE} ${MY_CARGO_ARGS} ${RUST_PROFILE_ARGUMENT}
+                WORKING_DIRECTORY "${ARGS_SOURCE_DIRECTORY}"
+                DEPENDS ${CARGO_INPUTS}
+                COMMENT "Building ${ARGS_TARGET} in ${ARGS_BINARY_DIRECTORY}")
+        endif()
+        set(OUTPUT "$<IF:${RUST_RELEASE_CONFIGURATION},${RELEASE_OUTPUT},${DEBUG_OUTPUT}>")
+    else()
+        # Build the executable. A universal macOS binary needs one Cargo build
+        # per architecture followed by lipo, matching add_rust_library().
+        if("${RUST_COMPILER_TARGET}" MATCHES "^universal-apple-darwin$")
+            set(X86_64_OUTPUT "${ARGS_BINARY_DIRECTORY}/x86_64-apple-darwin/${CARGO_BUILD_TYPE}/${ARGS_TARGET}")
+            set(ARM64_OUTPUT "${ARGS_BINARY_DIRECTORY}/aarch64-apple-darwin/${CARGO_BUILD_TYPE}/${ARGS_TARGET}")
+            add_custom_command(
+                OUTPUT "${OUTPUT}"
+                COMMAND ${CMAKE_COMMAND} -E env ${ARGS_ENVIRONMENT} ${cargo_EXECUTABLE} ${MY_CARGO_ARGS} --target=x86_64-apple-darwin
+                COMMAND ${CMAKE_COMMAND} -E env ${ARGS_ENVIRONMENT} ${cargo_EXECUTABLE} ${MY_CARGO_ARGS} --target=aarch64-apple-darwin
+                COMMAND ${CMAKE_COMMAND} -E make_directory "${RUST_EXECUTABLE_DIRECTORY}/${CARGO_BUILD_TYPE}"
+                COMMAND lipo -create "${X86_64_OUTPUT}" "${ARM64_OUTPUT}" -output "${OUTPUT}"
+                WORKING_DIRECTORY "${ARGS_SOURCE_DIRECTORY}"
+                DEPENDS ${CARGO_INPUTS}
+                COMMENT "Building universal ${ARGS_TARGET} in ${ARGS_BINARY_DIRECTORY}")
+        else()
+            add_custom_command(
+                OUTPUT "${OUTPUT}"
+                COMMAND ${CMAKE_COMMAND} -E env ${ARGS_ENVIRONMENT} ${cargo_EXECUTABLE} ${MY_CARGO_ARGS}
+                WORKING_DIRECTORY "${ARGS_SOURCE_DIRECTORY}"
+                DEPENDS ${CARGO_INPUTS}
+                COMMENT "Building ${ARGS_TARGET} in ${ARGS_BINARY_DIRECTORY} with:\n\t ${cargo_EXECUTABLE} ${MY_CARGO_ARGS_STRING}\n  Environment:  ${ARGS_ENVIRONMENT}")
+        endif()
+        add_custom_target(${ARGS_TARGET}_target DEPENDS ${OUTPUT})
+    endif()
 
-    # Create a target from the build output
-    add_custom_target(${ARGS_TARGET}_target
-        DEPENDS ${OUTPUT})
-
-    # Create an executable target from custom target
+    # Keep a buildable custom target and expose the Cargo artifact as an
+    # imported executable target for CMake consumers that use TARGET_FILE.
     add_custom_target(${ARGS_TARGET} ALL DEPENDS ${ARGS_TARGET}_target)
+    add_executable(${ARGS_TARGET}_executable IMPORTED GLOBAL)
+    add_dependencies(${ARGS_TARGET}_executable ${ARGS_TARGET}_target)
 
-    # Specify where the executable is
-    set_target_properties(${ARGS_TARGET}
-        PROPERTIES
-        IMPORTED_LOCATION "${OUTPUT}"
-    )
+    # Specify where the executable artifact is.
+    if(CMAKE_CONFIGURATION_TYPES)
+        set_target_properties(${ARGS_TARGET}_executable
+            PROPERTIES
+            IMPORTED_LOCATION "${DEBUG_OUTPUT}"
+            IMPORTED_CONFIGURATIONS "DEBUG;RELEASE;RELWITHDEBINFO;MINSIZEREL"
+            IMPORTED_LOCATION_DEBUG "${DEBUG_OUTPUT}"
+            IMPORTED_LOCATION_RELEASE "${RELEASE_OUTPUT}"
+            IMPORTED_LOCATION_RELWITHDEBINFO "${RELEASE_OUTPUT}"
+            IMPORTED_LOCATION_MINSIZEREL "${RELEASE_OUTPUT}"
+        )
+    else()
+        set_target_properties(${ARGS_TARGET}_executable
+            PROPERTIES
+            IMPORTED_LOCATION "${OUTPUT}"
+        )
+    endif()
+
+    if(ARGS_OUTPUT_VARIABLE)
+        set(${ARGS_OUTPUT_VARIABLE} "${OUTPUT}" PARENT_SCOPE)
+    endif()
 
     # Vendor the dependencies, if desired
     if(VENDOR_DEPENDENCIES)
@@ -361,7 +472,7 @@ endfunction()
 function(add_rust_test)
     set(options)
     set(oneValueArgs NAME SOURCE_DIRECTORY BINARY_DIRECTORY PRECOMPILE_TESTS PRECOMPILE_DEPENDS)
-    set(multiValueArgs PRECOMPILE_ENVIRONMENT)
+    set(multiValueArgs ENVIRONMENT PRECOMPILE_ENVIRONMENT)
     cmake_parse_arguments(ARGS "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
     set(MY_CARGO_ARGS "test")
@@ -370,27 +481,36 @@ function(add_rust_test)
         list(APPEND MY_CARGO_ARGS "--target" ${RUST_COMPILER_TARGET})
     endif()
 
-    if("${CMAKE_BUILD_TYPE}" STREQUAL "Release" OR "${CMAKE_BUILD_TYPE}" STREQUAL "RelWithDebInfo")
+    if(CMAKE_CONFIGURATION_TYPES)
+        set(RUST_TEST_PROFILE "$<IF:$<OR:$<CONFIG:Release>,$<CONFIG:RelWithDebInfo>,$<CONFIG:MinSizeRel>>,release,dev>")
+        set(RUST_TEST_PROFILE_ARGUMENT "--profile=${RUST_TEST_PROFILE}")
+    elseif("${CMAKE_BUILD_TYPE}" STREQUAL "Release" OR "${CMAKE_BUILD_TYPE}" STREQUAL "RelWithDebInfo" OR "${CMAKE_BUILD_TYPE}" STREQUAL "MinSizeRel")
         list(APPEND MY_CARGO_ARGS "--release")
     endif()
 
     list(APPEND MY_CARGO_ARGS "--target-dir" ${ARGS_BINARY_DIRECTORY})
     list(JOIN MY_CARGO_ARGS " " MY_CARGO_ARGS_STRING)
 
+    set(RUST_TEST_ENVIRONMENT ${ARGS_ENVIRONMENT})
+    list(APPEND RUST_TEST_ENVIRONMENT
+        "CARGO_CMD=test"
+        "CARGO_TARGET_DIR=${ARGS_BINARY_DIRECTORY}"
+        "RUSTFLAGS=${RUSTFLAGS}")
+
     if(ARGS_PRECOMPILE_TESTS)
-        list(APPEND ARGS_PRECOMPILE_ENVIRONMENT "CARGO_CMD=test" "CARGO_TARGET_DIR=${ARGS_BINARY_DIRECTORY}")
+        list(APPEND ARGS_PRECOMPILE_ENVIRONMENT ${RUST_TEST_ENVIRONMENT})
         add_custom_target(${ARGS_NAME}_tests ALL
-            COMMAND ${CMAKE_COMMAND} -E env ${ARGS_PRECOMPILE_ENVIRONMENT} ${cargo_EXECUTABLE} ${MY_CARGO_ARGS} --color always --no-run
+            COMMAND ${CMAKE_COMMAND} -E env ${ARGS_PRECOMPILE_ENVIRONMENT} ${cargo_EXECUTABLE} ${MY_CARGO_ARGS} ${RUST_TEST_PROFILE_ARGUMENT} --color always --no-run
             DEPENDS ${ARGS_PRECOMPILE_DEPENDS}
             WORKING_DIRECTORY ${ARGS_SOURCE_DIRECTORY}
         )
     endif()
 
-    message(STATUS "Environment: ${ARGS_ENVIRONMENT}")
+    message(STATUS "Environment: ${RUST_TEST_ENVIRONMENT}")
 
     add_test(
         NAME ${ARGS_NAME}
-        COMMAND ${CMAKE_COMMAND} -E env "CARGO_CMD=test" "CARGO_TARGET_DIR=${ARGS_BINARY_DIRECTORY}" "RUSTFLAGS=${RUSTFLAGS}" ${cargo_EXECUTABLE} ${MY_CARGO_ARGS} --color always
+        COMMAND ${CMAKE_COMMAND} -E env ${RUST_TEST_ENVIRONMENT} ${cargo_EXECUTABLE} ${MY_CARGO_ARGS} ${RUST_TEST_PROFILE_ARGUMENT} --color always
         WORKING_DIRECTORY ${ARGS_SOURCE_DIRECTORY}
     )
 endfunction()
@@ -458,8 +578,13 @@ if(NOT RUST_COMPILER_TARGET)
     # Note: Users may override automatic target detection by specifying their own. Most likely needed for cross-compiling.
     # For reference determining target platform: https://doc.rust-lang.org/nightly/rustc/platform-support.html
     if(WIN32)
-        # For windows x86/x64, it's easy enough to guess the target.
-        if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+        # For Visual Studio ARM64 configurations, CMAKE_SIZEOF_VOID_P is also
+        # eight. Check the target platform before falling back to x86_64.
+        if(CMAKE_GENERATOR_PLATFORM MATCHES "^[Aa][Rr][Mm]64$"
+                OR CMAKE_VS_PLATFORM_NAME MATCHES "^[Aa][Rr][Mm]64$"
+                OR CMAKE_SYSTEM_PROCESSOR MATCHES "^(ARM64|arm64|aarch64)$")
+            set(RUST_COMPILER_TARGET "aarch64-pc-windows-msvc")
+        elseif(CMAKE_SIZEOF_VOID_P EQUAL 8)
             set(RUST_COMPILER_TARGET "x86_64-pc-windows-msvc")
         else()
             set(RUST_COMPILER_TARGET "i686-pc-windows-msvc")
