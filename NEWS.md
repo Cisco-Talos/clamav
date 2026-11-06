@@ -1128,7 +1128,7 @@ ClamAV 1.2.3 is a critical patch release with the following fixes:
 
   [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1239)
 
-- Silenced a warning "Unexpected early end-of-file" that occured when
+- Silenced a warning "Unexpected early end-of-file" that occurred when
   scanning some PNG files.
 
   [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1215)
@@ -1765,7 +1765,7 @@ ClamAV 1.0.6 is a critical patch release with the following fixes:
 
   [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1240)
 
-- Silenced a warning "Unexpected early end-of-file" that occured when
+- Silenced a warning "Unexpected early end-of-file" that occurred when
   scanning some PNG files.
 
   [GitHub pull request](https://github.com/Cisco-Talos/clamav/pull/1216)
