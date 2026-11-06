@@ -113,7 +113,8 @@ target_sources(check_clamav
         check_matchers.c
         check_regex.c
         check_str.c
-        check_uniq.c)
+        check_uniq.c
+        check_unzip.c)
 target_link_libraries(check_clamav
     PRIVATE
         ClamAV::libclamav

@@ -2197,6 +2197,7 @@ int main(int argc, char **argv)
     srunner_add_suite(sr, test_matchers_suite());
     srunner_add_suite(sr, test_htmlnorm_suite());
     srunner_add_suite(sr, test_bytecode_suite());
+    srunner_add_suite(sr, test_unzip_suite());
 
     srunner_set_log(sr, OBJDIR PATHSEP "test.log");
     log_file = freopen(OBJDIR PATHSEP "test-stderr.log", "w+", stderr);
