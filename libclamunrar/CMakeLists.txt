@@ -32,6 +32,7 @@ set( UNRAR_SOURCES
     hash.cpp
     headers.cpp
     list.cpp
+    largepage.cpp
     match.cpp
     options.cpp
     pathfn.cpp
@@ -61,7 +62,7 @@ set( UNRAR_SOURCES
     volume.cpp
 )
 if(WIN32)
-    list(APPEND UNRAR_SOURCES isnt.cpp)
+    list(APPEND UNRAR_SOURCES isnt.cpp motw.cpp)
 endif()
 
 if(ENABLE_SHARED_LIB)

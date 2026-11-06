@@ -42,6 +42,7 @@
 #define unrar_open libclamunrar_iface_LTX_unrar_open
 #define unrar_peek_file_header libclamunrar_iface_LTX_unrar_peek_file_header
 #define unrar_extract_file libclamunrar_iface_LTX_unrar_extract_file
+#define unrar_extract_file_to_buffer libclamunrar_iface_LTX_unrar_extract_file_to_buffer
 #define unrar_skip_file libclamunrar_iface_LTX_unrar_skip_file
 #define unrar_close libclamunrar_iface_LTX_unrar_close
 
@@ -67,6 +68,7 @@ typedef struct unrar_metadata_tag {
 cl_unrar_error_t unrar_open(const char *filename, void **hArchive, char **comment, uint32_t *comment_size, uint8_t debug_flag);
 cl_unrar_error_t unrar_peek_file_header(void *hArchive, unrar_metadata_t *file_metadata);
 cl_unrar_error_t unrar_extract_file(void *hArchive, const char *destPath, char *outputBuffer);
+cl_unrar_error_t unrar_extract_file_to_buffer(void *hArchive, uint8_t *buffer, size_t capacity, size_t *written);
 cl_unrar_error_t unrar_skip_file(void *hArchive);
 void unrar_close(void *hArchive);
 

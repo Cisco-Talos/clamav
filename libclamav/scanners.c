@@ -213,6 +213,8 @@ static cl_error_t cli_unrar_scanmetadata(unrar_metadata_t *metadata, cli_ctx *ct
     return status;
 }
 
+#define RAR_MAX_BUFFERED_MEMBER_SIZE (16U * 1024U * 1024U)
+
 static cl_error_t cli_scanrar_file(const char *filepath, int desc, cli_ctx *ctx)
 {
     cl_error_t status          = CL_EPARSE;
@@ -228,9 +230,10 @@ static cl_error_t cli_scanrar_file(const char *filepath, int desc, cli_ctx *ctx)
     uint32_t comment_size = 0;
 
     unrar_metadata_t metadata;
-    char *filename_base    = NULL;
-    char *extract_fullpath = NULL;
-    char *comment_fullpath = NULL;
+    char *filename_base     = NULL;
+    char *extract_fullpath  = NULL;
+    uint8_t *extract_buffer = NULL;
+    char *comment_fullpath  = NULL;
 
     UNUSEDPARAM(desc);
 
@@ -383,6 +386,8 @@ static cl_error_t cli_scanrar_file(const char *filepath, int desc, cli_ctx *ctx)
                     break;
                 }
             } else {
+                size_t extract_buffer_len = 0;
+
                 /*
                  * Extract the file...
                  */
@@ -390,74 +395,102 @@ static cl_error_t cli_scanrar_file(const char *filepath, int desc, cli_ctx *ctx)
                     (void)cli_basename(metadata.filename, strlen(metadata.filename), &filename_base, true /* posix_support_backslash_pathsep */);
                 }
 
-                if (!(ctx->engine->keeptmp) ||
-                    (NULL == filename_base)) {
-                    extract_fullpath = cli_gentemp(ctx->this_layer_tmpdir);
-                } else {
-                    extract_fullpath = cli_gentemp_with_prefix(ctx->this_layer_tmpdir, filename_base);
-                }
-                if (NULL == extract_fullpath) {
-                    cli_dbgmsg("RAR: Memory error allocating filename for extracted file.");
-                    status = CL_EMEM;
-                    break;
-                }
-                cli_dbgmsg("RAR: Extracting file: %s to %s\n", metadata.filename, extract_fullpath);
-
-                unrar_ret = cli_unrar_extract_file(hArchive, extract_fullpath, NULL);
-                if (unrar_ret != UNRAR_OK) {
-                    /*
-                     * Some other error extracting the file
-                     */
-                    cli_dbgmsg("RAR: Error extracting file: %s\n", metadata.filename);
-
-                    /* TODO:
-                     *   may need to manually skip the file depending on what, specifically, cli_unrar_extract_file() returned.
-                     */
-                } else {
-                    /*
-                     * File should be extracted...
-                     * ... make sure we have read permissions to the file.
-                     */
-                    if (0 != access(extract_fullpath, R_OK)) {
-                        cli_dbgmsg("RAR: Don't have read permissions, attempting to change file permissions to make it readable..\n");
-#ifdef _WIN32
-                        if (0 != _chmod(extract_fullpath, _S_IREAD)) {
-#else
-                        if (0 != chmod(extract_fullpath, S_IRUSR | S_IRGRP)) {
-#endif
-                            cli_dbgmsg("RAR: Failed to change permission bits so the extracted file is readable..\n");
-                        }
+                if (!ctx->engine->keeptmp && metadata.unpack_size > 0 &&
+                    metadata.unpack_size <= RAR_MAX_BUFFERED_MEMBER_SIZE) {
+                    extract_buffer = cli_max_malloc((size_t)metadata.unpack_size);
+                    if (NULL == extract_buffer) {
+                        cli_dbgmsg("RAR: Unable to allocate the extraction buffer. Falling back to a tempfile.\n");
                     }
+                }
 
-                    /*
-                     * ... scan the extracted file.
-                     */
-                    cli_dbgmsg("RAR: Extraction complete.  Scanning now...\n");
-                    status = cli_magic_scan_file(extract_fullpath, ctx, filename_base, LAYER_ATTRIBUTES_NONE);
-                    if (status == CL_EOPEN) {
-                        cli_dbgmsg("RAR: File not found, Extraction failed!\n");
-
-                        // Don't abort the scan just because one file failed to extract.
-                        status = CL_SUCCESS;
+                if (NULL != extract_buffer) {
+                    cli_dbgmsg("RAR: Extracting file to memory: %s\n", metadata.filename);
+                    unrar_ret = cli_unrar_extract_file_to_buffer(hArchive, extract_buffer,
+                                                                 (size_t)metadata.unpack_size,
+                                                                 &extract_buffer_len);
+                    if (unrar_ret != UNRAR_OK) {
+                        cli_dbgmsg("RAR: Error extracting file to memory: %s\n", metadata.filename);
                     } else {
-                        /* Delete the tempfile if not --leave-temps */
-                        if (!ctx->engine->keeptmp) {
-                            if (cli_unlink(extract_fullpath)) {
-                                cli_dbgmsg("RAR: Failed to unlink the extracted file: %s\n", extract_fullpath);
-                            }
-                        }
-
+                        cli_dbgmsg("RAR: Memory extraction complete (%zu bytes). Scanning now...\n", extract_buffer_len);
+                        status = cli_magic_scan_buff(extract_buffer, extract_buffer_len, ctx,
+                                                     filename_base, LAYER_ATTRIBUTES_NONE);
                         if (status != CL_SUCCESS) {
-                            // Bail out if "virus" and also if exceeded scan maximums, etc.
                             goto done;
                         }
                     }
-                }
 
-                /* Free up that the filepath */
-                if (NULL != extract_fullpath) {
-                    free(extract_fullpath);
-                    extract_fullpath = NULL;
+                    free(extract_buffer);
+                    extract_buffer = NULL;
+                } else {
+                    if (!(ctx->engine->keeptmp) ||
+                        (NULL == filename_base)) {
+                        extract_fullpath = cli_gentemp(ctx->this_layer_tmpdir);
+                    } else {
+                        extract_fullpath = cli_gentemp_with_prefix(ctx->this_layer_tmpdir, filename_base);
+                    }
+                    if (NULL == extract_fullpath) {
+                        cli_dbgmsg("RAR: Memory error allocating filename for extracted file.");
+                        status = CL_EMEM;
+                        break;
+                    }
+                    cli_dbgmsg("RAR: Extracting file: %s to %s\n", metadata.filename, extract_fullpath);
+
+                    unrar_ret = cli_unrar_extract_file(hArchive, extract_fullpath, NULL);
+                    if (unrar_ret != UNRAR_OK) {
+                        /*
+                         * Some other error extracting the file
+                         */
+                        cli_dbgmsg("RAR: Error extracting file: %s\n", metadata.filename);
+
+                        /* TODO:
+                         *   may need to manually skip the file depending on what, specifically, cli_unrar_extract_file() returned.
+                         */
+                    } else {
+                        /*
+                         * File should be extracted...
+                         * ... make sure we have read permissions to the file.
+                         */
+                        if (0 != access(extract_fullpath, R_OK)) {
+                            cli_dbgmsg("RAR: Don't have read permissions, attempting to change file permissions to make it readable..\n");
+#ifdef _WIN32
+                            if (0 != _chmod(extract_fullpath, _S_IREAD)) {
+#else
+                            if (0 != chmod(extract_fullpath, S_IRUSR | S_IRGRP)) {
+#endif
+                                cli_dbgmsg("RAR: Failed to change permission bits so the extracted file is readable..\n");
+                            }
+                        }
+
+                        /*
+                         * ... scan the extracted file.
+                         */
+                        cli_dbgmsg("RAR: Extraction complete.  Scanning now...\n");
+                        status = cli_magic_scan_file(extract_fullpath, ctx, filename_base, LAYER_ATTRIBUTES_NONE);
+                        if (status == CL_EOPEN) {
+                            cli_dbgmsg("RAR: File not found, Extraction failed!\n");
+
+                            // Don't abort the scan just because one file failed to extract.
+                            status = CL_SUCCESS;
+                        } else {
+                            /* Delete the tempfile if not --leave-temps */
+                            if (!ctx->engine->keeptmp) {
+                                if (cli_unlink(extract_fullpath)) {
+                                    cli_dbgmsg("RAR: Failed to unlink the extracted file: %s\n", extract_fullpath);
+                                }
+                            }
+
+                            if (status != CL_SUCCESS) {
+                                // Bail out if "virus" and also if exceeded scan maximums, etc.
+                                goto done;
+                            }
+                        }
+                    }
+
+                    /* Free up that the filepath */
+                    if (NULL != extract_fullpath) {
+                        free(extract_fullpath);
+                        extract_fullpath = NULL;
+                    }
                 }
             }
         }
@@ -503,6 +536,11 @@ done:
     if (NULL != extract_fullpath) {
         free(extract_fullpath);
         extract_fullpath = NULL;
+    }
+
+    if (NULL != extract_buffer) {
+        free(extract_buffer);
+        extract_buffer = NULL;
     }
 
     if ((CL_VIRUS != status) && (nEncryptedFilesFound > 0)) {

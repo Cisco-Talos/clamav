@@ -87,6 +87,7 @@
 cl_unrar_error_t (*cli_unrar_open)(const char *filename, void **hArchive, char **comment, uint32_t *comment_size, uint8_t debug_flag);
 cl_unrar_error_t (*cli_unrar_peek_file_header)(void *hArchive, unrar_metadata_t *file_metadata);
 cl_unrar_error_t (*cli_unrar_extract_file)(void *hArchive, const char *destPath, char *outputBuffer);
+cl_unrar_error_t (*cli_unrar_extract_file_to_buffer)(void *hArchive, uint8_t *buffer, size_t capacity, size_t *written);
 cl_unrar_error_t (*cli_unrar_skip_file)(void *hArchive);
 void (*cli_unrar_close)(void *hArchive);
 
@@ -315,11 +316,12 @@ static void rarload(void)
     if (have_rar) return;
 
 #ifdef UNRAR_LINKED
-    cli_unrar_open             = unrar_open;
-    cli_unrar_peek_file_header = unrar_peek_file_header;
-    cli_unrar_extract_file     = unrar_extract_file;
-    cli_unrar_skip_file        = unrar_skip_file;
-    cli_unrar_close            = unrar_close;
+    cli_unrar_open                   = unrar_open;
+    cli_unrar_peek_file_header       = unrar_peek_file_header;
+    cli_unrar_extract_file           = unrar_extract_file;
+    cli_unrar_extract_file_to_buffer = unrar_extract_file_to_buffer;
+    cli_unrar_skip_file              = unrar_skip_file;
+    cli_unrar_close                  = unrar_close;
 #else
     rhandle = load_module("libclamunrar_iface", "unrar");
     if (NULL == rhandle)
@@ -328,6 +330,7 @@ static void rarload(void)
     if ((NULL == (cli_unrar_open = (cl_unrar_error_t (*)(const char *, void **, char **, uint32_t *, uint8_t))get_module_function(rhandle, "libclamunrar_iface_LTX_unrar_open"))) ||
         (NULL == (cli_unrar_peek_file_header = (cl_unrar_error_t (*)(void *, unrar_metadata_t *))get_module_function(rhandle, "libclamunrar_iface_LTX_unrar_peek_file_header"))) ||
         (NULL == (cli_unrar_extract_file = (cl_unrar_error_t (*)(void *, const char *, char *))get_module_function(rhandle, "libclamunrar_iface_LTX_unrar_extract_file"))) ||
+        (NULL == (cli_unrar_extract_file_to_buffer = (cl_unrar_error_t (*)(void *, uint8_t *, size_t, size_t *))get_module_function(rhandle, "libclamunrar_iface_LTX_unrar_extract_file_to_buffer"))) ||
         (NULL == (cli_unrar_skip_file = (cl_unrar_error_t (*)(void *))get_module_function(rhandle, "libclamunrar_iface_LTX_unrar_skip_file"))) ||
         (NULL == (cli_unrar_close = (void (*)(void *))get_module_function(rhandle, "libclamunrar_iface_LTX_unrar_close")))) {
 
