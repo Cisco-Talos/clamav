@@ -3622,6 +3622,60 @@ static inline void perf_done(cli_ctx *ctx)
  *                      will output HTML or MAIL types after performing HTML/MAIL scans
  * @return cl_error_t
  */
+
+/*
+ * Content heuristic: decide whether a TEXT_ASCII file found to contain an HTML
+ * file-type signature by scanraw() should be reclassified as HTML.
+ *
+ * cli_determine_fmap_type() already verified the first CL_FILE_MBUFF_SIZE (1024)
+ * bytes contain no HTML signature.  We search bytes 1024 through 64 KB for
+ * document-level HTML markers that indicate a genuine HTML document whose
+ * preamble pushed the first recognisable marker just past the initial
+ * detection window.  Incidental HTML fragments in large text files lack
+ * such markers within this bounded region.
+ */
+static bool scanraw_html_reclassify_check(cli_ctx *ctx)
+{
+    static const struct {
+        const char *tag;
+        size_t len;
+    } html_doc_markers[] = {
+        {"<!DOCTYPE", 9},
+        {"<!doctype", 9},
+        {"<html",     5},
+        {"<HTML",     5},
+        {"<head",     5},
+        {"<HEAD",     5},
+        {"<body",     5},
+        {"<BODY",     5},
+    };
+    size_t search_start = CL_FILE_MBUFF_SIZE; /* skip bytes already checked */
+    size_t search_end   = MIN(ctx->fmap->len, 65536);
+    size_t search_len;
+    const unsigned char *buf = NULL;
+    size_t mi;
+
+    if (search_end <= search_start)
+        return false;
+
+    search_len = search_end - search_start;
+    buf = fmap_need_off_once(ctx->fmap, search_start, search_len);
+    if (!buf)
+        return false;
+
+    for (mi = 0; mi < sizeof(html_doc_markers) / sizeof(html_doc_markers[0]); mi++) {
+        if (search_len >= html_doc_markers[mi].len &&
+            NULL != cli_memstr((const char *)buf, search_len,
+                               html_doc_markers[mi].tag, html_doc_markers[mi].len)) {
+            cli_dbgmsg("scanraw: HTML document marker '%s' in TEXT_ASCII file, reclassifying as HTML\n", html_doc_markers[mi].tag);
+            return true;
+        }
+    }
+
+    cli_dbgmsg("scanraw: HTML in TEXT_ASCII file but no document marker in first 64 KB, skipping reclassification\n");
+    return false;
+}
+
 static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_file_t *dettype)
 {
     cl_error_t ret = CL_SUCCESS, nret = CL_SUCCESS;
@@ -4150,8 +4204,8 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
                         /* bb#11196 - autoit script file misclassified as HTML */
                         ret = CL_TYPE_TEXT_ASCII;
                     } else if (SCAN_PARSE_HTML &&
-                               (type == CL_TYPE_TEXT_ASCII ||
-                                type == CL_TYPE_GIF) && /* Scan GIFs for embedded HTML/Javascript */
+                               (type == CL_TYPE_GIF || /* Scan GIFs for embedded HTML/Javascript */
+                                (type == CL_TYPE_TEXT_ASCII && scanraw_html_reclassify_check(ctx))) &&
                                (DCONF_DOC & DOC_CONF_HTML)) {
                         *dettype = CL_TYPE_HTML;
                         if (CL_SUCCESS != (ret = cli_recursion_stack_change_type(ctx, CL_TYPE_HTML, true))) {
