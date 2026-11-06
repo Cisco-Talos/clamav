@@ -19,11 +19,10 @@ class TC(testcase.TestCase):
         super(TC, cls).setUpClass()
         cls.archive = (
             TC.path_source
-            / 'libclamav_rust'
-            / 'vendor'
-            / 'sevenz-rust2'
-            / 'tests'
-            / 'resources'
+            / 'unit_tests'
+            / 'input'
+            / 'clamav_hdb_scanfiles'
+            / 'sevenz'
             / 'bzip2_file.7z'
         )
         cls.limit_archive = cls.archive.with_name('bzip2_limit.7z')
@@ -32,16 +31,20 @@ class TC(testcase.TestCase):
         cls.database = TC.path_tmp / 'sevenz-bzip2.hdb'
         payload = b'world\n'
         cls.large_payload = b'A' * (1024 * 1024)
+        cls.nested_payload = b'malware after malformed nested archive\n'
         cls.database.write_text(
             '{}:{}:SEVENZ_BZIP2_TEST\n'
             '{}:{}:SEVENZ_ACTUAL_SIZE_TEST\n'
-            '{}:{}:SEVENZ_LATER_ENTRY_TEST\n'.format(
+            '{}:{}:SEVENZ_LATER_ENTRY_TEST\n'
+            '{}:{}:SEVENZ_NESTED_LATER_TEST\n'.format(
                 hashlib.md5(payload).hexdigest(),
                 len(payload),
                 hashlib.md5(cls.large_payload).hexdigest(),
                 len(cls.large_payload),
                 '05195b31a821a97eaa6e825627b2be8a',
                 2654,
+                hashlib.md5(cls.nested_payload).hexdigest(),
+                len(cls.nested_payload),
             )
         )
         cls.clean_database = TC.path_tmp / 'sevenz-clean.hdb'
@@ -76,6 +79,22 @@ class TC(testcase.TestCase):
         bad_start_crc = bytearray(cls.archive.read_bytes())
         bad_start_crc[8] ^= 0x01
         cls.bad_start_crc_archive.write_bytes(bad_start_crc)
+        cls.nested_malformed_archive = TC.path_tmp / 'sevenz-nested-malformed.7z'
+        cls.nested_malformed_archive.write_bytes(bytes.fromhex(
+            '377abcaf271c0004e45f5f6e4f010000000000002a00000000000000bd94b1cd'
+            '0100b2377abcaf271c0004f0fa2d8273000000000000002000000000000000ec'
+            '1af054010005776f726c640a000100036261720a000000813307ae3198e2961f'
+            'c856090ce9dece48d913fe963363706b36063c6764b406336160b9abb96f7891'
+            '4205b22decfd5030293c90359f1900926f438a91b245f571bf0db36856af5268'
+            '2e64985b078102663c6fa3f26950b89f8804df00000017061201096100070b01'
+            '000123030101055d001000000c760a01ec5b2f340000000100266d616c776172'
+            '65206166746572206d616c666f726d6564206e65737465642061726368697665'
+            '0a000000813307ae319edc7fc46186abdbc7b9a1ebdbfdcbbc5c33d31a9843f'
+            '0091d5389aedfe6c151a38fc60f126a273286a6c3ba20bda31162b7d0234f9c'
+            'bd1a9c830915f6a45636c48ffe69c64f65cc4245f5de07579e13b361d7ddf95'
+            '54032349c4c1a7758aa48af6ab5a40b00170680e201096d0a0181956d070007'
+            '0b01000123030101055d000080000c808500080a01e8fe455e0000'
+        ))
         cls.malformed_database = TC.path_tmp / 'sevenz-malformed.hdb'
         cls.malformed_database.write_text(
             '{}:{}:SEVENZ_MALFORMED_RAW_TEST\n'.format(
@@ -237,8 +256,8 @@ class TC(testcase.TestCase):
         assert output.ec == 0
         assert not [path for path in tempdir.rglob('*') if path.is_file()]
 
-    def test_invalid_archives_return_format_error(self):
-        self.step_name('Test malformed, CRC, truncation, and memory errors are not clean')
+    def test_invalid_archives_preserve_clean_result(self):
+        self.step_name('Test malformed, CRC, truncation, and memory errors remain clean')
         cases = (
             TC.bad_start_crc_archive,
             TC.bad_next_header_crc_archive,
@@ -248,7 +267,7 @@ class TC(testcase.TestCase):
         )
         for archive in cases:
             output = self.scan(archive=archive, database=TC.clean_database)
-            assert output.ec == 2, '{} returned {}:\n{}'.format(
+            assert output.ec == 0, '{} returned {}:\n{}'.format(
                 archive.name,
                 output.ec,
                 output.out,
@@ -263,8 +282,8 @@ class TC(testcase.TestCase):
 
         assert output.ec == 0
 
-    def test_detection_takes_precedence_over_format_error(self):
-        self.step_name('Test raw detection takes precedence over a 7z format error')
+    def test_malformed_archive_raw_detection_still_runs(self):
+        self.step_name('Test raw detection still runs for a malformed 7z archive')
         output = self.scan(
             archive=TC.bad_start_crc_archive,
             database=TC.malformed_database,
@@ -274,6 +293,16 @@ class TC(testcase.TestCase):
         self.verify_output(
             output.out,
             expected=['SEVENZ_MALFORMED_RAW_TEST.UNOFFICIAL FOUND'],
+        )
+
+    def test_malformed_nested_archive_does_not_hide_later_entry(self):
+        self.step_name('Test a malformed nested 7z does not hide a later entry')
+        output = self.scan(archive=TC.nested_malformed_archive)
+
+        assert output.ec == 1
+        self.verify_output(
+            output.out,
+            expected=['SEVENZ_NESTED_LATER_TEST.UNOFFICIAL FOUND'],
         )
 
     def test_bzip2_member_limit_uses_extracted_bytes(self):

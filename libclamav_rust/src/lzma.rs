@@ -217,6 +217,14 @@ unsafe fn rust_lzma_init_impl(
     RESULT_OK
 }
 
+/// Initialize the incremental LZMA decoder and consume any available header bytes.
+///
+/// # Safety
+///
+/// If non-null, `state` must point to a writable state pointer. A non-null value
+/// in that pointer must be a live state created by this API. `next_in` and
+/// `avail_in` must point to writable values; when `*avail_in` is nonzero,
+/// `*next_in` must point to that many readable bytes.
 #[no_mangle]
 pub unsafe extern "C" fn rust_lzma_init(
     state: *mut *mut c_void,
@@ -318,6 +326,17 @@ unsafe fn rust_lzma_decode_impl(
     }
 }
 
+/// Decode available input into the caller-provided output buffer.
+///
+/// # Safety
+///
+/// If non-null, `state` must point to a writable state pointer, whose non-null
+/// value is a live state created by this API. `next_in`, `avail_in`, `next_out`,
+/// and `avail_out` must point to writable values. Nonzero input and output
+/// lengths require valid readable and writable buffers of those lengths. The
+/// input and output buffers must not overlap each other or the decoder state,
+/// and the state and buffers must not be accessed concurrently for the duration
+/// of this call.
 #[no_mangle]
 pub unsafe extern "C" fn rust_lzma_decode(
     state: *mut *mut c_void,
@@ -340,6 +359,12 @@ unsafe fn rust_lzma_shutdown_impl(state: *mut *mut c_void) {
     unsafe { invalidate_state(state) };
 }
 
+/// Release the incremental LZMA decoder state, if one exists.
+///
+/// # Safety
+///
+/// If non-null, `state` must point to a writable state pointer. Its value must
+/// be null or a live state created by this API that has not already been freed.
 #[no_mangle]
 pub unsafe extern "C" fn rust_lzma_shutdown(state: *mut *mut c_void) {
     unsafe {

@@ -343,7 +343,7 @@ unsafe fn scan_impl(ctx: *mut cli_ctx, offset: usize) -> cl_error_t {
         }
     }
 
-    let extraction = archive.for_each_entries_with_decision(|entry, reader| {
+    let extraction = archive.for_each_entries_with_decision_allowing_surplus(|entry, reader| {
         if !entry.has_stream || entry.is_directory || entry.is_anti_item {
             return Ok(EntryDecision::Continue);
         }
@@ -390,6 +390,8 @@ unsafe fn scan_impl(ctx: *mut cli_ctx, offset: usize) -> cl_error_t {
             if limit != cl_error_t_CL_SUCCESS {
                 scan_result =
                     merge_scan_result(scan_result, unsafe { record_limit_result(ctx, limit) });
+                // A size limit applies to the current compression block. Skip
+                // its remaining members, but let independent later blocks scan.
                 return Ok(if limit == cl_error_t_CL_EMAXSIZE {
                     EntryDecision::SkipBlock
                 } else {
@@ -414,6 +416,8 @@ unsafe fn scan_impl(ctx: *mut cli_ctx, offset: usize) -> cl_error_t {
             }
         }
         if let Some(temp) = temp {
+            // Consume the temp file so each entry is scanned once; explicit
+            // cleanup also lets us report unlink failures to the caller.
             let entry_result = unsafe { temp.scan(ctx, &name) };
             scan_result = merge_scan_result(scan_result, entry_result);
             if entry_result != cl_error_t_CL_SUCCESS {
@@ -446,6 +450,11 @@ unsafe fn scan_impl(ctx: *mut cli_ctx, offset: usize) -> cl_error_t {
 #[no_mangle]
 pub unsafe extern "C" fn scan_7z(ctx: *mut cli_ctx, offset: usize) -> cl_error_t {
     match panic::catch_unwind(AssertUnwindSafe(|| unsafe { scan_impl(ctx, offset) })) {
+        // Malformed archives are logged by scan_impl. Keep the established
+        // archive-scanner policy of treating them as clean here so a malformed
+        // nested archive cannot prevent its parent's later entries from being
+        // scanned.
+        Ok(result) if result == cl_error_t_CL_EFORMAT => cl_error_t_CL_SUCCESS,
         Ok(result) => result,
         Err(payload) => {
             let dropping = panic::catch_unwind(AssertUnwindSafe(|| drop(payload)));
@@ -457,7 +466,7 @@ pub unsafe extern "C" fn scan_7z(ctx: *mut cli_ctx, offset: usize) -> cl_error_t
             if let Err(payload) = logging {
                 mem::forget(payload);
             }
-            cl_error_t_CL_EFORMAT
+            cl_error_t_CL_ERROR
         }
     }
 }
