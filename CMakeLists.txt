@@ -1013,9 +1013,6 @@ if(APPLE)
 endif()
 
 include(CheckFmapFeatures)
-if(WIN32)
-    set(USE_MPOOL 1)
-endif()
 
 add_definitions(-DHAVE_CONFIG_H)
 configure_file(clamav-config.h.cmake.in clamav-config.h)
