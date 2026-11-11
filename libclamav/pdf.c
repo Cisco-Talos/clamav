@@ -2163,12 +2163,79 @@ static void pdf_parse_trailer(struct pdf_struct *pdf, const char *s, long length
     }
 }
 
+/*
+ * Find the end of a dictionary block.
+ *
+ * `p` points just past the opening "<<" and `end` is one past the last byte
+ * that may belong to the object. Returns a pointer to the first '>' of the
+ * ">>" that closes the dictionary, or NULL if it is not closed before `end`.
+ *
+ * Literal strings, hex strings and comments are skipped, so their delimiters
+ * are not mistaken for dictionary delimiters. Before this, the '>' that closes
+ * a hex string inside a nested dictionary (e.g. "/Params << /CheckSum <..> >>",
+ * as written by qpdf and pikepdf for embedded files) made the nested "<<" go
+ * uncounted, so the outer dictionary ended early and /Filter was never read.
+ * See https://github.com/Cisco-Talos/clamav/issues/1773
+ */
+static const char *pdf_find_dict_end(const char *p, const char *end)
+{
+    unsigned depth = 1;
+
+    while (p < end) {
+        if (*p == '(') {
+            /* literal string: balanced parentheses, '\' escapes one byte */
+            unsigned paren = 1;
+            for (p++; p < end && paren; p++) {
+                if (*p == '\\') {
+                    p++;
+                    continue;
+                }
+                if (*p == '(')
+                    paren++;
+                else if (*p == ')')
+                    paren--;
+            }
+            continue;
+        }
+        if (*p == '%') {
+            /* comment: runs to the end of the line */
+            while (p < end && *p != '\r' && *p != '\n')
+                p++;
+            continue;
+        }
+        if (*p == '<') {
+            const char *gt;
+            if (p + 1 < end && p[1] == '<') {
+                /* nested dictionary */
+                depth++;
+                p += 2;
+                continue;
+            }
+            /* hex string: runs to the next '>' */
+            gt = memchr(p + 1, '>', end - (p + 1));
+            if (NULL == gt)
+                return NULL;
+            p = gt + 1;
+            continue;
+        }
+        if (*p == '>' && p + 1 < end && p[1] == '>') {
+            if (--depth == 0)
+                return p;
+            p += 2;
+            continue;
+        }
+        p++;
+    }
+
+    return NULL;
+}
+
 void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
 {
     /* enough to hold common pdf names, we don't need all the names */
     char pdfname[64] = {0};
     const char *q2, *q3;
-    const char *nextobj = NULL, *nextopen = NULL, *nextclose = NULL;
+    const char *nextobj = NULL, *nextclose = NULL;
     const char *q    = NULL;
     const char *dict = NULL, *enddict = NULL, *start = NULL;
     off_t dict_length = 0, full_dict_length = 0, bytesleft = 0;
@@ -2308,32 +2375,11 @@ void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
         return;
     }
 
-    /* while still looking ... */
-    while ((q < enddict - 1) && (blockopens > 0)) {
-        /* find next close */
-        nextclose = memchr(q, '>', enddict - q);
-        if (nextclose && (nextclose[1] == '>')) {
-            /* check for nested open */
-            while ((nextopen = memchr(q - 1, '<', nextclose - q + 1)) != NULL) {
-                if (nextopen[1] == '<') {
-                    /* nested open */
-                    blockopens++;
-                    q = nextopen + 2;
-                } else {
-                    /* unmatched < before next close */
-                    q = nextopen + 2;
-                }
-            }
-            /* close block */
-            blockopens--;
-            q = nextclose + 2;
-        } else if (nextclose) {
-            /* found one > but not two */
-            q = nextclose + 2;
-        } else {
-            /* next closing not found */
-            break;
-        }
+    /* find the ">>" that closes this dictionary (see pdf_find_dict_end()) */
+    nextclose = pdf_find_dict_end(q, enddict + 1);
+    if (NULL != nextclose) {
+        blockopens = 0;
+        q          = nextclose + 2;
     }
 
     /* Was end of dictionary found? */
