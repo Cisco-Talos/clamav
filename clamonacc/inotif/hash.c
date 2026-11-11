@@ -694,11 +694,10 @@ int onas_ht_add_hierarchy(struct onas_ht *ht, const char *pathname)
 {
     if (!ht || !pathname) return CL_ENULLARG;
 
-    int ret           = 0;
-    FTS *ftsp         = NULL;
-    int ftspopts      = FTS_PHYSICAL | FTS_XDEV;
-    FTSENT *curr      = NULL;
-    FTSENT *childlist = NULL;
+    int ret      = 0;
+    FTS *ftsp    = NULL;
+    int ftspopts = FTS_PHYSICAL | FTS_XDEV;
+    FTSENT *curr = NULL;
 
     size_t len = strlen(pathname);
     char *prnt = onas_get_parent(pathname, len);
@@ -738,17 +737,15 @@ int onas_ht_add_hierarchy(struct onas_ht *ht, const char *pathname)
                 continue;
         }
 
-        if ((childlist = _priv_fts_children(ftsp, 0))) {
-            do {
-                if (childlist->fts_info == FTS_D) {
-                    if (CL_EMEM == onas_add_hashnode_child(hnode, childlist->fts_name)) {
-
-                        ret = CL_EMEM;
-                        onas_free_hashnode(hnode);
-                        goto out;
-                    }
-                }
-            } while ((childlist = childlist->fts_link));
+        /* Link directories when fts_read identifies them, rather than relying
+         * on fts_children to return FTS_D. Some implementations return
+         * FTS_NSOK for children until they are visited by fts_read. */
+        if (curr->fts_level > 0) {
+            ret = onas_add_hashnode_child(curr->fts_parent->fts_pointer, curr->fts_name);
+            if (ret != CL_SUCCESS) {
+                onas_free_hashnode(hnode);
+                goto out;
+            }
         }
 
         struct onas_element *elem = onas_element_init(hnode, hnode->pathname, hnode->pathlen);
@@ -765,6 +762,8 @@ int onas_ht_add_hierarchy(struct onas_ht *ht, const char *pathname)
             onas_free_element(elem);
             goto out;
         }
+
+        curr->fts_pointer = hnode;
     }
 
 out:

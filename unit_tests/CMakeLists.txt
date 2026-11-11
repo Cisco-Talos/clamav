@@ -588,3 +588,22 @@ if(WIN32)
         set_directory_properties(PROPERTIES TEST_INCLUDE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/Run-GetLibs.ctest)
     endif()
 endif()
+
+# DDD directory graph regression test; no fanotify privileges are required.
+if(ENABLE_CLAMONACC AND HAVE_SYS_FANOTIFY_H)
+    add_executable(check_clamonacc_hash
+        check_clamonacc_hash.c
+        ../clamonacc/inotif/hash.c)
+    if(NOT HAVE_SYSTEM_LFS_FTS)
+        target_sources(check_clamonacc_hash PRIVATE ../clamonacc/misc/fts.c)
+    endif()
+    target_include_directories(check_clamonacc_hash PRIVATE
+        ${PROJECT_SOURCE_DIR}
+        ${PROJECT_SOURCE_DIR}/libclamav
+        ${PROJECT_SOURCE_DIR}/clamonacc
+        ${PROJECT_SOURCE_DIR}/libclamunrar_iface
+        ${PROJECT_SOURCE_DIR}/clamd
+        ${CMAKE_BINARY_DIR})
+    target_link_libraries(check_clamonacc_hash PRIVATE ClamAV::common)
+    add_test(NAME clamonacc_hash COMMAND check_clamonacc_hash)
+endif()
