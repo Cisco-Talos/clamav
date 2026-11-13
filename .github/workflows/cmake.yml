@@ -79,7 +79,7 @@ jobs:
         run: brew install bison flex pipx
 
       - name: Install Dependencies
-        run: brew install bzip2 check curl json-c libxml2 ncurses openssl@3 pcre2 zlib
+        run: brew install bzip2 check curl json-c libxml2 ncurses openssl@4 pcre2 zlib
 
       - name: Install pytest for easier to read test results
         run: pipx install pytest
@@ -101,9 +101,7 @@ jobs:
         # The CMake binaries on the Github Actions machines are (as of this writing) 3.12
         run:
           cmake ${{runner.workspace}}/clamav -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }}
-          -DOPENSSL_ROOT_DIR=/opt/homebrew/include/
-          -DOPENSSL_CRYPTO_LIBRARY=/opt/homebrew/lib/libcrypto.3.dylib
-          -DOPENSSL_SSL_LIBRARY=/opt/homebrew/lib/libssl.3.dylib
+          -DOPENSSL_ROOT_DIR="$(brew --prefix openssl@4)"
           -DENABLE_STATIC_LIB=ON
           -DENABLE_EXAMPLES=ON
 
