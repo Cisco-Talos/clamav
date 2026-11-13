@@ -131,7 +131,7 @@ jobs:
         run: sudo apt-get install -y bison flex valgrind pipx
 
       - name: Install Dependencies
-        run: sudo apt-get install -y check libbz2-dev libcurl4-openssl-dev libjson-c-dev libmilter-dev libncurses5-dev libpcre3-dev libssl-dev libxml2-dev zlib1g-dev
+        run: sudo apt-get install -y check libbz2-dev libcurl4-openssl-dev libjson-c-dev libmilter-dev libncurses-dev libpcre2-dev libssl-dev libxml2-dev zlib1g-dev
 
       - name: Install pytest for easier to read test results
         run: pipx install pytest
