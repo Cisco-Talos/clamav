@@ -58,6 +58,7 @@ include = [
   "evidence::IndicatorType",
   "scanners::scan_onenote",
   "scanners::cli_scanalz",
+  "rar::cli_scanrar_rust",
   "util::glob_rm",
   "util::mkdir_w32",
 ]
