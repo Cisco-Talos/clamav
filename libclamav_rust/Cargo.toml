@@ -2,6 +2,7 @@
 authors = ["The ClamAV Team <clamav-bugs@external.cisco.com>"]
 edition = "2021"
 name = "clamav_rust"
+rust-version = "1.89"
 version = "0.0.1"
 
 [dependencies]
@@ -32,6 +33,7 @@ openssl = "0.10.70"
 glob = "0.3.1"
 indexmap = "2.10.0"
 ruzstd = "0.8.3"
+rars = { git = "https://github.com/bitplane/rars", rev = "e01b925aaf49a40995e1cae23819cb60383121c3", default-features = false }
 
 [features]
 not_ready = []
