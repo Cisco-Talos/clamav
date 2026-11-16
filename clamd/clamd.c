@@ -115,8 +115,6 @@ static void help(void)
     printf("\n");
     printf("Environment Variables:\n");
     printf("\n");
-    printf("    LD_LIBRARY_PATH                         May be used on startup to find the libclamunrar_iface\n");
-    printf("                                            shared library module to enable RAR archive support.\n");
     printf("    CVD_CERTS_DIR                           Specify a directory containing the root CA cert needed\n");
     printf("                                            to verify detached CVD digital signatures.\n");
     printf("                                            If not provided, then clamd will look in the default directory.\n");

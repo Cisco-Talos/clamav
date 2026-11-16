@@ -219,6 +219,11 @@ git = \"https://github.com/Cisco-Talos/clamav-signature-util.git\"
 tag = \"1.2.4\"
 replace-with = \"vendored-sources\"
 
+[source.\"git+https://github.com/bitplane/rars?rev=e01b925aaf49a40995e1cae23819cb60383121c3\"]
+git = \"https://github.com/bitplane/rars\"
+rev = \"e01b925aaf49a40995e1cae23819cb60383121c3\"
+replace-with = \"vendored-sources\"
+
 [source.vendored-sources]
 directory = \".cargo/vendor\"
 "
@@ -411,7 +416,7 @@ find_rust_program(rustfmt)
 find_rust_program(bindgen)
 
 if(RUSTC_MINIMUM_REQUIRED AND rustc_VERSION VERSION_LESS RUSTC_MINIMUM_REQUIRED)
-    message(FATAL_ERROR "Your Rust toolchain is to old to build this project:
+    message(FATAL_ERROR "Your Rust toolchain is too old to build this project:
     ${rustc_VERSION} < ${RUSTC_MINIMUM_REQUIRED}")
 endif()
 

@@ -128,13 +128,7 @@ are licensed differently than ClamAV. These include:
 - getopt.c: MIT license
 - Curl: license inspired by MIT/X, but not identical
 - libmspack: LGPL license
-- UnRAR (libclamunrar): a non-free/restricted open source license
-  - Note: The UnRAR license is incompatible with GPLv2 because it contains a
-    clause that prohibits reverse engineering a RAR compression algorithm from
-    the UnRAR decompression code.
-    For this reason, libclamunrar/libclamunrar_iface is not linked at all with
-    libclamav. It is instead loaded at run-time. If it fails to load, ClamAV
-    will continue running without RAR support.
+- rars: Apache License 2.0
 
 See the `COPYING` directory for a copy of the 3rd party project licenses.
 

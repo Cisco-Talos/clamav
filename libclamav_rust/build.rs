@@ -26,8 +26,6 @@ const LIB_ENV_LINK: &[&str] = &[
     "LIBCURL",
     "LIBJSONC",
     "LIBCLAMMSPACK",
-    "LIBCLAMUNRARIFACE",
-    "LIBCLAMUNRAR",
     "LIBICONV",
 ];
 
@@ -82,11 +80,7 @@ const BINDGEN_HEADERS: &[&str] = &[
 ];
 
 // Find the required headers in these directories:
-const BINDGEN_INCLUDE_PATHS: &[&str] = &[
-    "-I../libclamav",
-    "-I../libclamunrar_iface",
-    "-I../libclammspack",
-];
+const BINDGEN_INCLUDE_PATHS: &[&str] = &["-I../libclamav", "-I../libclammspack"];
 
 // Write the bindings to this file:
 const BINDGEN_OUTPUT_FILE: &str = "src/sys.rs";

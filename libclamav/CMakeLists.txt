@@ -5,7 +5,6 @@ include_directories(
     ${OPENSSL_INCLUDE_DIR}
     ${ZLIB_INCLUDE_DIR}
     ${CMAKE_CURRENT_BINARY_DIR}
-    $<TARGET_PROPERTY:ClamAV::libunrar_iface_iface,INTERFACE_INCLUDE_DIRECTORIES>
     ${CMAKE_CURRENT_SOURCE_DIR}/..
 )
 
@@ -436,7 +435,6 @@ if(ENABLE_SHARED_LIB)
             bytecode_runtime
             ${LIBMSPACK}
             ClamAV::libclamav_rust
-            ClamAV::libunrar_iface_iface
             OpenSSL::SSL
             OpenSSL::Crypto
             ZLIB::ZLIB
@@ -456,7 +454,6 @@ if(ENABLE_SHARED_LIB)
             PUBLIC
                 Threads::Threads
                 Iconv::Iconv
-                ${CMAKE_DL_LIBS}
                 m )
     endif()
 
@@ -568,10 +565,6 @@ if(ENABLE_STATIC_LIB)
             PCRE2::pcre2
             LibXml2::LibXml2
             JSONC::jsonc )
-        if (ENABLE_UNRAR)
-            target_link_libraries( clamav_static PUBLIC ClamAV::libunrar_iface_static ClamAV::libunrar_iface_iface)
-        endif()
-
     if (WIN32)
         target_link_libraries( clamav_static
             PUBLIC
@@ -583,7 +576,6 @@ if(ENABLE_STATIC_LIB)
             PUBLIC
                 Threads::Threads
                 Iconv::Iconv
-                ${CMAKE_DL_LIBS}
                 m )
     endif()
 

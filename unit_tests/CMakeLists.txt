@@ -16,11 +16,6 @@ if(WIN32)
 endif()
 
 
-if (ENABLE_UNRAR)
-    add_definitions(-DHAVE_UNRAR)
-endif()
-
-
 add_definitions(-DTHIS_IS_LIBCLAMAV)
 
 #
@@ -49,17 +44,6 @@ if(ENABLE_APP)
         PRIVATE
             ClamAV::libclamav
             libcheck::check)
-    if(ENABLE_SHARED_LIB)
-        target_link_libraries(check_fpu_endian
-            PRIVATE
-                ClamAV::libunrar_iface_iface)
-    else()
-        if (ENABLE_UNRAR)
-            target_link_libraries(check_fpu_endian
-                PRIVATE
-                    ClamAV::libunrar_iface_static)
-            endif()
-    endif()
     if(LLVM_FOUND)
         target_link_directories( check_fpu_endian PUBLIC ${LLVM_LIBRARY_DIRS} )
         target_link_libraries( check_fpu_endian PUBLIC ${LLVM_LIBRARIES} )
@@ -79,17 +63,6 @@ if(ENABLE_APP)
             ClamAV::libclamav
             ClamAV::common
             libcheck::check)
-    if(ENABLE_SHARED_LIB)
-        target_link_libraries(check_clamd
-            PRIVATE
-                ClamAV::libunrar_iface_iface)
-    else()
-        if (ENABLE_UNRAR)
-            target_link_libraries(check_clamd
-                PRIVATE
-                    ClamAV::libunrar_iface_static)
-        endif()
-    endif()
     if(LLVM_FOUND)
         target_link_directories( check_clamd PUBLIC ${LLVM_LIBRARY_DIRS} )
         target_link_libraries( check_clamd PUBLIC ${LLVM_LIBRARIES} )
@@ -119,20 +92,6 @@ target_link_libraries(check_clamav
         ClamAV::libclamav
         ClamAV::common
         libcheck::check)
-if (ENABLE_UNRAR)
-    if(ENABLE_SHARED_LIB)
-        target_link_libraries(check_clamav
-            PRIVATE
-                ClamAV::libunrar_iface_iface)
-    else()
-        if (ENABLE_UNRAR)
-            target_link_libraries(check_clamav
-                PRIVATE
-                    ClamAV::libunrar_iface_static)
-        endif()
-    endif()
-endif()
-
 if(LLVM_FOUND)
     target_link_directories( check_clamav PUBLIC ${LLVM_LIBRARY_DIRS} )
     target_link_libraries( check_clamav PUBLIC ${LLVM_LIBRARIES} )
@@ -179,10 +138,6 @@ if(WIN32)
 
     if(ENABLE_STATIC_LIB)
         file(TO_NATIVE_PATH $<TARGET_FILE:clamav_static>                        LIBCLAMAV)
-        if (ENABLE_UNRAR)
-            file(TO_NATIVE_PATH $<TARGET_FILE:clamunrar_iface_static>           LIBCLAMUNRARIFACE)
-            file(TO_NATIVE_PATH $<TARGET_FILE:clamunrar_static>                 LIBCLAMUNRAR)
-        endif()
     else()
         file(TO_NATIVE_PATH $<TARGET_FILE:clamav>                               LIBCLAMAV)
     endif()
@@ -216,9 +171,6 @@ else()
     if(NOT ENABLE_LIBCLAMAV_ONLY)
         set(LD_LIBRARY_PATH $<TARGET_FILE_DIR:ClamAV::libfreshclam>:${LD_LIBRARY_PATH})
     endif()
-    if (ENABLE_UNRAR)
-        set(LD_LIBRARY_PATH ${LD_LIBRARY_PATH}:$<TARGET_FILE_DIR:ClamAV::libunrar_iface>:$<TARGET_FILE_DIR:ClamAV::libunrar>)
-    endif()
 
     set(SOURCE             ${CMAKE_SOURCE_DIR})
     set(BUILD              ${CMAKE_BINARY_DIR})
@@ -243,10 +195,6 @@ else()
 
     if(ENABLE_STATIC_LIB)
         set(LIBCLAMAV            $<TARGET_FILE:clamav_static>)
-        if (ENABLE_UNRAR)
-            set(LIBCLAMUNRARIFACE    $<TARGET_FILE:clamunrar_iface_static>)
-            set(LIBCLAMUNRAR         $<TARGET_FILE:clamunrar_static>)
-        endif()
     else()
         set(LIBCLAMAV          $<TARGET_FILE:clamav>)
     endif()
@@ -304,8 +252,6 @@ set(ENVIRONMENT
     LIBWIN32COMPAT=${LIBWIN32COMPAT}
     LIBCLAMAV=${LIBCLAMAV}
     LIBCLAMMSPACK=${LIBCLAMMSPACK}
-    LIBCLAMUNRARIFACE=${LIBCLAMUNRARIFACE}
-    LIBCLAMUNRAR=${LIBCLAMUNRAR}
     CHECK_CLAMAV=${CHECK_CLAMAV}
     CHECK_XLM_SCANMAP=${CHECK_XLM_SCANMAP}
     CHECK_CLAMD=${CHECK_CLAMD}
@@ -426,6 +372,20 @@ if(WIN32)
         #
         # Have CMake invoke itself to performa a local install for our test suite.
         #
+        # cmake_install.cmake installs every enabled library variant. Make the
+        # test install wait for each corresponding target so a parallel build
+        # cannot try to copy a static library which is still being linked.
+        set(TEST_INSTALL_LIBRARIES ClamAV::libclamav ${LIBMSPACK})
+        foreach(TEST_INSTALL_LIBRARY
+                ClamAV::libfreshclam
+                ClamAV::libclamav_static
+                ClamAV::libfreshclam_static
+                ClamAV::libmspack_static)
+            if(TARGET ${TEST_INSTALL_LIBRARY})
+                list(APPEND TEST_INSTALL_LIBRARIES ${TEST_INSTALL_LIBRARY})
+            endif()
+        endforeach()
+
         if(ENABLE_APP)
             add_custom_target(test_install
                 ALL
@@ -435,7 +395,7 @@ if(WIN32)
                 -P "${CMAKE_BINARY_DIR}/cmake_install.cmake"
                 DEPENDS
                     check_clamav check_clamd check_fpu_endian
-                    ClamAV::libclamav ClamAV::libfreshclam ClamAV::libunrar ClamAV::libunrar_iface ${LIBMSPACK}
+                    ${TEST_INSTALL_LIBRARIES}
                     clambc clamd clamdscan clamdtop clamscan clamsubmit clamconf freshclam-bin sigtool
             )
         else()
@@ -447,7 +407,7 @@ if(WIN32)
                 -P "${CMAKE_BINARY_DIR}/cmake_install.cmake"
                 DEPENDS
                     check_clamav
-                    ClamAV::libclamav ClamAV::libfreshclam ClamAV::libunrar ClamAV::libunrar_iface ClamAV::libmspack
+                    ${TEST_INSTALL_LIBRARIES}
             )
         endif()
     else()
@@ -502,12 +462,6 @@ if(WIN32)
                 file(COPY $<TARGET_FILE:ClamAV::libfreshclam> DESTINATION $<TARGET_FILE_DIR:check_clamav>)
                 if ($<TARGET_EXISTS:ClamAV::libmspack>)
                     file(COPY $<TARGET_FILE:$<IF:$<TARGET_EXISTS:ClamAV::libmspack>,ClamAV::libmspack,check_clamav>> DESTINATION $<TARGET_FILE_DIR:check_clamav>)
-                endif()
-                if ($<TARGET_EXISTS:ClamAV::libunrar>)
-                    file(COPY $<TARGET_FILE:$<IF:$<TARGET_EXISTS:ClamAV::libunrar>,ClamAV::libunrar,check_clamav>> DESTINATION $<TARGET_FILE_DIR:check_clamav>)
-                endif()
-                if ($<TARGET_EXISTS:ClamAV::libunrar_iface>)
-                    file(COPY $<TARGET_FILE:$<IF:$<TARGET_EXISTS:ClamAV::libunrar_iface>,ClamAV::libunrar_iface,check_clamav>> DESTINATION $<TARGET_FILE_DIR:check_clamav>)
                 endif()
 
                 # Collect our apps
@@ -566,12 +520,6 @@ if(WIN32)
                 file(COPY $<TARGET_FILE:ClamAV::libclamav> DESTINATION $<TARGET_FILE_DIR:check_clamav>)
                 if ($<TARGET_EXISTS:ClamAV::libmspack>)
                     file(COPY $<TARGET_FILE:$<IF:$<TARGET_EXISTS:ClamAV::libmspack>,ClamAV::libmspack,check_clamav>> DESTINATION $<TARGET_FILE_DIR:check_clamav>)
-                endif()
-                if ($<TARGET_EXISTS:ClamAV::libunrar>)
-                    file(COPY $<TARGET_FILE:$<IF:$<TARGET_EXISTS:ClamAV::libunrar>,ClamAV::libunrar,check_clamav>> DESTINATION $<TARGET_FILE_DIR:check_clamav>)
-                endif()
-                if ($<TARGET_EXISTS:ClamAV::libunrar_iface>)
-                    file(COPY $<TARGET_FILE:$<IF:$<TARGET_EXISTS:ClamAV::libunrar_iface>,ClamAV::libunrar_iface,check_clamav>> DESTINATION $<TARGET_FILE_DIR:check_clamav>)
                 endif()
 
                 # Collect example programs, if built with ENABLE_EXAMPLES=ON

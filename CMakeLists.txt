@@ -105,7 +105,6 @@ else()
     set(ENABLE_MAN_PAGES_DEFAULT    ON)
 endif()
 set(ENABLE_DOXYGEN_DEFAULT          OFF)
-set(ENABLE_UNRAR_DEFAULT            ON)
 set(ENABLE_SYSTEMD_DEFAULT          ON)
 
 # See CMakeOptions.cmake for additional options.
@@ -155,11 +154,6 @@ if(ENABLE_FUZZ)
         set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -fsanitize=$ENV{SANITIZER},fuzzer-no-link -fsanitize-coverage=edge,indirect-calls")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=$ENV{SANITIZER},fuzzer-no-link -fsanitize-coverage=edge,indirect-calls")
     endif()
-endif()
-
-if(ENABLE_STATIC_LIB AND NOT ENABLE_SHARED_LIB AND ENABLE_UNRAR)
-    # When building everything static, link in libunrar.
-    set(UNRAR_LINKED 1)
 endif()
 
 if(ENABLE_LIBCLAMAV_ONLY AND (ENABLE_APP OR ENABLE_EXAMPLES))
@@ -1073,15 +1067,6 @@ endif()
 # ClamAV Build targets!
 #
 
-# Build targets for libraries.
-if(ENABLE_UNRAR)
-    # Only build libclamunrar if enabled.
-    # We still define the libclamunrar_iface's interface regardless,
-    # so that libclamav will have unrar_iface.h in the include path.
-    add_subdirectory( libclamunrar )
-endif()
-add_subdirectory( libclamunrar_iface )
-
 if(NOT ENABLE_EXTERNAL_MSPACK)
     add_subdirectory( libclammspack )
     set(LIBMSPACK "ClamAV::libmspack")
@@ -1196,7 +1181,6 @@ ${c}    Build Options:          ${e}
 ${b}        Build apps:         ${e}${ENABLE_APP}
 ${b}        Shared library:     ${e}${ENABLE_SHARED_LIB}
 ${b}        Static library:     ${e}${ENABLE_STATIC_LIB}
-${b}        Enable UnRAR:       ${e}${ENABLE_UNRAR}
 ${b}        Examples:           ${e}${ENABLE_EXAMPLES}
 ${b}        Tests:              ${e}${ENABLE_TESTS}
 ${b}        Build man pages:    ${e}${ENABLE_MAN_PAGES}
