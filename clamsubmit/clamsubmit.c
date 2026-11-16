@@ -151,10 +151,48 @@ static size_t write_cb(char *ptr, size_t size, size_t nmemb, void *userdata)
     return chunk_size;
 }
 
+/** @brief Check whether a libcurl text diagnostic is safe to display. */
+static bool debug_text_is_safe(const char *data, size_t size)
+{
+    static const char *const safe_prefixes[] = {
+        "  Trying ",
+        "ALPN:",
+        "CAfile:",
+        "CApath:",
+        "Connected to ",
+        "Connection #",
+        "Connection timed out",
+        "Could not connect to server",
+        "Established connection to ",
+        "Failed to connect to ",
+        "Hostname ",
+        "HTTP 1.0, assume close after body",
+        "Request completely sent off",
+        "SSL connection using ",
+        "TLSv",
+        "shutting down connection #",
+        "upload completely sent off:",
+        "using HTTP/",
+    };
+    size_t i;
+
+    for (i = 0; i < sizeof(safe_prefixes) / sizeof(safe_prefixes[0]); i++) {
+        size_t prefix_size = strlen(safe_prefixes[i]);
+
+        if (size >= prefix_size && memcmp(data, safe_prefixes[i], prefix_size) == 0) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 /**
- * @brief Emit connection diagnostics without request headers or bodies.
+ * @brief Emit safe connection diagnostics without request data or credentials.
  *
- * Headers and bodies contain cookies, CSRF tokens, and signed upload fields.
+ * Headers, bodies, and some text diagnostics contain cookies, CSRF tokens,
+ * signed upload fields, or URLs. Only known-safe connection status messages
+ * are displayed.
  */
 static int debug_cb(CURL *curl, curl_infotype type, char *data, size_t size, void *userdata)
 {
@@ -162,7 +200,7 @@ static int debug_cb(CURL *curl, curl_infotype type, char *data, size_t size, voi
     (void)curl;
     (void)userdata;
 
-    if (type != CURLINFO_TEXT || size == 0) {
+    if (type != CURLINFO_TEXT || size == 0 || !debug_text_is_safe(data, size)) {
         return 0;
     }
     printable_size = size > INT_MAX ? INT_MAX : (int)size;
@@ -682,7 +720,9 @@ int main(int argc, char *argv[])
                 false_positive_name = optarg;
                 break;
             case 'd':
-                g_debug = true;
+                g_debug         = true;
+                logg_verbose    = 1;
+                mprintf_verbose = 1;
                 break;
             case 'h':
                 usage(argv[0], stdout);
