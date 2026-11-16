@@ -107,6 +107,13 @@ ClamAV 1.4.7 is a patch release with the following fixes:
 - Fixed Rust CDIFF handling so a borrowed file descriptor remains owned by
   the calling C code, preventing the descriptor from being closed twice.
 
+- Restored `clamsubmit` sample submissions after the service changed its
+  presigned-upload endpoint from GET to POST. The client now preserves the
+  session, CSRF token, and referer, handles optional S3 ACL fields, and reports
+  HTTP or malformed-response errors instead of crashing.
+
+  The fix is included in 1.4.7 and 1.5.5.
+
 - Improved compatibility with OpenSSL 4 by reading opaque `ASN1_TIME` values
   through supported accessors instead of accessing OpenSSL internals directly.
 
