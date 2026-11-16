@@ -460,8 +460,7 @@ int main(int argc, char **argv)
 #ifdef HAVE_ICONV
     printf("ICONV ");
 #endif
-    if (have_rar)
-        printf("RAR ");
+    printf("RAR ");
     if (have_clamjit())
         printf("JIT");
     printf("\n");

@@ -33,8 +33,6 @@ clang-format-16 -i -verbose libclamav/lzw/*.h
 clang-format-16 -i -verbose libclamav/nsis/nulsft.*
 clang-format-16 -i -verbose libclamav/c++/*.cpp
 clang-format-16 -i -verbose libclamav/c++/*.h
-clang-format-16 -i -verbose libclamunrar_iface/*.cpp
-clang-format-16 -i -verbose libclamunrar_iface/*.h
 clang-format-16 -i -verbose libfreshclam/*.c
 clang-format-16 -i -verbose libfreshclam/*.h
 clang-format-16 -i -verbose common/*.c

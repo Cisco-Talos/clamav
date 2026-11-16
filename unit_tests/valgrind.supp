@@ -252,41 +252,11 @@
    fun:_ZN4llvm13FPPassManager13runOnFunctionERNS_8FunctionE
 }
 {
-   unrar-wcsrtombs
-   Memcheck:Cond
-   fun:internal_ascii_loop
-   fun:__gconv_transform_internal_ascii
-   fun:wcsrtombs
-   ...
-}
-{
-   unrar-wcsrtombs-2
-   Memcheck:Cond
-   fun:__wcsnlen_avx2
-   fun:wcsrtombs
-   ...
-}
-{
-   unrar-wcsrtombs-3
-   Memcheck:Cond
-   fun:__wcsnlen_sse4_1
-   fun:wcsrtombs
-   ...
-}
-{
    binhex-overlapping-memmove
    Memcheck:Overlap
    fun:__memcpy_chk
    ...
    fun:cli_binhex
-   ...
-}
-{
-   unrar-wcsrtombs-4
-   Memcheck:Cond
-   fun:internal_utf8_loop
-   fun:__gconv_transform_internal_utf8
-   fun:wcsrtombs
    ...
 }
 {

@@ -114,10 +114,6 @@ option(ENABLE_SHARED_LIB
     "Build libclamav and/or libfreshclam shared libraries."
     ON)
 
-option(ENABLE_UNRAR
-    "Build & install libclamunrar."
-    ${ENABLE_UNRAR_DEFAULT})
-
 option(ENABLE_SYSTEMD
     "Install systemd service files if systemd is found."
     ${ENABLE_SYSTEMD_DEFAULT})
