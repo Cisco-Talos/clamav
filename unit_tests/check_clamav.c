@@ -1789,8 +1789,22 @@ static void hash_error_reentrant_callback(enum cl_msg severity, const char *full
     cl_hash_destroy(ctx);
 }
 
+/* libclamav does not expose its default message callback, so a test that
+ * replaces it cannot put the original back. This stand-in does what the
+ * default does: print the message to stderr. */
+static void hash_error_print_callback(enum cl_msg severity, const char *fullmsg, const char *msg, void *context)
+{
+    UNUSEDPARAM(severity);
+    UNUSEDPARAM(msg);
+    UNUSEDPARAM(context);
+
+    fputs(fullmsg, stderr);
+}
+
 START_TEST(test_hash_libctx_failure)
 {
+    void *ctx;
+
     if (NULL == getenv("CLAMAV_TEST_OSSL_LIBCTX_FAILURE")) {
         return;
     }
@@ -1799,7 +1813,13 @@ START_TEST(test_hash_libctx_failure)
     hash_error_callback_failed = false;
     cl_set_clcb_msg(hash_error_reentrant_callback);
 
-    ck_assert_msg(NULL == cl_hash_init("md5"),
+    ctx = cl_hash_init("md5");
+
+    /* Take the reentrant callback back out before any assertion can end the
+     * test, so it cannot swallow error messages from the tests that follow. */
+    cl_set_clcb_msg(hash_error_print_callback);
+
+    ck_assert_msg(NULL == ctx,
                   "cl_hash_init(md5) returned a context after OSSL_LIB_CTX_new failed");
     ck_assert_msg(hash_error_callback_called, "digest-cache failure did not invoke the message callback");
     ck_assert_msg(!hash_error_callback_failed, "hashing from the message callback failed");
