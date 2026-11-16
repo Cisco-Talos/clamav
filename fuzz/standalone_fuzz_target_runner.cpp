@@ -9,6 +9,8 @@
 // e.g. the one that comes from a bug report.
 
 #include <cassert>
+#include <cstddef>
+#include <cstdint>
 #include <iostream>
 #include <fstream>
 #include <vector>
@@ -16,8 +18,12 @@
 // Forward declare the "fuzz target" interface.
 // We deliberately keep this interface simple and header-free.
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size);
+extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) __attribute__((weak));
 
 int main(int argc, char **argv) {
+  if (LLVMFuzzerInitialize) {
+    LLVMFuzzerInitialize(&argc, &argv);
+  }
   for (int i = 1; i < argc; i++) {
     std::ifstream in(argv[i]);
     in.seekg(0, in.end);
