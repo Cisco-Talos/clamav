@@ -564,7 +564,7 @@ START_TEST(test_pcre_scanbuff)
 
     ctx.options->general &= ~CL_SCAN_GENERAL_ALLMATCHES; /* make sure all-match is disabled */
     for (i = 0; pcre_testdata[i].data; i++) {
-        ret = cli_pcre_scanbuf((const unsigned char *)pcre_testdata[i].data, strlen(pcre_testdata[i].data), &virname, NULL, root, NULL, NULL, NULL);
+        ret = cli_pcre_scanbuf((const unsigned char *)pcre_testdata[i].data, strlen(pcre_testdata[i].data), &virname, NULL, root, NULL, NULL, false, NULL);
         ck_assert_msg(ret == pcre_testdata[i].expected_result, "[pcre] cli_pcre_scanbuff() failed for %s (%d != %d)", pcre_testdata[i].virname, ret, pcre_testdata[i].expected_result);
 
         // we cannot check if the virname matches because we didn't load a whole logical signature, and virnames are stored in the lsig structure, now.
@@ -618,7 +618,7 @@ START_TEST(test_pcre_scanbuff_allscan)
     for (i = 0; pcre_testdata[i].data; i++) {
         cl_error_t verdict = CL_CLEAN;
 
-        ret = cli_pcre_scanbuf((const unsigned char *)pcre_testdata[i].data, strlen(pcre_testdata[i].data), &virname, NULL, root, NULL, NULL, NULL);
+        ret = cli_pcre_scanbuf((const unsigned char *)pcre_testdata[i].data, strlen(pcre_testdata[i].data), &virname, NULL, root, NULL, NULL, false, NULL);
         ck_assert_msg(ret == pcre_testdata[i].expected_result, "[pcre] cli_pcre_scanbuff() failed for %s (%d != %d)", pcre_testdata[i].virname, ret, pcre_testdata[i].expected_result);
 
         // we cannot check if the virname matches because we didn't load a whole logical signature, and virnames are stored in the lsig structure, now.
