@@ -43,3 +43,9 @@ Build and run (clang, AddressSanitizer + UndefinedBehaviorSanitizer):
 The UnRAR library itself is compiled without UBSan's enum and alignment checks: it casts the header type byte to an enum
 without a range check, and on x86 it loads words from unaligned addresses on purpose. Everything else stays checked, and
 the interface code and the harness keep all checks.
+
+Every input that once failed is kept in `fuzz/regression/clamav_unrar_iface_fuzzer/` and replayed by
+`clamav_unrar_iface_regression` (the same code without the fuzzing engine) as one CTest test per file:
+
+    cmake --build build-fuzz --target clamav_unrar_iface_regression
+    ctest --test-dir build-fuzz -R unrar_iface_regression

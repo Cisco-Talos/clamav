@@ -1064,7 +1064,7 @@ endif()
 
 # include CTest to enable testing before we add any subdirectories which may
 # add additional tests (like with `add_rust_test()`)
-if(ENABLE_TESTS)
+if(ENABLE_TESTS OR ENABLE_FUZZ)
     include(CTest)
 endif()
 

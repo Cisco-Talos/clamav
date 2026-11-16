@@ -81,4 +81,24 @@ if(ENABLE_UNRAR)
         PRIVATE clamav_unrar_iface_fuzzer.cpp)
     target_link_libraries(clamav_unrar_iface_fuzzer ClamAV::libunrar_iface_static ClamAV::libunrar_iface_iface)
     set_target_properties(clamav_unrar_iface_fuzzer PROPERTIES LINK_FLAGS "-fsanitize=fuzzer")
+
+    # The same target without the fuzzing engine, to replay inputs that once
+    # failed. Each file in fuzz/regression/clamav_unrar_iface_fuzzer is a test.
+    add_executable(clamav_unrar_iface_regression)
+    target_sources(clamav_unrar_iface_regression
+        PRIVATE
+            clamav_unrar_iface_fuzzer.cpp
+            standalone_fuzz_target_runner.cpp)
+    target_link_libraries(clamav_unrar_iface_regression ClamAV::libunrar_iface_static ClamAV::libunrar_iface_iface)
+
+    file(GLOB UNRAR_IFACE_REGRESSION_INPUTS CONFIGURE_DEPENDS
+        ${CMAKE_CURRENT_SOURCE_DIR}/regression/clamav_unrar_iface_fuzzer/*)
+    foreach(INPUT ${UNRAR_IFACE_REGRESSION_INPUTS})
+        get_filename_component(INPUT_NAME ${INPUT} NAME)
+        add_test(NAME unrar_iface_regression_${INPUT_NAME}
+            COMMAND clamav_unrar_iface_regression ${INPUT})
+        set_tests_properties(unrar_iface_regression_${INPUT_NAME} PROPERTIES
+            TIMEOUT 30
+            ENVIRONMENT "UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1;ASAN_OPTIONS=detect_leaks=1")
+    endforeach()
 endif()
