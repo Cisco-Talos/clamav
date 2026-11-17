@@ -28,6 +28,7 @@
 #include <string.h>
 #include <signal.h>
 #include <locale.h>
+#include <json.h>
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -73,13 +74,251 @@ static void loggBytes(uint64_t bytes)
     }
 }
 
+static void generate_sarif_report(const char *filename, int argc, char **argv)
+{
+    struct json_object *sarif = NULL;
+    struct json_object *runs = NULL, *run = NULL, *tool = NULL, *driver = NULL;
+    struct json_object *s_desc = NULL, *props_local = NULL, *results = NULL;
+
+    if (!filename) {
+        mprintf(LOGG_ERROR, "SARIF filename is NULL\n");
+        return;
+    }
+
+    /* quick check that we can create/truncate the destination file */
+    FILE *f = fopen(filename, "w");
+    if (!f) {
+        mprintf(LOGG_ERROR, "Failed to open SARIF report file for writing: %s\n", filename);
+        return;
+    }
+    fclose(f);
+
+    sarif = json_object_new_object();
+    if (!sarif) {
+        mprintf(LOGG_ERROR, "Failed to allocate SARIF json object\n");
+        return;
+    }
+    /*
+    version:
+    Schema:
+    runs:
+    - tool:
+        driver:
+          name:
+          version:
+          shortDescription:
+          informationUri:
+          properties:
+            dbVersion:
+            dbTime:
+    - invocations:
+      commandLine:
+      arguments:
+    - results:
+        level:
+    */
+
+    json_object_object_add(sarif, "version", json_object_new_string("2.1.0"));
+    json_object_object_add(sarif, "$schema", json_object_new_string(
+        "https://docs.oasis-open.org/sarif/sarif/v2.1.0/errata01/os/schemas/sarif-schema-2.1.0.json"));
+
+    runs = json_object_new_array();
+    run = json_object_new_object();
+    tool = json_object_new_object();
+    driver = json_object_new_object();
+
+    if (!runs || !run || !tool || !driver) {
+        mprintf(LOGG_ERROR, "Failed to allocate internal SARIF json objects\n");
+        goto cleanup;
+    }
+
+    json_object_object_add(driver, "name", json_object_new_string("ClamAV"));
+    json_object_object_add(driver, "version", json_object_new_string(get_version() ? get_version() : "unknown"));
+    s_desc = json_object_new_object();
+    if (!s_desc) {
+        mprintf(LOGG_ERROR, "Failed to allocate driver.shortDescription json object\n");
+        goto cleanup;
+    }
+    json_object_object_add(s_desc, "text", json_object_new_string("ClamAV (clamscan) scan results"));
+    json_object_object_add(driver, "shortDescription", s_desc);
+    json_object_object_add(driver, "informationUri", json_object_new_string("https://www.clamav.net/"));
+
+    props_local = json_object_new_object();
+    if (!props_local) {
+        mprintf(LOGG_ERROR, "Failed to allocate run properties json object\n");
+        goto cleanup;
+    }
+
+    /* try to populate DB info using cl_get_db_build_info() */
+    {
+        unsigned int db_version = 0;
+        time_t db_time = 0;
+        char dbverstr[32] = {0};
+        char db_timestr[32]= {0};
+
+        int got = cl_get_db_build_info(NULL, &db_version, &db_time);
+        if (got > 0) {
+            snprintf(dbverstr, sizeof(dbverstr), "%u", db_version);
+            struct tm tm;
+#ifdef _WIN32
+            gmtime_s(&tm, &db_time);
+#else
+            gmtime_r(&db_time, &tm);
+#endif
+            strftime(db_timestr, sizeof(db_timestr), "%Y-%m-%dT%H:%M:%SZ", &tm);
+            json_object_object_add(props_local, "dbVersion", json_object_new_string(dbverstr));
+            json_object_object_add(props_local, "dbTime", json_object_new_string(db_timestr));
+        } else if (got == 0) {
+            json_object_object_add(props_local, "dbVersion", json_object_new_string("unknown"));
+            json_object_object_add(props_local, "dbTime", json_object_new_string("unknown"));
+        } else {
+            json_object_object_add(props_local, "dbVersion", json_object_new_string("error"));
+            json_object_object_add(props_local, "dbTime", json_object_new_string("error"));
+        }
+    }
+
+    json_object_object_add(run, "properties", props_local);
+    /* run now owns props_local */
+    props_local = NULL;
+
+    json_object_object_add(tool, "driver", driver);
+    /* tool now owns driver */
+    driver = NULL;
+    json_object_object_add(run, "tool", tool);
+    /* run now owns tool */
+    tool = NULL;
+    json_object_array_add(runs, run);
+    /* runs now owns run */
+    json_object_object_add(sarif, "runs", runs);
+    /* sarif now owns runs */
+
+    results = json_object_new_array();
+    if (!results) {
+        mprintf(LOGG_ERROR, "Failed to allocate results json array\n");
+        goto cleanup;
+    }
+    json_object_object_add(run, "results", results);
+    /* run now owns results */
+     if (info.ifiles > 0) {
+        /* if infected, add at least a minimal result entry */
+        struct json_object *result = json_object_new_object();
+        if (!result) {
+            mprintf(LOGG_ERROR, "Failed to allocate a result json object\n");
+            goto cleanup;
+        }
+        json_object_object_add(result, "level", json_object_new_string("error"));
+        json_object_array_add(results, result);
+        /* results owns result */
+        result = NULL;
+        /* TODO: add locations and messages for each infected file, probably
+        could use ruleId as the virus signature identifier */
+        /* Note: I don't think this is easily doable without some more 
+        substantial changes to the codebase since clamscan doesn't REALLY
+        store findings. Quick and dirty would be to just monitor stderr/stdout,
+        but having an actual datastructure storing the findings as it scans
+        is probably better.*/
+    }
+
+    /* Add invocation info: store argv as an arguments[] array and include
+     * workingDirectory (uses getcwd to build a file:// URI). */
+    {
+        struct json_object *invocations = json_object_new_array();
+        if (invocations) {
+            struct json_object *invocation = json_object_new_object();
+            if (invocation) {
+                struct json_object *args_array = json_object_new_array();
+                if (args_array) {
+                    int i = 0;
+                    for (i = 0; i < argc; ++i) {
+                        const char *a = argv[i] ? argv[i] : "";
+                        json_object_array_add(args_array, json_object_new_string(a));
+                    }
+                    json_object_object_add(invocation, "arguments", args_array);
+
+                    /* workingDirectory: "uri": "file:///path/to/cwd" */
+                    char cwdbuf[PATH_MAX + 1] = {0};
+                    if (
+#ifdef _WIN32
+                        _getcwd(cwdbuf, sizeof(cwdbuf)) != NULL
+#else
+                        getcwd(cwdbuf, sizeof(cwdbuf)) != NULL
+#endif
+                    ) {
+#ifdef _WIN32
+                        /* normalize backslashes in-place */
+                        for (char *p = cwdbuf; *p; ++p) if (*p == '\\') *p = '/';
+                        char uri_buf[PATH_MAX + 8];
+                        int rc = snprintf(uri_buf, sizeof(uri_buf), "file:///%s", cwdbuf);
+#else
+                        char uri_buf[PATH_MAX + 8];
+                        int rc = snprintf(uri_buf, sizeof(uri_buf), "file://%s", cwdbuf);
+#endif
+                        if (rc > 0 && rc < (int)sizeof(uri_buf)) {
+                            struct json_object *work_dir = json_object_new_object();
+                            if (work_dir) {
+                                struct json_object *uri = json_object_new_string(uri_buf);
+                                if (uri) {
+                                    json_object_object_add(work_dir, "uri", uri);
+                                    json_object_object_add(invocation, "workingDirectory", work_dir);
+                                } else {
+                                    json_object_put(work_dir);
+                                }
+                            }
+                        }
+                    }
+
+                    json_object_array_add(invocations, invocation);
+                    json_object_object_add(run, "invocations", invocations);
+                } else {
+                    json_object_put(invocation);
+                    json_object_put(invocations);
+                }
+            } else {
+                json_object_put(invocations);
+            }
+        }
+    }
+
+    /* We've finished mutating run/runs/results; null local refs so cleanup
+     * doesn't attempt to free attached objects twice (sarif owns them).
+     */
+    run = NULL;
+    results = NULL;
+    runs = NULL;
+
+    /* Write the JSON to file (pretty-printed). */
+    if (json_object_to_file_ext(filename, sarif, JSON_C_TO_STRING_PRETTY) != 0) {
+        mprintf(LOGG_ERROR, "Failed to write SARIF report to %s\n", filename);
+        goto cleanup;
+    }
+
+cleanup:
+    if (sarif)
+        json_object_put(sarif);
+    /* free any partially-allocated objects that were never attached */
+    if (runs)
+        json_object_put(runs);
+    if (run)
+        json_object_put(run);
+    if (tool)
+        json_object_put(tool);
+    if (driver)
+        json_object_put(driver);
+    if (s_desc)
+        json_object_put(s_desc);
+    if (props_local)
+        json_object_put(props_local);
+    if (results)
+        json_object_put(results);
+}
+
 int main(int argc, char **argv)
 {
     int ds, dms, ret;
     struct timeval t1, t2;
     time_t date_start, date_end;
 
-    char buffer[26];
+    char buffer[26] = {0};
 #ifdef _WIN32
     SetConsoleOutputCP(CP_UTF8);
 #else /* !_WIN32 */
@@ -237,6 +476,10 @@ int main(int argc, char **argv)
         }
         strftime(buffer, sizeof(buffer), "%Y:%m:%d %H:%M:%S", &tmp);
         logg(LOGG_INFO, "End Date:   %s\n", buffer);
+
+        if(optget(opts, "sarif")->enabled) {
+            generate_sarif_report(optget(opts, "sarif")->strarg, argc, argv);
+        }
     }
 
     optfree(opts);
@@ -282,6 +525,7 @@ void help(void)
     mprintf(LOGG_INFO, "    --official-db-only[=yes/no(*)]       Only load official signatures.\n");
     mprintf(LOGG_INFO, "    --fail-if-cvd-older-than=days        Return with a nonzero error code if virus database outdated.\n");
     mprintf(LOGG_INFO, "    --log=FILE            -l FILE        Save scan report to FILE.\n");
+    mprintf(LOGG_INFO, "    --sarif=FILE                         Save scan report to FILE in SARIF format.\n");
     mprintf(LOGG_INFO, "    --recursive[=yes/no(*)]  -r          Scan subdirectories recursively.\n");
     mprintf(LOGG_INFO, "    --allmatch[=yes/no(*)]   -z          Continue scanning within file after finding a match.\n");
     mprintf(LOGG_INFO, "    --cross-fs[=yes(*)/no]               Scan files and directories on other filesystems.\n");
