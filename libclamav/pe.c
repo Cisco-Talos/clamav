@@ -601,15 +601,27 @@ static cl_error_t scan_pe_mdb(cli_ctx *ctx, struct cli_exe_section *exe_section)
 
     /* Do scans */
     for (type = CLI_HASH_MD5; type < CLI_HASH_AVAIL_TYPES; type++) {
-        if (foundsize[type] && cli_hm_scan(hashset[type], exe_section->rsz, &virname, mdb_sect, type) == CL_VIRUS) {
-            ret = cli_append_virus(ctx, virname);
-            if (ret != CL_SUCCESS) {
+        if (foundsize[type]) {
+            ret = cli_hm_scan(hashset[type], exe_section->rsz, &virname, mdb_sect, type);
+            if (ret == CL_VIRUS) {
+                ret = cli_append_virus(ctx, virname);
+                if (ret != CL_SUCCESS) {
+                    break;
+                }
+            } else if (ret != CL_SUCCESS) {
+                cli_dbgmsg("scan_pe_mdb: Error checking size-based section hash signatures\n");
                 break;
             }
         }
-        if (foundwild[type] && cli_hm_scan_wild(hashset[type], &virname, mdb_sect, type) == CL_VIRUS) {
-            ret = cli_append_virus(ctx, virname);
-            if (ret != CL_SUCCESS) {
+        if (foundwild[type]) {
+            ret = cli_hm_scan_wild(hashset[type], &virname, mdb_sect, type);
+            if (ret == CL_VIRUS) {
+                ret = cli_append_virus(ctx, virname);
+                if (ret != CL_SUCCESS) {
+                    break;
+                }
+            } else if (ret != CL_SUCCESS) {
+                cli_dbgmsg("scan_pe_mdb: Error checking size-agnostic section hash signatures\n");
                 break;
             }
         }
@@ -2598,17 +2610,25 @@ static cl_error_t scan_pe_imp(cli_ctx *ctx, struct cli_exe_info *peinfo)
 
     /* Do scans */
     for (type = CLI_HASH_MD5; type < CLI_HASH_AVAIL_TYPES; type++) {
-        if (cli_hm_scan(hashset[type], impsz, &virname, imp, type) == CL_VIRUS) {
+        ret = cli_hm_scan(hashset[type], impsz, &virname, imp, type);
+        if (ret == CL_VIRUS) {
             ret = cli_append_virus(ctx, virname);
             if (ret != CL_SUCCESS) {
                 break;
             }
+        } else if (ret != CL_SUCCESS) {
+            cli_dbgmsg("scan_pe_imp: Error checking size-based import hash signatures\n");
+            break;
         }
-        if (cli_hm_scan_wild(hashset[type], &virname, imp, type) == CL_VIRUS) {
-            cli_append_virus(ctx, virname);
+        ret = cli_hm_scan_wild(hashset[type], &virname, imp, type);
+        if (ret == CL_VIRUS) {
+            ret = cli_append_virus(ctx, virname);
             if (ret != CL_SUCCESS) {
                 break;
             }
+        } else if (ret != CL_SUCCESS) {
+            cli_dbgmsg("scan_pe_imp: Error checking size-agnostic import hash signatures\n");
+            break;
         }
     }
 
