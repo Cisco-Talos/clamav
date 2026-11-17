@@ -790,6 +790,13 @@ extern "C" {
     ) -> cl_error_t;
 }
 extern "C" {
+    #[doc = " Append a potentially unwanted application or heuristic alert."]
+    pub fn cli_append_potentially_unwanted(
+        ctx: *mut cli_ctx,
+        virname: *const ::std::os::raw::c_char,
+    ) -> cl_error_t;
+}
+extern "C" {
     pub fn cli_append_potentially_unwanted_if_heur_exceedsmax(
         ctx: *mut cli_ctx,
         vname: *mut ::std::os::raw::c_char,

@@ -97,12 +97,10 @@ set(ENCRYPTED_TESTFILES
     signing/sign/signing-test.key
 )
 
-if(ENABLE_UNRAR)
-    set(ENCRYPTED_TESTFILES ${ENCRYPTED_TESTFILES}
-        clamav_hdb_scanfiles/clam-v2.rar
-        clamav_hdb_scanfiles/clam-v3.rar
-    )
-endif()
+set(ENCRYPTED_TESTFILES ${ENCRYPTED_TESTFILES}
+    clamav_hdb_scanfiles/clam-v2.rar
+    clamav_hdb_scanfiles/clam-v3.rar
+)
 
 add_custom_target(tgt_build_unit_tests_directories ALL
     COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/clamav_hdb_scanfiles

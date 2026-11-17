@@ -54,8 +54,6 @@
 #include "crtmgr.h"
 #include "scan_layer.h"
 
-#include "unrar_iface.h"
-
 #ifdef HAVE_YARA
 #include "yara_clam.h"
 #endif
@@ -472,14 +470,6 @@ struct cl_settings {
     uint64_t pcre_recmatch_limit;
     uint64_t pcre_max_filesize;
 };
-
-extern cl_unrar_error_t (*cli_unrar_open)(const char *filename, void **hArchive, char **comment, uint32_t *comment_size, uint8_t debug_flag);
-extern cl_unrar_error_t (*cli_unrar_peek_file_header)(void *hArchive, unrar_metadata_t *file_metadata);
-extern cl_unrar_error_t (*cli_unrar_extract_file)(void *hArchive, const char *destPath, char *outputBuffer);
-extern cl_unrar_error_t (*cli_unrar_skip_file)(void *hArchive);
-extern void (*cli_unrar_close)(void *hArchive);
-
-extern LIBCLAMAV_EXPORT int have_rar;
 
 #define SCAN_ALLMATCHES (ctx->options->general & CL_SCAN_GENERAL_ALLMATCHES)
 #define SCAN_COLLECT_METADATA (ctx->options->general & CL_SCAN_GENERAL_COLLECT_METADATA)
