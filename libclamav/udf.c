@@ -54,6 +54,45 @@ static bool isDirectory(FileIdentifierDescriptor *fid)
     return (0 != (fid->characteristics & 2));
 }
 
+/**
+ * @brief Decode a UDF allocation descriptor extent length and type.
+ *
+ * The top two bits of short, long, and extended allocation descriptor extent
+ * lengths identify the extent type. The remaining 30 bits contain the length.
+ *
+ * @param raw_length Raw little-endian-converted extent length.
+ * @param type       Receives the decoded extent type.
+ * @return uint32_t  Decoded extent length in bytes.
+ */
+static uint32_t decodeExtentLength(uint32_t raw_length, udf_extent_type_t *type)
+{
+    *type = (udf_extent_type_t)((raw_length & UDF_EXTENT_TYPE_MASK) >> UDF_EXTENT_TYPE_SHIFT);
+    return raw_length & UDF_EXTENT_LENGTH_MASK;
+}
+
+/**
+ * @brief Calculate the byte offset for a block within a UDF partition.
+ *
+ * @param partition_start Partition starting block.
+ * @param block_number    Block number relative to the partition.
+ * @param block_size      Logical block size in bytes.
+ * @param offset          Receives the byte offset when representable by size_t.
+ * @return true           The offset was calculated successfully.
+ * @return false          The block size is zero or the calculation would
+ *                        overflow size_t.
+ */
+static bool calculateExtentOffset(uint32_t partition_start, uint32_t block_number, uint32_t block_size, size_t *offset)
+{
+    uint64_t absolute_block = (uint64_t)partition_start + block_number;
+
+    if (0 == block_size || absolute_block > SIZE_MAX / block_size) {
+        return false;
+    }
+
+    *offset = (size_t)(absolute_block * block_size);
+    return true;
+}
+
 static cl_error_t writeWholeFile(cli_ctx *ctx, const char *const fileName, const uint8_t *const data, const size_t dataLen)
 {
     int fd     = -1;
@@ -110,9 +149,12 @@ static cl_error_t extractFile(cli_ctx *ctx, PartitionDescriptor *pPartitionDescr
                               uint16_t icbFlags, FileIdentifierDescriptor *fileIdentifierDescriptor)
 {
     cl_error_t ret                     = CL_EPARSE;
-    uint32_t offset                    = 0;
+    size_t offset                      = 0;
     uint32_t length                    = 0;
-    uint8_t *contents                  = NULL;
+    uint32_t extent_length             = 0;
+    uint32_t extent_block              = 0;
+    udf_extent_type_t extent_type      = UDF_EXTENT_RECORDED_AND_ALLOCATED;
+    const uint8_t *contents            = NULL;
     uint32_t partitionStartingLocation = le32_to_host(pPartitionDescriptor->partitionStartingLocation);
     uint32_t logicalBlockSize          = le32_to_host(pLogicalVolumeDescriptor->logicalBlockSize);
 
@@ -131,10 +173,8 @@ static cl_error_t extractFile(cli_ctx *ctx, PartitionDescriptor *pPartitionDescr
 
             short_ad *shortDesc = (short_ad *)allocation_descriptor;
 
-            offset = partitionStartingLocation * logicalBlockSize;
-            offset += le32_to_host(shortDesc->position) * logicalBlockSize;
-
-            length = le32_to_host(shortDesc->length);
+            extent_block = le32_to_host(shortDesc->position);
+            length       = decodeExtentLength(le32_to_host(shortDesc->length), &extent_type);
 
         } break;
         case 1: {
@@ -145,15 +185,13 @@ static cl_error_t extractFile(cli_ctx *ctx, PartitionDescriptor *pPartitionDescr
 
             long_ad *longDesc = (long_ad *)allocation_descriptor;
 
-            offset = partitionStartingLocation * logicalBlockSize;
-            length = le32_to_host(longDesc->length);
+            extent_block = le32_to_host(longDesc->extentLocation.blockNumber);
+            length       = decodeExtentLength(le32_to_host(longDesc->length), &extent_type);
 
             if (le16_to_host(longDesc->extentLocation.partitionReferenceNumber) != le16_to_host(pPartitionDescriptor->partitionNumber)) {
                 cli_warnmsg("extractFile: Unable to extract the files because the Partition Descriptor Reference Numbers don't match\n");
                 goto done;
             }
-            offset += le32_to_host(longDesc->extentLocation.blockNumber) * logicalBlockSize;
-            offset += partitionStartingLocation;
 
         } break;
         case 2: {
@@ -164,20 +202,31 @@ static cl_error_t extractFile(cli_ctx *ctx, PartitionDescriptor *pPartitionDescr
 
             ext_ad *extDesc = (ext_ad *)allocation_descriptor;
 
-            offset = partitionStartingLocation * logicalBlockSize;
-            length = le32_to_host(extDesc->recordedLen);
+            extent_block  = le32_to_host(extDesc->extentLocation.blockNumber);
+            extent_length = decodeExtentLength(le32_to_host(extDesc->extentLen), &extent_type);
+            length        = le32_to_host(extDesc->recordedLen);
+
+            if (0 != (length & UDF_EXTENT_TYPE_MASK) || length > extent_length) {
+                cli_warnmsg("extractFile: Extended Allocation Descriptor length is invalid.\n");
+                goto done;
+            }
 
             if (le16_to_host(extDesc->extentLocation.partitionReferenceNumber) != le16_to_host(pPartitionDescriptor->partitionNumber)) {
                 cli_warnmsg("extractFile: Unable to extract the files because the Partition Descriptor Reference Numbers don't match\n");
                 goto done;
             }
-            offset += le32_to_host(extDesc->extentLocation.blockNumber) * logicalBlockSize;
-            offset += partitionStartingLocation;
         } break;
         default:
             // impossible unless the file is malformed.
             cli_warnmsg("extractFile: Unknown descriptor type found.\n");
             goto done;
+    }
+
+    if (UDF_EXTENT_NEXT_ALLOCATION_DESCRIPTORS == extent_type) {
+        cli_dbgmsg("extractFile: Skipping unsupported continuation allocation descriptors.\n");
+        emax_reached(ctx);
+        ret = CL_SUCCESS;
+        goto done;
     }
 
     ret = cli_checklimits("UDF", ctx, length, 0, 0);
@@ -187,7 +236,25 @@ static cl_error_t extractFile(cli_ctx *ctx, PartitionDescriptor *pPartitionDescr
         goto done;
     }
 
-    contents = (uint8_t *)fmap_need_off(ctx->fmap, offset, length);
+    if (UDF_EXTENT_RECORDED_AND_ALLOCATED != extent_type) {
+        cli_dbgmsg("extractFile: Skipping unrecorded extent.\n");
+        emax_reached(ctx);
+        ret = CL_SUCCESS;
+        goto done;
+    }
+
+    if (0 == length) {
+        ret = CL_SUCCESS;
+        goto done;
+    }
+
+    if (!calculateExtentOffset(partitionStartingLocation, extent_block, logicalBlockSize, &offset)) {
+        cli_warnmsg("extractFile: Extent offset is too large.\n");
+        ret = CL_EPARSE;
+        goto done;
+    }
+
+    contents = fmap_need_off(ctx->fmap, offset, length);
     if (NULL == contents) {
         cli_warnmsg("extractFile: Unable to get offset referenced in the file.\n");
         goto done;

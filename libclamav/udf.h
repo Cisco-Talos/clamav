@@ -319,6 +319,18 @@ typedef struct __attribute__((packed)) {
 
 } ExtendedFileEntryDescriptor;
 
+// Allocation descriptor extent length encoding
+#define UDF_EXTENT_LENGTH_MASK 0x3fffffffU
+#define UDF_EXTENT_TYPE_MASK 0xc0000000U
+#define UDF_EXTENT_TYPE_SHIFT 30
+
+typedef enum {
+    UDF_EXTENT_RECORDED_AND_ALLOCATED         = 0,
+    UDF_EXTENT_NOT_RECORDED_BUT_ALLOCATED     = 1,
+    UDF_EXTENT_NOT_RECORDED_AND_NOT_ALLOCATED = 2,
+    UDF_EXTENT_NEXT_ALLOCATION_DESCRIPTORS    = 3
+} udf_extent_type_t;
+
 // Short allocation descriptor
 typedef struct __attribute__((packed)) {
 
