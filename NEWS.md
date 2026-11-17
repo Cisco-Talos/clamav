@@ -107,6 +107,13 @@ ClamAV 1.5.5 is a patch release with the following fixes:
 - Sigtool now retries after a delay when building a database archive whose MD5
   hash begins with `00`, preserving compatibility with ClamAV 1.1 through 1.4.
 
+- Restored `clamsubmit` sample submissions after the service changed its
+  presigned-upload endpoint from GET to POST. The client now preserves the
+  session, CSRF token, and referer, handles optional S3 ACL fields, and reports
+  HTTP or malformed-response errors instead of crashing.
+
+  The fix is included in 1.4.7 and 1.5.5.
+
 - Improved compatibility with OpenSSL 4 and reduced hashing overhead by reusing
   digest implementations fetched from a long-lived private library context.
   Also read opaque `ASN1_TIME` values through supported accessors instead of
