@@ -124,6 +124,7 @@ int cli_7unz(cli_ctx *ctx, size_t offset)
             char *name;
             char *tmp_name;
             size_t j;
+            UInt32 folderIndex;
             int newnamelen, fd;
 
             // abort if we would exceed max files or max scan time.
@@ -136,6 +137,22 @@ int cli_7unz(cli_ctx *ctx, size_t offset)
             // skip this file if we would exceed max file size or max scan size. (we already checked for the max files and max scan time)
             if (cli_checklimits("7unz", ctx, f->Size, 0, 0))
                 continue;
+
+            /*
+             * Extracting a file decodes its whole folder (solid block) into memory, however small the file is.
+             * Skip the file if decoding that folder would exceed max scan size.
+             */
+            folderIndex = db.FileIndexToFolderIndexMap[i];
+            if ((folderIndex != (UInt32)-1) && (folderIndex != blockIndex) && (ctx->engine->maxscansize != 0)) {
+                uint64_t folderSize = SzFolder_GetUnpackSize(db.db.Folders + folderIndex);
+
+                if (folderSize > ctx->engine->maxscansize - ctx->scansize) {
+                    cli_dbgmsg("cli_7unz: folder of file %u would exceed max scansize (initial: %" PRIu64 ", consumed: %" PRIu64 ", folder: %" PRIu64 "). Skipping file.\n",
+                               (unsigned int)i, ctx->engine->maxscansize, ctx->scansize, folderSize);
+                    cli_append_potentially_unwanted_if_heur_exceedsmax(ctx, "Heuristics.Limits.Exceeded.MaxScanSize");
+                    continue;
+                }
+            }
 
             if (!db.FileNameOffsets)
                 newnamelen = 0; /* no filename */
