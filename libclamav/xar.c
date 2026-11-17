@@ -730,6 +730,10 @@ int cli_scanxar(cli_ctx *ctx)
                         if (e_hash_ctx != NULL)
                             xar_hash_update(e_hash_ctx, buff, bytes, e_hash);
 
+                        if (cli_checklimits("cli_scanxar", ctx, outsize + bytes, 0, 0) != CL_CLEAN) {
+                            break;
+                        }
+
                         if (cli_writen(fd, buff, bytes) == (size_t)-1) {
                             cli_dbgmsg("cli_scanxar: cli_writen error file %s.\n", tmpname);
                             inflateEnd(&strm);
@@ -737,9 +741,6 @@ int cli_scanxar(cli_ctx *ctx)
                             goto exit_tmpfile;
                         }
                         outsize += sizeof(buff) - strm.avail_out;
-                        if (cli_checklimits("cli_scanxar", ctx, outsize, 0, 0) != CL_CLEAN) {
-                            break;
-                        }
                         if (inf == Z_STREAM_END) {
                             break;
                         }
@@ -853,6 +854,10 @@ int cli_scanxar(cli_ctx *ctx)
                     /*            "consumed %li of %li available compressed bytes.\n", */
                     /*            avail_out, in_consumed, avail_in); */
 
+                    if (cli_checklimits("cli_scanxar", ctx, out_size + avail_out, 0, 0) != CL_CLEAN) {
+                        break;
+                    }
+
                     if (cli_writen(fd, buff, avail_out) == (size_t)-1) {
                         cli_dbgmsg("cli_scanxar: cli_writen error writing lzma temp file for %llu bytes.\n",
                                    (long long unsigned)avail_out);
@@ -864,9 +869,6 @@ int cli_scanxar(cli_ctx *ctx)
 
                     /* Check file size limitation. */
                     out_size += avail_out;
-                    if (cli_checklimits("cli_scanxar", ctx, out_size, 0, 0) != CL_CLEAN) {
-                        break;
-                    }
 
                     if (lret == LZMA_STREAM_END)
                         break;
