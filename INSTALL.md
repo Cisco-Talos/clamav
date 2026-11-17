@@ -48,7 +48,6 @@ configuration options.
     - [`pthreads-win32` (Windows-only)](#pthreads-win32-windows-only)
     - [`llvm` (optional, _see "Bytecode Runtime" section_)](#llvm-optional-see-bytecode-runtime-section)
     - [`libcurl`](#libcurl)
-    - [`ncurses` or `pdcurses`, for `clamdtop`](#ncurses-or-pdcurses-for-clamdtop)
     - [Bytecode Runtime](#bytecode-runtime)
       - [Interpreter Bytecode Runtime](#interpreter-bytecode-runtime)
       - [LLVM JIT Bytecode Runtime](#llvm-jit-bytecode-runtime)
@@ -139,7 +138,6 @@ libfreshclam adds these additional library dependencies:
 For regular folk who want the ClamAV apps, you'll also need:
 
 - `libmilter` (Unix/Linux-only, disable with `ENABLE_MILTER=OFF`)
-- `ncurses` or `pdcurses`, for ClamDTop.
 
 Optionally, if on a Linux distro with SystemD:
 
@@ -657,27 +655,6 @@ have multiple LLVM installations:
 ```sh
   -D CURL_INCLUDE_DIR="_path to curl header directory_"
   -D CURL_LIBRARY="_filepath of curl library_"
-```
-
-### `ncurses` or `pdcurses`, for `clamdtop`
-
-```sh
-  -D NCURSES_INCLUDE_DIR="_path to ncurses header directory_"
-```
-
-or:
-```sh
-  -D PDCURSES_INCLUDE_DIR="_path to pdcurses header directory_"
-```
-
-and:
-```sh
-  -D CURSES_LIBRARY="_filepath of curses library_"
-```
-
-and, if tinfo is separate from ncurses:
-```sh
-  -D TINFO_LIBRARY="_filepath of tinfo library_"
 ```
 
 ### Bytecode Runtime

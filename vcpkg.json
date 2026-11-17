@@ -12,7 +12,6 @@
         "check",
        	"pthreads",
        	"zlib",
-       	"pdcurses",
        	"bzip2"
     ]
 }
