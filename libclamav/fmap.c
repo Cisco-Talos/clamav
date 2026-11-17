@@ -1455,12 +1455,12 @@ done:
     return status;
 }
 
-extern cl_error_t cl_fmap_set_hash(const cl_fmap_t *map, const char *hash_alg, char hash)
+extern cl_error_t cl_fmap_set_hash(const cl_fmap_t *map, const char *hash_alg, const char *hash)
 {
     cl_error_t status = CL_ERROR;
     cli_hash_type_t type;
 
-    if (!map || !hash_alg) {
+    if (!map || !hash_alg || !hash) {
         status = CL_ENULLARG;
         goto done;
     }
@@ -1477,7 +1477,7 @@ extern cl_error_t cl_fmap_set_hash(const cl_fmap_t *map, const char *hash_alg, c
         goto done;
     }
 
-    status = fmap_set_hash((fmap_t *)map, (uint8_t *)&hash, type);
+    status = fmap_set_hash((fmap_t *)map, (uint8_t *)hash, type);
     if (status != CL_SUCCESS) {
         cli_errmsg("cl_fmap_set_hash: Failed to set hash for algorithm: %s\n", hash_alg);
         goto done;
