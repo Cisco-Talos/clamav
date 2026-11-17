@@ -456,7 +456,11 @@ static int action_fstatat_nointr(int dirfd, const char *path, STATBUF *st, int f
     int rc;
 
     do {
-#if defined(HAVE_STAT64) && STAT64_OK
+#if defined(_AIX)
+        /* AIX: fstatat64 does not exist. Use stat64at which takes struct stat64*
+         * and is the 64-bit equivalent of fstatat. */
+        rc = stat64at(dirfd, path, st, flags);
+#elif defined(HAVE_STAT64) && STAT64_OK
         rc = fstatat64(dirfd, path, st, flags);
 #else
         rc = fstatat(dirfd, path, st, flags);
