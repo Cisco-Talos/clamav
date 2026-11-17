@@ -202,7 +202,7 @@ static cl_error_t ooxml_content_cb(int fd, const char *filepath, cli_ctx *ctx, c
     const xmlChar *localname, *value;
     xmlChar *CT = NULL, *PN = NULL;
     xmlTextReaderPtr reader = NULL;
-    uint32_t loff;
+    size_t loff;
 
     UNUSEDPARAM(filepath);
     UNUSEDPARAM(name);
@@ -297,7 +297,7 @@ static cl_error_t ooxml_content_cb(int fd, const char *filepath, cli_ctx *ctx, c
                 cli_dbgmsg("cli_process_ooxml: failed to find core properties file \"%s\"!\n", PN);
                 mcore++;
             } else {
-                cli_dbgmsg("ooxml_content_cb: found core properties file \"%s\" @ %x\n", PN, loff);
+                cli_dbgmsg("ooxml_content_cb: found core properties file \"%s\" @ %zx\n", PN, loff);
                 if (!core) {
                     tmp = unzip_single_internal(ctx, loff, ooxml_core_cb);
                     if (tmp == CL_ETIMEOUT || tmp == CL_EMEM) {
@@ -315,7 +315,7 @@ static cl_error_t ooxml_content_cb(int fd, const char *filepath, cli_ctx *ctx, c
                 cli_dbgmsg("cli_process_ooxml: failed to find extended properties file \"%s\"!\n", PN);
                 mextn++;
             } else {
-                cli_dbgmsg("ooxml_content_cb: found extended properties file \"%s\" @ %x\n", PN, loff);
+                cli_dbgmsg("ooxml_content_cb: found extended properties file \"%s\" @ %zx\n", PN, loff);
                 if (!extn) {
                     tmp = unzip_single_internal(ctx, loff, ooxml_extn_cb);
                     if (tmp == CL_ETIMEOUT || tmp == CL_EMEM) {
@@ -333,7 +333,7 @@ static cl_error_t ooxml_content_cb(int fd, const char *filepath, cli_ctx *ctx, c
                 cli_dbgmsg("cli_process_ooxml: failed to find custom properties file \"%s\"!\n", PN);
                 mcust++;
             } else {
-                cli_dbgmsg("ooxml_content_cb: found custom properties file \"%s\" @ %x\n", PN, loff);
+                cli_dbgmsg("ooxml_content_cb: found custom properties file \"%s\" @ %zx\n", PN, loff);
                 /* custom properties are not parsed */
                 cust++;
             }
@@ -466,7 +466,7 @@ cli_file_t cli_ooxml_filetype(cli_ctx *ctx)
 
 cl_error_t cli_process_ooxml(cli_ctx *ctx, int type)
 {
-    uint32_t loff  = 0;
+    size_t loff    = 0;
     cl_error_t ret = CL_SUCCESS;
 
     cli_dbgmsg("in cli_process_ooxml\n");
@@ -515,7 +515,7 @@ cl_error_t cli_process_ooxml(cli_ctx *ctx, int type)
         }
         cli_dbgmsg("cli_process_ooxml: found "
                    "[Content_Types].xml"
-                   " @ %x\n",
+                   " @ %zx\n",
                    loff);
 
         ret = unzip_single_internal(ctx, loff, ooxml_content_cb);
