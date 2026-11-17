@@ -5,6 +5,9 @@
 # for detailed documentation of every option.
 
 language = "C"
+# Generate headers for Cargo's build TARGET, without fetching dependencies for
+# unrelated platforms during an offline build.
+only_target_dependencies = true
 
 ############## Options for Wrapping the Contents of the Header #################
 

@@ -1,0 +1,12 @@
+# syntax=docker/dockerfile:1
+# Repackage an already-built Debian runtime. No compiler or package download.
+ARG BINARY_IMAGE=antivirus:optimized-binaries
+FROM ${BINARY_IMAGE}
+ARG PACKAGING_REVISION=unknown
+LABEL local.clamav.packaging-revision="${PACKAGING_REVISION}"
+COPY docker/config/clamd.conf docker/config/freshclam.conf /etc/clamav/
+COPY --chmod=755 docker/entrypoint.sh docker/healthcheck.sh /usr/local/bin/
+RUN chmod 644 /etc/clamav/clamd.conf \
+    && chown root:clamav /etc/clamav/freshclam.conf \
+    && chmod 640 /etc/clamav/freshclam.conf \
+    && clamscan --version && freshclam --version
