@@ -517,6 +517,8 @@ const struct clam_option __clam_options[] = {
 
     {"PCREMaxFileSize", "pcre-max-filesize", 0, CLOPT_TYPE_SIZE, MATCH_SIZE, CLI_DEFAULT_PCRE_MAX_FILESIZE, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option sets the maximum filesize for which PCRE subsigs will be executed.\nFiles exceeding this limit will not have PCRE subsigs executed unless a subsig is encompassed to a smaller buffer.\nNegative values are not allowed.\nSetting this value to zero disables the limit.\nWARNING: setting this limit too high or disabling it may severely impact performance.", "100M"},
 
+    {"PCREJit", "pcre-jit", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "When enabled, PCRE regex subsignatures are JIT-compiled at database load and matched with native code, which can significantly reduce scan time for content that triggers many PCRE subsignatures.\nThis requires the linked PCRE2 library to be built with JIT support; otherwise matching falls back to the interpreter with no functional change.\nDetection results are unchanged when enabled.\nNote: PCRE2 does not enforce the depth/recursion limit (PCRERecMatchLimit) for JIT matches; PCREMatchLimit is still enforced. Leave this disabled if you rely on PCRERecMatchLimit to bound recursive backtracking.", "no"},
+
     /* OnAccess settings */
     {"OnAccessMountPath", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_CLAMD, "This option specifies a directory or mount point which should be scanned on access. The mount point specified, or the mount point containing the specified directory will be watched, but only notifications will occur. If any directories are specified, this option will preempt the DDD system. It can also be used multiple times.", "/\n/home/user"},
 

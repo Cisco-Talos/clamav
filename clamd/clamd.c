@@ -741,6 +741,14 @@ int main(int argc, char **argv)
             }
         }
 
+        if ((opt = optget(opts, "PCREJit"))->active) {
+            if ((ret = cl_engine_set_num(engine, CL_ENGINE_PCRE_JIT, opt->enabled))) {
+                logg(LOGG_ERROR, "cli_engine_set_num(PCREJit) failed: %s\n", cl_strerror(ret));
+                cl_engine_free(engine);
+                return 1;
+            }
+        }
+
         if ((opt = optget(opts, "PCRERecMatchLimit"))->active) {
             if ((ret = cl_engine_set_num(engine, CL_ENGINE_PCRE_RECMATCH_LIMIT, opt->numarg))) {
                 logg(LOGG_ERROR, "cli_engine_set_num(PCRERecMatchLimit) failed: %s\n", cl_strerror(ret));
