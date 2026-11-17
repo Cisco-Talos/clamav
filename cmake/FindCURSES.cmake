@@ -73,6 +73,11 @@ if(NCURSES_NOT_FOUND EQUAL -1)
         )
     endif()
 
+    find_library(TINFO_LIBRARY
+        NAMES tinfo tinfow
+        PATHS ${PC_NCurses_LIBRARY_DIRS}
+    )
+
     include(FindPackageHandleStandardArgs)
     find_package_handle_standard_args(CURSES
         FOUND_VAR CURSES_FOUND
