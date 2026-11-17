@@ -96,6 +96,10 @@ const C_HEADER_OUTPUT: &str = "clamav_rust.h";
 const ENV_PATTERNS: &[&str] = &["CARGO_", "RUST", "LIB"];
 
 fn main() -> Result<(), &'static str> {
+    println!("cargo:rerun-if-changed=cbindgen.toml");
+    println!("cargo:rerun-if-changed=src/scanners.rs");
+    println!("cargo:rerun-if-changed=src/scanner/filetype_handlers/executable/mod.rs");
+
     // Dump the command line and interesting environment variables for diagnostic
     // purposes. These will end up in a 'stderr' file under the target directory,
     // in a ".../clamav_rust-<hex>" subdirectory
@@ -329,8 +333,7 @@ fn parse_lib_path(path: &str) -> Result<ParsedLibraryPath, &'static str> {
 
     // Windows typically requires the full filename when linking system libraries,
     // but not when it's one of the locally-generated libraries.
-    let should_trim_leading_lib =
-        !cfg!(windows) || WINDOWS_TRIM_LOCAL_LIB.iter().any(|s| *s == full_libname);
+    let should_trim_leading_lib = !cfg!(windows) || WINDOWS_TRIM_LOCAL_LIB.contains(&full_libname);
 
     let libname = if should_trim_leading_lib {
         full_libname

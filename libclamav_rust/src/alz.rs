@@ -511,7 +511,9 @@ impl AlzLocalFileHeader {
             usize::try_from(self.start_of_compressed_data).map_err(|_| Error::Extract)?;
 
         if self.compressed_size != self.uncompressed_size {
-            debug!("Uncompressed file has different lengths for compressed vs uncompressed, using the stored size");
+            debug!(
+                "Uncompressed file has different lengths for compressed vs uncompressed, using the stored size"
+            );
         }
 
         let len: usize = usize::try_from(self.compressed_size).map_err(|_| Error::Extract)?;
@@ -657,7 +659,7 @@ impl<'aa> Alz {
     fn is_alz(&self, cursor: &mut std::io::Cursor<&Vec<u8>>) -> bool {
         cursor
             .read_u32::<LittleEndian>()
-            .map_or(false, |n| ALZ_FILE_HEADER == n)
+            .is_ok_and(|n| ALZ_FILE_HEADER == n)
     }
 
     fn parse_local_fileheader<F>(

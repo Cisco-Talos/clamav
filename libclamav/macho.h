@@ -29,6 +29,5 @@
 cl_error_t cli_scanmacho(cli_ctx *ctx, struct cli_exe_info *fileinfo);
 cl_error_t cli_machoheader(cli_ctx *ctx, struct cli_exe_info *fileinfo);
 cl_error_t cli_scanmacho_unibin(cli_ctx *ctx);
-cl_error_t cli_unpackmacho(cli_ctx *ctx);
 
 #endif

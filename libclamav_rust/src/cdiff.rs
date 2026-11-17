@@ -20,9 +20,9 @@
 
 use std::{
     collections::BTreeMap,
-    ffi::{c_void, CStr, CString},
+    ffi::{CStr, CString, c_void},
     fs::{self, File, OpenOptions},
-    io::{prelude::*, BufReader, BufWriter, Read, Seek, SeekFrom, Write},
+    io::{BufReader, BufWriter, Read, Seek, SeekFrom, Write, prelude::*},
     iter::*,
     mem::ManuallyDrop,
     os::raw::c_char,
@@ -37,7 +37,7 @@ use crate::{
     sys, validate_str_param,
 };
 
-use flate2::{read::GzDecoder, write::GzEncoder, Compression};
+use flate2::{Compression, read::GzDecoder, write::GzEncoder};
 use log::{debug, error, warn};
 use sha2::{Digest, Sha256};
 
@@ -445,7 +445,7 @@ fn is_debug_enabled() -> bool {
     }
 }
 
-#[export_name = "script2cdiff"]
+#[unsafe(export_name = "script2cdiff")]
 pub extern "C" fn _script2cdiff(
     script: *const c_char,
     builder: *const c_char,
@@ -588,7 +588,7 @@ pub fn script2cdiff(script_file_name: &str, builder: &str, server: &str) -> Resu
 /// # Safety
 ///
 /// No parameters may be NULL.
-#[export_name = "cdiff_apply"]
+#[unsafe(export_name = "cdiff_apply")]
 pub unsafe extern "C" fn _cdiff_apply(
     cdiff_file_path_str: *const c_char,
     verifier_ptr: *const c_void,

@@ -73,7 +73,7 @@ pub struct IndicatorMeta {
 }
 
 /// Initialize a match vector
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn evidence_new() -> sys::evidence_t {
     Box::into_raw(Box::<Evidence>::default()) as sys::evidence_t
 }
@@ -85,7 +85,7 @@ pub extern "C" fn evidence_new() -> sys::evidence_t {
 ///
 /// # Safety
 /// /// No parameters may be NULL
-#[export_name = "evidence_new_from_child"]
+#[unsafe(export_name = "evidence_new_from_child")]
 pub unsafe extern "C" fn _evidence_new_from_child(
     child: sys::evidence_t,
     evidence_out: *mut sys::evidence_t,
@@ -93,11 +93,15 @@ pub unsafe extern "C" fn _evidence_new_from_child(
     err: *mut *mut FFIError,
 ) -> bool {
     if child.is_null() {
-        error!("Attempted to create evidence from a NULL child pointer. Please report this at: https://github.com/Cisco-Talos/clamav/issues");
+        error!(
+            "Attempted to create evidence from a NULL child pointer. Please report this at: https://github.com/Cisco-Talos/clamav/issues"
+        );
         return false;
     }
     if evidence_out.is_null() {
-        error!("evidence_out pointer is NULL. Please report this at: https://github.com/Cisco-Talos/clamav/issues");
+        error!(
+            "evidence_out pointer is NULL. Please report this at: https://github.com/Cisco-Talos/clamav/issues"
+        );
         return false;
     }
 
@@ -110,7 +114,7 @@ pub unsafe extern "C" fn _evidence_new_from_child(
             *evidence_out = Box::into_raw(Box::new(evidence)) as sys::evidence_t;
             true
         }
-        Err(error) => return ffi_error!(err = err, error),
+        Err(error) => ffi_error!(err = err, error),
     }
 }
 
@@ -122,7 +126,7 @@ pub unsafe extern "C" fn _evidence_new_from_child(
 /// # Safety
 ///
 /// No parameters may be NULL
-#[export_name = "evidence_add_child_evidence"]
+#[unsafe(export_name = "evidence_add_child_evidence")]
 pub unsafe extern "C" fn _evidence_add_child_evidence(
     evidence: sys::evidence_t,
     child: sys::evidence_t,
@@ -130,11 +134,15 @@ pub unsafe extern "C" fn _evidence_add_child_evidence(
     err: *mut *mut FFIError,
 ) -> bool {
     if evidence.is_null() {
-        error!("Attempted to add child evidence to a NULL evidence pointer. Please report this at: https://github.com/Cisco-Talos/clamav/issues");
+        error!(
+            "Attempted to add child evidence to a NULL evidence pointer. Please report this at: https://github.com/Cisco-Talos/clamav/issues"
+        );
         return false;
     }
     if child.is_null() {
-        error!("Attempted to add NULL child evidence. Please report this at: https://github.com/Cisco-Talos/clamav/issues");
+        error!(
+            "Attempted to add NULL child evidence. Please report this at: https://github.com/Cisco-Talos/clamav/issues"
+        );
         return false;
     }
 
@@ -152,7 +160,7 @@ pub unsafe extern "C" fn _evidence_add_child_evidence(
 }
 
 /// Free the evidence
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn evidence_free(evidence: sys::evidence_t) {
     if !evidence.is_null() {
         let _ = unsafe { Box::from_raw(evidence as *mut Evidence) };
@@ -170,7 +178,7 @@ pub extern "C" fn evidence_free(evidence: sys::evidence_t) {
 /// # Safety
 ///
 /// No parameters may be NULL
-#[export_name = "evidence_render_verdict"]
+#[unsafe(export_name = "evidence_render_verdict")]
 pub unsafe extern "C" fn _evidence_render_verdict(evidence: sys::evidence_t) -> bool {
     let evidence = ManuallyDrop::new(Box::from_raw(evidence as *mut Evidence));
 
@@ -186,7 +194,7 @@ pub unsafe extern "C" fn _evidence_render_verdict(evidence: sys::evidence_t) -> 
 /// So the lifetime of the string is good at least until you reload or unload the databases.
 ///
 /// No parameters may be NULL
-#[export_name = "evidence_get_last_alert"]
+#[unsafe(export_name = "evidence_get_last_alert")]
 pub unsafe extern "C" fn _evidence_get_last_alert(evidence: sys::evidence_t) -> *const c_char {
     let evidence = ManuallyDrop::new(Box::from_raw(evidence as *mut Evidence));
 
@@ -211,7 +219,7 @@ pub unsafe extern "C" fn _evidence_get_last_alert(evidence: sys::evidence_t) -> 
 /// The out_depth and out_object_id parameters are optional, and will be size_t pointers for depth and object_id.
 ///
 /// No parameters may be NULL
-#[export_name = "evidence_get_indicator"]
+#[unsafe(export_name = "evidence_get_indicator")]
 pub unsafe extern "C" fn _evidence_get_indicator(
     evidence: sys::evidence_t,
     indicator_type: IndicatorType,
@@ -232,7 +240,7 @@ pub unsafe extern "C" fn _evidence_get_indicator(
                     *out_object_id = meta.last().unwrap().object_id;
                 }
 
-                return meta.last().unwrap().static_virname as *const c_char;
+                meta.last().unwrap().static_virname as *const c_char
             } else {
                 // no alert at that index. return NULL
                 std::ptr::null()
@@ -248,7 +256,7 @@ pub unsafe extern "C" fn _evidence_get_indicator(
                     *out_object_id = meta.last().unwrap().object_id;
                 }
 
-                return meta.last().unwrap().static_virname as *const c_char;
+                meta.last().unwrap().static_virname as *const c_char
             } else {
                 // no alert at that index. return NULL
                 std::ptr::null()
@@ -264,7 +272,7 @@ pub unsafe extern "C" fn _evidence_get_indicator(
                     *out_object_id = meta.last().unwrap().object_id;
                 }
 
-                return meta.last().unwrap().static_virname as *const c_char;
+                meta.last().unwrap().static_virname as *const c_char
             } else {
                 // no alert at that index. return NULL
                 std::ptr::null()
@@ -278,7 +286,7 @@ pub unsafe extern "C" fn _evidence_get_indicator(
 /// # Safety
 ///
 /// No parameters may be NULL
-#[export_name = "evidence_num_alerts"]
+#[unsafe(export_name = "evidence_num_alerts")]
 pub unsafe extern "C" fn _evidence_num_alerts(evidence: sys::evidence_t) -> usize {
     // If the pointer is NULL, return 0. Because there if there is no evidence, there are no indicators.
     if evidence.is_null() {
@@ -296,7 +304,7 @@ pub unsafe extern "C" fn _evidence_num_alerts(evidence: sys::evidence_t) -> usiz
 /// # Safety
 ///
 /// No parameters may be NULL
-#[export_name = "evidence_num_indicators_type"]
+#[unsafe(export_name = "evidence_num_indicators_type")]
 pub unsafe extern "C" fn _evidence_num_indicators_type(
     evidence: sys::evidence_t,
     indicator_type: IndicatorType,
@@ -323,7 +331,7 @@ pub unsafe extern "C" fn _evidence_num_indicators_type(
 /// # Safety
 ///
 /// `hexsig` and `err` must not be NULL
-#[export_name = "evidence_add_indicator"]
+#[unsafe(export_name = "evidence_add_indicator")]
 pub unsafe extern "C" fn _evidence_add_indicator(
     evidence: sys::evidence_t,
     name: *const c_char,
@@ -355,7 +363,7 @@ pub unsafe extern "C" fn _evidence_add_indicator(
 /// # Safety
 ///
 /// `hexsig` and `err` must not be NULL
-#[export_name = "evidence_remove_indicator"]
+#[unsafe(export_name = "evidence_remove_indicator")]
 pub unsafe extern "C" fn _evidence_remove_indicator(
     evidence: sys::evidence_t,
     name: *const c_char,
