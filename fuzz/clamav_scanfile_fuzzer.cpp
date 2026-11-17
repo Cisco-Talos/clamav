@@ -111,10 +111,22 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
 
     __pid_t pid = getpid();
 
-    snprintf(tmp_file_name, sizeof(tmp_file_name), "tmp.scanfile.%d", pid);
+    const char* tmpdir = getenv("TMPDIR");
+    if (NULL == tmpdir) {
+        tmpdir = "/tmp";
+    }
+
+    snprintf(tmp_file_name, sizeof(tmp_file_name), "%s/tmp.scanfile.%d", tmpdir, pid);
 
     fuzzfile = fopen(tmp_file_name, "w");
-    fwrite(data, size, 1, fuzzfile);
+    if (NULL == fuzzfile) {
+        return 0;
+    }
+    if (size != 0 && 1 != fwrite(data, size, 1, fuzzfile)) {
+        fclose(fuzzfile);
+        unlink(tmp_file_name);
+        return 0;
+    }
     fclose(fuzzfile);
 
     const char* virus_name = nullptr;
