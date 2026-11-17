@@ -211,7 +211,7 @@ Alert on encrypted documents (encrypted .zip, .7zip, .rar, .pdf).
 Alert on OLE2 files containing VBA macros (Heuristics.OLE2.ContainsMacros).
 .TP
 \fB\-\-alert\-exceeds\-max[=yes/no(*)]\fR
-Alert on files that exceed max file size, max scan size, or max recursion limit (Heuristics.Limits.Exceeded).
+Alert on files that exceed configured scan limits (Heuristics.Limits.Exceeded).
 .TP
 \fB\-\-alert\-phishing\-ssl[=yes/no(*)]\fR
 Alert on emails containing SSL mismatches in URLs (might lead to false positives!).
