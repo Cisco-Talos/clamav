@@ -1179,6 +1179,10 @@ static cl_error_t cli_scangzip(cli_ctx *ctx)
                     /* no break yet, flush extracted bytes to file */
                 }
             }
+            if (cli_checklimits("GZip", ctx, outsize + (sizeof(buff) - z.avail_out), 0, 0) != CL_SUCCESS) {
+                at = map->len;
+                break;
+            }
             if (cli_writen(fd, buff, sizeof(buff) - z.avail_out) == (size_t)-1) {
                 inflateEnd(&z);
                 close(fd);
@@ -1190,10 +1194,6 @@ static cl_error_t cli_scangzip(cli_ctx *ctx)
                 return CL_EWRITE;
             }
             outsize += sizeof(buff) - z.avail_out;
-            if (cli_checklimits("GZip", ctx, outsize, 0, 0) != CL_SUCCESS) {
-                at = map->len;
-                break;
-            }
             if (inf == Z_STREAM_END) {
                 at -= z.avail_in;
                 inflateReset(&z);
@@ -1278,6 +1278,9 @@ static cl_error_t cli_scanbzip(cli_ctx *ctx)
 
         if (!strm.avail_out || BZ_STREAM_END == rc) {
 
+            if (cli_checklimits("Bzip", ctx, size + (sizeof(buf) - strm.avail_out), 0, 0) != CL_SUCCESS)
+                break;
+
             size += sizeof(buf) - strm.avail_out;
 
             if (cli_writen(fd, buf, sizeof(buf) - strm.avail_out) != sizeof(buf) - strm.avail_out) {
@@ -1293,9 +1296,6 @@ static cl_error_t cli_scanbzip(cli_ctx *ctx)
                 free(tmpname);
                 return CL_EWRITE;
             }
-
-            if (cli_checklimits("Bzip", ctx, size, 0, 0) != CL_SUCCESS)
-                break;
 
             strm.next_out  = buf;
             strm.avail_out = sizeof(buf);
@@ -1384,6 +1384,12 @@ static cl_error_t cli_scanxz(cli_ctx *ctx)
         /* write decompress buffer */
         if (!strm.avail_out || rc == XZ_STREAM_END) {
             size_t towrite = CLI_XZ_OBUF_SIZE - strm.avail_out;
+            if (cli_checklimits("cli_scanxz", ctx, size + towrite, 0, 0) != CL_SUCCESS) {
+                cli_warnmsg("cli_scanxz: decompress file size exceeds limits - "
+                            "only scanning %li bytes\n",
+                            size);
+                break;
+            }
             size += towrite;
 
             // cli_dbgmsg("Writing %li bytes to XZ decompress temp file(%li byte total)\n",
@@ -1393,12 +1399,6 @@ static cl_error_t cli_scanxz(cli_ctx *ctx)
                 cli_errmsg("cli_scanxz: Can't write to file.\n");
                 ret = CL_EWRITE;
                 goto xz_exit;
-            }
-            if (cli_checklimits("cli_scanxz", ctx, size, 0, 0) != CL_SUCCESS) {
-                cli_warnmsg("cli_scanxz: decompress file size exceeds limits - "
-                            "only scanning %li bytes\n",
-                            size);
-                break;
             }
             strm.next_out  = buf;
             strm.avail_out = CLI_XZ_OBUF_SIZE;
