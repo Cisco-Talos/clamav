@@ -412,6 +412,8 @@ class ClamSubmitTest(unittest.TestCase):
         scenario = Scenario()
         result = self.run_client(scenario, self.standard_arguments() + ["-d"])
         self.assertEqual(result.returncode, 0, result.stderr.decode())
+        debug_output = result.stdout + result.stderr
+        self.assertIn(b"libcurl:", debug_output)
         for secret in (
             CSRF_TOKEN,
             FORM_AUTHENTICITY_TOKEN,
@@ -422,7 +424,7 @@ class ClamSubmitTest(unittest.TestCase):
             "submitter@example.com",
         ):
             with self.subTest(secret=secret):
-                self.assertNotIn(secret.encode(), result.stderr)
+                self.assertNotIn(secret.encode(), debug_output)
 
     def test_cli_validation(self):
         result = subprocess.run(
