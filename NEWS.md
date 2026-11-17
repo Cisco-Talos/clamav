@@ -17,6 +17,17 @@ ClamAV 1.6.0 includes the following improvements and changes:
 
 ### Bug fixes
 
+- Fixed a PDF parsing issue where an embedded file was scanned without being
+  decoded when its stream dictionary held a nested dictionary with a hex string
+  before `/Filter` (e.g. `/Params << /CheckSum <...> >>`, as written by qpdf and
+  pikepdf). The end of the dictionary was found too early, so `/Filter` was
+  never read. Dictionary end detection now skips literal strings, hex strings
+  and comments, and so does the pass that reads the dictionary's names, so a
+  name inside a string or comment (e.g. `/Desc (... /Filter /ASCIIHexDecode)`)
+  is no longer applied to the object. If a string or comment in the dictionary
+  is not terminated, the previous dictionary end detection is used instead.
+  - GitHub issue: https://github.com/Cisco-Talos/clamav/issues/1773
+
 ### Acknowledgments
 
 Special thanks to the following people for code contributions and bug reports:
