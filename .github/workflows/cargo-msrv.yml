@@ -1,0 +1,76 @@
+# For most projects, this workflow file will not need changing; you simply need
+# to commit it to your repository.
+#
+# You may wish to alter this file to override the set of languages analyzed,
+# or to provide custom queries or build logic.
+#
+# ******** NOTE ********
+# We have attempted to detect the languages in your repository. Please check
+# the `language` matrix defined below to confirm you have the correct set of
+# supported CodeQL languages.
+#
+name: "Verify Minimum Supported Rust Version (MSRV)"
+on:
+  push:
+    branches: [ "main", dev/*, rel/*, feature/* ]
+  pull_request:
+    # The branches below must be a subset of the branches above
+    branches: [ "main", dev/*, feature/* ]
+  schedule:
+    - cron: '20 10 * * 3'
+
+jobs:
+  msrv:
+    name: Verify MSRV
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Install cargo-msrv
+      run: cargo install cargo-msrv
+
+    - name: Install dependencies
+      run: sudo apt-get update && sudo apt-get install -y jq
+
+    - name: Check MSRV
+      run: |
+        # Ensure the expected MSRV file exists.
+        if [ ! -f MINIMUM_SUPPORTED_RUST_VERSION.txt ]; then
+          echo "Error: MINIMUM_SUPPORTED_RUST_VERSION.txt not found."
+          exit 1
+        fi
+
+        # Check the MSRV and store the output in a file.
+        cargo msrv find --output-format json > CARGO_MSRV.log
+        if [ ! -f CARGO_MSRV.log ]; then
+          echo "Error: Failed to detect MSRV."
+          exit 1
+        fi
+
+        # Read the detected MSRV from the file.
+        MIN_RUST_VERSION=$(jq -r 'select(.type=="subcommand_result" and .result.success==true) | .result.version' CARGO_MSRV.log)
+        if [ -z "$MIN_RUST_VERSION" ]; then
+          echo "Error: Could not determine MSRV."
+          exit 1
+        fi
+
+        echo "Detected minimum Rust version: $MIN_RUST_VERSION"
+
+        # Read the expected MSRV from the file.
+        EXPECTED_MIN_RUST_VERSION=$(tr -d '\r\n' < MINIMUM_SUPPORTED_RUST_VERSION.txt)
+        echo "Expected minimum Rust version: $EXPECTED_MIN_RUST_VERSION"
+
+        # Compare the expected MSRV with the actual MSRV.
+        if [ "$MIN_RUST_VERSION" != "$EXPECTED_MIN_RUST_VERSION" ]; then
+          echo "Error: MSRV mismatch. Expected: $EXPECTED_MIN_RUST_VERSION, Found: $MIN_RUST_VERSION"
+          echo "Please update 'MINIMUM_SUPPORTED_RUST_VERSION.txt' or adjust your code to be compatible with the current MSRV."
+          exit 1
+        else
+          echo "MSRV check passed. Expected: $EXPECTED_MIN_RUST_VERSION, Found: $MIN_RUST_VERSION"
+        fi
