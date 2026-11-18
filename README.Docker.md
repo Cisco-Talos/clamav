@@ -34,7 +34,7 @@ You can use the `unstable` version (i.e. `clamav/clamav:unstable` or
 ## Building the ClamAV image
 
 While it is recommended to pull the image from our
-[Docker Hub registry](https://hub.docker.com/u/clamav/clamav), some may want
+[Docker Hub registry](https://hub.docker.com/r/clamav/clamav), some may want
 to build the image locally instead.
 
 To do this, you will need to get the  `Dockerfile` and the supporting `scripts/`
