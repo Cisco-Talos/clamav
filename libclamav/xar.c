@@ -607,6 +607,8 @@ int cli_scanxar(cli_ctx *ctx)
         rc = xar_inflate_toc(ctx, compressed_toc, (size_t)hdr.toc_length_compressed, &toc, &toc_length);
     }
     if (rc != CL_SUCCESS) {
+        if (ctx->abort_scan || rc == CL_ETIMEOUT || rc == CL_EMAXFILES || rc == CL_EMAXSIZE)
+            emax_reached(ctx);
         return rc;
     }
 

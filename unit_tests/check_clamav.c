@@ -6,6 +6,8 @@
 
 #include <stdlib.h>
 #include <limits.h>
+#include <inttypes.h>
+#include <stdint.h>
 #include <fcntl.h>
 #include <string.h>
 #include <check.h>
@@ -319,10 +321,15 @@ START_TEST(test_xar_incomplete_scan_is_not_clean_cached)
     unsigned char header[28] = {0};
     unsigned char *member = NULL;
     unsigned char *compressed_toc = NULL;
-    unsigned long member_size, compressed_toc_size;
+    size_t member_size;
+    uLong zlib_toc_size;
+    uLongf compressed_toc_size;
     unsigned long scanned = 0;
     size_t toc_size;
+    uint64_t compressed_toc_length_field, toc_length_field;
+    long long original_maxfiles, original_maxfilesize;
     int i, toc_length, added;
+    long xar_length;
     FILE *member_file = NULL, *xar_file = NULL;
     struct cl_scan_options options;
     int ret;
@@ -333,7 +340,7 @@ START_TEST(test_xar_incomplete_scan_is_not_clean_cached)
     long member_length = ftell(member_file);
     ck_assert_msg(member_length > 0, "empty %s", member_path);
     ck_assert_msg(fseek(member_file, 0, SEEK_SET) == 0, "rewind %s", member_path);
-    member_size = (unsigned long)member_length;
+    member_size = (size_t)member_length;
     member = malloc(member_size);
     ck_assert_msg(member != NULL, "allocate XAR member");
     ck_assert_msg(fread(member, 1, member_size, member_file) == member_size, "read %s", member_path);
@@ -353,36 +360,45 @@ START_TEST(test_xar_incomplete_scan_is_not_clean_cached)
     }
     added = snprintf(toc + toc_length, sizeof(toc) - (size_t)toc_length,
                      "<file><name>clam.exe</name><type>file</type><data>"
-                     "<length>%lu</length><offset>100</offset><size>%lu</size>"
-                     "</data></file></toc></xar>", member_size, member_size);
+                     "<length>%" PRIu64 "</length><offset>100</offset><size>%" PRIu64 "</size>"
+                     "</data></file></toc></xar>", (uint64_t)member_size, (uint64_t)member_size);
     ck_assert_msg(added > 0 && (size_t)added < sizeof(toc) - (size_t)toc_length,
                   "append signature member to XAR TOC");
     toc_length += added;
     toc_size = (size_t)toc_length;
-    compressed_toc_size = compressBound(toc_size);
-    compressed_toc = malloc(compressed_toc_size);
+    ck_assert_msg(toc_size <= ULONG_MAX, "XAR TOC exceeds zlib input length type");
+    zlib_toc_size     = (uLong)toc_size;
+    compressed_toc_size = compressBound(zlib_toc_size);
+    ck_assert_msg((uint64_t)compressed_toc_size <= (uint64_t)SIZE_MAX,
+                  "compressed XAR TOC exceeds size_t");
+    compressed_toc = malloc((size_t)compressed_toc_size);
     ck_assert_msg(compressed_toc != NULL, "allocate compressed XAR TOC");
     ck_assert_msg(compress(compressed_toc, &compressed_toc_size,
-                           (const Bytef *)toc, toc_size) == Z_OK,
+                           (const Bytef *)toc, zlib_toc_size) == Z_OK,
                   "compress XAR TOC");
 
     /* XAR's header fields are big-endian. */
     header[0] = 0x78; header[1] = 0x61; header[2] = 0x72; header[3] = 0x21;
     header[5] = 28;
+    compressed_toc_length_field = (uint64_t)compressed_toc_size;
+    toc_length_field            = (uint64_t)toc_size;
     for (i = 0; i < 8; i++) {
-        header[8 + i] = (unsigned char)(compressed_toc_size >> (56 - 8 * i));
-        header[16 + i] = (unsigned char)(toc_size >> (56 - 8 * i));
+        header[8 + i]  = (unsigned char)(compressed_toc_length_field >> (56 - 8 * i));
+        header[16 + i] = (unsigned char)(toc_length_field >> (56 - 8 * i));
     }
 
     snprintf(xar_path, sizeof(xar_path), "%s" PATHSEP "xar-cache-regression.xar", OBJDIR);
     xar_file = fopen(xar_path, "wb");
     ck_assert_msg(xar_file != NULL, "create %s", xar_path);
     ck_assert_msg(fwrite(header, 1, sizeof(header), xar_file) == sizeof(header), "write XAR header");
-    ck_assert_msg(fwrite(compressed_toc, 1, compressed_toc_size, xar_file) == compressed_toc_size,
+    ck_assert_msg(fwrite(compressed_toc, 1, (size_t)compressed_toc_size, xar_file) == (size_t)compressed_toc_size,
                   "write compressed XAR TOC");
     for (i = 0; i < 20; i++)
         ck_assert_msg(fwrite("clean", 1, 5, xar_file) == 5, "write clean XAR member %d", i);
     ck_assert_msg(fwrite(member, 1, member_size, xar_file) == member_size, "write second XAR member");
+    ck_assert_msg(fflush(xar_file) == 0, "flush %s", xar_path);
+    xar_length = ftell(xar_file);
+    ck_assert_msg(xar_length > 0, "get XAR fixture size");
     ck_assert_msg(fclose(xar_file) == 0, "close %s", xar_path);
     xar_file = NULL;
     free(compressed_toc);
@@ -390,6 +406,10 @@ START_TEST(test_xar_incomplete_scan_is_not_clean_cached)
 
     memset(&options, 0, sizeof(options));
     options.parse |= ~0;
+    original_maxfiles = cl_engine_get_num(g_engine, CL_ENGINE_MAX_FILES, NULL);
+    original_maxfilesize = cl_engine_get_num(g_engine, CL_ENGINE_MAX_FILESIZE, NULL);
+    ck_assert_msg(original_maxfiles >= 0 && original_maxfilesize >= 0,
+                  "read original engine limits");
 
     /* MaxFiles allows the first member but blocks later members, so this
      * incomplete archive result must not be cached as clean. */
@@ -408,6 +428,28 @@ START_TEST(test_xar_incomplete_scan_is_not_clean_cached)
     ck_assert_msg(ret == CL_VIRUS, "second XAR scan should detect skipped member: %s", cl_strerror(ret));
     ck_assert_msg(virname && !strcmp(virname, "ClamAV-Test-File.UNOFFICIAL"),
                   "virusname: %s", virname ? virname : "(null)");
+
+    /* The archive itself fits MaxFileSize, but the expanded TOC does not.
+     * Relaxing the limit on this same engine must rescan the XAR and detect
+     * the member instead of reusing a clean-cache result. */
+    ck_assert_msg(cl_engine_set_num(g_engine, CL_ENGINE_MAX_FILESIZE, xar_length) == CL_SUCCESS,
+                  "set TOC-limiting MaxFileSize");
+    ret = cl_scanfile(xar_path, &virname, &scanned, g_engine, &options);
+    ck_assert_msg(ret == CL_CLEAN, "TOC-limited XAR scan: %s", cl_strerror(ret));
+
+    ck_assert_msg(cl_engine_set_num(g_engine, CL_ENGINE_MAX_FILESIZE, 1024 * 1024) == CL_SUCCESS,
+                  "raise MaxFileSize");
+    virname = NULL;
+    scanned = 0;
+    ret = cl_scanfile(xar_path, &virname, &scanned, g_engine, &options);
+    ck_assert_msg(ret == CL_VIRUS, "TOC-limit-relaxed XAR scan should detect skipped member: %s",
+                  cl_strerror(ret));
+    ck_assert_msg(virname && !strcmp(virname, "ClamAV-Test-File.UNOFFICIAL"),
+                  "virusname: %s", virname ? virname : "(null)");
+    ck_assert_msg(cl_engine_set_num(g_engine, CL_ENGINE_MAX_FILES, original_maxfiles) == CL_SUCCESS,
+                  "restore MaxFiles");
+    ck_assert_msg(cl_engine_set_num(g_engine, CL_ENGINE_MAX_FILESIZE, original_maxfilesize) == CL_SUCCESS,
+                  "restore MaxFileSize");
     cli_unlink(xar_path);
 }
 END_TEST
