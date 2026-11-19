@@ -82,6 +82,16 @@ class TC(testcase.TestCase):
     def xar_compress(data):
         return zlib.compress(data)
 
+    @staticmethod
+    def deterministic_payload(length, start_counter=0):
+        return b''.join(
+            hashlib.sha256(struct.pack('>I', counter)).digest()
+            for counter in range(
+                start_counter,
+                start_counter + (length + hashlib.sha256().digest_size - 1) // hashlib.sha256().digest_size,
+            )
+        )[:length]
+
     def test_declared_large_actual_small_toc_is_scanned(self):
         self.step_name('Test XAR limits use the actual TOC size')
 
@@ -160,8 +170,12 @@ class TC(testcase.TestCase):
     def test_gzip_extraction_respects_maxfilesize(self):
         self.step_name('Verify that XAR gzip extraction does not write beyond MaxFileSize')
 
-        maxfilesize = 64 * 1024
-        payload = b'A' * (1024 * 1024)
+        maxfilesize = 65 * 1024
+        # Keep the compressed archive below MaxFileSize while making the
+        # compressed member span several fmap input pages.
+        seed_a = self.deterministic_payload(20 * 1024)
+        seed_b = self.deterministic_payload(20 * 1024, start_counter=10000)
+        payload = seed_a * 16 + seed_b * 16
         compressed = self.xar_compress(payload)
         toc = (
             b'<?xml version="1.0" encoding="UTF-8"?>'
@@ -191,7 +205,7 @@ class TC(testcase.TestCase):
         tempdir = Path(tempfile.mkdtemp(prefix='xar-gzip-maxfilesize-', dir=TC.path_tmp))
         output = self.scan_xar(
             testfile,
-            '--max-filesize=64K --max-scansize=16M --alert-exceeds-max=no '
+            '--max-filesize=65K --max-scansize=16M --alert-exceeds-max=no '
             '--leave-temps --tempdir={}'.format(tempdir),
         )
 
@@ -200,18 +214,58 @@ class TC(testcase.TestCase):
         assert tempfiles
         extracted = [path for path in tempfiles if path.stat().st_size == maxfilesize]
         assert len(extracted) == 1
-        assert extracted[0].read_bytes() == b'A' * maxfilesize
+        assert extracted[0].read_bytes() == payload[:maxfilesize]
 
-    def test_gzip_extraction_respects_aggregate_maxscansize(self):
-        self.step_name('Verify that XAR gzip extraction counts truncated members against MaxScanSize')
+    def test_gzip_extraction_stops_after_oversized_member(self):
+        self.step_name('Verify that XAR stops after a MaxFileSize-truncated member')
 
-        maxfilesize = 64 * 1024
-        maxscansize = 96 * 1024
-        payload = b'A' * (1024 * 1024)
+        maxfilesize = 129 * 1024
+        seed_a = self.deterministic_payload(20 * 1024)
+        seed_b = self.deterministic_payload(20 * 1024, start_counter=10000)
+        payload = seed_a * 16 + seed_b * 16
         compressed_members = [self.xar_compress(payload) for _ in range(2)]
         toc_entries = []
         offset = 0
         for index, compressed in enumerate(compressed_members):
+            toc_entries.append(
+                (
+                    f'<file><name>large{index}.bin</name><type>file</type><data>'
+                    f'<length>{len(compressed)}</length><offset>{offset}</offset>'
+                    f'<size>{len(payload)}</size>'
+                    '<encoding style="application/x-gzip"/></data></file>'
+                ).encode()
+            )
+            offset += len(compressed)
+        toc = b'<xar><toc>' + b''.join(toc_entries) + b'</toc></xar>'
+        compressed_toc = zlib.compress(toc)
+        testfile = TC.path_tmp / 'xar-gzip-two-oversized.xar'
+        testfile.write_bytes(
+            struct.pack('>IHHQQI', 0x78617221, 28, 0, len(compressed_toc), len(toc), 0)
+            + compressed_toc + b''.join(compressed_members)
+        )
+        tempdir = Path(tempfile.mkdtemp(prefix='xar-gzip-two-oversized-', dir=TC.path_tmp))
+        output = self.scan_xar(
+            testfile,
+            '--max-files=3 --max-filesize=129K --max-scansize=10M '
+            '--alert-exceeds-max=no --leave-temps --tempdir={}'.format(tempdir),
+        )
+
+        assert output.ec == 0
+        extracted = [path for path in tempdir.rglob('*') if path.is_file()]
+        partial_members = [path for path in extracted if path.stat().st_size == maxfilesize]
+        assert len(partial_members) == 1
+        assert partial_members[0].read_bytes() == payload[:maxfilesize]
+
+    def test_gzip_extraction_respects_aggregate_maxscansize(self):
+        self.step_name('Verify that XAR gzip extraction counts truncated members against MaxScanSize')
+
+        maxfilesize = 2 * 1024 * 1024
+        maxscansize = 96 * 1024
+        payloads = (b'A' * (64 * 1024), b'B' * (1024 * 1024))
+        compressed_members = [self.xar_compress(payload) for payload in payloads]
+        toc_entries = []
+        offset = 0
+        for index, (payload, compressed) in enumerate(zip(payloads, compressed_members)):
             toc_entries.append(
                 (
                     f'<file><name>payload{index}.bin</name><type>file</type><data>'
@@ -248,19 +302,28 @@ class TC(testcase.TestCase):
         tempdir = Path(tempfile.mkdtemp(prefix='xar-gzip-maxscansize-', dir=TC.path_tmp))
         output = self.scan_xar(
             testfile,
-            '--max-filesize=64K --max-scansize=96K --alert-exceeds-max=no '
-            '--leave-temps --tempdir={}'.format(tempdir),
+            '--max-filesize={} --max-scansize=96K --alert-exceeds-max=no '
+            '--leave-temps --tempdir={}'.format(maxfilesize, tempdir),
         )
 
         assert output.ec == 0
-        extracted = [
-            path for path in tempdir.rglob('*') if path.is_file() and path.stat().st_size > 1024
-        ]
+        extracted = []
+        for path in tempdir.rglob('*'):
+            if not path.is_file() or path.stat().st_size <= 1024:
+                continue
+            data = path.read_bytes()
+            if data == b'A' * len(data) or data == b'B' * len(data):
+                extracted.append(path)
         assert len(extracted) == 2
         total_extracted = sum(path.stat().st_size for path in extracted)
-        assert maxfilesize < total_extracted <= maxscansize
-        assert all(path.read_bytes() == b'A' * path.stat().st_size for path in extracted)
-        assert max(path.stat().st_size for path in extracted) == maxfilesize
+        sizes = sorted(path.stat().st_size for path in extracted)
+        assert 64 * 1024 < total_extracted <= maxscansize
+        assert sizes[0] > 0
+        assert sizes[1] == 64 * 1024
+        assert all(
+            path.read_bytes() == (b'A' if path.stat().st_size == 64 * 1024 else b'B') * path.stat().st_size
+            for path in extracted
+        )
 
     def test_gzip_extraction_respects_maxfiles(self):
         self.step_name('Verify that XAR gzip extraction stops at MaxFiles')

@@ -12,6 +12,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <dirent.h>
+#include <zlib.h>
 #if HAVE_UNISTD_H
 #include <unistd.h>
 #endif
@@ -306,6 +307,108 @@ START_TEST(test_cl_scanfile_allscan)
         ck_assert_msg(ret == CL_VIRUS, "cl_scanfile_allscan failed for %s: %s", file, cl_strerror(ret));
         ck_assert_msg(virname && !strcmp(virname, "ClamAV-Test-File.UNOFFICIAL"), "virusname: %s", virname);
     }
+}
+END_TEST
+
+START_TEST(test_xar_incomplete_scan_is_not_clean_cached)
+{
+    const char *virname = NULL;
+    const char *member_path = OBJDIR PATHSEP "input" PATHSEP "clamav_hdb_scanfiles" PATHSEP "clam.exe";
+    char xar_path[PATH_MAX];
+    char toc[8192];
+    unsigned char header[28] = {0};
+    unsigned char *member = NULL;
+    unsigned char *compressed_toc = NULL;
+    unsigned long member_size, compressed_toc_size;
+    unsigned long scanned = 0;
+    size_t toc_size;
+    int i, toc_length, added;
+    FILE *member_file = NULL, *xar_file = NULL;
+    struct cl_scan_options options;
+    int ret;
+
+    member_file = fopen(member_path, "rb");
+    ck_assert_msg(member_file != NULL, "open %s", member_path);
+    ck_assert_msg(fseek(member_file, 0, SEEK_END) == 0, "seek %s", member_path);
+    long member_length = ftell(member_file);
+    ck_assert_msg(member_length > 0, "empty %s", member_path);
+    ck_assert_msg(fseek(member_file, 0, SEEK_SET) == 0, "rewind %s", member_path);
+    member_size = (unsigned long)member_length;
+    member = malloc(member_size);
+    ck_assert_msg(member != NULL, "allocate XAR member");
+    ck_assert_msg(fread(member, 1, member_size, member_file) == member_size, "read %s", member_path);
+    fclose(member_file);
+    member_file = NULL;
+
+    toc_length = snprintf(toc, sizeof(toc), "<xar><toc>");
+    ck_assert_msg(toc_length > 0 && (size_t)toc_length < sizeof(toc), "start XAR TOC");
+    for (i = 0; i < 20; i++) {
+        added = snprintf(toc + toc_length, sizeof(toc) - (size_t)toc_length,
+                         "<file><name>clean%d.txt</name><type>file</type><data>"
+                         "<length>5</length><offset>%d</offset><size>5</size>"
+                         "</data></file>", i, i * 5);
+        ck_assert_msg(added > 0 && (size_t)added < sizeof(toc) - (size_t)toc_length,
+                      "append clean member to XAR TOC");
+        toc_length += added;
+    }
+    added = snprintf(toc + toc_length, sizeof(toc) - (size_t)toc_length,
+                     "<file><name>clam.exe</name><type>file</type><data>"
+                     "<length>%lu</length><offset>100</offset><size>%lu</size>"
+                     "</data></file></toc></xar>", member_size, member_size);
+    ck_assert_msg(added > 0 && (size_t)added < sizeof(toc) - (size_t)toc_length,
+                  "append signature member to XAR TOC");
+    toc_length += added;
+    toc_size = (size_t)toc_length;
+    compressed_toc_size = compressBound(toc_size);
+    compressed_toc = malloc(compressed_toc_size);
+    ck_assert_msg(compressed_toc != NULL, "allocate compressed XAR TOC");
+    ck_assert_msg(compress(compressed_toc, &compressed_toc_size,
+                           (const Bytef *)toc, toc_size) == Z_OK,
+                  "compress XAR TOC");
+
+    /* XAR's header fields are big-endian. */
+    header[0] = 0x78; header[1] = 0x61; header[2] = 0x72; header[3] = 0x21;
+    header[5] = 28;
+    for (i = 0; i < 8; i++) {
+        header[8 + i] = (unsigned char)(compressed_toc_size >> (56 - 8 * i));
+        header[16 + i] = (unsigned char)(toc_size >> (56 - 8 * i));
+    }
+
+    snprintf(xar_path, sizeof(xar_path), "%s" PATHSEP "xar-cache-regression.xar", OBJDIR);
+    xar_file = fopen(xar_path, "wb");
+    ck_assert_msg(xar_file != NULL, "create %s", xar_path);
+    ck_assert_msg(fwrite(header, 1, sizeof(header), xar_file) == sizeof(header), "write XAR header");
+    ck_assert_msg(fwrite(compressed_toc, 1, compressed_toc_size, xar_file) == compressed_toc_size,
+                  "write compressed XAR TOC");
+    for (i = 0; i < 20; i++)
+        ck_assert_msg(fwrite("clean", 1, 5, xar_file) == 5, "write clean XAR member %d", i);
+    ck_assert_msg(fwrite(member, 1, member_size, xar_file) == member_size, "write second XAR member");
+    ck_assert_msg(fclose(xar_file) == 0, "close %s", xar_path);
+    xar_file = NULL;
+    free(compressed_toc);
+    free(member);
+
+    memset(&options, 0, sizeof(options));
+    options.parse |= ~0;
+
+    /* MaxFiles allows the first member but blocks later members, so this
+     * incomplete archive result must not be cached as clean. */
+    ck_assert_msg(cl_engine_set_num(g_engine, CL_ENGINE_MAX_FILES, 2) == CL_SUCCESS,
+                  "set low MaxFiles");
+    ret = cl_scanfile(xar_path, &virname, &scanned, g_engine, &options);
+    ck_assert_msg(ret == CL_CLEAN, "first constrained XAR scan: %s", cl_strerror(ret));
+
+    ck_assert_msg(cl_engine_set_num(g_engine, CL_ENGINE_MAX_FILES, 100) == CL_SUCCESS,
+                  "raise MaxFiles");
+    ck_assert_msg(cl_engine_get_num(g_engine, CL_ENGINE_MAX_FILES, NULL) == 100,
+                  "MaxFiles update did not take effect");
+    virname = NULL;
+    scanned = 0;
+    ret = cl_scanfile(xar_path, &virname, &scanned, g_engine, &options);
+    ck_assert_msg(ret == CL_VIRUS, "second XAR scan should detect skipped member: %s", cl_strerror(ret));
+    ck_assert_msg(virname && !strcmp(virname, "ClamAV-Test-File.UNOFFICIAL"),
+                  "virusname: %s", virname ? virname : "(null)");
+    cli_unlink(xar_path);
 }
 END_TEST
 
@@ -1501,6 +1604,7 @@ static Suite *test_cl_suite(void)
     tcase_add_loop_test(tc_cl_scan, test_cl_scandesc_allscan, 0, expect);
     tcase_add_loop_test(tc_cl_scan, test_cl_scanfile, 0, expect);
     tcase_add_loop_test(tc_cl_scan, test_cl_scanfile_allscan, 0, expect);
+    tcase_add_test(tc_cl_scan, test_xar_incomplete_scan_is_not_clean_cached);
     tcase_add_loop_test(tc_cl_scan, test_cl_scandesc_callback, 0, expect);
     tcase_add_loop_test(tc_cl_scan, test_cl_scandesc_callback_allscan, 0, expect);
     tcase_add_loop_test(tc_cl_scan, test_cl_scanfile_callback, 0, expect);

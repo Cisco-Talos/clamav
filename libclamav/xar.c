@@ -586,6 +586,8 @@ int cli_scanxar(cli_ctx *ctx)
      * enforced against the actual decompressed TOC length below. */
     rc = cli_checklimits("cli_scanxar", ctx, 0, 0, 0);
     if (rc != CL_SUCCESS) {
+        if (ctx->abort_scan || rc == CL_ETIMEOUT || rc == CL_EMAXFILES)
+            emax_reached(ctx);
         return rc;
     }
 
@@ -665,6 +667,7 @@ int cli_scanxar(cli_ctx *ctx)
             break;
 
         int do_extract_cksum = 1;
+        int maxfilesize_truncated = 0;
         unsigned char *blockp;
         void *a_sc, *e_sc;
         void *a_mc, *e_mc;
@@ -680,8 +683,10 @@ int cli_scanxar(cli_ctx *ctx)
 
         /* Do not create or extract another member after a file-count limit. */
         rc = cli_checklimits("cli_scanxar", ctx, 0, 0, 0);
-        if (rc == CL_ETIMEOUT || rc == CL_EMAXFILES || ctx->abort_scan)
+        if (rc == CL_ETIMEOUT || rc == CL_EMAXFILES || ctx->abort_scan) {
+            emax_reached(ctx);
             goto exit_reader;
+        }
 
         at = offset + hdr.toc_length_compressed + hdr.size;
 
@@ -744,6 +749,7 @@ int cli_scanxar(cli_ctx *ctx)
 
                         if (out_size > UINT64_MAX - bytes) {
                             cli_dbgmsg("cli_scanxar: decompressed output size overflow.\n");
+                            emax_reached(ctx);
                             rc = CL_EMAXSIZE;
                             break;
                         }
@@ -760,8 +766,10 @@ int cli_scanxar(cli_ctx *ctx)
                                 uint64_t remaining = (out_size < ctx->engine->maxfilesize) ?
                                                          (ctx->engine->maxfilesize - out_size) :
                                                          0;
-                                if (remaining < allowed)
+                                if (remaining < allowed) {
                                     allowed = remaining;
+                                    maxfilesize_truncated = 1;
+                                }
                             }
 
                             if (ctx->engine->maxscansize) {
@@ -982,12 +990,24 @@ int cli_scanxar(cli_ctx *ctx)
                 }
         } /* end of switch */
 
-        if (ctx->abort_scan || rc == CL_ETIMEOUT || rc == CL_EMAXFILES)
+        if (ctx->abort_scan || rc == CL_ETIMEOUT || rc == CL_EMAXFILES) {
+            emax_reached(ctx);
             goto exit_tmpfile;
+        }
+
+        /* A truncated member is not scanned and therefore cannot consume a
+         * MaxFiles slot. Stop here so an archive cannot force repeated partial
+         * extractions of oversized members. */
+        if (maxfilesize_truncated) {
+            emax_reached(ctx);
+            goto exit_tmpfile;
+        }
 
         if (rc == CL_EMAXSIZE && ctx->engine->maxscansize &&
-            ctx->scansize >= ctx->engine->maxscansize)
+            ctx->scansize >= ctx->engine->maxscansize) {
+            emax_reached(ctx);
             goto exit_tmpfile;
+        }
 
         if (a_hash_ctx != NULL) {
             xar_hash_final(a_hash_ctx, a_hash_result, a_hash);
@@ -1031,6 +1051,8 @@ int cli_scanxar(cli_ctx *ctx)
 
             rc = cli_magic_scan_desc(fd, tmpname, ctx, NULL, LAYER_ATTRIBUTES_NONE); /// TODO: collect file names in xar_get_toc_data_values()
             if (rc != CL_SUCCESS) {
+                if (ctx->abort_scan || rc == CL_ETIMEOUT || rc == CL_EMAXFILES || rc == CL_EMAXSIZE)
+                    emax_reached(ctx);
                 goto exit_tmpfile;
             }
         }
