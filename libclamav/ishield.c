@@ -537,45 +537,63 @@ static cl_error_t is_dump_and_scan(cli_ctx *ctx, off_t off, size_t fsize)
     return ret;
 }
 
-/* Process data1.hdr and extracts all the available files from dataX.cab */
+/**
+ * @brief Process data1.hdr and extract available files from dataX.cab.
+ *
+ * @return CL_BREAK if the structured extraction was complete, CL_SUCCESS if
+ *         malformed metadata requires raw fallback scanning, or another
+ *         cl_error_t status if scanning should stop.
+ */
 static cl_error_t is_parse_hdr(cli_ctx *ctx, struct IS_CABSTUFF *c)
 {
-    uint32_t h1_data_off, objs_files_cnt, objs_dirs_off;
-    unsigned int off, i, scanned = 0;
-    int ret = CL_BREAK;
-    char hash[33], *hdr;
+    uint32_t h1_data_off, objs_files_cnt, objs_dirs_off, objs_dir_sz;
+    unsigned int scanned = 0;
+    size_t available_files, dirs_base, files_to_process, header_start, i, off;
+    cl_error_t status = CL_BREAK;
+    char hash[33];
     fmap_t *map = ctx->fmap;
 
     const struct IS_HDR *h1;
-    struct IS_OBJECTS *objs;
+    const struct IS_OBJECTS *objs;
     /* struct IS_INSTTYPEHDR *typehdr; -- UNUSED */
 
-    if (!c->hdr || !c->hdrsz || !c->cabcnt) {
+    if (c->hdr < 0 || (uint64_t)c->hdr > SIZE_MAX || c->hdrsz < sizeof(*h1) || !c->cabcnt) {
         cli_dbgmsg("is_parse_hdr: inconsistent hdr, maybe a false match\n");
         return CL_SUCCESS;
     }
 
-    if (!(h1 = fmap_need_off(map, c->hdr, c->hdrsz))) {
+    header_start = (size_t)c->hdr;
+    if (!CLI_ISCONTAINED_0_TO(map->len, header_start, c->hdrsz)) {
+        cli_dbgmsg("is_parse_hdr: header out of bounds\n");
+        return CL_SUCCESS;
+    }
+
+    if (!(h1 = fmap_need_off(map, header_start, sizeof(*h1)))) {
         cli_dbgmsg("is_parse_hdr: not enough room for H1\n");
         return CL_SUCCESS;
     }
 
-    hdr         = (char *)h1;
     h1_data_off = le32_to_host(h1->data_off);
-    objs        = (struct IS_OBJECTS *)fmap_need_ptr(map, hdr + h1_data_off, sizeof(*objs));
-    if (!objs) {
-        cli_dbgmsg("is_parse_hdr: not enough room for OBJECTS\n");
-        return CL_SUCCESS;
-    }
-
     cli_dbgmsg("is_parse_hdr: magic %x, unk1 %x, unk2 %x, data_off %x, data_sz %x\n",
                h1->magic, h1->unk1, h1->unk2, h1_data_off, h1->data_sz);
     if (le32_to_host(h1->magic) != 0x28635349) {
         cli_dbgmsg("is_parse_hdr: bad magic. wrong version?\n");
+        fmap_unneed_ptr(map, h1, sizeof(*h1));
         return CL_SUCCESS;
     }
 
     fmap_unneed_ptr(map, h1, sizeof(*h1));
+
+    if (h1_data_off > c->hdrsz || sizeof(*objs) > c->hdrsz - h1_data_off) {
+        cli_dbgmsg("is_parse_hdr: not enough room for OBJECTS\n");
+        return CL_SUCCESS;
+    }
+
+    objs = fmap_need_off(map, header_start + h1_data_off, sizeof(*objs));
+    if (!objs) {
+        cli_dbgmsg("is_parse_hdr: not enough room for OBJECTS\n");
+        return CL_SUCCESS;
+    }
 
     /*     cli_errmsg("COMPONENTS\n"); */
     /*     off = le32_to_host(objs->comps_off) + h1_data_off; */
@@ -611,27 +629,87 @@ static cl_error_t is_parse_hdr(cli_ctx *ctx, struct IS_CABSTUFF *c)
     /* dir = &hdr[*(uint32_t *)(&hdr[h1_data_off + objs_dirs_off + 4 * file->dir_id]) + h1_data_off + objs_dirs_off] */
 
     objs_files_cnt = le32_to_host(objs->files_cnt);
-    off            = h1_data_off + objs_dirs_off + le32_to_host(objs->dir_sz2);
+    objs_dir_sz    = le32_to_host(objs->dir_sz2);
+
+    off = h1_data_off;
+    if (off > c->hdrsz || objs_dirs_off > c->hdrsz - off) {
+        cli_dbgmsg("is_parse_hdr: file table offset out of bounds\n");
+        fmap_unneed_ptr(map, objs, sizeof(*objs));
+        return CL_SUCCESS;
+    }
+    off += objs_dirs_off;
+    dirs_base = off;
+
+    if (objs_dir_sz > c->hdrsz - off) {
+        cli_dbgmsg("is_parse_hdr: file table offset out of bounds\n");
+        fmap_unneed_ptr(map, objs, sizeof(*objs));
+        return CL_SUCCESS;
+    }
+    off += objs_dir_sz;
+
+    available_files  = (c->hdrsz - off) / sizeof(struct IS_FILEITEM);
+    files_to_process = objs_files_cnt;
+    if (files_to_process > available_files) {
+        cli_dbgmsg("is_parse_hdr: declared file table is truncated\n");
+        files_to_process = available_files;
+        status           = CL_SUCCESS;
+    }
+
     fmap_unneed_ptr(map, objs, sizeof(*objs));
-    for (i = 0; i < objs_files_cnt; i++) {
-        struct IS_FILEITEM *file = (struct IS_FILEITEM *)fmap_need_off(map, c->hdr + off, sizeof(*file));
+    for (i = 0; i < files_to_process; i++) {
+        cl_error_t timelimit_status;
+        const struct IS_FILEITEM *file;
+
+        timelimit_status = cli_checktimelimit(ctx);
+        if (timelimit_status != CL_SUCCESS) {
+            cli_dbgmsg("is_parse_hdr: time limit reached\n");
+            return timelimit_status;
+        }
+
+        file = fmap_need_off(map, header_start + off, sizeof(*file));
 
         if (file) {
             const char *emptyname = "", *dir_name = emptyname, *file_name = emptyname;
-            uint32_t dir_rel  = h1_data_off + objs_dirs_off + 4 * le32_to_host(file->dir_id);   /* rel off of dir entry from array of rel ptrs */
-            uint32_t file_rel = objs_dirs_off + h1_data_off + le32_to_host(file->str_name_off); /* rel off of fname */
             uint64_t file_stream_off, file_size, file_csize;
             uint16_t cabno;
 
             memcpy(hash, file->md5, 16);
             md5str((uint8_t *)hash);
-            if (fmap_need_ptr_once(map, &hdr[dir_rel], 4)) {
-                dir_rel = cli_readint32(&hdr[dir_rel]) + h1_data_off + objs_dirs_off;
-                if (fmap_need_str(map, &hdr[dir_rel], c->hdrsz - dir_rel))
-                    dir_name = &hdr[dir_rel];
+
+            {
+                size_t dir_index = (size_t)le16_to_host(file->dir_id) * sizeof(uint32_t);
+
+                if (dir_index <= c->hdrsz - dirs_base &&
+                    sizeof(uint32_t) <= c->hdrsz - dirs_base - dir_index) {
+                    const uint8_t *dir_entry;
+                    size_t dir_entry_rel = dirs_base + dir_index;
+
+                    dir_entry = fmap_need_off_once(map, header_start + dir_entry_rel, sizeof(uint32_t));
+                    if (dir_entry) {
+                        size_t dir_name_off = cli_readint32(dir_entry);
+
+                        if (dir_name_off < c->hdrsz - dirs_base) {
+                            size_t dir_name_rel = dirs_base + dir_name_off;
+
+                            dir_name = fmap_need_offstr(map, header_start + dir_name_rel, c->hdrsz - dir_name_rel);
+                            if (!dir_name)
+                                dir_name = emptyname;
+                        }
+                    }
+                }
             }
-            if (fmap_need_str(map, &hdr[file_rel], c->hdrsz - file_rel))
-                file_name = &hdr[file_rel];
+
+            {
+                size_t file_name_off = le32_to_host(file->str_name_off);
+
+                if (file_name_off < c->hdrsz - dirs_base) {
+                    size_t file_name_rel = dirs_base + file_name_off;
+
+                    file_name = fmap_need_offstr(map, header_start + file_name_rel, c->hdrsz - file_name_rel);
+                    if (!file_name)
+                        file_name = emptyname;
+                }
+            }
 
             file_stream_off = le64_to_host(file->stream_off);
             file_size       = le64_to_host(file->size);
@@ -666,13 +744,16 @@ static cl_error_t is_parse_hdr(cli_ctx *ctx, struct IS_CABSTUFF *c)
                                     fmap_unneed_ptr(map, (void *)file_name, strlen(file_name) + 1);
                                 if (dir_name != emptyname)
                                     fmap_unneed_ptr(map, (void *)dir_name, strlen(dir_name) + 1);
+                                fmap_unneed_ptr(map, file, sizeof(*file));
                                 return limitret;
                             }
 
                             for (j = 0; j < c->cabcnt && c->cabs[j].cabno != cabno; j++) {
                             }
                             if (j != c->cabcnt) {
-                                if (CLI_ISCONTAINED(c->cabs[j].off, c->cabs[j].sz, file_stream_off + c->cabs[j].off, file_csize)) {
+                                if (c->cabs[j].off >= 0 && file_csize > 0 &&
+                                    file_stream_off <= c->cabs[j].sz &&
+                                    file_csize <= c->cabs[j].sz - file_stream_off) {
                                     scanned++;
                                     if (ctx->engine->maxfiles && scanned >= ctx->engine->maxfiles) {
                                         cli_dbgmsg("is_parse_hdr: File limit reached (max: %u)\n", ctx->engine->maxfiles);
@@ -680,19 +761,20 @@ static cl_error_t is_parse_hdr(cli_ctx *ctx, struct IS_CABSTUFF *c)
                                             fmap_unneed_ptr(map, (void *)file_name, strlen(file_name) + 1);
                                         if (dir_name != emptyname)
                                             fmap_unneed_ptr(map, (void *)dir_name, strlen(dir_name) + 1);
+                                        fmap_unneed_ptr(map, file, sizeof(*file));
                                         return CL_EMAXFILES;
                                     }
-                                    cabret = is_extract_cab(ctx, file_stream_off + c->cabs[j].off, file_size, file_csize);
+                                    cabret = is_extract_cab(ctx, (uint64_t)c->cabs[j].off + file_stream_off, file_size, file_csize);
                                 } else {
-                                    ret = CL_SUCCESS;
+                                    status = CL_SUCCESS;
                                     cli_dbgmsg("is_parse_hdr: stream out of file\n");
                                 }
                             } else {
-                                ret = CL_SUCCESS;
+                                status = CL_SUCCESS;
                                 cli_dbgmsg("is_parse_hdr: data%u.cab not available\n", cabno);
                             }
                             if (cabret == CL_BREAK) {
-                                ret    = CL_SUCCESS;
+                                status = CL_SUCCESS;
                                 cabret = CL_SUCCESS;
                             }
                             if (cabret != CL_SUCCESS) {
@@ -700,6 +782,7 @@ static cl_error_t is_parse_hdr(cli_ctx *ctx, struct IS_CABSTUFF *c)
                                     fmap_unneed_ptr(map, (void *)file_name, strlen(file_name) + 1);
                                 if (dir_name != emptyname)
                                     fmap_unneed_ptr(map, (void *)dir_name, strlen(dir_name) + 1);
+                                fmap_unneed_ptr(map, file, sizeof(*file));
                                 return cabret;
                             }
                         } else {
@@ -708,7 +791,7 @@ static cl_error_t is_parse_hdr(cli_ctx *ctx, struct IS_CABSTUFF *c)
                     }
                     break;
                 default:
-                    cli_dbgmsg("is_parse_hdr: skipped unknown file entry %u\n", i);
+                    cli_dbgmsg("is_parse_hdr: skipped unknown file entry %zu\n", i);
             }
             if (file_name != emptyname)
                 fmap_unneed_ptr(map, (void *)file_name, strlen(file_name) + 1);
@@ -716,12 +799,13 @@ static cl_error_t is_parse_hdr(cli_ctx *ctx, struct IS_CABSTUFF *c)
                 fmap_unneed_ptr(map, (void *)dir_name, strlen(dir_name) + 1);
             fmap_unneed_ptr(map, file, sizeof(*file));
         } else {
-            ret = CL_SUCCESS;
+            status = CL_SUCCESS;
             cli_dbgmsg("is_parse_hdr: FILEITEM out of bounds\n");
+            break;
         }
         off += sizeof(*file);
     }
-    return ret;
+    return status;
 }
 
 static void md5str(uint8_t *sum)
