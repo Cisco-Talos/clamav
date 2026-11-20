@@ -32,16 +32,19 @@ UNIT_TEST_MAGIC = b"CLAMAV-TEST-STRING-NOT-EICAR"
 def db_files(dbtype, per_type=15, max_size=MAX_DB):
     files = []
     # In-tree unit-test signature files first (small, valid, purpose-made).
+    # Paths are relative to ${CLAMAV}: clamav.hdb lives under input/, not
+    # other_sigs/ (see unit_tests/CMakeLists.txt).
     intree = {
-        "NDB": "Clamav-Unit-Test-Signature.ndb",
-        "HDB": "clamav.hdb",
-        "WDB": "daily.wdb",
-        "HDB2": "logo.hsb",
+        "NDB": os.path.join("unit_tests", "input", "other_sigs",
+                            "Clamav-Unit-Test-Signature.ndb"),
+        "HDB": os.path.join("unit_tests", "input", "clamav.hdb"),
+        "WDB": os.path.join("unit_tests", "input", "other_sigs", "daily.wdb"),
+        "HDB2": os.path.join("unit_tests", "input", "other_sigs", "logo.hsb"),
     }
     for key in (dbtype, dbtype + "2"):
-        name = intree.get(key)
-        if name:
-            path = os.path.join(CLAMAV, "unit_tests", "input", "other_sigs", name)
+        rel = intree.get(key)
+        if rel:
+            path = os.path.join(CLAMAV, rel)
             if os.path.isfile(path):
                 files.append(path)
     for path in sorted(glob.glob(os.path.join(CORPUS, "database", dbtype, "*"))):
@@ -56,6 +59,11 @@ def sample_files():
     samples = []
     # A file whose content matches the in-tree unit-test NDB signature.
     samples.append(UNIT_TEST_MAGIC * 4)
+    # logo.png matches the sole SHA-256/size entry in logo.hsb (HDB2).
+    logo = os.path.join(CLAMAV, "logo.png")
+    if os.path.isfile(logo):
+        with open(logo, "rb") as f:
+            samples.append(f.read())
     api = os.path.join(CLAMAV, "unit_tests", "input", "bytecode_scanfiles",
                        "apitestfile")
     if os.path.isfile(api):
