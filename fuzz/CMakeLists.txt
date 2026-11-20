@@ -67,3 +67,12 @@ foreach(TARGET ${DBLOAD_TARGETS})
     target_link_libraries(clamav_dbload_${TARGET}_fuzzer ClamAV::libclamav)
     set_target_properties(clamav_dbload_${TARGET}_fuzzer PROPERTIES LINK_FLAGS "-fsanitize=fuzzer")
 endforeach()
+
+# Database container (.cld/.cvd) header + tar.gz unpack + contained-sig load
+# pipeline (see clamav_cvdload_fuzzer.cpp).
+add_executable(clamav_cvdload_fuzzer)
+target_sources(clamav_cvdload_fuzzer
+    PRIVATE clamav_cvdload_fuzzer.cpp)
+target_link_libraries(clamav_cvdload_fuzzer ClamAV::libclamav)
+set_target_properties(clamav_cvdload_fuzzer PROPERTIES LINK_FLAGS "-fsanitize=fuzzer")
+
