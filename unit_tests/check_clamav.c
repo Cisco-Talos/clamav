@@ -26,6 +26,9 @@
 // libclamav
 #include "clamav.h"
 #include "others.h"
+#ifdef __linux__
+#include "../clamonacc/fanotif/fanotif.h"
+#endif
 #include "matcher.h"
 #include "version.h"
 #include "dsig.h"
@@ -141,7 +144,7 @@ START_TEST(test_cli_get_filepath_from_filedesc_long_path)
     fd = open(expected_path, O_CREAT | O_RDONLY, 0600);
     ck_assert_msg(fd >= 0, "open failed for long path: %s", strerror(errno));
 
-    ck_assert_int_eq(CL_SUCCESS, cli_get_filepath_from_filedesc(fd, &resolved_path));
+    ck_assert_int_eq(CL_SUCCESS, onas_fan_resolve_path(fd, &resolved_path));
     ck_assert_ptr_nonnull(resolved_path);
     ck_assert_str_eq(expected_path, resolved_path);
 

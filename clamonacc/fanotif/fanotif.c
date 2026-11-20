@@ -207,14 +207,14 @@ int onas_fan_eloop(struct onas_context **ctx)
             scan = 1;
             if (fmd->fd >= 0) {
                 char *fname       = NULL;
-                cl_error_t status = cli_get_filepath_from_filedesc(fmd->fd, &fname);
+                cl_error_t status = onas_fan_resolve_path(fmd->fd, &fname);
 
                 if (CL_SUCCESS != status) {
                     int path_errno = errno;
 
                     close(fmd->fd);
                     logg(LOGG_ERROR, "ClamFanotif: failed to resolve pathname for file descriptor %d: %s\n", fmd->fd, cl_strerror(status));
-                    if (path_errno == EBADF) {
+                    if (CL_EOPEN == status && EBADF == path_errno) {
                         logg(LOGG_INFO, "ClamWorker: fd already closed ... recovering ...\n");
                         fmd = FAN_EVENT_NEXT(fmd, bread);
                         continue;
@@ -296,6 +296,7 @@ int onas_fan_eloop(struct onas_context **ctx)
                         if (errno == EBADF) {
                             logg(LOGG_INFO, "ClamFanotif: fd already closed ... recovering ...\n");
                         } else {
+                            free(fname);
                             return 2;
                         }
                     }
