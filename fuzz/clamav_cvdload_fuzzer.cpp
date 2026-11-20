@@ -23,13 +23,12 @@
  * multi-file engine accumulation, and per-file database parsing under the
  * OFFICIAL/SIGNED option set.
  *
- * Input shape: single blob, written to a temporary `.cld` file and loaded
- * (`.cld` = container without entry-point signature verification; the
- * header, tar reader, gzip stream, and all contained signature parsing are
- * fully exercised). On success the engine is compiled, building matchers
- * from every signature the container contained. Seeds: the in-tree
- * unit-test `bytecode.cvd` (a real container holding a compiled bytecode
- * signature) plus generated containers built by `gen_cvdload_seeds.py`.
+ * Input shape: single blob, written once as `.cld` and once as `.cvd` and
+ * loaded with a fresh engine each time. `.cld` covers unpack + contained-sig
+ * load without entry-point verification; `.cvd` covers `cvd_verify` / cert
+ * error paths. An additional `.cld` load with CL_DB_UNSIGNED lets synthetic
+ * seeds (`.info` without a forged DSIG) reach member `cli_load`. Seeds: the
+ * in-tree unit-test `bytecode.cvd` plus containers from `gen_cvdload_seeds.py`.
  */
 
 #include <stdint.h>
@@ -76,6 +75,20 @@ class ClamAVInit
 // Global static initializer, run once.
 static ClamAVInit kClamAVInit;
 
+static void try_load(const char* db_name, unsigned int dboptions)
+{
+    struct cl_engine* engine = cl_engine_new();
+    if (NULL == engine) {
+        return;
+    }
+    unsigned int sigs = 0;
+    if (CL_SUCCESS == cl_load(db_name, engine, &sigs, dboptions)) {
+        /* Compile builds matchers/bytecode prepare from the container. */
+        cl_engine_compile(engine);
+    }
+    cl_engine_free(engine);
+}
+
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
 {
     if (0 == size || size > 2000000) {
@@ -84,8 +97,12 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
 
     __pid_t pid = getpid();
     char db_name[200];
-    snprintf(db_name, sizeof(db_name), "tmp.cvdload.%d.cld", pid);
+    const unsigned int base_opts =
+        CL_DB_PHISHING | CL_DB_PHISHING_URLS |
+        CL_DB_BYTECODE | CL_DB_PUA | CL_DB_ENHANCED;
 
+    /* --- .cld: unpack/load without cvd_verify --- */
+    snprintf(db_name, sizeof(db_name), "tmp.cvdload.%d.cld", pid);
     FILE* f = fopen(db_name, "wb");
     if (NULL == f) {
         return 0;
@@ -93,20 +110,23 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
     fwrite(data, 1, size, f);
     fclose(f);
 
-    struct cl_engine* engine = cl_engine_new();
-    if (NULL != engine) {
-        unsigned int sigs = 0;
-        unsigned int dboptions =
-            CL_DB_PHISHING | CL_DB_PHISHING_URLS |
-            CL_DB_BYTECODE | CL_DB_PUA | CL_DB_ENHANCED;
-
-        if (CL_SUCCESS == cl_load(db_name, engine, &sigs, dboptions)) {
-            /* Compile builds matchers/bytecode prepare from the container. */
-            cl_engine_compile(engine);
-        }
-        cl_engine_free(engine);
-    }
-
+    try_load(db_name, base_opts);
+    /* Synthetic seeds ship .info without a forged DSIG; UNSIGNED lets
+     * cli_loadinfo accept them so contained sig files reach cli_load. */
+    try_load(db_name, base_opts | CL_DB_UNSIGNED);
     unlink(db_name);
+
+    /* --- .cvd: exercise cvd_verify and its error paths --- */
+    snprintf(db_name, sizeof(db_name), "tmp.cvdload.%d.cvd", pid);
+    f = fopen(db_name, "wb");
+    if (NULL == f) {
+        return 0;
+    }
+    fwrite(data, 1, size, f);
+    fclose(f);
+
+    try_load(db_name, base_opts);
+    unlink(db_name);
+
     return 0;
 }

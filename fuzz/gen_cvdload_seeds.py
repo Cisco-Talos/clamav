@@ -8,10 +8,10 @@ Seeds are database containers:
 - The in-tree unit-test `bytecode.cvd` (a real container holding a compiled
   bytecode signature) is included as-is.
 - Synthetic `.cld`-style containers are built from real signature files in
-  the clamav-fuzz-corpus database directories, with a correct header (magic,
-  time, version, sig count, functionality level, payload md5, dsig
-  placeholder, builder).
-- A few malformed variants cover header/verify error paths.
+  the clamav-fuzz-corpus database directories, with a correct header field order
+  (magic:time:version:sigs:flevel:md5:dsig:builder:epoch), a matching
+  `.info` manifest (required by cli_cvdload), and mixed signature types.
+- A few malformed variants cover header parse error paths.
 """
 import glob
 import gzip
@@ -29,38 +29,75 @@ CORPUS = os.path.join(SRC, "clamav-fuzz-corpus")
 
 HEADER_SIZE = 512
 MAX_SEEDS = 12
+# Must match between the outer CVD header and the .info ClamAV-VDB line.
+CREATION = "02 Nov 2026 00-00 +0000"
+EPOCH = "1762041600"
+BUILDER = "clamav-fuzzer"
 
 
-def db_files(types, per_type=2, max_size=60000):
-    files = []
+def db_files_by_type(types, per_type=2, max_size=60000):
+    """Return {type: [paths...]} with up to per_type files each."""
+    by_type = {}
     for t in types:
-        got = 0
+        files = []
         for path in sorted(glob.glob(os.path.join(CORPUS, "database", t, "*"))):
             if os.path.isfile(path) and 0 < os.path.getsize(path) <= max_size:
                 files.append(path)
-                got += 1
-                if got >= per_type:
+                if len(files) >= per_type:
                     break
-    return files
+        by_type[t] = files
+    return by_type
+
+
+def cvd_header_line(version, nsigs, fl, md5_hex, dsig="x"):
+    """CVD header fields in the order parsed by CVD::from_file / cl_cvdparse."""
+    return "ClamAV-VDB:%s:%s:%s:%s:%s:%s:%s:%s" % (
+        CREATION, version, nsigs, fl, md5_hex, dsig, BUILDER, EPOCH)
+
+
+def make_info(members, version, nsigs, fl):
+    """Build a .info manifest: CVD header line + name:size:sha2-256 per member.
+
+    No DSIG line: the fuzzer also loads with CL_DB_UNSIGNED so synthetic
+    containers can pass cli_loadinfo without a forged RSA signature.
+    """
+    # Real containers use X:X for md5/dsig inside .info; version/sigs/fl/epoch
+    # must still match the outer header for cli_cvdload's consistency check.
+    lines = [cvd_header_line(version, nsigs, fl, "X", "X")]
+    for name, data in members:
+        lines.append("%s:%d:%s" % (name, len(data),
+                                   hashlib.sha256(data).hexdigest()))
+    return ("\n".join(lines) + "\n").encode()
 
 
 def make_container(paths, version="90", sigs=None, fl="130"):
-    """Build [header][tar.gz payload]; header md5 = md5(payload)."""
+    """Build [header][tar.gz payload] with a required .info member."""
+    members = []
+    for p in paths:
+        with open(p, "rb") as f:
+            data = f.read()
+        members.append((os.path.basename(p), data))
+
+    nsigs = sigs if sigs is not None else str(len(members))
+    info_body = make_info(members, version, nsigs, fl)
+
     tarbuf = io.BytesIO()
     with tarfile.open(fileobj=tarbuf, mode="w", format=tarfile.USTAR_FORMAT) as tf:
-        for p in paths:
-            with open(p, "rb") as f:
-                data = f.read()
-            info = tarfile.TarInfo(os.path.basename(p))
-            info.size = len(data)
-            info.mtime = 0
-            info.mode = 0o644
-            tf.addfile(info, io.BytesIO(data))
+        info = tarfile.TarInfo("daily.info")
+        info.size = len(info_body)
+        info.mtime = 0
+        info.mode = 0o644
+        tf.addfile(info, io.BytesIO(info_body))
+        for name, data in members:
+            ti = tarfile.TarInfo(name)
+            ti.size = len(data)
+            ti.mtime = 0
+            ti.mode = 0o644
+            tf.addfile(ti, io.BytesIO(data))
+
     payload = gzip.compress(tarbuf.getvalue(), mtime=0)
-    nsigs = sigs if sigs is not None else str(len(paths))
-    head = "ClamAV-VDB:02 Nov 2026 00-00 +0000:clamav-1.5:%s:%s:%s:%s:clamav-fuzzer" % (
-        version, nsigs, fl, hashlib.md5(payload).hexdigest())
-    head = head + ":" + "0" * 64  # dsig placeholder (unverified for .cld)
+    head = cvd_header_line(version, nsigs, fl,
+                           hashlib.md5(payload).hexdigest(), "x")
     assert len(head) <= HEADER_SIZE, "header too long"
     head = head.ljust(HEADER_SIZE, " ")
     return head.encode() + payload
@@ -76,22 +113,34 @@ def main():
         with open(bc_cvd, "rb") as f:
             seeds.append(f.read())
 
-    # Synthetic containers: ndb+ftm, ldb+hdb, ndb+ftm+ldb+idb mixes.
-    picks = db_files(["NDB", "FTM", "LDB", "HDB", "IDB", "CDB"])
-    if picks:
-        seeds.append(make_container(picks[:1]))
-        seeds.append(make_container(picks[:2]))
-        seeds.append(make_container(picks[:3], sigs="9"))
-        if len(picks) > 3:
-            seeds.append(make_container(picks[:4], fl="999"))
+    # Synthetic containers with mixed signature types (not alphabetical
+    # prefixes of a flat NDB,NDB,FTM,... list).
+    by_type = db_files_by_type(["NDB", "FTM", "LDB", "HDB", "IDB", "CDB"])
+    ndb, ftm = by_type.get("NDB", []), by_type.get("FTM", [])
+    ldb, hdb = by_type.get("LDB", []), by_type.get("HDB", [])
+    idb, cdb = by_type.get("IDB", []), by_type.get("CDB", [])
 
-    # Header-only and bad-magic error variants.
-    hdr1 = (b"ClamAV-VDB:02 Nov 2026 00-00 +0000:clamav-1.5:1:130:" +
-            b"0" * 32 + b":" + b"0" * 64 + b":clamav-fuzzer")
+    if ndb:
+        seeds.append(make_container([ndb[0]]))
+    if ndb and ftm:
+        seeds.append(make_container([ndb[0], ftm[0]]))
+    if ndb and ftm and ldb:
+        seeds.append(make_container([ndb[0], ftm[0], ldb[0]], sigs="9"))
+    if ndb and ftm and ldb and hdb:
+        seeds.append(make_container([ndb[0], ftm[0], ldb[0], hdb[0]], fl="999"))
+    if ldb and hdb:
+        seeds.append(make_container([ldb[0], hdb[0]]))
+    if idb and cdb:
+        seeds.append(make_container([idb[0], cdb[0]]))
+
+    # Header-only and bad-magic error variants (correct field order where
+    # applicable so the parser reaches the intended failure mode).
+    hdr1 = cvd_header_line("1", "1", "130", "0" * 32, "0" * 64).encode()
     seeds.append(hdr1.ljust(HEADER_SIZE, b" "))
     seeds.append(b"NOT-A-CVD:" + b"\x00" * 100)
-    hdr2 = (b"ClamAV-VDB:02 Nov 2026 00-00 +0000:clamav-1.5:x:130:zz:" +
-            b"0" * 64 + b":builder")
+    # Non-integer version field
+    hdr2 = ("ClamAV-VDB:%s:notanint:1:130:%s:x:%s:%s" % (
+        CREATION, "0" * 32, BUILDER, EPOCH)).encode()
     seeds.append(hdr2.ljust(HEADER_SIZE, b" "))
 
     with zipfile.ZipFile(os.path.join(OUT, "clamav_cvdload_fuzzer_seed_corpus.zip"),
