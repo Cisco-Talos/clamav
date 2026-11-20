@@ -67,3 +67,10 @@ foreach(TARGET ${DBLOAD_TARGETS})
     target_link_libraries(clamav_dbload_${TARGET}_fuzzer ClamAV::libclamav)
     set_target_properties(clamav_dbload_${TARGET}_fuzzer PROPERTIES LINK_FLAGS "-fsanitize=fuzzer")
 endforeach()
+
+# Bytecode signature load/prepare/execute pipeline (see clamav_bcrun_fuzzer.cpp).
+add_executable(clamav_bcrun_fuzzer)
+target_sources(clamav_bcrun_fuzzer
+    PRIVATE clamav_bcrun_fuzzer.cpp)
+target_link_libraries(clamav_bcrun_fuzzer ClamAV::libclamav)
+set_target_properties(clamav_bcrun_fuzzer PROPERTIES LINK_FLAGS "-fsanitize=fuzzer")
