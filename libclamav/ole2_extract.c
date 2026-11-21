@@ -1044,7 +1044,7 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
                     cli_dbgmsg("OLE2: filesize exceeded\n");
                 }
                 if ((int)(prop_block[idx].child) != -1) {
-                    ret = ole2_walk_property_tree(hdr, dir, prop_block[idx].child, handler, rec_level, file_count, ctx, scansize, handler_ctx, pEncryptionStatus);
+                    ret = ole2_walk_property_tree(hdr, dir, prop_block[idx].child, handler, rec_level + 1, file_count, ctx, scansize, handler_ctx, pEncryptionStatus);
                     if (ret != CL_SUCCESS) {
                         ole2_list_delete(&node_list);
                         return ret;
