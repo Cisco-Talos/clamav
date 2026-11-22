@@ -217,6 +217,7 @@ static inline cl_error_t matcher_run(const struct cli_matcher *root,
                 if (maxfilesize && (map->len > maxfilesize)) {
                     cli_dbgmsg("matcher_run: pcre max filesize (map) exceeded (limit: %llu, needed: %llu)\n",
                                (long long unsigned)maxfilesize, (long long unsigned)map->len);
+                    cli_append_potentially_unwanted_if_heur_exceedsmax(ctx, "Heuristics.Limits.Exceeded.PCREMaxFileSize");
                     return CL_EMAXSIZE;
                 }
 
@@ -236,6 +237,7 @@ static inline cl_error_t matcher_run(const struct cli_matcher *root,
                 return rc;
             if (maxfilesize && (length > maxfilesize)) {
                 cli_dbgmsg("matcher_run: pcre max filesize (buf) exceeded (limit: %llu, needed: %u)\n", (long long unsigned)maxfilesize, length);
+                cli_append_potentially_unwanted_if_heur_exceedsmax(ctx, "Heuristics.Limits.Exceeded.PCREMaxFileSize");
                 return CL_EMAXSIZE;
             }
 
