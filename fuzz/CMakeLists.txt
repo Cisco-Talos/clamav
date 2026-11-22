@@ -67,3 +67,11 @@ foreach(TARGET ${DBLOAD_TARGETS})
     target_link_libraries(clamav_dbload_${TARGET}_fuzzer ClamAV::libclamav)
     set_target_properties(clamav_dbload_${TARGET}_fuzzer PROPERTIES LINK_FLAGS "-fsanitize=fuzzer")
 endforeach()
+
+# OpenIOC (.ioc) database load + evaluation pipeline (see clamav_openioc_fuzzer.cpp).
+add_executable(clamav_openioc_fuzzer)
+target_sources(clamav_openioc_fuzzer
+    PRIVATE clamav_openioc_fuzzer.cpp)
+target_link_libraries(clamav_openioc_fuzzer ClamAV::libclamav)
+set_target_properties(clamav_openioc_fuzzer PROPERTIES LINK_FLAGS "-fsanitize=fuzzer")
+
