@@ -1,0 +1,8 @@
+[Unit]
+Description=ClamAV clamdscan %f
+Documentation=man:clamdscan(1) man:clamdscan.conf(5) https://docs.clamav.net/
+
+[Service]
+Nice=19
+IOSchedulingClass=idle
+ExecStart=@prefix@/bin/clamdscan --infected --multiscan --fdpass %f
