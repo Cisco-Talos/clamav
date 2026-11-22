@@ -471,7 +471,7 @@ cl_error_t scanfd(
             ret = CL_ETIMEOUT;
         logg(LOGG_INFO, "%s: %s ERROR\n", log_filename, cl_strerror(ret));
     } else {
-        if (conn_reply_single(conn, reply_fdstr, "OK") == CL_ETIMEOUT)
+        if (conn_reply_single(conn, reply_fdstr, "OK") == -1)
             ret = CL_ETIMEOUT;
         if (logok)
             logg(LOGG_INFO, "%s: OK\n", log_filename);
