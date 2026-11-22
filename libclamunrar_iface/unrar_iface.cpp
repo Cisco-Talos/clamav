@@ -33,7 +33,18 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "rar.hpp"
+#ifdef UNRAR_EXTERNAL
+/*
+ * When linking against an external libunrar, only the public DLL API header
+ * is available. Set up the platform macros.
+ */
+# if defined(_WIN32) || defined(__WIN32__) || defined(_WIN64)
+#  include <windows.h>
+# else
+#  define _UNIX
+# endif
+#endif
+
 #include "dll.hpp"
 
 extern "C" {

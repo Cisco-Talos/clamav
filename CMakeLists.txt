@@ -1077,7 +1077,14 @@ if(ENABLE_UNRAR)
     # Only build libclamunrar if enabled.
     # We still define the libclamunrar_iface's interface regardless,
     # so that libclamav will have unrar_iface.h in the include path.
-    add_subdirectory( libclamunrar )
+    if(ENABLE_EXTERNAL_UNRAR)
+        # Link against an installed libunrar instead of building the bundled
+        # UnRAR sources into a libclamunrar shared object. The find module
+        # provides the ClamAV::libunrar targets expected by the iface.
+        find_package(LibUnrar REQUIRED)
+    else()
+        add_subdirectory( libclamunrar )
+    endif()
 endif()
 add_subdirectory( libclamunrar_iface )
 

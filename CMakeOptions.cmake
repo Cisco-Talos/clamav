@@ -72,6 +72,9 @@ option(ENABLE_FUZZ
 option(ENABLE_EXTERNAL_MSPACK
     "Use external mspack instead of internal libclammspack.")
 
+option(ENABLE_EXTERNAL_UNRAR
+    "Use an external libunrar instead of building the bundled libclamunrar.")
+
 option(ENABLE_JSON_SHARED
     "Prefer linking with libjson-c shared library instead of static."
     ON)
