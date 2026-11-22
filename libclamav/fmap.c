@@ -1455,12 +1455,14 @@ done:
     return status;
 }
 
-extern cl_error_t cl_fmap_set_hash(const cl_fmap_t *map, const char *hash_alg, char hash)
+extern cl_error_t cl_fmap_set_hash(const cl_fmap_t *map, const char *hash_alg, const char *hash)
 {
     cl_error_t status = CL_ERROR;
     cli_hash_type_t type;
+    size_t hash_string_len;
+    uint8_t hash_bytes[CLI_HASHLEN_MAX] = {0};
 
-    if (!map || !hash_alg) {
+    if (!map || !hash_alg || !hash) {
         status = CL_ENULLARG;
         goto done;
     }
@@ -1477,7 +1479,21 @@ extern cl_error_t cl_fmap_set_hash(const cl_fmap_t *map, const char *hash_alg, c
         goto done;
     }
 
-    status = fmap_set_hash((fmap_t *)map, (uint8_t *)&hash, type);
+    hash_string_len = strlen(hash);
+    if (hash_string_len != cli_hash_len(type) * 2) {
+        cli_errmsg("cl_fmap_set_hash: Hash string length (%zu) does not match expected length for %s (%zu)\n",
+                   hash_string_len, hash_alg, cli_hash_len(type) * 2);
+        status = CL_EARG;
+        goto done;
+    }
+
+    status = cli_hexstr_to_bytes(hash, hash_string_len, hash_bytes);
+    if (status != CL_SUCCESS) {
+        cli_errmsg("cl_fmap_set_hash: Hash value is not a valid hexadecimal string for algorithm: %s\n", hash_alg);
+        goto done;
+    }
+
+    status = fmap_set_hash((fmap_t *)map, hash_bytes, type);
     if (status != CL_SUCCESS) {
         cli_errmsg("cl_fmap_set_hash: Failed to set hash for algorithm: %s\n", hash_alg);
         goto done;
