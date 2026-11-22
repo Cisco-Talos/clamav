@@ -1,0 +1,20 @@
+[package]
+name = "clamdtop"
+version = "1.6.0"
+edition = "2021"
+publish = false
+rust-version = "1.88"
+build = "build.rs"
+license = "GPL-2.0-only"
+
+[[bin]]
+name = "clamdtop"
+path = "src/main.rs"
+
+[dependencies]
+crossterm = "=0.29.0"
+ratatui = { version = "=0.30.2", default-features = false, features = ["crossterm"] }
+time = { version = "=0.3.55", features = ["formatting", "local-offset", "macros"] }
+
+[build-dependencies]
+embed-resource = "=3.0.12"

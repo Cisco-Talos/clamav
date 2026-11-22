@@ -8,7 +8,7 @@ clamdtop [options] [clamdspec ...]
 .SH "DESCRIPTION"
 .LP 
 clamdtop is a tool to monitor one or multiple clamd(s).
-It has a (color) ncurses interface, that shows the jobs in clamd's queue, memory usage, and information about the loaded signature database.
+It has a color terminal interface, that shows the jobs in clamd's queue, memory usage, and information about the loaded signature database.
 You can specify on the command-line to which clamd(s) it should connect to. By
 default it will attempt to connect to the local clamd as defined in clamd.conf.
 
@@ -22,9 +22,12 @@ Display help information and exit.
 \fB\-V, \-\-version\fR
 Print version number and exit.
 .TP
-\fB\-\-config\-file=FILE\fR
+\fB\-c FILE, \-\-config\-file=FILE\fR
 Read clamd settings from FILE, to determine how to connect to it.
 .TP 
+\fB\-d, \-\-defaultcolors\fR
+Use the terminal's default colors.
+.TP
 \fBclamdspec\fR
 Specifies the clamd to connect to: either a path to the local (unix domain) socket of clamd,
 or an IP address and an port number (that defaults to 3310) to connect to a
