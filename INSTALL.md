@@ -120,6 +120,8 @@ libclamav requires these library dependencies:
 - `json-c`
 - `libjson-c` / `json-c`
 - `libmspack` (built-in by default, enable with `ENABLE_EXTERNAL_MSPACK=ON`)
+- `libunrar` (bundled by default, enable with `ENABLE_EXTERNAL_UNRAR=ON`;
+  requires the matching development header `dll.hpp`)
 - `libiconv` (built-in to `libc` 99% of the time, not requires on Windows)
 - `pthreads` (provided by Linux/Unix; requires `pthreads-win32` on Windows)
 - `llvm` (optional, see: [Bytecode Runtime](#bytecode-runtime), below)
@@ -435,6 +437,13 @@ The following is a complete list of CMake options unique to configuring ClamAV:
   _Default: `OFF`_
 
 - `ENABLE_EXTERNAL_MSPACK`: Use external mspack instead of internal libclammspack.
+
+  _Default: `OFF`_
+
+- `ENABLE_EXTERNAL_UNRAR`: Link `libclamunrar_iface` against an installed
+  libunrar instead of building the bundled UnRAR sources into `libclamunrar`.
+  Requires `ENABLE_UNRAR=ON`, libunrar, and its development header
+  (`dll.hpp`). The header must match the ABI of the installed library.
 
   _Default: `OFF`_
 
