@@ -349,7 +349,29 @@ if (WIN32)
 
     set(CPACK_GENERATOR                  "ZIP;WIX")
     set(CPACK_PACKAGE_VENDOR             "Cisco Systems, Inc.")
-    set(CPACK_PACKAGE_FILE_NAME ${CPACK_PACKAGE_FILE_NAME}.win.${CMAKE_VS_PLATFORM_NAME})
+    # Visual Studio generators provide CMAKE_VS_PLATFORM_NAME, but Ninja does
+    # not. Derive the package architecture from the compiler when necessary so
+    # documented Ninja builds do not produce package names ending in "win.".
+    set(CLAMAV_PACKAGE_ARCHITECTURE "${CMAKE_VS_PLATFORM_NAME}")
+    if(NOT CLAMAV_PACKAGE_ARCHITECTURE)
+        string(TOLOWER "${CMAKE_C_COMPILER_ARCHITECTURE_ID}" COMPILER_ARCHITECTURE_ID_LOWER)
+        if(COMPILER_ARCHITECTURE_ID_LOWER MATCHES "^(x64|amd64|x86_64)$")
+            set(CLAMAV_PACKAGE_ARCHITECTURE x64)
+        elseif(COMPILER_ARCHITECTURE_ID_LOWER MATCHES "^(x86|i[3-6]86)$")
+            set(CLAMAV_PACKAGE_ARCHITECTURE Win32)
+        elseif(COMPILER_ARCHITECTURE_ID_LOWER MATCHES "^(arm64|aarch64)$")
+            set(CLAMAV_PACKAGE_ARCHITECTURE ARM64)
+        elseif(COMPILER_ARCHITECTURE_ID_LOWER MATCHES "^arm")
+            set(CLAMAV_PACKAGE_ARCHITECTURE ARM)
+        elseif(CMAKE_C_COMPILER_ARCHITECTURE_ID)
+            set(CLAMAV_PACKAGE_ARCHITECTURE "${CMAKE_C_COMPILER_ARCHITECTURE_ID}")
+        elseif(CMAKE_SYSTEM_PROCESSOR)
+            set(CLAMAV_PACKAGE_ARCHITECTURE "${CMAKE_SYSTEM_PROCESSOR}")
+        else()
+            message(FATAL_ERROR "Unable to determine the Windows package architecture")
+        endif()
+    endif()
+    set(CPACK_PACKAGE_FILE_NAME ${CPACK_PACKAGE_FILE_NAME}.win.${CLAMAV_PACKAGE_ARCHITECTURE})
 
     NumberToHex(${PROJECT_VERSION_MAJOR} HEX_MAJOR)
     NumberToHex(${PROJECT_VERSION_MINOR} HEX_MINOR)
@@ -512,16 +534,16 @@ find_package(ZLIB REQUIRED)
 find_package(BZip2 REQUIRED)
 
 # Disable CMAKE_FIND_PACKAGE_PREFER_CONFIG, temporarily, because
-# we don't presently support the using libxml2's Config.cmake
+# we don't presently support using the libxml2 or PCRE2 Config.cmake files.
 set(PACKAGE_PREFER_CONFIG_BAK ${CMAKE_FIND_PACKAGE_PREFER_CONFIG})
 set(CMAKE_FIND_PACKAGE_PREFER_CONFIG FALSE)
 
 find_package(LibXml2 REQUIRED)
 
+find_package(PCRE2 REQUIRED)
+
 # Restore the requested CMAKE_FIND_PACKAGE_PREFER_CONFIG setting
 set(CMAKE_FIND_PACKAGE_PREFER_CONFIG ${PACKAGE_PREFER_CONFIG_BAK})
-
-find_package(PCRE2 REQUIRED)
 
 # libclamav feature dependencies
 if(NOT WIN32)

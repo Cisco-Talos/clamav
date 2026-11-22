@@ -30,6 +30,9 @@
 #
 # ``LIBCHECK_ROOT_DIR``
 #  The root to search for libcheck.
+#
+# ``LIBCHECK_RUNTIME_LIBRARY``
+#  The Check DLL used with a shared import library on Windows.
 
 # First let's try to find libcheck in the vcpkg cache
 find_package(check CONFIG QUIET)
@@ -76,6 +79,28 @@ else()
         PATH_SUFFIXES
         lib
     )
+    set(_libcheck_is_shared FALSE)
+    if(WIN32 AND LIBCHECK_LIBRARY)
+        get_filename_component(_libcheck_library_name "${LIBCHECK_LIBRARY}" NAME_WE)
+        string(TOLOWER "${_libcheck_library_name}" _libcheck_library_name_lower)
+        if(_libcheck_library_name_lower MATCHES "(dynamic|shared)" OR LIBCHECK_RUNTIME_LIBRARY)
+            set(_libcheck_is_shared TRUE)
+            get_filename_component(_libcheck_library_dir "${LIBCHECK_LIBRARY}" DIRECTORY)
+            find_file(LIBCHECK_RUNTIME_LIBRARY
+                NAMES
+                checkDynamic.dll
+                check.dll
+                HINTS
+                "${_libcheck_library_dir}/../bin"
+                "${_libcheck_library_dir}"
+                PATHS
+                ${LIBCHECK_ROOT_DIR}
+                PATH_SUFFIXES
+                bin
+            )
+        endif()
+    endif()
+
     find_library(LIBCHECK_SUBUNIT_LIBRARY
         NAMES
         subunit
@@ -95,6 +120,9 @@ else()
     if(PC_LIBCHECK_FOUND AND "${PC_LIBCHECK_LIBRARIES}" MATCHES "subunit")
         list(APPEND _libcheck_extra_required LIBCHECK_SUBUNIT_LIBRARY)
     endif()
+    if(_libcheck_is_shared)
+        list(APPEND _libcheck_extra_required LIBCHECK_RUNTIME_LIBRARY)
+    endif()
 
     include(FindPackageHandleStandardArgs)
     find_package_handle_standard_args(Libcheck
@@ -102,18 +130,27 @@ else()
         LIBCHECK_INCLUDE_DIR
         LIBCHECK_LIBRARY
         THREADS_FOUND
+        ${_libcheck_extra_required}
     )
     if(LIBCHECK_FOUND)
         if(NOT TARGET libcheck::check)
-            add_library(libcheck::check UNKNOWN IMPORTED)
+            if(_libcheck_is_shared)
+                add_library(libcheck::check SHARED IMPORTED)
+                set_target_properties(libcheck::check PROPERTIES
+                    IMPORTED_IMPLIB "${LIBCHECK_LIBRARY}"
+                    IMPORTED_LOCATION "${LIBCHECK_RUNTIME_LIBRARY}"
+                    INTERFACE_COMPILE_DEFINITIONS "CK_DLL_EXP=_declspec(dllimport)")
+            else()
+                add_library(libcheck::check UNKNOWN IMPORTED)
+                set_target_properties(libcheck::check PROPERTIES
+                    IMPORTED_LOCATION "${LIBCHECK_LIBRARY}")
+            endif()
 
             set_target_properties(libcheck::check PROPERTIES
-                INTERFACE_INCLUDE_DIRECTORIES "${LIBCHECK_INCLUDE_DIR}")
-            set_target_properties(libcheck::check PROPERTIES
                 IMPORTED_LINK_INTERFACE_LANGUAGES "C"
-                IMPORTED_LOCATION ${LIBCHECK_LIBRARY})
+                INTERFACE_INCLUDE_DIRECTORIES "${LIBCHECK_INCLUDE_DIR}")
             set_property(TARGET libcheck::check PROPERTY
-                    IMPORTED_LINK_INTERFACE_LIBRARIES Threads::Threads)
+                IMPORTED_LINK_INTERFACE_LIBRARIES Threads::Threads)
 
             # if we found librt or libm, link them.
             if(LIBCHECK_LIBRT)
@@ -130,7 +167,7 @@ else()
             endif()
 
         endif()
-        mark_as_advanced(LIBCHECK_INCLUDE_DIR LIBCHECK_LIBRARY LIBCHECK_SUBUNIT_LIBRARY)
+        mark_as_advanced(LIBCHECK_INCLUDE_DIR LIBCHECK_LIBRARY LIBCHECK_RUNTIME_LIBRARY LIBCHECK_SUBUNIT_LIBRARY)
     endif()
     mark_as_advanced(LIBCHECK_ROOT_DIR LIBCHECK_LIBRT LIBCHECK_LIBM)
 endif()
