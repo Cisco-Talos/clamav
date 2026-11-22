@@ -179,11 +179,13 @@ CLAMAV_PRIVATE {
     cli_hex2str;
     cli_ac_init;
     cli_ac_initdata;
+    cli_ac_initdata_for_matcher;
     cli_ac_buildtrie;
     cli_ac_scanbuff;
     cli_ac_freedata;
     cli_ac_free;
     cli_ac_chklsig;
+    cli_ac_eval_lsig;
     cli_sigopts_handler;
     cli_bm_init;
     cli_bm_scanbuff;

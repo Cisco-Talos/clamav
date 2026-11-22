@@ -225,6 +225,40 @@ rule regex
             'Infected files: 1',
         ]
 
+    def test_pcre_repeated_matches(self):
+        self.step_name('Test repeated PCRE matches and transitions between patterns')
+
+        # MZ avoids text normalization changing the subject or match counts.
+        # Trailing END forces a final no-match call after the global matches.
+        cases = [
+            ('captures', 'abc abc abc END', '1=3', [r'0/(a)(b)(c)/g'], []),
+            ('wrong_count', 'abc abc abc END', '1=2', [r'0/(a)(b)(c)/g'], []),
+            ('optional_capture', 'ab a ab END', '1=3', [r'0/(a)(b)?/g'], []),
+            ('many_matches', 'abc ' * 1024 + 'END', '1=1024', [r'0/(abc)/g'], []),
+            ('different_capture_counts', 'abc abc abc xyz xyz END', '1=3&2=2',
+             [r'0/abc/g', r'0/((((((((((x))))))))))(y)(z)/g'], []),
+            ('empty_match', 'abc END', '1', [r'0/(?=abc)/'], []),
+            ('empty_match_at_end', 'abc END', '1=1', [r'0/$/g'], []),
+            ('match_limit_then_match', 'a' * 64 + '! END', '2',
+             [r'0/(*NO_START_OPT)(a+)+$/g', r'0/(END)/'], ['--pcre-match-limit=10']),
+        ]
+        for name, subject, expression, patterns, extra in cases:
+            with self.subTest(name=name):
+                db = TC.path_tmp / ('repeated-' + name + '.ldb')
+                db.write_text('repeated;Engine:81-255,Target:0;' + expression +
+                              ';4d5a;' + ';'.join(patterns) + '\n')
+                testfile = TC.path_tmp / ('repeated-' + name + '.sample')
+                testfile.write_text('MZ ' + subject)
+                command = '{valgrind} {valgrind_args} {clamscan} --disable-cache {extra} -d {db} {sample}'.format(
+                    valgrind=TC.valgrind, valgrind_args=TC.valgrind_args,
+                    clamscan=TC.clamscan, extra=' '.join(extra), db=db, sample=testfile,
+                )
+                output = self.execute_command(command)
+                detected = name != 'wrong_count'
+                assert output.ec == int(detected), output.out + output.err
+                expected = 'repeated.UNOFFICIAL FOUND' if detected else 'OK'
+                self.verify_output(output.out, expected=[testfile.name + ': ' + expected])
+
     def test_ldb_multi_pcre(self):
         self.step_name('Test LDB and Yara regex rules with / and : in the string work')
         # This is a regression test for a bug where :'s in a PCRE regex would act
