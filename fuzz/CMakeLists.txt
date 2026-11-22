@@ -67,3 +67,23 @@ foreach(TARGET ${DBLOAD_TARGETS})
     target_link_libraries(clamav_dbload_${TARGET}_fuzzer ClamAV::libclamav)
     set_target_properties(clamav_dbload_${TARGET}_fuzzer PROPERTIES LINK_FLAGS "-fsanitize=fuzzer")
 endforeach()
+
+# Signature-database load + compile + scan pipeline, per signature type
+# (see clamav_dbscan_fuzzer.cpp).
+set(DBSCAN_TARGETS
+    LDB
+    NDB
+    HDB
+    YARA
+    WDB
+    FTM)
+
+foreach(TARGET ${DBSCAN_TARGETS})
+    add_executable(clamav_dbscan_${TARGET}_fuzzer)
+    target_sources(clamav_dbscan_${TARGET}_fuzzer
+        PRIVATE clamav_dbscan_fuzzer.cpp)
+    target_compile_definitions(clamav_dbscan_${TARGET}_fuzzer PUBLIC CLAMAV_FUZZ_${TARGET})
+    target_link_libraries(clamav_dbscan_${TARGET}_fuzzer ClamAV::libclamav)
+    set_target_properties(clamav_dbscan_${TARGET}_fuzzer PROPERTIES LINK_FLAGS "-fsanitize=fuzzer")
+endforeach()
+
