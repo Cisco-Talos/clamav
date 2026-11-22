@@ -26,6 +26,12 @@
 
 #include "../clamonacc.h"
 
+/* Resolve the pathname carried by a fanotify event's file descriptor. */
+static inline cl_error_t onas_fan_resolve_path(int fd, char **pathname)
+{
+    return cli_get_filepath_from_filedesc(fd, pathname);
+}
+
 // void *onas_fan_th(void *arg);
 cl_error_t onas_setup_fanotif(struct onas_context **ctx);
 int onas_fan_eloop(struct onas_context **ctx);
