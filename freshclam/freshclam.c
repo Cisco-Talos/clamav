@@ -23,6 +23,7 @@
 #endif
 
 #include <stdio.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -1675,7 +1676,8 @@ int main(int argc, char **argv)
     const char *logFileName            = NULL;
 #endif /* HAVE_PWD_H */
 
-    fc_ctx fc_context = {0};
+    fc_ctx fc_context             = {0};
+    bool libfreshclam_initialized = false;
 
 #ifndef _WIN32
     struct sigaction sigact;
@@ -1906,6 +1908,7 @@ int main(int argc, char **argv)
         status = FC_EINIT;
         goto done;
     }
+    libfreshclam_initialized = true;
 
     if (!optget(opts, "no-dns")->enabled && optget(opts, "DNSDatabaseInfo")->enabled) {
         dnsUpdateInfoServer = optget(opts, "DNSDatabaseInfo")->strarg;
@@ -2193,8 +2196,9 @@ done:
         free(cfgfile);
     }
 
-    /* Cleanup libfreshclam */
-    fc_cleanup();
+    if (libfreshclam_initialized) {
+        fc_cleanup();
+    }
 
     /* Remove temp directory */
     if (*g_freshclamTempDirectory) {
