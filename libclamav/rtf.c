@@ -347,29 +347,28 @@ static int rtf_object_process(struct rtf_state* state, const unsigned char* inpu
             }
             case WAIT_DESC: {
                 cli_dbgmsg("RTF: in WAIT_DESC\n");
-                for (i = 0; i < out_cnt && data->bread < data->desc_len && data->bread < 64; i++, data->bread++)
-                    data->desc_name[data->bread] = out_data[i];
+                /* Consume all desc_len bytes of the description, but only store
+                 * the first 64 into desc_name (which is capped at 65 bytes).
+                 * The previous code capped data->bread at 64 and then tested
+                 * bread >= desc_len, which never became true when desc_len > 64,
+                 * so the state machine never left WAIT_DESC and the embedded
+                 * object was never dumped or scanned. */
+                for (i = 0; i < out_cnt && data->bread < data->desc_len; i++, data->bread++) {
+                    if (data->bread < 64)
+                        data->desc_name[data->bread] = out_data[i];
+                }
                 out_cnt -= i;
                 out_data += i;
-                if (data->bread < data->desc_len && data->bread < 64) {
+                if (data->bread < data->desc_len) {
                     cli_dbgmsg("RTF: waiting for more data(1)\n");
                     return 0; /* wait for more data */
                 }
-                data->desc_name[data->bread] = '\0';
-                if (data->desc_len - data->bread > out_cnt) {
-                    data->desc_len -= out_cnt;
-                    cli_dbgmsg("RTF: waiting for more data(2)\n");
-                    return 0; /* wait for more data */
-                }
-                out_cnt -= data->desc_len - data->bread;
-                if (data->bread >= data->desc_len) {
-                    out_data += data->desc_len - data->bread;
-                    data->bread = 0;
-                    cli_dbgmsg("Preparing to dump rtf embedded object, description:%s\n", data->desc_name);
-                    free(data->desc_name);
-                    data->desc_name      = NULL;
-                    data->internal_state = WAIT_ZERO;
-                }
+                data->desc_name[(data->bread < 64) ? data->bread : 64] = '\0';
+                data->bread = 0;
+                cli_dbgmsg("Preparing to dump rtf embedded object, description:%s\n", data->desc_name);
+                free(data->desc_name);
+                data->desc_name      = NULL;
+                data->internal_state = WAIT_ZERO;
                 break;
             }
             case WAIT_ZERO: {
