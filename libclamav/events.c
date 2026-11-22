@@ -68,7 +68,15 @@ cli_events_t *cli_events_new(unsigned max_event)
 void cli_events_free(cli_events_t *ev)
 {
     if (ev) {
-        /* TODO: free components */
+        unsigned i;
+        for (i = 0; i < ev->max; i++) {
+            if (ev->events[i].multiple == multiple_chain) {
+                free(ev->events[i].u.v_chain);
+            }
+        }
+        if (ev->errors.multiple == multiple_chain) {
+            free(ev->errors.u.v_chain);
+        }
         free(ev->events);
         free(ev);
     }
