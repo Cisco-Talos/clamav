@@ -15,6 +15,17 @@ ClamAV 1.6.0 includes the following improvements and changes:
 
 ### Other improvements
 
+- Added an option to enable the PCRE2 JIT compiler for regex subsignature
+  matching. When enabled, patterns are JIT-compiled at database load and matched
+  with native code, significantly reducing scan time for content that triggers
+  many PCRE subsignatures. The new option is `PCREJit` in `clamd.conf` and
+  `--pcre-jit` for `clamscan`, and is disabled by default. It requires the
+  linked PCRE2 library to be built with JIT support; otherwise matching
+  transparently falls back to the interpreter. Detection results are unchanged.
+  Note: PCRE2 does not enforce the depth/recursion limit (`PCRERecMatchLimit`)
+  for JIT matches, though `PCREMatchLimit` is still enforced; leave the option
+  disabled if you rely on `PCRERecMatchLimit` to bound recursive backtracking.
+
 ### Bug fixes
 
 ### Acknowledgments
