@@ -2090,7 +2090,9 @@ static void pdf_parse_encrypt(struct pdf_struct *pdf, const char *enc, int len)
     unsigned long genid;
     long temp_long;
 
-    if (len >= 16 && !strncmp(enc, "/EncryptMetadata", 16)) {
+    /* Skip every /EncryptMetadata key. The Encrypt dictionary may contain more
+     * than one, e.g. inside /CF/StdCF and again at the top level. */
+    while (len >= 16 && !strncmp(enc, "/EncryptMetadata", 16)) {
         q = cli_memstr(enc + 16, len - 16, "/Encrypt", 8);
         if (!q)
             return;
