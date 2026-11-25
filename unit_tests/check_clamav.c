@@ -846,15 +846,7 @@ static const int expected_testfiles = 89;
 
 static unsigned skip_files(void)
 {
-    unsigned skipped = 0;
-
-    /* skip .rar files if unrar is disabled */
-#if HAVE_UNRAR
-#else
-    skipped += 2;
-#endif
-
-    return skipped;
+    return 0;
 }
 
 static void init_testfiles(void)

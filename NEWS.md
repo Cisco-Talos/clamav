@@ -13,6 +13,15 @@ ClamAV 1.6.0 includes the following improvements and changes:
   the discontinued clamintel service. This removes the related libclamav stats
   callback API.
 
+- Replaced the vendored UnRAR implementation with the pure-Rust `rars`
+  reader. RAR support is now always available and archive members are scanned
+  directly from bounded memory buffers. Automatic discovery of sibling RAR
+  volumes by pathname is not supported.
+
+  This removes the `ENABLE_UNRAR` CMake option and the separately installed
+  `libclamunrar` and `libclamunrar_iface` libraries. ClamAV now requires Rust
+  1.89 or newer.
+
 ### Other improvements
 
 ### Bug fixes

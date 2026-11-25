@@ -118,9 +118,6 @@
 #include "execs.h"
 #include "egg.h"
 
-// libclamunrar_iface
-#include "unrar_iface.h"
-
 #include <bzlib.h>
 
 #include <fcntl.h>
@@ -187,401 +184,51 @@ done:
 }
 
 /**
- * @brief  Scan the metadata using cli_matchmeta()
+ * @brief Scan a RAR archive and apply ClamAV's encrypted-archive heuristic.
  *
- * @param metadata  unrar metadata structure
- * @param ctx       scanning context structure
- * @param files
- * @return cl_error_t  Returns CL_SUCCESS if nothing found, CL_VIRUS if something found, CL_EUNPACK if encrypted.
+ * The Rust static library is also linked directly into some ClamAV programs.
+ * Keep alert creation on the C side so it does not depend on an unexported
+ * libclamav symbol when those programs link against the shared library.
+ *
+ * @param ctx Scan context.
+ * @return cl_error_t Scan status.
  */
-static cl_error_t cli_unrar_scanmetadata(unrar_metadata_t *metadata, cli_ctx *ctx, unsigned int files)
-{
-    cl_error_t status = CL_SUCCESS;
-
-    cli_dbgmsg("RAR: %s, crc32: 0x%x, encrypted: %u, compressed: %u, normal: %u, method: %u, ratio: %u\n",
-               metadata->filename, metadata->crc, metadata->encrypted, (unsigned int)metadata->pack_size,
-               (unsigned int)metadata->unpack_size, metadata->method,
-               metadata->pack_size ? (unsigned int)(metadata->unpack_size / metadata->pack_size) : 0);
-
-    if (CL_VIRUS == cli_matchmeta(ctx, metadata->filename, metadata->pack_size, metadata->unpack_size, metadata->encrypted, files, metadata->crc)) {
-        status = CL_VIRUS;
-    } else if (SCAN_HEURISTIC_ENCRYPTED_ARCHIVE && metadata->encrypted) {
-        cli_dbgmsg("RAR: Encrypted files found in archive.\n");
-        status = CL_EUNPACK;
-    }
-
-    return status;
-}
-
-static cl_error_t cli_scanrar_file(const char *filepath, int desc, cli_ctx *ctx)
-{
-    cl_error_t status          = CL_EPARSE;
-    cl_unrar_error_t unrar_ret = UNRAR_ERR;
-
-    unsigned int file_count = 0;
-
-    uint32_t nEncryptedFilesFound = 0;
-
-    void *hArchive = NULL;
-
-    char *comment         = NULL;
-    uint32_t comment_size = 0;
-
-    unrar_metadata_t metadata;
-    char *filename_base    = NULL;
-    char *extract_fullpath = NULL;
-    char *comment_fullpath = NULL;
-
-    UNUSEDPARAM(desc);
-
-    if (filepath == NULL || ctx == NULL) {
-        cli_dbgmsg("RAR: Invalid arguments!\n");
-        return CL_EARG;
-    }
-
-    cli_dbgmsg("in scanrar()\n");
-
-    /* Zero out the metadata struct before we read the header */
-    memset(&metadata, 0, sizeof(unrar_metadata_t));
-
-    /*
-     * Open the archive.
-     */
-    if (UNRAR_OK != (unrar_ret = cli_unrar_open(filepath, &hArchive, &comment, &comment_size, cli_debug_flag))) {
-        if (unrar_ret == UNRAR_ENCRYPTED) {
-            cli_dbgmsg("RAR: Encrypted main header\n");
-            status = CL_SUCCESS;
-            nEncryptedFilesFound += 1;
-            goto done;
-        }
-        if (unrar_ret == UNRAR_EMEM) {
-            status = CL_EMEM;
-            goto done;
-        } else if (unrar_ret == UNRAR_EOPEN) {
-            status = CL_EOPEN;
-            goto done;
-        } else {
-            status = CL_EFORMAT;
-            goto done;
-        }
-    }
-
-    /* If the archive header had a comment, write it to the comment dir. */
-    if ((comment != NULL) && (comment_size > 0)) {
-
-        if (ctx->engine->keeptmp) {
-            int comment_fd = -1;
-            if (!(comment_fullpath = cli_gentemp_with_prefix(ctx->this_layer_tmpdir, "comments"))) {
-                status = CL_EMEM;
-                goto done;
-            }
-
-            comment_fd = open(comment_fullpath, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY, 0600);
-            if (comment_fd < 0) {
-                cli_dbgmsg("RAR: ERROR: Failed to open output file\n");
-            } else {
-                cli_dbgmsg("RAR: Writing the archive comment to temp file: %s\n", comment_fullpath);
-                if (cli_writen(comment_fd, comment, comment_size) != comment_size) {
-                    cli_dbgmsg("RAR: ERROR: Failed to write to output file\n");
-                }
-                close(comment_fd);
-            }
-        }
-
-        /* Scan the comment */
-        status = cli_magic_scan_buff(comment, comment_size, ctx, NULL, LAYER_ATTRIBUTES_NONE);
-        if (status != CL_SUCCESS) {
-            goto done;
-        }
-    }
-
-    /*
-     * Read & scan each file header.
-     * Extract & scan each file.
-     *
-     * Skip files if they will exceed max filesize or max scansize.
-     * Count the number of encrypted file headers and encrypted files.
-     *  - Alert if there are encrypted files,
-     *      if the Heuristic for encrypted archives is enabled,
-     *      and if we have not detected a signature match.
-     */
-    do {
-        status = CL_SUCCESS;
-
-        /* Zero out the metadata struct before we read the header */
-        memset(&metadata, 0, sizeof(unrar_metadata_t));
-
-        /*
-         * Get the header information for the next file in the archive.
-         */
-        unrar_ret = cli_unrar_peek_file_header(hArchive, &metadata);
-        if (unrar_ret != UNRAR_OK) {
-            if (unrar_ret == UNRAR_ENCRYPTED) {
-                /* Found an encrypted file header, must skip. */
-                cli_dbgmsg("RAR: Encrypted file header, unable to reading file metadata and file contents. Skipping file...\n");
-                nEncryptedFilesFound += 1;
-
-                if (UNRAR_OK != cli_unrar_skip_file(hArchive)) {
-                    /* Failed to skip!  Break extraction loop. */
-                    cli_dbgmsg("RAR: Failed to skip file. RAR archive extraction has failed.\n");
-                    break;
-                }
-            } else if (unrar_ret == UNRAR_BREAK) {
-                /* No more files. Break extraction loop. */
-                cli_dbgmsg("RAR: No more files in archive.\n");
-                break;
-            } else {
-                /* Memory error or some other error reading the header info. */
-                cli_dbgmsg("RAR: Error (%u) reading file header!\n", unrar_ret);
-                break;
-            }
-        } else {
-            file_count += 1;
-
-            /*
-             * Scan the metadata for the file in question since the content was clean, or we're running in all-match.
-             */
-            status = cli_unrar_scanmetadata(&metadata, ctx, file_count);
-            if (status == CL_EUNPACK) {
-                nEncryptedFilesFound += 1;
-            } else if (status != CL_SUCCESS) {
-                break;
-            }
-
-            /* Check if we've already exceeded the scan limit */
-            if (cli_checklimits("RAR", ctx, 0, 0, 0))
-                break;
-
-            if (metadata.is_dir) {
-                /* Entry is a directory. Skip. */
-                cli_dbgmsg("RAR: Found directory. Skipping to next file.\n");
-
-                if (UNRAR_OK != cli_unrar_skip_file(hArchive)) {
-                    /* Failed to skip!  Break extraction loop. */
-                    cli_dbgmsg("RAR: Failed to skip directory. RAR archive extraction has failed.\n");
-                    break;
-                }
-            } else if (cli_checklimits("RAR", ctx, metadata.unpack_size, 0, 0)) {
-                /* File size exceeds maxfilesize, must skip extraction.
-                 * Although we may be able to scan the metadata */
-
-                cli_dbgmsg("RAR: Next file is too large (%" PRIu64 " bytes); it would exceed max scansize.  Skipping to next file.\n", metadata.unpack_size);
-
-                if (UNRAR_OK != cli_unrar_skip_file(hArchive)) {
-                    /* Failed to skip!  Break extraction loop. */
-                    cli_dbgmsg("RAR: Failed to skip file. RAR archive extraction has failed.\n");
-                    break;
-                }
-            } else if (metadata.encrypted != 0) {
-                /* Found an encrypted file, must skip. */
-                cli_dbgmsg("RAR: Encrypted file, unable to extract file contents. Skipping file...\n");
-                nEncryptedFilesFound += 1;
-
-                if (UNRAR_OK != cli_unrar_skip_file(hArchive)) {
-                    /* Failed to skip!  Break extraction loop. */
-                    cli_dbgmsg("RAR: Failed to skip file. RAR archive extraction has failed.\n");
-                    break;
-                }
-            } else {
-                /*
-                 * Extract the file...
-                 */
-                if (0 != metadata.filename[0]) {
-                    (void)cli_basename(metadata.filename, strlen(metadata.filename), &filename_base, true /* posix_support_backslash_pathsep */);
-                }
-
-                if (!(ctx->engine->keeptmp) ||
-                    (NULL == filename_base)) {
-                    extract_fullpath = cli_gentemp(ctx->this_layer_tmpdir);
-                } else {
-                    extract_fullpath = cli_gentemp_with_prefix(ctx->this_layer_tmpdir, filename_base);
-                }
-                if (NULL == extract_fullpath) {
-                    cli_dbgmsg("RAR: Memory error allocating filename for extracted file.");
-                    status = CL_EMEM;
-                    break;
-                }
-                cli_dbgmsg("RAR: Extracting file: %s to %s\n", metadata.filename, extract_fullpath);
-
-                unrar_ret = cli_unrar_extract_file(hArchive, extract_fullpath, NULL);
-                if (unrar_ret != UNRAR_OK) {
-                    /*
-                     * Some other error extracting the file
-                     */
-                    cli_dbgmsg("RAR: Error extracting file: %s\n", metadata.filename);
-
-                    /* TODO:
-                     *   may need to manually skip the file depending on what, specifically, cli_unrar_extract_file() returned.
-                     */
-                } else {
-                    /*
-                     * File should be extracted...
-                     * ... make sure we have read permissions to the file.
-                     */
-                    if (0 != access(extract_fullpath, R_OK)) {
-                        cli_dbgmsg("RAR: Don't have read permissions, attempting to change file permissions to make it readable..\n");
-#ifdef _WIN32
-                        if (0 != _chmod(extract_fullpath, _S_IREAD)) {
-#else
-                        if (0 != chmod(extract_fullpath, S_IRUSR | S_IRGRP)) {
-#endif
-                            cli_dbgmsg("RAR: Failed to change permission bits so the extracted file is readable..\n");
-                        }
-                    }
-
-                    /*
-                     * ... scan the extracted file.
-                     */
-                    cli_dbgmsg("RAR: Extraction complete.  Scanning now...\n");
-                    status = cli_magic_scan_file(extract_fullpath, ctx, filename_base, LAYER_ATTRIBUTES_NONE);
-                    if (status == CL_EOPEN) {
-                        cli_dbgmsg("RAR: File not found, Extraction failed!\n");
-
-                        // Don't abort the scan just because one file failed to extract.
-                        status = CL_SUCCESS;
-                    } else {
-                        /* Delete the tempfile if not --leave-temps */
-                        if (!ctx->engine->keeptmp) {
-                            if (cli_unlink(extract_fullpath)) {
-                                cli_dbgmsg("RAR: Failed to unlink the extracted file: %s\n", extract_fullpath);
-                            }
-                        }
-
-                        if (status != CL_SUCCESS) {
-                            // Bail out if "virus" and also if exceeded scan maximums, etc.
-                            goto done;
-                        }
-                    }
-                }
-
-                /* Free up that the filepath */
-                if (NULL != extract_fullpath) {
-                    free(extract_fullpath);
-                    extract_fullpath = NULL;
-                }
-            }
-        }
-
-        /*
-         * Free up any malloced metadata...
-         */
-        if (NULL != filename_base) {
-            free(filename_base);
-            filename_base = NULL;
-        }
-
-    } while (status == CL_SUCCESS);
-
-    if (status == CL_BREAK) {
-        status = CL_SUCCESS;
-    }
-
-done:
-    if (NULL != comment) {
-        free(comment);
-        comment = NULL;
-    }
-
-    if (NULL != comment_fullpath) {
-        if (!ctx->engine->keeptmp) {
-            cli_rmdirs(comment_fullpath);
-        }
-        free(comment_fullpath);
-        comment_fullpath = NULL;
-    }
-
-    if (NULL != hArchive) {
-        cli_unrar_close(hArchive);
-        hArchive = NULL;
-    }
-
-    if (NULL != filename_base) {
-        free(filename_base);
-        filename_base = NULL;
-    }
-
-    if (NULL != extract_fullpath) {
-        free(extract_fullpath);
-        extract_fullpath = NULL;
-    }
-
-    if ((CL_VIRUS != status) && (nEncryptedFilesFound > 0)) {
-        /* If user requests enabled the Heuristic for encrypted archives... */
-        if (SCAN_HEURISTIC_ENCRYPTED_ARCHIVE) {
-            if (CL_VIRUS == cli_append_potentially_unwanted(ctx, "Heuristics.Encrypted.RAR")) {
-                status = CL_VIRUS;
-            }
-        }
-    }
-
-    cli_dbgmsg("RAR: Exit code: %d\n", status);
-
-    return status;
-}
-
 static cl_error_t cli_scanrar(cli_ctx *ctx)
 {
-    cl_error_t status = CL_SUCCESS;
+    cl_error_t status           = CL_SUCCESS;
+    const char *scratch_path    = ctx->this_layer_tmpdir;
+    const char *normalized_path = NULL;
+    uint32_t encrypted_members  = 0;
 
-    const char *filepath = NULL;
-    int fd               = -1;
-
-    char *tmpname = NULL;
-    int tmpfd     = -1;
-
-    if ((SCAN_UNPRIVILEGED) ||
-        (NULL == ctx->fmap->path) ||
-        (0 != access(ctx->fmap->path, R_OK)) ||
-        (ctx->fmap->nested_offset > 0) || (ctx->fmap->len < ctx->fmap->real_len)) {
-
-        /* If map is not file-backed have to dump to file for scanrar. */
-        status = fmap_dump_to_file(ctx->fmap, ctx->fmap->path, ctx->this_layer_tmpdir, &tmpname, &tmpfd, 0, SIZE_MAX);
-        if (status != CL_SUCCESS) {
-            cli_dbgmsg("cli_magic_scan: failed to generate temporary file.\n");
-            goto done;
-        }
-        filepath = tmpname;
-        fd       = tmpfd;
-    } else {
-        /* Use the original file and file descriptor. */
-        filepath = ctx->fmap->path;
-        fd       = fmap_fd(ctx->fmap);
+    if (NULL == scratch_path) {
+        scratch_path = cli_gettmpdir();
     }
 
-    /* scan file */
-    status = cli_scanrar_file(filepath, fd, ctx);
+    /*
+     * Windows ClamAV paths may be UTF-8 or use the active ANSI code page.
+     * Normalize them before Rust constructs a native PathBuf. On Unix this
+     * macro preserves the original bytes.
+     */
+    normalized_path = cli_to_utf8_maybe_alloc(scratch_path);
+    if (NULL == normalized_path) {
+        cli_warnmsg("RAR: failed to convert the temporary directory path.\n");
+        status = CL_EOPEN;
+        goto done;
+    }
 
-    if ((NULL == tmpname) && (CL_EOPEN == status)) {
-        /*
-         * Failed to open the file using the original filename.
-         * Try writing the file descriptor to a temp file and try again.
-         */
-        status = fmap_dump_to_file(ctx->fmap, ctx->fmap->path, ctx->this_layer_tmpdir, &tmpname, &tmpfd, 0, SIZE_MAX);
-        if (status != CL_SUCCESS) {
-            cli_dbgmsg("cli_magic_scan: failed to generate temporary file.\n");
-            goto done;
+    status = cli_scanrar_rust(ctx, normalized_path, &encrypted_members);
+    if (CL_VIRUS != status && encrypted_members > 0 && SCAN_HEURISTIC_ENCRYPTED_ARCHIVE) {
+        cl_error_t heuristic_status = cli_append_potentially_unwanted(ctx, "Heuristics.Encrypted.RAR");
+        if (CL_SUCCESS != heuristic_status) {
+            status = heuristic_status;
         }
-        filepath = tmpname;
-        fd       = tmpfd;
-
-        /* try to scan again */
-        status = cli_scanrar_file(filepath, fd, ctx);
     }
 
 done:
-    if (tmpfd != -1) {
-        /* If dumped tempfile, need to cleanup */
-        close(tmpfd);
-        if (!ctx->engine->keeptmp) {
-            if (cli_unlink(tmpname)) {
-                status = CL_EUNLINK;
-            }
-        }
+    if (normalized_path != scratch_path) {
+        free((char *)normalized_path);
     }
 
-    if (tmpname != NULL) {
-        free(tmpname);
-    }
     return status;
 }
 
@@ -3889,7 +3536,7 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
 
                     switch (fpt->type) {
                         case CL_TYPE_RARSFX:
-                            if ((have_rar && SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_RAR)) &&
+                            if ((SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_RAR)) &&
                                 (type != CL_TYPE_RAR)) {
                                 // TODO: Add header validity check to prevent false positives from being scanned.
                                 nret = cli_magic_scan_nested_fmap_type(
@@ -4999,7 +4646,7 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
 
         case CL_TYPE_RAR:
         case CL_TYPE_RARSFX:
-            if (have_rar && SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_RAR))
+            if (SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_RAR))
                 ret = cli_scanrar(ctx);
             break;
 

@@ -213,12 +213,6 @@ CLAMAV_PRIVATE {
     messageCreate;
     messageDestroy;
     base64Flush;
-    cli_unrar_open;
-    cli_unrar_peek_file_header;
-    cli_unrar_extract_file;
-    cli_unrar_skip_file;
-    cli_unrar_close;
-    have_rar;
     have_clamjit;
     cli_bytecode_load;
     cli_bytecode_prepare2;

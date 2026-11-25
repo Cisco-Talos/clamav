@@ -78,7 +78,7 @@ The Windows Visual Studio and Autotools build systems have been removed.
 You will need:
 - CMake 3.17 or newer
 - A C compiler toolchain such as `gcc`, `clang`, or Microsoft Visual Studio.
-- The Rust compiler toolchain.
+- The Rust compiler toolchain, version 1.89 or newer.
 
 Recommended tools:
 - pkg-config
@@ -468,10 +468,6 @@ The following is a complete list of CMake options unique to configuring ClamAV:
   Requires: `ENABLE_APP`
 
   _Default: `OFF` for Mac & Windows, `ON` for Linux/Unix_
-
-- `ENABLE_UNRAR`: Build & install libclamunrar (UnRAR) and libclamunrar_iface.
-
-  _Default: `ON`_
 
 - `ENABLE_MAN_PAGES`: Generate man pages.
 

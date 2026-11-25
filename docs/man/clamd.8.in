@@ -130,9 +130,6 @@ Specify a directory containing the root CA cert needed to verify detached CVD di
 .LP
 clamd uses the following environment variables:
 .TP
-\fBLD_LIBRARY_PATH\fR
-May be used on startup to find the libclamunrar_iface shared library module to enable RAR archive support.
-.TP
 \fBCVD_CERTS_DIR\fR
 Specify a directory containing the root CA cert needed to verify detached CVD digital signatures. If not provided, then clamd will look in the default directory.
 

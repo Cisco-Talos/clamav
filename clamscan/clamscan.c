@@ -387,8 +387,6 @@ void help(void)
     mprintf(LOGG_INFO, "\n");
     mprintf(LOGG_INFO, "Environment Variables:\n");
     mprintf(LOGG_INFO, "\n");
-    mprintf(LOGG_INFO, "    LD_LIBRARY_PATH                      May be used on startup to find the libclamunrar_iface\n");
-    mprintf(LOGG_INFO, "                                         shared library module to enable RAR archive support.\n");
     mprintf(LOGG_INFO, "    CVD_CERTS_DIR                        Specify a directory containing the root CA cert needed\n");
     mprintf(LOGG_INFO, "                                         to verify detached CVD digital signatures.\n");
     mprintf(LOGG_INFO, "                                         If not provided, then clamscan will look in the default directory.\n");

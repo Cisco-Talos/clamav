@@ -411,7 +411,7 @@ find_rust_program(rustfmt)
 find_rust_program(bindgen)
 
 if(RUSTC_MINIMUM_REQUIRED AND rustc_VERSION VERSION_LESS RUSTC_MINIMUM_REQUIRED)
-    message(FATAL_ERROR "Your Rust toolchain is to old to build this project:
+    message(FATAL_ERROR "Your Rust toolchain is too old to build this project:
     ${rustc_VERSION} < ${RUSTC_MINIMUM_REQUIRED}")
 endif()
 
